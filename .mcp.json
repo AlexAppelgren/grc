@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "green-design-system": {
+      "command": "npx",
+      "args": ["-y", "-p", "@sebgroup/green-core@3.23.0", "-p", "@modelcontextprotocol/sdk@^1.24.0", "green-core-mcp"]
+    }
+  }
+}
