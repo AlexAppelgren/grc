@@ -1,0 +1,113 @@
+import { describe, expect, it } from 'vitest';
+
+import { pillTones } from '@/components/ui/pill-tones';
+
+import { computeVars, readStyle, resolveName, type Theme, type VarMap } from './css-vars.test-helper';
+
+// Playbook 6.3: contrast is pinned by a unit test against WCAG AA for every
+// text-on-surface pair the design uses, in both themes, including all six
+// pill tones. Values are resolved from tokens.generated.css + brand.css.
+
+const AA_NORMAL_TEXT = 4.5;
+
+const tokens = readStyle('tokens.generated.css');
+const brand = readStyle('brand.css');
+
+type Rgba = { r: number; g: number; b: number; a: number };
+
+function parseColour(value: string): Rgba {
+  const v = value.trim().toLowerCase();
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/.exec(v);
+  if (hex) {
+    let h = hex[1] ?? '';
+    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16), a: 1 };
+  }
+  const rgb = /^rgba?\(([^)]+)\)$/.exec(v);
+  if (rgb) {
+    const parts = (rgb[1] ?? '').split(',').map((p) => Number(p.trim()));
+    return { r: parts[0] ?? 0, g: parts[1] ?? 0, b: parts[2] ?? 0, a: parts[3] ?? 1 };
+  }
+  throw new Error(`contrast: cannot parse colour "${value}"`);
+}
+
+function composite(fg: Rgba, bg: Rgba): Rgba {
+  const a = fg.a;
+  return { r: fg.r * a + bg.r * (1 - a), g: fg.g * a + bg.g * (1 - a), b: fg.b * a + bg.b * (1 - a), a: 1 };
+}
+
+function channel(c: number): number {
+  const s = c / 255;
+  return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+}
+
+function luminance(c: Rgba): number {
+  return 0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b);
+}
+
+export function contrastRatio(fg: string, bg: string): number {
+  const back = parseColour(bg);
+  const front = composite(parseColour(fg), back);
+  const l1 = luminance(front);
+  const l2 = luminance(back);
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+
+interface Pair {
+  name: string;
+  fg: string;
+  bg: string;
+}
+
+// Every text-on-surface pair the shell and the primitives use. Names are
+// theme.css semantic names; values are the token variables behind them.
+const PAIRS: Pair[] = [
+  { name: 'text on page', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l1-neutral-02' },
+  { name: 'text on surface', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'text on surface-2', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l2-neutral-02-2' },
+  { name: 'text on sand', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l2-brand-02' },
+  { name: 'muted on page', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l1-neutral-02' },
+  { name: 'muted on surface', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'muted on sand', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-brand-02' },
+  { name: 'brass on sand (legal margin)', fg: '--gds-sys-color-content-brand-02', bg: '--gds-sys-color-l2-brand-02' },
+  { name: 'brass on surface (AI note)', fg: '--gds-sys-color-content-brand-02', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'accent on surface', fg: '--bleqq-accent', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'on-brand on side rail', fg: '--bleqq-on-brand', bg: '--gds-sys-color-l2-brand-01' },
+  { name: 'on-brand-muted on side rail (who panel)', fg: '--bleqq-on-brand-muted', bg: '--gds-sys-color-l2-brand-01' },
+  { name: 'current nav item', fg: '--bleqq-rail-current-fg', bg: '--bleqq-rail-current-bg' },
+  { name: 'button text on button', fg: '--gds-sys-color-content-neutral-03', bg: '--gds-sys-color-l3-neutral-03' },
+  { name: 'negative on surface (danger button)', fg: '--gds-sys-color-content-negative-01', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'warning on surface (date emphasis)', fg: '--gds-sys-color-content-warning-01', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'positive on surface (date emphasis)', fg: '--gds-sys-color-content-positive-03', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'notice on surface (date emphasis)', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'notice on sand (focus ring reference)', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-brand-02' },
+  ...Object.entries(pillTones).map(([tone, { background, text }]) => ({ name: `pill ${tone}`, fg: text, bg: background })),
+  { name: 'outlined information pill on surface', fg: pillTones.information.text, bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'outlined information pill on sand', fg: pillTones.information.text, bg: '--gds-sys-color-l2-brand-02' },
+];
+
+function varsFor(theme: Theme): VarMap {
+  return computeVars([tokens, brand], theme);
+}
+
+describe('WCAG AA contrast for every text-on-surface pair (playbook 6.3)', () => {
+  for (const theme of ['light', 'dark'] as const) {
+    const vars = varsFor(theme);
+    describe(theme, () => {
+      it.each(PAIRS)('$name is at least 4.5:1', ({ fg, bg }) => {
+        const ratio = contrastRatio(resolveName(vars, fg), resolveName(vars, bg));
+        expect(ratio).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+      });
+    });
+  }
+
+  it('the six pill tones and only those are checked', () => {
+    expect(Object.keys(pillTones).sort()).toEqual(['brand', 'information', 'negative', 'notice', 'positive', 'warning']);
+  });
+
+  it('the ratio formula matches the WCAG reference values', () => {
+    expect(contrastRatio('#000000', '#ffffff')).toBeCloseTo(21, 5);
+    expect(contrastRatio('#ffffff', '#ffffff')).toBeCloseTo(1, 5);
+    expect(contrastRatio('rgba(255, 255, 255, 0.5)', '#000000')).toBeGreaterThan(1);
+  });
+});

@@ -1,0 +1,109 @@
+/*
+ * Tailwind 4 theme (CSS-first). Playbook 6.3 and 6.4.
+ *
+ * Colours: semantic names only, every one mapped to a Green token variable
+ * from tokens.generated.css (overridden by brand.css). The default Tailwind
+ * palette is removed (--color-*: initial) so text-white, bg-gray-100 or any
+ * hex value cannot appear in a component. Light and dark switch through the
+ * token variables, so screens never need the dark: variant.
+ *
+ * Type: the NAMED scale replaces the numbered one. --text-*: initial deletes
+ * Tailwind's text-sm, text-lg and the rest so they generate nothing, and
+ * eslint.config.js fails the build on any of them in a string literal. Values
+ * come from the prototype CSS (design/prototype/index.html): body 16px/1.5,
+ * h1 2rem/400, h2 1.25rem/500, meta .85rem, microlabel uppercase tracked.
+ * Six roles, no seventh.
+ */
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* `inline` matters: without it a utility such as bg-page compiles to
+   var(--color-page), which :root resolves once against the light tokens and
+   descendants inherit as a computed colour, so a .dark or .light wrapper
+   (the /dev/pills gallery, any nested theme) cannot re-theme it. With inline
+   the utility references the token variable itself. */
+@theme inline {
+  /* --- colour: replace, do not extend --- */
+  --color-*: initial;
+
+  --color-page: var(--gds-sys-color-l1-neutral-02);
+  --color-surface: var(--gds-sys-color-l2-neutral-02);
+  --color-surface-2: var(--gds-sys-color-l2-neutral-02-2);
+  --color-sand: var(--gds-sys-color-l2-brand-02);
+  --color-sand-2: var(--gds-sys-color-l3-brand-02);
+  --color-sand-3: var(--gds-sys-color-l3-brand-02-2);
+  --color-brand: var(--gds-sys-color-l2-brand-01);
+
+  --color-fg: var(--gds-sys-color-content-neutral-01);
+  --color-muted: var(--gds-sys-color-content-neutral-02);
+  --color-brass: var(--gds-sys-color-content-brand-02);
+  --color-accent: var(--bleqq-accent);
+  --color-on-brand: var(--bleqq-on-brand);
+  --color-on-brand-muted: var(--bleqq-on-brand-muted);
+  --color-on-brand-line: var(--bleqq-on-brand-line);
+  --color-on-brand-hover: var(--bleqq-on-brand-hover);
+  --color-rail-current: var(--bleqq-rail-current-bg);
+  --color-on-rail-current: var(--bleqq-rail-current-fg);
+
+  --color-line: var(--gds-sys-color-border-neutral-02);
+  --color-line-strong: var(--gds-sys-color-border-neutral-01);
+  --color-focus: var(--gds-sys-color-border-notice-01);
+
+  --color-negative: var(--gds-sys-color-content-negative-01);
+  --color-warning: var(--gds-sys-color-content-warning-01);
+  --color-positive: var(--gds-sys-color-content-positive-03);
+  --color-notice: var(--gds-sys-color-content-notice-01);
+  --color-negative-soft: var(--gds-sys-color-l3-negative-02);
+  --color-warning-soft: var(--gds-sys-color-l3-warning-02);
+  --color-positive-soft: var(--gds-sys-color-l3-positive-02);
+  --color-notice-soft: var(--gds-sys-color-l3-notice-02);
+  --color-neutral-soft: var(--gds-sys-color-l3-neutral-02);
+
+  --color-button: var(--gds-sys-color-l3-neutral-03);
+  --color-on-button: var(--gds-sys-color-content-neutral-03);
+
+  /* --- type: the named scale, replacing the numbered one --- */
+  --text-*: initial;
+
+  --text-hero: 2.75rem;
+  --text-hero--line-height: 1.1;
+  --text-hero--font-weight: 400;
+  --text-hero--letter-spacing: -0.02em;
+
+  --text-display: 2rem;
+  --text-display--line-height: 1.2;
+  --text-display--font-weight: 400;
+  --text-display--letter-spacing: -0.01em;
+
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.2;
+  --text-title--font-weight: 500;
+  --text-title--letter-spacing: -0.01em;
+
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+
+  --text-meta: 0.85rem;
+  --text-meta--line-height: 1.4;
+
+  --font-sans: 'Hanken Grotesk Variable', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-mono: 'Noto Sans Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --radius-xs: var(--gds-sys-radius-xs);
+  --radius-s: var(--gds-sys-radius-s);
+  --radius-m: var(--gds-sys-radius-m);
+  --radius-l: var(--gds-sys-radius-l);
+  --radius-xl: var(--gds-sys-radius-xl);
+  --radius-max: var(--gds-sys-radius-max);
+}
+
+/* The same register as meta, uppercase with tracking: eyebrows, column
+   heads, button labels (playbook 6.4). */
+@utility microlabel {
+  font-size: var(--text-meta);
+  line-height: var(--text-meta--line-height);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

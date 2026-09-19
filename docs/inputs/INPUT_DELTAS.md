@@ -73,7 +73,9 @@ writes, never an OpenAPI `enum`.
   `impact_assessment`, `action`, `gap`, `change_case`, configuration rows)
   and require `If-Match` on their writes.
 - Evidence and export downloads stream through the API. Remove `DownloadLink`
-  and the presigned download operations. Upload may stay presigned if the
+  and the presigned download operations `GET /evidence/{evidenceId}/download`
+  and `GET /exports/{exportId}/download`; chunks 9 and 12 replace them with
+  streaming endpoints of the same paths that answer the file, not a link. Upload may stay presigned if the
   scan and the hash still happen before the file is visible.
 
 ## 5. Tenancy and agents
@@ -95,3 +97,12 @@ writes, never an OpenAPI `enum`.
 
 `audit_event` and `outbox_event` stay as designed. django-simple-history is
 not used. Add `step_up_assertion_id` to `audit_event`.
+
+## 7. Paths outside the API prefix (Phase 0)
+
+- `GET /health` is served at `/health/` on the site root, outside `/api/v1`,
+  so a load balancer can probe it without the API prefix and without
+  authentication. It answers 200 with every component named, or 503 naming
+  the failing one (playbook 2.2).
+- `GET /me` exists from Phase 0 with the principal only (`SessionAuth` and
+  `EnrolmentAuth`, AC-ID2). Chunk 1 grows it to the designed shape.

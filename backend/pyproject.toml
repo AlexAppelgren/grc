@@ -1,0 +1,136 @@
+[project]
+name = "compliance-watch-backend"
+version = "0.1.0"
+description = "Compliance Watch API: Django + Django Ninja on PostgreSQL with pgvector"
+requires-python = ">=3.12,<3.13"
+# Exact pins per the Phase 0 brief. Django stays on the 5.2 LTS line (DECISIONS D-17).
+# A pin that fails to resolve is replaced by the nearest working version and the change
+# is recorded in the Phase 0 report and the stack ADR.
+dependencies = [
+    "django (==5.2.17)",
+    "django-ninja (==1.7.0)",
+    "psycopg[binary] (==3.3.6)",
+    "pgvector (==0.5.0)",
+    "celery (==5.6.3)",
+    "redis (==8.1.0)",
+    "webauthn (==3.0.0)",
+    "gunicorn (==26.2.0)",
+    "sentry-sdk (==2.69.2)",
+    "django-cors-headers (==4.9.0)",
+    "dj-database-url (==3.1.2)",
+    "python-json-logger (==4.2.0)",
+    "boto3 (==1.43.97)",
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+ruff = "0.16.8"
+mypy = "2.3.1"
+django-stubs = "5.2.9"
+# django-stubs 5.2.9 references django_stubs_ext.db.*, which the 6.x ext dropped; without
+# this pin Poetry resolves ext 6.1.1 and mypy crashes ("Cannot find component 'db'").
+# Pinned to the same 5.2 line as the stubs.
+django-stubs-ext = "5.2.9"
+coverage = "7.16.1"
+# PyYAML reads docs/inputs/openapi.yaml in scripts/contract_drift.py. Not in the brief's
+# pin list; newest at resolve time, recorded in the Phase 0 report.
+pyyaml = "6.0.3"
+types-pyyaml = "6.0.12.20250915"
+
+# ---------------------------------------------------------------------------------------
+# ruff: correctness classes only (playbook 9). Every excluded rule names its reason below.
+# A rule selected then blanket-ignored is worse than none.
+# ---------------------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["apps/*/migrations/*.py"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B", "DJ", "S"]
+ignore = [
+    # S101: assert is the assertion primitive in tests and in the structural guards
+    # (playbook 5). Production code raises; the per-file ignore below would be enough
+    # but the guards also assert inside helpers imported by tests.
+    "S101",
+    # S308: mark_safe is never used; the rule fires on Ninja's docs template helpers in
+    # config/api.py where we do not render HTML ourselves.
+    "S308",
+    # B008: Ninja and Django idioms pass call results as defaults (Query(...), Form(...)).
+    "B008",
+    # DJ001: null=True on CharField is used deliberately for "unset" tri-state columns
+    # such as Vocabulary.kind (playbook 15: optional fixed kind). Empty string would be a
+    # third meaning.
+    "DJ001",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests spawn subprocesses on purpose (production guard, playbook 11.1) and use fixed
+# dev-only literals for database URLs (S105/S106: not secrets, allowlisted in .gitleaks).
+"apps/*/tests_*.py" = ["S603", "S607", "S105", "S106"]
+"apps/shared/testing.py" = ["S105", "S106"]
+# Management commands run subprocesses for migrate_from_zero (documented in the command).
+"apps/shared/management/commands/*.py" = ["S603", "S607"]
+# scripts/ are standalone gate tools that run subprocesses (coverage, git) by design.
+"scripts/*.py" = ["S603", "S607"]
+# The one place raw DDL is built from strings (playbook 11.2: policies, triggers and grants
+# live in migrations). Every identifier is a module constant; no input reaches it.
+"apps/shared/migration_helpers.py" = ["S608"]
+
+# ---------------------------------------------------------------------------------------
+# mypy: pragmatic, whole tree, django-stubs plugin (playbook 9). Strict on what is
+# annotated, lenient on what is not, so the checker adds signal without blocking.
+# ---------------------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+files = ["apps", "config", "scripts", "manage.py"]
+exclude = ["apps/.*/migrations/"]
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = ["apps.*.migrations.*"]
+ignore_errors = true
+
+[tool.django-stubs]
+django_settings_module = "config.test_settings"
+
+# ---------------------------------------------------------------------------------------
+# coverage: the global floor lives here, the per-module floors in scripts/coverage_gate.py
+# (playbook 8.2). Never lowered to go green.
+# ---------------------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["apps", "config"]
+branch = true
+omit = [
+    "apps/*/migrations/*",
+    "apps/*/tests_*.py",
+    "apps/shared/testing.py",
+    "config/test_settings.py",
+    "config/wsgi.py",
+    "config/asgi.py",
+]
+
+[tool.coverage.report]
+# Global floor: measured 97% on 2026-09-19 at Phase 0 close (128 tests, 1448 statements),
+# margin minus 2 at 400+ statements (playbook 8.2). Per-module floors, the test count and
+# the date live in scripts/coverage_gate.py.
+fail_under = 95
+show_missing = true
+skip_covered = false
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

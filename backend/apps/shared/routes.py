@@ -1,0 +1,48 @@
+"""Enumerate the operations Ninja registered: the same objects that produce openapi.json
+(playbook 5). The route guards, the audit-on-write guard and the tenant-isolation guard
+all read this one function so they can never disagree about what exists."""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Iterator
+from dataclasses import dataclass
+from typing import Any
+
+from ninja import NinjaAPI
+
+
+@dataclass(frozen=True)
+class RegisteredOperation:
+    method: str
+    path: str  # as registered under /api/v1, e.g. "/me"
+    operation_id: str
+    view_func: Callable[..., Any]
+    auth: Any
+
+
+def _join(prefix: str, path: str) -> str:
+    parts = [segment for segment in (prefix.strip("/"), path.strip("/")) if segment]
+    return "/" + "/".join(parts)
+
+
+def iter_operations(api: NinjaAPI) -> Iterator[RegisteredOperation]:
+    for bound in api._get_bound_routers():
+        for path, path_view in bound.path_operations.items():
+            for operation in path_view.operations:
+                for method in operation.methods:
+                    yield RegisteredOperation(
+                        method=method.upper(),
+                        path=_join(bound.prefix, path),
+                        operation_id=operation.operation_id
+                        or api.get_openapi_operation_id(operation),
+                        view_func=operation.view_func,
+                        auth=operation.auth_callbacks,
+                    )
+
+
+# Tenant-scoped routes register here (chunk 1 onward) so the tenant-isolation guard can
+# request a record of tenant A as tenant B for each one and demand a 404. Entries are
+# (method, path, model label, factory name); the guard builds the record with the
+# factory in apps/shared/factories.py. Phase 0 has none, and the guard enumerates
+# an empty registry rather than skipping.
+TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = []

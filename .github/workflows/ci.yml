@@ -1,0 +1,585 @@
+# CI (playbook 2.4, 9, Appendix D). Every gate blocks; nothing here is advisory.
+#
+# Gate inventory: which gate, what it stops, which job.
+# ----------------------------------------------------------------------------
+# Migration drift (makemigrations --check)      A model change without a migration       backend
+# Migration graph applies from zero             A conflicting or broken graph            backend
+# Backend tests under coverage                  Regressions                              backend
+# Global + per-module coverage floors           Coverage sliding, masked modules         backend
+# ruff + mypy                                   Undefined names, bugbear, Django footguns,
+#                                               bandit findings, type errors             backend
+# Compliance lint (--all)                       Unschema'd JSONField, stray enums, PII in
+#                                               logs, bare except, untyped responses,
+#                                               random for security, **kwargs            backend
+# Requirements coverage                         A requirement with no scenario, a scenario
+#                                               with no test                             backend
+# Contract drift                                A designed operation missing or reshaped
+#                                               without an INPUT_DELTAS entry            backend
+# Search and classification evaluation          Retrieval/tagging quality dropping       backend
+# OpenAPI + TypeScript drift                    Frontend types diverging from the API    openapi-types-drift
+# Frontend lint, typecheck, unit coverage,
+#   build                                       Lint/type errors, coverage drops, broken
+#                                               build                                    frontend
+# Message catalogs                              A UI string missing in a shipped language frontend
+# Copy drift                                    Reworded copy breaking journeys          frontend
+# E2E (real stack, @smoke on push, all nightly) Broken journeys, undeclared API failures,
+#                                               page exceptions                          e2e
+# Pill gallery screenshot (both themes)         Tones, slots and labels drifting         e2e
+# Secret scan (gitleaks, every push)            Committed secrets                        secrets
+# Dependency CVEs (osv-scanner on the committed
+#   lockfiles + npm audit; nightly regardless)  Known-vulnerable dependencies            cve
+# Dependency licences                           Copyleft dependencies, missing Apache
+#                                               attribution for @sebgroup/*             licences
+# Container image scan (Trivy, HIGH+CRITICAL)   Vulnerable OS packages in the images     container-scan
+# CodeQL (own SARIF gate, medium and above)     Injection, traversal, unsafe deserialisation  codeql.yml
+# ----------------------------------------------------------------------------
+#
+# Shape (playbook 9):
+# - Tiered by the `changes` job (dorny/paths-filter, `base: github.ref_name` on
+#   push, extglob patterns). A change under .github/ counts as everything.
+# - Nightly at 02:30 UTC (04:30 Stockholm, away from local midnight) runs
+#   everything in full: no thinning, full E2E suite, CVE scan regardless of
+#   lockfile changes.
+# - A timeout on every job. The values are first estimates; retune to roughly
+#   twice the slowest observed run once there are observations.
+# - Explicit read-only permissions; raised per job only where a job needs more.
+# - Concurrency cancels in-flight runs on the same ref, except the schedule.
+# - No `${{ }}` inside a `run:` body; values pass through `env:`.
+# - Every `uses:` is pinned to a full commit SHA with the version beside it.
+# - Failure artefacts are kept for 14 days.
+#
+# Secrets and variables needed: none beyond the automatic GITHUB_TOKEN.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # 02:30 UTC = 04:30 Europe/Stockholm (CEST) / 03:30 (CET): away from midnight.
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.event_name == 'schedule' && format('nightly-{0}', github.run_id) || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+env:
+  PYTHON_VERSION: "3.12"
+  POETRY_VERSION: "2.0.1"
+  # 22.19 is the floor undici (a Next dependency) declares; pinned exactly so a runner image change cannot move it.
+  NODE_VERSION: "22.23.2"
+  # Dev-only credentials, allowlisted by exact literal in .gitleaks.toml. The
+  # roles come from infra/db/init.sql applied by .github/actions/init-db.
+  DATABASE_URL: postgres://cw_app:cw-app-dev-only@localhost:5432/compliance_watch
+  MIGRATOR_DATABASE_URL: postgres://cw_migrator:cw-migrator-dev-only@localhost:5432/compliance_watch
+  REDIS_URL: redis://localhost:6379/0
+  ENVIRONMENT: ci
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Tiering: decide which expensive jobs run. On schedule and manual runs, and
+  # whenever the workflows change, everything runs.
+  # ---------------------------------------------------------------------------
+  changes:
+    name: Decide which gates run
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      full: ${{ steps.decide.outputs.full }}
+      backend: ${{ steps.decide.outputs.backend }}
+      frontend: ${{ steps.decide.outputs.frontend }}
+      lockfiles: ${{ steps.decide.outputs.lockfiles }}
+      containers: ${{ steps.decide.outputs.containers }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Detect changed areas
+        id: filter
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          # On push, diff against the branch itself (the commit before the
+          # push); without this the filter diffs against the default branch
+          # and matches everything. Ignored on pull_request.
+          base: ${{ github.ref_name }}
+          # Extglob, not list negation: '!**/*.md' as a separate line would
+          # match every non-markdown file in the repository.
+          filters: |
+            workflows:
+              - '.github/**'
+            backend:
+              - 'backend/**/!(*.md)'
+              # app.md is parsed by requirements_coverage.py, PRD.md is its
+              # source of truth, and contract_drift.py reads the design inputs.
+              - 'backend/apps/*/app.md'
+              - 'PRD.md'
+              - 'docs/inputs/openapi.yaml'
+              - 'docs/inputs/INPUT_DELTAS.md'
+              - 'generate-types.sh'
+              - 'openapi.json'
+              - 'infra/db/**'
+              - 'docker-compose.yml'
+            frontend:
+              - 'frontend/**/!(*.md)'
+              - 'openapi.json'
+              - 'generate-types.sh'
+            lockfiles:
+              - 'backend/poetry.lock'
+              - 'backend/pyproject.toml'
+              - 'frontend/package-lock.json'
+              - 'frontend/package.json'
+              - 'frontend/THIRD_PARTY_NOTICES.md'
+              - 'scripts/**'
+            containers:
+              - 'backend/Dockerfile'
+              - 'frontend/Dockerfile'
+              - '**/.dockerignore'
+              - 'backend/entrypoint.sh'
+
+      - name: Decide
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGED_WORKFLOWS: ${{ steps.filter.outputs.workflows }}
+          CHANGED_BACKEND: ${{ steps.filter.outputs.backend }}
+          CHANGED_FRONTEND: ${{ steps.filter.outputs.frontend }}
+          CHANGED_LOCKFILES: ${{ steps.filter.outputs.lockfiles }}
+          CHANGED_CONTAINERS: ${{ steps.filter.outputs.containers }}
+        run: |
+          set -euo pipefail
+          full=false
+          case "$EVENT_NAME" in
+            schedule|workflow_dispatch) full=true ;;
+          esac
+          if [ "$CHANGED_WORKFLOWS" = "true" ]; then full=true; fi
+          decide() {
+            if [ "$full" = true ] || [ "$2" = "true" ]; then echo "$1=true"; else echo "$1=false"; fi
+          }
+          {
+            echo "full=$full"
+            decide backend "$CHANGED_BACKEND"
+            decide frontend "$CHANGED_FRONTEND"
+            decide lockfiles "$CHANGED_LOCKFILES"
+            decide containers "$CHANGED_CONTAINERS"
+          } | tee -a "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------------------
+  # Backend: migrations, tests under coverage, floors, lint, types, compliance
+  # lint, requirements coverage, contract drift, search evaluation.
+  # ---------------------------------------------------------------------------
+  backend:
+    name: Backend gates
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres-dev-only
+          POSTGRES_DB: compliance_watch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d compliance_watch"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: backend
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Create database roles and extensions
+        uses: ./.github/actions/init-db
+        with:
+          container-id: ${{ job.services.db.id }}
+
+      - name: Set up backend toolchain
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Migration drift
+        run: bash ./run.sh run python manage.py makemigrations --check --dry-run --settings=config.test_settings
+
+      - name: Migration graph applies from zero
+        run: bash ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings
+
+      - name: Tests under coverage
+        run: bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput
+
+      - name: Coverage report
+        run: bash ./run.sh run coverage report
+
+      - name: Coverage floors (global + per module)
+        run: bash ./run.sh run python scripts/coverage_gate.py
+
+      - name: ruff
+        run: bash ./run.sh run ruff check .
+
+      - name: mypy
+        run: bash ./run.sh run mypy
+
+      - name: Compliance lint (whole tree)
+        run: bash ./run.sh run python scripts/compliance_check.py --all
+
+      - name: Requirements coverage
+        run: bash ./run.sh run python scripts/requirements_coverage.py
+
+      - name: Contract drift
+        run: bash ./run.sh run python scripts/contract_drift.py
+
+      - name: Search and classification evaluation
+        run: bash ./run.sh run python scripts/search_eval.py
+
+  # ---------------------------------------------------------------------------
+  # OpenAPI + TypeScript drift: regenerate and diff the committed artefacts.
+  # ---------------------------------------------------------------------------
+  openapi-types-drift:
+    name: OpenAPI and TypeScript drift
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up backend toolchain
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Regenerate openapi.json and api.generated.ts
+        shell: bash
+        run: bash generate-types.sh
+
+      - name: Committed artefacts match the contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-files --error-unmatch openapi.json frontend/src/types/api.generated.ts
+          git diff --exit-code -- openapi.json frontend/src/types/api.generated.ts
+
+  # ---------------------------------------------------------------------------
+  # Frontend: lint, typecheck, unit coverage, message catalogs, copy drift, build.
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend gates
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    defaults:
+      run:
+        shell: bash
+        working-directory: frontend
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Build design tokens
+        run: npm run build:tokens
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests with coverage thresholds
+        run: npm run test:coverage
+
+      - name: Message catalogs
+        run: npm run check:messages
+
+      - name: Copy drift
+        run: npm run check:copy-drift
+
+      - name: Build
+        run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # E2E: the real stack. Playwright's webServer recreates the throwaway
+  # database, migrates from zero, seeds, boots Django with the E2E flag and
+  # `next start`. @smoke on push and pull requests; the full suite nightly and
+  # on manual runs. The pill gallery screenshot compare is part of this suite.
+  # ---------------------------------------------------------------------------
+  e2e:
+    name: E2E (Playwright)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres-dev-only
+          POSTGRES_DB: compliance_watch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d compliance_watch"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      CI: "true"
+      E2E_MODE: "true"
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    defaults:
+      run:
+        shell: bash
+        working-directory: frontend
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Create database roles and extensions
+        uses: ./.github/actions/init-db
+        with:
+          container-id: ${{ job.services.db.id }}
+
+      - name: Set up backend toolchain
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build design tokens
+        run: npm run build:tokens
+
+      - name: Run journeys
+        env:
+          FULL_SUITE: ${{ needs.changes.outputs.full }}
+        run: |
+          set -euo pipefail
+          if [ "$FULL_SUITE" = "true" ]; then
+            npm run test:e2e
+          else
+            npm run test:e2e -- --grep @smoke
+          fi
+
+      - name: Upload screenshots and traces
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            frontend/test-results
+            frontend/playwright-report
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Secrets: every push, the whole history reachable from the ref.
+  # ---------------------------------------------------------------------------
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out with history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The action takes its config through this variable (there is no
+          # args input); it is the same file `gitleaks git . --config
+          # .gitleaks.toml` uses locally (Appendix D, item 10).
+          GITLEAKS_CONFIG: .gitleaks.toml
+          # Pinned so a run today and a run in a month scan the same way.
+          GITLEAKS_VERSION: "8.30.1"
+          # Read-only token: no PR comments, no licence (personal account).
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_SUMMARY: "true"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "true"
+
+  # ---------------------------------------------------------------------------
+  # Dependency CVEs on the COMMITTED lockfiles, plus npm audit. Also nightly
+  # regardless of changes: advisories publish against lockfiles that did not move.
+  # ---------------------------------------------------------------------------
+  cve:
+    name: Dependency CVEs
+    needs: changes
+    if: needs.changes.outputs.lockfiles == 'true' || needs.changes.outputs.full == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Refuse to scan an empty or missing lockfile
+        shell: bash -eo pipefail {0}
+        run: |
+          for lockfile in backend/poetry.lock frontend/package-lock.json; do
+            if [ ! -s "$lockfile" ]; then
+              echo "::error file=$lockfile::$lockfile is missing or empty; the scan would pass on nothing"
+              exit 1
+            fi
+          done
+          git ls-files --error-unmatch backend/poetry.lock frontend/package-lock.json
+
+      - name: osv-scanner on the committed lockfiles
+        uses: google/osv-scanner-action/osv-scanner-action@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
+        with:
+          scan-args: |-
+            --lockfile=backend/poetry.lock
+            --lockfile=frontend/package-lock.json
+
+      - name: npm audit (high and above)
+        shell: bash -eo pipefail {0}
+        working-directory: frontend
+        run: |
+          npm audit --audit-level=high
+
+  # ---------------------------------------------------------------------------
+  # Licences: no copyleft in either tree, Apache attribution for @sebgroup/*.
+  # ---------------------------------------------------------------------------
+  licences:
+    name: Dependency licences
+    needs: changes
+    if: needs.changes.outputs.lockfiles == 'true' || needs.changes.outputs.full == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up backend toolchain
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Licence checker self-test
+        shell: bash
+        run: python3 scripts/check_licences.py self-test
+
+      - name: Backend licences (inside the Poetry environment)
+        shell: bash
+        working-directory: backend
+        run: bash ./run.sh run python ../scripts/check_licences.py backend
+
+      - name: Frontend licences and Apache attribution
+        shell: bash
+        run: python3 scripts/check_licences.py frontend
+
+  # ---------------------------------------------------------------------------
+  # Container image scan: OS packages a lockfile scanner never sees.
+  # ---------------------------------------------------------------------------
+  container-scan:
+    name: Container scan (${{ matrix.image }})
+    needs: changes
+    if: needs.changes.outputs.containers == 'true' || needs.changes.outputs.lockfiles == 'true' || needs.changes.outputs.full == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: backend
+            context: backend
+            dockerfile: backend/Dockerfile
+          - image: frontend
+            context: frontend
+            dockerfile: frontend/Dockerfile
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: false
+          load: true
+          tags: compliance-watch/${{ matrix.image }}:ci
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+      - name: Trivy (HIGH and CRITICAL, fixed or not)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: compliance-watch/${{ matrix.image }}:ci
+          scanners: vuln
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          ignore-unfixed: "false"
+          exit-code: "1"
+          format: table

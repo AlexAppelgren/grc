@@ -1,0 +1,134 @@
+# proposals — The review queue
+
+> **App spec.** Source: `PRD.md` Module PRO (PRO-01–PRO-04, AC-PRO1–AC-PRO2), playbook
+> 4.3 and 14, D-14, `docs/inputs/INPUT_DELTAS.md` §5.
+> The PRD is the source of truth; on any conflict the PRD wins. Update this
+> file whenever the PRD version bumps or a feature lands.
+
+## 1. Business / user context
+
+The library is shared by every bank, so no single agent or person edits it.
+Agents and people propose; a library editor in the platform console reviews,
+may correct scope and wording, and approves. Approval applies the payload,
+writes the new version, the audit row and the search re-index in one
+transaction. The proposer never approves their own proposal, and the database
+enforces it.
+
+The prototype shows the tenant's compliance officer approving agent
+proposals. That is the one place the prototype is wrong: the queue lives in
+the console with the `library_editor` role. Tenants see library updates and
+can report problems.
+
+Deliberately simplified for R1: batch proposals (re-tag, backfill) with a
+row-by-row review wait for R2.
+
+## 2. Requirements
+
+Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
+
+| ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
+|----|----|----|----|----|
+| PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field | M | R1 | pending |
+| PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction; the reviewer can correct scope and wording first; never the proposer | M | R1 | pending |
+| PRO-03 | The queue lives in the platform console; tenants see library updates and can report problems | M | R1 | pending |
+| PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 | pending |
+
+## 3. Acceptance criteria (from PRD, condensed)
+
+- **AC-PRO1** No API key scope and no tenant role can change a library record
+  except through an approved proposal.
+- **AC-PRO2** Approving your own proposal answers 409 `four_eyes_violation`.
+- **Playbook rules:** `Idempotency-Key` on proposal submission because agents
+  retry; a proposal carries the source for every changed field; `proposal_kind`
+  and `proposal_status` are kinds in code; rejection needs a reason and is
+  audited; apply runs inside `library_write()` in `proposals/apply.py`.
+
+## 4. Test scenarios (Gherkin)
+
+Integration scenarios live in `tests_scenarios.py`; E2E scenarios in
+`frontend/tests/e2e/proposals.journey.spec.ts`. Each test carries its scenario ID.
+Stubs stay skipped until the feature lands; never delete a scenario without
+updating this file.
+
+### PRO-S1 — A proposal carries a source per changed field `@integration` (PRO-01)
+```gherkin
+Given an agent key with proposals.write
+When it submits a proposal that changes an obligation's summary and duty type
+Then each changed field carries a source reference
+And a proposal missing a source for any field answers 422 with code "source_missing"
+And the proposal is "Waiting for approval" in the queue
+```
+
+### PRO-S2 — No scope and no tenant role can change a library record directly `@integration` (PRO-01, AC-PRO1)
+```gherkin
+Given an API key with every scope and a tenant admin holding every tenant permission
+When either writes to an instrument, provision, obligation, version or library vocabulary route
+Then the request answers 403 or the route does not exist
+And the only path that leaves a library change is an approved proposal
+```
+
+### PRO-S3 — Approval applies payload, version, audit row and re-index in one transaction `@integration` `@e2e` (PRO-02)
+```gherkin
+Given a proposal changing an obligation summary
+When a library editor who is not the proposer approves it
+Then a new summary version exists with the stated effective date
+And the audit event, the outbox event and the search chunk update are in the same transaction
+And the obligation shows "version 2" with "Show what changed"
+When the re-index step fails
+Then nothing was applied and the proposal is still waiting
+```
+
+### PRO-S4 — The reviewer corrects scope and wording before approving `@integration` `@e2e` (PRO-02)
+```gherkin
+Given a proposal with a scope term the editor disagrees with
+When the editor edits the scope and the wording in the review screen and approves
+Then the applied version carries the corrected values
+And the proposal keeps both the proposed and the applied payload for the audit trail
+```
+
+### PRO-S5 — Approving your own proposal answers four_eyes_violation `@integration` `@e2e` (PRO-02, AC-PRO2)
+```gherkin
+Given a library editor who submitted a proposal
+When they approve it
+Then the request answers 409 with code "four_eyes_violation"
+And the check constraint on the proposal table refuses the row on its own
+And the screen shows "A second person has to approve this"
+```
+
+### PRO-S6 — A retried submission with the same Idempotency-Key creates one proposal `@integration` (PRO-01)
+```gherkin
+Given an agent submitting a proposal with Idempotency-Key "run-42-obl-7"
+When the same request arrives twice
+Then one proposal exists and the second call returns it with 200
+When the same key arrives with a different payload
+Then the request answers 409 with code "idempotency_conflict"
+```
+
+### PRO-S7 — The queue is in the console and tenants see updates and report problems `@integration` `@e2e` (PRO-03)
+```gherkin
+Given a tenant compliance officer and a library editor
+When the officer opens the tenant app
+Then there is no proposal queue and the review route answers 403
+When the editor opens the console
+Then the queue lists waiting proposals with the source beside the diff
+When a proposal is applied
+Then the tenant's "Library updates" lists it and "This looks wrong" opens a problem report
+```
+
+### PRO-S8 — A batch proposal previews and is approved whole or row by row `@integration` `@e2e` (PRO-04)
+```gherkin
+Given a re-tag request that would add "Client money" to twelve obligations
+When the editor opens it
+Then the preview lists the twelve rows with before and after
+When they reject two rows and approve the rest
+Then ten obligations change, two do not, and one audit event records the batch with each row's outcome
+```
+
+### PRO-S9 — A rejection needs a reason and is audited `@integration` `@e2e` (PRO-01)
+```gherkin
+Given a waiting proposal
+When the editor rejects it without a reason
+Then the request answers 422
+When they reject it with a reason
+Then the proposal is rejected, the proposer is notified with the reason and an audit event records it
+```

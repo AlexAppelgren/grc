@@ -1,0 +1,46 @@
+# Root build context exclusions. The service Dockerfiles (backend/Dockerfile,
+# frontend/Dockerfile) normally build from their own directory and carry their
+# own .dockerignore; this file protects any build that uses the repository root
+# as context (a compose override, a one-off `docker build .`) from shipping
+# secrets, the git history, node_modules or design assets into an image.
+.git
+.github
+.gitleaks.toml
+.env
+.env.*
+!.env.example
+
+# Documentation, design and agent material never belong in an image
+docs
+design
+agents
+*.md
+!frontend/THIRD_PARTY_NOTICES.md
+
+# Language and tool caches
+**/__pycache__
+**/*.py[cod]
+**/.venv
+**/.mypy_cache
+**/.ruff_cache
+**/.pytest_cache
+**/node_modules
+**/.next
+**/coverage
+**/htmlcov
+**/.coverage
+**/.coverage.*
+**/coverage.xml
+
+# Test and scan artefacts
+**/test-results
+**/playwright-report
+**/blob-report
+sarif-results
+.cache
+
+# Editors and operating systems
+.vscode
+.idea
+**/.DS_Store
+**/Thumbs.db

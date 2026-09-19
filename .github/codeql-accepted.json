@@ -1,0 +1,10 @@
+{
+  "_about": [
+    "Accepted CodeQL findings for .github/scripts/codeql_gate.py (playbook 9: CodeQL, own SARIF gate, medium and above).",
+    "One entry per finding, keyed on ruleId + fingerprint (SARIF partialFingerprints.primaryLocationLineHash), never per rule.",
+    "Every entry needs: language, ruleId, fingerprint, path, reason, acceptedOn (YYYY-MM-DD), acceptedBy.",
+    "The gate fails when an entry no longer matches a finding (stale), so remove entries when the code moves or the finding is fixed.",
+    "Re-triage at the new location before re-keying a fingerprint that an adjacent edit rehashed; never re-key on faith."
+  ],
+  "accepted": []
+}

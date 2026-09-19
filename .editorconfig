@@ -1,0 +1,37 @@
+# Editor defaults shared by every tool and agent (playbook 2.1). Line width and
+# formatting rules proper live with the linters (ruff in backend/pyproject.toml,
+# ESLint in frontend/); this file only stops editors from fighting them.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_size = 4
+
+[*.{md,mdc}]
+# Two trailing spaces are a hard line break in Markdown.
+trim_trailing_whitespace = false
+
+[*.{yml,yaml,json,toml}]
+indent_size = 2
+
+[*.{ts,tsx,js,mjs,cjs,css}]
+indent_size = 2
+
+[*.sql]
+indent_size = 2
+
+[*.sh]
+indent_size = 2
+
+[Makefile]
+indent_style = tab
+
+[*.{bat,cmd}]
+end_of_line = crlf

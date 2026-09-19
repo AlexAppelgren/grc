@@ -1,0 +1,49 @@
+# Backend toolchain for CI jobs (playbook 2.2, 9).
+#
+# Python 3.12 and Poetry 2.0.1 are pinned to the versions the brief pins so a
+# green run here means the same thing as a green run locally. Poetry is
+# installed with pipx BEFORE setup-python because setup-python's `cache: poetry`
+# asks Poetry where its virtualenvs live to build the cache key.
+#
+# Dependencies are installed through the Poetry wrapper `backend/run.sh`, the
+# same entry point every canonical command uses (the wrapper unsets
+# VIRTUAL_ENV so Poetry never picks up a stray environment). It is invoked via
+# `bash` so a checkout from Windows without the executable bit still works.
+name: Set up the backend toolchain
+description: Python 3.12, Poetry 2.0.1 via pipx, a cached Poetry virtualenv and the backend dependencies from backend/poetry.lock.
+
+inputs:
+  python-version:
+    description: Python version to install.
+    required: false
+    default: "3.12"
+  poetry-version:
+    description: Poetry version to install through pipx.
+    required: false
+    default: "2.0.1"
+
+runs:
+  using: composite
+  steps:
+    - name: Install Poetry
+      shell: bash
+      env:
+        POETRY_VERSION: ${{ inputs.poetry-version }}
+      run: |
+        set -euo pipefail
+        pipx install "poetry==${POETRY_VERSION}"
+        poetry --version
+
+    - name: Set up Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: poetry
+        cache-dependency-path: backend/poetry.lock
+
+    - name: Install backend dependencies
+      shell: bash
+      working-directory: backend
+      run: |
+        set -euo pipefail
+        bash ./run.sh install --no-interaction --no-root

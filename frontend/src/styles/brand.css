@@ -1,0 +1,106 @@
+/*
+ * brand.css: the one file that carries our own colour values (playbook 6.3,
+ * DECISIONS D-05). It overrides EVERY --gds-sys-color-*brand* variable the
+ * generated token file defines, in both themes, so no SEB brand value survives
+ * (the prototype's #003824 / #efe9dc / #685631 are SEB's brand tokens and
+ * Apache-2.0 grants no trademark rights). A unit test (brand.test.ts) parses
+ * this file against tokens.generated.css and fails if any brand variable keeps
+ * a generated value.
+ *
+ * Placeholders until Alex picks the real values (design/brand/README.md):
+ *   green  #0a3a2a  (side rail, brand-01)      sand #f6f3ec  (brand-02 surface)
+ *   brass pill background  #ece5d6 light / #33291a dark
+ *   brass text             #6a5730 light / #d9cba9 dark
+ *
+ * Derivations for the variables the README does not name, so the whole set
+ * stays one family:
+ *   l3-brand-02-2     one step deeper than the pill background, the same step
+ *                     Green takes (light: #ece5d6 -> #e2d9c5, mixing 8% toward
+ *                     the brass text; dark: #33291a -> #443826, +17/+15/+12).
+ *   l2-brand-02 dark  the dark sand surface, 72% of the dark pill background
+ *                     (#33291a * 0.72 -> #251e13), matching Green's ratio between
+ *                     its own dark l2-brand-02 and l3-brand-02.
+ *   l3-brand-01 dark  Green uses a light neutral here; ours is the light brass
+ *                     (#d9cba9) so "identity" stays brass in dark mode.
+ *   state-brand-01/02 Green's overlay on brand surfaces is white at 20%/35%
+ *                     (light) and black at 20%/30% (dark). Ours are the sand
+ *                     colour at the same alphas: light rgba(246,243,236,...),
+ *                     dark rgba(37,30,19,...).
+ *   state-brand-03..06  Green's green at .06/.14/.06/.14 (light) and
+ *                     .3/.7/.5/.9 (dark); ours use the placeholder green
+ *                     rgb(10,58,42) at the same alphas.
+ *   state-brand-02-2/-3 Green's brass text at .04/.10 (light) and .12/.18
+ *                     (dark); ours use our brass text at the same alphas.
+ *   content-brand-01 dark  Green keeps the brand green; we keep ours, and the
+ *                     product accent (--bleqq-accent) switches to brass in dark
+ *                     as the prototype does.
+ *
+ * Contrast (contrast.test.ts, WCAG AA 4.5:1): white on #0a3a2a 12.7:1, sand
+ * on #0a3a2a 10.1:1, brass text on pill background 5.6:1 light / 8.9:1 dark.
+ */
+
+:root,
+.light {
+  --gds-sys-color-l1-brand-01: #0a3a2a;
+  --gds-sys-color-l2-brand-01: #0a3a2a;
+  --gds-sys-color-l3-brand-01: #0a3a2a;
+  --gds-sys-color-content-brand-01: #0a3a2a;
+  --gds-sys-color-l2-brand-02: #f6f3ec;
+  --gds-sys-color-l3-brand-02: #ece5d6;
+  --gds-sys-color-l3-brand-02-2: #e2d9c5;
+  --gds-sys-color-content-brand-02: #6a5730;
+  --gds-sys-color-state-brand-01: rgba(246, 243, 236, 0.2);
+  --gds-sys-color-state-brand-02: rgba(246, 243, 236, 0.35);
+  --gds-sys-color-state-brand-03: rgba(10, 58, 42, 0.06);
+  --gds-sys-color-state-brand-04: rgba(10, 58, 42, 0.14);
+  --gds-sys-color-state-brand-05: rgba(10, 58, 42, 0.06);
+  --gds-sys-color-state-brand-06: rgba(10, 58, 42, 0.14);
+  --gds-sys-color-state-brand-02-2: rgba(106, 87, 48, 0.04);
+  --gds-sys-color-state-brand-02-3: rgba(106, 87, 48, 0.1);
+
+  /* Product aliases built on the brand pair. */
+  --bleqq-accent: var(--gds-sys-color-content-brand-01);
+  --bleqq-on-brand: #ffffff;
+  --bleqq-on-brand-muted: rgba(255, 255, 255, 0.75);
+  --bleqq-on-brand-line: rgba(255, 255, 255, 0.25);
+  --bleqq-on-brand-hover: var(--gds-sys-color-state-brand-01);
+  /* The side rail stays dark green in both themes, so its current item is
+     always light sand with green text (prototype .nav [aria-current]). */
+  --bleqq-rail-current-bg: #f6f3ec;
+  --bleqq-rail-current-fg: #0a3a2a;
+}
+
+.dark {
+  --gds-sys-color-l1-brand-01: #0a3a2a;
+  --gds-sys-color-l2-brand-01: #0a3a2a;
+  --gds-sys-color-l3-brand-01: #d9cba9;
+  --gds-sys-color-content-brand-01: #0a3a2a;
+  --gds-sys-color-l2-brand-02: #251e13;
+  --gds-sys-color-l3-brand-02: #33291a;
+  --gds-sys-color-l3-brand-02-2: #443826;
+  --gds-sys-color-content-brand-02: #d9cba9;
+  --gds-sys-color-state-brand-01: rgba(37, 30, 19, 0.25);
+  --gds-sys-color-state-brand-02: rgba(37, 30, 19, 0.4);
+  --gds-sys-color-state-brand-03: rgba(10, 58, 42, 0.3);
+  --gds-sys-color-state-brand-04: rgba(10, 58, 42, 0.7);
+  --gds-sys-color-state-brand-05: rgba(10, 58, 42, 0.5);
+  --gds-sys-color-state-brand-06: rgba(10, 58, 42, 0.9);
+  --gds-sys-color-state-brand-02-2: rgba(217, 203, 169, 0.12);
+  --gds-sys-color-state-brand-02-3: rgba(217, 203, 169, 0.18);
+
+  /* Accessibility exception, not a brand value: Green's own dark negative
+     pill pair (content-negative-01 #f08975 on l3-negative-02 #731d0c) measures
+     4.47:1, just under WCAG AA 4.5:1 for the pill's 13.6px/600 text. The
+     background is deepened one step (#6a1a0b, 4.84:1) so the `negative` tone
+     passes contrast.test.ts without changing the card's token pair. Remove
+     when Green ships a passing value. */
+  --gds-sys-color-l3-negative-02: #6a1a0b;
+
+  --bleqq-accent: var(--gds-sys-color-content-brand-02);
+  --bleqq-on-brand: #ffffff;
+  --bleqq-on-brand-muted: rgba(255, 255, 255, 0.75);
+  --bleqq-on-brand-line: rgba(255, 255, 255, 0.25);
+  --bleqq-on-brand-hover: rgba(246, 243, 236, 0.12);
+  --bleqq-rail-current-bg: #f6f3ec;
+  --bleqq-rail-current-fg: #0a3a2a;
+}

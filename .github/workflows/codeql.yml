@@ -1,0 +1,100 @@
+# CodeQL with its own SARIF gate (playbook 2.4, 9).
+#
+# The analysis uploads SARIF to code scanning as usual, and then
+# .github/scripts/codeql_gate.py fails the job on any finding of medium
+# severity or above that is not accepted per fingerprint (with a reason and a
+# date) in .github/codeql-accepted.json. Stale acceptances fail too, so the
+# list cannot rot into a mute. Dismissing an alert in the GitHub UI does not
+# satisfy the gate: the acceptance has to be in the repository.
+#
+# The security-extended suite runs: more queries than the default, gated by
+# severity rather than precision, because a bank's vendor review asks what was
+# looked for, not how quiet the tool was.
+#
+# Secrets and variables needed: none beyond the automatic GITHUB_TOKEN.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Same nightly slot as ci.yml: 02:30 UTC, away from Stockholm midnight.
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: codeql-${{ github.event_name == 'schedule' && format('nightly-{0}', github.run_id) || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+jobs:
+  analyze:
+    name: Analyse (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      # Upload SARIF to code scanning.
+      security-events: write
+      # Read workflow metadata for the upload (needed by the action on
+      # private repositories; harmless on public ones).
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+          config: |
+            paths:
+              - backend
+              - frontend
+              - scripts
+              - .github/scripts
+            paths-ignore:
+              - frontend/src/types/api.generated.ts
+              - frontend/src/styles/tokens.generated.css
+              - "**/node_modules"
+              - "**/.next"
+              - "**/test-results"
+
+      - name: Analyse and upload SARIF
+        id: analyze
+        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          category: /language:${{ matrix.language }}
+          output: sarif-results
+          upload: always
+
+      - name: Keep the SARIF for two weeks
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: codeql-sarif-${{ matrix.language }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: sarif-results
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Gate on medium and above, per fingerprint
+        shell: bash
+        env:
+          CODEQL_LANGUAGE: ${{ matrix.language }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/codeql_gate.py \
+            --sarif-dir sarif-results \
+            --accepted .github/codeql-accepted.json \
+            --language "$CODEQL_LANGUAGE"

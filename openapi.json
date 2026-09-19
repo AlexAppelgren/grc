@@ -1,0 +1,138 @@
+{
+  "components": {
+    "schemas": {
+      "MeResponse": {
+        "description": "Phase 0 shape of GET /me: the principal only. Chunk 1 adds the user, tenant, roles\nand queue counts of the designed `Me` (contract_drift_pending.txt).",
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Permissions",
+            "type": "array"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "subjectId": {
+            "format": "uuid",
+            "title": "Subjectid",
+            "type": "string"
+          },
+          "tenantId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenantid"
+          }
+        },
+        "required": [
+          "kind",
+          "subjectId",
+          "tenantId",
+          "permissions",
+          "scopes"
+        ],
+        "title": "MeResponse",
+        "type": "object"
+      },
+      "ProductInfo": {
+        "properties": {
+          "productName": {
+            "title": "Productname",
+            "type": "string"
+          }
+        },
+        "required": [
+          "productName"
+        ],
+        "title": "ProductInfo",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "EnrolmentAuth": {
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "SessionAuth": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "Compliance inventory and regulatory watch. Library records are shared facts that change only through approved proposals; tenant records belong to one company and sit under row-level security. Errors follow RFC 9457 and carry a `code`.",
+    "title": "Compliance Watch API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/me": {
+      "get": {
+        "operationId": "apps_shared_api_get_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "EnrolmentAuth": []
+          }
+        ],
+        "summary": "Get Me",
+        "tags": [
+          "Shared"
+        ]
+      }
+    },
+    "/api/v1/reference/product": {
+      "get": {
+        "operationId": "apps_shared_api_get_product",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductInfo"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Get Product",
+        "tags": [
+          "Shared"
+        ]
+      }
+    }
+  }
+}

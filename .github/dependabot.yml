@@ -1,0 +1,88 @@
+# Dependency updates (playbook 2.4, 9): grouped weekly per ecosystem, targeting
+# main. Majors that a peer dependency cannot take are ignored BY NAME with the
+# reason, never by a blanket "no majors" rule, so the rest of the tree keeps
+# moving. Advisories on unchanged lockfiles are caught by the nightly `cve` job
+# in ci.yml, not here.
+#
+# Time: Monday 06:00 Stockholm, so a grouped PR is waiting at the start of the
+# week and its CI run never overlaps the 02:30 UTC nightly.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /backend
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Stockholm
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(backend)"
+    groups:
+      backend-python:
+        patterns:
+          - "*"
+    ignore:
+      # D-17: Django 5.2 LTS. 6.x waits for a deliberate upgrade decision and
+      # a matching django-stubs line; a grouped bump would drag both.
+      - dependency-name: django
+        versions: [">=6.0"]
+      - dependency-name: django-stubs
+        versions: [">=6.0"]
+      - dependency-name: django-stubs-ext
+        versions: [">=6.0"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Stockholm
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(frontend)"
+    groups:
+      frontend-npm:
+        patterns:
+          - "*"
+    ignore:
+      # typescript-eslint 8.x declares a TypeScript peer range that stops
+      # below 6.0, and 7.x is the Go-native rewrite the brief excludes.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      # Next 16 pins React 19; a React major arrives through the Next major
+      # that supports it, not on its own.
+      - dependency-name: react
+        update-types: ["version-update:semver-major"]
+      - dependency-name: react-dom
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      # @next/eslint-plugin-next must match the installed Next version; it
+      # moves with `next`, inside the same group, never ahead of it.
+      - dependency-name: "@next/eslint-plugin-next"
+        update-types: ["version-update:semver-major"]
+      # Tailwind 4 changed the PostCSS integration; the two move together.
+      - dependency-name: "@tailwindcss/postcss"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Stockholm
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(ci)"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

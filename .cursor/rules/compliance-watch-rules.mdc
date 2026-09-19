@@ -1,0 +1,18 @@
+---
+description: Compliance Watch (bleqq) rules that never bend. Full text in CLAUDE.md and docs/CONVENTIONS.md.
+globs: ["**/*"]
+alwaysApply: true
+---
+
+1. Django Ninja, not DRF. The exported `openapi.json` is the contract; `frontend/src/types/api.generated.ts` is generated from it and never hand-edited.
+2. Two zones: library tables carry no `tenant_id`; tenant tables carry it under enabled and forced row-level security that the `cw_app` role cannot bypass.
+3. Proposals are the only door into the library. Agents and people propose, a second person approves, no API key scope reaches a library write.
+4. `record()` on every write: the audit row and the outbox row commit in the same transaction as the change, and nothing is ever overwritten (versions with effective dates).
+5. Vocabularies are rows: types, statuses, tags and reasons are admin-managed; enums in code are for kinds only; store and compare keys, never labels; the API returns `key` and `kind`.
+6. Read `backend/apps/<app>/app.md` first; every requirement has an ID from `PRD.md`, every scenario an ID, and IDs never appear on screen.
+7. `schemas.py` (camelCase Pydantic), `logic.py` (rules, `ValidationError`), `api.py` (routes and decorators only); no `**kwargs`, no `Dict[str, Any]`, no logic in routes.
+8. UTC timestamps with `USE_TZ`; legal dates are plain dates with a precision; deadlines convert through the tenant's timezone explicitly.
+9. Every window, cap, rate and threshold is a setting with an env override; tests use fixtures, never literals.
+10. Permissions, never role names, in endpoints and UI; four eyes with a passkey step-up on approvals; no passwords, the emailed code is enrolment-only.
+11. Safe logging: a person's name and id at most, never tenant content, tokens or contact details; `logger` only, never `console.log`; nothing tenant-owned reaches Sentry or an unapproved model.
+12. Pills only through `Pill` with one of six tones chosen by slot or kind; no string literals in JSX; E2E signs in through the UI with a virtual passkey and never mocks an API.

@@ -97,3 +97,106 @@ never writes to them.
 | Library integrity | `LibraryModel`, `library_write()`, the library fence guard, API key scopes |
 | AI governance | Adapters, `ai_generation`, labels until confirmed, evaluation gate |
 | Design fidelity | `Pill`, presentation functions, the pill gallery screenshot, contrast test |
+
+## Phase 0 mechanics
+
+Added 2026-09-19 at the end of Phase 0. What exists after Phase 0 is the
+floor every app builds on; no domain table exists yet.
+
+### Two database roles, and how tests use them
+
+`cw_migrator` owns the schema and runs migrations; `cw_app` runs the
+application with no ownership and no `BYPASSRLS` (ADR 0022;
+`infra/db/init.sql` locally, the role script in `RAILWAY_DEPLOY.md` in
+production). The app reads `DATABASE_URL` (cw_app) and the entrypoint reads
+`MIGRATOR_DATABASE_URL` (cw_migrator). The boot guard
+(`apps/shared/db_role_guard.py`) queries `pg_roles` and table ownership for
+the connected role and refuses to start on a superuser, an owner or a
+`BYPASSRLS` role.
+
+Tests keep both roles honest: `config/test_settings.py` creates the
+throwaway database as `cw_migrator` (which is why that role has `CREATEDB`
+locally and in CI, and never in production) and runs the test client as
+`cw_app`, so a policy that is missing or not forced shows up as a failing
+isolation test rather than as a passing one. `migrate_from_zero` does the
+same for the migration graph. Extensions live in `template1` so every
+throwaway database inherits `vector`, `citext` and `pg_trgm`.
+
+### The RLS policy shape
+
+Every tenant table is created with `ENABLE ROW LEVEL SECURITY` and
+`FORCE ROW LEVEL SECURITY` in a `RunSQL` migration with reverse SQL, and one
+policy of this shape:
+
+```sql
+CREATE POLICY tenant_isolation ON <table>
+  USING (tenant_id = current_setting('app.tenant_id', true)::uuid)
+  WITH CHECK (tenant_id = current_setting('app.tenant_id', true)::uuid);
+```
+
+`current_setting(..., true)` returns NULL when nothing was set, and NULL
+matches no row, so an unactivated connection sees nothing. Mixed tables
+(`audit_event`, `ai_generation`, `problem_report`, `outbox_event`, `api_key`)
+use `tenant_id IS NULL OR tenant_id = current_setting(...)`, and
+tenant-private library records use the same "shared or mine" shape on
+`owner_tenant_id`. `ATOMIC_REQUESTS = True`; after authentication resolves
+the membership, `tenancy.activate(tenant_id)` issues `SET LOCAL
+app.tenant_id`, which dies with the transaction. Worker tasks get the same
+through `@tenant_task`, which takes the tenant id explicitly and activates
+it inside its own transaction. The RLS guard reads `pg_class` and
+`pg_policies` for every model with a tenant foreign key.
+
+### `record()`
+
+`apps/shared/audit.py` exposes one function. It takes the actor (user, agent
+or system), the action, the subject (kind, id and its title at the time), a
+summary, before and after values and, when the route was behind
+`@requires_step_up`, the assertion reference. It writes the `audit_event`
+and the `outbox_event` inside the caller's transaction, so a change that
+commits without them cannot exist and a failure in `record()` rolls the
+change back. `AppendOnlyModel` raises on update and delete; a trigger on
+each ledger (`BEFORE UPDATE OR DELETE … RAISE`) makes that true for raw SQL,
+with `SET LOCAL cw.maintenance = 'on'` as the escape hatch a conscious fix
+states. The audit-on-write guard fails any mutating route whose scenario
+wrote no audit row.
+
+### The adapters
+
+`apps/shared/adapters/` holds four seams, each one interface with a mock and
+real providers chosen by a setting: `llm.py` (`LLM_PROVIDER`: mock,
+anthropic, bedrock), `embedder.py` (`EMBEDDER_PROVIDER`, 1024 dimensions),
+`agent_runner.py` (`AGENT_RUNNER`: mock, managed_agents), `mailer.py`
+(`MAIL_PROVIDER`: mock, smtp). `storage.py` is the fifth seam
+(`STORAGE_BACKEND`: local, s3). The mocks are deterministic so E2E journeys
+can assert on them (the mock mailer records what it would have sent, which
+is how AC-ID1 is proven). Production refuses every mock at boot; the one
+deployed environment named `test` allows them and the API reports which are
+active so the UI can show its banner.
+
+### The guard list
+
+The structural guards of playbook Section 5 live in `apps/shared/tests_*.py`
+and exist from Phase 0: route permissions (`UNGATED_BY_DESIGN` with a reason
+of shape self, bootstrap, capability, logic-gate or public-token), row-level
+security, database role, tenant isolation, library fence (AST), four eyes
+(check constraints), audit on write, kinds only, vocabulary integrity, schema
+names, production guard (subprocess boots), query ordering, seed integrity,
+Celery registration, health. Each was made to fail once before it was
+trusted. Add a guard whenever a class of bug recurs and name the incident in
+its docstring.
+
+### The frontend token pipeline
+
+`frontend/scripts/build-tokens.mjs` reads `@sebgroup/green-tokens` (2023
+theme) and writes `src/styles/tokens.generated.css`: light values under
+`:root`, dark values under `.dark`. The file is generated on `npm run
+build:tokens` and never edited. `src/styles/brand.css` overrides every
+`brand-01` and `brand-02` variable with our own values (placeholders from
+`design/brand/README.md` until D-05 is decided). `tailwind.config.ts` maps
+semantic colour names to the token variables and replaces the numbered font
+scale with the named roles. `next-themes` toggles `.dark` on the root
+element. `components/ui/Pill.tsx` consumes the six tone pairs and nothing
+else; `/dev/pills` renders every tone, slot and record type and a Playwright
+screenshot pins it in both themes, while a Vitest test checks every
+text-on-surface pair against WCAG AA. Token names are looked up through the
+Green MCP server, never recalled.

@@ -1,0 +1,73 @@
+# Secrets and local configuration (playbook 11.2: secrets live in host
+# variables and GitHub encrypted secrets; .env.example is the only template).
+.env
+.env.*
+!.env.example
+
+# Python / Django (backend/)
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+backend/.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+backend/staticfiles/
+backend/media/
+backend/local_storage/
+db.sqlite3
+# There is no SQLite anywhere (playbook 2.1); this line exists so a stray
+# file from a misconfigured tool can never be committed by accident.
+*.sqlite3
+
+# Coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+frontend/coverage/
+
+# Node / Next.js (frontend/)
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Playwright artefacts (uploaded by CI on failure, never committed)
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/playwright/.cache/
+# Screenshot baselines ARE committed (pill gallery gate, playbook 9);
+# only the actual/diff output of a failed compare is ignored.
+**/*-actual.png
+**/*-diff.png
+
+# CI and scanner output
+sarif-results/
+.cache/trivy/
+trivy-results.*
+osv-results.*
+
+# Editors and operating systems
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local scratch that must never ship
+*.log
+tmp/
+.tmp/

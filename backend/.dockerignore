@@ -1,0 +1,14 @@
+# Keep the image to the application: no venv, no caches, no test artefacts, no local
+# media, no secrets.
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+var/
+.env
+*.log

@@ -1,0 +1,25 @@
+# Skeleton from Phase 0. Chunk 5 fills it in. The shape is the contract that
+# apps/agents/logic.py reads; keys here are kinds (tier 1), everything a
+# tenant configures lives in tenant_agent_setting rows.
+id: watch-sweeper
+version: 1
+kind: watch            # agent_kind, INPUT_DELTAS section 1
+status: draft          # draft | active | retired
+description: >
+  Checks registered sources for new or changed regulatory documents, registers
+  one change per reform with a stable key, and proposes obligation links.
+tools:
+  - agent_api.open_run
+  - agent_api.log_source_check
+  - search.similar
+  - agent_api.register_change
+  - agent_api.submit_proposal
+  - agent_api.close_run
+vocabularies_read_at_run_start:
+  - change_type
+  - urgency
+  - flag
+  - term_dimension
+budget_defaults:
+  max_model_calls_per_run: 200
+  max_fetches_per_run: 500

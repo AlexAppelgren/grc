@@ -21,3 +21,10 @@ bump. Add a row whenever the build relies on something external.
 | Latest on PyPI: `webauthn` 3.0.0, `django-ninja` 1.7.0, `pgvector` 0.5.0. Django 5.2 is the LTS line | Verified | PyPI | 2026-09-19 |
 | Railway: EU West region, Postgres templates with pgvector, private S3-compatible buckets | From the Compliance Watch chat | Verify in the Railway console when creating the project | 2026-09-18 |
 | Embedding candidates covering sv, da, nb, fi, en at 1024 dimensions | **Not verified** | Decide against the evaluation set (D-09) | |
+| Playwright 1.63.0: `browserContext.credentials` is the virtual WebAuthn authenticator (property added in 1.61); `storageState({credentials})` and `setStorageState` restore it, so a seeded passkey survives a saved state | Verified | playwright.dev, BrowserContext documentation | 2026-09-19 |
+| Django 5.2.17 is the newest patch of the 5.2 LTS line. Django 6.1.1 exists; D-17 pins 5.2 (ADR 0017) | Verified | PyPI | 2026-09-19 |
+| django-ninja 1.7.0, webauthn 3.0.0 and pgvector 0.5.0 are the newest releases | Verified | PyPI | 2026-09-19 |
+| Next 16.3.5 and @playwright/test 1.63.0 are the newest releases | Verified | npm | 2026-09-19 |
+| TypeScript 7.0.2 exists on npm; tooling support (typescript-eslint 8.70.0, Next 16.3.5, openapi-typescript 7.13.0) for 7.x is unverified, so the newest 5.x is pinned (ADR 0019) | Verified that 7.0.2 exists; 7.x support **not verified** | npm | 2026-09-19 |
+| Green Core 3.23.0 `GdsButton` renders on the server and hydrates under Next 16 `next start` with only `'use client'` on the rendering component; no dynamic import, manual registration or CSS import needed | Verified by the D-04 spike (`frontend/tests/e2e/green-spike.spec.ts`, ADR 0004) | Production build, Chromium | 2026-09-19 |
+| Playwright 1.63.0 typings: the virtual authenticator is `browserContext.credentials`; helper names in `frontend/tests/e2e/support/passkeys.ts` were written against the installed `@playwright/test` type definitions | Verified | `node_modules/@playwright/test` typings | 2026-09-19 |

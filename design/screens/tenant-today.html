@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen card: tenant Today</title>
+<style>
+/* Cut from design/prototype/index.html, vToday() (playbook Section 7, step 4).
+   The timeline home: the next dates as one short list, part of the weekly
+   briefing beside it, "Decide now" and "Where we stand" below, the source
+   check in the foot. Same list on phone and desktop. Values are the
+   prototype's CSS variables; the build maps them to Green tokens. */
+:root{
+  --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--sand:#f8f6f1;--sand-2:#efe9dc;
+  --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
+  --btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;
+  --red:#b92f13;--red-soft:#fdebe8;--amber:#8f530a;--amber-soft:#fce8cf;--green:#026436;--green-soft:#dcefdc;
+  --blue:#005fb3;--blue-soft:#e6f3ff;--grey-soft:#eaebeb;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0b0b;--surface:#191a1a;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;
+  --red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;--blue:#66b8ff;--blue-soft:#10273d;--grey-soft:#313533;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--text);text-underline-offset:3px}
+h1,h2{font-weight:500;line-height:1.2;margin:0;letter-spacing:-.01em}
+h1{font-size:2rem;font-weight:400}h2{font-size:1.25rem}
+p{margin:0 0 .75rem}
+main{padding:32px 36px 96px;max-width:1100px;width:100%;margin:0 auto}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.kicker{color:var(--muted);font-size:.95rem;margin:0 0 6px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.panel>h2{margin-bottom:12px}
+.feature{background:var(--sand);border:1px solid var(--sand-2);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:14px}
+.home{display:grid;grid-template-columns:1fr 1.7fr;gap:16px;align-items:stretch;margin-bottom:16px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.meta{color:var(--muted);font-size:.86rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:600;background:var(--grey-soft);color:var(--text)}
+.pill.red{background:var(--red-soft);color:var(--red)}.pill.amber{background:var(--amber-soft);color:var(--amber)}
+.pill.blue{background:var(--blue-soft);color:var(--blue)}.pill.brass{background:var(--sand-2);color:var(--bronze)}
+.dates{display:flex;flex-direction:column;gap:16px}
+.dates>div{display:flex;gap:12px;align-items:flex-start}
+.dates i{width:12px;height:12px;border-radius:50%;margin-top:6px;flex-shrink:0;background:var(--text)}
+.dates i.red{background:var(--red)}.dates i.amber{background:var(--amber)}.dates i.blue{background:var(--blue)}
+.dates b{font-weight:700}.dates b.red{color:var(--red)}.dates b.amber{color:var(--amber)}.dates b.blue{color:var(--blue)}
+.dates a{text-decoration:none}.dates a:hover{text-decoration:underline}
+.sowhat{background:var(--surface);border-radius:12px;padding:12px 14px;margin:0;line-height:1.5}
+.sowhat .ai{font-size:.8rem;color:var(--bronze);font-weight:600;display:block;margin-bottom:2px}
+.btn{background:var(--btn);color:var(--btn-text);border:1px solid var(--btn);border-radius:999px;padding:10px 20px;font-weight:600;min-height:44px}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-strong)}
+.btn.small{padding:6px 14px;min-height:36px;font-size:.86rem}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.barwrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.barwrap .bar{margin-top:2px}
+.statusbar{display:flex;gap:3px;margin:4px 0 10px}.statusbar i{height:10px;border-radius:999px;display:block}
+.legend{display:flex;justify-content:space-between;font-size:.92rem;padding:3px 0}
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.9rem;margin-top:16px}
+.note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+@media (max-width:820px){
+  main{padding:20px 16px 100px}
+  h1{font-size:1.6rem}
+  .home,.pair{grid-template-columns:1fr}.feature{padding:20px}
+  .bar{justify-content:flex-end;flex-wrap:nowrap}
+  .bar .btn{order:2;flex:0 1 auto;min-width:0;padding:10px 16px;font-size:.94rem;white-space:nowrap}
+  .bar .btn:not(.ghost){order:3}
+  .barwrap{flex-direction:column;align-items:flex-end;gap:6px}.barwrap .bar{align-self:stretch}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="head"><div><p class="kicker">Friday 19 September 2026</p><h1>What is coming, and where we stand</h1></div></div>
+  <div class="home">
+    <div class="feature"><h2>Coming up</h2>
+      <div class="dates">
+        <div><i class="red"></i><span><b class="red">1 Oct 2026</b> <span class="meta" style="display:inline">in 12 days</span><br><a href="#">In force: FI adopts amended rules on paying for investment research</a></span></div>
+        <div><i class="amber"></i><span><b class="amber">15 Nov 2026</b> <span class="meta" style="display:inline">in 57 days</span><br><a href="#">Application date: Retail investment strategy, final compromise text</a></span></div>
+        <div><i class="blue"></i><span><b class="blue">17 Jan 2027</b> <span class="meta" style="display:inline">in 120 days</span><br><a href="#">Application date: DORA register of information, second submission</a></span></div>
+      </div>
+      <div class="barwrap" style="margin-top:auto"><div class="bar"><button class="btn ghost">Open the roadmap</button></div><span class="meta">7 dated items ahead</span></div>
+    </div>
+    <div class="panel" style="display:flex;flex-direction:column;gap:12px">
+      <div class="meta"><span class="pill brass">This week</span><span class="pill red">Act now</span><span>Finansinspektionen, 12 Sep 2026</span></div>
+      <h2 style="font-size:1.45rem">FI adopts amended rules on paying for investment research</h2>
+      <div class="sowhat"><span class="ai">Drafted by AI, not yet confirmed by a person</span><b>So what?</b> Research paid from the firm's own account must be shown separately on the client statement. <b>In force 1 Oct 2026.</b></div>
+      <div class="barwrap"><div class="bar"><button class="btn">Read the briefing</button><button class="btn ghost">Triage</button></div><span class="meta">2 more items this week</span></div>
+    </div>
+  </div>
+  <div class="pair">
+    <div class="panel"><h2>Decide now</h2>
+      <p style="margin-bottom:6px">3 changes need triage. The most urgent takes effect in 12 days.</p>
+      <p style="margin-bottom:6px">1 waiting for sign-off.</p>
+      <p style="margin-bottom:6px">2 agent proposals to review.</p>
+      <div class="bar"><button class="btn">Open the queue</button><button class="btn ghost">Sign-offs</button></div>
+    </div>
+    <div class="panel"><h2>Where we stand</h2>
+      <p style="color:var(--muted);font-size:.92rem;margin-bottom:6px">14 obligations apply to us.</p>
+      <div class="statusbar"><i style="flex:8 1 0;background:var(--green)"></i><i style="flex:3 1 0;background:var(--amber)"></i><i style="flex:1 1 0;background:var(--red)"></i><i style="flex:2 1 0;background:var(--line-strong)"></i></div>
+      <div class="legend"><span>Compliant</span><b>8</b></div>
+      <div class="legend"><span>Partly compliant</span><b>3</b></div>
+      <div class="legend"><span>Gap</span><b>1</b></div>
+      <div class="legend"><span>Not assessed</span><b>2</b></div>
+      <div class="bar"><button class="btn ghost small">See the gaps</button></div>
+    </div>
+  </div>
+  <div class="foot"><span>Sources: 11 of 12 checked. EBA news feed failed 18 Sep.</span><a href="#">See coverage log</a></div>
+  <p class="note">Today card. Phase 0 builds the head and the empty state (see tenant-shell.html); the chunk that lands HOM-01 fills the four panels from the API. Urgency colours on the dates come from the urgency kind, never from a stored label. The "So what?" block carries the AI note until a person confirms it.</p>
+</main>
+</body>
+</html>

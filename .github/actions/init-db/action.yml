@@ -1,0 +1,38 @@
+# Database roles and extensions for the pgvector service container (playbook 14).
+#
+# docker-compose.yml mounts infra/db/init.sql into the local container's
+# docker-entrypoint-initdb.d, but a GitHub Actions service container has no
+# volume mounts, so CI applies the same script by hand, as `postgres`, through
+# `docker exec` into the service container. The script creates cw_migrator
+# (owns the schema, CREATEDB for throwaway test databases) and cw_app (no
+# ownership, NOBYPASSRLS), and installs vector, citext and pg_trgm in both the
+# database and template1. Running it through the container's own psql means the
+# runner needs no PostgreSQL client and the `\connect` meta-commands work.
+name: Initialise database roles and extensions
+description: Runs infra/db/init.sql as postgres inside the pgvector service container.
+
+inputs:
+  container-id:
+    description: The service container id, from `job.services.<name>.id`.
+    required: true
+  sql-file:
+    description: The init script, relative to the repository root.
+    required: false
+    default: infra/db/init.sql
+
+runs:
+  using: composite
+  steps:
+    - name: Apply init.sql to the service container
+      shell: bash
+      env:
+        DB_CONTAINER: ${{ inputs.container-id }}
+        SQL_FILE: ${{ inputs.sql-file }}
+      run: |
+        set -euo pipefail
+        test -s "$SQL_FILE"
+        docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d compliance_watch < "$SQL_FILE"
+        # Prove the invariant CI depends on: the app role cannot bypass RLS.
+        docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d compliance_watch -tAc \
+          "SELECT CASE WHEN rolbypassrls OR rolsuper THEN 'BYPASS' ELSE 'ok' END FROM pg_roles WHERE rolname = 'cw_app'" \
+          | grep -qx ok

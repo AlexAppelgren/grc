@@ -9,8 +9,8 @@ menus in the Railway console: this was written without access to it.
 |---|---|---|---|
 | `db` | Postgres with pgvector template | | Enable point-in-time recovery. Run the role script below once |
 | `redis` | Redis | | Celery broker and cache |
-| `bucket` | Private S3-compatible bucket | | Evidence and exports |
-| `api` | `backend/Dockerfile` | default entrypoint | Migrates as `cw_migrator`, seeds reference data, starts gunicorn as `cw_app` |
+| `bucket` | Private S3-compatible bucket | | Evidence and exports. Required on every deployed environment, the test one included: the app refuses to boot on the local file backend when deployed (`STORAGE_BACKEND=s3`) |
+| `api` | `backend/Dockerfile` | default entrypoint | Migrates as `cw_migrator` (the entrypoint runs `manage.py migrate` with `DATABASE_URL=$MIGRATOR_DATABASE_URL`), seeds reference data, starts gunicorn as `cw_app` |
 | `worker` | same image | `celery -A config worker` | |
 | `beat` | same image | `celery -A config beat` | Exactly one instance |
 | `web` | `frontend/Dockerfile` | `next start` | Custom domain attached here |
@@ -53,10 +53,10 @@ at a role that can bypass row-level security.
 1. Deploy `db`, `redis`, `bucket`. Run the role script.
 2. Deploy `api`. Check `/health/` answers 200 with every component named.
 3. Deploy `worker`, `beat`, `web`. Attach the test host to `web`.
-4. `python manage.py bootstrap_platform --admin-email you@…` creates the first
+4. `python manage.py bootstrap_platform --admin-email you@…` (lands with chunk 1; after Phase 0 only `seed_reference`, `seed_e2e`, `migrate_from_zero` and `export_openapi` exist) creates the first
    platform admin invitation. Open the emailed link, enter the code, enrol a
    passkey.
 5. In the console, create the first tenant and invite its admin.
-6. Optional: `python manage.py seed_demo` loads the prototype's sample data
+6. Optional: `python manage.py seed_demo` (lands with chunk 3) loads the prototype's sample data
    into a demo tenant. It refuses to run when `ENVIRONMENT` is a production
    name.

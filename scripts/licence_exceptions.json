@@ -1,0 +1,10 @@
+{
+  "_about": [
+    "Exceptions for scripts/check_licences.py (playbook 9: Dependency licences).",
+    "One entry per package whose metadata the gate cannot classify (UNKNOWN, missing, SEE LICENSE IN ...) or whose copyleft reading was reviewed and found wrong.",
+    "Fields: package, licence (the licence actually verified, from the package's LICENSE file, with the URL), reason, acceptedOn (YYYY-MM-DD), acceptedBy.",
+    "An exception is never a way past a real AGPL/GPL/SSPL dependency: the gate reports an unused exception as stale and fails, so entries leave with the package."
+  ],
+  "backend": [],
+  "frontend": []
+}

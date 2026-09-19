@@ -1,0 +1,37 @@
+# Local services. The same engines as production (playbook 2.1, 14): PostgreSQL 16
+# with pgvector, and Redis. There is no SQLite anywhere.
+#
+#   docker compose up -d db redis
+#
+# The db container runs infra/db/init.sql once on first start. It creates the two
+# database roles the design depends on (cw_migrator owns the schema, cw_app runs
+# the application with no ownership and no BYPASSRLS) and the extensions the model
+# needs. Production does the same by hand: docs/runbooks/RAILWAY_DEPLOY.md.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres-dev-only
+      POSTGRES_DB: compliance_watch
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./infra/db/init.sql:/docker-entrypoint-initdb.d/10-roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d compliance_watch"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  db-data:

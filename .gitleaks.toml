@@ -1,0 +1,78 @@
+# Secret scanning (playbook 9 "Secret scan", 11.2 "Secrets", Appendix D item 10).
+#
+# The default ruleset is extended, never replaced. Allowlist entries are exact
+# literals with a stated reason; there is no relaxed rule, no path-wide
+# exemption and no entropy tweak. Every literal below is a dev-only value that
+# the application refuses when deployed (playbook 11.1): the boot guards reject
+# a default SECRET_KEY and the `-dev-only` / `django-insecure-` prefixes are
+# the convention that marks a value as one of them (brief, "Environment
+# variables").
+#
+# Run locally:  gitleaks git . --config .gitleaks.toml
+# CI:           the `secrets` job in .github/workflows/ci.yml, on every push.
+
+title = "Compliance Watch gitleaks configuration"
+
+[extend]
+useDefault = true
+
+# Each allowlist matches the *extracted secret* (the default regexTarget), and
+# each regex is anchored, so only the exact literal is ignored. A real secret
+# that merely contains one of these strings is still reported.
+
+[[allowlists]]
+description = "cw_migrator database password for local Docker and CI only. Set in infra/db/init.sql and MIGRATOR_DATABASE_URL in docker-compose.yml, .env.example and ci.yml. Production roles are created by hand with real passwords (docs/runbooks/RAILWAY_DEPLOY.md)."
+regexes = ['''^cw-migrator-dev-only$''']
+
+[[allowlists]]
+description = "cw_app database password for local Docker and CI only. Set in infra/db/init.sql and DATABASE_URL in docker-compose.yml, .env.example and ci.yml. Production roles are created by hand with real passwords (docs/runbooks/RAILWAY_DEPLOY.md)."
+regexes = ['''^cw-app-dev-only$''']
+
+[[allowlists]]
+description = "Superuser password of the local/CI postgres container (POSTGRES_PASSWORD in docker-compose.yml and the ci.yml service). Never used by the application; production has no such container."
+regexes = ['''^postgres-dev-only$''']
+
+[[allowlists]]
+description = "Default SECRET_KEY in backend/config/settings.py for local and test runs. The boot guard refuses this exact value when the environment is deployed (playbook 11.1), so it can never protect anything real. Two literals during Phase 0: the brief names the first, the backend currently ships the second; delete whichever the settings file does not use once the name is settled."
+regexes = [
+  '''^django-insecure-dev-only-change-me$''',
+]
+
+# Connection strings carry the dev-only passwords above. Some rules extract the
+# whole URL rather than the password, so the same literals are also accepted
+# when they appear as the password segment of a local/CI Postgres URL.
+[[allowlists]]
+description = "Local/CI Postgres connection strings that embed the dev-only role passwords listed above (docker-compose.yml, .env.example, ci.yml, README quick start). Host is localhost or the compose service, database is compliance_watch."
+regexes = [
+  '''^postgres(ql)?://cw_migrator:cw-migrator-dev-only@(localhost|127\.0\.0\.1|db):5432/[A-Za-z0-9_]+$''',
+  '''^postgres(ql)?://cw_app:cw-app-dev-only@(localhost|127\.0\.0\.1|db):5432/[A-Za-z0-9_]+$''',
+]
+
+# ---------------------------------------------------------------------------
+# E2E passkey test credentials (playbook 8.3): to be added by the frontend agent.
+#
+# The E2E seed stores the public keys of fixed test credentials and
+# frontend/tests/e2e/support/passkeys.ts seeds the matching PRIVATE keys into
+# Playwright's virtual authenticator (browserContext.credentials). Those private
+# keys are test fixtures, not secrets, but gitleaks has no way to know that, so
+# each one is allowlisted here BY EXACT LITERAL. How to add one:
+#
+#   1. Generate the key pair deterministically in the seed (no randomness) and
+#      paste the private key literal exactly as it appears in passkeys.ts
+#      (base64url string or PEM body; if PEM, one regex per line-free literal
+#      or anchor on the base64 body as written in the file).
+#   2. Add one [[allowlists]] table per key, `condition = "AND"`, with the
+#      literal anchored in `regexes` AND the file in `paths`, so the same
+#      literal anywhere else is still reported.
+#   3. Say in `description` which seeded user the credential belongs to and
+#      why it is safe (test-only, public key seeded by `seed_e2e`, refused on
+#      deployed environments).
+#
+# Template (uncomment and fill in; keep the anchors):
+#
+# [[allowlists]]
+# description = "E2E passkey private key for the seeded user <email> (playbook 8.3). Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+# condition = "AND"
+# regexes = ['''^<exact private key literal>$''']
+# paths = ['''^frontend/tests/e2e/support/passkeys\.ts$''']
+# ---------------------------------------------------------------------------
