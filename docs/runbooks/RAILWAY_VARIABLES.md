@@ -45,6 +45,8 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `LLM_PROVIDER` | api, worker | `mock` | `mock` | `anthropic` | `mock`, `anthropic`, `bedrock` (D-07, ADR 0007) |
 | `ANTHROPIC_API_KEY` | api, worker | unset | unset | Railway secret | Only read when `LLM_PROVIDER=anthropic` |
 | `EMBEDDER_PROVIDER` | api, worker | `mock` | `mock` | per D-09 | Plus the provider's key variable once D-09 is decided; until then the test deploy searches by keyword only |
+| `RERANKER_PROVIDER` | api, worker | `mock` | `mock` | `none` until D-09 names one | `mock` is refused when deployed except in `test`; `none` leaves the fused order as the answer |
+| `RERANKER_TOP_K` | api, worker | `50` | `50` | `50` | How many fused hits the reranker is given (SRC-01) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
 
 ## Testing, observability, budgets

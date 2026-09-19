@@ -276,7 +276,11 @@ MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
 MAIL_SMTP_PORT = env_int("MAIL_SMTP_PORT", 587)
 MAIL_SMTP_USER = env_str("MAIL_SMTP_USER", "")
 MAIL_SMTP_PASSWORD = env_str("MAIL_SMTP_PASSWORD", "")
-MOCK_ADAPTER_SETTINGS = ("LLM_PROVIDER", "EMBEDDER_PROVIDER", "AGENT_RUNNER", "MAIL_PROVIDER")
+# E4: the reranker over the fused top window (SRC-01, D-09). `none` is the contracted
+# state until a model is chosen, and leaves the fused order as the answer.
+RERANKER_PROVIDER = env_str("RERANKER_PROVIDER", "mock")  # mock | none | <chosen per D-09>
+RERANKER_TOP_K = env_int("RERANKER_TOP_K", 50)
+MOCK_ADAPTER_SETTINGS = ("LLM_PROVIDER", "EMBEDDER_PROVIDER", "RERANKER_PROVIDER", "AGENT_RUNNER", "MAIL_PROVIDER")
 
 # ---------------------------------------------------------------------------------------
 # File storage (playbook 4.6). local for dev and tests, s3 when deployed. Nothing public.
