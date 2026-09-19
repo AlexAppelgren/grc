@@ -125,6 +125,13 @@ main{padding:24px 32px 64px;max-width:1200px;width:100%;min-width:0}
 .back{display:inline-flex;align-items:center;height:32px;background-color:transparent;border:0;border-radius:var(--r-control);color:var(--muted);padding:0 8px;margin:0 0 8px -8px;font-weight:500}
 .back:hover{color:var(--text)}
 .notice{background:var(--subtle);color:var(--muted);border-radius:var(--r-control);padding:6px 10px;font-size:var(--fs-meta);line-height:var(--lh-meta);margin-bottom:20px}
+/* A warn notice carries the one thing that is waiting. Every word in it is text-fg:
+   muted and negative text on the warning fill fail AA in dark mode. */
+.notice.warn{background:var(--amber-soft);color:var(--text);padding:10px 12px}
+.notice.warn p{margin:0}.notice.warn p+p{margin-top:4px}
+/* The warning pill carries the same fill as the notice, so inside one it takes the
+   surface instead and keeps its shape. */
+.notice.warn .pill{background:var(--surface);color:var(--text)}
 
 /* Card: shadcn's Card with a smaller radius (8px), a hairline, no shadow, 16px padding. */
 .grid{display:grid;gap:16px}.grid>*{min-width:0}
@@ -150,7 +157,7 @@ main{padding:24px 32px 64px;max-width:1200px;width:100%;min-width:0}
 .field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
 .field input::placeholder,.search input::placeholder{color:var(--muted);font-style:italic}
 
-/* Toggle (filters, footprint): an outline control that fills when pressed. Square-ish, so
+/* Toggle (filters): an outline control that fills when pressed. Square-ish, so
    it never reads as a pill. */
 .chip{display:inline-flex;align-items:center;height:32px;background-color:var(--surface);border:1px solid var(--line-control);border-radius:var(--r-control);padding:0 12px;font-weight:500;color:var(--muted)}
 .chip:hover{color:var(--text)}
@@ -241,6 +248,17 @@ main{padding:24px 32px 64px;max-width:1200px;width:100%;min-width:0}
 .check:last-child{border-bottom:0}
 .check input{width:16px;height:16px;margin-top:2px;accent-color:var(--primary)}
 .check .done{text-decoration:line-through;color:var(--muted)}
+/* Regulatory scope. The read state is the same row with a checkbox-shaped glyph in place
+   of the control, so a held and an unheld option read alike, nothing is greyed out and
+   nothing sits in the tab order. One column on phones, two above, three from 1280px. */
+.check svg{width:16px;height:16px;flex:none;margin-top:2px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.check svg rect{stroke:var(--line-strong)}
+.scope{display:grid;gap:16px 24px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.scope>*{min-width:0}
+.scope fieldset{border:0;padding:0;margin:0}
+.scope h3,.scope legend{font-weight:600;margin:0 0 4px;padding:0}
+.scope .hint{color:var(--muted);font-size:var(--fs-meta);line-height:var(--lh-meta);margin:0 0 4px}
+@media (width >= 80rem){.scope{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 .search{display:flex;gap:8px;margin-bottom:12px}.search input{flex:1 1 0;min-width:0}
 mark{background:var(--brass-bg-2);color:inherit;border-radius:3px;padding:0 2px}
@@ -291,6 +309,7 @@ mark{background:var(--brass-bg-2);color:inherit;border-radius:3px;padding:0 2px}
   .kv{grid-template-columns:1fr;gap:2px 0}.kv dd{margin-bottom:10px}
   .lagrum{grid-template-columns:1fr}.lagrum .margin{display:flex;gap:10px;align-items:baseline;text-align:left;padding:8px 16px;border-right:0;border-bottom:1px solid var(--brass-bg)}
   .lagrum .margin small{margin:0}.lagrum .body{padding:16px}
+  .scope{grid-template-columns:1fr}
   .bars div{grid-template-columns:110px 1fr 24px}
   .ent{grid-template-columns:1fr}
 }
@@ -370,7 +389,7 @@ const USERS=[
  {id:"johan",name:"Johan Berg",role:"Obligation owner, digital investing"},
  {id:"maria",name:"Maria Ek",role:"Approver, head of compliance"},
  {id:"erik",name:"Erik Holm",role:"Administrator"}];
-const REGIMES=["Securities","Insurance","Tax","Data protection","AML","AI and ICT"];
+const REGIMES=["Securities","Insurance","Tax","Data protection","AML","AI and ICT","Banking","Payments"];
 const ACCOUNTS=["ISK","AF","Depå","KF","Pension"];
 const ENTITIES=["Bank","Insurer","Fund company"];
 const SERVICES=["Advice","Non-advised","Execution only","Portfolio management","Custody","Insurance distribution"];
@@ -383,6 +402,7 @@ const STATUS_LABEL={new:"Needs triage",assigned:"Assigned",assessing:"Assessment
 var seed=function(){return{
  user:"sara",view:{name:"today"},stack:[],
  footprint:{regimes:[...REGIMES],accounts:[...ACCOUNTS],entities:[...ENTITIES],services:[...SERVICES],clients:[...CLIENTS]},
+ scopeRequest:null,
  org:{entities:[
    {id:"e-bank",name:"Example Bank AB",kind:"Bank",orgnr:"556000-0001",licences:["Banking business","Securities business, LVM 2 kap."]},
    {id:"e-ins",name:"Example Liv Försäkring AB",kind:"Insurer",orgnr:"516000-0002",licences:["Life insurance business","Insurance distribution"]},
@@ -396,18 +416,18 @@ var seed=function(){return{
   {id:"g1",obl:"o-esma",title:"The warning can be dismissed with one tap and the choice is not logged",desc:"ESMA expects warnings to be prominent and the client's choice to be recorded. Today the order flow lets the client tap past the warning, and nothing is stored.",severity:"Medium",source:"Assessment",owner:"johan",target:"2026-11-15",status:"remediating",raisedBy:"sara",raisedAt:"2026-08-20",pendingAccept:null,actions:[{id:"ga1",title:"Log the client's choice after each warning",owner:"johan",due:"2026-10-20",done:false},{id:"ga2",title:"Redesign the warning so it cannot be passed with one tap",owner:"johan",due:"2026-11-05",done:false}]},
   {id:"g2",obl:"o-research",title:"No documented research budget per strategy",desc:"The new rules allow joint payment for research and execution only with a documented budget and a yearly quality assessment. Neither exists yet.",severity:"Medium",source:"Change case",owner:"johan",target:"2026-10-30",status:"open",raisedBy:"sara",raisedAt:"2026-09-10",pendingAccept:null,actions:[]}],
  agents:[
-  {id:"a-watch",name:"Regulatory watch",desc:"Checks the monitored sources and the open web for changes that touch our footprint. New changes land in triage, and inventory edits go to review.",writes:"Shared library, through review",cadence:"Weekly",scope:"Follows the footprint",version:"0.4",on:true,paused:false,runs:[
+  {id:"a-watch",name:"Regulatory watch",desc:"Checks the monitored sources and the open web for changes that touch our regulatory scope. New changes land in triage, and inventory edits go to review.",writes:"Shared library, through review",cadence:"Weekly",scope:"Follows the regulatory scope",version:"0.4",on:true,paused:false,runs:[
     {id:"r3",t:"2026-09-14T06:02",trigger:"Schedule",by:"",status:"done",mins:14,found:3,props:2,cost:2.10},
     {id:"r2",t:"2026-09-07T06:01",trigger:"Schedule",by:"",status:"done",mins:12,found:2,props:1,cost:1.85},
     {id:"r1",t:"2026-08-31T06:02",trigger:"Schedule",by:"",status:"done",mins:16,found:4,props:2,cost:2.30}]},
   {id:"a-verify",name:"Re-verification",desc:"Re-checks the obligations that were verified longest ago against their sources, and proposes an update when the source has moved.",writes:"Shared library, through review",cadence:"Monthly",scope:"The 20 obligations verified longest ago",version:"0.4",on:true,paused:false,runs:[
     {id:"r4",t:"2026-09-01T06:01",trigger:"Schedule",by:"",status:"done",mins:9,found:0,props:1,cost:0.92}]},
-  {id:"a-sowhat",name:"So what drafter",desc:"Drafts the So what for each new change against our footprint, our products and our earlier decisions. The text stays labelled as a draft until someone confirms it.",writes:"Our workspace only",cadence:"On each new change",fixed:true,scope:"Footprint and products",version:"0.2",on:true,paused:false,runs:[
+  {id:"a-sowhat",name:"So what drafter",desc:"Drafts the So what for each new change against our regulatory scope, our products and our earlier decisions. The text stays labelled as a draft until someone confirms it.",writes:"Our workspace only",cadence:"On each new change",fixed:true,scope:"Scope and products",version:"0.2",on:true,paused:false,runs:[
     {id:"r5",t:"2026-09-14T06:19",trigger:"New change",by:"",status:"done",mins:1,found:0,props:0,cost:0.18}]},
   {id:"a-private",name:"Private source watch",desc:"Watches sources that only we care about. What it finds is visible to us alone and never enters the shared library.",writes:"Our workspace only",cadence:"Weekly",scope:"Our private sources",version:"0.1",on:false,paused:false,runs:[]}],
  budget:{cap:40,spent:7.35},
  privateSources:[{name:"Group policy portal, regulatory notices",url:"policies.example.internal",vis:"Private to us",status:"Active"}],
- ui:{gapTab:"open",watchTab:"triage",fRegime:"",fUrgency:"",fFoot:true,invInstrument:"",invApplies:"",invService:"",invStatus:"",lang:"en",searchMode:"search",q:"",asOf:"",diff:false,rmKind:"all",rmPick:""},
+ ui:{gapTab:"open",watchTab:"triage",fRegime:"",fUrgency:"",fFoot:true,invInstrument:"",invApplies:"",invService:"",invStatus:"",lang:"en",searchMode:"search",q:"",asOf:"",diff:false,rmKind:"all",rmPick:"",scopeDraft:null},
  instruments:[
   {id:"LVM",name:"Lag (2007:528) om värdepappersmarknaden",short:"LVM",regime:"Securities",level:"Swedish act",binding:true,official:"SFS 2007:528",implements:"MiFID II, Directive 2014/65/EU"},
   {id:"FFFS172",name:"FFFS 2017:2 om värdepappersrörelse",short:"FFFS 2017:2",regime:"Securities",level:"FI regulation",binding:true,official:"FFFS 2017:2",implements:"MiFID II delegated directive (EU) 2017/593"},
@@ -582,9 +602,12 @@ function log(a,o){S.audit.unshift({t:new Date().toISOString().slice(0,19),u:S.us
 const ch=id=>S.changes.find(c=>c.id===id);
 const obl=id=>S.obligations.find(o=>o.id===id);
 const inst=id=>S.instruments.find(i=>i.id===id);
-const any=(a,b)=>!a||!a.length||a.some(x=>b.includes(x));
-const inFoot=c=>any(c.regimes,S.footprint.regimes)&&any(c.accounts,S.footprint.accounts)&&any(c.services,S.footprint.services);
-const oblInFoot=o=>any(o.accounts,S.footprint.accounts)&&any(o.service,S.footprint.services)&&any(o.entity,S.footprint.entities)&&any(o.client,S.footprint.clients)&&S.footprint.regimes.includes(inst(o.instrument).regime);
+/* An empty group in the scope restricts nothing (FP-01): it is the scope of a tenant that
+   has not narrowed that dimension, not the scope of a tenant that hid everything in it.
+   Both sides take a scope, so the change preview can count against a draft. */
+const any=(a,b)=>!b||!b.length||!a||!a.length||a.some(x=>b.includes(x));
+const inFoot=(c,f=S.footprint)=>any(c.regimes,f.regimes)&&any(c.accounts,f.accounts)&&any(c.services,f.services);
+const oblInFoot=(o,f=S.footprint)=>any(o.accounts,f.accounts)&&any(o.service,f.services)&&any(o.entity,f.entities)&&any(o.client,f.clients)&&any([inst(o.instrument).regime],f.regimes);
 const cpill=o=>`<span class="pill ${CSTATUS[o.status][1]}">${CSTATUS[o.status][0]}</span>`;
 const pill=u=>`<span class="pill ${UCLASS[u]||""}">${esc(u)}</span>`;
 const gapOf=id=>S.gaps.find(g=>g.id===id);
@@ -613,7 +636,7 @@ const svg=k=>`<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 /* The collapsed rail shows the open e alone, cut from the wordmark (the favicon's glyph, without its square). */
 const MARK=`<svg class="mark" viewBox="1908 -590 640 640" aria-hidden="true"><path d="M${LOGO_SIDE.match(/ d="([^"]+)"/)[1].split(" M")[3]}"/></svg>`;
 function counts(){return{triage:S.changes.filter(c=>c.status==="new").length,props:S.proposals.filter(p=>p.status==="open").length};}
-function section(){const n=S.view.name;return n==="change"?"watch":n==="obligation"?"inventory":n==="gap"?"gaps":n;}
+function section(){const n=S.view.name;return n==="change"?"watch":n==="obligation"?"inventory":n==="gap"?"gaps":n==="scope"?"settings":n;}
 function renderShell(){
  const c=counts(),cur=section(),n=c.triage+c.props,mini=!!S.ui.mini;
  document.querySelector(".app").classList.toggle("mini",mini);
@@ -639,7 +662,7 @@ function closeMore(focusId){
  const b=$("more-btn");if(b)b.setAttribute("aria-expanded","false");
  if(focusId)$(focusId).focus();
 }
-function render(){renderShell();const v=S.view;const fn={today:vToday,watch:vWatch,change:vChange,inventory:vInventory,obligation:vObligation,search:vSearch,week:vWeek,roadmap:vRoadmap,reports:vReports,audit:vAudit,settings:vSettings,gaps:vGaps,gap:vGap,agents:vAgents}[v.name]||vToday;
+function render(){renderShell();const v=S.view;const fn={today:vToday,watch:vWatch,change:vChange,inventory:vInventory,obligation:vObligation,search:vSearch,week:vWeek,roadmap:vRoadmap,reports:vReports,audit:vAudit,settings:vSettings,scope:vScope,gaps:vGaps,gap:vGap,agents:vAgents}[v.name]||vToday;
  $("main").innerHTML=`<div class="mbrand"><button class="mhome" data-act="nav" data-v="today">${LOGO_MOB}</button></div><div class="notice">Prototype with sample data, not verified legal content. Your actions stay in this browser.</div>`+fn(v);
  if(v.name==="search")renderResults();save();}
 
@@ -659,7 +682,7 @@ function dateRows(list){return `<div class="dates">${list.map(c=>`<div><i class=
 function standing(){const app=S.obligations.filter(o=>o.applies==="yes"&&oblInFoot(o)),col={compliant:"var(--green)",partly:"var(--amber)",gap:"var(--red)",unknown:"var(--line-strong)"};
  const n=k=>app.filter(o=>o.status===k).length;
  return `<p style="color:var(--muted);font-size:var(--fs-meta);margin-bottom:6px">${app.length} obligations apply to us.</p><div class="statusbar">${Object.keys(CSTATUS).map(k=>n(k)?`<i style="flex:${n(k)} 1 0;background:${col[k]}"></i>`:"").join("")}</div>${Object.keys(CSTATUS).map(k=>`<div class="legend"><span>${CSTATUS[k][0]}</span><b>${n(k)}</b></div>`).join("")}`;}
-function leadCard(c,full){if(!c)return `<div class="panel"><h2>This week</h2><p style="color:var(--muted)">Nothing new matches our footprint this week.</p></div>`;
+function leadCard(c,full){if(!c)return `<div class="panel"><h2>This week</h2><p style="color:var(--muted)">Nothing new matches our scope this week.</p></div>`;
  const others=weekItems().filter(x=>x.id!==c.id).length,isNew=c.status==="new";
  return `<div class="${full?"feature":"panel"}" style="${full?"":"display:flex;flex-direction:column;gap:12px"}"><div class="meta"><span class="pill brass">${full?"Lead":"This week"}</span>${pill(c.urgency)}<span>${esc(c.authority)}${c.published?", "+fmt(c.published):""}</span></div>
  <h2 class="${full?"lead":""}">${esc(c.title)}</h2>${full?`<p style="max-width:70ch;margin:0">${esc(c.summary)}</p>`:""}
@@ -668,7 +691,7 @@ function leadCard(c,full){if(!c)return `<div class="panel"><h2>This week</h2><p 
 
 function vToday(){
  const tri=S.changes.filter(c=>c.status==="new"&&inFoot(c)),sign=S.changes.filter(c=>c.status==="signoff"),mine=S.changes.filter(c=>c.owner===S.user&&!["closed","dismissed","signoff"].includes(c.status)),props=S.proposals.filter(p=>p.status==="open");
- const up=upcomingList().filter(inFoot),rm=roadmapItems().length,first=tri.slice().sort((x,y)=>(x.keyDate||"9").localeCompare(y.keyDate||"9"))[0];
+ const up=upcomingList().filter(c=>inFoot(c)),rm=roadmapItems().length,first=tri.slice().sort((x,y)=>(x.keyDate||"9").localeCompare(y.keyDate||"9"))[0];
  const ok=S.sources.filter(x=>x[2]==="ok").length,bad=S.sources.filter(x=>x[2]!=="ok");
  const decide=[tri.length?`${tri.length} change${tri.length>1?"s":""} need${tri.length>1?"":"s"} triage.${first&&first.keyDate?" The most urgent takes effect "+daysLabel(first.keyDate)+".":""}`:"Nothing is waiting for triage.",
   sign.length?`${sign.length} waiting for sign-off.`:"",props.length?`${props.length} agent proposal${props.length>1?"s":""} to review.`:"",mine.length?`${mine.length} assigned to you.`:""].filter(Boolean);
@@ -684,10 +707,10 @@ function vToday(){
 }
 
 function vWeek(){
- const w=weekItems(),lead=w[0]||null,rest=w.slice(1),up=upcomingList().filter(inFoot).slice(0,3);
+ const w=weekItems(),lead=w[0]||null,rest=w.slice(1),up=upcomingList().filter(c=>inFoot(c)).slice(0,3);
  return `<button class="back" data-act="nav" data-v="today">Back to home</button>
  <div class="head"><div><p class="kicker">${weekLabel()}</p><h1>This week in brief</h1></div><span class="meta">The same items go out in the weekly email.</span></div>
- ${lead?leadCard(lead,true):'<div class="empty">Nothing new matches our footprint this week. Widen the footprint under Settings, or check the Watch tab for older items.</div>'}
+ ${lead?leadCard(lead,true):'<div class="empty">Nothing new matches our scope this week. Widen the regulatory scope, or check the Watch tab for older items.</div>'}
  <div class="home" style="grid-template-columns:1.7fr 1fr;margin-top:24px"><div><h2 style="margin-bottom:16px">Also this week</h2>${rest.map(c=>`<div class="brief"><a href="#" data-act="open-change" data-id="${c.id}">${esc(c.title)}</a><p><b style="color:var(--text)">So what?</b> ${esc(c.sowhat.text)}</p>${pill(c.urgency)} ${c.flags.map(f=>`<span class="pill brass">${esc(f)}</span>`).join(" ")} <span class="pill">${esc(STATUS_LABEL[c.status])}</span></div>`).join("")||'<p style="color:var(--muted)">Nothing else this week.</p>'}</div>
  <div class="panel" style="align-self:start"><h2>Coming up</h2>${up.length?dateRows(up):'<p style="color:var(--muted)">No dated changes ahead.</p>'}<div class="bar"><button class="btn outline small" data-act="nav" data-v="roadmap">Open the roadmap</button></div></div></div>`;
 }
@@ -734,10 +757,10 @@ function vWatch(){
   let list=S.changes.filter(inTab);
   if(ui.fRegime)list=list.filter(c=>c.regimes.includes(ui.fRegime));
   if(ui.fUrgency)list=list.filter(c=>c.urgency===ui.fUrgency);
-  if(ui.fFoot)list=list.filter(inFoot);
+  if(ui.fFoot)list=list.filter(c=>inFoot(c));
   body=`<div class="filters"><select data-bind="fRegime" aria-label="Regime"><option value="">All regimes</option>${REGIMES.map(r=>`<option ${ui.fRegime===r?"selected":""}>${r}</option>`).join("")}</select>
   <select data-bind="fUrgency" aria-label="Urgency"><option value="">Any urgency</option>${URGENCY.map(r=>`<option ${ui.fUrgency===r?"selected":""}>${r}</option>`).join("")}</select>
-  <button class="chip" data-act="toggle-foot" aria-pressed="${ui.fFoot}">Matches our footprint</button></div>
+  <button class="chip" data-act="toggle-foot" aria-pressed="${ui.fFoot}">Matches our scope</button></div>
   <div class="rows">${list.map(changeRow).join("")||'<div class="empty">Nothing here. Change the filters or check another tab.</div>'}</div>`;
  }
  const c=counts();
@@ -804,14 +827,14 @@ function vInventory(){
  if(ui.invApplies)list=list.filter(o=>o.applies===ui.invApplies);
  if(ui.invService)list=list.filter(o=>o.service.includes(ui.invService));
  if(ui.invStatus)list=list.filter(o=>o.status===ui.invStatus);
- list=list.filter(oblInFoot);
+ list=list.filter(o=>oblInFoot(o));
  const A={yes:["Applies","green"],no:["Does not apply",""],assess:["Under assessment","amber"]};
  return `<div class="head"><div><h1>Inventory</h1><p>${S.obligations.length} obligations across ${S.instruments.length} instruments, each scoped by entity, service and client, with an owner, a decision on whether it applies and a separate compliance status.</p></div></div>
  <div class="filters"><select data-bind="invInstrument" aria-label="Instrument"><option value="">All instruments</option>${S.instruments.map(i=>`<option value="${i.id}" ${ui.invInstrument===i.id?"selected":""}>${esc(i.short)} (${S.obligations.filter(o=>o.instrument===i.id).length})</option>`).join("")}</select>
  <select data-bind="invApplies" aria-label="Applicability"><option value="">Any decision</option><option value="yes" ${ui.invApplies==="yes"?"selected":""}>Applies</option><option value="assess" ${ui.invApplies==="assess"?"selected":""}>Under assessment</option><option value="no" ${ui.invApplies==="no"?"selected":""}>Does not apply</option></select>
  <select data-bind="invService" aria-label="Service type"><option value="">Any service</option>${SERVICES.map(x=>`<option ${ui.invService===x?"selected":""}>${x}</option>`).join("")}</select>
  <select data-bind="invStatus" aria-label="Compliance status"><option value="">Any status</option>${Object.keys(CSTATUS).map(k=>`<option value="${k}" ${ui.invStatus===k?"selected":""}>${CSTATUS[k][0]}</option>`).join("")}</select></div>
- <div class="rows">${list.map(o=>{const open=S.changes.filter(c=>c.obligations.includes(o.id)&&!["closed","dismissed"].includes(c.status)).length;return `<button class="row" data-act="open-obl" data-id="${o.id}"><div class="meta"><span class="pill brass">${esc(inst(o.instrument).short)}</span>${inst(o.instrument).binding?"":'<span class="pill">Guidance</span>'}<span class="pill ${A[o.applies][1]}">${A[o.applies][0]}</span>${o.applies==="yes"?cpill(o):""}${o.pendingApplies?'<span class="pill amber">Change waiting for approval</span>':""}${open?`<span class="pill blue">${open} open change${open>1?"s":""}</span>`:""}</div><h3>${esc(o.title)}</h3><div class="meta"><span>${esc(o.ref)}</span><span>${esc(o.service.length===SERVICES.length?"All services":o.service.join(", "))}</span><span>${esc(o.accounts.join(", "))}</span><span>${esc(uname(o.owner))}</span></div></button>`;}).join("")||'<div class="empty">No obligations match. Clear a filter or widen the footprint in Settings.</div>'}</div>`;
+ <div class="rows">${list.map(o=>{const open=S.changes.filter(c=>c.obligations.includes(o.id)&&!["closed","dismissed"].includes(c.status)).length;return `<button class="row" data-act="open-obl" data-id="${o.id}"><div class="meta"><span class="pill brass">${esc(inst(o.instrument).short)}</span>${inst(o.instrument).binding?"":'<span class="pill">Guidance</span>'}<span class="pill ${A[o.applies][1]}">${A[o.applies][0]}</span>${o.applies==="yes"?cpill(o):""}${o.pendingApplies?'<span class="pill amber">Change waiting for approval</span>':""}${open?`<span class="pill blue">${open} open change${open>1?"s":""}</span>`:""}</div><h3>${esc(o.title)}</h3><div class="meta"><span>${esc(o.ref)}</span><span>${esc(o.service.length===SERVICES.length?"All services":o.service.join(", "))}</span><span>${esc(o.accounts.join(", "))}</span><span>${esc(uname(o.owner))}</span></div></button>`;}).join("")||'<div class="empty">No obligations match. Clear a filter or widen the regulatory scope.</div>'}</div>`;
 }
 function verAt(o,asOf){const d=asOf||today();let v=o.versions[0];for(const x of o.versions){if(!x.from||x.from<=d)v=x;}return v;}
 function sentences(t){return t.match(/[^.]+\.?/g).map(s=>s.trim()).filter(Boolean);}
@@ -950,13 +973,70 @@ function vReports(){
 
 function vAudit(){return `<div class="head"><div><h1>Audit log</h1><p>Written in ink: entries are added, never changed or removed. Every decision and edit, by whom and when. Try an action elsewhere and come back.</p></div></div><div class="panel log">${S.audit.map(e=>`<div><time>${esc(e.t.replace("T"," "))}</time><b>${esc(uname(e.u))}</b> ${esc(e.a)}: ${esc(e.o)}</div>`).join("")}</div>`;}
 
-function vSettings(){const f=S.footprint;return `<div class="head"><div><h1>Settings</h1><p>The footprint decides what the feed and the inventory show.</p></div></div>
- <div class="grid g2"><div class="panel"><h2>Footprint</h2><h3 style="margin:6px 0 8px;font-weight:600">Regimes</h3><div class="filters">${REGIMES.map(r=>`<button class="chip" data-act="fp" data-k="regimes" data-v="${r}" aria-pressed="${f.regimes.includes(r)}">${r}</button>`).join("")}</div>
- <h3 style="margin:6px 0 8px;font-weight:600">Account types</h3><div class="filters">${ACCOUNTS.map(r=>`<button class="chip" data-act="fp" data-k="accounts" data-v="${r}" aria-pressed="${f.accounts.includes(r)}">${r}</button>`).join("")}</div>
- <h3 style="margin:6px 0 8px;font-weight:600">Legal entities</h3><div class="filters">${ENTITIES.map(r=>`<button class="chip" data-act="fp" data-k="entities" data-v="${r}" aria-pressed="${f.entities.includes(r)}">${r}</button>`).join("")}</div>
- <h3 style="margin:6px 0 8px;font-weight:600">Services we provide</h3><div class="filters">${SERVICES.map(r=>`<button class="chip" data-act="fp" data-k="services" data-v="${r}" aria-pressed="${f.services.includes(r)}">${r}</button>`).join("")}</div>
- <h3 style="margin:6px 0 8px;font-weight:600">Client categories</h3><div class="filters">${CLIENTS.map(r=>`<button class="chip" data-act="fp" data-k="clients" data-v="${r}" aria-pressed="${f.clients.includes(r)}">${r}</button>`).join("")}</div>
- <p class="meta">Try switching off Advice: advised obligations leave the inventory and advice-only changes leave the feed.</p></div>
+/* ---------- regulatory scope ---------- */
+/* A restricted section (docs/plans/briefs/REGULATORY_SCOPE.md, sections 4.1 to 4.4). It
+   decides what every member sees, so it opens read-only, a change is a request, and the
+   request waits for a second person. The prototype stops at the waiting request:
+   approval, rejection and history are the app's and design/screens/admin-footprint.html.
+   Who holds what, until there are real roles and permissions. */
+const PERMS={sara:["request","approve"],erik:["request","approve"],maria:["approve"],johan:[]};
+const can=p=>(PERMS[S.user]||[]).includes(p);
+const canScope=()=>can("request")||can("approve");
+const SCOPE_GROUPS=[["regimes","Regimes",REGIMES],["accounts","Account types",ACCOUNTS],["entities","Legal entities",ENTITIES],["services","Services we provide",SERVICES],["clients","Client categories",CLIENTS]];
+/* The read state's glyph. It is a picture of a checkbox, not a control: aria-hidden, and
+   the visually hidden text beside it says which way it reads. */
+const BOX=on=>`<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/>${on?'<path d="M4.4 8.3l2.4 2.4 4.8-5.2"/>':""}</svg>`;
+const plural=(n,w)=>n+" "+w+(n===1?"":"s");
+const draftOf=()=>JSON.parse(JSON.stringify(S.footprint));
+function scopeDiff(d){const adds=[],removes=[];
+ for(const[k,,terms]of SCOPE_GROUPS)for(const t of terms){const was=S.footprint[k].includes(t),now=d[k].includes(t);
+  if(now&&!was)adds.push(t);else if(was&&!now)removes.push(t);}
+ return{adds,removes};}
+function requestTitle(d){const{adds,removes}=scopeDiff(d);
+ if(adds.length&&removes.length)return "Add "+adds.join(", ")+", remove "+removes.join(", ");
+ if(adds.length)return "Add "+adds.join(", ");
+ if(removes.length)return "Remove "+removes.join(", ");
+ return "";}
+/* A group that holds nothing today and something after the change starts to filter, which
+   hides every record tagged only with the rest of the group. That is the dangerous
+   direction, so it is said out loud. Emptying a group only widens, and says nothing. */
+function narrowedGroups(d){return SCOPE_GROUPS.filter(([k])=>!S.footprint[k].length&&d[k].length).map(([,l])=>l);}
+function previewCounts(d){const gone=(a,b)=>a.filter(x=>!b.includes(x)).length;
+ const nowC=S.changes.filter(c=>inFoot(c)),nextC=S.changes.filter(c=>inFoot(c,d));
+ const nowO=S.obligations.filter(o=>oblInFoot(o)),nextO=S.obligations.filter(o=>oblInFoot(o,d));
+ return{hides:{changes:gone(nowC,nextC),obligations:gone(nowO,nextO)},reveals:{changes:gone(nextC,nowC),obligations:gone(nextO,nowO)}};}
+function scopeTerms(d,req){const pend=req?scopeDiff(req.draft):{adds:[],removes:[]};
+ return `<div class="scope">${SCOPE_GROUPS.map(([k,label,terms])=>{
+  const held=d?d[k]:S.footprint[k];
+  if(d)return `<fieldset data-dimension="${k}"${held.length?"":` aria-describedby="hint-${k}"`}><legend>${label}</legend>${held.length?"":`<p class="hint" id="hint-${k}">Not restricted: every option applies.</p>`}${terms.map(t=>`<label class="check"><input type="checkbox" data-act-change="scope-tick" data-k="${k}" data-v="${esc(t)}"${held.includes(t)?" checked":""}><span>${esc(t)}</span></label>`).join("")}</fieldset>`;
+  const rows=held.length?terms.map(t=>{const on=held.includes(t);
+    const mark=pend.adds.includes(t)?'<span class="pill amber">Added when approved</span>':pend.removes.includes(t)?'<span class="pill amber">Removed when approved</span>':"";
+    return `<div class="check">${BOX(on)}<span>${esc(t)}<span class="sr">, ${on?"in our scope":"not in our scope"}</span> ${mark}</span></div>`;}).join("")
+   :`<p class="meta">Not restricted: every option applies.</p>`;
+  return `<div data-dimension="${k}"><h3>${label}</h3>${rows}</div>`;}).join("")}</div>`;}
+function scopeCounts(x){return `<p class="meta">${plural(x.obligations,"obligation")}</p><p class="meta">${plural(x.changes,"change")} in the feed</p>`;}
+function scopePanel(d){const t=requestTitle(d),c=previewCounts(d),nar=narrowedGroups(d);
+ const warn=c.hides.obligations+c.hides.changes>0||nar.length>0;
+ return `<div class="panel" data-draft-preview style="margin-top:16px"><h2>${t?"Your change: "+esc(t):"Your change"}</h2>
+ ${t?`<div class="pair"><div><h3>Hides</h3>${scopeCounts(c.hides)}</div><div><h3>Reveals</h3>${scopeCounts(c.reveals)}</div></div>
+ ${warn?`<div class="notice warn" style="margin:16px 0 0"><p>What this hides leaves the feed, the inventory, the roadmap and the briefing for every member.</p>${nar.map(g=>`<p>${esc(g)} will start to filter: records tagged only with other options in it are hidden from every member.</p>`).join("")}</div>`:""}`
+ :`<p>Nothing changed yet.</p>`}
+ <div class="bar"><button class="btn outline" data-act="scope-cancel">Cancel</button>${t?`<button class="btn" data-act="scope-send">Request approval</button>`:""}</div></div>`;}
+function scopeBanner(req){const c=previewCounts(req.draft),mine=req.by===S.user;
+ return `<div class="notice warn" data-pending-request><p><span class="pill amber">Waiting for approval</span> <b>${esc(req.title)}</b></p>
+ <p>${mine?"You requested this on "+fmt(req.at)+".":"Requested by "+esc(uname(req.by))+", "+fmt(req.at)+"."} It hides ${plural(c.hides.obligations,"obligation")} and ${plural(c.hides.changes,"change")}, and reveals ${plural(c.reveals.obligations,"obligation")} and ${plural(c.reveals.changes,"change")}.${can("request")?" No other change can be proposed until this one is decided.":""}</p>
+ ${mine?`<div class="bar"><button class="btn outline" data-act="scope-withdraw">Withdraw</button></div>`:`<p>Approving and rejecting are not in the prototype. The screen card for /admin/footprint shows them.</p>`}</div>`;}
+function vScope(){
+ if(!canScope())return `<div class="head"><div><h1>Regulatory scope</h1></div></div>
+  <div class="panel"><h2>This page is not available to you</h2><p>It needs footprint request or footprint approve, and your role holds neither. Ask an administrator if you need it. What is in the scope still decides what you see in the feed and the inventory.</p></div>`;
+ const req=S.scopeRequest||null,d=S.ui.scopeDraft||null;
+ return `<button class="back" data-act="nav" data-v="settings">Back to Settings</button>
+ <div class="head"><div><h1>Regulatory scope</h1><p>Which rules apply to us, what we do and for whom</p></div>${can("request")&&!req&&!d?`<button class="btn danger" id="scope-propose" data-act="scope-edit">Propose a change</button>`:""}</div>
+ ${req?scopeBanner(req):`<div class="notice">Changes apply to every member once someone else approves them with a passkey.</div>`}
+ <div class="panel">${scopeTerms(d,req)}</div>${d?scopePanel(d):""}`;}
+
+function vSettings(){return `<div class="head"><div><h1>Settings</h1><p>People, the legal entities and products behind the inventory, and the prototype's own data.</p></div></div>
+ <div class="grid${canScope()?" g2":""}">${canScope()?`<div class="panel"><h2>Regulatory scope</h2><p>Which rules apply to us, what we do and for whom. It decides what every member sees, so a change is a request that someone else approves.</p><div class="bar"><button class="btn outline" data-act="nav" data-v="scope">Open regulatory scope</button></div><p class="meta">Try proposing the removal of Custody: the change counts what it would hide before it is sent, and nothing moves until someone else approves it.</p></div>`:""}
  <div class="panel"><h2>People</h2>${USERS.map(u=>`<p style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span><b>${esc(u.name)}</b><br><span class="meta">${esc(u.role)}</span></span>${u.id===S.user?'<span class="pill green">You</span>':`<button class="btn outline small" data-act="be" data-id="${u.id}">Switch</button>`}</p>`).join("")}<p class="meta">Switch person to try four-eyes approval: whoever requests a sign-off cannot give it.</p></div></div>
  <div class="grid g2" style="margin-top:14px"><div class="panel"><h2>Legal entities and licences</h2><p style="color:var(--muted);font-size:var(--fs-meta)">An obligation that covers more than one of these gets a compliance status per entity.</p>${S.org.entities.map(e=>`<p><b>${esc(e.name)}</b> <span class="pill brass">${esc(e.kind)}</span><br><span class="meta"><span>${esc(e.orgnr)}</span>${e.licences.map(l=>`<span>${esc(l)}</span>`).join("")}</span></p>`).join("")}</div>
  <div class="panel"><h2>Products</h2><p style="color:var(--muted);font-size:var(--fs-meta)">Describe a product the way obligations are scoped, and see which obligations it meets.</p>${S.org.products.map(p=>`<p style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span><b>${esc(p.name)}</b> <span class="pill ${p.status==="Live"?"green":"blue"}">${esc(p.status)}</span><br><span class="meta"><span>${esc(ent(p.entity).name)}</span><span>${esc(p.accounts.join(", "))}</span></span></span><button class="btn outline small" data-act="product-obls" data-id="${p.id}">${productObls(p).length} obligations</button></p>`).join("")}<div class="bar"><button class="btn outline small" data-act="product-new">Add product</button></div></div></div>
@@ -1025,7 +1105,10 @@ const ACT={
  "q-try":el=>{S.ui.q=el.dataset.q;render();},
  subscribe:()=>{log("Subscribed to calendar feed","Roadmap");toast("Calendar feed link copied");},
  pack:()=>{const open=S.changes.filter(c=>!["closed","dismissed"].includes(c.status));modal(`<h2 style="margin-bottom:12px">Committee pack</h2><pre id="pk">${esc(["REGULATORY CHANGE REPORT, "+fmt(today()),"",`Open changes: ${open.length}`,...URGENCY.map(u=>`  ${u}: ${open.filter(c=>c.urgency===u).length}`),"","DECISIONS NEEDED",...open.filter(c=>c.urgency==="Act now").map(c=>`- ${c.title}${c.keyDate?" ("+c.keyLabel+" "+fmt(c.keyDate)+")":""}`),"","NEXT DATES",...upcomingList().slice(0,5).map(c=>`- ${fmt(c.keyDate)}: ${c.title}`),"","SOURCE COVERAGE",...S.sources.map(s=>`- ${s[0]}: ${s[2]==="ok"?"checked "+s[1]:"FETCH FAILED "+s[1]}`)].join("\n"))}</pre><div class="bar"><button class="btn" data-act="copy" data-src="pk">Copy text</button><button class="btn outline" data-act="modal-close">Close</button></div>`);},
- fp:el=>{const arr=S.footprint[el.dataset.k],v=el.dataset.v,i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else arr.push(v);log("Changed footprint: "+v+(i>=0?" off":" on"),"Settings");render();},
+ "scope-edit":()=>{S.ui.scopeDraft=draftOf();render();const f=document.querySelector(".scope input");if(f)f.focus();},
+ "scope-cancel":()=>{S.ui.scopeDraft=null;render();const b=$("scope-propose");if(b)b.focus();},
+ "scope-send":()=>{const d=S.ui.scopeDraft,t=d?requestTitle(d):"";if(!t)return;S.scopeRequest={by:S.user,at:today(),title:t,draft:d};S.ui.scopeDraft=null;log("Requested a regulatory scope change: "+t,"Regulatory scope");render();toast("Sent for approval. Nothing changes until someone else approves it.");},
+ "scope-withdraw":()=>{const r=S.scopeRequest;if(!r||r.by!==S.user)return;S.scopeRequest=null;log("Withdrew the regulatory scope change: "+r.title,"Regulatory scope");render();toast("Withdrawn");},
  reset:()=>{S=seed();render();toast("Prototype reset");},
  "open-gap":el=>{closeModal();go({name:"gap",id:el.dataset.id});},
  "gap-tab":el=>{S.ui.gapTab=el.dataset.k;render();},
@@ -1064,6 +1147,9 @@ document.addEventListener("click",e=>{const el=e.target.closest("[data-act]");if
 document.addEventListener("change",e=>{const t=e.target;
  if(t.dataset.bind){S.ui[t.dataset.bind]=t.value;render();}
  else if(t.dataset.bindLive){S.ui[t.dataset.bindLive]=t.value;save();renderResults();}
+ else if(t.dataset.actChange==="scope-tick"){const a=S.ui.scopeDraft[t.dataset.k],v=t.dataset.v,i=a.indexOf(v);
+  if(t.checked){if(i<0)a.push(v);}else if(i>=0)a.splice(i,1);
+  render();const b=document.querySelector(`input[data-act-change="scope-tick"][data-k="${t.dataset.k}"][data-v="${v}"]`);if(b)b.focus();}
  else if(t.dataset.act==="action-toggle"){const c=ch(t.dataset.id),a=c.actions.find(x=>x.id===t.dataset.aid);a.done=t.checked;log((a.done?"Completed":"Reopened")+" action: "+a.title,c.title);render();}
  else if(t.dataset.actChange==="cstatus"){const o=obl(t.dataset.id),eid=t.dataset.ent||"",v=t.value;render();modal(`<h2 style="margin-bottom:4px">Record the assessment</h2><p class="meta" style="margin-bottom:12px"><span class="pill ${CSTATUS[v][1]}">${CSTATUS[v][0]}</span>${eid?`<span>${esc(ent(eid).name)}</span>`:""}</p><div class="field"><label for="as-method">How was it assessed</label><select id="as-method"><option>Self-assessment</option><option>Second-line review</option><option>Internal audit</option><option>External audit</option></select></div><div class="field"><label for="as-why">What it rests on</label><textarea id="as-why" placeholder="What was checked, and what was found"></textarea></div><div id="as-err" class="err" role="alert"></div><div class="bar"><button class="btn outline" data-act="modal-close">Cancel</button><button class="btn" data-act="assess-status-save" data-id="${o.id}" data-ent="${eid}" data-v="${v}">Save assessment</button></div>`);}
  else if(t.dataset.act==="gap-action-toggle"){const g=gapOf(t.dataset.id),a=g.actions.find(x=>x.id===t.dataset.aid);a.done=t.checked;log((a.done?"Completed":"Reopened")+" action: "+a.title,g.title);render();}
