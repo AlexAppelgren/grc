@@ -94,11 +94,17 @@ ADR (0026 to 0041), each reversible. These are the ones that need you.
 
 ### Legal, before any standard is seeded
 
-Nothing below was checked in the session that wrote PRD 0.3. **Every fact the
-standards analysis states about ISO, IAF, PCI SSC, Swift, SIS, DS, Standard
-Norge and SFS is unverified**, and no Verification log row claims otherwise.
-Task `f03-T34` in `docs/plans/briefs/FEATURES_0_3_TASKS.md` fetches and logs
-them, and nothing is seeded before it is green.
+`f03-T34` fetched these facts on 2026-09-19 and logged them in
+`docs/plans/Verification_Log.md`, section "PRD 0.3 standards facts". The
+questions below are still yours: they ask what the terms **allow us to do**,
+which no page answers. ISO's own terms could not be read at all (every
+`www.iso.org` URL answers HTTP 403), so the ECLA claims in the standards
+analysis stay unverified.
+
+The strictest terms we did read: SFS forbids developing or training AI with the
+content of standards; IEC and PCI SSC forbid derivative works; Standard Norge
+needs a paid reproduction agreement for any excerpt. All of them are consistent
+with D-35, which keeps clause and control text out of the library.
 
 - [ ] May the library store and show a standard edition's official title and our
       one-sentence conformance duty?
@@ -119,18 +125,34 @@ them, and nothing is seeded before it is green.
       standards licences and for any licensed material it uploads as evidence,
       plus a takedown process.
 
-### Outside facts still to fetch (none of them checked yet)
+### Outside facts: fetched, and the five that no site would give us
 
-These are the rows `f03-T34` must add to `docs/plans/Verification_Log.md`, each
-fetched rather than recalled: the current ISO/IEC 27001 edition, its stage and
-its amendment; the catalogue page and any per-standard feed; the Annex A
-exclusion rule; the IAF MD 26 transition dates; the ISO/IEC 17021-1
-certification cycle; ISO's systematic review cycle; the Nordic national
-adoptions; the PCI DSS version and its retirement practice; the Swift CSCF
-attestation window; and the licence and website terms of ISO, IAF, PCI SSC, SIS,
-DS, Standard Norge and SFS. The research reported blocked pages on some of
-these, and a row that cannot be fetched is logged as not verified, with the
-reason.
+`f03-T34` fetched every fact of `STANDARDS.md` section 9 on 2026-09-19 and wrote
+them into `docs/plans/Verification_Log.md` with their URLs. The ISO/IEC 27001
+edition and amendment, the Annex A rule, the IAF MD 26 transition dates, the
+Nordic adoptions, the PCI DSS version and its retirement practice, and the terms
+of IEC, PCI SSC, SIS, DS, Standard Norge, SFS and Global ACI are all verified
+there. Five are logged as **not verified**, each with its reason, and each one
+needs a person or a different route:
+
+- [ ] **ISO's licence terms and its text-and-data-mining reservation.** Every
+      `www.iso.org` URL answers HTTP 403, `robots.txt` included. Someone has to
+      read the ECLA and the site terms in a browser.
+- [ ] **ISO's systematic review cycle.** Same 403; `www.iec.ch` too. Nothing in
+      the product may schedule a review from an assumed cycle until this is read.
+- [ ] **The ISO stage code and the ISO catalogue page.** Same 403. The IEC
+      webstore serves the joint ISO/IEC catalogue instead, but gives a status
+      word, not a stage code, and offers no feed of any kind.
+- [ ] **ISO/IEC 17021-1's certification cycle.** Paid text. The three-year cycle
+      is logged from IAF MD 5, which governs QMS, EMS and OH&SMS, not ISMS.
+- [ ] **The Swift CSCF version and attestation window.** Every `swift.com` and
+      `www2.swift.com` URL answers HTTP 403. The Swift CSCF stays out of the seed.
+
+One fact worth knowing before the seed is written: **IAF no longer exists.**
+Global ACI took over the roles of IAF and ILAC on 1 January 2026, and IAF's
+mandatory documents stay valid only until equivalent Global ACI documents are
+adopted. The ISO/IEC 27001:2022 transition MD 26 describes ended on
+31 October 2025.
 - [ ] Agent definitions are read at seed time by a small reader in `backend/apps/agents/seeds/definition.py` instead of PyYAML, because PyYAML is a development dependency, the image installs `--only main`, and `seed_reference` runs on every deploy; changing dependencies was outside the package. It reads the five scalar fields the `agent` row needs and refuses anything else, and a test parses the same file with PyYAML and demands the two agree. Say the word and PyYAML moves to the main dependencies, after which the reader is deleted and the seed loads the whole definition — which is what chunk 11 needs anyway, when tools, budgets and vocabularies become columns.
 
 ## Before the first bank tenant
