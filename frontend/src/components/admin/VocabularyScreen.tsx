@@ -105,7 +105,7 @@ function RenameForm({ list, row, isLibrary, onClose }: { list: string; row: Voca
       <div className="grid gap-1.5" data-rename-proposed="">
         <StatusLine tone="positive">{t('admin.vocabularies.proposed', { title: proposed })}</StatusLine>
         <ButtonBar>
-          <Button variant="ghost" size="small" onClick={onClose}>
+          <Button variant="outline" size="small" onClick={onClose}>
             {t('common.done')}
           </Button>
         </ButtonBar>
@@ -124,7 +124,7 @@ function RenameForm({ list, row, isLibrary, onClose }: { list: string; row: Voca
       <small className="text-meta text-muted">{t('admin.vocabularies.keyKept', { key: row.key })}</small>
       {update.isError ? <ProblemAlert error={update.error} /> : null}
       <ButtonBar>
-        <Button variant="ghost" size="small" onClick={onClose} disabled={update.isPending}>
+        <Button variant="outline" size="small" onClick={onClose} disabled={update.isPending}>
           {t('common.cancel')}
         </Button>
         <Button type="submit" size="small" disabled={update.isPending}>
@@ -187,8 +187,8 @@ function ValueRow({
     <div
       className={
         row.active
-          ? 'grid grid-cols-[auto_1fr] items-start gap-x-3 gap-y-2 rounded-m border border-line bg-surface px-4 py-3.5 md:grid-cols-[auto_1fr_auto]'
-          : 'grid grid-cols-[auto_1fr] items-start gap-x-3 gap-y-2 rounded-m border border-dashed border-line bg-surface px-4 py-3.5 opacity-60 md:grid-cols-[auto_1fr_auto]'
+          ? 'grid grid-cols-[auto_1fr] items-start gap-x-3 gap-y-2 rounded-card border border-line bg-surface px-4 py-3 md:grid-cols-[auto_1fr_auto]'
+          : 'grid grid-cols-[auto_1fr] items-start gap-x-3 gap-y-2 rounded-card border border-dashed border-line bg-surface px-4 py-3 opacity-60 md:grid-cols-[auto_1fr_auto]'
       }
       data-value-key={row.key}
       data-value-active={row.active ? '' : undefined}
@@ -235,7 +235,7 @@ function ValueRow({
         <div className="col-span-2 md:col-span-1">
           <ButtonBar className="mt-0">
             {!row.active ? (
-              <Button variant="ghost" size="small" disabled={restore.isPending} onClick={() => restore.mutate(row.key)}>
+              <Button variant="outline" size="small" disabled={restore.isPending} onClick={() => restore.mutate(row.key)}>
                 {t('admin.vocabularies.restore')}
               </Button>
             ) : (
@@ -246,11 +246,11 @@ function ValueRow({
                   </Button>
                 )}
                 {row.isSystem ? null : (
-                  <Button variant="ghost" size="small" onClick={() => onMerge(row)}>
+                  <Button variant="outline" size="small" onClick={() => onMerge(row)}>
                     {t('admin.vocabularies.mergeInto')}
                   </Button>
                 )}
-                <Button variant="ghost" size="small" onClick={() => onEdit(row.key)}>
+                <Button variant="outline" size="small" onClick={() => onEdit(row.key)}>
                   {t('admin.vocabularies.rename')}
                 </Button>
               </>
@@ -278,7 +278,7 @@ function RetireDialog({ list, row, onClose }: { list: string; row: VocabularyRow
     >
       {retire.isError ? <ProblemAlert error={retire.error} codes={{ [IN_USE_CODE]: t('admin.vocabularies.retireBodyUsed', { count: row.usageCount }) }} /> : null}
       <ButtonBar>
-        <Button variant="ghost" onClick={onClose} disabled={retire.isPending}>
+        <Button variant="outline" onClick={onClose} disabled={retire.isPending}>
           {t('common.cancel')}
         </Button>
         <Button variant="danger" disabled={retire.isPending} onClick={() => retire.mutate({ key: row.key, confirm: true }, { onSuccess: onClose })}>
@@ -314,7 +314,7 @@ function MergeDialog({ list, row, targets, onClose }: { list: string; row: Vocab
       title={t('admin.vocabularies.mergeTitle', { label: row.label })}
     >
       <Field id="merge-into" label={t('admin.vocabularies.mergeKeep')}>
-        <select id="merge-into" className="w-full min-h-11 rounded-s border border-line-strong bg-surface px-3 py-2" value={into} onChange={(e) => runPreview(e.target.value)}>
+        <select id="merge-into" className="h-9 w-full rounded-control border border-line-strong bg-surface px-2.5" value={into} onChange={(e) => runPreview(e.target.value)}>
           {targets.map((candidate) => (
             <option key={candidate.key} value={candidate.key}>
               {candidate.label}
@@ -327,7 +327,7 @@ function MergeDialog({ list, row, targets, onClose }: { list: string; row: Vocab
         <StatusLine tone="positive">{t('admin.vocabularies.proposed', { title: proposed })}</StatusLine>
       ) : (
         <>
-          <Panel sand title={t('admin.vocabularies.mergeWhatHappens')} data-merge-preview="">
+          <Panel title={t('admin.vocabularies.mergeWhatHappens')} data-merge-preview="">
             {preview.isPending ? (
               <StatusLine>{t('common.loading')}</StatusLine>
             ) : moved === undefined ? (
@@ -346,7 +346,7 @@ function MergeDialog({ list, row, targets, onClose }: { list: string; row: Vocab
       )}
 
       <ButtonBar>
-        <Button variant="ghost" onClick={onClose} disabled={merge.isPending}>
+        <Button variant="outline" onClick={onClose} disabled={merge.isPending}>
           {proposed === null ? t('common.cancel') : t('common.done')}
         </Button>
         {proposed === null ? (
@@ -457,7 +457,7 @@ function AddDialog({ list, isLibrary, onClose }: { list: string; isLibrary: bool
             <div role="alert" className="mt-2.5 grid gap-1.5" data-near-duplicate="">
               <p className="text-meta text-negative">{t('admin.vocabularies.didYouMean', { label: candidates[0]?.label ?? '' })}</p>
               <ButtonBar className="mt-0">
-                <Button variant="ghost" size="small" onClick={() => submit(true)} disabled={create.isPending}>
+                <Button variant="outline" size="small" onClick={() => submit(true)} disabled={create.isPending}>
                   {t('admin.vocabularies.addAnyway')}
                 </Button>
                 <Button
@@ -476,7 +476,7 @@ function AddDialog({ list, isLibrary, onClose }: { list: string; isLibrary: bool
           ) : null}
 
           <ButtonBar>
-            <Button variant="ghost" onClick={onClose} disabled={create.isPending}>
+            <Button variant="outline" onClick={onClose} disabled={create.isPending}>
               {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={create.isPending}>

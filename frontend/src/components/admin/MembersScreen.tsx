@@ -29,7 +29,7 @@ function MemberRow({ member }: { member: Member }) {
   const t = useT();
   const ctx = useFormatContext();
   return (
-    <Link href={`/admin/members/${member.userId}`} className="block rounded-m border border-line bg-surface px-4.5 py-4 no-underline hover:border-fg" data-member-id={member.userId}>
+    <Link href={`/admin/members/${member.userId}`} className="block rounded-card border border-line bg-surface px-4 py-3 no-underline hover:hover-fill" data-member-id={member.userId}>
       <h3 className="mb-1 font-semibold">{member.name}</h3>
       <div className="mb-1.5">
         <PillRow pills={presentMember(member, t)} />
@@ -67,7 +67,7 @@ function InvitationRow({ invitation }: { invitation: Invitation }) {
       {resend.isSuccess ? <StatusLine tone="positive">{t('admin.members.resent')}</StatusLine> : null}
       {open ? (
         <ButtonBar>
-          <Button variant="ghost" size="small" disabled={revoke.isPending} onClick={() => revoke.mutate(invitation.id)}>
+          <Button variant="outline" size="small" disabled={revoke.isPending} onClick={() => revoke.mutate(invitation.id)}>
             {t('admin.members.revoke')}
           </Button>
           <Button size="small" disabled={resend.isPending} onClick={() => resend.mutate(invitation.id)}>
@@ -140,7 +140,7 @@ function InviteModal({ open, onClose, onSent }: { open: boolean; onClose: () => 
         </CheckGroup>
         {invite.isError ? <ProblemAlert error={invite.error} /> : null}
         <ButtonBar>
-          <Button variant="ghost" onClick={onClose} disabled={invite.isPending}>
+          <Button variant="outline" onClick={onClose} disabled={invite.isPending}>
             {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={invite.isPending}>

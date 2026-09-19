@@ -105,7 +105,7 @@ function ConfirmedAction({
       <ButtonBar>
         {confirming ? (
           <>
-            <Button variant="ghost" size="small" onClick={() => setConfirming(false)}>
+            <Button variant="outline" size="small" onClick={() => setConfirming(false)}>
               {t('common.cancel')}
             </Button>
             <Button

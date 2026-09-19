@@ -11,8 +11,8 @@ import type { Surface } from '@/shared/navigation/registry';
 // The shell on shadcn's Sidebar structure (ADR 0020 amendment 2026-09-19):
 // SidebarProvider holds the open state (persisted, ctrl/cmd+b), the rail
 // collapses to icons on desktop and becomes an off-canvas sheet on phones,
-// and SidebarInset is the page. Main keeps the prototype's measure (1100px)
-// and padding.
+// and SidebarInset is the page. Main takes foundations.md's measure: 1200px,
+// left aligned beside the rail, 24 / 32px padding (12 / 16px on phones).
 export function AppShell({ surface, children }: { surface: Surface; children: ReactNode }) {
   const t = useT();
   return (
@@ -25,7 +25,7 @@ export function AppShell({ surface, children }: { surface: Surface; children: Re
       </a>
       <AppSidebar surface={surface} />
       <SidebarInset id="main" tabIndex={-1} className="outline-none">
-        <div className="w-full max-w-[1100px] px-4 pt-4 pb-16 md:px-9 md:pt-8">
+        <div className="w-full max-w-[1200px] px-4 pt-3 pb-16 md:px-8 md:pt-6">
           <MobileHeader />
           {children}
         </div>

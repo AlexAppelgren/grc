@@ -169,7 +169,7 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
       {values.isError ? (
         <div role="alert" className="flex flex-wrap items-center gap-2">
           <span className="text-meta text-negative">{t('picker.error')}</span>
-          <Button variant="ghost" size="small" onClick={() => void values.refetch()}>
+          <Button variant="outline" size="small" onClick={() => void values.refetch()}>
             {t('common.tryAgain')}
           </Button>
         </div>
@@ -197,14 +197,14 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
             onKeyDown={onKeyDown}
           />
           {open && query.trim() !== '' ? (
-            <ul id={listboxId} role="listbox" aria-label={t('picker.options')} className="absolute z-20 mt-1 grid w-full list-none gap-0 rounded-m border border-line bg-surface p-1 shadow-lg">
+            <ul id={listboxId} role="listbox" aria-label={t('picker.options')} className="absolute z-20 mt-1 grid w-full list-none gap-0 rounded-card border border-line bg-surface p-1 shadow-lg">
               {matches.map((row, index) => (
                 <li
                   key={row.key}
                   id={`${id}-option-${index}`}
                   role="option"
                   aria-selected={index === active}
-                  className={cn('cursor-pointer rounded-s px-2.5 py-2', index === active && 'bg-surface-2')}
+                  className={cn('cursor-pointer rounded-control px-2 py-1.5', index === active && 'bg-neutral-soft')}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => choose(index)}
                   data-picker-option={row.key}
@@ -219,7 +219,7 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
                   id={`${id}-option-${matches.length}`}
                   role="option"
                   aria-selected={active === matches.length}
-                  className={cn('cursor-pointer rounded-s px-2.5 py-2', active === matches.length && 'bg-surface-2')}
+                  className={cn('cursor-pointer rounded-control px-2 py-1.5', active === matches.length && 'bg-neutral-soft')}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => choose(matches.length)}
                   data-picker-last={last}
@@ -234,7 +234,7 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
       )}
 
       {expanded ? (
-        <div className="rounded-m border border-sand-2 bg-sand p-4" data-picker-create="">
+        <div className="rounded-card border border-line bg-surface p-4" data-picker-create="">
           <Field id={`${id}-create-label`} label={t('admin.vocabularies.label')}>
             <TextInput id={`${id}-create-label`} value={draftLabel} autoFocus onChange={(e) => setDraftLabel(e.target.value)} />
           </Field>
@@ -244,7 +244,7 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
           {refused !== null && refused[0] !== undefined ? (
             <div role="alert" className="flex flex-wrap items-center gap-2" data-near-duplicate="">
               <span className="text-meta text-negative">{t('picker.alreadyExists', { label: refused[0].label })}</span>
-              <Button variant="ghost" size="small" onClick={() => pick(refused[0] as { key: string })}>
+              <Button variant="outline" size="small" onClick={() => pick(refused[0] as { key: string })}>
                 {t('picker.useExisting', { label: refused[0].label })}
               </Button>
             </div>
@@ -252,7 +252,7 @@ export function VocabularyPicker({ list, tier, label, value, onChange }: Vocabul
             <ProblemAlert error={create.error} />
           ) : null}
           <ButtonBar>
-            <Button variant="ghost" size="small" onClick={reset} disabled={create.isPending}>
+            <Button variant="outline" size="small" onClick={reset} disabled={create.isPending}>
               {t('common.cancel')}
             </Button>
             <Button size="small" onClick={submitCreate} disabled={create.isPending || draftLabel.trim() === ''}>

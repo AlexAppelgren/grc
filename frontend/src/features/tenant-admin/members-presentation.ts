@@ -11,7 +11,8 @@ const ORDER = { kind: 5, roles: 10, scopes: 10, status: 50 } as const;
 
 export type MemberFacts = Pick<Member, 'status' | 'roles'>;
 export type InvitationFacts = Pick<Invitation, 'kind' | 'roles' | 'status'>;
-export type RoleFacts = Pick<TenantRole, 'isSystem' | 'active'>;
+// The roles list returns active roles only, so a role row has no retired state.
+export type RoleFacts = Pick<TenantRole, 'isSystem'>;
 export type ApiKeyFacts = Pick<ApiKey, 'scopes' | 'revokedAt' | 'expiresAt'>;
 export type LoginEventFacts = Pick<LoginEvent, 'event' | 'success'>;
 
@@ -67,10 +68,7 @@ export function presentInvitation(invitation: InvitationFacts, t: Translate): Pr
 }
 
 export function presentRole(role: RoleFacts, t: Translate): PresentedPill[] {
-  const pills: PresentedPill[] = [];
-  if (role.isSystem) pills.push({ key: 'role:system', label: t('admin.roles.systemRole'), tone: 'information', order: ORDER.kind });
-  if (!role.active) pills.push({ key: 'role:retired', label: t('admin.roles.retired'), tone: 'information', order: ORDER.status });
-  return pills;
+  return role.isSystem ? [{ key: 'role:system', label: t('admin.roles.systemRole'), tone: 'information', order: ORDER.kind }] : [];
 }
 
 // `cases.signoff` reads "cases signoff", `search:read` reads "search read":

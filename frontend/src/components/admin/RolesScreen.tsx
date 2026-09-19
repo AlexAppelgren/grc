@@ -112,7 +112,7 @@ function RoleForm({ editing, onClose }: { editing: NonNullable<Editing>; onClose
         )}
         {error !== null && error !== undefined ? <ProblemAlert error={error} codes={{ step_up_required: t('problem.stepUpCancelled') }} /> : null}
         <ButtonBar>
-          <Button variant="ghost" onClick={onClose} disabled={pending}>
+          <Button variant="outline" onClick={onClose} disabled={pending}>
             {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={pending}>
@@ -146,33 +146,31 @@ function RoleRow({ role, onEdit }: { role: TenantRole; onEdit: (editing: Editing
       </div>
       {retire.isError ? <ProblemAlert error={retire.error} /> : null}
       {confirming ? <StatusLine>{t('admin.roles.retireConfirm')}</StatusLine> : null}
-      {role.active ? (
-        <ButtonBar>
-          {role.isSystem ? (
-            <Button variant="ghost" size="small" onClick={() => onEdit({ mode: 'rename', role })}>
-              {t('admin.roles.rename')}
+      <ButtonBar>
+        {role.isSystem ? (
+          <Button variant="outline" size="small" onClick={() => onEdit({ mode: 'rename', role })}>
+            {t('admin.roles.rename')}
+          </Button>
+        ) : confirming ? (
+          <>
+            <Button variant="outline" size="small" onClick={() => setConfirming(false)}>
+              {t('common.cancel')}
             </Button>
-          ) : confirming ? (
-            <>
-              <Button variant="ghost" size="small" onClick={() => setConfirming(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button variant="danger" size="small" disabled={retire.isPending} onClick={() => retire.mutate(role.key, { onSettled: () => setConfirming(false) })}>
-                {t('admin.roles.retire')}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="danger" size="small" onClick={() => setConfirming(true)}>
-                {t('admin.roles.retire')}
-              </Button>
-              <Button variant="ghost" size="small" onClick={() => onEdit({ mode: 'edit', role })}>
-                {t('admin.roles.edit')}
-              </Button>
-            </>
-          )}
-        </ButtonBar>
-      ) : null}
+            <Button variant="danger" size="small" disabled={retire.isPending} onClick={() => retire.mutate(role.key, { onSettled: () => setConfirming(false) })}>
+              {t('admin.roles.retire')}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="danger" size="small" onClick={() => setConfirming(true)}>
+              {t('admin.roles.retire')}
+            </Button>
+            <Button variant="outline" size="small" onClick={() => onEdit({ mode: 'edit', role })}>
+              {t('admin.roles.edit')}
+            </Button>
+          </>
+        )}
+      </ButtonBar>
     </Row>
   );
 }

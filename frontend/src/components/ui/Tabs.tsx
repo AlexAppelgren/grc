@@ -15,7 +15,7 @@ export interface TabDef {
 
 export function Tabs({ tabs, current, onSelect }: { tabs: readonly TabDef[]; current: string; onSelect: (id: string) => void }) {
   return (
-    <div role="tablist" className="mb-5 flex flex-wrap gap-1 border-b border-line">
+    <div role="tablist" className="mb-4 flex flex-wrap gap-1 border-b border-line">
       {tabs.map((tab) => {
         const selected = tab.id === current;
         return (
@@ -27,7 +27,7 @@ export function Tabs({ tabs, current, onSelect }: { tabs: readonly TabDef[]; cur
             aria-selected={selected}
             aria-controls={`panel-${tab.id}`}
             onClick={() => onSelect(tab.id)}
-            className={cn('-mb-px border-b-2 px-3.5 py-2.5 font-semibold whitespace-nowrap', selected ? 'border-fg text-fg' : 'border-transparent text-muted hover:text-fg')}
+            className={cn('-mb-px border-b-2 px-2.5 py-2 font-medium whitespace-nowrap', selected ? 'border-fg text-fg' : 'border-transparent text-muted hover:text-fg')}
           >
             {tab.label}
             {tab.badge === undefined ? null : <span className="ml-1.5 text-meta text-muted">{tab.badge}</span>}

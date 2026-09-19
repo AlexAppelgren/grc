@@ -99,8 +99,8 @@ describe('SidebarProvider', () => {
     const { container } = renderRail();
     const wrapper = container.querySelector('[data-slot="sidebar-wrapper"]') as HTMLElement;
     expect(wrapper.style.getPropertyValue('--sidebar-width')).toBe('15rem');
-    expect(wrapper.style.getPropertyValue('--sidebar-width-icon')).toBe('3.25rem');
-    expect(wrapper.style.getPropertyValue('--sidebar-width-mobile')).toBe('17rem');
+    expect(wrapper.style.getPropertyValue('--sidebar-width-icon')).toBe('3rem');
+    expect(wrapper.style.getPropertyValue('--sidebar-width-mobile')).toBe('17.5rem');
     expect(rail()).toHaveAttribute('data-collapsible', '');
 
     fireEvent.click(trigger());
@@ -191,6 +191,7 @@ describe('SidebarMenuButton', () => {
     expect(button).toHaveAttribute('type', 'button');
     expect(button).toHaveAttribute('data-active', 'true');
     expect(button.className).toContain('rounded-md');
+    expect(button.className).toContain('h-8');
     expect(button.className).toContain('data-[active=true]:font-medium');
     expect(button.className).not.toContain('rounded-full');
   });
@@ -206,7 +207,7 @@ describe('SidebarMenuButton', () => {
     const link = screen.getByRole('link', { name: 'Watch' });
     expect(link).toHaveAttribute('data-active', 'false');
     expect(link).not.toHaveAttribute('type');
-    expect(link.className).toContain('h-8');
+    expect(link.className).toContain('h-7');
   });
 
   it('shows its tooltip only while the rail is collapsed', async () => {

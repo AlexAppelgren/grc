@@ -51,7 +51,7 @@ function ReopenLink() {
       </h1>
       <p className="mb-5 text-muted">{t('auth.code.reopenLink')}</p>
       <ButtonBar>
-        <Link href="/sign-in" className="inline-flex min-h-11 items-center rounded-full border border-line-strong px-5 py-2.5 font-semibold no-underline">
+        <Link href="/sign-in" className="inline-flex h-9 items-center rounded-control border border-line-control bg-surface px-4 font-medium no-underline hover:hover-fill">
           {t('auth.invitation.goToSignIn')}
         </Link>
       </ButtonBar>
@@ -150,7 +150,7 @@ function CodeStep({ invitationToken, onVerified }: { invitationToken: string | n
         {/* The sign-in path says the same sentence whatever the server did: an enrolled address learns nothing (AC-ID1). */}
         {sentOnce ? <StatusLine>{invitationToken === null ? t('auth.code.neutral') : t('auth.code.resent')}</StatusLine> : null}
         <ButtonBar>
-          <Button variant="ghost" onClick={sendNew} disabled={requestCode.isPending || reopen.isPending || gone}>
+          <Button variant="outline" onClick={sendNew} disabled={requestCode.isPending || reopen.isPending || gone}>
             {t('auth.code.sendNew')}
           </Button>
           <Button type="submit" disabled={verify.isPending || locked || gone}>
@@ -196,7 +196,7 @@ function PasskeyStep({ second, onRegistered, onSessionEnded }: { second: boolean
         {register.isPending ? <StatusLine>{t('auth.enrol.waitingHint')}</StatusLine> : null}
         <ButtonBar>
           {ended ? (
-            <Button variant="ghost" onClick={onSessionEnded}>
+            <Button variant="outline" onClick={onSessionEnded}>
               {t('auth.enrol.backToCode')}
             </Button>
           ) : null}
@@ -212,7 +212,7 @@ function PasskeyStep({ second, onRegistered, onSessionEnded }: { second: boolean
 function SecondStep({ added, onSkip, onAdd }: { added: string; onSkip: () => void; onAdd: () => void }) {
   const t = useT();
   return (
-    <AuthPanel aria-labelledby="second-title" className="border-sand-2 bg-sand">
+    <AuthPanel aria-labelledby="second-title">
       <StepKicker>{t('auth.enrol.step3')}</StepKicker>
       <h1 id="second-title" className="mb-2">
         {t('auth.enrol.secondTitle')}
@@ -220,7 +220,7 @@ function SecondStep({ added, onSkip, onAdd }: { added: string; onSkip: () => voi
       <StatusLine tone="positive">{t('auth.enrol.added', { name: added })}</StatusLine>
       <p className="mt-2 mb-5 text-muted">{t('auth.enrol.secondLede')}</p>
       <ButtonBar>
-        <Button variant="ghost" onClick={onSkip}>
+        <Button variant="outline" onClick={onSkip}>
           {t('auth.enrol.skip')}
         </Button>
         <Button onClick={onAdd}>{t('auth.enrol.addAnother')}</Button>

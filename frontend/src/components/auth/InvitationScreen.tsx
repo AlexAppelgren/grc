@@ -76,7 +76,7 @@ export function InvitationScreen() {
             {gone ? t('auth.invitation.expired') : t('auth.invitation.error')}
           </p>
           <ButtonBar>
-            <Link href="/sign-in" className="inline-flex min-h-11 items-center rounded-full border border-line-strong px-5 py-2.5 font-semibold no-underline">
+            <Link href="/sign-in" className="inline-flex h-9 items-center rounded-control border border-line-control bg-surface px-4 font-medium no-underline hover:hover-fill">
               {t('auth.invitation.goToSignIn')}
             </Link>
             {gone ? null : <Button onClick={() => mutate(token)}>{t('common.tryAgain')}</Button>}

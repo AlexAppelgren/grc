@@ -14,7 +14,7 @@ import { changes, complianceStatuses, gapStatuses, gaps, obligations, roadmapIte
 // whichever theme the visitor uses.
 
 function Record({ children }: { children: React.ReactNode }) {
-  return <div className="mb-2.5 rounded-m border border-line bg-surface px-4 py-3.5">{children}</div>;
+  return <div className="mb-2 rounded-card border border-line bg-surface px-4 py-3">{children}</div>;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

@@ -78,7 +78,7 @@ export function StepUpProvider({ children }: { children: ReactNode }) {
         {error !== null ? <ProblemAlert error={error} codes={{}} className="mt-2.5 text-meta text-negative" /> : null}
         {error !== null ? <p className="mt-1 text-meta text-muted">{t('stepUp.refused')}</p> : null}
         <ButtonBar>
-          <Button variant="ghost" onClick={() => finish(false)} disabled={stepUp.isPending}>
+          <Button variant="outline" onClick={() => finish(false)} disabled={stepUp.isPending}>
             {t('stepUp.cancel')}
           </Button>
           <Button onClick={() => void confirm()} disabled={stepUp.isPending}>

@@ -13,20 +13,22 @@ export interface PillProps {
   children: ReactNode;
 }
 
-// The one pill component (playbook 6.7). Shape from the prototype: fully
-// rounded, 2px by 10px padding, 600 weight, the `meta` type role. Colours are
-// the token pair of the tone, read at render time so light and dark follow
-// the tokens. No className, no colour prop.
+// The one pill component (playbook 6.7). Shape from foundations.md (shadcn's
+// Badge): fully rounded, 20px tall, 8px side padding, the `meta` role at 500,
+// no border. Colours are the token pair of the tone. The background is
+// light-dark(), which follows the nearest theme class through color-scheme
+// (theme.css), so a .dark swatch inside a light page still gets the dark
+// step. No className, no colour prop.
 export function Pill({ tone, outlined = false, children }: PillProps) {
-  const { background, text } = pillTones[tone];
+  const { background, darkBackground, text } = pillTones[tone];
   const style: CSSProperties = outlined
     ? { color: `var(${text})`, background: 'transparent', boxShadow: `inset 0 0 0 1px var(${text})` }
-    : { color: `var(${text})`, background: `var(${background})` };
+    : { color: `var(${text})`, background: `light-dark(var(${background}), var(${darkBackground}))` };
   return (
     <span
       data-pill={tone}
       data-outlined={outlined ? '' : undefined}
-      className="inline-block rounded-full px-2.5 py-0.5 text-meta font-semibold whitespace-nowrap"
+      className="inline-flex h-5 items-center rounded-full px-2 text-meta font-medium whitespace-nowrap"
       style={style}
     >
       {children}

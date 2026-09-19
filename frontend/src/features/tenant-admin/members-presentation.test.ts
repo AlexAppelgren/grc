@@ -59,10 +59,9 @@ describe('presentInvitation', () => {
 });
 
 describe('presentRole and presentPermissions', () => {
-  it('flags system and retired roles as neutral facts', () => {
-    expect(presentRole({ isSystem: true, active: true }, t)).toEqual([{ key: 'role:system', label: 'System role', tone: 'information', order: 5 }]);
-    expect(presentRole({ isSystem: false, active: false }, t).map((p) => p.label)).toEqual(['Retired']);
-    expect(presentRole({ isSystem: false, active: true }, t)).toEqual([]);
+  it('flags a system role as a neutral fact', () => {
+    expect(presentRole({ isSystem: true }, t)).toEqual([{ key: 'role:system', label: 'System role', tone: 'information', order: 5 }]);
+    expect(presentRole({ isSystem: false }, t)).toEqual([]);
   });
 
   it('renders permissions as their grant name in plain words', () => {

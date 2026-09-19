@@ -10,7 +10,7 @@ import { cn } from '@/shared/utils/cn';
 
 export function Swatch({ scheme, className, children }: { scheme: 'light' | 'dark'; className?: string; children: ReactNode }) {
   return (
-    <span className={cn(scheme, 'inline-flex items-center rounded-s border border-line bg-page px-1.5 py-1', className)} data-swatch={scheme}>
+    <span className={cn(scheme, 'inline-flex items-center rounded-control border border-line bg-page px-1.5 py-1', className)} data-swatch={scheme}>
       {children}
     </span>
   );

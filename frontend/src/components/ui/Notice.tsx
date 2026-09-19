@@ -10,15 +10,17 @@ import { cn } from '@/shared/utils/cn';
 
 export type NoticeTone = 'plain' | 'warn' | 'bad';
 
+// A tone fill with no coloured edge (foundations.md "banner"); the border
+// stays transparent so every banner keeps the same box.
 const border: Record<NoticeTone, string> = {
-  plain: 'border-line bg-surface-2',
-  warn: 'border-warning bg-warning-soft',
-  bad: 'border-negative bg-negative-soft',
+  plain: 'border-transparent bg-subtle',
+  warn: 'border-transparent bg-warning-soft',
+  bad: 'border-transparent bg-negative-soft',
 };
 
 export function Notice({ tone = 'plain', children, className, ...rest }: { tone?: NoticeTone; children: ReactNode } & Omit<HTMLAttributes<HTMLDivElement>, 'role'>) {
   return (
-    <div role={tone === 'bad' ? 'alert' : 'status'} data-notice={tone} className={cn('mb-4 rounded-m border p-4', border[tone], className)} {...rest}>
+    <div role={tone === 'bad' ? 'alert' : 'status'} data-notice={tone} className={cn('mb-4 rounded-control border px-3 py-2.5', border[tone], className)} {...rest}>
       {children}
     </div>
   );

@@ -84,14 +84,6 @@
   --gds-sys-color-state-brand-02-2: rgba(217, 203, 169, 0.12);
   --gds-sys-color-state-brand-02-3: rgba(217, 203, 169, 0.18);
 
-  /* Accessibility exception, not a brand value: Green's own dark negative
-     pill pair (content-negative-01 #f08975 on l3-negative-02 #731d0c) measures
-     4.47:1, just under WCAG AA 4.5:1 for the pill's 13.6px/600 text. The
-     background is deepened one step (#6a1a0b, 4.84:1) so the `negative` tone
-     passes contrast.test.ts without changing the card's token pair. Remove
-     when Green ships a passing value. */
-  --gds-sys-color-l3-negative-02: #6a1a0b;
-
   --bleqq-accent: var(--gds-sys-color-content-brand-02);
   --bleqq-on-brand: #ffffff;
   --bleqq-on-brand-muted: rgba(255, 255, 255, 0.75);

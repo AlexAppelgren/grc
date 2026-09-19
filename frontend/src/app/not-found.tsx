@@ -4,7 +4,7 @@ import { NotFoundScreen } from '@/components/ui/States';
 // (playbook 4.4): never the Restricted screen.
 export default function NotFound() {
   return (
-    <div className="mx-auto max-w-[1100px] px-4 py-8">
+    <div className="mx-auto max-w-[1200px] px-4 py-8">
       <NotFoundScreen />
     </div>
   );

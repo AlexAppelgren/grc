@@ -19,7 +19,7 @@ export function AdminIndexScreen() {
       <PageHead title={t('admin.title')} lede={t('admin.lede')} />
       <Rows>
         {sections.map((d) => (
-          <Link key={d.id} href={d.href} className="block rounded-m border border-line bg-surface px-4.5 py-4 font-semibold no-underline hover:border-fg" data-admin-section={d.id}>
+          <Link key={d.id} href={d.href} className="block rounded-card border border-line bg-surface px-4 py-3 font-medium no-underline hover:hover-fill" data-admin-section={d.id}>
             {t(d.labelKey)}
           </Link>
         ))}

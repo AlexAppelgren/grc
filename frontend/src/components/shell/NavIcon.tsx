@@ -21,7 +21,7 @@ const DOT: readonly string[] = ['M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0'];
 
 export function NavIcon({ id }: { id: string }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-[18px] shrink-0 fill-none stroke-current stroke-[1.6] [stroke-linecap:round] [stroke-linejoin:round]">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4 shrink-0 fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round]">
       {(ICONS[id] ?? DOT).map((d) => (
         <path key={d} d={d} />
       ))}

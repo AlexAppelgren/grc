@@ -21,7 +21,7 @@ describe('Button and ButtonBar', () => {
   it('renders the variants and sizes as a button of type button by default', () => {
     render(
       <ButtonBar>
-        <Button variant="ghost" size="small">
+        <Button variant="outline" size="small">
           one
         </Button>
         <Button variant="danger">two</Button>
@@ -34,6 +34,23 @@ describe('Button and ButtonBar', () => {
     // The primary is last in DOM order, so it sits on the right (playbook 6.8).
     const buttons = screen.getAllByRole('button');
     expect(buttons.at(-1)).toHaveTextContent('three');
+  });
+
+  it('has the foundations shape: 36px, 6px radius, body at 500, never fully rounded', () => {
+    render(
+      <>
+        <Button>primary</Button>
+        <Button variant="outline">outline</Button>
+        <Button variant="ghost">ghost</Button>
+        <Button size="small">small</Button>
+      </>,
+    );
+    const primary = screen.getByRole('button', { name: 'primary' }).className;
+    for (const token of ['h-9', 'px-4', 'rounded-control', 'text-body', 'font-medium', 'bg-button']) expect(primary).toContain(token);
+    expect(primary).not.toContain('rounded-full');
+    expect(screen.getByRole('button', { name: 'outline' }).className).toContain('border-line-control');
+    expect(screen.getByRole('button', { name: 'ghost' }).className).toContain('border-transparent');
+    expect(screen.getByRole('button', { name: 'small' }).className).toContain('h-8');
   });
 });
 
@@ -95,11 +112,11 @@ describe('Field family', () => {
 });
 
 describe('Panel, Rows, Row, Meta', () => {
-  it('renders a titled panel, a sand panel and rows', () => {
+  it('renders a titled panel as a hairline card with no sand fill, and rows', () => {
     render(
       <>
         <Panel title="Profile">body</Panel>
-        <Panel sand>sand</Panel>
+        <Panel>card</Panel>
         <Rows>
           <Row>
             <Meta>meta</Meta>
@@ -108,7 +125,10 @@ describe('Panel, Rows, Row, Meta', () => {
       </>,
     );
     expect(screen.getByRole('heading', { name: 'Profile' })).toBeInTheDocument();
-    expect(screen.getByText('sand').className).toContain('bg-sand');
+    const card = screen.getByText('card').className;
+    expect(card).toContain('rounded-card');
+    expect(card).toContain('border-line');
+    expect(card).not.toContain('sand');
     expect(screen.getByText('meta')).toBeInTheDocument();
   });
 });

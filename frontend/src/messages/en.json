@@ -232,7 +232,6 @@
   "admin.roles.lede": "A role is a set of permissions. System roles can be renamed, not changed.",
   "admin.roles.create": "Create a role",
   "admin.roles.systemRole": "System role",
-  "admin.roles.retired": "Retired",
   "admin.roles.rename": "Rename",
   "admin.roles.edit": "Edit",
   "admin.roles.retire": "Retire",

@@ -16,6 +16,7 @@
     font-size: var(--text-body);
     line-height: var(--text-body--line-height);
     margin: 0;
+    -webkit-font-smoothing: antialiased;
   }
   h1,
   h2,
@@ -34,10 +35,17 @@
     font-weight: var(--text-title--font-weight);
     letter-spacing: var(--text-title--letter-spacing);
   }
+  /* foundations.md: display is 20/28 on phones (the md breakpoint, 768px). */
+  @media (width < 48rem) {
+    h1 {
+      font-size: 1.25rem;
+      line-height: 1.75rem;
+    }
+  }
   h3 {
     font-size: var(--text-body);
-    line-height: 1.2;
-    font-weight: 500;
+    line-height: var(--text-body--line-height);
+    font-weight: 600;
   }
   button,
   input,

@@ -7,7 +7,9 @@ import { cn } from '@/shared/utils/cn';
 // Prototype `.chip` and the footprint card's `.chip.off`
 // (design/screens/admin-footprint.html): a pressed chip is a term the
 // footprint holds; a struck one is a term a pending request is about to
-// switch off. A chip carries no tone, so it is not a pill.
+// switch off. A chip carries no tone, so it is not a pill. foundations.md
+// "Toggle": 32px, 12px sides, 6px radius, `body` at 500, so it never reads
+// as a pill.
 
 export function Chip({
   pressed,
@@ -31,8 +33,8 @@ export function Chip({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'min-h-9 rounded-full border px-3.5 py-1.5 text-meta font-semibold whitespace-nowrap disabled:cursor-default',
-        pressed ? 'border-fg bg-surface-2 text-fg' : 'border-line bg-transparent text-muted',
+        'inline-flex h-8 items-center rounded-control border px-3 text-body font-medium whitespace-nowrap disabled:cursor-default',
+        pressed ? 'border-line-strong bg-neutral-soft text-fg' : 'border-line-control bg-surface text-muted enabled:hover:text-fg',
         struck && 'line-through opacity-55',
       )}
     >

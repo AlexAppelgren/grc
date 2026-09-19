@@ -17,7 +17,7 @@ export function AuthFrame({ children }: { children: ReactNode }) {
 
 export function AuthPanel({ children, ...rest }: { children: ReactNode } & React.HTMLAttributes<HTMLElement>) {
   return (
-    <section className="rounded-m border border-line bg-surface p-6" {...rest}>
+    <section className="rounded-card border border-line bg-surface p-6" {...rest}>
       {children}
     </section>
   );

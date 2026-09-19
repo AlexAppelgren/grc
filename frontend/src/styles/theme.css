@@ -10,9 +10,10 @@
  * Type: the NAMED scale replaces the numbered one. --text-*: initial deletes
  * Tailwind's text-sm, text-lg and the rest so they generate nothing, and
  * eslint.config.js fails the build on any of them in a string literal. Values
- * come from the prototype CSS (design/prototype/index.html): body 16px/1.5,
- * h1 2rem/400, h2 1.25rem/500, meta .85rem, microlabel uppercase tracked.
- * Six roles, no seventh.
+ * are design/system/foundations.md (ADR 0020 amendment "Foundations",
+ * 2026-09-19): shadcn/ui's proportions on Green's colours. hero 36/40,
+ * display 24/32, title 16/24, body 14/20, meta 13/18, microlabel 11/16
+ * uppercase; weights 400, 500, 600. Six roles, no seventh.
  */
 @import 'tailwindcss';
 
@@ -27,7 +28,10 @@
   /* --- colour: replace, do not extend --- */
   --color-*: initial;
 
-  --color-page: var(--gds-sys-color-l1-neutral-02);
+  /* foundations.md "Colour": the page is white in light, so cards are drawn
+     by their hairline; subtle is the muted fill (banner, code block). */
+  --color-page: var(--gds-sys-color-l1-neutral-01);
+  --color-subtle: var(--subtle);
   --color-surface: var(--gds-sys-color-l2-neutral-02);
   --color-surface-2: var(--gds-sys-color-l2-neutral-02-2);
   --color-sand: var(--gds-sys-color-l2-brand-02);
@@ -44,9 +48,14 @@
   --color-on-brand-line: var(--bleqq-on-brand-line);
   --color-on-brand-hover: var(--bleqq-on-brand-hover);
 
-  --color-line: var(--gds-sys-color-border-neutral-02);
+  /* hairline: cards and dividers (quieter in dark, see --hairline below);
+     line-control: outline button, toggle, empty state; line-strong: the
+     input boundary, 3:1 against the surface (WCAG 1.4.11). */
+  --color-line: var(--hairline);
+  --color-line-control: var(--gds-sys-color-border-neutral-02);
   --color-line-strong: var(--gds-sys-color-border-neutral-01);
-  --color-focus: var(--gds-sys-color-border-notice-01);
+  --color-focus: var(--gds-sys-color-content-notice-01);
+  --color-hover: var(--gds-sys-color-state-neutral-05);
 
   --color-negative: var(--gds-sys-color-content-negative-01);
   --color-warning: var(--gds-sys-color-content-warning-01);
@@ -73,55 +82,63 @@
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-hover: var(--sidebar-hover);
 
   /* --- type: the named scale, replacing the numbered one --- */
   --text-*: initial;
 
-  --text-hero: 2.75rem;
-  --text-hero--line-height: 1.1;
-  --text-hero--font-weight: 400;
-  --text-hero--letter-spacing: -0.02em;
+  --text-hero: 2.25rem;
+  --text-hero--line-height: 2.5rem;
+  --text-hero--font-weight: 600;
+  --text-hero--letter-spacing: -0.025em;
 
-  --text-display: 2rem;
-  --text-display--line-height: 1.2;
-  --text-display--font-weight: 400;
-  --text-display--letter-spacing: -0.01em;
+  --text-display: 1.5rem;
+  --text-display--line-height: 2rem;
+  --text-display--font-weight: 600;
+  --text-display--letter-spacing: -0.02em;
 
-  --text-title: 1.25rem;
-  --text-title--line-height: 1.2;
-  --text-title--font-weight: 500;
+  --text-title: 1rem;
+  --text-title--line-height: 1.5rem;
+  --text-title--font-weight: 600;
   --text-title--letter-spacing: -0.01em;
 
-  --text-body: 1rem;
-  --text-body--line-height: 1.5;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
 
-  --text-meta: 0.85rem;
-  --text-meta--line-height: 1.4;
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.125rem;
 
   --font-sans: 'Hanken Grotesk Variable', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   --font-mono: 'Noto Sans Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  /* shadcn's rail uses `rounded-md` for the active row. Tailwind's own
-     --radius-md happens to be 6px, but a copied value is a copied value, so
-     it is remapped onto Green's 6px step (playbook 6.3). */
+  /* Radius by use (foundations.md "Radius"), each a Green step: controls
+     (button, input, toggle, nav row, banner) 6px, cards and list rows 8px,
+     dialogs and the sheet 12px, the pill fully rounded. The larger Green
+     steps are left out so a 16px card cannot come back. shadcn's rail uses
+     `rounded-md`, remapped onto the same 6px step. */
+  --radius-control: var(--gds-sys-radius-2xs);
+  --radius-card: var(--gds-sys-radius-xs);
+  --radius-overlay: var(--gds-sys-radius-s);
   --radius-md: var(--gds-sys-radius-2xs);
-
-  --radius-xs: var(--gds-sys-radius-xs);
-  --radius-s: var(--gds-sys-radius-s);
-  --radius-m: var(--gds-sys-radius-m);
-  --radius-l: var(--gds-sys-radius-l);
-  --radius-xl: var(--gds-sys-radius-xl);
   --radius-max: var(--gds-sys-radius-max);
 }
 
-/* The same register as meta, uppercase with tracking: eyebrows, column
-   heads, button labels (playbook 6.4). */
+/* Eyebrows, column heads, the "Drafted by AI" line: 11/16, uppercase,
+   tracked, 500 (foundations.md). Button labels are `body` at 500, sentence
+   case, as the ADR amendment records. */
 @utility microlabel {
-  font-size: var(--text-meta);
-  line-height: var(--text-meta--line-height);
-  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+/* Hover on any surface (foundations.md "hover"): Green's state-neutral-05
+   overlay painted as an image, so the surface underneath still shows. Used
+   as `hover:hover-fill`. */
+@utility hover-fill {
+  background-image: linear-gradient(var(--color-hover), var(--color-hover));
 }
 
 /*
@@ -133,8 +150,8 @@
  * token, so brand.css keeps every brand value.
  *
  * Light and dark pick a different surface on purpose. On light, the rail sits
- * one step above the page (l2-neutral-01 #f7f8f7 against l1-neutral-02
- * #f4f5f5) because a rail flush with a light page reads as unfinished. On
+ * one step below the white page (l2-neutral-01 #f7f8f7 against l1-neutral-01
+ * #ffffff, foundations.md) because a rail flush with it reads as unfinished. On
  * dark, it sits flush with the page (l1-neutral-02 #0a0b0b), because a
  * lighter rail there reads as a raised panel and loses the restraint; that is
  * what seb.io's own dark rail does. In both themes the hairline does the
@@ -144,7 +161,8 @@
  * overlay: the state tokens are rgba, and a translucent background cannot be
  * pinned by contrast.test.ts, which composites one pair of real colours.
  * l3-neutral-02 lands on #eaebeb light and #313533 dark, the latter the same
- * value seb.io uses for its own current item.
+ * value seb.io uses for its own current item. Hover is Green's state-neutral-05 overlay,
+ * and every text pair on it is pinned on the accent, which is darker.
  */
 :root,
 .light {
@@ -154,15 +172,28 @@
   --sidebar-border: var(--gds-sys-color-border-neutral-02);
   --sidebar-accent: var(--gds-sys-color-l3-neutral-02);
   --sidebar-accent-foreground: var(--gds-sys-color-content-neutral-01);
-  --sidebar-ring: var(--gds-sys-color-border-notice-01);
+  --sidebar-ring: var(--gds-sys-color-content-notice-01);
+  --sidebar-hover: var(--gds-sys-color-state-neutral-05);
+  --hairline: var(--gds-sys-color-border-neutral-02);
+  --subtle: var(--gds-sys-color-l1-neutral-02);
+  color-scheme: light;
 }
 
 .dark {
   --sidebar: var(--gds-sys-color-l1-neutral-02);
   --sidebar-foreground: var(--gds-sys-color-content-neutral-01);
   --sidebar-muted-foreground: var(--gds-sys-color-content-neutral-02);
-  --sidebar-border: var(--gds-sys-color-border-neutral-02);
+  --sidebar-border: var(--gds-sys-color-border-neutral-03);
   --sidebar-accent: var(--gds-sys-color-l3-neutral-02);
   --sidebar-accent-foreground: var(--gds-sys-color-content-neutral-01);
-  --sidebar-ring: var(--gds-sys-color-border-notice-01);
+  --sidebar-ring: var(--gds-sys-color-content-notice-01);
+  --sidebar-hover: var(--gds-sys-color-state-neutral-05);
+  /* One step quieter than light's hairline: -02 drew every dark card as a
+     box. Controls keep border-neutral-02 (line-control). */
+  --hairline: var(--gds-sys-color-border-neutral-03);
+  /* Dark l1-neutral-02 is the page itself, so the muted fill is l2-neutral-01. */
+  --subtle: var(--gds-sys-color-l2-neutral-01);
+  /* color-scheme follows the nearest theme class, so native controls and the
+     pill's light-dark() background (Pill.tsx) switch with a .dark wrapper. */
+  color-scheme: dark;
 }

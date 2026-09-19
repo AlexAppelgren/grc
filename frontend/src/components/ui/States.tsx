@@ -14,10 +14,10 @@ import { humanisePermission } from '@/shared/navigation/require-permission';
 export function LoadingState({ rows = 2 }: { rows?: number }) {
   const t = useT();
   return (
-    <div role="status" aria-busy="true" className="grid gap-2.5" data-loading-state="">
+    <div role="status" aria-busy="true" className="grid gap-2" data-loading-state="">
       <span className="sr-only">{t('common.loading')}</span>
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="h-[84px] rounded-m border border-line bg-surface-2" aria-hidden="true" />
+        <div key={i} className="h-[72px] rounded-card border border-line bg-subtle" aria-hidden="true" />
       ))}
     </div>
   );
@@ -26,11 +26,11 @@ export function LoadingState({ rows = 2 }: { rows?: number }) {
 export function ErrorState({ title, onRetry }: { title: string; onRetry?: () => void }) {
   const t = useT();
   return (
-    <div role="alert" className="rounded-m border border-dashed border-line-strong p-7 text-center text-muted" data-error-state="">
+    <div role="alert" className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-error-state="">
       <h2 className="text-fg">{title}</h2>
       <p className="mx-auto mt-2 max-w-[60ch]">{t('common.errorBody')}</p>
       {onRetry !== undefined ? (
-        <Button variant="ghost" size="small" className="mt-4" onClick={onRetry}>
+        <Button variant="outline" size="small" className="mt-4" onClick={onRetry}>
           {t('common.tryAgain')}
         </Button>
       ) : null}
@@ -46,7 +46,7 @@ export function NotFoundScreen({ body, backHref = '/', backLabel }: { body?: str
     <section className="mx-auto max-w-[60ch] py-16 text-center" data-not-found="">
       <h1>{t('notFound.title')}</h1>
       <p className="mt-3 text-muted">{body ?? t('notFound.body')}</p>
-      <Link href={backHref} className="mt-4 inline-block font-semibold underline">
+      <Link href={backHref} className="mt-4 inline-block font-medium underline">
         {backLabel ?? t('notFound.back')}
       </Link>
     </section>

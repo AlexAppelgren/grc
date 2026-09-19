@@ -33,9 +33,11 @@ import { cn } from '@/shared/utils/cn';
 // medium weight on data-[active=true], so the fully rounded shape stays
 // <Pill>'s alone (playbook 6.7).
 
+// foundations.md "Sidebar row": 240px, 48px collapsed (shadcn's 3rem), 280px
+// as a phone sheet.
 const WIDTH = '15rem';
-const WIDTH_ICON = '3.25rem';
-const WIDTH_MOBILE = '17rem';
+const WIDTH_ICON = '3rem';
+const WIDTH_MOBILE = '17.5rem';
 
 /**
  * localStorage, not shadcn's cookie: the API owns the cookie jar and its
@@ -191,10 +193,10 @@ export function SidebarTrigger({ className }: { className?: string }) {
       type="button"
       data-sidebar="trigger"
       aria-label={t('sidebar.toggle')}
-      className={cn('inline-flex size-9 items-center justify-center rounded-md text-fg hover:bg-sidebar-accent', className)}
+      className={cn('inline-flex size-8 items-center justify-center rounded-md text-fg hover:bg-sidebar-hover', className)}
       onClick={toggleSidebar}
     >
-      <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 fill-none stroke-current stroke-[1.7] [stroke-linecap:round]">
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4 fill-none stroke-current stroke-[1.75] [stroke-linecap:round]">
         <path d="M4 6h16M4 12h16M4 18h16" />
       </svg>
     </button>
@@ -235,7 +237,9 @@ export function SidebarMenuItem({ children }: { children: ReactNode }) {
   return <li className="relative">{children}</li>;
 }
 
-const SIZES = { default: 'h-9 text-body', sm: 'h-8 text-meta', lg: 'h-11 text-body' } as const;
+// shadcn's SidebarMenuButton sizes: default 32px (h-8) in `body`, sm 28px
+// in `meta`; lg is the account row, as tall as its two lines.
+const SIZES = { default: 'h-8 text-body', sm: 'h-7 text-meta', lg: 'min-h-8 py-1.5 text-body group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:py-0' } as const;
 
 export function SidebarMenuButton({
   asChild = false,
@@ -261,8 +265,8 @@ export function SidebarMenuButton({
           type={asChild ? undefined : 'button'}
           data-active={isActive}
           className={cn(
-            'flex w-full items-center gap-2.5 overflow-hidden rounded-md px-2.5 text-left text-sidebar-foreground no-underline transition-colors',
-            'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+            'flex w-full items-center gap-2 overflow-hidden rounded-md px-2 text-left text-sidebar-foreground no-underline transition-colors',
+            'hover:bg-sidebar-hover',
             'data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground',
             'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0',
             '[&>span:last-child]:truncate group-data-[collapsible=icon]:[&>span:last-child]:hidden',

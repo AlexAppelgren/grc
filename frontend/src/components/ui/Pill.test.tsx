@@ -14,18 +14,18 @@ describe('Pill (playbook 6.7)', () => {
     render(<Pill tone={tone}>label</Pill>);
     const pill = screen.getByText('label');
     expect(pill).toHaveAttribute('data-pill', tone);
-    expect(pill.style.background).toBe(`var(${pillTones[tone].background})`);
+    expect(pill.style.background).toBe(`light-dark(var(${pillTones[tone].background}), var(${pillTones[tone].darkBackground}))`);
     expect(pill.style.color).toBe(`var(${pillTones[tone].text})`);
     expect(pill).not.toHaveAttribute('data-outlined');
   });
 
-  it('uses the card token names exactly', () => {
-    expect(pillTones.information).toEqual({ background: '--gds-sys-color-l3-neutral-02', text: '--gds-sys-color-content-neutral-01' });
-    expect(pillTones.notice).toEqual({ background: '--gds-sys-color-l3-notice-02', text: '--gds-sys-color-content-notice-01' });
-    expect(pillTones.positive).toEqual({ background: '--gds-sys-color-l3-positive-02', text: '--gds-sys-color-content-positive-03' });
-    expect(pillTones.warning).toEqual({ background: '--gds-sys-color-l3-warning-02', text: '--gds-sys-color-content-warning-01' });
-    expect(pillTones.negative).toEqual({ background: '--gds-sys-color-l3-negative-02', text: '--gds-sys-color-content-negative-01' });
-    expect(pillTones.brand).toEqual({ background: '--gds-sys-color-l3-brand-02', text: '--gds-sys-color-content-brand-02' });
+  it('uses the card token names exactly, with the -03 dark step for the four status tones', () => {
+    expect(pillTones.information).toEqual({ background: '--gds-sys-color-l3-neutral-02', darkBackground: '--gds-sys-color-l3-neutral-02', text: '--gds-sys-color-content-neutral-01' });
+    expect(pillTones.notice).toEqual({ background: '--gds-sys-color-l3-notice-02', darkBackground: '--gds-sys-color-l3-notice-03', text: '--gds-sys-color-content-notice-01' });
+    expect(pillTones.positive).toEqual({ background: '--gds-sys-color-l3-positive-02', darkBackground: '--gds-sys-color-l3-positive-03', text: '--gds-sys-color-content-positive-03' });
+    expect(pillTones.warning).toEqual({ background: '--gds-sys-color-l3-warning-02', darkBackground: '--gds-sys-color-l3-warning-03', text: '--gds-sys-color-content-warning-01' });
+    expect(pillTones.negative).toEqual({ background: '--gds-sys-color-l3-negative-02', darkBackground: '--gds-sys-color-l3-negative-03', text: '--gds-sys-color-content-negative-01' });
+    expect(pillTones.brand).toEqual({ background: '--gds-sys-color-l3-brand-02', darkBackground: '--gds-sys-color-l3-brand-02', text: '--gds-sys-color-content-brand-02' });
   });
 
   it('renders a tenant tag outlined: transparent with the text colour as a ring', () => {
@@ -40,13 +40,13 @@ describe('Pill (playbook 6.7)', () => {
     expect(pill.style.boxShadow).toContain(`var(${pillTones.information.text})`);
   });
 
-  it('has the prototype shape: rounded, 2px by 10px, 600 weight, meta role', () => {
+  it('has the foundations shape: fully rounded, 20px, 8px sides, meta at 500', () => {
     render(<Pill tone="brand">LVM</Pill>);
     const pill = screen.getByText('LVM');
     expect(pill.className).toContain('rounded-full');
-    expect(pill.className).toContain('px-2.5');
-    expect(pill.className).toContain('py-0.5');
-    expect(pill.className).toContain('font-semibold');
+    expect(pill.className).toContain('h-5');
+    expect(pill.className).toContain('px-2');
+    expect(pill.className).toContain('font-medium');
     expect(pill.className).toContain('text-meta');
   });
 });

@@ -46,7 +46,7 @@ function PasskeyRow({ passkey, onlyOne }: { passkey: Passkey; onlyOne: boolean }
           </Field>
           {rename.isError ? <ProblemAlert error={rename.error} /> : null}
           <ButtonBar className="mt-0">
-            <Button variant="ghost" size="small" onClick={() => setEditing(false)}>
+            <Button variant="outline" size="small" onClick={() => setEditing(false)}>
               {t('common.cancel')}
             </Button>
             <Button type="submit" size="small" disabled={rename.isPending}>
@@ -69,7 +69,7 @@ function PasskeyRow({ passkey, onlyOne }: { passkey: Passkey; onlyOne: boolean }
           <ButtonBar className="mt-0">
             {confirming ? (
               <>
-                <Button variant="ghost" size="small" onClick={() => setConfirming(false)}>
+                <Button variant="outline" size="small" onClick={() => setConfirming(false)}>
                   {t('common.cancel')}
                 </Button>
                 <Button variant="danger" size="small" disabled={remove.isPending} onClick={() => remove.mutate(passkey.id, { onSettled: () => setConfirming(false) })}>
@@ -78,7 +78,7 @@ function PasskeyRow({ passkey, onlyOne }: { passkey: Passkey; onlyOne: boolean }
               </>
             ) : (
               <>
-                <Button variant="ghost" size="small" onClick={() => setEditing(true)}>
+                <Button variant="outline" size="small" onClick={() => setEditing(true)}>
                   {t('me.passkeys.rename')}
                 </Button>
                 {/* Stays pressable with one passkey: the server's 409 last_passkey is the answer (ID-S10). */}
@@ -121,7 +121,7 @@ function AddPasskeyModal({ open, onClose, onAdded }: { open: boolean; onClose: (
         ) : null}
         {add.isPending ? <StatusLine>{t('auth.enrol.waitingHint')}</StatusLine> : null}
         <ButtonBar>
-          <Button variant="ghost" onClick={onClose} disabled={add.isPending}>
+          <Button variant="outline" onClick={onClose} disabled={add.isPending}>
             {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={add.isPending}>

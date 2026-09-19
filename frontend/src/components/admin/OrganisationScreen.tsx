@@ -132,9 +132,9 @@ function Checklist({ tenant }: { tenant: Tenant }) {
   const total = tenant.onboarding.steps.length;
   const done = tenant.onboarding.stepsDone;
   return (
-    <Panel sand title={t('admin.organisation.checklist')} data-onboarding="">
-      <div className="my-2.5 h-2.5 overflow-hidden rounded-full bg-neutral-soft" aria-hidden="true">
-        <i className="block h-full rounded-full bg-brand" style={{ width: `${total === 0 ? 0 : Math.round((done / total) * 100)}%` }} />
+    <Panel title={t('admin.organisation.checklist')} data-onboarding="">
+      <div className="my-2 h-1.5 overflow-hidden rounded-[3px] bg-neutral-soft" aria-hidden="true">
+        <i className="block h-full bg-accent" style={{ width: `${total === 0 ? 0 : Math.round((done / total) * 100)}%` }} />
       </div>
       <p className="text-meta text-muted">{t('admin.organisation.progress', { done, total })}</p>
       <ul className="m-0 list-none p-0">

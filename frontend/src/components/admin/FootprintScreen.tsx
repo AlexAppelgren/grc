@@ -116,17 +116,17 @@ function PendingBanner({
       </p>
       {withdraw.isError ? <ProblemAlert error={withdraw.error} /> : null}
       <ButtonBar className="mt-0 justify-start">
-        <Button variant="ghost" size="small" onClick={onShowPreview}>
+        <Button variant="outline" size="small" onClick={onShowPreview}>
           {t('footprint.banner.seePreview')}
         </Button>
         {mine ? (
-          <Button variant="ghost" size="small" disabled={withdraw.isPending} onClick={() => withdraw.mutate({ requestId: request.id, version: request.version })}>
+          <Button variant="outline" size="small" disabled={withdraw.isPending} onClick={() => withdraw.mutate({ requestId: request.id, version: request.version })}>
             {t('footprint.banner.withdraw')}
           </Button>
         ) : null}
         {approver ? (
           <>
-            <Button variant="ghost" size="small" onClick={onReject}>
+            <Button variant="outline" size="small" onClick={onReject}>
               {t('footprint.banner.reject')}
             </Button>
             <Button size="small" onClick={onApprove}>
@@ -199,14 +199,14 @@ function DraftPreview({
   }, [signature, mutate]);
 
   return (
-    <Panel sand title={t('footprint.preview.title', { title })} data-draft-preview="">
+    <Panel title={t('footprint.preview.title', { title })} data-draft-preview="">
       <PreviewColumns preview={preview.data} pending={preview.isPending} />
       {preview.isError ? <ProblemAlert error={preview.error} /> : null}
       {create.isError ? <ProblemAlert error={create.error} /> : null}
       <div className="mt-3.5 flex flex-wrap items-center justify-end gap-3">
         <span className="text-meta text-muted">{t('footprint.preview.secondPerson')}</span>
         <ButtonBar className="mt-0">
-          <Button variant="ghost" onClick={onDiscard} disabled={create.isPending}>
+          <Button variant="outline" onClick={onDiscard} disabled={create.isPending}>
             {t('footprint.preview.discard')}
           </Button>
           <Button disabled={create.isPending} onClick={() => create.mutate(changes, { onSuccess: onSent })}>
@@ -240,7 +240,7 @@ function ApproveDialog({ request, approve, onClose, onDone }: { request: Footpri
         <ProblemAlert error={approve.error} codes={{ step_up_required: t('problem.stepUpCancelled') }} />
       ) : null}
       <ButtonBar>
-        <Button variant="ghost" onClick={onClose} disabled={approve.isPending}>
+        <Button variant="outline" onClick={onClose} disabled={approve.isPending}>
           {t('common.cancel')}
         </Button>
         <Button disabled={approve.isPending || fourEyes} onClick={() => approve.mutate({ requestId: request.id, version: request.version }, { onSuccess: onDone })}>
@@ -278,7 +278,7 @@ function RejectDialog({ request, reject, onClose, onDone }: { request: Footprint
         </Field>
         {reject.isError ? <ProblemAlert error={reject.error} /> : null}
         <ButtonBar>
-          <Button variant="ghost" onClick={onClose} disabled={reject.isPending}>
+          <Button variant="outline" onClick={onClose} disabled={reject.isPending}>
             {t('common.cancel')}
           </Button>
           <Button type="submit" variant="danger" disabled={reject.isPending}>
@@ -397,7 +397,7 @@ export function FootprintScreen() {
       ) : null}
 
       {pending !== null && showPendingPreview ? (
-        <Panel sand title={t('footprint.preview.title', { title: requestTitle(pending, t) })} data-pending-preview="">
+        <Panel title={t('footprint.preview.title', { title: requestTitle(pending, t) })} data-pending-preview="">
           <PreviewColumns preview={pending.preview} pending={false} />
         </Panel>
       ) : null}

@@ -8,8 +8,11 @@ import { computeVars, readStyle, resolveName, type Theme, type VarMap } from './
 // text-on-surface pair the design uses, in both themes, including all six
 // pill tones. Values are resolved from tokens.generated.css + brand.css, then
 // theme.css for the rail's --sidebar-* aliases (ADR 0020 amendment 2026-09-19).
+// The pairs are the table in design/system/foundations.md "Contrast".
 
 const AA_NORMAL_TEXT = 4.5;
+// WCAG 1.4.11: a field boundary and the focus ring against their surface.
+const AA_NON_TEXT = 3;
 
 const tokens = readStyle('tokens.generated.css');
 const brand = readStyle('brand.css');
@@ -64,11 +67,19 @@ interface Pair {
 // Every text-on-surface pair the shell and the primitives use. Names are
 // theme.css semantic names; values are the token variables behind them.
 const PAIRS: Pair[] = [
-  { name: 'text on page', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l1-neutral-02' },
+  { name: 'text on page', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l1-neutral-01' },
+  { name: 'text on subtle (banner, code block)', fg: '--gds-sys-color-content-neutral-01', bg: '--subtle' },
+  { name: 'text on a warning banner', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l3-warning-02' },
+  { name: 'text on a refusal banner', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l3-negative-02' },
+  { name: 'warning pill on a warning banner (waiting for approval)', fg: '--gds-sys-color-content-warning-01', bg: '--gds-sys-color-l3-warning-02' },
+  { name: 'text on accent (current row, pressed toggle)', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l3-neutral-02' },
+  { name: 'text on search highlight', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l3-brand-02-2' },
   { name: 'text on surface', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'text on surface-2', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l2-neutral-02-2' },
   { name: 'text on sand', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l2-brand-02' },
-  { name: 'muted on page', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l1-neutral-02' },
+  { name: 'muted on page', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l1-neutral-01' },
+  { name: 'muted on subtle (banner)', fg: '--gds-sys-color-content-neutral-02', bg: '--subtle' },
+  { name: 'muted on accent (count or role on the current row)', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l3-neutral-02' },
   { name: 'muted on surface', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'muted on sand', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-brand-02' },
   { name: 'brass on sand (legal margin)', fg: '--gds-sys-color-content-brand-02', bg: '--gds-sys-color-l2-brand-02' },
@@ -82,7 +93,6 @@ const PAIRS: Pair[] = [
   { name: 'positive on surface (date emphasis)', fg: '--gds-sys-color-content-positive-03', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'notice on surface (date emphasis)', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'notice on sand (focus ring reference)', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-brand-02' },
-  ...Object.entries(pillTones).map(([tone, { background, text }]) => ({ name: `pill ${tone}`, fg: text, bg: background })),
   { name: 'outlined information pill on surface', fg: pillTones.information.text, bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'outlined information pill on sand', fg: pillTones.information.text, bg: '--gds-sys-color-l2-brand-02' },
   // The rail: a neutral surface with a hairline, shadcn's structure in
@@ -93,6 +103,18 @@ const PAIRS: Pair[] = [
   { name: 'rail: role line and count on a current or hovered row', fg: '--sidebar-muted-foreground', bg: '--sidebar-accent' },
 ];
 
+// Each tone on the background it takes in that theme (light-dark() in Pill.tsx).
+function pillPairs(theme: Theme): Pair[] {
+  return Object.entries(pillTones).map(([tone, { background, darkBackground, text }]) => ({ name: `pill ${tone}`, fg: text, bg: theme === 'dark' ? darkBackground : background }));
+}
+
+const NON_TEXT: Pair[] = [
+  { name: 'input boundary on surface', fg: '--gds-sys-color-border-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'focus ring on surface', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'focus ring on page', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l1-neutral-01' },
+  { name: 'focus ring on the rail', fg: '--sidebar-ring', bg: '--sidebar' },
+];
+
 function varsFor(theme: Theme): VarMap {
   return computeVars([tokens, brand, themeCss], theme);
 }
@@ -101,9 +123,13 @@ describe('WCAG AA contrast for every text-on-surface pair (playbook 6.3)', () =>
   for (const theme of ['light', 'dark'] as const) {
     const vars = varsFor(theme);
     describe(theme, () => {
-      it.each(PAIRS)('$name is at least 4.5:1', ({ fg, bg }) => {
+      it.each([...PAIRS, ...pillPairs(theme)])('$name is at least 4.5:1', ({ fg, bg }) => {
         const ratio = contrastRatio(resolveName(vars, fg), resolveName(vars, bg));
         expect(ratio).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+      });
+      it.each(NON_TEXT)('$name is at least 3:1', ({ fg, bg }) => {
+        const ratio = contrastRatio(resolveName(vars, fg), resolveName(vars, bg));
+        expect(ratio).toBeGreaterThanOrEqual(AA_NON_TEXT);
       });
     });
   }

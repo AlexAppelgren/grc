@@ -38,7 +38,7 @@ function ListRow({ summary }: { summary: VocabularyListSummary }) {
   return (
     <Link
       href={href(summary.list)}
-      className="block rounded-m border border-line bg-surface px-4.5 py-4 no-underline hover:border-fg"
+      className="block rounded-card border border-line bg-surface px-4 py-3 no-underline hover:hover-fill"
       data-vocabulary-list={summary.list}
       data-vocabulary-tier={summary.tier}
     >

@@ -23,7 +23,7 @@ function Slot({ char, isActive, hasFakeCaret, invalid }: SlotProps & { invalid: 
       data-slot="otp-slot"
       data-active={isActive || undefined}
       className={cn(
-        'relative flex h-12 w-11 items-center justify-center rounded-s border bg-surface font-mono text-[1.3rem] text-fg',
+        'relative flex h-12 w-11 items-center justify-center rounded-control border bg-surface font-mono text-[1.3rem] text-fg',
         invalid ? 'border-negative' : 'border-line-strong',
         isActive && 'outline-2 outline-offset-2 outline-focus outline-solid',
       )}

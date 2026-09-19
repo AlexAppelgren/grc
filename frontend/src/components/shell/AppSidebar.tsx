@@ -29,7 +29,7 @@ export function groupDestinations(destinations: readonly Destination[]): Destina
 
 // The rail (ADR 0020 amendment 2026-09-19): shadcn's Sidebar structure in
 // seb.io's restraint. The phonetic mark alone on top as a small signature
-// (about 104px, currentColor), the open e alone when collapsed; the registry's
+// (about 68px, currentColor, foundations.md), the open e alone when collapsed; the registry's
 // destinations in its groups, separated by space rather than headings; the
 // signed-in person and "Minimise menu" pinned at the bottom. It renders
 // whatever the registry holds for this surface and permission list, so a
@@ -44,17 +44,17 @@ export function AppSidebar({ surface }: { surface: Surface }) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="px-4 pt-5 pb-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
+      <SidebarHeader className="px-4 pt-5 pb-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
         <Link href="/" className="block text-sidebar-foreground" onClick={() => setOpenMobile(false)}>
-          <Logo className="block h-auto w-[104px] group-data-[collapsible=icon]:hidden" />
-          <LogoMark className="hidden size-7 group-data-[collapsible=icon]:block" />
+          <Logo className="block h-auto w-[68px] group-data-[collapsible=icon]:hidden" />
+          <LogoMark className="hidden size-5 group-data-[collapsible=icon]:block" />
         </Link>
       </SidebarHeader>
 
       <SidebarContent>
         <nav aria-label={t('nav.main')}>
           {groups.map((group) => (
-            <SidebarGroup key={group[0]?.group} data-nav-group={group[0]?.group} className="py-1.5">
+            <SidebarGroup key={group[0]?.group} data-nav-group={group[0]?.group} className="py-2">
               <SidebarMenu>
                 {group.map((d) => {
                   const label = t(d.labelKey);

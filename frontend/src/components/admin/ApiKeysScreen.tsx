@@ -61,14 +61,14 @@ function NewKeyPanel({ created, onDone }: { created: ApiKeyCreated; onDone: () =
     }
   };
   return (
-    <Panel sand title={t('admin.apiKeys.newKeyTitle')} role="status" data-new-key="">
-      <pre className="m-0 mb-2.5 rounded-s border border-line bg-surface p-3.5 font-mono whitespace-pre-wrap break-all" data-plain-key="">
+    <Panel title={t('admin.apiKeys.newKeyTitle')} role="status" data-new-key="">
+      <pre className="m-0 mb-3 rounded-control border border-line bg-subtle p-3 font-mono whitespace-pre-wrap break-all" data-plain-key="">
         {created.plainKey}
       </pre>
       <p className="text-muted">{t('admin.apiKeys.newKeyBody')}</p>
       {copied ? <StatusLine tone="positive">{t('admin.apiKeys.copied')}</StatusLine> : null}
       <ButtonBar>
-        <Button variant="ghost" size="small" onClick={onDone}>
+        <Button variant="outline" size="small" onClick={onDone}>
           {t('common.done')}
         </Button>
         <Button size="small" onClick={() => void copy()}>
@@ -134,7 +134,7 @@ function CreateForm({ onCreated, onClose }: { onCreated: (key: ApiKeyCreated) =>
         </CheckGroup>
         {create.isError ? <ProblemAlert error={create.error} codes={{ step_up_required: t('problem.stepUpCancelled') }} /> : null}
         <ButtonBar>
-          <Button variant="ghost" onClick={onClose} disabled={create.isPending}>
+          <Button variant="outline" onClick={onClose} disabled={create.isPending}>
             {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={create.isPending}>
@@ -175,7 +175,7 @@ function KeyRow({ apiKey }: { apiKey: ApiKey }) {
         <ButtonBar>
           {confirming ? (
             <>
-              <Button variant="ghost" size="small" onClick={() => setConfirming(false)}>
+              <Button variant="outline" size="small" onClick={() => setConfirming(false)}>
                 {t('common.cancel')}
               </Button>
               <Button variant="danger" size="small" disabled={revoke.isPending} onClick={() => revoke.mutate(apiKey.id, { onSettled: () => setConfirming(false) })}>

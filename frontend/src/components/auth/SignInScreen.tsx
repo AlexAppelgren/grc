@@ -27,10 +27,10 @@ function RecoveryPanel({ onBack }: { onBack: () => void }) {
         {t('auth.recovery.title')}
       </h1>
       <p className="text-muted">{t('auth.recovery.lede')}</p>
-      <div className="my-3.5 rounded-s bg-sand px-3.5 py-3">{t('auth.recovery.body')}</div>
+      <div className="my-3 rounded-control bg-subtle px-3 py-2.5">{t('auth.recovery.body')}</div>
       <p className="text-muted">{t('auth.recovery.lastAdmin')}</p>
       <ButtonBar>
-        <Button variant="ghost" onClick={onBack}>
+        <Button variant="outline" onClick={onBack}>
           {t('auth.recovery.back')}
         </Button>
       </ButtonBar>

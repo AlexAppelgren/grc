@@ -38,7 +38,7 @@ export function SecurityLogScreen() {
         <EmptyState title={t('admin.securityLog.emptyTitle')} body={t('admin.securityLog.emptyBody')} />
       ) : (
         <>
-          <Panel className="px-5 py-1" data-security-log="">
+          <Panel className="px-4 py-1" data-security-log="">
             {log.data.items.map((event) => (
               <div key={event.id} className="grid gap-1 border-b border-line py-3 last:border-b-0 md:grid-cols-[170px_1fr] md:gap-x-4" data-event={event.event}>
                 <time dateTime={event.occurredAt} className="block text-meta text-muted">
@@ -62,10 +62,10 @@ export function SecurityLogScreen() {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-meta text-muted">
             <span>{t('admin.securityLog.range', { from: offset + 1, to: Math.min(offset + log.data.items.length, log.data.total), total: log.data.total })}</span>
             <div className="flex gap-2">
-              <Button variant="ghost" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - SECURITY_LOG_PAGE))}>
+              <Button variant="outline" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - SECURITY_LOG_PAGE))}>
                 {t('admin.securityLog.newer')}
               </Button>
-              <Button variant="ghost" size="small" disabled={offset + SECURITY_LOG_PAGE >= log.data.total} onClick={() => setOffset(offset + SECURITY_LOG_PAGE)}>
+              <Button variant="outline" size="small" disabled={offset + SECURITY_LOG_PAGE >= log.data.total} onClick={() => setOffset(offset + SECURITY_LOG_PAGE)}>
                 {t('admin.securityLog.older')}
               </Button>
             </div>

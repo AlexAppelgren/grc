@@ -232,7 +232,6 @@
   "admin.roles.lede": "En roll är en uppsättning behörigheter. Systemroller kan döpas om, inte ändras.",
   "admin.roles.create": "Skapa en roll",
   "admin.roles.systemRole": "Systemroll",
-  "admin.roles.retired": "Avvecklad",
   "admin.roles.rename": "Byt namn",
   "admin.roles.edit": "Redigera",
   "admin.roles.retire": "Avveckla",
