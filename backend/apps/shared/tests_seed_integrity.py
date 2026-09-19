@@ -26,11 +26,23 @@ from apps.identity.models import Invitation, Membership, PlatformRoleAssignment,
 from apps.shared import tenancy
 from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, REISSUE_LOGIN_EMAIL, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
-from apps.library.models import Instrument, Obligation, ObligationVersion
+from apps.library.models import Instrument, Obligation, ObligationVersion, Verification
 from apps.shared.e2e_seed import EXPECTED_FOOTPRINTS, EXPECTED_LIBRARY, EXPECTED_PENDING_REQUEST, EXPECTED_TENANTS, SeedRefused, seed_e2e
 from apps.shared.models import AuditEvent, Tenant
+from apps.taxonomy.matching import footprint_of, in_footprint, restricting_dimensions
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm
 from apps.taxonomy.registry import REGISTRY
+
+
+def _scope(obligation: Obligation) -> dict[str, set[str]]:
+    """An obligation's scope: its own terms plus its instrument's regime."""
+    scope: dict[str, set[str]] = {}
+    for term in obligation.terms.all():
+        scope.setdefault(term.dimension.key, set()).add(term.key)
+    regime = obligation.instrument.regime
+    if regime is not None:
+        scope.setdefault(regime.dimension.key, set()).add(regime.key)
+    return scope
 
 
 @override_settings(E2E_MODE=True)
@@ -179,6 +191,54 @@ class SeedIntegrityGuard(TestCase):
         seed_e2e()
         self.assertEqual((Instrument.objects.count(), Obligation.objects.count()), (EXPECTED_LIBRARY.instruments, EXPECTED_LIBRARY.obligations))
         self.assertEqual(ObligationVersion.objects.filter(obligation__stable_key=EXPECTED_LIBRARY.research_obligation).count(), 2)
+
+    def test_switching_off_advice_hides_an_obligation_of_tenant_a(self) -> None:
+        """J-6, FP-01, FP-03, AC-FP1: the pending request switches Advice off. With Advice in
+        tenant A's footprint no obligation is hidden; without it at least one is, the
+        advice-only sample obligation among them."""
+        seed_e2e()
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        footprint = footprint_of(tenant_a.id)
+        without = {dimension: set(keys) for dimension, keys in footprint.items()}
+        for ref in EXPECTED_PENDING_REQUEST.removes:
+            dimension, key = ref.split(":")
+            without[dimension].discard(key)
+        restricting = restricting_dimensions()
+        scopes = {
+            o.stable_key: _scope(o) for o in Obligation.objects.select_related("instrument__regime__dimension").prefetch_related("terms__dimension")
+        }
+        self.assertEqual([key for key, scope in scopes.items() if not in_footprint(scope, footprint, restricting=restricting)], [])
+        hidden = [key for key, scope in scopes.items() if not in_footprint(scope, without, restricting=restricting)]
+        self.assertIn(EXPECTED_LIBRARY.advice_only_obligation, hidden)
+
+    def test_every_instrument_and_obligation_has_a_source_link_and_a_verified_date(self) -> None:
+        """INV-06, INV-S7: the card shows the source link and "Verified <date>" on every record."""
+        seed_e2e()
+        rows = [(row.stable_key, row.source_url, row.last_verified_at) for row in Instrument.objects.all()]
+        rows += [(row.stable_key, row.source_url, row.last_verified_at) for row in Obligation.objects.all()]
+        for key, source_url, verified_at in rows:
+            with self.subTest(record=key):
+                self.assertTrue(source_url)
+                self.assertIsNotNone(verified_at)
+
+    def test_no_library_verifier_is_a_tenant_member(self) -> None:
+        """Regression pin (INV-06, INV-S8): a library record is verified by a library editor,
+        never by a bank's user. The fixture names a tenant user (sara) as verifier, so the
+        seed names nobody until a re-verification does. Proven to fail 2026-09-19 by
+        stamping the compliance officer as an obligation's verifier after the seed."""
+        seed_e2e()
+        verifiers = {
+            *Instrument.objects.exclude(verified_by=None).values_list("verified_by", flat=True),
+            *Obligation.objects.exclude(verified_by=None).values_list("verified_by", flat=True),
+            *Verification.objects.exclude(verified_by=None).values_list("verified_by", flat=True),
+        }
+        members: set[object] = set()
+        for tenant in Tenant.objects.all():
+            tenancy.activate(tenant.id)
+            members |= set(Membership.objects.filter(tenant=tenant).values_list("user_id", flat=True))
+        self.assertTrue(members, "the pin needs the seeded members to compare against")
+        self.assertEqual(verifiers & members, set())
 
     def test_the_command_prints_counts(self) -> None:
         out = StringIO()

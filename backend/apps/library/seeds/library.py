@@ -11,7 +11,12 @@ leaves one audit row through record().
 The research payment obligation's second version (in force 2026-10-01) exists in the
 fixture only as the payload of the open proposal `prop-research-payments-v2`. The loader
 files it as version 2 so "as of" and the diff have a future version to show
-(data-model §4, INV-S4); the proposal row itself is not seeded here."""
+(data-model §4, INV-S4); the proposal row itself is not seeded here.
+
+Every record carries a verified date (INV-06). The fixture dates obligations only, so an
+instrument without its own date takes the latest of its obligations', or the fixture's
+anchor date when it has none. `verified_by` is never loaded: the fixture's verifier is a
+tenant user, and a library record is verified by a library editor (INV-S8)."""
 
 from __future__ import annotations
 
@@ -70,7 +75,7 @@ def _audit(subject_type: str, row: Any, key: str) -> None:
         subject_type=subject_type,
         subject_id=row.id,
         subject_title=key,
-        summary=f"Filed the {subject_type} {key} from the prototype library.",
+        summary=f"Filed the {subject_type} {key} from the sample library fixture.",
         tenant_id=None,
     )
 
@@ -95,7 +100,18 @@ def seed_authorities() -> int:
     return len(specs)
 
 
-def _instrument(spec: dict[str, Any], terms: dict[str, TaxonomyTerm]) -> Instrument:
+def _instrument_verified_on(data: dict[str, Any]) -> dict[str, str]:
+    """Instrument key -> its verified date: its own, else its obligations' latest, else the
+    anchor date. ISO dates order as strings; check_prototype_data.py requires a verified
+    date on every obligation."""
+    latest: dict[str, str] = {}
+    for spec in data["obligations"]:
+        latest[spec["instrument"]] = max(latest.get(spec["instrument"], ""), spec["last_verified_at"])
+    anchor: str = data["_meta"]["anchor_date"]
+    return {spec["stable_key"]: spec["last_verified_at"] or latest.get(spec["stable_key"], anchor) for spec in data["instruments"]}
+
+
+def _instrument(spec: dict[str, Any], terms: dict[str, TaxonomyTerm], verified_on: str) -> Instrument:
     jurisdiction = Jurisdiction.objects.select_related("default_language").get(key=spec["jurisdiction"].lower())
     row, created = Instrument.objects.get_or_create(
         stable_key=spec["stable_key"],
@@ -114,7 +130,7 @@ def _instrument(spec: dict[str, Any], terms: dict[str, TaxonomyTerm]) -> Instrum
             "implements_note": spec["implements_note"] or "",
             "status": spec["status"],
             "created_origin": OriginType.USER.value,
-            "last_verified_at": _stamp(spec["last_verified_at"]),
+            "last_verified_at": _stamp(verified_on),
         },
     )
     if created:
@@ -179,8 +195,9 @@ def load_library() -> dict[str, int]:
     data = fixture.load()
     terms = {f"{term.dimension.key}:{term.key}": term for term in TaxonomyTerm.objects.select_related("dimension")}
     relation_types = {row.key: row for row in RelationType.objects.all()}
+    verified_on = _instrument_verified_on(data)
     with library_write(SEED_REASON):
-        instruments = {spec["stable_key"]: _instrument(spec, terms) for spec in data["instruments"]}
+        instruments = {spec["stable_key"]: _instrument(spec, terms, verified_on[spec["stable_key"]]) for spec in data["instruments"]}
         for spec in data["instrument_relations"]:
             InstrumentRelation.objects.get_or_create(
                 from_instrument=instruments[spec["from_instrument"]],

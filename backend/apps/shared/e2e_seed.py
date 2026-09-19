@@ -142,13 +142,20 @@ class SeedLibrary:
     instruments: int
     obligations: int
     research_obligation: str
+    advice_only_obligation: str
     anchor_date: datetime.date
 
 
 # Chunk 3: the prototype's library (the fixture's 12 instruments plus the three EU
-# directives its lineage needs) and the obligation whose second version is still ahead.
+# directives its lineage needs), the obligation whose second version is still ahead, and
+# the one sample obligation whose only service is advice, which J-6's switch-off hides
+# (the prototype's 15 obligations plus that one).
 EXPECTED_LIBRARY = SeedLibrary(
-    instruments=15, obligations=15, research_obligation=RESEARCH_OBLIGATION, anchor_date=datetime.date(2026, 9, 16)
+    instruments=15,
+    obligations=16,
+    research_obligation=RESEARCH_OBLIGATION,
+    advice_only_obligation="obl-suitability-statement",
+    anchor_date=datetime.date(2026, 9, 16),
 )
 
 

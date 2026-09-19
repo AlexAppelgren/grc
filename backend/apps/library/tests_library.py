@@ -8,6 +8,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 from io import StringIO
+from zoneinfo import ZoneInfo
 
 from django.core.management import call_command
 from django.db import DEFAULT_DB_ALIAS, IntegrityError, ProgrammingError, transaction
@@ -84,7 +85,7 @@ def seed_library() -> dict[str, int]:
 class LibraryLoaderTests(TestCase):
     def test_the_loader_files_the_prototype_library(self) -> None:
         counts = seed_library()
-        self.assertEqual(counts, {"instruments": 15, "provisions": 2, "obligations": 15, "obligation_versions": 16})
+        self.assertEqual(counts, {"instruments": 15, "provisions": 2, "obligations": 16, "obligation_versions": 17})
         lvm = Instrument.objects.get(stable_key="sfs-2007-528")
         self.assertIsNone(lvm.owner_tenant_id, "a seeded record is shared")
         self.assertEqual((lvm.level.key, lvm.jurisdiction.key, lvm.authority and lvm.authority.key), ("act", "se", "riksdagen"))
@@ -113,6 +114,38 @@ class LibraryLoaderTests(TestCase):
         rows = {row.language_id: (row.is_original, row.is_machine) for row in version.summaries.all()}
         self.assertEqual(rows, {"sv": (True, False), "en": (False, True)})
 
+    def test_an_instrument_is_verified_when_its_latest_obligation_was_or_on_the_anchor_date(self) -> None:
+        """INV-06: every record carries a verified date. The fixture dates obligations only,
+        so an instrument takes the latest date among its obligations, or the fixture's
+        anchor date when it has none. The loader names no verifier: the fixture's is a
+        tenant user."""
+        seed_library()
+        stockholm = ZoneInfo("Europe/Stockholm")
+        # LVM's obligations were verified 2026-08-28, 2026-08-28 and 2026-09-10.
+        self.assertEqual(Instrument.objects.get(stable_key="sfs-2007-528").last_verified_at, datetime.datetime(2026, 9, 10, tzinfo=stockholm))
+        # MiFID II has no obligation: the anchor date, 2026-09-16.
+        self.assertEqual(Instrument.objects.get(stable_key="celex-32014l0065").last_verified_at, datetime.datetime(2026, 9, 16, tzinfo=stockholm))
+        for instrument in Instrument.objects.prefetch_related("obligations"):
+            with self.subTest(instrument=instrument.stable_key):
+                dates = [o.last_verified_at for o in instrument.obligations.all() if o.last_verified_at]
+                expected = max(dates) if dates else datetime.datetime(2026, 9, 16, tzinfo=stockholm)
+                self.assertEqual(instrument.last_verified_at, expected)
+        self.assertFalse(Instrument.objects.exclude(verified_by=None).exists())
+        self.assertFalse(Obligation.objects.exclude(verified_by=None).exists())
+
+    def test_the_advice_only_sample_obligation_is_filed_with_one_translated_version(self) -> None:
+        """J-6: the one obligation whose only service is advice, added to the prototype's
+        library (from_prototype false) so switching off Advice hides something."""
+        seed_library()
+        obligation = Obligation.objects.select_related("instrument__jurisdiction").get(stable_key="obl-suitability-statement")
+        self.assertEqual(obligation.instrument.jurisdiction.key, "se")
+        self.assertEqual({t.key for t in obligation.terms.filter(dimension__key="service_type")}, {"advice"})
+        self.assertIsNotNone(obligation.last_verified_at)
+        version = obligation.versions.get()
+        self.assertEqual((version.version_number, version.effective_from), (1, None))
+        rows = {row.language_id: (row.is_original, row.is_machine) for row in version.summaries.all()}
+        self.assertEqual(rows, {"sv": (True, False), "en": (False, True)})
+
     def test_the_research_payment_obligation_has_a_future_second_version(self) -> None:
         seed_library()
         versions = list(ObligationVersion.objects.filter(obligation__stable_key=RESEARCH_OBLIGATION))
@@ -123,9 +156,9 @@ class LibraryLoaderTests(TestCase):
     def test_the_loader_is_idempotent_and_audits_each_record_once(self) -> None:
         seed_library()
         audited = AuditEvent.objects.filter(action="library.seeded").count()
-        self.assertEqual(audited, 8 + 15 + 15, "one audit row per authority, instrument and obligation")
+        self.assertEqual(audited, 8 + 15 + 16, "one audit row per authority, instrument and obligation")
         summaries = ObligationSummary.objects.count()
-        self.assertEqual(load_library(), {"instruments": 15, "provisions": 2, "obligations": 15, "obligation_versions": 16})
+        self.assertEqual(load_library(), {"instruments": 15, "provisions": 2, "obligations": 16, "obligation_versions": 17})
         self.assertEqual(seed_authorities(), 8)
         self.assertEqual(AuditEvent.objects.filter(action="library.seeded").count(), audited)
         self.assertEqual(ObligationSummary.objects.count(), summaries)
@@ -146,7 +179,7 @@ class LibraryLoaderTests(TestCase):
     def test_seed_demo_prints_counts_and_refuses_a_deployed_environment(self) -> None:
         out = StringIO()
         call_command("seed_demo", stdout=out)
-        self.assertIn("obligations: 15", out.getvalue())
+        self.assertIn("obligations: 16", out.getvalue())
         with override_settings(IS_DEPLOYED_ENVIRONMENT=True, ENVIRONMENT="prod"), self.assertRaises(SeedRefused):
             call_command("seed_demo", stdout=StringIO())
 

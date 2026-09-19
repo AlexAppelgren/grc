@@ -13,7 +13,8 @@ through `record()` so audit and outbox rows are written with every insert.
 
 `check_prototype_data.py` validates referential integrity (every referenced key exists,
 every vocabulary key is in the `vocabularies` section, every date is ISO 8601, one primary
-document per change, no duplicate stable keys) and with `--eval` also that
+document per change, no duplicate stable keys, a verified date on every obligation, a
+summary in each version's original language) and with `--eval` also that
 `backend/eval/retrieval.jsonl` and `classification.jsonl` name only keys that exist here.
 Plain Python, no Django, exit 0 when clean.
 
@@ -118,6 +119,19 @@ to `proposal`, "Supervision", "Enforcement" and "Recurring date" to their keys.
   the count so `change_document.is_duplicate` has a row; the seed may drop it.
 - **Confidence and confirmation on change-obligation links** are not in the prototype;
   both are null, origin `agent`.
+- **J-6 needs an advice-only obligation.** Switching Advice off (the pending footprint
+  request of J-6) must hide something, but every prototype obligation that names advice
+  also names another service. One sample obligation, `obl-suitability-statement` (LVM
+  9 kap., the suitability statement before an advised trade), is added with
+  `from_prototype: false`: advice is its only service, every other restricting term is
+  inside the prototype's footprint, and it has one version since always with a Swedish
+  original and an English machine translation. It is sample text, not verbatim law. No
+  prototype obligation is rescoped.
+- **Verified dates and verifiers.** The prototype dates obligations only. The loader gives
+  an instrument without its own `last_verified_at` the latest date among its obligations,
+  or `_meta.anchor_date` when it has none. `verified_by` is kept verbatim (`sara`) but never
+  loaded: she is a tenant user, and a library record is verified by a library editor, so
+  it stays null until someone re-verifies.
 - **Source URLs of instruments** are the prototype's site roots (riksdagen.se, fi.se,
   the EUR-Lex ELI pages it uses). Exact document URLs are verified in chunk 3 and logged in
   `docs/plans/Verification_Log.md`; `in_force_from` dates on instruments are authored and

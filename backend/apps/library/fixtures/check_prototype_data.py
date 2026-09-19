@@ -5,9 +5,12 @@ Every reference in the fixture must resolve: instruments to authorities, regimes
 jurisdictions; obligations to instruments; terms to taxonomy terms; changes to
 authorities and obligations; proposals to targets, changes and runs; sources to
 authorities; audit rows to their subjects; tenant rows to users and obligations; every
-vocabulary key used to the `vocabularies` section; every date to ISO 8601. With
-`--eval` it also checks that backend/eval/retrieval.jsonl and classification.jsonl only
-name keys that exist here, so the evaluation sets cannot drift from the corpus.
+vocabulary key used to the `vocabularies` section; every date to ISO 8601. Every
+obligation carries a verified date and every version a summary in its original language,
+and `_meta.anchor_date` (an instrument's verified date when nothing else gives one) is a
+date. With `--eval` it also checks that backend/eval/retrieval.jsonl and
+classification.jsonl only name keys that exist here, so the evaluation sets cannot drift
+from the corpus.
 
 Exit 0 when clean, 1 with every problem listed. No Django, no database: plain Python.
 
@@ -114,6 +117,7 @@ class Checker:
     # -- tables ----------------------------------------------------------------------
     def run(self) -> list[str]:
         d = self.d
+        self.date("_meta.anchor_date", d["_meta"]["anchor_date"], optional=False)
         for name, rows in d["vocabularies"].items():
             for key, row in rows.items():
                 where = f"vocabularies.{name}.{key}"
@@ -141,6 +145,7 @@ class Checker:
             self.kind(where, "record_status", i["status"])
             self.date(where + ".in_force_from", i["in_force_from"])
             self.date(where + ".in_force_to", i["in_force_to"])
+            self.date(where + ".last_verified_at", i["last_verified_at"])
             if not i["source_url"]:
                 self.problem(where, "source_url is required")
         for r in d["instrument_relations"]:
@@ -169,7 +174,7 @@ class Checker:
             self.kind(where, "origin_type", o["created_origin"])
             self.ref(where, o["created_by_agent_run"], self.runs, "created_by_agent_run", optional=True)
             self.ref(where, o["verified_by"], self.users, "verified_by", optional=True)
-            self.date(where + ".last_verified_at", o["last_verified_at"])
+            self.date(where + ".last_verified_at", o["last_verified_at"], optional=False)
             if not o["title"] or not o["ref_label"]:
                 self.problem(where, "title and ref_label are required")
         versions_per: dict[str, set[int]] = {}
@@ -183,6 +188,8 @@ class Checker:
             self.date(where + ".effective_to", v["effective_to"])
             if not v["summary_en"] or not v["summary_sv"]:
                 self.problem(where, "summary_en and summary_sv are required")
+            if not v.get(f"summary_{v['original_language']}"):
+                self.problem(where, f"no summary in its original language {v['original_language']!r}")
             if v["version_no"] in versions_per.setdefault(v["obligation"], set()):
                 self.problem(where, "duplicate version_no")
             versions_per[v["obligation"]].add(v["version_no"])

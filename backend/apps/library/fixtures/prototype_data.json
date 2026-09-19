@@ -1482,6 +1482,10 @@
   {
    "obligation": "obl-gdpr-article-22",
    "provision": "celex-32016r0679/art-22"
+  },
+  {
+   "obligation": "obl-suitability-statement",
+   "provision": "sfs-2007-528/9"
   }
  ],
  "obligations": [
@@ -1866,6 +1870,32 @@
    "verified_by": "sara",
    "last_verified_at": "2026-06-18",
    "prototype_id": "o-art22"
+  },
+  {
+   "stable_key": "obl-suitability-statement",
+   "instrument": "sfs-2007-528",
+   "ref_label": "9 kap.",
+   "title": "Give the retail client a suitability statement before an advised trade",
+   "duty_type": "disclosure",
+   "product_scope": "All instruments",
+   "trigger_frequency": "Per advised transaction, before it is carried out",
+   "retention": "5 years",
+   "sanction_exposure": "FI remark, warning or sanction fee",
+   "tags": [
+    "suitability",
+    "advice",
+    "documentation"
+   ],
+   "status": "active",
+   "created_origin": "user",
+   "created_by_agent_run": null,
+   "created_model": null,
+   "created_by_label": "Library editor",
+   "verified_by": null,
+   "last_verified_at": "2026-09-10",
+   "prototype_id": null,
+   "from_prototype": false,
+   "note": "Sample row for J-6, not verbatim law: the one obligation whose only service is advice, so switching Advice off hides it. No prototype obligation is advice-only."
   }
  ],
  "obligation_versions": [
@@ -2042,6 +2072,18 @@
    "version_no": 1,
    "summary_en": "A person has the right not to be subject to a decision based solely on automated processing that significantly affects them, unless an exception applies and safeguards such as human intervention are in place.",
    "summary_sv": "En person har rätt att inte bli föremål för ett beslut som enbart grundas på automatiserad behandling och som i betydande grad påverkar personen, om inte ett undantag gäller och skyddsåtgärder som mänskligt ingripande finns.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-suitability-statement",
+   "version_no": 1,
+   "summary_en": "Before a transaction is carried out after investment advice, the institution gives a retail client a suitability statement. The statement sets out the advice given and how it meets the client's preferences, objectives and other characteristics. It is provided in a durable medium.",
+   "summary_sv": "Innan en transaktion genomförs efter investeringsrådgivning ska institutet ge en icke-professionell kund en lämplighetsförklaring. Förklaringen anger vilka råd som lämnats och hur de motsvarar kundens preferenser, mål och andra egenskaper. Den lämnas på ett varaktigt medium.",
    "original_language": "sv",
    "effective_from": null,
    "effective_to": null,
@@ -2657,6 +2699,42 @@
   },
   {
    "obligation": "obl-gdpr-article-22",
+   "term": "lifecycle_stage:pre_trade"
+  },
+  {
+   "obligation": "obl-suitability-statement",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-suitability-statement",
+   "term": "account_type:af"
+  },
+  {
+   "obligation": "obl-suitability-statement",
+   "term": "account_type:depa"
+  },
+  {
+   "obligation": "obl-suitability-statement",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-suitability-statement",
+   "term": "service_type:advice"
+  },
+  {
+   "obligation": "obl-suitability-statement",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-suitability-statement",
+   "term": "channel:branch"
+  },
+  {
+   "obligation": "obl-suitability-statement",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-suitability-statement",
    "term": "lifecycle_stage:pre_trade"
   }
  ],
