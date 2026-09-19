@@ -175,3 +175,9 @@ regexes = [
 ]
 regexTarget = "secret"
 condition = "AND"
+
+[[allowlists]]
+description = "Work-package ids in the parallel build plan, not secrets: the generic-api-key rule reads the ids c5-integration-scenarios and p03-consolidation as keys because nearby table cells hold serialization keys named like idkeys (docs/plans/PARALLEL_PLAN.md, 2026-09-19). Exact literals, this one file only."
+condition = "AND"
+regexes = ['''^c5-integration-scenarios$''', '''^p03-consolidation$''']
+paths = ['''^docs/plans/PARALLEL_PLAN\.md$''']
