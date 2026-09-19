@@ -16,7 +16,7 @@ its own databases, Redis index and ports.
 
 ## The slot
 
-`scripts/worktree.sh` allocates slot N (1 to 9) per worktree and writes `.env.worktree`.
+`scripts/worktree.sh` allocates slot N (1 to 14) per worktree and writes `.env.worktree`.
 The main checkout is slot 0 and keeps the defaults.
 
 | Resource | Slot N |
@@ -106,7 +106,7 @@ next tool call, and changing its scope mid-task is how the long runs of 2026-09-
 ## Rules
 
 - `main` is the only branch that is pushed. `wt/*` branches are local and short-lived.
-- One slot per worktree; `remove` frees it. Nine slots is the ceiling.
+- One slot per worktree; `remove` frees it. Fourteen slots is the ceiling: slot N uses Redis index N+1, and Redis has 16 databases. Memory, not slots, is the practical limit: at most three worktrees run an E2E stack at once on a 16 GB machine.
 - A worktree made by a tool has no slot until `init` runs in it (`list` shows `- (none)`),
   and until then it must not run the suite, since it would use the shared default database.
 - Never recursively delete a worktree directory by hand while its dependency links exist:

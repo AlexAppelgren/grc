@@ -17,7 +17,7 @@
 #   set -a; . ./.env.worktree; set +a
 set -euo pipefail
 
-MAX_SLOT=9
+MAX_SLOT=14   # Redis has 16 databases; slot N uses index N+1 (docs/runbooks/WORKTREES.md)
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 WT_DIR_REL=".claude/worktrees"   # git-ignored in .gitignore, checked in `ensure_ignored`
 APP_PW="cw-app-dev-only"
