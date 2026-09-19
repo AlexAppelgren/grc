@@ -103,7 +103,8 @@ laptop). The cloud machine has 4 CPUs and 15 GB, enough for a full E2E stack of 
 
 1. **Dispatch.** The main agent creates a one-off routine with `RemoteTrigger` (no schedule):
    repository `AlexAppelgren/grc`, model `claude-opus-5` set explicitly, the task's branch
-   `claude/<task>`, and the prompt below. Then it runs the routine once.
+   `claude/<task>`, and a short prompt that names the task and its brief and points at "The
+   session's rules" below. Then it runs the routine once.
 2. **The session** runs `bash scripts/cloud-setup.sh` (with `--e2e` when its gates include E2E),
    builds the task test-first exactly like a local sub-agent, runs its gates, commits, and
    pushes only its own `claude/<task>-…` branch. It never pushes `main` or `candidate` and
@@ -115,11 +116,26 @@ laptop). The cloud machine has 4 CPUs and 15 GB, enough for a full E2E stack of 
    `git merge --squash`, `prepush.sh --quick`, commit, `ship.sh`. Delete the remote branch
    after the merge (`git push origin --delete claude/<task>-…`).
 
-The prompt names the task and its brief file, says to run the setup script first, to work
-test-first inside the task's owned paths, to run every gate the task lists, never to commit
-`openapi.json` or `api.generated.ts`, to commit with a playbook 13.4 message and push only its
-own branch, and to end with a report: commit, files, gates with results, deviations, and what
-the security review should look at.
+### The session's rules
+
+A cloud session's prompt only names its task and brief; these are its standing rules.
+
+1. Run `bash scripts/cloud-setup.sh` first, with `--e2e` when the task's gates include E2E. If
+   it fails, fix only what stops it, say exactly what in the report, and continue.
+2. Read CLAUDE.md (loaded), this runbook, the brief's opening sections and the task in full,
+   then every file the task names. Stay inside the task's owned paths; any other file touched
+   is kept minimal and named in the report.
+3. Nobody can answer questions: take the documented default for any open decision and say so.
+4. Test-first where there is code. Never simplify away a guard, test, audit row, permission
+   check or validation. Never lower a gate, skip or quarantine a test, or mock an API in E2E.
+   Never commit `openapi.json` or `frontend/src/types/api.generated.ts`. Never change
+   dependencies.
+5. Run every gate the task lists, then `bash scripts/prepush.sh --quick`; all must be green.
+6. Commit on the session's own `claude/...` branch with a playbook 13.4 message (no model or
+   tool names, no Co-Authored-By line) and `git push -u origin HEAD`. Never push `main` or
+   `candidate`, never open a pull request, never send push notifications.
+7. End with a report: branch and commit; files changed; each gate and its result; every
+   default taken; any deviation from the task and why; what a reviewer should look at.
 
 Model and effort: the routine takes a model (`claude-opus-5`, set explicitly, never a smaller
 one); on 2026-09-19 its API accepted no effort setting, so a cloud session runs at the model's
