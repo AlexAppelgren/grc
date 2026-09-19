@@ -144,6 +144,15 @@ describe('navigation registry (playbook 6.2)', () => {
     }
   });
 
+  // AUD-01: audit.read is in every system role, so the audit log is the one
+  // admin section a reader reaches, and it is what puts Admin in their rail.
+  it('lets any member reach Admin for the audit log and the organisation profile', () => {
+    expect(visibleDestinations('tenant', ['audit.read']).map((d) => d.id)).toEqual(['today', 'admin']);
+    expect(childDestinations('admin', ['audit.read']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-audit-log']);
+    expect(findDestination('admin-audit-log')?.href).toBe('/admin/audit-log');
+    expect(existsSync(join(import.meta.dirname, '..', '..', 'app', '(tenant)', 'admin', 'audit-log', 'page.tsx'))).toBe(true);
+  });
+
   it('has unique ids and hrefs, and a label in every language', () => {
     const ids = destinations.map((d) => d.id);
     const hrefs = destinations.map((d) => d.href);

@@ -43,6 +43,9 @@ const TENANT_ADMIN_PERMISSIONS = [
   // way in to the footprint screen (FP-01, FP-02).
   'footprint.request',
   'footprint.approve',
+  // Every system role holds audit.read (PRD section 6), so every member
+  // reaches Admin for the audit log and the organisation profile (AUD-01).
+  'audit.read',
 ] as const;
 
 // Seeing the footprint is enough to request a change or to approve one; the
@@ -65,6 +68,7 @@ export const destinations: readonly Destination[] = [
   { id: 'admin-footprint', href: '/admin/footprint', labelKey: 'nav.admin.footprint', surface: 'tenant', anyOfPermissions: FOOTPRINT_PERMISSIONS, group: 'admin', parent: 'admin' },
   { id: 'admin-api-keys', href: '/admin/api-keys', labelKey: 'nav.admin.apiKeys', surface: 'tenant', anyOfPermissions: ['integrations.manage'], group: 'admin', parent: 'admin' },
   { id: 'admin-security-log', href: '/admin/security-log', labelKey: 'nav.admin.securityLog', surface: 'tenant', anyOfPermissions: ['security.manage'], group: 'admin', parent: 'admin' },
+  { id: 'admin-audit-log', href: '/admin/audit-log', labelKey: 'nav.admin.auditLog', surface: 'tenant', anyOfPermissions: ['audit.read'], group: 'admin', parent: 'admin' },
   // Account: any signed-in person, from the who panel.
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },

@@ -32,7 +32,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| AUD-01 | Append-only audit log written with every change: actor (user, agent, system), action, subject with its title at the time, summary, before and after | M | R1 | in_progress |
+| AUD-01 | Append-only audit log written with every change: actor (user, agent, system), action, subject with its title at the time, summary, before and after | M | R1 | built |
 | AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 | pending |
 | AUD-03 | Problem reports resolved by a proposal, closing the loop to the agents | S | R1 | pending |
 | AUD-04 | Retention per tenant with a purge that respects append-only tables | S | R3 | pending |
