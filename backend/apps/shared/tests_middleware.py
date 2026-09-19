@@ -77,15 +77,16 @@ class ServerTiming(TestCase):
 
     @override_settings(API_BUDGET_MS=0)
     def test_over_budget_never_logs_a_path_parameter(self) -> None:
-        """Security review 2026-09-19, finding F6: the invitation token travels in the
-        path, so the over-budget warning logs the matched route, not the concrete path,
-        and a 404 logs no more than the first two segments."""
-        token = "secret-invitation-token-123"
+        """Security review 2026-09-19, finding F6: a path parameter can carry a value a
+        caller chose, so the over-budget warning logs the matched route, not the concrete
+        path, and a 404 logs no more than the first two segments. (The invitation token
+        left every path with F29; this guards the rule for any later path parameter.)"""
+        token = "secret-value-123"
         with self.assertLogs("apps.shared.middleware", level="WARNING") as logs:
-            self.client.post(f"/api/v1/auth/invitations/{token}/open")
+            self.client.get(f"/api/v1/vocab/tenant_tag/{token}")
         route = getattr(logs.records[0], "route")  # noqa: B009
         self.assertNotIn(token, route)
-        self.assertIn("invitations", route)
+        self.assertIn("vocab", route)
         with self.assertLogs("apps.shared.middleware", level="WARNING") as logs:
             self.client.get(f"/no/such/{token}")
         self.assertNotIn(token, getattr(logs.records[0], "route"))  # noqa: B009

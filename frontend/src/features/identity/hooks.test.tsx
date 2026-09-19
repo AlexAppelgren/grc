@@ -143,7 +143,8 @@ describe('identity hooks', () => {
     await request.result.current.mutateAsync('a@b.c');
     const open = renderHook(() => useOpenInvitation(), { wrapper });
     await open.result.current.mutateAsync('tok-1');
-    expect(sent.map((s) => s.path)).toEqual(['/api/v1/auth/code/verify', '/api/v1/auth/code/request', '/api/v1/auth/invitations/tok-1/open']);
+    expect(sent.map((s) => s.path)).toEqual(['/api/v1/auth/code/verify', '/api/v1/auth/code/request', '/api/v1/auth/invitations/open']);
+    expect(sent[2]?.body).toEqual({ token: 'tok-1' });
   });
 
   it('useVerifyInvitationCode stores the enrolment token', async () => {

@@ -28,8 +28,10 @@ export type { RegisterVerifyBody } from '@/features/identity/types';
 const AUTH = '/api/v1/auth';
 const ME = '/api/v1/me';
 
+// The token rides in the body, never a path, so no request line holds it
+// (security review F29).
 export async function openInvitation(token: string): Promise<void> {
-  await api.post(`${AUTH}/invitations/${encodeURIComponent(token)}/open`, {});
+  await api.post(`${AUTH}/invitations/open`, { token });
 }
 
 // The invitation path: the link's token names the account, so no address is

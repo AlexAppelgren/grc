@@ -144,8 +144,13 @@ export function mailsTo(outbox: OutboxMessage[], address: string): OutboxMessage
   return outbox.filter((m) => m.to.toLowerCase() === address.toLowerCase());
 }
 
-/** The `/invite/<token>` path in a mail body, or null. */
-export function invitePathFrom(message: OutboxMessage): string | null {
-  const match = /\/invite\/([A-Za-z0-9_\-.~]+)/.exec(message.body);
-  return match === null ? null : `/invite/${match[1]}`;
+/** The invitation link for a token: in the fragment, never a path (security review F29). */
+export function inviteLink(token: string): string {
+  return `/invite#${token}`;
+}
+
+/** The `/invite#<token>` link in a mail body, or null. */
+export function inviteLinkFrom(message: OutboxMessage): string | null {
+  const token = /\/invite#([A-Za-z0-9_\-.~]+)/.exec(message.body)?.[1];
+  return token === undefined ? null : inviteLink(token);
 }

@@ -587,7 +587,7 @@
         "type": "object"
       },
       "InvitationCodeVerifyBody": {
-        "description": "The invitation path: the link's token names the account, so no address travels.\nThe token rides in the body, never the path, so no access log holds it (F6).",
+        "description": "The invitation path: the link's token names the account, so no address travels.\nThe token rides in the body, never the path, so no access log holds it (F6, F29).",
         "properties": {
           "code": {
             "maxLength": 12,
@@ -605,6 +605,21 @@
           "code"
         ],
         "title": "InvitationCodeVerifyBody",
+        "type": "object"
+      },
+      "InvitationOpenBody": {
+        "description": "Opening the emailed link. The token rides in the body, never a path, so no server\nthat logs request lines ever holds it (security review F29).",
+        "properties": {
+          "token": {
+            "maxLength": 128,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "InvitationOpenBody",
         "type": "object"
       },
       "InvitationOut": {
@@ -3659,6 +3674,38 @@
         ]
       }
     },
+    "/api/v1/auth/invitations/open": {
+      "post": {
+        "operationId": "openInvitation",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationOpenBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "summary": "Open Invitation",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
     "/api/v1/auth/invitations/verify": {
       "post": {
         "operationId": "verifyInvitationCode",
@@ -3686,38 +3733,6 @@
           }
         },
         "summary": "Verify Invitation Code",
-        "tags": [
-          "Identity"
-        ]
-      }
-    },
-    "/api/v1/auth/invitations/{token}/open": {
-      "post": {
-        "operationId": "openInvitation",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "202": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Empty"
-                }
-              }
-            },
-            "description": "Accepted"
-          }
-        },
-        "summary": "Open Invitation",
         "tags": [
           "Identity"
         ]

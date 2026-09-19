@@ -79,7 +79,9 @@ describe('api-client', () => {
 
   it('classifies bootstrap paths and write methods', () => {
     expect(isSessionBootstrapPath(REFRESH_PATH)).toBe(true);
-    expect(isSessionBootstrapPath('/api/v1/auth/invitations/abc/open')).toBe(true);
+    expect(isSessionBootstrapPath('/api/v1/auth/invitations/open')).toBe(true);
+    // The token never rides in a path (F29): the old path form is no route at all.
+    expect(isSessionBootstrapPath('/api/v1/auth/invitations/abc/open')).toBe(false);
     expect(isSessionBootstrapPath('/api/v1/auth/invitations/verify')).toBe(true);
     expect(isSessionBootstrapPath('/api/v1/auth/passkeys/authenticate/options')).toBe(true);
     expect(isSessionBootstrapPath('/api/v1/auth/passkeys/authenticate/verify')).toBe(true);

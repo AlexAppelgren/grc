@@ -39,9 +39,16 @@ class CodeVerifyBody(CamelSchema):
     code: str = Field(max_length=12)
 
 
+class InvitationOpenBody(CamelSchema):
+    """Opening the emailed link. The token rides in the body, never a path, so no server
+    that logs request lines ever holds it (security review F29)."""
+
+    token: str = Field(max_length=128)
+
+
 class InvitationCodeVerifyBody(CamelSchema):
     """The invitation path: the link's token names the account, so no address travels.
-    The token rides in the body, never the path, so no access log holds it (F6)."""
+    The token rides in the body, never the path, so no access log holds it (F6, F29)."""
 
     token: str = Field(max_length=128)
     code: str = Field(max_length=12)

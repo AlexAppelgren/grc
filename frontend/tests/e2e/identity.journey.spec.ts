@@ -6,7 +6,8 @@ import {
   ANNA_INVITE_TOKEN,
   E2E_FIXED_CODE,
   installAuthenticator,
-  invitePathFrom,
+  inviteLink,
+  inviteLinkFrom,
   LOGINS,
   mailOutbox,
   mailsTo,
@@ -73,8 +74,14 @@ test.describe('identity journeys', () => {
     test("ID-S4: The enrolment session reaches only passkey registration and GET /me", async ({ page, apiGuard }) => {
       // pending: ID-S4 (ID-02, AC-ID2) -> built in chunk 1
       allowFreshContext(apiGuard);
-      await page.goto(`/invite/${ANNA_INVITE_TOKEN}`);
+      // The token rides in the link's fragment and the request bodies, never a
+      // request line any server logs (security review F29).
+      const requestLines: string[] = [];
+      page.on('request', (request) => requestLines.push(request.url()));
+      await page.goto(inviteLink(ANNA_INVITE_TOKEN));
       await enterInvitationCode(page);
+      expect(requestLines.some((url) => url.endsWith('/api/v1/auth/invitations/open'))).toBe(true);
+      expect(requestLines.filter((url) => url.includes(ANNA_INVITE_TOKEN))).toEqual([]);
       // The enrolment session may reach only registration and GET /me: every
       // tenant screen sends her back to the passkey step.
       await page.goto('/');
@@ -89,7 +96,7 @@ test.describe('identity journeys', () => {
       // pending: ID-S25 (ID-01, ID-02, ID-03, AC-ID1, J-1) -> built in chunk 1
       allowFreshContext(apiGuard);
       await installAuthenticator(page.context());
-      await page.goto(`/invite/${ANNA_INVITE_TOKEN}`);
+      await page.goto(inviteLink(ANNA_INVITE_TOKEN));
       await enterInvitationCode(page);
       const firstName = await createPasskey(page);
       // ID-S5 in passing: the first passkey activates the account and asks for a second one.
@@ -144,7 +151,7 @@ test.describe('identity journeys', () => {
 
       const mail = mailsTo(await mailOutbox(request), LOGINS.anna).at(-1);
       expect(mail, 'Anna was notified with a new invitation link').toBeDefined();
-      reissuedInvitePath = mail === undefined ? null : invitePathFrom(mail);
+      reissuedInvitePath = mail === undefined ? null : inviteLinkFrom(mail);
       expect(reissuedInvitePath).not.toBeNull();
     });
 

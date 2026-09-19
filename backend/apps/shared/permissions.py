@@ -327,8 +327,8 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         UngatedReason.BOOTSTRAP,
         "The sign-in page needs the product name before anyone has signed in.",
     ),
-    ("POST", "/auth/invitations/{token}/open"): Ungated(
-        UngatedReason.PUBLIC_TOKEN, "The single-use invitation token in the URL is the grant (ID-01)."
+    ("POST", "/auth/invitations/open"): Ungated(
+        UngatedReason.PUBLIC_TOKEN, "The single-use invitation token, in the body, is the grant; rate limited (ID-01)."
     ),
     ("POST", "/auth/invitations/verify"): Ungated(
         UngatedReason.PUBLIC_TOKEN,

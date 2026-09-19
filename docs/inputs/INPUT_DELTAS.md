@@ -210,3 +210,10 @@ Chunk 1 follow-up (enrolment without an address, Alex 2026-09-19):
   consumed or unknown invitation, and verifies only a code issued for that
   invitation's address. `POST /auth/code/verify` with `{email, code}` stays for the
   sign-in page's "First time here?" path (J-1).
+- `POST /auth/invitations/open` (`openInvitation`) is not in the design either, and
+  takes `{token}` in the body: there is no path form (security review F29). Every
+  server that logs request lines (Django's request logger on a 4xx, gunicorn's access
+  log, the hosting edge) would otherwise write the token down. The emailed link is
+  `/invite#<token>`: a fragment never reaches a server, proxy or `Referer`, and the page
+  clears it before its first request. Same `auth:ip` rate limit, 202 `{}`, and 410
+  `invitation_expired` for an expired, revoked, consumed or unknown token.

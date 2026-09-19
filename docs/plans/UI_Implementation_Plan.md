@@ -103,7 +103,7 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
 | `GET /health` (served at `/health/`, site root, INPUT_DELTAS §7) | none, load balancer | none | none | no | none | NFR-S14 | served |
-| `POST /auth/invitations/{token}/open` | `auth-invitation.html` | both | none | no | anyone with the link | ID-S2, ID-S25 | in build |
+| `POST /auth/invitations/open` | `auth-invitation.html` | both | none | no | anyone with the link | ID-S2, ID-S25 | in build |
 | `POST /auth/code/request` | `auth-code.html`, `auth-sign-in.html` | both | none | no | anyone; enrolled account looks identical | ID-S6, ID-S25 | in build |
 | `POST /auth/code/verify` | `auth-code.html` | both | none | no | anyone; lock after 5 attempts | ID-S3, ID-S4 | in build |
 | `POST /auth/passkeys/register/options`, `/verify` | `auth-enrol.html` (enrolment session), `me-passkeys.html` (add) | both | enrolment session or any signed-in | no | anyone | ID-S5, ID-S10 | in build |

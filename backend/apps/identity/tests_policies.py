@@ -14,6 +14,7 @@ from datetime import timedelta
 from io import StringIO
 from typing import Any
 from unittest import mock
+from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.core.cache import cache
@@ -58,6 +59,7 @@ from apps.shared.adapters.mailer import MockMailer, OutgoingMail
 from apps.shared.authentication import ApiKeyAuth, Principal, PrincipalKind
 from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent
+from config.api import api
 from apps.shared.permissions import enforce_step_up
 from apps.shared.testing import sign_in, user_principal
 
@@ -345,7 +347,7 @@ class BootstrapPlatform(TestCase):
         self.assertEqual(PlatformRoleAssignment.objects.filter(user=user, role__key="platform_admin").count(), 1)
         invitation = Invitation.objects.get(email="root@bleqq.test", tenant__isnull=True)
         self.assertIsNone(invitation.tenant_id)
-        self.assertIn("/invite/", out.getvalue())
+        self.assertIn("/invite#", out.getvalue())
         self.assertEqual(MockMailer.sent[-1].to, "root@bleqq.test")
         call_command("bootstrap_platform", "--admin-email", "root@bleqq.test", stdout=StringIO())
         self.assertEqual(PlatformRoleAssignment.objects.filter(user=user).count(), 1)
@@ -818,7 +820,7 @@ class InvitationCodeByToken(TestCase):
 
     def _open(self, token: str) -> str:
         """Open the link and return the code the mail carried."""
-        self.assertEqual(self._post(f"/auth/invitations/{token}/open").status_code, 202)
+        self.assertEqual(self._post("/auth/invitations/open", {"token": token}).status_code, 202)
         found = re.search(r"Your code is (\d+)", MockMailer.sent[-1].body)
         assert found is not None
         return found.group(1)
@@ -917,3 +919,50 @@ class InvitationCodeByToken(TestCase):
         tenancy.activate(self.tenant.id)
         self.assertNotIn(self.token, str(list(LoginEvent.objects.values())))
         self.assertNotIn(self.token, str(list(AuditEvent.objects.values())))
+
+
+class InvitationTokenNeverInAPath(TestCase):
+    """Security review 2026-09-19, finding F29: every server that logs request lines
+    (Django's request logger on a 4xx, runserver, gunicorn's access log, the hosting edge,
+    the web server) writes the path down, so the invitation token must never be in one.
+    The emailed link carries it in the fragment, which no browser sends, and the API
+    takes it in the body."""
+
+    def setUp(self) -> None:
+        MockMailer.reset()
+        cache.clear()
+
+    def test_no_invitation_route_has_a_path_parameter(self) -> None:
+        paths = api.get_openapi_schema()["paths"]
+        invitation_auth = sorted(path for path in paths if path.startswith("/api/v1/auth/invitations"))
+        self.assertEqual(invitation_auth, ["/api/v1/auth/invitations/open", "/api/v1/auth/invitations/verify"])
+        for path in invitation_auth:
+            self.assertNotIn("{", path)
+            self.assertEqual(set(paths[path]), {"post"})
+
+    def test_the_emailed_link_holds_the_token_in_the_fragment_alone(self) -> None:
+        token = "secret-invitation-token-29"  # noqa: S105 a test value, not a credential
+        parts = urlsplit(mail.invitation_link(token))
+        self.assertEqual((parts.path, parts.query, parts.fragment), ("/invite", "", token))
+
+    def test_opening_takes_the_token_in_the_body_and_no_request_line_or_log_carries_it(self) -> None:
+        tenant = factories.tenant(slug="f29-bank")
+        invitation = factories.invitation(tenant, email="anna@f29.example")
+        token: str = invitation.plain_token  # type: ignore[attr-defined]
+        opened = self.client.post("/api/v1/auth/invitations/open", data={"token": token}, content_type="application/json")
+        self.assertEqual(opened.status_code, 202, opened.content)
+        self.assertIn("Your code is", MockMailer.sent[-1].body)
+        self.assertNotIn(token, opened.wsgi_request.get_full_path())
+        # A 4xx is where Django's request logger writes the request line down.
+        unknown = "unknown-token-29"
+        with self.assertLogs("django.request", level="WARNING") as logs:
+            gone = self.client.post("/api/v1/auth/invitations/open", data={"token": unknown}, content_type="application/json")
+        self.assertEqual((gone.status_code, gone.json()["code"]), (410, "invitation_expired"))
+        self.assertNotIn(unknown, "\n".join(logs.output))
+        self.assertNotIn(unknown, gone.wsgi_request.get_full_path())
+        # The path form is gone: a token in a path reaches no handler.
+        self.assertEqual(self.client.post(f"/api/v1/auth/invitations/{token}/open").status_code, 404)
+
+    def test_a_token_longer_than_any_issued_is_refused_before_any_lookup(self) -> None:
+        response = self.client.post("/api/v1/auth/invitations/open", data={"token": "x" * 129}, content_type="application/json")
+        self.assertEqual(response.status_code, 422)

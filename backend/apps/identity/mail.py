@@ -24,7 +24,10 @@ def _deliver(to: str, subject: str, body: str) -> None:
 
 
 def invitation_link(token: str) -> str:
-    return f"{settings.APP_BASE_URL.rstrip('/')}/invite/{token}"
+    """The token rides in the fragment, which a browser never sends to any server, proxy
+    or `Referer` header, so no request line ever holds it (security review F29). The page
+    reads it and posts it in the body of `POST /auth/invitations/open`."""
+    return f"{settings.APP_BASE_URL.rstrip('/')}/invite#{token}"
 
 
 def send_code(to: str, code: str) -> None:

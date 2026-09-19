@@ -31,8 +31,7 @@ export const STEP_UP_REQUIRED_CODE = 'step_up_required';
 // under the enrolment or the full session and carries that token.
 export const SESSION_BOOTSTRAP_PATHS: readonly RegExp[] = [
   /^\/api\/v1\/auth\/refresh$/,
-  /^\/api\/v1\/auth\/invitations\/[^/]+\/open$/,
-  /^\/api\/v1\/auth\/invitations\/verify$/,
+  /^\/api\/v1\/auth\/invitations\/(open|verify)$/,
   /^\/api\/v1\/auth\/code\/(request|verify)$/,
   /^\/api\/v1\/auth\/passkeys\/authenticate\/(options|verify)$/,
 ];

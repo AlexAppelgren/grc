@@ -59,8 +59,9 @@ def _scrub_mapping(mapping: dict[str, Any], sensitive: frozenset[str]) -> dict[s
 
 
 def scrub_url(url: str) -> str:
-    """A path can carry a credential: the single-use invitation token in
-    `/auth/invitations/{token}/open` (security review 2026-09-19, finding F6)."""
+    """A path can carry a credential. The invitation token used to, in
+    `/auth/invitations/{token}/open` (finding F6); since F29 it rides in the body and no
+    route takes it in a path, so this stays as defence in depth against a stale link."""
     return _TOKEN_PATH.sub(rf"\1{REDACTED}", url)
 
 

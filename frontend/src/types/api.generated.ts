@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/invitations/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open Invitation */
+        post: operations["openInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/invitations/verify": {
         parameters: {
             query?: never;
@@ -49,23 +66,6 @@ export interface paths {
         put?: never;
         /** Verify Invitation Code */
         post: operations["verifyInvitationCode"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/invitations/{token}/open": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Open Invitation */
-        post: operations["openInvitation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1271,11 +1271,20 @@ export interface components {
         /**
          * InvitationCodeVerifyBody
          * @description The invitation path: the link's token names the account, so no address travels.
-         *     The token rides in the body, never the path, so no access log holds it (F6).
+         *     The token rides in the body, never the path, so no access log holds it (F6, F29).
          */
         InvitationCodeVerifyBody: {
             /** Code */
             code: string;
+            /** Token */
+            token: string;
+        };
+        /**
+         * InvitationOpenBody
+         * @description Opening the emailed link. The token rides in the body, never a path, so no server
+         *     that logs request lines ever holds it (security review F29).
+         */
+        InvitationOpenBody: {
             /** Token */
             token: string;
         };
@@ -2523,6 +2532,30 @@ export interface operations {
             };
         };
     };
+    openInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationOpenBody"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Empty"];
+                };
+            };
+        };
+    };
     verifyInvitationCode: {
         parameters: {
             query?: never;
@@ -2543,28 +2576,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionTokens"];
-                };
-            };
-        };
-    };
-    openInvitation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Accepted */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Empty"];
                 };
             };
         };

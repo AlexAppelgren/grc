@@ -20,9 +20,11 @@ describe('identity api', () => {
     await identity.openInvitation('e2e/invite');
     await identity.requestCode({ email: 'anna@example-bank.test' });
     expect(sent.map((s) => [s.method, s.path, s.authorization])).toEqual([
-      ['post', '/api/v1/auth/invitations/e2e%2Finvite/open', undefined],
+      ['post', '/api/v1/auth/invitations/open', undefined],
       ['post', '/api/v1/auth/code/request', undefined],
     ]);
+    // The token rides in the body, never a path (security review F29).
+    expect(sent[0]?.body).toEqual({ token: 'e2e/invite' });
     expect(sent[1]?.body).toEqual({ email: 'anna@example-bank.test' });
   });
 

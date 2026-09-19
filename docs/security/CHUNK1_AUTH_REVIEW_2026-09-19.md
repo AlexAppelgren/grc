@@ -122,8 +122,7 @@ penetration test (playbook 18).
 
 ## Addendum, 2026-09-19: F29, the invitation token travels in request paths
 
-**Severity:** medium. **Status:** open, fix scheduled as the first task after chunks 1 and 2
-are committed. Nothing is deployed yet.
+**Severity:** medium. **Status:** fixed 2026-09-19, before any deployment.
 
 Found while building the code-only invitation step. The token sits in the path of
 `POST /auth/invitations/{token}/open` and of the page URL `/invite/{token}`, so every server
@@ -139,6 +138,17 @@ link becomes `/invite#<token>`: a URL fragment is never sent to any server, prox
 `Referer` header. The page reads it and posts it in the request body to `/open`, as the new
 `POST /auth/invitations/verify` already does. A test asserts no request line carries a token.
 
+**Fixed.** The link is `/invite#<token>` (`apps/identity/mail.py`). `POST
+/auth/invitations/open` takes `{token}` in the body, with the same `auth:ip` rate limit,
+410 `invitation_expired`, audit and security-log behaviour; the path form is gone (404).
+The page `/invite` reads the fragment, replaces the address with `/enrol?via=invitation`
+before any request, keeps the token in React state alone and keeps `no-referrer`. F6's
+route-only logging and Sentry URL scrub stay as defence in depth. Tests:
+`tests_policies.InvitationTokenNeverInAPath` (no invitation route has a path parameter,
+the link holds the token only in its fragment, the 410's request log line and every
+request path are token-free), `InvitationScreen.test.tsx` ("opening the invitation": the
+fragment is read and cleared before the first request, the token posted in the body),
+and E2E `identity.journey` ID-S4 (no browser request URL carries the seeded token).
 
 ## Addendum, 2026-09-19: F30, CodeQL py/weak-sensitive-data-hashing
 

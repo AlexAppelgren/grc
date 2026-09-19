@@ -62,7 +62,7 @@ from config.api import api
 
 ANNA = "anna@bank.example"
 CHROME_ON_WINDOWS = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
-LINK = re.compile(r"/invite/(\S+)")
+LINK = re.compile(r"/invite#(\S+)")
 CODE = re.compile(r"Your code is (\d+)")
 COOKIE = settings.REFRESH_COOKIE_NAME
 
@@ -106,7 +106,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         return Invitation.objects.get(pk=response.json()["id"]), token
 
     def _open_and_get_code(self, token: str) -> str:
-        response = self._post(f"/auth/invitations/{token}/open")
+        response = self._post("/auth/invitations/open", {"token": token})
         self.assertEqual(response.status_code, 202, response.content)
         return _find(CODE, MockMailer.sent[-1].body)
 
@@ -175,18 +175,18 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertNotIn(token, str(AuditEvent.objects.filter(subject_id=invitation.id).values()))
         # Expired: opening after INVITATION_TTL_HOURS (a setting) answers 410.
         with self._later(hours=settings.INVITATION_TTL_HOURS + 1):
-            expired = self._post(f"/auth/invitations/{token}/open")
+            expired = self._post("/auth/invitations/open", {"token": token})
         self.assertEqual(expired.status_code, 410)
         self.assertEqual(expired.json()["code"], "invitation_expired")
         # Consumed: after enrolment the same link answers 410 too.
         user, authenticator, body, _ = self._enrol("bo@bank.example")
         self.activate(self.tenant)
-        consumed_token = _find(LINK, next(m.body for m in MockMailer.sent if m.to == "bo@bank.example" and "/invite/" in m.body))
-        consumed = self._post(f"/auth/invitations/{consumed_token}/open")
+        consumed_token = _find(LINK, next(m.body for m in MockMailer.sent if m.to == "bo@bank.example" and "/invite#" in m.body))
+        consumed = self._post("/auth/invitations/open", {"token": consumed_token})
         self.assertEqual(consumed.status_code, 410)
         self.assertEqual(consumed.json()["code"], "invitation_expired")
         # An unknown token is 410 as well: the answer never says which.
-        self.assertEqual(self._post("/auth/invitations/not-a-token/open").status_code, 410)
+        self.assertEqual(self._post("/auth/invitations/open", {"token": "not-a-token"}).status_code, 410)
 
     def test_id_s2(self) -> None:
         """ID-S2

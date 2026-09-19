@@ -69,7 +69,7 @@ class RequestIdLogFilter(logging.Filter):
 
 
 def loggable_route(request: HttpRequest) -> str:
-    """The URL pattern that matched (`api/v1/auth/invitations/<token>/open`), which holds
+    """The URL pattern that matched (`api/v1/vocab/<list>/<key>`), which holds
     no value a caller supplied. When nothing matched (a 404) the path is reduced to its
     first two segments, which is enough to see what was hit and never a token."""
     match = getattr(request, "resolver_match", None)
@@ -90,8 +90,8 @@ class ServerTimingMiddleware:
         response["Server-Timing"] = f"app;dur={elapsed_ms:.1f}"
         if elapsed_ms > settings.API_BUDGET_MS:
             # The route pattern is logged, never the concrete path, the body or the query
-            # (playbook 4.7): a path can carry a credential, such as the single-use
-            # invitation token in `/auth/invitations/{token}/open` (finding F6).
+            # (playbook 4.7): a path can carry a value a caller chose (finding F6). No
+            # credential travels in a path any more (F29); this keeps it that way in logs.
             logger.warning(
                 "request over budget",
                 extra={

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Screen card: invitation landing (/invite/[token])</title>
+<title>Screen card: invitation landing (/invite#token)</title>
 <style>
 /* Cut from design/prototype/index.html (playbook Section 7, step 4); the
    prototype has no invitation landing. Same auth surface as auth-sign-in. */
@@ -68,7 +68,7 @@ p{margin:0 0 .75rem}
       <div class="bar"><button class="btn ghost">Go to sign in</button><button class="btn">Try again</button></div>
     </section>
 
-    <p class="note">Invitation card. Opening the link asks the server to send the code, then the code card (auth-code.html) follows in place at /enrol?via=invitation, asking for the code alone: the token names the account. The page never shows the address or the code. The 410 state is the same for expired and consumed links. Two buttons share one row on phones, primary on the right.</p>
+    <p class="note">Invitation card. The emailed link is /invite#token: the token rides in the fragment, which no browser sends to a server, and the page clears it from the address before asking for anything. Opening the link asks the server to send the code, then the code card (auth-code.html) follows in place at /enrol?via=invitation, asking for the code alone: the token names the account. The page never shows the address or the code. The 410 state is the same for expired and consumed links. Two buttons share one row on phones, primary on the right.</p>
   </div>
 </div>
 </body>

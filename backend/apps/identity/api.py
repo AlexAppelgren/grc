@@ -31,6 +31,7 @@ from apps.identity.schemas import (
     CodeVerifyBody,
     Empty,
     InvitationCodeVerifyBody,
+    InvitationOpenBody,
     InvitationOut,
     InvitationsPage,
     Me,
@@ -101,10 +102,11 @@ def _session_response(bundle: session_logic.SessionBundle, response: HttpRespons
 # ---------------------------------------------------------------------------------------
 # Invitation, code, enrolment (ID-01, ID-02)
 # ---------------------------------------------------------------------------------------
-@router.post("/auth/invitations/{token}/open", response={202: Empty}, auth=None, operation_id="openInvitation", by_alias=True)
-def open_invitation(request: HttpRequest, token: str) -> tuple[int, Empty]:
-    # Ungated by design: public-token (the single-use token is the grant).
-    invitation_logic.open_invitation(token, request)
+@router.post("/auth/invitations/open", response={202: Empty}, auth=None, operation_id="openInvitation", by_alias=True)
+def open_invitation(request: HttpRequest, body: InvitationOpenBody) -> tuple[int, Empty]:
+    # Ungated by design: public-token (the single-use token is the grant). It rides in the
+    # body, never the path, so no request line holds it (security review F29).
+    invitation_logic.open_invitation(body.token, request)
     return 202, Empty()
 
 

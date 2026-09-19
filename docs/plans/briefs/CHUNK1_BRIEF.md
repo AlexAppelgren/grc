@@ -100,7 +100,8 @@ is R2: do not create it.
 ## API contract (Ninja, `/api/v1`, camelCase, RFC 9457 errors; both agents build to this)
 Auth, ungated by design (`bootstrap` / `public-token`), rate limited (settings; off in
 tests except the test that proves it):
-- `POST /auth/invitations/{token}/open` -> 202 `{}`; valid token: sends a code to the
+- `POST /auth/invitations/open` `{token}` -> 202 `{}` (the token in the body since
+  security review F29, the link is `/invite#<token>`); valid token: sends a code to the
   invited address and answers 202; expired or consumed: 410 `invitation_expired`.
 - `POST /auth/code/request` `{email}` -> 202 `{}` always (neutral); sends a code only for
   an address with an open invitation or re-enrolment and no live passkey; otherwise logs
@@ -212,7 +213,7 @@ Cards in `design/screens/`: `auth-invitation.html`, `auth-code.html`, `auth-enro
 `admin-api-keys.html`, `admin-security-log.html`, `admin-organisation.html` (TEN-01).
 Cut from the prototype's language (its CSS variables and components); phone first; two
 buttons share one row, primary right.
-Routes: `/sign-in`, `/invite/[token]`, `/enrol` (code, then passkey, then second-passkey
+Routes: `/sign-in`, `/invite` (token in the fragment, F29), `/enrol` (code, then passkey, then second-passkey
 prompt), `/me/passkeys`, `/me/sessions`, `/admin/organisation`, `/admin/members`,
 `/admin/roles`, `/admin/api-keys`, `/admin/security-log`, `/restricted`. Navigation
 registry entries with `anyOfPermissions`. `api-client.ts`: on 403 `step_up_required` run
