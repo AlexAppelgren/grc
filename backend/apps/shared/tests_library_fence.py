@@ -116,6 +116,12 @@ class LibraryFenceGuard(SimpleTestCase):
         self.assertEqual(offenders, [], "possible library writes outside the fence:\n  " + "\n  ".join(offenders))
 
     def test_enumeration_reports_the_library_models_it_guards(self) -> None:
-        # Phase 0 has none; the list is printed so a reviewer can see what is guarded.
-        names = sorted(model.__name__ for model in concrete_library_models())
-        self.assertIsInstance(names, list)
+        # Chunk 3's library records are guarded beside chunk 2's vocabularies and terms.
+        names = {model.__name__ for model in concrete_library_models()}
+        chunk3 = {
+            "Authority", "Instrument", "InstrumentTitle", "InstrumentRelation", "Provision", "ProvisionVersion",
+            "ProvisionText", "Obligation", "ObligationTitle", "ObligationVersion", "ObligationSummary",
+            "ObligationProvision", "ObligationTerm", "ObligationTag", "ObligationRelation", "Verification",
+        }  # fmt: skip
+        self.assertLessEqual(chunk3 | {"TaxonomyTerm", "RelationType"}, names)
+        self.assertNotIn("ProblemReport", names, "any member reports a problem; it is a mixed tenant table, not a library record")

@@ -26,7 +26,8 @@ from apps.identity.models import Invitation, Membership, PlatformRoleAssignment,
 from apps.shared import tenancy
 from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, REISSUE_LOGIN_EMAIL, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
-from apps.shared.e2e_seed import EXPECTED_FOOTPRINTS, EXPECTED_PENDING_REQUEST, EXPECTED_TENANTS, SeedRefused, seed_e2e
+from apps.library.models import Instrument, Obligation, ObligationVersion
+from apps.shared.e2e_seed import EXPECTED_FOOTPRINTS, EXPECTED_LIBRARY, EXPECTED_PENDING_REQUEST, EXPECTED_TENANTS, SeedRefused, seed_e2e
 from apps.shared.models import AuditEvent, Tenant
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm
 from apps.taxonomy.registry import REGISTRY
@@ -159,6 +160,25 @@ class SeedIntegrityGuard(TestCase):
         self.assertEqual(FootprintChangeRequest.objects.filter(tenant=tenant_a).count(), 1)
         self.assertEqual(FootprintTerm.objects.filter(tenant=tenant_a).count(), len(EXPECTED_FOOTPRINTS[TENANT_A_SLUG]))
         self.assertEqual(FootprintHistory.objects.filter(tenant=tenant_a).count(), len(EXPECTED_FOOTPRINTS[TENANT_A_SLUG]))
+
+    def test_the_library_holds_the_prototype_instruments_and_obligations(self) -> None:
+        """Chunk 3 (INV-01..INV-05, J-6): the prototype's instruments and obligations, the
+        research payment obligation with a second version still in the future on the
+        fixture's anchor date, and an English and a Swedish summary on every version."""
+        counts = seed_e2e()
+        self.assertEqual((counts["instruments"], counts["obligations"]), (EXPECTED_LIBRARY.instruments, EXPECTED_LIBRARY.obligations))
+        self.assertEqual(Instrument.objects.count(), EXPECTED_LIBRARY.instruments)
+        self.assertEqual(Obligation.objects.count(), EXPECTED_LIBRARY.obligations)
+        research = list(ObligationVersion.objects.filter(obligation__stable_key=EXPECTED_LIBRARY.research_obligation))
+        self.assertEqual([v.version_number for v in research], [1, 2])
+        assert research[1].effective_from is not None
+        self.assertGreater(research[1].effective_from, EXPECTED_LIBRARY.anchor_date, "version 2 must still be in the future")
+        for version in ObligationVersion.objects.prefetch_related("summaries"):
+            with self.subTest(version=str(version)):
+                self.assertTrue({"en", "sv"} <= {row.language_id for row in version.summaries.all()})
+        seed_e2e()
+        self.assertEqual((Instrument.objects.count(), Obligation.objects.count()), (EXPECTED_LIBRARY.instruments, EXPECTED_LIBRARY.obligations))
+        self.assertEqual(ObligationVersion.objects.filter(obligation__stable_key=EXPECTED_LIBRARY.research_obligation).count(), 2)
 
     def test_the_command_prints_counts(self) -> None:
         out = StringIO()

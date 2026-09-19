@@ -200,6 +200,7 @@ class Checker:
             where = f"obligation_relations.{r['obligation']}->{r['related_obligation']}"
             self.ref(where, r["obligation"], self.obligations, "obligation")
             self.ref(where, r["related_obligation"], self.obligations, "related_obligation")
+            self.vocab_key(where, "relation_type", r["relation"])
             if r["obligation"] == r["related_obligation"]:
                 self.problem(where, "relates an obligation to itself")
 

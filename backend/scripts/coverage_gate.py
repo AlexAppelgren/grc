@@ -70,7 +70,12 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/identity/api.py": (95, 98, 215, "2026-09-19"),
     "apps/tenants/logic.py": (87, 91, 91, "2026-09-19"),
     "apps/tenants/api.py": (96, 100, 31, "2026-09-19"),
-    "apps/library/seeds.py": (96, 100, 9, "2026-09-19"),
+    # Chunk 3 (library data layer): the "as of" rule and the loader that files the
+    # prototype's library, measured 2026-09-19 over 426 tests (301 run, 125 scenario stubs
+    # skipped), aggregate 97% over 6641 statements. seeds.py became the seeds/ package.
+    "apps/library/seeds/__init__.py": (96, 100, 22, "2026-09-19"),
+    "apps/library/seeds/library.py": (96, 100, 85, "2026-09-19"),
+    "apps/library/logic.py": (96, 100, 9, "2026-09-19"),
     # Chunk 2 (vocabularies, taxonomy, footprint, proposals): footprint matching, vocabulary
     # retire and merge, four eyes and proposal apply, measured 2026-09-19 over 409 tests
     # (284 run, 125 scenario stubs skipped), aggregate 97% over 6221 statements.

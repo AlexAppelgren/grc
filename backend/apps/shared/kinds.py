@@ -96,4 +96,9 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "suggestion_status",
         "VOC-03: a member's suggestion is pending, accepted (the row was created) or declined; the admin's inbox branches on it",
     ),
+    # Chunk 3 (library and inventory).
+    "VerificationOutcome": (
+        "verification_outcome",
+        "INV-06: a re-verification found no change, found a change (a proposal follows) or could not reach the source; the re-verify queue branches on it",
+    ),
 }

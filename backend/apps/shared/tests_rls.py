@@ -53,7 +53,8 @@ class RowLevelSecurityGuard(TestCase):
         tables = sorted(model._meta.db_table for model in tenant_scoped_models())
         self.assertIn("audit_event", tables)
         self.assertIn("outbox_event", tables)
-        for table in ("membership", "tenant_role", "invitation", "user_session", "api_key", "login_event", "support_access"):
+        # instrument and obligation: "shared or mine" on owner_tenant_id (INPUT_DELTAS §5).
+        for table in ("membership", "tenant_role", "invitation", "user_session", "api_key", "login_event", "support_access", "instrument", "obligation", "problem_report"):
             self.assertIn(table, tables)
 
     def test_only_the_named_tables_carry_the_identity_lookup_clause(self) -> None:

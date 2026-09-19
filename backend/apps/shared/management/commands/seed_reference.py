@@ -15,6 +15,7 @@ from django.db import transaction
 
 from apps.identity.roles_logic import ensure_platform_roles, ensure_system_roles
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.library.seeds.library import seed_authorities
 from apps.shared import tenancy
 from apps.shared.models import Tenant
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
@@ -43,13 +44,13 @@ def seed_tenant_vocabularies() -> int:
 
 
 # (name, function, what silently breaks without it). Order is dependency order.
-# chunk 3: ("authorities", seed_authorities, "sources cannot be registered")
 # chunk 11: ("agent_definitions", seed_agent_definitions, "no agent can be switched on")
 REFERENCE_SEEDS: tuple[tuple[str, Callable[[], int], str], ...] = (
     ("languages", seed_languages, "no label can be stored and every picker is empty"),
     ("jurisdictions", seed_jurisdictions, "no instrument can be filed and provision kinds have no jurisdiction"),
     ("library_vocabularies", seed_library_vocabularies, "agents get an empty vocabulary read and every classification is unknown_key"),
     ("taxonomy_terms", seed_taxonomy_terms, "no footprint can be set and no obligation can be scoped"),
+    ("authorities", seed_authorities, "no instrument or source can name who issued it"),
     ("platform_roles", ensure_platform_roles, "nobody can be a platform editor or admin"),
     ("tenant_system_roles", seed_tenant_system_roles, "invitations cannot assign a role"),
     ("tenant_vocabularies", seed_tenant_vocabularies, "a tenant's pickers are empty and a case has no status to start in"),

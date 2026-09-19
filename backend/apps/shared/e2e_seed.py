@@ -16,6 +16,7 @@ out a journey. Fixed ids keep audit rows and URLs stable across reseeds."""
 
 from __future__ import annotations
 
+import datetime
 import uuid
 from dataclasses import dataclass
 
@@ -38,6 +39,7 @@ from apps.identity.models import (
 )
 from apps.library.models import Language
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.library.seeds.library import RESEARCH_OBLIGATION, load_library, seed_authorities
 from apps.shared import tenancy
 from apps.shared.audit import Actor, record
 from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
@@ -135,14 +137,29 @@ EXPECTED_PENDING_REQUEST = SeedFootprintRequest(
 )
 
 
+@dataclass(frozen=True)
+class SeedLibrary:
+    instruments: int
+    obligations: int
+    research_obligation: str
+    anchor_date: datetime.date
+
+
+# Chunk 3: the prototype's library (the fixture's 12 instruments plus the three EU
+# directives its lineage needs) and the obligation whose second version is still ahead.
+EXPECTED_LIBRARY = SeedLibrary(
+    instruments=15, obligations=15, research_obligation=RESEARCH_OBLIGATION, anchor_date=datetime.date(2026, 9, 16)
+)
+
+
 class SeedRefused(ImproperlyConfigured):
-    """seed_e2e on a deployed environment (playbook 8.3, 12)."""
+    """seed_e2e or seed_demo on a deployed environment (playbook 8.3, 12)."""
 
 
-def refuse_when_deployed() -> None:
+def refuse_when_deployed(command: str = "seed_e2e") -> None:
     if settings.IS_DEPLOYED_ENVIRONMENT:
         raise SeedRefused(
-            f"seed_e2e refuses to run on deployed environment {settings.ENVIRONMENT!r}: "
+            f"{command} refuses to run on deployed environment {settings.ENVIRONMENT!r}: "
             "test-only data changes never execute where a real tenant could live."
         )
 
@@ -306,12 +323,14 @@ def seed_e2e() -> dict[str, int]:
         seed_jurisdictions()
         seed_library_vocabularies()
         seed_taxonomy_terms()
+        seed_authorities()
+        library = load_library()
         roles_logic.ensure_platform_roles()
         tenants = seed_tenants()
         logins = seed_logins(tenants)
         footprint_terms = seed_footprints(tenants)
         seed_pending_footprint_request(tenants)
-    return {"tenants": len(tenants), "logins": logins, "footprint_terms": footprint_terms}
+    return {"tenants": len(tenants), "logins": logins, "footprint_terms": footprint_terms, **library}
 
 
 def anna_invitation() -> Invitation | None:

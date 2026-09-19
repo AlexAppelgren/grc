@@ -82,7 +82,7 @@ Vocabulary keys (all with English and Swedish labels and a usage note in the fil
   `lifecycle_stage` describe only.
 - `compliance_status` (tenant scale with ordinal and tone): `compliant`,
   `partly_compliant`, `gap`, `not_assessed`. `risk_rating`: `low`, `medium`, `high`.
-- `relation_type`: `implements`, `elaborates`. `source_kind`: `authority_site`,
+- `relation_type`: `implements`, `elaborates`, `related` (the last for `obligation_relations`, whose schema v0.3 default it is). `source_kind`: `authority_site`,
   `legal_database`, `open_web_sweep`, `tenant_private`. `link_kind`: `policy`,
   `procedure`, `control`.
 

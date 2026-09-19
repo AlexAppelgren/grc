@@ -392,6 +392,12 @@
     "label_sv": "Preciserar",
     "kind": null,
     "usage_note": "Guidance or delegated rules that detail a higher instrument."
+   },
+   "related": {
+    "label_en": "Related",
+    "label_sv": "Relaterad",
+    "kind": null,
+    "usage_note": "Two obligations a reader should see together, with no hierarchy between them."
    }
   },
   "source_kind": {

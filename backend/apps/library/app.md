@@ -30,12 +30,12 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| INV-01 | Instruments with level, binding force, official reference, ELI where available, jurisdiction, authority, in-force dates and lineage | M | R1 | pending |
-| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes | S | R1 | pending |
-| INV-03 | Obligations: plain-language duty, duty type, scope facets, trigger, retention, sanction exposure, provenance, related obligations | M | R1 | pending |
-| INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | pending |
-| INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | pending |
-| INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | pending |
+| INV-01 | Instruments with level, binding force, official reference, ELI where available, jurisdiction, authority, in-force dates and lineage | M | R1 | in_progress |
+| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes | S | R1 | in_progress |
+| INV-03 | Obligations: plain-language duty, duty type, scope facets, trigger, retention, sanction exposure, provenance, related obligations | M | R1 | in_progress |
+| INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | in_progress |
+| INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | in_progress |
+| INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | in_progress |
 | INV-07 | Tenant-private instruments and obligations from the tenant's own sources | C | R3 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
