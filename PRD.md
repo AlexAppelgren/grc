@@ -3,6 +3,7 @@
 | Version | Date | Change | Decided by |
 |---|---|---|---|
 | 0.1 | 2026-09-19 | First PRD. Consolidates the journey and capability list from the Compliance Watch chat, the data model and API work from the Compliance Data chat, the playbook review, and the decisions on passkeys, Nordic scope, admin-owned vocabularies, the pill system and Green tokens | Alex |
+| 0.2 | 2026-09-19 | Sector scope: regulated financial services only, not a general-purpose GRC product. Standards and certifications within that scope (for example ISO/IEC 27001 followed by some of a tenant's legal entities) are inventoried, watched and worked like regulation; their requirements are being analysed and land in a following version | Alex |
 
 Requirement IDs never appear on screen. Priority is MoSCoW (M, S, C).
 Release: R1 makes it useful alone, R2 makes it a system of record, R3 is what
@@ -20,6 +21,21 @@ pack a vendor review can use.
 
 **Wedge.** Inventory plus watch, done deeply for Nordic sources, with
 paragraph-level citations and a plain verdict on every item.
+
+**Sector scope.** Compliance Watch covers regulated financial services only: banking,
+payments, investment services, insurance and pension provision, and asset and wealth
+management, together with the AML, data protection and ICT-risk regimes that apply to
+them. It is not a general-purpose or multi-industry GRC product. It is not built for, and
+has no path to, other regulated sectors such as healthcare, life sciences, construction,
+environmental compliance or workplace safety.
+
+**Standards and certifications.** Within that scope, standards a firm chooses or is
+required by contract to follow are handled like regulation: an information-security,
+business-continuity, privacy or payment-card standard (for example ISO/IEC 27001 followed
+by some of a tenant's legal entities) is kept in the inventory, watched for revisions and
+transition deadlines, and worked through applicability, compliance status, gaps and
+evidence per legal entity. Testing the controls themselves stays out of scope, as below.
+
 **Out of scope by decision.** Control testing, policy management, incidents
 and risk registers. Obligations carry linked internal items and the API lets
 an existing GRC system integrate.
