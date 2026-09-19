@@ -313,6 +313,16 @@ API_PAGE_SIZE_DEFAULT = env_int("API_PAGE_SIZE_DEFAULT", 20)
 API_PAGE_SIZE_MAX = env_int("API_PAGE_SIZE_MAX", 100)
 
 # ---------------------------------------------------------------------------------------
+# ===== INV-04 "show what changed" (apps/library/logic.py sentence_diff) ==================
+# Aligning two versions costs up to the cube of their sentence count when sentences repeat,
+# and the texts come from fetched sources. Above this many sentences on either side the
+# diff is the whole old text deleted and the whole new text inserted. The worst case measured
+# 12 ms at 50 (29 ms under coverage on a loaded machine), 60 ms at 100 and 211 ms at 200,
+# against API_BUDGET_MS for the whole request. A summary or a provision is a few sentences.
+# ---------------------------------------------------------------------------------------
+LIBRARY_DIFF_MAX_SENTENCES = env_int("LIBRARY_DIFF_MAX_SENTENCES", 50)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------

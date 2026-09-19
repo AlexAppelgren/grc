@@ -5,7 +5,7 @@ or system actor and before and after values. The outbox row is what the worker d
 row, and vice versa.
 
 `AppendOnlyModel` refuses update and delete in Python; the migration's trigger makes the
-docstring true in the database, with a `SET LOCAL cw.maintenance = 'on'` escape hatch
+docstring true in the database, with the escape hatch in apps/shared/migration_helpers.py
 so a conscious fix states its intent.
 """
 

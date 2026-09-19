@@ -18,13 +18,20 @@ Rules (each has a suppression id for the inline form `# compliance: <id> <reason
                   key, secret): use `secrets`.
   no-kwargs       `*args` / `**kwargs` in a function defined in api.py, logic.py or
                   *_logic.py (`allow-kwargs <why>` for framework signatures).
+  maintenance-hatch  The setting that switches the append-only triggers off
+                  (`cw.maintenance`, or MAINTENANCE_SETTING which holds it) is named only in
+                  apps/shared/migration_helpers.py, under migrations/ and in tests_*.py, so
+                  request code cannot reach it. Any line counts, comments included. This
+                  rule takes no suppression.
 
 Suppression: append `# compliance: <id> <reason>` to the offending line, or the line that
 opens the offending statement; the reason must be non-empty. A suppression with no reason
 is itself a finding.
 
 Proven to fail 2026-09-19 by adding `models.JSONField()` without a schema comment to
-apps/home/models.py (exit 1, one finding named), then restored.
+apps/home/models.py (exit 1, one finding named), then restored. maintenance-hatch proven
+to fail 2026-09-19 by adding `SET LOCAL cw.maintenance = 'on'` to apps/library/logic.py
+(exit 1, one finding named), then restored.
 """
 
 from __future__ import annotations
@@ -52,6 +59,8 @@ LOG_SENSITIVE = re.compile(
 LOG_METHODS = {"debug", "info", "warning", "warn", "error", "exception", "critical", "log"}
 HTTP_METHODS = {"get", "post", "put", "patch", "delete", "api_operation"}
 SUPPRESSION = re.compile(r"#\s*compliance:\s*(?P<id>[a-z-]+)(?P<reason>.*)$")
+MAINTENANCE_HATCH = re.compile(r"cw\.maintenance|MAINTENANCE_SETTING")
+HATCH_HOME = "apps/shared/migration_helpers.py"
 
 
 @dataclass(frozen=True)
@@ -77,6 +86,7 @@ class Checker:
         self.is_logic = rel.endswith("/logic.py") or rel.endswith("_logic.py")
         self.is_security = bool(SECURITY_MODULE.search(rel))
         self.is_test = path.name.startswith("tests_") or path.name == "testing.py"
+        self.may_name_hatch = rel == HATCH_HOME or "/migrations/" in rel or path.name.startswith("tests_")
 
     def suppressed(self, line: int, rule: str) -> bool:
         for candidate in (line, line - 1):
@@ -107,7 +117,16 @@ class Checker:
                 self.check_import(node)
             elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 self.check_function(node)
+        if not self.may_name_hatch:
+            self.check_maintenance_hatch()
         return self.findings
+
+    def check_maintenance_hatch(self) -> None:
+        for number, line in enumerate(self.lines, start=1):
+            if MAINTENANCE_HATCH.search(line):  # appended directly: no suppression
+                self.findings.append(
+                    Finding(self.path, number, "maintenance-hatch", f"the append-only escape hatch is named outside {HATCH_HOME}, migrations and tests")
+                )
 
     @staticmethod
     def _callee(node: ast.Call) -> tuple[str | None, str | None]:

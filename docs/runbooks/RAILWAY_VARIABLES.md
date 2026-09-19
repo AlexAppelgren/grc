@@ -56,6 +56,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `E2E_MODE` | api (E2E only) | set by Playwright's `webServer` | set by the E2E job | never | Makes the enrolment code deterministic and enables `seed_e2e`. Refused on two independent legs when deployed |
 | `SENTRY_DSN` | all | unset | unset | optional, EU region DSN | `send_default_pii=False`, bodies never sent, scrubbers on events and transactions |
 | `API_BUDGET_MS` | api | `250` | `250` | `250` | A WARNING with the request ID above it |
+| `LIBRARY_DIFF_MAX_SENTENCES` | api | `50` | `50` | `50` | "Show what changed" compares sentence by sentence up to this many sentences per version, and above it shows the whole old text deleted and the new one inserted. Aligning repeated sentences costs up to the cube of their count: the worst case measured 12 ms at 50, 60 ms at 100 and 211 ms at 200. Raise only after measuring |
 
 ## Web app
 
