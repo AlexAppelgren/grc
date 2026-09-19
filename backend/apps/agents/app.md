@@ -40,7 +40,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AGT-04 | Tenant controls: on and off, cadence, scope, run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch | M | R2 | pending |
 | AGT-05 | Research requests: check a source now, research a topic, re-tag existing records | S | R2 | pending |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | pending |
-| AGT-07 | Fetched content screened for embedded instructions | M | R1 | pending |
+| AGT-07 | Fetched content screened for embedded instructions | M | R1 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
