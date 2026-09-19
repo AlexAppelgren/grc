@@ -10,8 +10,9 @@
    platform console). Designed in the prototype's shell language: the same green
    rail with a "Platform console" kicker, destinations Queue, Vocabularies,
    Sources, Languages and jurisdictions, Problem reports, Tenants, Health,
-   each visible only with its permission. The dock carries Queue, Vocabularies,
-   Sources, Reports, More. No tenant query fires on this surface. */
+   each visible only with its permission. Below 1024px the tab bar carries the
+   ranked console destinations, then More (design/system/navigation.md,
+   section 13). No tenant query fires on this surface. */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;
   --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
@@ -278,7 +279,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="rows" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the console</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     </div>
-    <p class="note">Console shell card. Same rail, same tokens, one kicker so nobody mistakes the surface. The navigation registry holds these destinations with surface "console" and their permission; the dock is the first four plus More, as on the tenant side. Counts on Queue and Problem reports are facts from the API. Tenants and Health are platform_admin destinations drawn in chunk 11 and 14 cards.</p>
+    <p class="note">Console shell card. Same rail, same tokens, one kicker so nobody mistakes the surface. The navigation registry holds these destinations with surface "console" and their permission; below 1024px the tab bar holds up to four ranked destinations plus More, as on the tenant side (design/system/navigation.md, section 13). Today that is Queue, Vocabularies and Sources; Reports joins as the fourth tab once the registry ranks it, and More holds only the account until the console has a destination without a rank. The full-width brand bar drawn here is the old style; the console chunk restyles it. Counts on Queue and Problem reports are facts from the API. Tenants and Health are platform_admin destinations drawn in chunk 11 and 14 cards.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Queue<span class="dot">3</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h9a3 3 0 0 1 3 3v11H7a3 3 0 0 0-3 3z"/><path d="M20 5h-4v14h4z"/></svg>Vocabularies</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>Sources</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>Reports<span class="dot">2</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

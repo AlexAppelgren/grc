@@ -717,35 +717,102 @@ Name each pair for the bar or the sheet, even where a generic pair already cover
 
 ---
 
-## Sources
 
-External sources: see the list returned with this spec. All of them go into `docs/plans/Verification_Log.md`.
+## Open questions
 
-Repository sources:
-- `frontend/src/shared/navigation/registry.ts`
-- `frontend/src/components/ui/sidebar.tsx`
-- `frontend/src/components/ui/Modal.tsx`
-- `frontend/src/components/shell/*`
-- `frontend/src/components/admin/OrganisationScreen.tsx`
-- `frontend/src/components/admin/MembersScreen.tsx`
-- `frontend/src/app/layout.tsx`
-- `frontend/src/app/not-found.tsx`
-- `frontend/src/app/(tenant)/*`
-- `frontend/src/styles/theme.css`
-- `frontend/src/styles/globals.css`
-- `frontend/src/styles/tokens.generated.css`
-- `frontend/src/styles/contrast.test.ts`
-- `frontend/src/shared/i18n/messages.ts`
-- `frontend/tests/e2e/support/passkeys.ts`
-- `frontend/tests/e2e/pills.gallery.spec.ts`
-- `backend/apps/shared/e2e_logins.py`
-- `frontend/eslint.config.js` with eslint-plugin-react-hooks 7.1.1 (`set-state-in-effect` and `set-state-in-render` are errors)
-- `design/system/foundations.md`
-- `design/system/pills-and-labels.md`
-- `design/README.md`
-- `docs/adr/0020-design-direction.md`
-- `design/screens/*.html`
-- `design/prototype/index.html`
-- the original prototype (commit f8d31b2)
+Each takes its stated default (`docs/DECISIONS.md` rule) and is listed in `docs/TODO_FOR_alex.md`. The "Rejected" lines record critiques of this file that were considered and not taken.
 
-Green tokens were read through the Green MCP server (`get_tokens`: shadow, space, viewport).
+- Open question 1: should the bar be capsule-shaped, with a fully rounded current tab, as in iOS 26? Default: no. The bar takes the 12 px overlay radius and the current tab 6 px, because the fully rounded shape belongs to Pill alone (ADR 0020, playbook 6.7).
+- Open question 2: should the More sheet close with a downward swipe? That needs the Base UI Drawer (a second headless library beside Radix) or vaul (unmaintained). Default: no swipe. Close, Escape, the scrim and any route change close it.
+- Open question 3: the 13-inch iPads in portrait (1024 and 1032 px wide) get the rail, which leaves 784 px of content. Should they get the tab bar instead? That needs a breakpoint that is not a step in Green or Tailwind. Default: the rail, from 1024.
+- Open question 4: should each tab remember where the person was in its section, as iOS does? For example, going from /watch/42 to Inventory and back would land on /watch/42. Default: no. Every tab links to its section's root, as the rail does, and the browser's back button returns to the previous place.
+- Open question 5: the rail's current row has the same fill-only indicator, at 1.12:1 light and 1.58:1 dark against the rail, which fails WCAG 1.4.11 in the same way. Should it get the tab's 1 px line-strong inset outline, which measures 3.90 / 7.96 against the rail? Default: unchanged in this slice, because ADR 0020 approved that look today. Recorded in TODO_FOR_alex.
+- Open question 6: should Modal and the More sheet animate together (a slide and fade that respects reduced motion)? Default: neither animates.
+- Open question 7: <html lang> is the build default (NEXT_PUBLIC_DEFAULT_LOCALE), while signed-in screens render the person's own language (SessionGate), so a Swedish user's pages are announced as English (WCAG 3.1.1). Default: fix it as a separate task. Meanwhile the tab bar sets its own lang for hyphenation.
+- Rejected: the unit test that focusing an input leaves --tabbar-height unchanged (the critique of sections 8 and 9). jsdom applies no CSS, so nothing would hide the bar. The unit test pins the zero-height guard instead, and E2E step 7 covers the real case.
+- Rejected: checkVisibility() for the focus fallback when overlays cross 1024 px. Safari has it only from 17.4, and the close is driven by the width flip, so the handler already knows the trigger is hidden.
+- Rejected: raising the current tab's weight to 600 and adding separate forced-colors: rules (the current-state contrast critique). The inset outline alone reaches 3:1, and forced-colours mode keeps outlines, so the weight stays the rail's 500.
+- Rejected: Swedish label checks in E2E (the label-break critiques). Playbook 8.3 pins E2E to one language and every seed login has locale 'en'. Swedish widths are covered by the measured arithmetic in section 5 and a device check.
+- Rejected: an E2E check with the WCAG 1.4.12 text-spacing override. 1.4.12 asks for no loss of content; a wrapped label grows the bar and loses nothing, and the 320 px no-clip check already covers loss.
+- Rejected: the premise that <html lang> carries the person's language for hyphens:auto. It is the build default (app/layout.tsx), so the bar sets lang from useLocale() itself.
+- Rejected: an E2E check of long account lines at 320 px. No seed login has a long organisation or role string, so it would pass without testing anything. A unit test renders a 120-character string and asserts that nothing in the sheet truncates.
+- Rejected: the 'preferred' option of pushing a history entry so that back closes only the sheet. It couples the sheet to the router and history beyond this slice. Closing on any route change already prevents the stale sheet, and back-to-close stays listed in section 14.
+- Rejected: building per-tab memory now. It needs sessionStorage state, a hydration path and clearing on sign-out, while the rail links to roots. The critique's own alternative, a recorded departure, is applied, and Alex is asked in open question 4.
+- Rejected: the claim that section 5 calls every tab's root link Apple's rule. The sentence sat under 'Tapping the current tab', where returning to the root is Apple's rule. It has been reworded so it cannot be read as covering the other tabs.
+
+## Sources, as read on 2026-09-19
+
+| Source | Relied on for |
+|---|---|
+| https://developer.apple.com/design/human-interface-guidelines/tab-bars | Tab bars preserve each section's navigation state (a departure recorded here); icons above labels in compact views and side by side otherwise (the compact-height layout); a modal may cover the bar; labels always shown and short; avoid overflow tabs; iPad puts the tab bar at the top. Text read through developer.apple.com/tutorials/data/design/human-interface-guidelines/tab-bars.json |
+| https://developer.apple.com/documentation/uikit/uitabbarcontroller | At most four tabs plus More on iPhone; tapping the selected tab returns to its root |
+| https://developer.apple.com/videos/play/wwdc2025/356/ | Floating bar inset from the edge on phones; concentric corners (12 px bar, 6 px padding, 6 px highlight) |
+| https://developer.apple.com/design/human-interface-guidelines/materials | Glass responds to Reduce Transparency, which is why the bar is solid |
+| https://developer.apple.com/design/human-interface-guidelines/layout | Safe areas; an app should do the same things at every width |
+| https://developer.apple.com/design/human-interface-guidelines/sidebars | Apple's iPad pattern (a tab bar first, a sidebar for depth), a departure accepted knowingly |
+| https://developer.apple.com/design/human-interface-guidelines/accessibility | 44 x 44 pt default touch target |
+| https://developer.apple.com/videos/play/wwdc2025/284/ | Minimising the bar on scroll is opt-in, so never moving it matches the default |
+| https://m3.material.io/components/navigation-bar/guidelines | Three to five destinations; never remove or truncate labels; one active item; don't hide on scroll while a screen reader is active; the keyboard may cover the bar for a while; no swiping between destinations |
+| https://m3.material.io/components/navigation-bar/accessibility | The bar grows with text size and labels stay visible at twice the text size, which is why --tabbar-height is measured |
+| https://developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes | Width classes: compact below 600 dp, medium 600 to 839, expanded from 840. Height: compact below 480 dp (the 30rem compact-height rule). Corrects '840 = compact/medium' to medium/expanded |
+| https://developer.android.com/develop/ui/compose/layouts/adaptive/build-adaptive-navigation | NavigationSuiteScaffold default: a navigation bar when the width or the height is compact, a rail otherwise. Basis of the rewritten Material departure |
+| https://m3.material.io/foundations/designing/structure | 48 dp minimum touch target |
+| https://www.nngroup.com/articles/hamburger-menus/ | Hidden navigation lowers discoverability, which supports replacing the hamburger sheet with visible tabs |
+| https://www.nngroup.com/articles/find-navigation-mobile-even-hamburger/ | Combined navigation (some items visible, the rest collapsed) beats fully hidden navigation |
+| https://tailwindcss.com/docs/responsive-design | lg = 64rem (1024 px) and its max-lg/lg variants |
+| https://screensizechecker.com/devices/ipad-viewport-sizes | iPad CSS viewport widths in portrait and landscape (secondary source) |
+| https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta/name/viewport | viewport-fit=cover, and using safe-area insets with it |
+| https://webkit.org/blog/7929/designing-websites-for-iphone-x/ | env() safe-area insets are not margins, so combine them with max(); landscape side insets on notched iPhones |
+| https://developer.mozilla.org/en-US/docs/Web/CSS/env | env(safe-area-inset-*) for a bottom toolbar, the gutter and the skip link |
+| https://nextjs.org/docs/app/api-reference/functions/generate-viewport | Next.js viewport export with viewportFit: 'cover' |
+| https://raw.githubusercontent.com/vercel/next.js/canary/packages/next/src/lib/metadata/types/extra-types.ts | The Viewport type accepts viewportFit 'auto' / 'cover' / 'contain' |
+| https://benfrain.com/ios26-safari-theme-color-tab-tinting-with-fixed-position-elements/ | iOS 26 Safari toolbar tint from fixed elements (observed by the community, hence a device check) |
+| https://www.w3.org/TR/resize-observer/ | An observation fires when the watched element's display is set to none, so display:none would zero --tabbar-height; basis of visibility:hidden and the zero-height guard |
+| https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html | A state indicator needs 3:1 against adjacent colours; a fill may mark the state only if it contrasts with what surrounds it. Basis of the inset line-strong outline on the current tab |
+| https://developer.mozilla.org/en-US/docs/Web/CSS/@media/forced-colors | Forced colours override background-color and outline-color with system colours and remove box-shadow; outlines stay visible, so the current tab stays distinct |
+| https://www.w3.org/WAI/WCAG22/Understanding/reflow.html | Advice to make sticky or fixed parts static at small viewport sizes: the height-below-20rem rule |
+| https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html | WCAG 2.5.8 AA, 24 px target size |
+| https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html | WCAG 2.5.5 AAA, 44 px target size |
+| https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum.html | WCAG 2.4.11: a sticky bar must not hide the focused element (F110). Drives the clearance, the keyboard rule and the visibility choice |
+| https://www.w3.org/WAI/WCAG22/Techniques/css/C43 | scroll-padding-bottom plus bottom padding as the sufficient technique |
+| https://www.w3.org/WAI/WCAG22/Understanding/focus-order.html | DOM order may differ from visual order when meaning is kept (the bar before main, shown at the bottom); focus must not be lost to body when an overlay closes |
+| https://www.w3.org/WAI/WCAG22/Understanding/consistent-navigation.html | Navigation and content in the same relative order at every width |
+| https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html | The visual 'current page is in More' state needs a programmatic equivalent: aria-current='true' on More |
+| https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/ | The More sheet as a modal dialog: focus inside, Tab wraps, Escape closes, focus returns, labelled by a visible title |
+| https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/examples/navigation.html | A labelled nav landmark; only one Main landmark exposed at a time |
+| https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-current | aria-current='page' on the current link; 'true' for the current item in a set (the More button) |
+| http://adrianroselli.com/2017/10/dont-use-aria-menu-roles-for-site-nav.html | Plain links for site navigation, with no menu or tab roles; why DropdownMenu and Tabs are rejected |
+| https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/examples/disclosure-navigation/ | APG avoids the menu role for site navigation |
+| https://ui.shadcn.com/docs/components | shadcn has no bottom navigation or tab bar component |
+| https://github.com/shadcn-ui/ui/issues/8847 | The Bottom Navigation request is still open, with no maintainer response |
+| https://ui.shadcn.com/docs/components/radix/sheet | Sheet with side='bottom' extends Radix Dialog; the chosen presenter for More |
+| https://www.radix-ui.com/primitives/docs/components/dialog | Focus trap, Escape returning focus to the trigger, onCloseAutoFocus (used for the #main fallback), opting out of aria-describedby |
+| https://ui.shadcn.com/docs/components/radix/drawer | The Radix-flavour Drawer is built on vaul (rejected) |
+| https://raw.githubusercontent.com/emilkowalski/vaul/main/README.md | vaul is unmaintained |
+| https://ui.shadcn.com/docs/components/drawer | The Base UI Drawer is the swipe-capable alternative; it would add a second primitive library (open question 2) |
+| https://developer.chrome.com/blog/viewport-resize-behavior | Chrome on Android resizes only the visual viewport by default, so the keyboard can cover fixed elements |
+| https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport | The keyboard shrinks the visual viewport, not the layout viewport, so height media queries are not affected; why no JS placement is attempted |
+| https://caniuse.com/mdn-api_virtualkeyboard | The VirtualKeyboard API is Chromium-only, so it is not used |
+| https://www.bram.us/2026/09/11/webkit-supports-interactive-widget-and-hopefully-safari-will-too/ | Safari has not shipped interactive-widget, so the default resizes-visual stays |
+| https://developer.apple.com/forums/thread/800125 | iOS 26.0 visualViewport.offsetTop bug that misplaced fixed footers; why the keyboard rule is CSS only |
+| https://caniuse.com/css-has | :has() support (Safari 15.4, Chrome 105, Firefox 121) for the keyboard rule |
+| https://www.learnui.design/blog/ios-design-guidelines-templates.html | Third-party measurement of the iOS floating bar, used only as a sanity check for the 64 px height |
+| green-design-system MCP get_tokens (shadow, space, viewport) | shadow-l-01/l-02 for shadow-float, space-m/space-5xl, viewport-m = 1024 |
+| frontend/src/shared/navigation/registry.ts | Destinations, dockRank, groups, permission gating, and the existing dockDestinations the bar calls directly |
+| frontend/src/components/ui/sidebar.tsx | MOBILE_QUERY, the phone Dialog branch with its bg-fg/50 scrim, SidebarTrigger, SIZES with overflow-hidden and truncate, and the flex wrapper |
+| frontend/src/components/ui/Modal.tsx | Modal's scrim is bg-fg/60 at z-40, and Modal opens without animation |
+| frontend/src/components/shell/AccountMenu.tsx | Uncontrolled modal DropdownMenu rendered without a portal inside the rail, and data-who-panel on its wrapper |
+| frontend/src/components/shell/AppShell.tsx | The wrapper's px-4 pt-3 pb-16 md:px-8 md:pt-6 and the skip link's focus:top-2 focus:left-2 |
+| frontend/src/app/layout.tsx | html lang is the build default locale, not the person's language |
+| frontend/src/components/shell/SessionGate.tsx | Signed-in screens render in the person's own locale (userLocaleOf), which is why the bar sets its own lang |
+| frontend/src/app/(tenant) | Only /, /admin/*, /me/* and /restricted exist, so today the Watch, Inventory, Search and Roadmap links fall through to the root not-found page outside the shell |
+| frontend/src/components/admin/OrganisationScreen.tsx | In-page #org-name and #org-timezone text fields followed by a select, used by E2E steps 7 and 8 |
+| frontend/src/components/admin/MembersScreen.tsx | Its only text inputs are inside the Invite Modal, so it cannot test the keyboard rule |
+| frontend/src/styles/theme.css | Dark tokens only under .dark with no prefers-color-scheme rule; the sidebar accent aliases |
+| frontend/src/styles/contrast.test.ts | PAIRS and NON_TEXT structure for the new named pairs |
+| frontend/tests/e2e/pills.gallery.spec.ts | Byte-identical dark baselines were already rejected as a control that proves nothing |
+| backend/apps/shared/e2e_logins.py | Every seed login runs in locale 'en' (playbook 8.3, one pinned language), so Swedish E2E checks are not possible |
+| frontend/node_modules/eslint-plugin-react-hooks | The 7.1.1 recommended rules make set-state-in-effect and set-state-in-render errors, so overlays reset during render, not in an effect |
+| design/system/foundations.md | Radius steps, colour aliases, Toggle's pressed pairing (l3-neutral-02 with border-neutral-01), '280 px as a phone sheet', contrast values |
+| docs/adr/0020-design-direction.md | The rail amendment this spec reverses below 1024 px: SidebarTrigger in its parts list, 'an off-canvas sheet below 768 px', 'count bubbles' and 'a second navigation model for phones' under Deliberately not done, and the badge coming back with its screen |
+| design/README.md | 'A count, once a screen feeds one, is a quiet muted number at the end of its row' |

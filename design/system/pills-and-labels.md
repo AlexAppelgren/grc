@@ -18,8 +18,10 @@ overridden in `brand.css`. Note Green's naming: `information` is the grey
 one and `notice` is blue. Tenant tags use an outlined `information` pill.
 Shape (foundations.md, 2026-09-19): fully rounded, 20 px tall, 8 px side
 padding, the `meta` type role (13 / 18) at 500 weight, no border. shadcn's
-current Badge is fully rounded too; buttons, toggles and the current nav row
-are 6 px, so the round shape stays the pill's alone. Was 2 by 10 px at 600.
+current Badge is fully rounded too; buttons, toggles, the current nav row and
+the current tab in the tab bar are 6 px, and the floating tab bar itself is
+12 px, not fully rounded (`navigation.md`). So the round shape stays the
+pill's alone. Was 2 by 10 px at 600.
 
 Dark theme: the four status tones take Green's `-03` background step. At
 `-02`, dark `negative` measures 4.47:1 and fails AA (dark `warning` 4.57:1,

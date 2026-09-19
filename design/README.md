@@ -4,6 +4,7 @@
 |---|---|
 | `prototype/index.html` | The interactive prototype ("bleqq: compliance inventory and watch"). Open it in a browser. It is the contract for flow, wording, labels and pills. Its sample data seeds `seed_e2e` and `seed_demo` |
 | `system/foundations.md` | Type roles, radius, spacing, the component specs and the Green token behind every colour |
+| `system/navigation.md` | The rail and the tab bar: which width gets what, the More sheet, and the reason and source for each rule |
 | `system/pills-and-labels.md` and `.html` | The pill and label contract, and a rendered card |
 | `brand/` | The phonetic wordmark `[blɛkː]`, the favicon, and the brand layer placeholders |
 | `screens/` | Empty. Cut one card per screen from the prototype as each chunk starts (playbook Section 7) |
@@ -48,9 +49,23 @@ signed-in person is one quiet row at the bottom (name, then organisation and
 role) opening a menu with My passkeys, My sessions and Sign out, followed by
 "Minimise menu". Minimised (or ctrl/cmd+b), the rail keeps only icons with a
 tooltip each and the open e alone as the mark, and remembers the choice on the
-device. On phones there is no dock: a menu button on the right of the header
-opens the same rail as a sheet, so every destination is reachable. A count,
-once a screen feeds one, is a quiet muted number at the end of its row.
+device. The rail shows from 1024 px.
+
+**The tab bar below 1024 px (Alex, 2026-09-19; ADR 0020 amendment "the tab
+bar below 1024 px").** Below 1024 px, which covers every phone and every
+iPad below 13 inches in portrait, the rail gives way to a floating tab bar
+with five items, the fifth being More, as many iPhone apps do. The first four are the registry's dock destinations (Today, Watch,
+Inventory and Search for every system role). More opens a sheet from the
+bottom holding every other destination and the account: the name,
+organisation and role, My passkeys, My sessions and Sign out. So every
+destination is reachable at every width. The bar floats on the surface colour
+with a hairline and a 12 px radius; the current tab is the rail's current row
+with a 1 px outline, never a full pill. The wordmark stays as a line at the
+top of the page and scrolls away. Every value and its reason is in
+`system/navigation.md`.
+
+A count, once a screen feeds one, is a quiet muted number at the end of its
+row.
 
 ## Where the prototype is wrong or silent
 

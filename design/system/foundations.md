@@ -43,15 +43,16 @@ or correct (see the report of 2026-09-19).
 
 | Use | Green token | Value | Was |
 |---|---|---|---|
-| Controls: button, input, select, toggle, nav row, callout, banner | `radius-2xs` | 6 px | 999 px buttons, 8 px inputs |
+| Controls: button, input, select, toggle, nav row, current tab, callout, banner | `radius-2xs` | 6 px | 999 px buttons, 8 px inputs |
 | Cards, list rows, empty states, toast | `radius-xs` | 8 px | 16 to 20 px |
-| Dialogs and the sheet | `radius-s` | 12 px | 20 px |
+| Dialogs, the sheet and the floating tab bar | `radius-s` | 12 px | 20 px |
 | Pill | `radius-max` | 999 px | unchanged |
 | Inline marks (`ins`, `del`, `mark`), meters | none (3 px, 2 px) | | 999 px bars |
 
 shadcn's own base is 10 px (`rounded-md` 8 px, `rounded-xl` 14 px on cards).
 Ours is one step tighter because Green's scale has 6 and 8, not 10 and 14,
-and a small radius reads as a tool.
+and a small radius reads as a tool. The tab bar is 12 px, never fully
+rounded. With its 6 px padding, the 6 px current tab sits concentric with it.
 
 ## Spacing
 
@@ -60,6 +61,25 @@ padding 16 px, gap between cards 16 px, heading to content 12 px, button row
 16 px above. List rows 12 px by 16 px. Content max width 1200 px, left
 aligned beside the rail. Was: 20 to 28 px card padding, 32 / 36 px page
 padding, 1100 px.
+
+The page gutter is safe-area aware at every width. Each side takes the larger
+of its step and the safe-area inset. At the sides that is 16 px below 768 px
+and 32 px from 768 px (`max(16px, env(safe-area-inset-left))`, and the same on
+the right). On top below 768 px it is `max(12px, env(safe-area-inset-top))`.
+So nothing sits under a notch, a sensor housing or the home indicator.
+
+Below 1024 px the page ends with room for the tab bar: its measured height,
+plus its bottom gap, plus 16 px (`calc(var(--tabbar-top) + 16px)`).
+`scroll-padding-bottom` takes the same value, so a focused control never sits
+behind the bar. Anything else fixed to the bottom there, such as a toast,
+sits at `calc(var(--tabbar-top) + 8px)`. From 1024 px the bottom padding is
+64 px, as before.
+
+## Shadow
+
+One shadow, `float`: Green `shadow-l-01` and `shadow-l-02` together (Green
+shadows come in pairs). Only the floating tab bar uses it, because it is the
+one layer that sits over scrolling content. Cards stay flat.
 
 ## Components
 
@@ -108,9 +128,50 @@ gets the text colour and a 2 px underline.
 **Sidebar row** (shadcn `SidebarMenuButton`, size default). 32 px (`h-8`),
 8 px padding, 8 px gap, 6 px radius, 16 px icon at 1.75 stroke, `body`.
 Current row: `l3-neutral-02` and 500 weight. Hover: `state-neutral-05`. Groups
-separated by 16 px. Width 240 px, 48 px collapsed (shadcn 3rem), 280 px as a
-phone sheet. Account row: name at 500, organisation and role in `meta`. Was:
-36 px rows, 18 px icons, 16 px labels.
+separated by 16 px. Width 240 px, 48 px collapsed (shadcn 3rem). The rail
+shows from 1024 px; below that the tab bar takes its place. Account row: name
+at 500, organisation and role in `meta`. Was: 36 px rows, 18 px icons, 16 px
+labels.
+
+**Tab bar** (below 1024 px; every rule and its source in `navigation.md`). A
+floating bar at the bottom: up to four dock destinations from the registry,
+then More, which is always last. It floats 16 px above the bottom edge and
+16 px from the sides, each the larger of that gap and the safe-area inset.
+Below 400 px the side gap is 8 px. The bar is as wide as its cells and
+centred: equal cells of at most 96 px, no gap, each cell the whole target.
+It is 64 px tall: 6 px padding, a 52 px cell, 6 px padding, with the 1 px
+border inside. It grows when a label wraps and never clips. 12 px radius
+(`radius-s`), solid `l2-neutral-02`, a 1 px hairline, the `float` shadow, no
+blur. It sits above the page and below the scrim and dialogs, and is hidden in
+print. A tab is a 20 px icon, a 4 px gap and the label in `meta`, on one or
+two lines, never truncated and never set smaller. "Search and ask" shows as
+"Search" in the bar. Rest: `content-neutral-02` at 400. Hover:
+`state-neutral-05`. Current: `l3-neutral-02` over the whole cell with a 6 px
+radius, plus a 1 px `border-neutral-01` outline inset by 1 px, and the text
+colour at 500. The outline is the part that reaches 3:1; the fill alone does
+not. Keyboard focus swaps the outline for the 2 px focus ring. While the
+current page lives in the More sheet, More takes the current treatment.
+Below 480 px tall, the icon sits beside the label with a 6 px gap, cells are
+44 px tall and up to 128 px wide, the padding is 4 px, and the bar sits 8 px
+above the bottom edge (about 54 px tall). Below 320 px tall, the bar leaves
+the fixed layer and scrolls away at the top of the page. On a touch screen it
+hides while a text field has focus. No counts until a screen feeds one. Was: a
+header menu button that opened the rail as a 280 px sheet.
+
+**More sheet.** A modal bottom sheet titled "More" in `title`, with a Close
+button that is a 44 by 44 px target. Full width at the bottom edge; centred at
+most 560 px wide (`Modal`'s width) once the viewport is wider than 592 px. Top
+corners 12 px, `l2-neutral-02`, a 1 px hairline on top, and on the sides too
+when centred. At most 85 svh tall, with the content scrolling inside. The
+header has 16 px at the sides, rows 8 px, and the bottom 16 px or the
+safe-area inset, whichever is larger. Rows are sidebar rows at the `touch`
+size: at least 44 px tall, `body`, a 16 px icon, a 6 px radius, labels that
+wrap, never a tooltip. The current row takes the current tab's treatment. The
+remaining destinations come first, in the rail's groups separated by space.
+Then a hairline and the account laid flat: the name at 500, organisation and
+roles in muted `meta` (both wrap), My passkeys, My sessions and Sign out. The
+scrim is `Modal`'s, the text colour at 60%. The sheet covers the bar and opens
+and closes without animation.
 
 **Table** (the heat map, later lists). Rows 36 px, 8 px cell padding, `meta`
 size, a hairline between rows only, head cells in 500 muted. Heat cells mix
@@ -166,21 +227,33 @@ Every text pair the design uses, lowest first. All pass 4.5:1.
 | muted text on subtle | 5.13 | 7.93 |
 | muted text on rail | 5.26 | 8.96 |
 | muted text on page / surface | 5.60 | 8.96 / 7.93 |
+| tab label on the tab bar (muted text on surface) | 5.60 | 7.93 |
+| organisation and role line in the More sheet (muted text on surface) | 5.60 | 7.93 |
 | negative text on surface (danger button, error) | 6.04 | 7.09 |
 | brand text on sand (AI label, legal margin) | 6.28 | 10.26 |
 | text on accent | 16.50 | 11.69 |
+| current tab label (text on accent) | 16.50 | 11.69 |
 | text on sand | 17.78 | 15.49 |
 | text on search highlight (`l3-brand-02-2`) | 14.04 | 10.72 |
 | primary button | 19.71 | 13.64 |
+| row label in the More sheet (text on surface) | 19.71 | 16.38 |
 | text on heat cell at the 36% cap | 9.52 | 6.48 |
 | pills | see `pills-and-labels.md` | |
 
 Non-text: input border 4.15 / 7.05, focus ring 6.39 / 8.19 against surface.
 
+Non-text on the tab bar and the More sheet, 3:1 each: the tab icon on the bar
+5.60 / 7.93; the current-tab outline 4.15 / 7.05 on the bar and 3.47 / 5.03 on
+its own fill; the current-row outline on the sheet 4.15 / 7.05; the focus ring
+on the bar 6.39 / 8.19. The current tab's fill alone measures 1.19 / 1.40
+against the bar, which fails WCAG 1.4.11, so the outline carries the state.
+`contrast.test.ts` names each pair for the bar or the sheet, so a later token
+change fails by name.
+
 ## Wordmark
 
-About 68 px wide in the rail (was 104 px), 64 px in the phone header (was
-96 px), 20 px open e when the rail is collapsed (was 28 px).
+About 68 px wide in the rail (was 104 px), 64 px in the compact header below
+1024 px (was 96 px), 20 px open e when the rail is collapsed (was 28 px).
 
 ## What is restyled now
 
