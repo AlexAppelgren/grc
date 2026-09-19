@@ -305,10 +305,11 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(preview.json(), {"from": "custody_svcs", "into": "custody", "usageCount": 4, "repointed": 3, "dryRun": True})
         self.assertEqual(Tagging.objects.filter(tag=svcs).count(), 4)
         self.assertEqual(AuditEvent.objects.count(), before, "a preview writes nothing, not even an audit row")
-        # A failure halfway leaves nothing changed.
+        # A failure halfway answers a problem and leaves nothing changed.
         with mock.patch.object(tenant_lists_logic, "record", side_effect=RuntimeError("audit failed")):
-            with self.assertRaises(RuntimeError):
-                self._post("/vocab/tenant_tag/custody_svcs/merge", {"into": "custody"}, admin)
+            with self.assertLogs("config.api", "ERROR"):
+                failed = self._post("/vocab/tenant_tag/custody_svcs/merge", {"into": "custody"}, admin)
+        self.assertEqual((failed.status_code, failed.json()["code"]), (500, "internal_error"))
         self.activate(self.tenant)
         self.assertEqual(Tagging.objects.filter(tag=svcs).count(), 4)
         self.assertTrue(TenantTag.objects.get(pk=svcs.pk).active)

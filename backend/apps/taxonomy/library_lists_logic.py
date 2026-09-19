@@ -40,14 +40,6 @@ def _proposable(list_name: str) -> Any:
     return entry
 
 
-def _extra_payload(entry: Any, extra: dict[str, Any] | None) -> dict[str, Any]:
-    """The list's own columns as the proposal shows them: camelCased like every other name
-    the reviewer reads. apply.py maps them back to columns."""
-    from pydantic.alias_generators import to_camel
-
-    return {to_camel(name): value for name, value in lists.extra_columns(entry, extra).items()}
-
-
 def _label(labels: dict[str, str]) -> str:
     return labels.get(lists.ORIGINAL_LANGUAGE) or next(iter(labels.values()), "")
 
@@ -76,7 +68,7 @@ def propose_create(
         "usageNote": usage_note.strip(),
         "kind": lists.validated_kind(entry, kind),
         "sortOrder": sort_order,
-        "extra": _extra_payload(entry, extra),
+        "extra": lists.extra_payload(entry, extra),
     }
     proposal, _created = proposals.create(
         kind=ProposalKind.VOCABULARY_CREATE.value,
@@ -110,7 +102,7 @@ def propose_relabel(
         "labels": cleaned,
         "usageNote": usage_note,
         "sortOrder": sort_order,
-        "extra": _extra_payload(entry, extra) or None,
+        "extra": lists.extra_payload(entry, extra) or None,
     }
     proposal, _created = proposals.create(
         kind=ProposalKind.VOCABULARY_RELABEL.value,

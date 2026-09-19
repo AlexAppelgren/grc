@@ -5,16 +5,40 @@ shapes carry the app prefix."""
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from django.conf import settings
 from ninja import Schema
-from pydantic import ConfigDict, Field, RootModel
+from pydantic import AfterValidator, ConfigDict, Field, RootModel
 from pydantic.alias_generators import to_camel
+
+# A pill's tone follows its slot or its row's kind, never a person's choice (NFR-03), so a
+# write naming one is refused rather than dropped: the writer learns it is not theirs to set.
+CHOSEN_TONE_KEYS = frozenset({"tone", "colour", "color"})
 
 
 class CamelSchema(Schema):
     model_config = ConfigDict(from_attributes=True, alias_generator=to_camel, populate_by_name=True)
+
+
+class WriteBody(CamelSchema):
+    """A write's request body or a proposal's payload: a field the schema does not name
+    answers 422 instead of being dropped, so a tone or a colour never rides along unseen
+    (NFR-S10). Response schemas stay open, so a new field never breaks an older client."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+def _no_chosen_tone(extra: dict[str, Any]) -> dict[str, Any]:
+    chosen = sorted(key for key in extra if key.casefold() in CHOSEN_TONE_KEYS)
+    if chosen:
+        raise ValueError(f"{', '.join(chosen)} cannot be set: a value's tone follows its kind.")
+    return extra
+
+
+# A vocabulary write's `extra`: the list's own columns (an urgency's ordinal and SLA days),
+# never a tone or a colour (NFR-S10).
+VocabularyExtra = Annotated[dict[str, Any], AfterValidator(_no_chosen_tone)]
 
 
 class ProductInfo(CamelSchema):

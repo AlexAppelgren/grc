@@ -4,7 +4,9 @@
 status) or by the permission decorators. config/api.py turns it into a response. The
 `code` values are the contract's vocabulary: four_eyes_violation, open_actions,
 evidence_missing, invalid_transition, stale_write, unknown_key, step_up_required,
-permission_denied, unauthenticated, not_found, validation_error.
+permission_denied, unauthenticated, not_found, validation_error, bad_request (a request
+Django cannot read: too large, too many fields, a broken multipart body) and
+internal_error (anything unexpected; no trace or message leaves the server).
 """
 
 from __future__ import annotations

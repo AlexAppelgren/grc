@@ -57,6 +57,16 @@ class VocabularyEdges(ScenarioTestCase):
     def _code(self, response: Any) -> str:
         return str(response.json()["code"])
 
+    def test_a_tenant_lists_extra_values_are_typed_before_they_are_written(self) -> None:
+        refused = self._patch("/vocab/risk_rating/low", {"extra": {"ordinal": "abc"}}, self.admin)
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(self._code(refused), "validation_error")
+        self.assertIn("ordinal", refused.json()["detail"])
+        created = self._post("/vocab/risk_rating", {"labels": {"en": "Severe"}, "extra": {"ordinal": "9"}}, self.admin)
+        self.assertEqual(created.status_code, 201, created.content)
+        self.activate(self.tenant)
+        self.assertEqual(RiskRating.objects.get(tenant=self.tenant, key="severe").ordinal, 9)
+
     def test_lists_rows_and_keys_that_do_not_exist_are_not_found(self) -> None:
         self.assertEqual(self._get("/vocab/planets", self.admin).status_code, 404)
         self.assertIn("tenant_tag", self._get("/vocab/planets", self.admin).json()["detail"])

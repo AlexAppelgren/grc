@@ -19,7 +19,7 @@ from apps.proposals.models import Proposal, ProposalStatus
 from apps.shared import factories
 from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
-from apps.taxonomy.models import Flag, TaxonomyTerm, Urgency
+from apps.taxonomy.models import Flag, ProvisionKind, TaxonomyTerm, Urgency
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 
@@ -149,6 +149,84 @@ class ProposalApply(ScenarioTestCase):
         self.assertEqual(untitled.json()["code"], "validation_error")
         # Jurisdictions are seeded reference data: the vocabulary routes refuse to queue them.
         self.assertEqual(self._post("/vocab/jurisdiction", {"labels": {"en": "Iceland"}}, editor).json()["code"], "validation_error")
+
+    # --- a proposal made directly is checked like one made through the vocabulary routes ---------
+    def _direct(self, kind: str, payload: dict[str, Any], headers: dict[str, Any] | None = None) -> Any:
+        body = {"kind": kind, "title": "Direct", "payload": payload}
+        return self._post("/proposals", body, headers or sign_in(self.editor))
+
+    def _refused(self, response: Any, code: str) -> None:
+        self.assertEqual(response.status_code, 422, response.content)
+        self.assertEqual(response.json()["code"], code, response.content)
+
+    def test_extra_values_are_typed_and_references_resolved_when_the_proposal_is_made(self) -> None:
+        before = Proposal.objects.count()
+        urgency = {"list": "urgency", "key": "within_a_day", "labels": {"en": "Within a day"}, "kind": "negative"}
+        self._refused(self._direct("vocabulary_create", {**urgency, "extra": {"ordinal": "abc"}}), "validation_error")
+        self._refused(self._direct("vocabulary_relabel", {"list": "urgency", "key": "act_now", "extra": {"slaDays": "soon"}}), "validation_error")
+        provision = {"list": "provision_kind", "key": "stycke", "labels": {"sv": "Stycke"}, "kind": "unit"}
+        self._refused(self._direct("vocabulary_create", {**provision, "extra": {"jurisdiction": "atlantis"}}), "unknown_key")
+        # The vocabulary routes build the same payload, so they refuse the same values.
+        self._refused(self._patch("/vocab/urgency/act_now", {"extra": {"slaDays": "soon"}}, sign_in(self.editor), HTTP_IF_MATCH="1"), "validation_error")
+        self.assertEqual(Proposal.objects.count(), before, "nothing reached the queue")
+        # A clean value is stored as its column's type, and a reference becomes the row it names.
+        typed = self._direct("vocabulary_create", {**urgency, "extra": {"ordinal": "4", "sla_days": "1"}})
+        self.assertEqual(typed.status_code, 201, typed.content)
+        self.assertEqual(typed.json()["payload"]["extra"], {"ordinal": 4, "slaDays": 1}, "the queue shows what approval writes")
+        self.assertEqual(self._approve(typed.json()).status_code, 200)
+        self.assertEqual((Urgency.objects.get(key="within_a_day").ordinal, Urgency.objects.get(key="within_a_day").sla_days), (4, 1))
+        placed = self._direct("vocabulary_create", {**provision, "extra": {"jurisdiction": "se"}})
+        self.assertEqual(placed.status_code, 201, placed.content)
+        self.assertEqual(placed.json()["payload"]["extra"], {"jurisdiction": "se"})
+        self.assertEqual(self._approve(placed.json()).status_code, 200)
+        self.assertEqual(ProvisionKind.objects.filter(key="stycke").values_list("jurisdiction__key", flat=True).get(), "se")
+
+    def test_extra_carries_only_the_lists_own_columns(self) -> None:
+        urgency = {"list": "urgency", "key": "within_a_day", "labels": {"en": "Within a day"}, "kind": "negative"}
+        for extra in ({"pillTone": "negative", "background": "#f00"}, {"ordinal": 5, "tone": "brand"}):
+            self._refused(self._direct("vocabulary_create", {**urgency, "extra": extra}), "validation_error")
+            self._refused(self._direct("vocabulary_relabel", {"list": "urgency", "key": "act_now", "extra": extra}), "validation_error")
+        self._refused(self._direct("vocabulary_create", {"list": "flag", "key": "x", "labels": {"en": "X"}, "extra": {"rank": 1}}), "validation_error")
+        self.assertFalse(Proposal.objects.exists())
+
+    def test_keys_and_labels_are_checked_when_the_proposal_is_made(self) -> None:
+        flag = {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}
+        self._refused(self._direct("vocabulary_create", {**flag, "key": "Bad Key!"}), "validation_error")
+        self._refused(self._direct("vocabulary_create", {**flag, "labels": {"zz": "Klientpengar"}}), "unknown_key")
+        self._refused(self._direct("vocabulary_create", {**flag, "labels": {"en": "   "}}), "validation_error")
+        self._refused(self._direct("vocabulary_relabel", {"list": "flag", "key": "ai", "labels": {"zz": "x"}}), "unknown_key")
+        self._refused(self._direct("vocabulary_relabel", {"list": "flag", "key": "AI!", "labels": {"en": "x"}}), "validation_error")
+        term = {"dimension": "service_type", "key": "sub_custody", "labels": {"en": "Sub-custody"}}
+        self._refused(self._direct("term_create", {**term, "key": "Sub Custody"}), "validation_error")
+        self._refused(self._direct("term_create", {**term, "labels": {"zz": "x"}}), "unknown_key")
+        self._refused(self._direct("term_update", {"dimension": "service_type", "key": "custody", "labels": {"zz": "x"}}), "unknown_key")
+        self._refused(self._direct("term_update", {"dimension": "service_type", "key": "Custody!"}), "validation_error")
+        self.assertFalse(Proposal.objects.exists())
+        # A good label is stored trimmed, as the vocabulary routes store it.
+        made = self._direct("vocabulary_create", {**flag, "labels": {"en": "  Client money  ", "sv": ""}})
+        self.assertEqual(made.status_code, 201, made.content)
+        self.assertEqual(made.json()["payload"]["labels"], {"en": "Client money"})
+
+    def test_a_stored_payload_that_no_longer_parses_is_refused_at_approval_and_stays_open(self) -> None:
+        stored = Proposal.objects.create(
+            kind="vocabulary_create", title="Written before the payload schema closed", payload={"list": "flag", "key": "x"}, origin="user"
+        )
+        refused = self._approve({"id": str(stored.id)})
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "validation_error")
+        self.assertIn("labels", refused.json()["detail"])
+        self.assertEqual(Proposal.objects.get(pk=stored.pk).status, ProposalStatus.OPEN.value)
+
+    def test_field_sources_are_links_by_field_and_unknown_top_level_fields_are_refused(self) -> None:
+        flag = {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}
+        body = {"kind": "vocabulary_create", "title": "Add Client money", "payload": flag}
+        editor = sign_in(self.editor)
+        self._refused(self._post("/proposals", {**body, "fieldSources": {"labels": {"nested": True}}}, editor), "validation_error")
+        self._refused(self._post("/proposals", {**body, "tone": "positive"}, editor), "validation_error")
+        self.assertFalse(Proposal.objects.exists())
+        made = self._post("/proposals", {**body, "fieldSources": {"labels": "https://www.fi.se/"}}, editor)
+        self.assertEqual(made.status_code, 201, made.content)
+        self.assertEqual(made.json()["fieldSources"], {"labels": "https://www.fi.se/"})
 
     # --- term kinds -----------------------------------------------------------------------------
     def test_terms_are_created_under_a_parent_and_updated_through_proposals(self) -> None:

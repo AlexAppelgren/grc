@@ -1688,6 +1688,7 @@
         "type": "object"
       },
       "ProposalCreateBody": {
+        "additionalProperties": false,
         "properties": {
           "agentRunId": {
             "anyOf": [
@@ -1726,7 +1727,9 @@
             "title": "Effectivefrom"
           },
           "fieldSources": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "type": "string"
+            },
             "title": "Fieldsources",
             "type": "object"
           },
@@ -1916,7 +1919,9 @@
             "title": "Effectivefrom"
           },
           "fieldSources": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "type": "string"
+            },
             "title": "Fieldsources",
             "type": "object"
           },
@@ -2467,6 +2472,7 @@
         "type": "object"
       },
       "TaxonomyTermCreateBody": {
+        "additionalProperties": false,
         "properties": {
           "dimension": {
             "title": "Dimension",
@@ -2782,6 +2788,7 @@
         "type": "object"
       },
       "VocabularyCreateBody": {
+        "additionalProperties": false,
         "description": "`key` is optional: it is slugified from the English label when absent, because a\nperson types a label and never a key. `force` is how a holder of vocab.manage insists\npast the near-duplicate hint (VOC-03, AC-VOC3).",
         "properties": {
           "extra": {
@@ -2920,6 +2927,7 @@
         "type": "object"
       },
       "VocabularyMergeBody": {
+        "additionalProperties": false,
         "properties": {
           "into": {
             "title": "Into",
@@ -2978,6 +2986,7 @@
         "type": "object"
       },
       "VocabularyPatchBody": {
+        "additionalProperties": false,
         "properties": {
           "extra": {
             "anyOf": [
@@ -3043,6 +3052,7 @@
         "type": "object"
       },
       "VocabularyReorderBody": {
+        "additionalProperties": false,
         "properties": {
           "keys": {
             "items": {
@@ -3082,6 +3092,7 @@
         "type": "object"
       },
       "VocabularyRetireBody": {
+        "additionalProperties": false,
         "properties": {
           "confirm": {
             "default": false,
@@ -3309,6 +3320,7 @@
         "type": "object"
       },
       "VocabularySuggestBody": {
+        "additionalProperties": false,
         "properties": {
           "key": {
             "anyOf": [

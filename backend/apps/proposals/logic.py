@@ -62,6 +62,14 @@ VOCABULARY_KINDS = frozenset(
         ProposalKind.VOCABULARY_MERGE,
     )
 )
+# The payloads that name a row by key and carry labels: the key must be its own slug and
+# the labels real languages, as the vocabulary routes make them.
+NAMED_PAYLOADS = (
+    ProposalVocabularyCreatePayload,
+    ProposalVocabularyRelabelPayload,
+    ProposalTermCreatePayload,
+    ProposalTermUpdatePayload,
+)
 
 
 @dataclass(frozen=True)
@@ -90,22 +98,37 @@ def validated_kind(kind: str) -> str:
     return kind
 
 
-def validated_payload(kind: str, payload: dict[str, Any]) -> pydantic.BaseModel:
-    """The payload as its kind's named schema. A malformed payload is refused when the
-    proposal is made, never when it is approved, so the queue holds nothing unappliable."""
-    schema = PAYLOAD_SCHEMAS[kind]
+def parsed_payload(kind: str, payload: dict[str, Any]) -> pydantic.BaseModel:
+    """The payload as its kind's named schema, or a 422 naming the fields to fix. Run when
+    a proposal is made and again when it is applied, so a stored payload that no longer
+    parses is a refusal the reviewer can act on, never a 500."""
     try:
-        parsed = schema.model_validate(payload)
+        return PAYLOAD_SCHEMAS[kind].model_validate(payload)
     except pydantic.ValidationError as exc:
         fields = ", ".join(".".join(str(part) for part in error["loc"]) for error in exc.errors())
-        raise ValidationError(f"The payload is incomplete: {fields}.", code="validation_error") from exc
+        raise ValidationError(f"Fix these payload fields: {fields}.", code="validation_error") from exc
+
+
+def validated_payload(kind: str, payload: dict[str, Any]) -> pydantic.BaseModel:
+    """The payload as its kind's named schema, checked as the vocabulary routes check it. A
+    malformed payload is refused when the proposal is made, never when it is approved, so
+    the queue holds nothing unappliable."""
+    parsed = parsed_payload(kind, payload)
     _validate_target(kind, parsed)
     return parsed
 
 
 def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
     """A vocabulary proposal names a library list that can be proposed to; a term proposal
-    names a dimension. Tenant lists never enter the queue: their admin writes them."""
+    names a dimension. Tenant lists never enter the queue: their admin writes them. An
+    editor or an agent can post a payload without the vocabulary routes, so their checks
+    run here too: labels in real languages (stored trimmed), a key that is its own slug,
+    and an `extra` that holds only the list's own columns, each a value of its type and
+    stored cleaned, so the queue shows what approval writes. That allowlist is also what
+    keeps a tone or a colour out of the queue (NFR-S10)."""
+    from pydantic.alias_generators import to_camel
+
+    from apps.taxonomy import tenant_lists_logic as lists
     from apps.taxonomy.registry import REGISTRY
 
     if kind in VOCABULARY_KINDS:
@@ -117,14 +140,29 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
                 f"{name!r} is not a library list a proposal can change. Valid lists: {', '.join(valid)}.",
                 code="unknown_key",
             )
-        if kind == ProposalKind.VOCABULARY_CREATE.value:
-            from apps.taxonomy.tenant_lists_logic import validated_kind as validated_row_kind
-
-            validated_row_kind(entry, getattr(payload, "kind", None))
+        if isinstance(payload, ProposalVocabularyCreatePayload):
+            lists.validated_kind(entry, payload.kind)
+        if isinstance(payload, ProposalVocabularyCreatePayload | ProposalVocabularyRelabelPayload) and payload.extra:
+            columns = {to_camel(column) for column in entry.extra_fields} | set(entry.extra_fields)
+            unknown = sorted(set(payload.extra) - columns)
+            if unknown:
+                named = ", ".join(to_camel(column) for column in entry.extra_fields) or "none"
+                raise ValidationError(
+                    f"{', '.join(unknown)} is not a column of {name!r}. Valid columns: {named}.", code="validation_error"
+                )
+            payload.extra = lists.extra_payload(entry, payload.extra)
     else:
         from apps.taxonomy.terms_logic import dimension_by_key
 
         dimension_by_key(getattr(payload, "dimension", ""))
+    if isinstance(payload, ProposalVocabularyCreatePayload | ProposalTermCreatePayload):
+        payload.labels = lists.validated_labels(payload.labels)
+    elif isinstance(payload, ProposalVocabularyRelabelPayload | ProposalTermUpdatePayload) and payload.labels:
+        payload.labels = lists.validated_labels(payload.labels)
+    if isinstance(payload, NAMED_PAYLOADS) and (not payload.key or lists.key_for(payload.labels, payload.key) != payload.key):
+        raise ValidationError(
+            f"{payload.key!r} is not a key: use lowercase letters, digits and underscores.", code="validation_error"
+        )
 
 
 def payload_dict(payload: pydantic.BaseModel) -> dict[str, Any]:
@@ -146,7 +184,7 @@ def create(
     change_id: uuid.UUID | None = None,
     agent_run_id: uuid.UUID | None = None,
     model: str = "",
-    field_sources: dict[str, Any] | None = None,
+    field_sources: dict[str, str] | None = None,
     source_label: str = "",
     source_url: str = "",
     effective_from: Any = None,

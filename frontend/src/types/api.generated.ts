@@ -1723,7 +1723,7 @@ export interface components {
             effectiveFrom?: string | null;
             /** Fieldsources */
             fieldSources?: {
-                [key: string]: unknown;
+                [key: string]: string;
             };
             /** Kind */
             kind: string;
@@ -1807,7 +1807,7 @@ export interface components {
             effectiveFrom?: string | null;
             /** Fieldsources */
             fieldSources?: {
-                [key: string]: unknown;
+                [key: string]: string;
             };
             /**
              * Id

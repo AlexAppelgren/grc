@@ -19,7 +19,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 
-from apps.proposals.logic import PAYLOAD_SCHEMAS
+from apps.proposals.logic import parsed_payload
 from apps.proposals.models import Proposal, ProposalKind
 from apps.proposals.schemas import (
     ProposalTermCreatePayload,
@@ -39,7 +39,7 @@ ORIGINAL_LANGUAGE = "en"
 
 
 def apply(proposal: Proposal, *, actor: Actor) -> None:
-    payload = PAYLOAD_SCHEMAS[proposal.kind].model_validate(proposal.payload)
+    payload = parsed_payload(proposal.kind, proposal.payload)
     with library_write(f"proposal:{proposal.id}"):
         if proposal.kind == ProposalKind.VOCABULARY_CREATE.value:
             assert isinstance(payload, ProposalVocabularyCreatePayload)
@@ -62,7 +62,7 @@ def apply(proposal: Proposal, *, actor: Actor) -> None:
         elif proposal.kind == ProposalKind.TERM_UPDATE.value:
             assert isinstance(payload, ProposalTermUpdatePayload)
             _term_update(payload, proposal, actor)
-        else:  # pragma: no cover - PAYLOAD_SCHEMAS already refused an unknown kind
+        else:  # pragma: no cover - parsed_payload already refused an unknown kind
             raise ValidationError(f"{proposal.kind!r} cannot be applied yet.", code="unknown_key")
 
 

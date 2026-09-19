@@ -16,7 +16,7 @@ from uuid import UUID
 
 from pydantic import Field
 
-from apps.shared.schemas import CamelSchema
+from apps.shared.schemas import CamelSchema, VocabularyExtra, WriteBody
 
 __all__ = ["CamelSchema"]
 
@@ -109,7 +109,7 @@ class VocabularyRowPage(CamelSchema):
     total: int
 
 
-class VocabularyCreateBody(CamelSchema):
+class VocabularyCreateBody(WriteBody):
     """`key` is optional: it is slugified from the English label when absent, because a
     person types a label and never a key. `force` is how a holder of vocab.manage insists
     past the near-duplicate hint (VOC-03, AC-VOC3)."""
@@ -119,22 +119,22 @@ class VocabularyCreateBody(CamelSchema):
     usage_note: str = ""
     kind: str | None = None
     sort_order: int | None = None
-    extra: dict[str, Any] = Field(default_factory=dict)  # schema: VocabularyExtra
+    extra: VocabularyExtra = Field(default_factory=dict)
     force: bool = False
 
 
-class VocabularyPatchBody(CamelSchema):
+class VocabularyPatchBody(WriteBody):
     labels: dict[str, str] | None = None
     usage_note: str | None = None
     sort_order: int | None = None
-    extra: dict[str, Any] | None = None  # schema: VocabularyExtra
+    extra: VocabularyExtra | None = None
 
 
-class VocabularyReorderBody(CamelSchema):
+class VocabularyReorderBody(WriteBody):
     keys: list[str]
 
 
-class VocabularyRetireBody(CamelSchema):
+class VocabularyRetireBody(WriteBody):
     confirm: bool = False
 
 
@@ -150,7 +150,7 @@ class VocabularyRestored(CamelSchema):
     restored: bool
 
 
-class VocabularyMergeBody(CamelSchema):
+class VocabularyMergeBody(WriteBody):
     into: str
 
 
@@ -165,7 +165,7 @@ class VocabularyMerged(CamelSchema):
     dry_run: bool
 
 
-class VocabularySuggestBody(CamelSchema):
+class VocabularySuggestBody(WriteBody):
     key: str | None = None
     labels: dict[str, str]
     usage_note: str = ""
@@ -210,7 +210,7 @@ class TaxonomyTermPage(CamelSchema):
     total: int
 
 
-class TaxonomyTermCreateBody(CamelSchema):
+class TaxonomyTermCreateBody(WriteBody):
     dimension: str
     key: str | None = None
     labels: dict[str, str]

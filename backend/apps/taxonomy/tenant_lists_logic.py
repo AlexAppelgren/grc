@@ -230,11 +230,45 @@ def validated_kind(entry: VocabularyList, kind: str | None) -> str | None:
 def extra_columns(entry: VocabularyList, extra: dict[str, Any] | None) -> dict[str, Any]:
     """The list's own columns from a write's `extra`, keyed by column name. Reads render
     them camelCased (`slaDays`), so writes accept that spelling as well as the column name
-    (`sla_days`); a key that is not one of the list's columns is dropped, never stored."""
+    (`sla_days`); a key that is not one of the list's columns is dropped, never stored.
+    Each value is cleaned by its model field and a reference (a related row's key) becomes
+    that row, so a wrong value is a 422 when the write or the proposal is made, never a
+    500 when it is saved or approved."""
     from pydantic.alias_generators import to_camel
 
     names = {to_camel(name): name for name in entry.extra_fields} | {name: name for name in entry.extra_fields}
-    return {names[key]: value for key, value in (extra or {}).items() if key in names}
+    columns: dict[str, Any] = {}
+    for key, value in (extra or {}).items():
+        name = names.get(key)
+        if name is None:
+            continue
+        related = entry.references.get(name)
+        if related is not None:
+            columns[name] = None if value is None else _referenced(related, value)
+            continue
+        try:
+            columns[name] = entry.model._meta.get_field(name).clean(value, None)
+        except ValidationError as exc:
+            raise ValidationError(f"{to_camel(name)}: {' '.join(exc.messages)}", code="validation_error") from exc
+    return columns
+
+
+def extra_payload(entry: VocabularyList, extra: dict[str, Any] | None) -> dict[str, Any]:
+    """The list's own columns as a proposal stores and shows them: cleaned like the write
+    that approval makes, camelCased like every other name the reviewer reads, a reference as
+    the key of the row it names. apply.py maps them back to columns."""
+    from pydantic.alias_generators import to_camel
+
+    return {to_camel(name): getattr(value, "key", value) for name, value in extra_columns(entry, extra).items()}
+
+
+def _referenced(list_name: str, key: Any) -> Any:
+    rows = REGISTRY[list_name].model._default_manager.filter(active=True)
+    row = rows.filter(key=key).order_by("sort_order", "key").first() if isinstance(key, str) else None
+    if row is None:
+        valid = ", ".join(rows.order_by("sort_order", "key").values_list("key", flat=True))
+        raise ValidationError(f"{key!r} is not a {list_name}. Valid values: {valid}.", code="unknown_key")
+    return row
 
 
 def key_for(labels: dict[str, str], key: str | None) -> str:

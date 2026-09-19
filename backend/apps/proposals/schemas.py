@@ -12,9 +12,9 @@ from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, RootModel
 
-from apps.shared.schemas import CamelSchema
+from apps.shared.schemas import CamelSchema, WriteBody
 
 __all__ = ["CamelSchema"]
 
@@ -28,7 +28,7 @@ class ProposalActorRef(CamelSchema):
 # Payloads, one named schema per kind (PRO-01). `list` is a vocabulary list name from
 # apps/taxonomy/registry.py; `key` is the immutable key the row will carry forever.
 # ---------------------------------------------------------------------------------------
-class ProposalVocabularyCreatePayload(CamelSchema):
+class ProposalVocabularyCreatePayload(WriteBody):
     list: str
     key: str
     labels: dict[str, str]
@@ -38,7 +38,7 @@ class ProposalVocabularyCreatePayload(CamelSchema):
     extra: dict[str, Any] = Field(default_factory=dict)  # schema: VocabularyExtra
 
 
-class ProposalVocabularyRelabelPayload(CamelSchema):
+class ProposalVocabularyRelabelPayload(WriteBody):
     list: str
     key: str
     labels: dict[str, str] = Field(default_factory=dict)
@@ -47,18 +47,18 @@ class ProposalVocabularyRelabelPayload(CamelSchema):
     extra: dict[str, Any] | None = None  # schema: VocabularyExtra
 
 
-class ProposalVocabularyRetirePayload(CamelSchema):
+class ProposalVocabularyRetirePayload(WriteBody):
     list: str
     key: str
 
 
-class ProposalVocabularyMergePayload(CamelSchema):
+class ProposalVocabularyMergePayload(WriteBody):
     list: str
     key: str
     into: str
 
 
-class ProposalTermCreatePayload(CamelSchema):
+class ProposalTermCreatePayload(WriteBody):
     dimension: str
     key: str
     labels: dict[str, str]
@@ -66,7 +66,7 @@ class ProposalTermCreatePayload(CamelSchema):
     parent: str | None = None
 
 
-class ProposalTermUpdatePayload(CamelSchema):
+class ProposalTermUpdatePayload(WriteBody):
     dimension: str
     key: str
     labels: dict[str, str] = Field(default_factory=dict)
@@ -91,11 +91,9 @@ class ProposalPayload(CamelSchema):
     extra: dict[str, Any] = Field(default_factory=dict)  # schema: VocabularyExtra
 
 
-class ProposalFieldSources(CamelSchema):
-    """`field_sources`: per changed field, where the value came from (PRO-01). Chunk 2
+class ProposalFieldSources(RootModel[dict[str, str]]):
+    """`field_sources`: per changed field, the link its value came from (PRO-01). Chunk 2
     proposals carry none; the watch agent fills it from chunk 5 on."""
-
-    fields: dict[str, str] = Field(default_factory=dict)
 
 
 class ProposalRow(CamelSchema):
@@ -107,7 +105,7 @@ class ProposalRow(CamelSchema):
     target_id: UUID | None = None
     change_id: UUID | None = None
     payload: dict[str, Any] = Field(default_factory=dict)  # schema: ProposalPayload
-    field_sources: dict[str, Any] = Field(default_factory=dict)  # schema: ProposalFieldSources
+    field_sources: dict[str, str] = Field(default_factory=dict)  # per changed field, its source link
     scope_suggestion: list[dict[str, Any]] = Field(default_factory=list)  # schema: TermRef (chunk 4 fills it)
     source_label: str = ""
     source_url: str = ""
@@ -135,7 +133,7 @@ class ProposalAccepted(CamelSchema):
     proposal: ProposalRow
 
 
-class ProposalCreateBody(CamelSchema):
+class ProposalCreateBody(WriteBody):
     kind: str
     title: str
     payload: dict[str, Any] = Field(default_factory=dict)  # schema: ProposalPayload
@@ -144,7 +142,7 @@ class ProposalCreateBody(CamelSchema):
     change_id: UUID | None = None
     agent_run_id: UUID | None = None  # the run that produced it (agents, chunk 5)
     model: str = ""  # the model that drafted it (AUD-02; labelled until a person confirms)
-    field_sources: dict[str, Any] = Field(default_factory=dict)  # schema: ProposalFieldSources
+    field_sources: dict[str, str] = Field(default_factory=dict)  # per changed field, its source link
     source_label: str = ""
     source_url: str = ""
     effective_from: date | None = None
