@@ -167,6 +167,9 @@ IP beyond the security log). **Tenant content:** assessment, gap, note,
 comment, evidence or Ask text never appears in logs, Sentry, analytics, or a
 prompt to a model endpoint the tenant's contract does not allow. Log the
 record id. The compliance lint checks both. Logs inherit a retention limit.
+A query string is tenant content (`?q=` is what someone searched for): the
+access log prints the path without it, and no formatter or Sentry hook may
+pass one on.
 
 ## 2. Structural guard tests (playbook 5)
 
@@ -190,6 +193,7 @@ message that says what to do.
 | Seed integrity | The E2E seed | Two tenants; every fixed login has exactly the properties journeys depend on |
 | Celery registration | Every task module | Every beat entry points at a real task; every tenant task wrapped in `@tenant_task` |
 | Health | `/health/` | 200 all ok; 503 names the failing component; worker ping bounded |
+| No query in logs | gunicorn's access format in `docker-entrypoint.sh` | Only method, path, status, size, time and request id atoms: no query, address, referrer, agent or request header |
 
 Add a guard whenever a class of bug recurs; the docstring names the incident.
 

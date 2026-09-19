@@ -186,6 +186,11 @@ Then it fails on a log call that passes a note, comment, assessment, evidence or
 And on a log call that passes contact details or a token
 Given the Sentry configuration
 Then send_default_pii is false, request bodies are never sent, local variables are off, and before_send and before_send_transaction scrub
+Given a request whose query string holds what someone searched for
+Then no access log line or application log line holds the query, the client address, the referrer or the user agent
+And gunicorn's access logger never reaches Sentry, and a breadcrumb message loses any query string and address
+Given an exception whose message, or a cause's, carries row values
+Then Sentry receives its type, module and frames, never its message, and a log event keeps its template but not what was interpolated into it
 ```
 
 ### NFR-S16 — Every error uses one shape and an empty answer is 200 `@integration` (NFR-01)

@@ -408,9 +408,14 @@ if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.celery import CeleryIntegration
     from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import ignore_logger
 
     from apps.shared.sentry_scrub import before_send, before_send_transaction  # noqa: E402
 
+    # gunicorn writes each access line at INFO outside any request scope, so as a
+    # breadcrumb it would ride on the next event, whoever's request that is (security
+    # review 2026-09-19). The line is in the container log already; Sentry never needs it.
+    ignore_logger("gunicorn.access")
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=HOST_ENVIRONMENT_NAME or ENVIRONMENT,

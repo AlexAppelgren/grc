@@ -40,10 +40,19 @@ SENSITIVE_KEYS = frozenset(
         "answer",
         "before",
         "after",
+        # Django's request and security loggers pass the request itself, whose repr is the
+        # full path with the query string.
+        "request",
     }
 )
 REDACTED = "[redacted]"
 _TOKEN_PATH = re.compile(r"(/auth/invitations/)[^/?#]+")
+# A query string attached to a path or URL, and anything shaped like an IPv4 or IPv6
+# address (a clock time with seconds matches too, which costs nothing). IPv4 goes first,
+# or the IPv6 pattern would take the first octet of `::ffff:198.51.100.9` and leave the rest.
+_QUERY = re.compile(r"(?<=\S)\?[^\s\"'<>]+")
+_IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+_IPV6 = re.compile(r"(?<![\w:])(?:[0-9A-Fa-f]{0,4}:){2,7}[0-9A-Fa-f]{0,4}(?![\w:])")
 
 
 def _scrub_mapping(mapping: dict[str, Any], sensitive: frozenset[str]) -> dict[str, Any]:
@@ -65,6 +74,13 @@ def scrub_url(url: str) -> str:
     return _TOKEN_PATH.sub(rf"\1{REDACTED}", url)
 
 
+def scrub_message(message: str) -> str:
+    """A log line recorded as a breadcrumb can hold a request line: gunicorn's access line
+    did, search text and client address included (security review 2026-09-19)."""
+    scrubbed = _QUERY.sub(f"?{REDACTED}", scrub_url(message))
+    return _IPV6.sub(REDACTED, _IPV4.sub(REDACTED, scrubbed))
+
+
 def scrub_event(event: dict[str, Any]) -> dict[str, Any]:
     request = event.get("request")
     if isinstance(request, dict):
@@ -84,11 +100,30 @@ def scrub_event(event: dict[str, Any]) -> dict[str, Any]:
         value = event.get(key)
         if isinstance(value, dict):
             event[key] = _scrub_mapping(value, SENSITIVE_KEYS)
+    exception = event.get("exception")
+    if isinstance(exception, dict) and isinstance(exception.get("values"), list):
+        for value in exception["values"]:
+            # A database error's message holds row values (`DETAIL: Failing row contains
+            # (...)`, security review 2026-09-19). Type, module and frames say where.
+            if isinstance(value, dict) and "value" in value:
+                value["value"] = REDACTED
+    logentry = event.get("logentry")
+    if isinstance(logentry, dict):
+        # The template stays; whatever logging interpolated into it does not.
+        if logentry.pop("params", None):
+            logentry.pop("formatted", None)
+        for key in ("message", "formatted"):
+            if isinstance(logentry.get(key), str):
+                logentry[key] = scrub_message(logentry[key])
     breadcrumbs = event.get("breadcrumbs")
     if isinstance(breadcrumbs, dict) and isinstance(breadcrumbs.get("values"), list):
         for crumb in breadcrumbs["values"]:
-            if isinstance(crumb, dict) and isinstance(crumb.get("data"), dict):
+            if not isinstance(crumb, dict):
+                continue
+            if isinstance(crumb.get("data"), dict):
                 crumb["data"] = _scrub_mapping(crumb["data"], SENSITIVE_KEYS)
+            if isinstance(crumb.get("message"), str):
+                crumb["message"] = scrub_message(crumb["message"])
     return event
 
 
