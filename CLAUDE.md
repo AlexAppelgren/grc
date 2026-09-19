@@ -109,7 +109,8 @@ Paginate (default 20, max 100). Measure against `next start`, never `next dev`.
 
 ## 7. Git workflow and the pre-push checklist
 
-One pushed branch, `main`, during the build (D-15); small commits per whole
+One deployed branch, `main`, during the build (D-15), reached only through `bash scripts/ship.sh`,
+which runs the real CI and CodeQL on the `candidate` branch first (ADR 0015, 2026-09-19); small commits per whole
 slice, each passing the checklist below. Parallel sub-agents work in local worktrees on
 short-lived `wt/*` branches that are never pushed; the main agent reviews each and merges
 it into `main` (`docs/runbooks/WORKTREES.md`, `scripts/worktree.sh`). Inside a worktree,
@@ -118,8 +119,8 @@ from the user's or the system's point of view; a body with the why, the
 requirement IDs, what now happens, what was deliberately not done; no model
 or tool names. The owner deploys; never deploy yourself.
 
-**Pre-push checklist: run `bash scripts/prepush.sh`** before every commit to
-`main` (`--all` for every gate). It mirrors CI and CodeQL with the same tools,
+**Pre-push checklist: run `bash scripts/prepush.sh --quick`** before every commit to
+`main`, and push only with `bash scripts/ship.sh` (`prepush.sh --all` runs every gate locally). It mirrors CI and CodeQL with the same tools,
 versions, flags and thresholds, so a green run predicts a green CI run: CodeQL
 (`security-extended`, then `.github/scripts/codeql_gate.py` with the accepted
 fingerprints), gitleaks, osv-scanner and `npm audit`, licences, the backend and

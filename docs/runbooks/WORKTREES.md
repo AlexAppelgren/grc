@@ -72,10 +72,11 @@ failures it caused.
    library fence, audit or four eyes also gets a security-review sub-agent. A critical
    finding blocks the merge and goes back to the task.
 5. **Integrate at once.** As soon as a task passes review, merge it into `main` squashed
-   (`git merge --squash wt/<task>`) and run `bash scripts/prepush.sh --all` before every commit
-   to `main`. It mirrors CI including CodeQL and its SARIF gate, and runs the full pre-push
-   checklist and the full E2E suite; a red gate means no commit. Then commit with a playbook
-   13.4 message, push, and watch CI and CodeQL until green. Then `remove` the worktree.
+   (`git merge --squash wt/<task>`), run `bash scripts/prepush.sh --quick`, and commit with a
+   playbook 13.4 message; a red gate means no commit. Then ship with `bash scripts/ship.sh`
+   (in the background: 20 to 40 minutes). It runs the real CI and CodeQL, including the full
+   E2E suite, on `candidate`, and moves `main` only when both are green. Several merged tasks
+   may ride one ship. Then `remove` the worktree.
    Never let finished work wait for the rest of the chunk. When a later branch conflicts,
    merge `main` into it inside its own worktree and rerun its gates there.
 
@@ -105,7 +106,9 @@ next tool call, and changing its scope mid-task is how the long runs of 2026-09-
 
 ## Rules
 
-- `main` is the only branch that is pushed. `wt/*` branches are local and short-lived.
+- `main` is the only branch that deploys, and it moves only through `bash scripts/ship.sh`: the
+  quick local gates, then the real CI and CodeQL on `candidate`, then a fast-forward of `main`
+  (ADR 0015, 2026-09-19). `wt/*` branches are local and short-lived.
 - One slot per worktree; `remove` frees it. Fourteen slots is the ceiling: slot N uses Redis index N+1, and Redis has 16 databases. Memory, not slots, is the practical limit: at most three worktrees run an E2E stack at once on a 16 GB machine.
 - A worktree made by a tool has no slot until `init` runs in it (`list` shows `- (none)`),
   and until then it must not run the suite, since it would use the shared default database.

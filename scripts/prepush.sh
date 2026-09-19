@@ -5,6 +5,9 @@
 #
 #   bash scripts/prepush.sh          the gates for what changed since origin/main
 #   bash scripts/prepush.sh --all    every gate, full E2E suite (what the nightly run does)
+#   bash scripts/prepush.sh --quick  the tiered gates without CodeQL, E2E and the container
+#                                    scans; only scripts/ship.sh uses it, because it then runs
+#                                    those in the real CI on `candidate` before main moves
 #
 # "Changed" is the committed, uncommitted and untracked work since origin/main. Tiers
 # mirror the `changes` job in ci.yml: backend, frontend, lockfiles, containers, and a
@@ -29,7 +32,8 @@ cd "$root"
 main="$(git worktree list --porcelain | awk '/^worktree /{print substr($0,10); exit}')"
 TOOLS="$(cd "$main" && pwd)/.tools"
 [ -f .env.worktree ] && { set -a; . ./.env.worktree; set +a; }   # a worktree's own slot
-all=0; case "${1:-}" in --all) all=1 ;; "") ;; *) die "usage: bash scripts/prepush.sh [--all]" ;; esac
+all=0 quick=0
+case "${1:-}" in --all) all=1 ;; --quick) quick=1 ;; "") ;; *) die "usage: bash scripts/prepush.sh [--all|--quick]" ;; esac
 
 pinned() { grep -qF "$2" "$1" || die "$1 no longer pins '$2'; update the matching pin in scripts/prepush.sh"; }
 pinned .github/workflows/codeql.yml "github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd"
@@ -95,6 +99,7 @@ while IFS= read -r f; do
   case "$f" in *.py) py=1 ;; *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) js=1 ;; esac
 done <<< "$(git diff --name-only "origin/main...$snapshot")"
 [ "$full" = 1 ] && be=1 fe=1 lock=1 cont=1 py=1 js=1
+[ "$quick" = 1 ] && echo "prepush: quick: CodeQL, E2E and the container scans are left to CI on candidate (scripts/ship.sh)"
 echo "prepush: full=$full backend=$be frontend=$fe lockfiles=$lock containers=$cont codeql-python=$py codeql-js=$js"
 
 timings=()
@@ -128,6 +133,7 @@ fi
 
 # CodeQL analyses CI's checkout, so here an export of the snapshot: no linked .venv or
 # node_modules, no ignored files, the same source root and relative paths.
+[ "$quick" = 1 ] && py=0 js=0
 if [ "$py" = 1 ] || [ "$js" = 1 ]; then
   rm -rf sarif-results/src && mkdir -p sarif-results/src && git archive "$snapshot" | tar -x -C sarif-results/src
 fi
@@ -183,13 +189,13 @@ if [ "$fe" = 1 ]; then  # ci.yml `frontend`
   done
 fi
 
-if [ "$be" = 1 ] || [ "$fe" = 1 ]; then  # ci.yml `e2e`: @smoke, the full suite when everything runs
+if [ "$quick" = 0 ] && { [ "$be" = 1 ] || [ "$fe" = 1 ]; }; then  # ci.yml `e2e`: @smoke, the full suite when everything runs
   gate "E2E: design tokens" frontend npm run build:tokens
   if [ "$full" = 1 ]; then gate "E2E: full suite" frontend env CI=true E2E_MODE=true npm run test:e2e
   else gate "E2E: @smoke" frontend env CI=true E2E_MODE=true npm run test:e2e -- --grep @smoke; fi
 fi
 
-if [ "$cont" = 1 ] || [ "$lock" = 1 ]; then  # ci.yml `container-scan`
+if [ "$quick" = 0 ] && { [ "$cont" = 1 ] || [ "$lock" = 1 ]; }; then  # ci.yml `container-scan`
   trivy="$(tool trivy-0.70.0 trivy$x "$trivy_url" "$trivy_sha")"
   for image in backend frontend; do
     gate "Container $image: build" . docker build -t "compliance-watch/$image:ci" -f "$image/Dockerfile" "$image"

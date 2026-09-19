@@ -44,3 +44,22 @@ main agent squash-merges it into `main` after review, one commit per slice with 
 other's test database mid-run the same day. `docs/runbooks/WORKTREES.md` holds the loop and
 `scripts/worktree.sh` the tooling, which gives each worktree its own databases, Redis index
 and ports.
+
+## Amendment, 2026-09-19: the real CI runs before `main` moves
+
+Alex asked for work to move off his laptop and into the cloud, to shorten the build without
+cutting a corner. The heaviest gates were the local CI mirror's CodeQL, the full E2E suite
+and the two container scans, run before every push on a 16 GB machine that also hosts the
+parallel worktrees. `main` now reaches GitHub only through `scripts/ship.sh`:
+
+1. The local tiered gates run without the heavy ones (`scripts/prepush.sh --quick`).
+2. The commit is pushed to `candidate`, a branch that only ever holds the next candidate for
+   `main` and is force-pushed each time. It is not the `staging` of tranche 2 above.
+3. `ci.yml` and `codeql.yml` are started on `candidate` by hand. A manual run in `ci.yml` is a
+   full run: every gate and the full E2E suite.
+4. Only when both are green is the same commit pushed to `main`, as a fast-forward.
+
+This is stricter than before, not looser: `main` never holds a commit that the real CI has not
+passed, where before it held one that a local mirror of CI had passed. The mirror stays for
+anyone who wants it (`scripts/prepush.sh`, `--all`). Still true: `main` is the only branch
+that deploys, there are no pull requests, and `wt/*` branches stay local.
