@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/audit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Audit Events */
+        get: operations["listAuditEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/code/request": {
         parameters: {
             query?: never;
@@ -1087,6 +1104,79 @@ export interface components {
             items: components["schemas"]["ApiKeyOut"][];
             /** Total */
             total: number;
+        };
+        /**
+         * AuditActorRef
+         * @description Who did it: a user, an agent or the system. `id` is empty for the system.
+         */
+        AuditActorRef: {
+            /** Id */
+            id: string | null;
+            /** Label */
+            label: string;
+            /** Type */
+            type: string;
+        };
+        /** AuditEventPage */
+        AuditEventPage: {
+            /** Items */
+            items: components["schemas"]["AuditEventRow"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * AuditEventQuery
+         * @description Filters of the audit log, each optional. A record is `subjectType` and `subjectId`;
+         *     `from` is inclusive and `to` exclusive.
+         */
+        AuditEventQuery: {
+            /** Actorid */
+            actorId?: string | null;
+            /** From */
+            from?: string | null;
+            /** Subjectid */
+            subjectId?: string | null;
+            /** Subjecttype */
+            subjectType?: string | null;
+            /** To */
+            to?: string | null;
+        };
+        /** AuditEventRow */
+        AuditEventRow: {
+            /** Action */
+            action: string;
+            actor: components["schemas"]["AuditActorRef"];
+            after: components["schemas"]["AuditSnapshot"];
+            before: components["schemas"]["AuditSnapshot"];
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Steppedup */
+            steppedUp: boolean;
+            /** Subjectid */
+            subjectId: string | null;
+            /** Subjecttitle */
+            subjectTitle: string;
+            /** Subjecttype */
+            subjectType: string;
+            /** Summary */
+            summary: string;
+        };
+        /**
+         * AuditSnapshot
+         * @description The `before` and `after` columns of audit_event: the audited record's fields at
+         *     the time, keyed by field name. Free-form by nature (the audit log stores every
+         *     model); named here so the JSONField's comment points somewhere real.
+         */
+        AuditSnapshot: {
+            [key: string]: unknown;
         };
         /** CodeRequestBody */
         CodeRequestBody: {
@@ -2484,6 +2574,34 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listAuditEvents: {
+        parameters: {
+            query?: {
+                subjectType?: string | null;
+                subjectId?: string | null;
+                actorId?: string | null;
+                from?: string | null;
+                to?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEventPage"];
+                };
+            };
+        };
+    };
     requestCode: {
         parameters: {
             query?: never;

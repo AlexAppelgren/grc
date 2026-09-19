@@ -18,6 +18,7 @@ from ninja import NinjaAPI
 from ninja.errors import AuthenticationError, HttpError
 from ninja.errors import ValidationError as NinjaValidationError
 
+from apps.governance.api import router as governance_router
 from apps.identity.api import router as identity_router
 from apps.library.api import router as library_router
 from apps.proposals.api import router as proposals_router
@@ -49,6 +50,7 @@ api.add_router("", tenants_router)
 api.add_router("", library_router)
 api.add_router("", taxonomy_router)
 api.add_router("", proposals_router)
+api.add_router("", governance_router)
 
 
 @api.exception_handler(ProblemError)

@@ -32,7 +32,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| AUD-01 | Append-only audit log written with every change: actor (user, agent, system), action, subject with its title at the time, summary, before and after | M | R1 | pending |
+| AUD-01 | Append-only audit log written with every change: actor (user, agent, system), action, subject with its title at the time, summary, before and after | M | R1 | in_progress |
 | AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 | pending |
 | AUD-03 | Problem reports resolved by a proposal, closing the loop to the agents | S | R1 | pending |
 | AUD-04 | Retention per tenant with a purge that respects append-only tables | S | R3 | pending |
@@ -45,6 +45,11 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 - **Mixed tables** (`audit_event`, `ai_generation`, `problem_report`,
   `outbox_event`, `api_key`) show library rows to everyone and tenant rows to
   their tenant.
+- The tenant audit log (`GET /audit-events`, `audit.read`) shows the tenant's
+  rows and, of the rows without a tenant, only a change to a library record
+  (authority, instrument, provision, obligation, vocabulary, taxonomy term)
+  made by an agent, the system or platform staff. Proposal rows and platform
+  sign-ins and code requests without a tenant never reach a tenant.
 - The audit-on-write guard fails a mutating route whose scenario wrote no
   audit row.
 - System health shows source coverage, runs, outbox lag and failed jobs with
@@ -83,8 +88,8 @@ Then the statement runs and the maintenance intent is visible in the transaction
 
 ### AUD-S3 — The audit log screen shows who did what, with before and after `@e2e` (AUD-01)
 ```gherkin
-Given a tenant with audit.read
-When they open the audit log and filter by a case
+Given a tenant member with audit.read and a record changed with step-up
+When they open the audit log and filter by that record (a case, once chunk 9 exists)
 Then each row shows actor, action, subject title, time and a diff of before and after
 And an event completed with step-up shows that a passkey was used
 ```
@@ -120,9 +125,9 @@ And the purge refuses to run without the environment guard
 
 ### AUD-S7 — Mixed tables show library rows to everyone and tenant rows to their tenant `@integration` (AUD-01)
 ```gherkin
-Given audit events for a library proposal and for a case in tenant A
+Given audit events for a library change an approved proposal applied and for tenant A's own work
 When tenant B reads the audit log
-Then it sees the library event and not the case event
+Then it sees the library event and not tenant A's
 When the row-level security guard enumerates the mixed tables
 Then each has a "shared or mine" policy, enabled and forced
 ```
