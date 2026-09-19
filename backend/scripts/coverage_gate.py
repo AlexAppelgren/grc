@@ -43,7 +43,11 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/shared/audit.py": (96, 100, 45, "2026-09-19"),
     "apps/shared/db_role_guard.py": (86, 90, 53, "2026-09-19"),
     "apps/shared/health_check.py": (88, 92, 65, "2026-09-19"),
-    "apps/shared/middleware.py": (96, 100, 60, "2026-09-19"),
+    "apps/shared/middleware.py": (96, 100, 68, "2026-09-19"),
+    # The code and invitation mail leaves through the worker after commit, so a code request
+    # takes the same time whether or not it sends (security review F12).
+    "apps/identity/tasks.py": (96, 100, 6, "2026-09-19"),
+    "apps/shared/adapters/mailer.py": (96, 100, 38, "2026-09-19"),
     "apps/shared/sentry_scrub.py": (89, 93, 41, "2026-09-19"),
     "apps/shared/storage.py": (95, 99, 62, "2026-09-19"),
     "apps/shared/vocabulary.py": (91, 96, 55, "2026-09-19"),
