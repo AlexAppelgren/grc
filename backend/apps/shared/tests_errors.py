@@ -21,6 +21,7 @@ from apps.shared.errors import PROBLEM_CONTENT_TYPE, ProblemError, problem_respo
 from apps.shared.logging import JsonFormatter
 from apps.shared.management.commands.export_openapi import normalise
 from apps.shared.management.commands.migrate_from_zero import _with_database
+from apps.shared.middleware import RequestIdLogFilter
 from config import api as api_module
 
 
@@ -125,8 +126,11 @@ class UnhandledErrors(TestCase):
         self.assertIn("<key>", getattr(logs.records[0], "route"))  # noqa: B009
         line = JsonFormatter().format(logs.records[0])
         self.assertIn("RuntimeError", line)
-        # Django's own line for the 500 names the route too, never the path it was asked for.
-        django_line = JsonFormatter().format(django_logs.records[0])
+        # Django's own line for the 500 names the route too, never the path it was asked for,
+        # written as the console handler writes it: its filter, then the formatter.
+        django_record = django_logs.records[0]
+        RequestIdLogFilter().filter(django_record)
+        django_line = JsonFormatter().format(django_record)
         self.assertIn("<key>", django_line)
         for written in (line, django_line):
             self.assertNotIn(key, written)

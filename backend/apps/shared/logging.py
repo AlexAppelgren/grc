@@ -30,6 +30,7 @@ class JsonFormatter(_JsonFormatter):
         # `request` and the concrete path in the message, and a path or a query can carry
         # a tenant's key or search text (finding F6). The request id already names the
         # request, so `request` is dropped and django.request's message names the route.
+        # This is the one place that rewrites it, so every handler writes the same line.
         log_record.pop("request", None)
         request = getattr(record, "request", None)
         if record.name == "django.request" and isinstance(request, HttpRequest):

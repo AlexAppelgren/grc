@@ -9,6 +9,7 @@ here depends on the day the suite runs."""
 from __future__ import annotations
 
 import datetime
+import json
 import logging
 import sys
 import time
@@ -195,6 +196,7 @@ class ObligationListTests(TestCase):
         self.assertEqual(set(obligation_scopes(list(sql))), set(scopes), "for given obligations as for all of them")
 
     def test_the_search_never_reaches_the_logs(self) -> None:
+        # Captured as the console handler writes it (settings.LOGGING): its filter, then the formatter.
         lines: list[str] = []
 
         class Capture(logging.Handler):
@@ -212,20 +214,40 @@ class ObligationListTests(TestCase):
             request_logger.removeHandler(handler)
         self.assertEqual(refused.status_code, 422)
         self.assertEqual(len(lines), 1, "the refusal is logged")
-        self.assertNotIn("branch", lines[0])
-        self.assertIn("GET api/v1/obligations", lines[0])
-        self.assertIn('"request_id": "req-obligations-1"', lines[0], "Django logs after the middleware; the id still travels")
+        for written in ("fraud", "branch", "twelve", "advice", "?", "q=", "term="):
+            self.assertNotIn(written, lines[0], "no search text and no query string")
+        self.assertNotIn("/api/v1/obligations", lines[0], "the route pattern, never the path the caller asked for")
+        line = json.loads(lines[0])
+        self.assertNotIn("request", line)
+        self.assertEqual(line["message"], "422 GET api/v1/obligations")
+        self.assertEqual(line["request_id"], "req-obligations-1", "Django logs after the middleware; the id still travels")
 
     def test_every_row_is_validated_before_it_is_answered(self) -> None:
-        # A value the database or a later change gets wrong fails the read; it never reaches
-        # the wire as a 200.
-        with mock.patch.object(reading, "in_force", return_value=mock.Mock(version_number="many", effective_from=None)):
-            with self.assertRaises(ValidationError):
-                self.get({})
-        # So does a row built without validation: the page validates every row it holds.
-        unchecked = ObligationRow.model_construct(id="not-a-uuid", stable_key=None)
-        with mock.patch.object(reading, "obligation_page", return_value=([unchecked], 1)), self.assertRaises(ValidationError):
-            self.get({})
+        # A value the database or a later change gets wrong fails the read: the caller gets the
+        # one problem shape (config.api), never a 200 and never the value, and the log names
+        # the validation error by its type, never its message (apps.shared.logging). A row
+        # built without validation fails the same way: the page validates every row it holds.
+        # The type is asserted because a 500 for any other reason would prove nothing.
+        refused_by_validation = f"{ValidationError.__module__}.{ValidationError.__qualname__}"
+        unchecked = ObligationRow.model_construct(id="unchecked-row-id", stable_key=None)
+        cases = (
+            ("in_force", mock.Mock(version_number="many-versions", effective_from=None), "many-versions"),
+            ("obligation_page", ([unchecked], 1), "unchecked-row-id"),
+        )
+        for name, value, malformed in cases:
+            with self.subTest(name):
+                with (
+                    mock.patch.object(reading, name, return_value=value),
+                    self.assertLogs("config.api", "ERROR") as logs,
+                    self.assertLogs("django.request", "ERROR") as django_logs,
+                ):
+                    response = self.get({})
+                self.assertEqual((response.status_code, response.json().get("code")), (500, "internal_error"))
+                self.assertNotIn(malformed, response.content.decode())
+                line = JsonFormatter().format(logs.records[0])
+                self.assertTrue(json.loads(line)["exc_info"].endswith(refused_by_validation), line)
+                for written in (line, JsonFormatter().format(django_logs.records[0])):
+                    self.assertNotIn(malformed, written)
 
     def test_as_of_returns_the_version_in_force_and_the_one_to_come(self) -> None:
         before = self.row("obl-d-research", {"asOf": EARLY.isoformat()})
