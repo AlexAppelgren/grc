@@ -1,4 +1,4 @@
-"""Models of the taxonomy app (VOC-01, VOC-02, VOC-07, FP-01, FP-02, I18N-01; INPUT_DELTAS
+"""Models of the taxonomy app (VOC-01, VOC-02, VOC-07, FP-01, FP-02, FP-04, I18N-01; INPUT_DELTAS
 §1; schema v0.3 `taxonomy_term`, `footprint_term`, `footprint_history`, `tenant_tag`,
 `tagging`).
 
@@ -20,6 +20,10 @@ The footprint (FP-01, FP-02): `FootprintTerm` rows are the company's terms; a ch
 a `FootprintChangeRequest` with a preview, decided by a second person (check constraint
 `footprint_change_request_four_eyes`), and every term switched leaves one
 `FootprintHistory` row (append-only) and one audit event.
+
+Markets (FP-04): the countries in the footprint are the ones the company operates in;
+`WatchedMarket` rows are the ones it watches instead. A market's level is computed from
+the two, never stored.
 """
 
 from __future__ import annotations
@@ -685,3 +689,29 @@ class FootprintHistory(AppendOnlyModel, TenantModel):
     def __str__(self) -> str:
         return f"{self.action} {self.term_id}"
 
+
+
+# ---------------------------------------------------------------------------------------
+# Markets (tenant)
+# ---------------------------------------------------------------------------------------
+class WatchedMarket(TenantModel):
+    """A market the company watches (FP-04, D-30, INPUT_DELTAS §1): a jurisdiction it does
+    not operate in but wants to see. Watching hides nothing, so it is a direct audited
+    write rather than a footprint change request.
+
+    The level is computed, never stored: a market is operating when its term is in the
+    footprint, otherwise watching when a row here names it, otherwise not followed. So a
+    market watched before it became operating reads as watched again once operating stops
+    (D-31), and footprint approval never touches these rows."""
+
+    jurisdiction = models.ForeignKey("library.Jurisdiction", on_delete=models.PROTECT, related_name="+")
+    added_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "watched_market"
+        ordering = ["added_at", "id"]
+        constraints = [models.UniqueConstraint(fields=["tenant", "jurisdiction"], name="watched_market_unique")]
+
+    def __str__(self) -> str:
+        return f"{self.tenant_id}:{self.jurisdiction_id}"
