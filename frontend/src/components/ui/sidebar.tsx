@@ -1,6 +1,5 @@
 'use client';
 
-import * as Dialog from '@radix-ui/react-dialog';
 import { Slot } from '@radix-ui/react-slot';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import {
@@ -16,7 +15,6 @@ import {
   type ReactNode,
 } from 'react';
 
-import { useT } from '@/shared/i18n/LocaleProvider';
 import { cn } from '@/shared/utils/cn';
 
 // The parts of shadcn/ui's Sidebar (ui.shadcn.com/docs/components/base/sidebar)
@@ -33,11 +31,9 @@ import { cn } from '@/shared/utils/cn';
 // medium weight on data-[active=true], so the fully rounded shape stays
 // <Pill>'s alone (playbook 6.7).
 
-// foundations.md "Sidebar row": 240px, 48px collapsed (shadcn's 3rem), 280px
-// as a phone sheet.
+// foundations.md "Sidebar row": 240px, 48px collapsed (shadcn's 3rem).
 const WIDTH = '15rem';
 const WIDTH_ICON = '3rem';
-const WIDTH_MOBILE = '17.5rem';
 
 /**
  * localStorage, not shadcn's cookie: the API owns the cookie jar and its
@@ -45,8 +41,13 @@ const WIDTH_MOBILE = '17.5rem';
  */
 export const SIDEBAR_STORAGE_KEY = 'bleqq.sidebar.open';
 
-/** Below Tailwind's `md`, the rail becomes the off-canvas sheet. */
-const MOBILE_QUERY = '(max-width: 767px)';
+/**
+ * Below 1024 px (Tailwind's `lg`, Green's viewport-m) the tab bar replaces the
+ * rail (design/system/navigation.md 1). CSS decides what is visible with
+ * `lg:` and `max-lg:`; JS reads this only for ctrl/cmd+b, closing overlays
+ * when the width crosses it, and hiding tooltips.
+ */
+export const COMPACT_QUERY = '(width < 64rem)';
 
 /** The stored open state; `null` when nothing is stored or storage throws (private mode). */
 export function readStoredOpen(): boolean | null {
@@ -74,21 +75,19 @@ function subscribeStorage(onChange: () => void): () => void {
   return () => window.removeEventListener('storage', onChange);
 }
 
-function subscribeMobile(onChange: () => void): () => void {
-  const query = window.matchMedia(MOBILE_QUERY);
+function subscribeCompact(onChange: () => void): () => void {
+  const query = window.matchMedia(COMPACT_QUERY);
   query.addEventListener('change', onChange);
   return () => query.removeEventListener('change', onChange);
 }
 
-const isMobileNow = (): boolean => window.matchMedia(MOBILE_QUERY).matches;
+const isCompactNow = (): boolean => window.matchMedia(COMPACT_QUERY).matches;
 const onServer = (): null => null;
-const notMobileOnServer = (): boolean => false;
+const wideOnServer = (): boolean => false;
 
 interface SidebarContextValue {
   state: 'expanded' | 'collapsed';
-  isMobile: boolean;
-  openMobile: boolean;
-  setOpenMobile: (open: boolean) => void;
+  isCompact: boolean;
   toggleSidebar: () => void;
 }
 
@@ -101,47 +100,40 @@ export function useSidebar(): SidebarContextValue {
 }
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const isMobile = useSyncExternalStore(subscribeMobile, isMobileNow, notMobileOnServer);
+  const isCompact = useSyncExternalStore(subscribeCompact, isCompactNow, wideOnServer);
   const stored = useSyncExternalStore(subscribeStorage, readStoredOpen, onServer);
   // This mount's choice wins over the stored one, so the rail still toggles
   // when storage throws.
   const [chosen, setChosen] = useState<boolean | null>(null);
-  const [openMobile, setOpenMobile] = useState(false);
   const open = chosen ?? stored ?? true;
 
   const toggleSidebar = useCallback(() => {
-    if (isMobile) {
-      setOpenMobile(!openMobile);
-      return;
-    }
     setChosen(!open);
     writeStoredOpen(!open);
-  }, [isMobile, openMobile, open]);
+  }, [open]);
 
-  // ctrl+b / cmd+b, as shadcn ships it.
+  // ctrl+b / cmd+b, as shadcn ships it, from 1024 px only. Below that there is
+  // no rail to toggle, so the shortcut stays the browser's (no preventDefault).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'b' && (event.metaKey || event.ctrlKey)) {
+      if (!isCompact && event.key === 'b' && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         toggleSidebar();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [toggleSidebar]);
+  }, [isCompact, toggleSidebar]);
 
-  const value = useMemo<SidebarContextValue>(
-    () => ({ state: open ? 'expanded' : 'collapsed', isMobile, openMobile, setOpenMobile, toggleSidebar }),
-    [open, isMobile, openMobile, toggleSidebar],
-  );
+  const value = useMemo<SidebarContextValue>(() => ({ state: open ? 'expanded' : 'collapsed', isCompact, toggleSidebar }), [open, isCompact, toggleSidebar]);
 
   return (
     <SidebarContext.Provider value={value}>
       <Tooltip.Provider delayDuration={0}>
         <div
           data-slot="sidebar-wrapper"
-          style={{ '--sidebar-width': WIDTH, '--sidebar-width-icon': WIDTH_ICON, '--sidebar-width-mobile': WIDTH_MOBILE } as CSSProperties}
-          className="flex min-h-svh w-full"
+          style={{ '--sidebar-width': WIDTH, '--sidebar-width-icon': WIDTH_ICON } as CSSProperties}
+          className="flex min-h-svh w-full max-lg:flex-col"
         >
           {children}
         </div>
@@ -150,56 +142,22 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** The rail: collapses to icons on desktop, an off-canvas sheet from the left on phones. */
+/**
+ * The rail: collapses to icons from 1024 px. Below that it stays mounted and
+ * CSS hides it (`hidden lg:block`), so the first paint is right before
+ * hydration; the tab bar takes its place.
+ */
 export function Sidebar({ children }: { children: ReactNode }) {
-  const t = useT();
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
-
-  if (isMobile) {
-    return (
-      <Dialog.Root open={openMobile} onOpenChange={setOpenMobile}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-40 bg-fg/50" />
-          <Dialog.Content
-            data-slot="sidebar"
-            className="fixed inset-y-0 left-0 z-50 flex h-svh w-[var(--sidebar-width-mobile)] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
-          >
-            <Dialog.Title className="sr-only">{t('sidebar.title')}</Dialog.Title>
-            <Dialog.Description className="sr-only">{t('sidebar.description')}</Dialog.Description>
-            {children}
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-    );
-  }
-
+  const { state } = useSidebar();
   // data-collapsible drives every collapsed style below through group-data.
   return (
-    <div className="group peer hidden text-sidebar-foreground md:block" data-slot="sidebar" data-state={state} data-collapsible={state === 'collapsed' ? 'icon' : ''}>
+    <div className="group peer hidden text-sidebar-foreground lg:block" data-slot="sidebar" data-state={state} data-collapsible={state === 'collapsed' ? 'icon' : ''}>
       {/* Holds the rail's width in the flex row; the rail itself is fixed so it never scrolls with the page. */}
       <div className="h-svh w-[var(--sidebar-width)] transition-[width] duration-200 ease-linear group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]" />
       <div className="fixed inset-y-0 left-0 z-10 flex h-svh w-[var(--sidebar-width)] flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-linear group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]">
         {children}
       </div>
     </div>
-  );
-}
-
-export function SidebarTrigger({ className }: { className?: string }) {
-  const t = useT();
-  const { toggleSidebar } = useSidebar();
-  return (
-    <button
-      type="button"
-      data-sidebar="trigger"
-      aria-label={t('sidebar.toggle')}
-      className={cn('inline-flex size-8 items-center justify-center rounded-md text-fg hover:bg-sidebar-hover', className)}
-      onClick={toggleSidebar}
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4 fill-none stroke-current stroke-[1.75] [stroke-linecap:round]">
-        <path d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
-    </button>
   );
 }
 
@@ -238,8 +196,20 @@ export function SidebarMenuItem({ children }: { children: ReactNode }) {
 }
 
 // shadcn's SidebarMenuButton sizes: default 32px (h-8) in `body`, sm 28px
-// in `meta`; lg is the account row, as tall as its two lines.
-const SIZES = { default: 'h-8 text-body', sm: 'h-7 text-meta', lg: 'min-h-8 py-1.5 text-body group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:py-0' } as const;
+// in `meta`; lg is the account row, as tall as its two lines. touch is a row
+// of the More sheet (design/system/navigation.md 3): at least 44px, a label
+// that wraps rather than truncates, and the current row takes the tab bar's
+// 1px line-strong outline, inset, which the keyboard focus ring replaces.
+const SIZES = {
+  default: 'h-8 text-body',
+  sm: 'h-7 text-meta',
+  lg: 'min-h-8 py-1.5 text-body group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:py-0',
+  touch:
+    'min-h-11 py-2 text-body data-[active=true]:not-focus-visible:outline data-[active=true]:not-focus-visible:-outline-offset-1 data-[active=true]:not-focus-visible:outline-line-strong',
+} as const;
+
+// Rows that clip their label to one line; a touch row wraps it instead.
+const CLIPPED = 'overflow-hidden [&>span:last-child]:truncate';
 
 export function SidebarMenuButton({
   asChild = false,
@@ -253,10 +223,10 @@ export function SidebarMenuButton({
   asChild?: boolean;
   isActive?: boolean;
   size?: keyof typeof SIZES;
-  /** Shown beside the collapsed rail, where only the icon is visible. */
+  /** Shown beside the collapsed rail, where only the icon is visible. Never on a touch row. */
   tooltip: string;
 }) {
-  const { isMobile, state } = useSidebar();
+  const { isCompact, state } = useSidebar();
   const Row = asChild ? Slot : 'button';
   return (
     <Tooltip.Root>
@@ -265,11 +235,12 @@ export function SidebarMenuButton({
           type={asChild ? undefined : 'button'}
           data-active={isActive}
           className={cn(
-            'flex w-full items-center gap-2 overflow-hidden rounded-md px-2 text-left text-sidebar-foreground no-underline transition-colors',
+            'flex w-full items-center gap-2 rounded-md px-2 text-left text-sidebar-foreground no-underline transition-colors',
             'hover:bg-sidebar-hover',
             'data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground',
             'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0',
-            '[&>span:last-child]:truncate group-data-[collapsible=icon]:[&>span:last-child]:hidden',
+            'group-data-[collapsible=icon]:[&>span:last-child]:hidden',
+            size === 'touch' ? null : CLIPPED,
             SIZES[size],
             className,
           )}
@@ -279,7 +250,7 @@ export function SidebarMenuButton({
       <Tooltip.Content
         side="right"
         sideOffset={8}
-        hidden={state !== 'collapsed' || isMobile}
+        hidden={state !== 'collapsed' || isCompact || size === 'touch'}
         className="z-50 rounded-md border border-line bg-surface px-2 py-1 text-meta text-fg"
       >
         {tooltip}

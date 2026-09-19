@@ -121,6 +121,11 @@
   --radius-overlay: var(--gds-sys-radius-s);
   --radius-md: var(--gds-sys-radius-2xs);
   --radius-max: var(--gds-sys-radius-max);
+
+  /* One shadow, for the one layer that floats over scrolling content: the tab
+     bar below 1024 px (design/system/navigation.md 4). Cards stay flat.
+     Green's shadows come in pairs, so `float` is its large pair. */
+  --shadow-float: var(--gds-sys-shadow-l-01), var(--gds-sys-shadow-l-02);
 }
 
 /* Eyebrows, column heads, the "Drafted by AI" line: 11/16, uppercase,

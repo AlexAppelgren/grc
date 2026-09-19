@@ -2,7 +2,18 @@ import { describe, expect, it } from 'vitest';
 
 import { catalogs } from '@/shared/i18n/messages';
 
-import { ACCOUNT_PARENT, childDestinations, destinations, dockDestinations, findDestination, isCurrent, unlocks, visibleDestinations } from './registry';
+import {
+  ACCOUNT_PARENT,
+  childDestinations,
+  destinations,
+  dockDestinations,
+  findDestination,
+  isCurrent,
+  isInMore,
+  moreDestinations,
+  unlocks,
+  visibleDestinations,
+} from './registry';
 
 describe('navigation registry (playbook 6.2)', () => {
   it('seeds the prototype destinations on the tenant surface and the console ones', () => {
@@ -33,6 +44,42 @@ describe('navigation registry (playbook 6.2)', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(dockDestinations('tenant', all).map((d) => d.id)).toEqual(['today', 'watch', 'inventory', 'search']);
     expect(dockDestinations('console', all).map((d) => d.id)).toEqual(['console-queue', 'console-vocabularies', 'console-sources']);
+  });
+
+  // iOS shows at most four tabs plus More (UIKit UITabBarController), and
+  // More is always the fifth item here (design/system/navigation.md 2). A
+  // fifth ranked destination would silently drop out of the bar, so the cap
+  // lives in this test and nowhere in the code.
+  it('ranks at most four destinations per surface, so every ranked one fits in the tab bar beside More', () => {
+    const MAX_TABS_BESIDE_MORE = 4;
+    for (const surface of ['tenant', 'console'] as const) {
+      expect(destinations.filter((d) => d.surface === surface && d.dockRank !== undefined).length).toBeLessThanOrEqual(MAX_TABS_BESIDE_MORE);
+    }
+  });
+
+  it('puts every visible destination that is not a tab in More, and never promotes an unranked one', () => {
+    const all = destinations.flatMap((d) => d.anyOfPermissions);
+    expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['roadmap', 'admin']);
+    expect(moreDestinations('console', all).map((d) => d.id)).toEqual([]);
+
+    expect(dockDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
+    expect(moreDestinations('tenant', []).map((d) => d.id)).toEqual([]);
+
+    // A ranked destination the person cannot open is skipped; the rest move up
+    // and the empty slot stays empty rather than taking Roadmap or Admin.
+    const noWatch = all.filter((p) => p !== 'watch.read');
+    expect(dockDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['today', 'inventory', 'search']);
+    expect(moreDestinations('tenant', noWatch).map((d) => d.id)).toEqual(['roadmap', 'admin']);
+  });
+
+  it('knows when the current page lives in More, account pages included', () => {
+    const all = destinations.flatMap((d) => d.anyOfPermissions);
+    for (const path of ['/roadmap', '/admin/members', '/me/sessions']) {
+      expect(isInMore('tenant', all, path)).toBe(true);
+    }
+    for (const path of ['/', '/watch', '/watch/42']) {
+      expect(isInMore('tenant', all, path)).toBe(false);
+    }
   });
 
   it('marks the current destination by path prefix, with Today exact', () => {
@@ -81,5 +128,17 @@ describe('navigation registry (playbook 6.2)', () => {
       expect(catalogs.en[d.labelKey]).toBeTruthy();
       expect(catalogs.sv[d.labelKey]).toBeTruthy();
     }
+  });
+
+  it('gives a tab its short label in every language, and Search one word', () => {
+    const short = destinations.filter((d) => d.shortLabelKey !== undefined);
+    expect(short.map((d) => d.id)).toEqual(['search']);
+    for (const d of short) {
+      const key = d.shortLabelKey ?? d.labelKey;
+      expect(catalogs.en[key]).toBeTruthy();
+      expect(catalogs.sv[key]).toBeTruthy();
+    }
+    expect(catalogs.en['nav.search.short']).toBe('Search');
+    expect(catalogs.sv['nav.search.short']).toBe('Sök');
   });
 });

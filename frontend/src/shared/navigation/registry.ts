@@ -1,7 +1,7 @@
 import type { MessageKey } from '@/shared/i18n';
 
 // The one typed navigation registry (playbook 6.2). Pure TypeScript, no
-// React: sidebar, dock, More menu, command palette, the client gate and the
+// React: sidebar, tab bar, More sheet, command palette, the client gate and the
 // Playwright role-matrix spec all derive from it. Nothing here checks a role
 // name: a destination is visible iff the user's permission list unlocks it.
 // The server's structured 403 remains the enforcer.
@@ -13,10 +13,12 @@ export interface Destination {
   id: string;
   href: string;
   labelKey: MessageKey;
+  /** A tab's label when `labelKey` is longer than one word; the rail and the More sheet keep `labelKey`. */
+  shortLabelKey?: MessageKey;
   surface: Surface;
   /** Empty means any signed-in user of that surface. Permission names are PRD section 6. */
   anyOfPermissions: readonly string[];
-  /** Present on destinations that sit in the phone dock, lowest first. */
+  /** Present on destinations that sit in the tab bar below 1024 px, lowest first. */
   dockRank?: number;
   group: NavGroup;
   /**
@@ -52,7 +54,7 @@ export const destinations: readonly Destination[] = [
   { id: 'watch', href: '/watch', labelKey: 'nav.watch', surface: 'tenant', anyOfPermissions: ['watch.read'], dockRank: 2, group: 'primary' },
   { id: 'inventory', href: '/inventory', labelKey: 'nav.inventory', surface: 'tenant', anyOfPermissions: ['library.read'], dockRank: 3, group: 'primary' },
   { id: 'roadmap', href: '/roadmap', labelKey: 'nav.roadmap', surface: 'tenant', anyOfPermissions: ['roadmap.read'], group: 'secondary' },
-  { id: 'search', href: '/search', labelKey: 'nav.search', surface: 'tenant', anyOfPermissions: ['search.use'], dockRank: 4, group: 'primary' },
+  { id: 'search', href: '/search', labelKey: 'nav.search', shortLabelKey: 'nav.search.short', surface: 'tenant', anyOfPermissions: ['search.use'], dockRank: 4, group: 'primary' },
   { id: 'admin', href: '/admin', labelKey: 'nav.admin', surface: 'tenant', anyOfPermissions: TENANT_ADMIN_PERMISSIONS, group: 'admin' },
   // Admin sections (ADM-03): each gated by its own permission. The
   // organisation profile is readable by any member; the server refuses edits.
@@ -90,6 +92,17 @@ export function dockDestinations(surface: Surface, permissions: readonly string[
   return visibleDestinations(surface, permissions)
     .filter((d) => d.dockRank !== undefined)
     .sort((a, b) => (a.dockRank ?? 0) - (b.dockRank ?? 0));
+}
+
+/** The visible destinations that are not tabs: the More sheet lists them above the account. */
+export function moreDestinations(surface: Surface, permissions: readonly string[]): Destination[] {
+  const dock = dockDestinations(surface, permissions);
+  return visibleDestinations(surface, permissions).filter((d) => !dock.includes(d));
+}
+
+/** Whether the current page is reached through More: a More destination (or one of its children) or an account page. */
+export function isInMore(surface: Surface, permissions: readonly string[], pathname: string): boolean {
+  return [...moreDestinations(surface, permissions), ...childDestinations(ACCOUNT_PARENT, permissions)].some((d) => isCurrent(d, pathname));
 }
 
 export function isCurrent(destination: Destination, pathname: string): boolean {

@@ -1,4 +1,4 @@
-import type { APIRequestContext, BrowserContext, Page } from '@playwright/test';
+import type { APIRequestContext, BrowserContext, Locator, Page } from '@playwright/test';
 
 import { expect, type ApiGuard } from './api-guard';
 
@@ -96,13 +96,23 @@ export function allowFreshContext(apiGuard: ApiGuard): void {
 }
 
 // The real ceremony on /sign-in: the seeded key answers the discoverable
-// request and the who panel shows the person.
+// request and the shell appears. The shell renders only for a signed-in
+// person, and exactly one "Main" navigation is visible at every width: the
+// rail from 1024 px, the tab bar below it (design/system/navigation.md 11).
 export async function signInAs(page: Page, login: string): Promise<SeededPasskey> {
   const passkey = await seedPasskeyFor(page.context(), login);
   await page.goto('/sign-in');
   await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
-  await expect(page.locator('[data-who-panel]')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible({ timeout: 15_000 });
   return passkey;
+}
+
+/** Below 1024 px: opens the More sheet from the tab bar and returns it. */
+export async function openMore(page: Page): Promise<Locator> {
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'More' }).click();
+  const sheet = page.getByRole('dialog', { name: 'More' });
+  await expect(sheet).toBeVisible();
+  return sheet;
 }
 
 /** The quiet Restricted screen, distinct from Next's own route announcer (also role=alert). */
@@ -111,10 +121,17 @@ export function restrictedScreen(page: Page) {
 }
 
 export async function signOut(page: Page): Promise<void> {
-  // Sign out lives in the account menu since the sidebar rebuild (2026-09-19): open the
-  // account row first, then choose the menu item.
-  await page.locator('[data-who-panel]').getByRole('button', { name: /, account menu$/ }).click();
-  await page.getByRole('menuitem', { name: 'Sign out' }).click();
+  // The width decides, as COMPACT_QUERY does: below 1024 px the account lives
+  // in the More sheet; from 1024 px in the rail's account menu (open the
+  // account row first, then choose the menu item). [data-who-panel] marks the
+  // rail's row only, so journeys that read it run at desktop width.
+  if ((page.viewportSize()?.width ?? 1280) < 1024) {
+    await openMore(page);
+    await page.getByRole('dialog', { name: 'More' }).getByRole('button', { name: 'Sign out' }).click();
+  } else {
+    await page.locator('[data-who-panel]').getByRole('button', { name: /, account menu$/ }).click();
+    await page.getByRole('menuitem', { name: 'Sign out' }).click();
+  }
   await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
 }
 

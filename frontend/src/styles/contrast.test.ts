@@ -101,6 +101,13 @@ const PAIRS: Pair[] = [
   { name: 'rail: role line, count and minimise on the rail', fg: '--sidebar-muted-foreground', bg: '--sidebar' },
   { name: 'rail: current and hovered row', fg: '--sidebar-accent-foreground', bg: '--sidebar-accent' },
   { name: 'rail: role line and count on a current or hovered row', fg: '--sidebar-muted-foreground', bg: '--sidebar-accent' },
+  // The tab bar and the More sheet below 1024 px (design/system/navigation.md
+  // 16). Named for the bar or the sheet even where a generic pair covers the
+  // same tokens, so a later token change fails by name.
+  { name: 'tab bar: tab label on the bar', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'tab bar: current tab label', fg: '--sidebar-accent-foreground', bg: '--sidebar-accent' },
+  { name: 'more sheet: row label', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'more sheet: organisation and role line', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
 ];
 
 // Each tone on the background it takes in that theme (light-dark() in Pill.tsx).
@@ -113,6 +120,13 @@ const NON_TEXT: Pair[] = [
   { name: 'focus ring on surface', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'focus ring on page', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l1-neutral-01' },
   { name: 'focus ring on the rail', fg: '--sidebar-ring', bg: '--sidebar' },
+  { name: 'tab bar: tab icon on the bar', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
+  // The fill alone is 1.19:1 against the bar (WCAG 1.4.11 fails); the inset
+  // line-strong outline is the current tab's 3:1 indicator, against both.
+  { name: 'tab bar: current-tab outline on the bar', fg: '--gds-sys-color-border-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'tab bar: current-tab outline on its fill', fg: '--gds-sys-color-border-neutral-01', bg: '--gds-sys-color-l3-neutral-02' },
+  { name: 'more sheet: current-row outline on the sheet', fg: '--gds-sys-color-border-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'tab bar: focus ring on the bar', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-neutral-02' },
 ];
 
 function varsFor(theme: Theme): VarMap {

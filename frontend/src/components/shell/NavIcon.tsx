@@ -1,7 +1,9 @@
-// Rail icons keyed by destination id: small stroke icons on currentColor,
-// seb.io's "small icon plus a label". The first four are the prototype's own.
-// A destination without an icon here gets a quiet dot, so the collapsed rail
-// never shows an empty square when the registry adds one.
+// Navigation icons keyed by destination id: small stroke icons on
+// currentColor, seb.io's "small icon plus a label". The first four and `more`
+// (three dots) are the prototype's own. A destination without an icon here
+// gets a quiet dot, so the collapsed rail never shows an empty square when the
+// registry adds one. 16px in a rail or sheet row, 20px over a tab's label
+// (design/system/navigation.md 5).
 const ICONS: Record<string, readonly string[]> = {
   today: ['M4 11l8-7 8 7v9H4z'],
   watch: ['M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0', 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z'],
@@ -15,13 +17,17 @@ const ICONS: Record<string, readonly string[]> = {
   account: ['M12 8m-3.5 0a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0', 'M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5'],
   'sidebar-collapse': ['M4 5h16v14H4z', 'M9 5v14', 'M15 10l-2 2 2 2'],
   'sidebar-expand': ['M4 5h16v14H4z', 'M9 5v14', 'M13 10l2 2-2 2'],
+  more: ['M5 12m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0', 'M12 12m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0', 'M19 12m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0'],
+  close: ['M6 6l12 12M18 6L6 18'],
 };
+
+const SIZE = { row: 'size-4', tab: 'size-5' } as const;
 
 const DOT: readonly string[] = ['M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0'];
 
-export function NavIcon({ id }: { id: string }) {
+export function NavIcon({ id, size = 'row' }: { id: string; size?: keyof typeof SIZE }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4 shrink-0 fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round]">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={`${SIZE[size]} shrink-0 fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round]`}>
       {(ICONS[id] ?? DOT).map((d) => (
         <path key={d} d={d} />
       ))}

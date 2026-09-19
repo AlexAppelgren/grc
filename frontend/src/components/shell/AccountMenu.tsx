@@ -3,6 +3,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { NavIcon } from '@/components/shell/NavIcon';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
@@ -13,7 +14,8 @@ import { ACCOUNT_PARENT, childDestinations } from '@/shared/navigation/registry'
 // The signed-in person as one quiet row in the rail's footer: name, then
 // organisation and roles, and a menu for my passkeys, my sessions and sign
 // out. No avatar, no bordered card (the "who" panel it replaces). The
-// prototype's "Switch user" never ships (design/README.md).
+// prototype's "Switch user" never ships (design/README.md). Below 1024 px the
+// More sheet lays the same account out flat (MoreSheet.tsx).
 //
 // `data-who-panel` stays on the row's wrapper because the E2E journeys locate
 // the signed-in person by it. The menu renders without a portal, so its items
@@ -27,12 +29,31 @@ export function secondLine(organisation: string | null, roles: string, t: Return
   return organisation ?? roles;
 }
 
+/** Signs out, then leaves for sign in whatever the server answered. The rail's menu and the More sheet share it. */
+export function useSignOutToSignIn(): { pending: boolean; signOut: () => void } {
+  const router = useRouter();
+  const signOut = useSignOut();
+  return {
+    pending: signOut.isPending,
+    signOut: () => signOut.mutate(undefined, { onSettled: () => router.replace('/sign-in') }),
+  };
+}
+
 export function AccountMenu() {
   const t = useT();
-  const router = useRouter();
   const { me } = useSession();
-  const { isMobile, setOpenMobile } = useSidebar();
-  const signOut = useSignOut();
+  const { isCompact } = useSidebar();
+  const { pending, signOut } = useSignOutToSignIn();
+  // Crossing 1024 px hides the rail under an open menu, which would leave its
+  // aria-hidden on the page and pointer-events off on body. Close it, during
+  // render as React advises for state that follows a value (an effect would
+  // be react-hooks/set-state-in-effect), and focus the page on close.
+  const [open, setOpen] = useState(false);
+  const [seenCompact, setSeenCompact] = useState(isCompact);
+  if (seenCompact !== isCompact) {
+    setSeenCompact(isCompact);
+    setOpen(false);
+  }
 
   // The session gate renders the shell only for a signed-in person.
   if (me === null) return null;
@@ -44,7 +65,7 @@ export function AccountMenu() {
   return (
     <SidebarMenu data-who-panel="">
       <SidebarMenuItem>
-        <DropdownMenu.Root>
+        <DropdownMenu.Root open={open} onOpenChange={setOpen}>
           <DropdownMenu.Trigger asChild>
             <SidebarMenuButton size="lg" tooltip={me.user.name} aria-label={t('shell.accountFor', { name: me.user.name })}>
               <NavIcon id="account" />
@@ -55,10 +76,17 @@ export function AccountMenu() {
             </SidebarMenuButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content
-            side={isMobile ? 'top' : 'right'}
+            side="right"
             align="end"
             sideOffset={8}
             className="z-50 min-w-56 rounded-md border border-sidebar-border bg-sidebar p-1 text-sidebar-foreground"
+            onCloseAutoFocus={(event) => {
+              // The rail, and the trigger with it, is hidden below 1024 px.
+              if (isCompact) {
+                event.preventDefault();
+                document.getElementById('main')?.focus();
+              }
+            }}
           >
             <DropdownMenu.Label className="px-2 py-1.5 text-meta text-sidebar-muted-foreground">
               {t('shell.signedInAs')}
@@ -68,20 +96,12 @@ export function AccountMenu() {
             <DropdownMenu.Separator className="mx-1 my-1 h-px bg-sidebar-border" />
             {links.map((d) => (
               <DropdownMenu.Item key={d.id} asChild className={MENU_ITEM}>
-                <Link href={d.href} onClick={() => setOpenMobile(false)}>
-                  {t(d.labelKey)}
-                </Link>
+                <Link href={d.href}>{t(d.labelKey)}</Link>
               </DropdownMenu.Item>
             ))}
             <DropdownMenu.Separator className="mx-1 my-1 h-px bg-sidebar-border" />
-            <DropdownMenu.Item
-              className={MENU_ITEM}
-              disabled={signOut.isPending}
-              onSelect={() => {
-                signOut.mutate(undefined, { onSettled: () => router.replace('/sign-in') });
-              }}
-            >
-              {signOut.isPending ? t('shell.signingOut') : t('shell.signOut')}
+            <DropdownMenu.Item className={MENU_ITEM} disabled={pending} onSelect={signOut}>
+              {pending ? t('shell.signingOut') : t('shell.signOut')}
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
