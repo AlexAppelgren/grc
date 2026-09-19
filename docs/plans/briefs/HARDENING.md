@@ -14,6 +14,8 @@ The main agent adds a row here whenever a review turns up such a finding.
 | H6 | Under the append-only trigger a machine translation cannot be confirmed in place (INV-05, INV-S6) | chunk3-rest-T1 review | low, design | TODO_FOR_alex with a default; built with the screens that confirm (chunk3-rest-T12/T14 or chunk 4) |
 | H7 | Child tables of tenant-private library records (titles, versions, summaries, terms, tags) have no RLS of their own; every read must reach them through the parent | chunk3-rest-T4 | low, future risk | Chunk 7's search index must carry the owner and its own RLS; the chunk 7 plan names it |
 | H8 | Approval's audit rows carry `steppedUp: false` because `apply.py` does not pass the step-up id | chunk4-T3 review | low | chunk4-T6 (already in its task text) |
+| H9 | The obligations count evaluates `taxonomy_in_footprint` for every visible obligation, so the cost grows with the whole library, not the page (about 200 ms per 1,000 obligations) | chunk3-rest-T4 review | low, future risk | A set-based anti-join replacing the per-row function call; before the library passes a few hundred obligations |
+| H10 | Gunicorn's default access log writes every query string (`?q=` search text), client IP and user agent to stdout, and Sentry turns those lines into breadcrumbs whose message is not scrubbed | chunk3-rest-T4 review | high | Worktree `wt/log-no-query`, in progress; merges before chunk3-rest-T4 |
 
 ## Task H-A: three small guards (after chunk3-rest-T3 merges, which owns `apps/shared/schemas.py`)
 
