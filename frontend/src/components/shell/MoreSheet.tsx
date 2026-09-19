@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 
-import { secondLine, useSignOutToSignIn } from '@/components/shell/AccountMenu';
+import { accountLine, useSignOutToSignIn } from '@/components/shell/AccountMenu';
 import { groupDestinations } from '@/components/shell/AppSidebar';
 import { NavIcon } from '@/components/shell/NavIcon';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -60,8 +60,7 @@ export function MoreSheet({ surface, children }: { surface: Surface; children: R
     );
   };
 
-  const roles = me?.roles.map((role) => role.label).join(', ') ?? '';
-  const detail = secondLine(me?.tenant?.name ?? null, roles, t);
+  const detail = me === null ? '' : accountLine(me, t);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

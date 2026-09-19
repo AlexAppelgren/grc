@@ -1,19 +1,28 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { catalogs } from '@/shared/i18n/messages';
 
 import {
   ACCOUNT_PARENT,
+  CONSOLE_HOME,
   childDestinations,
   destinations,
   dockDestinations,
   findDestination,
+  homeOf,
   isCurrent,
   isInMore,
   moreDestinations,
+  surfaceOf,
   unlocks,
   visibleDestinations,
 } from './registry';
+
+/** Every platform permission (PRD section 6), so a test sees every console destination the registry holds. */
+const PLATFORM = ['proposals.review', 'library_vocab.manage', 'sources.manage', 'eval.manage', 'tenants.manage', 'agent_definitions.manage', 'support_access.grant', 'system.health'];
 
 describe('navigation registry (playbook 6.2)', () => {
   it('seeds the prototype destinations on the tenant surface and the console ones', () => {
@@ -25,11 +34,27 @@ describe('navigation registry (playbook 6.2)', () => {
       'search',
       'admin',
     ]);
-    expect(visibleDestinations('console', ['proposals.review', 'library_vocab.manage', 'sources.manage']).map((d) => d.id)).toEqual([
-      'console-queue',
-      'console-vocabularies',
-      'console-sources',
-    ]);
+    // Chunk 4 registers a console destination with its page: vocabularies
+    // now; the queue, problem reports and tenants join with theirs.
+    expect(visibleDestinations('console', PLATFORM).map((d) => d.id)).toEqual(['console-vocabularies']);
+  });
+
+  it('registers a console destination only once its page exists, so none renders "coming soon"', () => {
+    for (const d of destinations.filter((entry) => entry.surface === 'console')) {
+      expect(existsSync(join(import.meta.dirname, '..', '..', 'app', '(console)', d.href, 'page.tsx')), d.href).toBe(true);
+    }
+  });
+
+  it('gives platform staff, who sign in without a tenant, the console, and everyone else their organisation', () => {
+    const tenant = { id: 't1', name: 'Example Bank AB', slug: 'example', timezone: 'Europe/Stockholm' };
+    expect(surfaceOf({ tenant: null })).toBe('console');
+    expect(homeOf({ tenant: null })).toBe(CONSOLE_HOME);
+    expect(CONSOLE_HOME).toBe('/console');
+    expect(surfaceOf({ tenant })).toBe('tenant');
+    expect(homeOf({ tenant })).toBe('/');
+    // No session yet: the tenant surface, whose gate sends the visitor to sign in.
+    expect(surfaceOf(null)).toBe('tenant');
+    expect(homeOf(null)).toBe('/');
   });
 
   it('shows a destination iff the permission list unlocks it, never by role name', () => {
@@ -43,7 +68,7 @@ describe('navigation registry (playbook 6.2)', () => {
   it('orders the phone dock by rank', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(dockDestinations('tenant', all).map((d) => d.id)).toEqual(['today', 'watch', 'inventory', 'search']);
-    expect(dockDestinations('console', all).map((d) => d.id)).toEqual(['console-queue', 'console-vocabularies', 'console-sources']);
+    expect(dockDestinations('console', all).map((d) => d.id)).toEqual(['console-vocabularies']);
   });
 
   // iOS shows at most four tabs plus More (UIKit UITabBarController), and

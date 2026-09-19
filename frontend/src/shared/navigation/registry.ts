@@ -68,10 +68,29 @@ export const destinations: readonly Destination[] = [
   // Account: any signed-in person, from the who panel.
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
-  { id: 'console-queue', href: '/console/queue', labelKey: 'nav.console.queue', surface: 'console', anyOfPermissions: ['proposals.review'], dockRank: 1, group: 'primary' },
+  // The platform console (ADM-02): a destination joins with its page, so none
+  // renders "coming soon". The queue takes rank 1 with its page (chunk 4),
+  // sources with theirs (chunk 5).
   { id: 'console-vocabularies', href: '/console/vocabularies', labelKey: 'nav.console.vocabularies', surface: 'console', anyOfPermissions: ['library_vocab.manage'], dockRank: 2, group: 'primary' },
-  { id: 'console-sources', href: '/console/sources', labelKey: 'nav.console.sources', surface: 'console', anyOfPermissions: ['sources.manage'], dockRank: 3, group: 'primary' },
 ];
+
+/** The console's landing: it sends each person on to the first console destination they may open. */
+export const CONSOLE_HOME = '/console';
+
+/**
+ * A person's own surface, read from the principal and never from a role name:
+ * platform staff sign in without a tenant and work in the console; everyone
+ * else works in their organisation. Before a session exists it is the
+ * tenant's, whose gate sends the visitor to sign in.
+ */
+export function surfaceOf(me: { tenant: object | null } | null): Surface {
+  return me !== null && me.tenant === null ? 'console' : 'tenant';
+}
+
+/** Where sign-in and the logo take a person: Today, or the console. */
+export function homeOf(me: { tenant: object | null } | null): string {
+  return surfaceOf(me) === 'console' ? CONSOLE_HOME : '/';
+}
 
 export function unlocks(anyOfPermissions: readonly string[], permissions: readonly string[]): boolean {
   if (anyOfPermissions.length === 0) return true;

@@ -14,6 +14,9 @@ const ICONS: Record<string, readonly string[]> = {
   'console-queue': ['M4 13l2-8h12l2 8v6H4z', 'M4 13h5l1 2h4l1-2h5'],
   'console-vocabularies': ['M9 6h11M9 12h11M9 18h11', 'M5 6h.01M5 12h.01M5 18h.01'],
   'console-sources': ['M12 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0', 'M4 12h16', 'M12 4c2.5 2.2 2.5 13.8 0 16M12 4c-2.5 2.2-2.5 13.8 0 16'],
+  // Drawn ahead of their pages, so the tasks that register them leave the shell alone.
+  'console-problem-reports': ['M12 4l9 16H3z', 'M12 10v4M12 17v.01'],
+  'console-tenants': ['M4 20h16', 'M6 20V5h8v15', 'M14 9h4v11', 'M9 8h2M9 12h2M9 16h2'],
   account: ['M12 8m-3.5 0a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0', 'M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5'],
   'sidebar-collapse': ['M4 5h16v14H4z', 'M9 5v14', 'M15 10l-2 2 2 2'],
   'sidebar-expand': ['M4 5h16v14H4z', 'M9 5v14', 'M13 10l2 2-2 2'],

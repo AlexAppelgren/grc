@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { NavIcon } from '@/components/shell/NavIcon';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { useSession, useSignOut } from '@/features/identity/hooks';
+import type { Me } from '@/features/identity/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { ACCOUNT_PARENT, childDestinations } from '@/shared/navigation/registry';
 
@@ -27,6 +28,12 @@ const MENU_ITEM =
 export function secondLine(organisation: string | null, roles: string, t: ReturnType<typeof useT>): string {
   if (organisation !== null && roles.length > 0) return t('shell.orgRoles', { organisation, roles });
   return organisation ?? roles;
+}
+
+/** The line under the name. Platform staff have no organisation and hold platform roles (Library editor). */
+export function accountLine(me: Me, t: ReturnType<typeof useT>): string {
+  const roles = [...me.roles, ...me.platformRoles].map((role) => role.label).join(', ');
+  return secondLine(me.tenant?.name ?? null, roles, t);
 }
 
 /** Signs out, then leaves for sign in whatever the server answered. The rail's menu and the More sheet share it. */
@@ -58,8 +65,7 @@ export function AccountMenu() {
   // The session gate renders the shell only for a signed-in person.
   if (me === null) return null;
 
-  const roles = me.roles.map((role) => role.label).join(', ');
-  const detail = secondLine(me.tenant?.name ?? null, roles, t);
+  const detail = accountLine(me, t);
   const links = childDestinations(ACCOUNT_PARENT, me.permissions);
 
   return (

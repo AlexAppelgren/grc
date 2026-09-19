@@ -17,8 +17,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { useSession } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { isCurrent, visibleDestinations, type Destination, type NavGroup, type Surface } from '@/shared/navigation/registry';
+import { homeOf, isCurrent, visibleDestinations, type Destination, type NavGroup, type Surface } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';
 
 const GROUP_ORDER: readonly NavGroup[] = ['primary', 'secondary', 'admin'];
@@ -34,10 +35,13 @@ export function groupDestinations(destinations: readonly Destination[]): Destina
 // destinations in its groups, separated by space rather than headings; the
 // signed-in person and "Minimise menu" pinned at the bottom. It renders
 // whatever the registry holds for this surface and permission list, so a
-// destination added there appears here with no change to this file.
+// destination added there appears here with no change to this file. The mark
+// leads to the person's home, Today or the console; in the console a kicker
+// under it names the surface (design/screens/console-shell.html).
 export function AppSidebar({ surface }: { surface: Surface }) {
   const t = useT();
   const pathname = usePathname();
+  const { me } = useSession();
   const permissions = usePermissions();
   const { state, toggleSidebar } = useSidebar();
   const groups = groupDestinations(visibleDestinations(surface, permissions ?? []));
@@ -46,10 +50,13 @@ export function AppSidebar({ surface }: { surface: Surface }) {
   return (
     <Sidebar>
       <SidebarHeader className="px-4 pt-5 pb-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
-        <Link href="/" className="block text-sidebar-foreground">
+        <Link href={homeOf(me)} className="block text-sidebar-foreground">
           <Logo className="block h-auto w-[68px] group-data-[collapsible=icon]:hidden" />
           <LogoMark className="hidden size-5 group-data-[collapsible=icon]:block" />
         </Link>
+        {surface === 'console' ? (
+          <span className="microlabel mt-1.5 text-sidebar-muted-foreground group-data-[collapsible=icon]:hidden">{t('shell.console')}</span>
+        ) : null}
       </SidebarHeader>
 
       <SidebarContent>

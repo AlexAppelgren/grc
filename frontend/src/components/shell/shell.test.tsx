@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppShell } from '@/components/shell/AppShell';
 import { groupDestinations, AppSidebar } from '@/components/shell/AppSidebar';
 import { secondLine } from '@/components/shell/AccountMenu';
+import { NavIcon } from '@/components/shell/NavIcon';
 import { COMPACT_QUERY, SIDEBAR_STORAGE_KEY, SidebarProvider } from '@/components/ui/sidebar';
 import type { Me } from '@/features/identity/types';
 import { createT } from '@/shared/i18n';
@@ -499,9 +500,9 @@ describe('at compact width: the tab bar', () => {
     expect(within(sheet()).getByRole('group', { name: 'Account' })).toBeInTheDocument();
   });
 
-  it('serves the console the same way: its three tabs, and only the account in More', () => {
+  it('serves the console the same way: its ranked destinations, and only the account in More', () => {
     renderShell({ surface: 'console', permissions: ['proposals.review', 'library_vocab.manage', 'sources.manage'] });
-    expect([...tabBar().querySelectorAll('a, button')].map((cell) => cell.textContent)).toEqual(['Queue', 'Vocabularies', 'Sources', 'More']);
+    expect([...tabBar().querySelectorAll('a, button')].map((cell) => cell.textContent)).toEqual(['Vocabularies', 'More']);
     openMore();
     expect(sheet().querySelectorAll('[data-nav-group]')).toHaveLength(0);
     expect(within(sheet()).getByRole('group', { name: 'Account' })).toBeInTheDocument();
@@ -538,7 +539,7 @@ describe('at compact width: the tab bar', () => {
 
 describe('the console surface and the helpers', () => {
   it('renders the console destinations the same way', () => {
-    const perms = ['proposals.review'];
+    const perms = ['library_vocab.manage'];
     render(
       <PermissionsProvider permissions={perms}>
         <SidebarProvider>
@@ -554,6 +555,19 @@ describe('the console surface and the helpers', () => {
     renderShell({ permissions: [...PERMISSIONS, 'roadmap.read', 'search.use'] });
     for (const link of within(mainNav()).getAllByRole('link')) {
       expect(link.querySelectorAll('svg path').length).toBeGreaterThan(0);
+    }
+  });
+
+  it('draws their own icons for the console destinations that join the rail next', () => {
+    const paths = (id: string) => {
+      const { container, unmount } = render(<NavIcon id={id} />);
+      const d = [...container.querySelectorAll('path')].map((p) => p.getAttribute('d'));
+      unmount();
+      return d;
+    };
+    const dot = paths('no-such-destination');
+    for (const id of ['console-tenants', 'console-problem-reports']) {
+      expect(paths(id)).not.toEqual(dot);
     }
   });
 

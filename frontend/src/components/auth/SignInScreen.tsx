@@ -8,12 +8,15 @@ import { Button, ButtonBar } from '@/components/ui/Button';
 import { ProblemAlert, StatusLine } from '@/components/ui/States';
 import { useSession, useSignIn } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { homeOf } from '@/shared/navigation/registry';
 import { problemStatus } from '@/shared/utils/problem';
 import { isWebAuthnAvailable, WebAuthnFailure } from '@/shared/webauthn';
 
 // Sign in (design/screens/auth-sign-in.html, ID-03): one action, no
 // username, the passkey is discoverable. The recovery panel
-// (auth-recovery.html) is a state of this screen, not a route.
+// (auth-recovery.html) is a state of this screen, not a route. A signed-in
+// person lands on their own home: Today, or the console for platform staff,
+// once the session the ceremony refreshed says which.
 
 function subscribeNever(): () => void {
   return () => undefined;
@@ -48,9 +51,9 @@ export function SignInScreen() {
   const supported = useSyncExternalStore(subscribeNever, isWebAuthnAvailable, () => true);
 
   useEffect(() => {
-    if (session.status === 'signed-in') router.replace('/');
+    if (session.status === 'signed-in') router.replace(homeOf(session.me));
     if (session.status === 'enrolment') router.replace('/enrol');
-  }, [session.status, router]);
+  }, [session.status, session.me, router]);
 
   if (recovery) return <RecoveryPanel onBack={() => setRecovery(false)} />;
 
@@ -69,7 +72,7 @@ export function SignInScreen() {
       </h1>
       <p className="mb-5 text-muted">{t('auth.signIn.lede')}</p>
       {supported ? (
-        <Button className="w-full" disabled={signIn.isPending} onClick={() => signIn.mutate(undefined, { onSuccess: () => router.replace('/') })}>
+        <Button className="w-full" disabled={signIn.isPending} onClick={() => signIn.mutate()}>
           {signIn.isPending ? t('auth.signIn.waiting') : t('auth.signIn.button')}
         </Button>
       ) : (
