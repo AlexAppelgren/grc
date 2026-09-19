@@ -206,7 +206,12 @@ cmd_remove() {
     # rmdir only ever removes an EMPTY directory, so retrying it is safe; nothing recurses.
     local i; for i in 1 2 3 4 5; do rmdir "$path" 2>/dev/null && break; sleep 2; done
     git -C "$root" worktree prune
-    [ -d "$path" ] && say "could not remove $path yet (locked or not empty); run 'git worktree prune' later"
+  fi
+  # A worktree the Agent tool created stays locked by the harness until that agent is fully
+  # done, and git refuses to remove it. Say so and stop, rather than report a removal that
+  # did not happen (seen 2026-09-19). Its databases are already dropped; rerun later.
+  if [ -d "$path" ]; then
+    die "remove: $path is still there (locked by the harness, or files still held); rerun later. Branch $branch kept."
   fi
   if [ "$force" = 1 ]; then git -C "$root" branch -D "$branch" || true
   else git -C "$root" branch -d "$branch" 2>/dev/null || say "kept branch $branch (not merged into HEAD; --force deletes it)"; fi
