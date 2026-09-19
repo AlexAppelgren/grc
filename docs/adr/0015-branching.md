@@ -63,3 +63,8 @@ This is stricter than before, not looser: `main` never holds a commit that the r
 passed, where before it held one that a local mirror of CI had passed. The mirror stays for
 anyone who wants it (`scripts/prepush.sh`, `--all`). Still true: `main` is the only branch
 that deploys, there are no pull requests, and `wt/*` branches stay local.
+
+The same day Alex approved cloud sessions as build lanes. A cloud session clones GitHub, so
+its work comes back on a pushed `claude/<task>` branch, which the main agent reviews,
+squash-merges into `main` like a worktree branch, ships, and then deletes. Those branches
+never deploy and never trigger CI (`ci.yml` runs on pushes to `main` only).

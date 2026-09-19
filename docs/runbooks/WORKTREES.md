@@ -94,6 +94,37 @@ A new request becomes a new small task in its own worktree. Do not redirect a ru
 sub-agent unless its current work would otherwise be wasted: a message only reaches it at its
 next tool call, and changing its scope mid-task is how the long runs of 2026-09-19 happened.
 
+## Cloud tasks
+
+Alex approved moving work off the laptop on 2026-09-19. A task can run in a Claude Code cloud
+session instead of a local worktree when its files are disjoint from every running task and
+everything it builds on is already on `origin/main` (a cloud session clones GitHub, not the
+laptop). The cloud machine has 4 CPUs and 15 GB, enough for a full E2E stack of its own.
+
+1. **Dispatch.** The main agent creates a one-off routine with `RemoteTrigger` (no schedule):
+   repository `AlexAppelgren/grc`, model `claude-opus-5` set explicitly, the task's branch
+   `claude/<task>`, and the prompt below. Then it runs the routine once.
+2. **The session** runs `bash scripts/cloud-setup.sh` (with `--e2e` when its gates include E2E),
+   builds the task test-first exactly like a local sub-agent, runs its gates, commits, and
+   pushes only its own `claude/<task>-…` branch. It never pushes `main` or `candidate` and
+   never opens a pull request.
+3. **Follow it** with `RemoteTrigger` `list_runs` and `get_run_log`: a cloud session sends no
+   completion notice, so the main agent checks it whenever it is next active.
+4. **Review and integrate** as for a worktree: `git fetch origin claude/<task>-…`, read the
+   diff against the brief, security review where the task touches an invariant, then
+   `git merge --squash`, `prepush.sh --quick`, commit, `ship.sh`. Delete the remote branch
+   after the merge (`git push origin --delete claude/<task>-…`).
+
+The prompt names the task and its brief file, says to run the setup script first, to work
+test-first inside the task's owned paths, to run every gate the task lists, never to commit
+`openapi.json` or `api.generated.ts`, to commit with a playbook 13.4 message and push only its
+own branch, and to end with a report: commit, files, gates with results, deviations, and what
+the security review should look at.
+
+Model and effort: the routine takes a model (`claude-opus-5`, set explicitly, never a smaller
+one); on 2026-09-19 its API accepted no effort setting, so a cloud session runs at the model's
+default effort.
+
 ## What went wrong on 2026-09-19, which this loop prevents
 
 | What happened | Cause | Now |
