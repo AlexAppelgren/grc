@@ -262,7 +262,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="states">
     <h2 class="k">My feeds</h2>
     <div class="rows">
-      <div class="row"><div class="meta"><span class="pill positive">Active</span><span>Everything in my footprint</span></div><h3>Outlook, work</h3><div class="meta"><span>Created 3 Sep 2026</span><span>Last fetched today 06:12</span><span>7 items</span></div><div class="bar"><button class="btn danger small">Revoke</button></div></div>
+      <div class="row"><div class="meta"><span class="pill positive">Active</span><span>Everything in our scope</span></div><h3>Outlook, work</h3><div class="meta"><span>Created 3 Sep 2026</span><span>Last fetched today 06:12</span><span>7 items</span></div><div class="bar"><button class="btn danger small">Revoke</button></div></div>
       <div class="row"><div class="meta"><span class="pill positive">Active</span><span>Regulatory dates only</span></div><h3>Team calendar</h3><div class="meta"><span>Created 20 Aug 2026</span><span>Never fetched</span></div><div class="bar"><button class="btn danger small">Revoke</button></div></div>
       <div class="row" style="opacity:.6"><div class="meta"><span class="pill">Revoked 1 Sep 2026</span></div><h3>Phone</h3><div class="meta"><span>Created 2 Jun 2026</span></div></div>
     </div>
@@ -271,7 +271,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="modal"><form class="box" aria-labelledby="nf"><h2 id="nf">New calendar feed</h2>
       <div class="field"><label for="fn">Name</label><input id="fn" placeholder="e.g. Outlook, work"><span class="hint">So you know which one to revoke later.</span></div>
       <div class="field"><label>Include</label>
-        <label class="check"><input type="radio" name="inc" checked> <span>Everything<small>Regulatory dates and our own deadlines, inside my footprint</small></span></label>
+        <label class="check"><input type="radio" name="inc" checked> <span>Everything<small>Regulatory dates and our own deadlines, inside our scope</small></span></label>
         <label class="check"><input type="radio" name="inc"> <span>Regulatory dates only</span></label>
         <label class="check"><input type="radio" name="inc"> <span>Our deadlines only</span></label></div>
       <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Create</button></div></form></div>
@@ -287,7 +287,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="rows" aria-busy="true" style="margin-top:10px"><div class="skeleton"></div></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load your feeds</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     </div>
-    <p class="note">Calendar feeds card. Any signed-in person with roadmap read has feeds; they are personal, listed from the who panel and reached from the roadmap. The address carries the token and appears once in a dialog with Copy; the row shows name, scope, created and last fetched. Revoke is immediate. What the feed contains follows the footprint at fetch time.</p>
+    <p class="note">Calendar feeds card. Any signed-in person with roadmap read has feeds; they are personal, listed from the who panel and reached from the roadmap. The address carries the token and appears once in a dialog with Copy; the row shows name, scope, created and last fetched. Revoke is immediate. What the feed contains follows the regulatory scope at fetch time.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

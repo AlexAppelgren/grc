@@ -73,7 +73,7 @@ row.
 |---|---|
 | The tenant's compliance officer approves agent proposals into the inventory | Wrong for a shared library. The queue moves to the platform console (`library_editor`). Tenants see library updates and report problems |
 | "Switch user" | Prototype device only. Replace with real sign-in |
-| Footprint toggles apply at once | Becomes a request with a preview and a second person |
+| The scope toggles apply at once, on a Settings page every user can open | The section is Regulatory scope, under Admin, and only the two scope permissions open it. A change becomes a request with a preview and a second person. The prototype's scope view stops at a pending request with Withdraw; approval, rejection and history follow the app and `screens/admin-footprint.html` |
 | `UCLASS` maps the label "Act now" to a colour, and urgency and change type are stored as labels | Store keys. Tone comes from slot or kind |
 | Obligation `tags` feed search but never render | Render library tags as `brand` pills after the flags, tenant tags as outlined `information` pills |
 | Colours are hex values copied from Green | Import the tokens, override the brand pair |

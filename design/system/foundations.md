@@ -91,7 +91,12 @@ one layer that sits over scrolling content. Cards stay flat.
 | primary | `l3-neutral-03` | `content-neutral-03` | same as background | 88% mix toward the page |
 | outline | `l2-neutral-02` | `content-neutral-01` | `border-neutral-02` | `state-neutral-05` overlay |
 | ghost | none | `content-neutral-01` | none | `state-neutral-05` overlay |
-| danger | `l2-neutral-02` | `content-negative-01` | `border-neutral-02` | `l3-negative-02` (light) |
+| danger | `l2-neutral-02` | `content-negative-01` | `border-neutral-02` | `l3-negative-02` (light), `l3-negative-03` (dark) |
+
+The danger hover is a tint, not a fill, and it differs by theme through the
+token `--color-negative-hover`: `l3-negative-02` in light, `l3-negative-03` in
+dark. Dark negative text on `l3-negative-02` measures 4.47:1 and fails AA; on
+`l3-negative-03` it measures 5.40:1.
 
 No fully rounded buttons. Primary stays neutral (near black in light, near
 white in dark), as shadcn's and seb.io's do, so brand green is not spent on
@@ -117,7 +122,7 @@ input border would not pass). Placeholder in `content-neutral-02`, italic.
 Textarea 76 px minimum. Label `body` at 500, hint and error `meta`. Was:
 44 px, 8 px radius.
 
-**Toggle** (filter and footprint chips, the Search / Ask switch). 32 px, 12 px
+**Toggle** (filter chips, the Search / Ask switch). 32 px, 12 px
 padding, 6 px radius, `body` at 500. Off: `l2-neutral-02`, `border-neutral-02`,
 `content-neutral-02` text. On: `l3-neutral-02`, `border-neutral-01`,
 `content-neutral-01` text. Was: fully rounded, solid black when on.
@@ -189,6 +194,43 @@ signature and stays; the block itself is an ordinary card.
 **Dates list.** The urgency tone is an 8 px dot; the date is `body` at 500 in
 the text colour, days left in `meta`. Was: bold dates in the tone colour.
 
+## Restricted setting
+
+A setting that decides what every member sees (today Regulatory scope, under
+Admin) reads as serious through how it behaves, not through new colours. There
+is no red frame, no new variant and no typed confirmation: a warning that
+appears everywhere stops being read, and red stays with destructive actions
+and errors, as Stripe and Green use it.
+
+- **The page is restricted** to the permissions that can change the setting,
+  and it **opens read-only**.
+- **A change is a request.** A second person approves it with a passkey.
+- **The one action that starts a change is a danger button,** and the only one
+  on the page.
+- **The read state is not a row of disabled controls.** Each option is a 16 px
+  checkbox-shaped glyph (inline SVG, `aria-hidden`), ticked when held and
+  empty when not, with the label in body text and visually hidden text saying
+  which it is. Nothing is greyed out, nothing sits in the tab order, and held
+  and unheld options stay equally visible. This is Green's read-only checkbox
+  pattern: it shows the selected state without allowing a change, and keeps
+  enough context to read both the selected and the unselected options.
+- **The edit state uses real checkboxes,** one `CheckGroup` per group with a
+  header label, stacked vertically (Green's default), the hint under the
+  legend and linked with `aria-describedby`. `disabled` is only for the moment
+  the request is being sent.
+- **One warn notice at most above the groups:** the pending banner. The rule
+  notice hides while the banner shows.
+- **All text inside a warn notice is `text-fg`.** In dark, muted text on
+  `l3-warning-02` measures 3.62:1 and negative text 3.24:1. An error raised by
+  a button inside the banner renders under the banner.
+- **The change is stated in plain text,** as the request title, never as
+  coloured `ins` / `del` marks: dark negative text on `l3-negative-02` is
+  4.47:1 and fails AA.
+- **Tones.** The rule notice is a plain `subtle` notice; a pending banner, a
+  pending mark on an option and a consequence notice are `warning`; a
+  four-eyes refusal and Reject are `negative`; the outcome line is `positive`.
+  Nobody chooses a tone: the slot does.
+
 ## Colour: every alias to a Green token
 
 | Alias | Light | Dark | Use |
@@ -257,7 +299,8 @@ About 68 px wide in the rail (was 104 px), 64 px in the compact header below
 
 ## What is restyled now
 
-`design/prototype/index.html`, `design/screens/tenant-shell.html` and
-`design/screens/tenant-today.html`. The other cards in `design/screens/`
+`design/prototype/index.html`, `design/screens/tenant-shell.html`,
+`design/screens/tenant-today.html` and
+`design/screens/admin-footprint.html`. The other cards in `design/screens/`
 keep their old styling and are restyled to these values when their chunk is
 built; where a card and this file disagree on a value, this file wins.

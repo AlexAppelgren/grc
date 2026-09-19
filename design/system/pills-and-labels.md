@@ -37,7 +37,7 @@ There is no seventh tone and no component accepts a colour.
 |---|---|
 | Slot | Change type is `notice`. Scope facets, instrument, flags and library tags are `brand`. Regime and workflow status are `information` |
 | Kind with severity | The fixed ordinal decides: urgency (act now `negative`, within 3 months `warning`, 6+ months `notice`, monitor `information`, no action `positive`), compliance category (compliant `positive`, partly `warning`, gap `negative`, not assessed `information`), gap category (open `negative`, remediating `warning`, risk accepted `information`, closed `positive`), severity (high `negative`, medium `warning`, low `information`) |
-| Computed | "Waiting for approval" and "Change waiting for approval" `warning`, "N open changes" `notice`, "Change pending: …" `warning`, "You" `positive` |
+| Computed | "Waiting for approval" and "Change waiting for approval" `warning`, "N open changes" `notice`, "Change pending: …" `warning`, "Added when approved" and "Removed when approved" `warning`, "You" `positive` |
 
 An admin adds a value by typing a label, its translations and a usage note.
 A new compliance sub-status inherits the tone of its category.
