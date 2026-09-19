@@ -358,7 +358,7 @@ Each runs in its own worktree (`docs/runbooks/WORKTREES.md`). T01 waits for chun
 
 ### T01: Seed Banking and Payments, and stop the seed undoing proposals
 
-**Added 2026-09-19 (found by chunk4-T2):** the same fault exists for every library vocabulary list, not only taxonomy terms. `seed_reference` resets sort order, the active flag and the default of library list rows on every deploy, so an approved reorder, retire or default change is undone by the next deploy. T01 applies the same rule to those rows: write sort order, active and default only when the seed creates the row, and prove with a test that an approved reorder survives a second seed run.
+**Added 2026-09-19 (found by chunk4-T2):** the same fault exists for every library vocabulary list, not only taxonomy terms. `seed_reference` resets sort order, the active flag and the default of library list rows on every deploy, so an approved reorder, retire or default change is undone by the next deploy. T01 applies the same rule to those rows: write sort order, active and default only when the seed creates the row, and prove with a test that an approved reorder survives a second seed run. The security review of chunk4-T2 also found that `seed_library_vocabularies` writes library rows without an audit row, unlike `seed_authorities`; T01 records a `record()` event (system actor `seed_reference`) for each library list row the seed creates.
 
 **Depends on:** nothing
 

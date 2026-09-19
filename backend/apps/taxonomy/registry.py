@@ -50,6 +50,8 @@ from apps.taxonomy.models import (
     ProvisionKind,
     ProvisionKindLabel,
     ProvisionStructuralKind,
+    RejectionReason,
+    RejectionReasonLabel,
     RelationType,
     RelationTypeLabel,
     RiskRating,
@@ -122,6 +124,7 @@ REGISTRY: dict[str, VocabularyList] = {
         VocabularyList("urgency", LIBRARY_TIER, Urgency, UrgencyLabel, "pill_tone", _values(PillTone), True, ("ordinal", "sla_days")),
         VocabularyList("library_tag", LIBRARY_TIER, LibraryTag, LibraryTagLabel),
         VocabularyList("flag", LIBRARY_TIER, Flag, FlagLabel),
+        VocabularyList("rejection_reason", LIBRARY_TIER, RejectionReason, RejectionReasonLabel),
         VocabularyList("jurisdiction", LIBRARY_TIER, Jurisdiction, JurisdictionLabel, "jurisdiction_kind", _values(JurisdictionKind), True, proposable=False),
         # --- tier 3: tenant lists, managed with vocab.manage ---
         VocabularyList("tenant_tag", TENANT_TIER, TenantTag, TenantTagLabel, usage=_count("taggings"), repoint=repoint.tenant_tag),

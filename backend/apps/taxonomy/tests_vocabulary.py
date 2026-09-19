@@ -10,7 +10,11 @@ change, and who may read what.
 
 from __future__ import annotations
 
+import json
+from io import StringIO
 from typing import Any
+
+from django.core.management import call_command
 
 from apps.identity.models import User
 from apps.library.models import Language
@@ -20,8 +24,11 @@ from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.models import RiskRating
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
+from config.api import api
 
 V1 = "/api/v1"
+# schema v0.3's `proposal.rejection_code` CHECK, in its order: the only list the inputs define.
+REJECTION_REASONS = ["wrong_fact", "wrong_scope", "bad_source", "duplicate", "not_relevant", "poor_wording", "other"]
 
 
 class VocabularyEdges(ScenarioTestCase):
@@ -155,3 +162,74 @@ class VocabularyEdges(ScenarioTestCase):
         self.assertEqual(self._post(f"/tenant/footprint/requests/{again['id']}/approve", {}, approver).status_code, 200)
         regimes = {t["key"] for d in self._get("/tenant/footprint", officer).json()["dimensions"] if d["dimension"]["key"] == "regime" for t in d["terms"]}
         self.assertEqual(regimes, {"aml"})
+
+
+class RejectionReasons(ScenarioTestCase):
+    """Rejection reasons are a library list (PRO-01, VOC-01, VOC-07, AC-VOC1): every deploy
+    files schema v0.3's seven codes, a change is a proposal a second editor approves, a new
+    reason leaves the contract as it was, and a deploy never undoes an approved relabel."""
+
+    def setUp(self) -> None:
+        call_command("seed_reference", stdout=StringIO())
+        self.editor = sign_in(factories.platform_user(roles=("library_editor",), email="editor@bleqq.test"))
+        self.second_editor = factories.platform_user(roles=("library_editor",), email="editor2@bleqq.test")
+
+    def _get(self, path: str) -> Any:
+        return self.client.get(f"{V1}{path}", **self.editor)
+
+    def _write(self, method: str, path: str, body: dict[str, Any], **headers: Any) -> Any:  # compliance: allow-kwargs test helper forwarding request headers
+        call = self.client.patch if method == "PATCH" else self.client.post
+        return call(f"{V1}{path}", data=body, content_type="application/json", **self.editor, **headers)
+
+    def _approve(self, proposed: Any) -> None:
+        self.assertEqual(proposed.status_code, 202, proposed.content)
+        approved = self.client.post(
+            f"{V1}/proposals/{proposed.json()['proposal']['id']}/approve", data={}, content_type="application/json",
+            **sign_in(self.second_editor, step_up=True),
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+    def _rows(self) -> dict[str, Any]:
+        return {row["key"]: row for row in self._get("/vocab/rejection_reason").json()["items"]}
+
+    def test_every_deploy_files_the_seven_reasons_in_en_and_sv(self) -> None:
+        listed = {item["list"]: item for item in self._get("/vocab").json()["items"]}
+        summary = listed["rejection_reason"]
+        self.assertEqual(
+            (summary["tier"], summary["kind"], summary["kinds"], summary["count"], summary["proposable"]),
+            (2, None, [], 7, True),
+        )
+        rows = self._rows()
+        self.assertEqual(list(rows), REJECTION_REASONS)
+        for key, row in rows.items():
+            with self.subTest(key=key):
+                self.assertIsNone(row["kind"])
+                self.assertTrue(row["isSystem"])
+                self.assertEqual(set(row["labels"]), {"en", "sv"})
+                self.assertTrue(all(text.strip() for text in row["labels"].values()))
+        self.assertEqual([key for key, row in rows.items() if row["isDefault"]], ["other"])
+
+    def test_a_write_is_a_proposal_and_a_new_reason_leaves_the_contract_as_it_was(self) -> None:
+        before = json.dumps(api.get_openapi_schema(), sort_keys=True)
+        proposed = self._write("POST", "/vocab/rejection_reason", {"labels": {"en": "Out of date", "sv": "Inaktuell"}})
+        self.assertEqual(proposed.status_code, 202, proposed.content)
+        proposal = proposed.json()["proposal"]
+        self.assertEqual((proposal["kind"], proposal["status"], proposal["payload"]["list"]), ("vocabulary_create", "open", "rejection_reason"))
+        self.assertNotIn("out_of_date", self._rows())
+        self._approve(proposed)
+        self.assertEqual(self._rows()["out_of_date"]["labels"], {"en": "Out of date", "sv": "Inaktuell"})
+        self.assertEqual(before, json.dumps(api.get_openapi_schema(), sort_keys=True))
+        # A system reason is relabelled through a proposal too, and never retired.
+        relabel = self._write("PATCH", "/vocab/rejection_reason/other", {"labels": {"en": "Something else"}}, HTTP_IF_MATCH="1")
+        self.assertEqual(relabel.status_code, 202, relabel.content)
+        self.assertEqual(relabel.json()["proposal"]["kind"], "vocabulary_relabel")
+        self.assertEqual(self._rows()["other"]["labels"]["en"], "Other")
+        retire = self._write("POST", "/vocab/rejection_reason/other/retire", {"confirm": True})
+        self.assertEqual((retire.status_code, retire.json()["code"]), (409, "system_row"))
+
+    def test_the_next_deploy_keeps_an_approved_relabel_and_adds_no_row(self) -> None:
+        self._approve(self._write("PATCH", "/vocab/rejection_reason/wrong_fact", {"labels": {"en": "Factual error"}}, HTTP_IF_MATCH="1"))
+        call_command("seed_reference", stdout=StringIO())
+        rows = self._rows()
+        self.assertEqual(list(rows), REJECTION_REASONS)
+        self.assertEqual(rows["wrong_fact"]["labels"], {"en": "Factual error", "sv": "Felaktig uppgift"})

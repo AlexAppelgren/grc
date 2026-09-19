@@ -322,6 +322,25 @@ class FlagLabel(LibraryVocabularyLabel):
         constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="flag_label_unique")]
 
 
+class RejectionReason(LibraryVocabulary):
+    """Why a reviewer rejected a proposal (PRO-01). Replaces schema v0.3's
+    `proposal.rejection_code` CHECK; the proposal stores the key."""
+
+    class Meta:
+        db_table = "rejection_reason"
+        ordering = ["sort_order", "key"]
+        constraints = [models.UniqueConstraint(fields=["key"], name="rejection_reason_key_unique")]
+
+
+class RejectionReasonLabel(LibraryVocabularyLabel):
+    vocabulary = models.ForeignKey(RejectionReason, on_delete=models.CASCADE, related_name="labels")
+
+    class Meta:
+        db_table = "rejection_reason_label"
+        ordering = ["language"]
+        constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="rejection_reason_label_unique")]
+
+
 # ---------------------------------------------------------------------------------------
 # Taxonomy terms (library)
 # ---------------------------------------------------------------------------------------

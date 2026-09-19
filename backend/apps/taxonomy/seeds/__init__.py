@@ -7,7 +7,7 @@ the default follow the code and the fixture.
 Keys, labels and usage notes come from the prototype fixture
 (apps/taxonomy/seeds/fixture.py) so chunk 3 loads the fixture's records against the
 rows these seeds wrote. The lists the prototype has no rows for (provision kinds, the
-four dimensions beyond the prototype's seven) are authored here."""
+four dimensions beyond the prototype's seven, the rejection reasons) are authored here."""
 
 from __future__ import annotations
 
@@ -78,6 +78,17 @@ _PROVISION_KINDS: list[SystemRow] = [
     SystemRow("annex", {"en": "Annex", "sv": "Bilaga"}, "An annex to an instrument.", ProvisionStructuralKind.ANNEX.value),
 ]
 
+# schema v0.3's `proposal.rejection_code` CHECK, in its order; the prototype has no labels.
+_REJECTION_REASONS: list[SystemRow] = [
+    SystemRow("wrong_fact", {"en": "Wrong fact", "sv": "Felaktig uppgift"}, "The proposal says something the source does not."),
+    SystemRow("wrong_scope", {"en": "Wrong scope", "sv": "Fel omfattning"}, "The scope terms do not match who or what the source covers."),
+    SystemRow("bad_source", {"en": "Bad source", "sv": "Bristfällig källa"}, "The source is missing, outdated or not the authoritative text."),
+    SystemRow("duplicate", {"en": "Duplicate", "sv": "Dubblett"}, "The library already holds this, or another proposal makes the same change."),
+    SystemRow("not_relevant", {"en": "Not relevant", "sv": "Inte relevant"}, "The change is outside what the library covers."),
+    SystemRow("poor_wording", {"en": "Poor wording", "sv": "Otydlig formulering"}, "The facts hold, but the wording needs more than a correction in review."),
+    SystemRow("other", {"en": "Other", "sv": "Annat"}, "None of the above; the note says why."),
+]
+
 # list name -> (default key, rows). Order is the picker's default order.
 LIBRARY_SYSTEM_ROWS: dict[str, tuple[str, list[SystemRow]]] = {
     "term_dimension": (
@@ -98,6 +109,7 @@ LIBRARY_SYSTEM_ROWS: dict[str, tuple[str, list[SystemRow]]] = {
     "urgency": ("monitor", _fixture_rows("urgency", kind_of=lambda row: fixture.TONES[row["tone"]], extra_of=lambda row: {"ordinal": int(row["ordinal"]), "sla_days": row["sla_days"]})),
     "library_tag": ("advice", _tag_rows()),
     "flag": ("ai", _fixture_rows("flag")),
+    "rejection_reason": ("other", _REJECTION_REASONS),
 }
 
 
