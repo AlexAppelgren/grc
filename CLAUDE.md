@@ -41,13 +41,13 @@ Chunks are in `docs/plans/Build_Plan.md`; their state is in
 
 | Layer | Pinned |
 |---|---|
-| Runtime | Python 3.12 (`py -3.12`), Node 22.18, npm 10.9, Poetry 2.0.1 |
-| Backend | Django 5.2.17 (LTS, D-17), django-ninja 1.7.0, psycopg[binary] 3.3.6, pgvector 0.5.0, celery 5.6.3, redis 8.1.0, webauthn 3.0.0, gunicorn 26.2.0, sentry-sdk 2.69.2, django-cors-headers 4.9.0, dj-database-url 3.1.2, python-json-logger 4.2.0, boto3 1.43.97, whitenoise 6.12.0 (only if needed) |
+| Runtime | Python 3.12 (`py -3.12`), Node 22.23.2 in CI (22.19 minimum), npm 10.9, Poetry 2.0.1 |
+| Backend | Django 6.1.1 (newest release, ADR 0025; D-17 superseded), django-ninja 1.7.0, psycopg[binary] 3.3.6, pgvector 0.5.0, celery 5.6.3, redis 8.1.0, webauthn 3.0.0, gunicorn 26.2.0, sentry-sdk 2.69.2, django-cors-headers 4.9.0, dj-database-url 3.1.2, python-json-logger 4.2.0, boto3 1.43.98 |
 | Backend dev | ruff 0.16.8, mypy 2.3.1, django-stubs and django-stubs-ext 6.1.1, coverage 7.16.1, pyyaml 6.0.3 |
 | Database | PostgreSQL 16 with pgvector (`pgvector/pgvector:pg16`), extensions `vector`, `citext`, `pg_trgm`. Redis 7 |
-| Frontend | next 16.3.5, react 19.3.0, react-dom 19.3.0, typescript newest 5.x (not 7.x), tailwindcss 4.3.3, @tailwindcss/postcss 4.3.3, postcss 8.5.28, @tanstack/react-query 5.103.1, axios 1.20.0, next-themes 0.4.6 |
-| Design | @sebgroup/green-tokens 3.1.8, @sebgroup/green-core 3.23.0, Radix primitives (dialog 1.1.23, dropdown-menu 2.1.24, tooltip 1.2.16, select 2.3.7, popover 1.1.23, tabs 1.1.21, checkbox 1.3.11, switch 1.3.7), class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0, @fontsource-variable/hanken-grotesk 5.3.0, @fontsource-variable/noto-sans-mono 5.3.0 |
-| Frontend test and lint | vitest 5.0.1, @vitest/coverage-v8 5.0.1, @playwright/test 1.63.0, @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1, jsdom 30.1.0, eslint 10.10.0, typescript-eslint 8.70.0, @next/eslint-plugin-next 16.3.5, eslint-plugin-react-hooks 7.1.1, openapi-typescript 7.13.0 |
+| Frontend | next 16.3.5, react 19.3.0, react-dom 19.3.0, TypeScript 7.0.2 as the compiler with @typescript/typescript6 6.0.3 under the `typescript` name for tools (ADR 0025), tailwindcss 4.3.3, @tailwindcss/postcss 4.3.3, postcss 8.5.28, @tanstack/react-query 5.103.1, axios 1.20.0, next-themes 0.4.6 |
+| Design | @sebgroup/green-tokens 3.1.8, @sebgroup/green-core 3.23.0, Radix primitives (dialog 1.1.23, dropdown-menu 2.1.24, tooltip 1.2.16, select 2.3.7, popover 1.1.23, tabs 1.1.21, checkbox 1.3.11, switch 1.3.7, slot 1.3.3), input-otp 1.5.0, class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0, @fontsource-variable/hanken-grotesk 5.3.0, @fontsource-variable/noto-sans-mono 5.3.0 |
+| Frontend test and lint | vitest 5.0.1, @vitest/coverage-v8 5.0.1, @playwright/test 1.63.0, @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1, jsdom 30.1.0, eslint 10.11.0, eslint-plugin-react 7.37.5, typescript-eslint 8.70.0, @next/eslint-plugin-next 16.3.5, eslint-plugin-react-hooks 7.1.1, openapi-typescript 7.13.0 |
 
 Frontend pins are exact (no `^`). A pin that fails to install is replaced by
 the nearest working version and the change is reported with its reason.

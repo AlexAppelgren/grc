@@ -71,6 +71,13 @@ proposals since a date, grouped by day, with what changed and "mark as seen" per
 `GET/PATCH /console/jurisdictions/{key}` (labels and active only, `library_vocab.manage`).
 
 ## Seeds and E2E
+**Seed conflict found in chunk 3 (2026-09-19):** chunk 3's seed already holds the research-payments
+obligation's version 2 (it gives "as of" and the diff something to show), and the fixture's open
+proposal for it carries that same version as its payload. Approving that proposal must not add the
+version twice. For J-4, seed a different pending `obligation_version` proposal (another
+obligation, a new effective date) and let the editor approve that one; keep the research-payments
+proposal out of the pending queue or mark it superseded.
+
 `seed_e2e`: three pending proposals from the prototype (fixture `proposals`), one made by the
 compliance officer (so J-4's four-eyes refusal can be shown when she tries to approve her own),
 one from an agent run placeholder (`proposed_by_agent_run` uuid without FK until chunk 5),
