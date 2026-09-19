@@ -24,6 +24,11 @@ RUN npm run build:tokens && npm run build
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
+# The runtime needs node alone: the standalone server is plain JavaScript. The npm that
+# node:alpine bundles carries its own dependency tree (tar, brace-expansion, pacote and
+# friends) whose advisories failed the first container scan (2026-09-19) although no
+# code of ours ever runs it. Removing it takes the findings and the attack surface away.
+RUN rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /opt/yarn* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 # `output: 'standalone'` emits a self-contained server.js; it is what
 # `next start` becomes for a standalone build (Next.js deployment docs), so the
 # image runs it directly instead of shipping the whole node_modules tree.

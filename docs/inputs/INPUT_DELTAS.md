@@ -73,20 +73,22 @@ writes, never an OpenAPI `enum`.
   `impact_assessment`, `action`, `gap`, `change_case`, configuration rows)
   and require `If-Match` on their writes.
 - Evidence and export downloads stream through the API. Remove `DownloadLink`
-  and the presigned download operations `GET /evidence/{evidenceId}/download`
-  and `GET /exports/{exportId}/download`; chunks 9 and 12 replace them with
-  streaming endpoints of the same paths that answer the file, not a link. Upload may stay presigned if the
+  and the presigned download operations. Upload may stay presigned if the
   scan and the hash still happen before the file is visible.
 
 ## 5. Tenancy and agents
 
-- Add `owner_tenant_id` to `source`, `regulatory_change`, `instrument` and
-  `obligation` for tenant-private records, with a "shared or mine" policy.
+- Version 0.3 of the schema already has `owner_tenant_id` on `source`,
+  `regulatory_change`, `instrument` and `obligation` with a "shared or mine"
+  policy. Keep it.
 - RLS policies read `current_setting('app.tenant_id', true)` and tables are
   `FORCE ROW LEVEL SECURITY`. Two database roles (playbook 14).
-- Add `agent_definition` and versions, `tenant_agent_setting`,
-  `agent_schedule`, `research_request`, `agent_budget`, and a trigger plus
-  requester on `agent_run`.
+- Version 0.3 already has the agent tables. Use its names: `agent`,
+  `agent_version`, `tenant_agent` (cadence, next run, scope, monthly budget,
+  pause, pinned version), `research_request`, `source_request`, and the
+  trigger and requester columns on `agent_run`. Add only a `retag` kind to
+  `research_request` and the batch proposal it produces (PRD AGT-05, PRO-04).
+  `agent.runtime` and `tenant_agent.environment` become kinds in code.
 - The proposal queue is reviewed in the platform console by `library_editor`.
   The prototype shows the tenant's compliance officer approving agent
   proposals. That is the one place the prototype is wrong.
@@ -98,7 +100,10 @@ writes, never an OpenAPI `enum`.
 `audit_event` and `outbox_event` stay as designed. django-simple-history is
 not used. Add `step_up_assertion_id` to `audit_event`.
 
-## 7. Paths outside the API prefix (Phase 0)
+## 7. Operations the build serves differently (contract drift, Phase 0)
+
+`scripts/contract_drift.py` accepts an operation as explained only when a row
+here names it with its backticked `METHOD /path`.
 
 - `GET /health` is served at `/health/` on the site root, outside `/api/v1`,
   so a load balancer can probe it without the API prefix and without
@@ -106,3 +111,7 @@ not used. Add `step_up_assertion_id` to `audit_event`.
   the failing one (playbook 2.2).
 - `GET /me` exists from Phase 0 with the principal only (`SessionAuth` and
   `EnrolmentAuth`, AC-ID2). Chunk 1 grows it to the designed shape.
+- `GET /evidence/{evidenceId}/download` and `GET /exports/{exportId}/download`
+  are the presigned-link operations section 4 removes; chunks 9 and 12
+  replace them with streaming endpoints of the same paths that answer the
+  file itself, permission-checked and audited (D-11).

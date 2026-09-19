@@ -23,15 +23,9 @@ updates:
       backend-python:
         patterns:
           - "*"
-    ignore:
-      # D-17: Django 5.2 LTS. 6.x waits for a deliberate upgrade decision and
-      # a matching django-stubs line; a grouped bump would drag both.
-      - dependency-name: django
-        versions: [">=6.0"]
-      - dependency-name: django-stubs
-        versions: [">=6.0"]
-      - dependency-name: django-stubs-ext
-        versions: [">=6.0"]
+    # No ignores: ADR 0025 puts every backend package at its newest release,
+    # Django included (D-17 superseded 2026-09-19). django-stubs and
+    # django-stubs-ext travel in the same weekly group, so they stay a pair.
 
   - package-ecosystem: npm
     directory: /frontend
@@ -49,12 +43,9 @@ updates:
         patterns:
           - "*"
     ignore:
-      # typescript-eslint 8.x declares a TypeScript peer range that stops
-      # below 6.0, and 7.x is the Go-native rewrite the brief excludes.
-      - dependency-name: typescript
-        update-types: ["version-update:semver-major"]
-      # Next 16 pins React 19; a React major arrives through the Next major
-      # that supports it, not on its own.
+      # TypeScript majors are taken (ADR 0025: 7.0.2 since 2026-09-19); the
+      # openapi-typescript peer range is widened by an npm override until it
+      # declares 7.x itself.
       - dependency-name: react
         update-types: ["version-update:semver-major"]
       - dependency-name: react-dom

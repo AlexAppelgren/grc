@@ -1,4 +1,6 @@
-#!/usr/bin/env bash
+#!/bin/sh
+# POSIX sh, not bash: the runtime image is Alpine (ADR 0025) and ships no bash. The
+# first Alpine image failed its smoke test on exactly this line (2026-09-19).
 # Entrypoint for the API image (playbook 2.2, 12).
 #
 #   1. Migrate as the migrator role (MIGRATOR_DATABASE_URL owns the tables).
@@ -11,9 +13,9 @@
 # The worker and beat services override the command (`celery -A config worker`,
 # `celery -A config beat`) and skip steps 1 and 2 by passing their own command: anything
 # other than `serve` is exec'd as given.
-set -euo pipefail
+set -eu
 
-if [[ "${1:-serve}" != "serve" ]]; then
+if [ "${1:-serve}" != "serve" ]; then
     exec "$@"
 fi
 

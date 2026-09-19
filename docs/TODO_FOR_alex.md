@@ -3,7 +3,7 @@
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
 ## Before the first test deploy
-- [ ] **Blocking now.** `docs/inputs/schema.sql` and `docs/inputs/data-model.md` are still missing (2026-09-19, checked during Phase 0). Phase 0 builds no domain tables and does not need them, but chunk 1 does: the build stops after Phase 0 until both land. Copy version 0.2 from the Compliance Data chat into `docs/inputs/`.
+- [x] `docs/inputs/schema.sql` and `docs/inputs/data-model.md` (version 0.3) landed on 2026-09-19 at 09:38 together with the updated `INPUT_DELTAS.md`. Chunk 1 starts from them.
 - [ ] Create the Railway project in EU West: Postgres with pgvector, Redis, a private bucket, services `api`, `worker`, `beat`, `web`. See `docs/runbooks/RAILWAY_DEPLOY.md`.
 - [ ] Point a test host at the web service (for example `compliance-test.bleqq.com`) and set `WEBAUTHN_RP_ID` to it. Passkeys made on a `*.up.railway.app` host stop working the day the host changes.
 - [ ] A transactional email sender on an EU region for invitation codes, with SPF and DKIM on the sending domain.

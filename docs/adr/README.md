@@ -36,3 +36,4 @@ Still to write, when the playbook's Appendix C says so: the SSO stance (R3),
 the switch from one branch to `staging` and `main` (supersedes 0015), the
 chosen embedding model (fills 0009), the first real agent runner (fills 0008),
 protection of production data from developer writes (playbook 11.3).
+- 0025: Newest releases of every package, and MEDIUM findings block (`0025-newest-releases-and-medium-findings.md`)

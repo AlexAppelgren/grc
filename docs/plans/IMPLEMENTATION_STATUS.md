@@ -21,7 +21,7 @@ commit for the chunk is on `main`. `pending` means none.
 | # | Chunk | Release | Implemented | Tested | Verified | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | 0 | Phase 0 bootstrap | R1 | 2026-09-19 | 2026-09-19 | | in progress | Checklist below. Verified waits for the owner to boot it (locally or on Railway) |
-| 1 | Identity and tenant admin basics | R1 | | | | pending | Blocked until `docs/inputs/schema.sql` and `data-model.md` land (`TODO_FOR_alex.md`) |
+| 1 | Identity and tenant admin basics | R1 | | | | pending | Inputs landed 2026-09-19; next chunk |
 | 2 | Vocabularies, taxonomy and footprint | R1 | | | | pending | |
 | 3 | Library and inventory | R1 | | | | pending | |
 | 4 | Proposals and the platform console | R1 | | | | pending | |
@@ -44,7 +44,7 @@ earlier ones.
 
 ### 2.1 Repo shape and stack
 - [x] `docker-compose.yml` and `infra/db/init.sql` (Postgres 16 with pgvector, Redis, roles `cw_migrator` and `cw_app`)
-- [x] Exact version pins in `backend/pyproject.toml` and `frontend/package.json` (ADR 0019); deviations recorded there
+- [x] Exact version pins in `backend/pyproject.toml` and `frontend/package.json` (ADR 0019); deviations recorded there. 2026-09-19: every package moved to its newest release, Django 6.1.1 and TypeScript 7.0.2 included (ADR 0025)
 - [x] `agents/` directory with the first versioned definition skeleton
 
 ### 2.2 Backend skeleton
@@ -87,7 +87,7 @@ earlier ones.
 - [x] `.github/workflows/codeql.yml` with `.github/scripts/codeql_gate.py`
 - [x] `.gitleaks.toml` extending the default ruleset, dev-only literals and E2E test keys allowlisted exactly
 - [x] `.github/dependabot.yml` grouped weekly per ecosystem targeting `main`
-- [x] Dependency licence gate and container image scan
+- [x] Dependency licence gate and container image scan (MEDIUM and above, Alpine images, ADR 0025)
 - [x] Every gate proven to fail once before it is trusted
 
 ### 2.5 The document chain
@@ -97,7 +97,7 @@ earlier ones.
 - [x] `docs/runbooks/FIRST_RUN_SETUP.md`, `RAILWAY_VARIABLES.md`, `DNS_DOMAINS.md`
 - [x] `backend/apps/<app>/app.md` for all 17 apps and `tests_scenarios.py` stubs for the 16 domain apps
 - [x] `Verification_Log.md`, `TODO_FOR_alex.md` and `Solution_Design.md` extended
-- [ ] `docs/inputs/schema.sql` and `data-model.md` present (owner; the build stops after Phase 0 until they land)
+- [x] `docs/inputs/schema.sql` and `data-model.md` present (version 0.3, landed 2026-09-19 09:38 with an updated `INPUT_DELTAS.md`)
 
 ### Exit criterion
 - [x] The pre-push checklist (Appendix D) passes on the empty app, end to end, including the full `npm run test:e2e` against a freshly seeded backend (2026-09-19: 4 live specs green, 111 stubs skipped, 29 s)

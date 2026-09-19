@@ -3,11 +3,13 @@ name = "compliance-watch-backend"
 version = "0.1.0"
 description = "Compliance Watch API: Django + Django Ninja on PostgreSQL with pgvector"
 requires-python = ">=3.12,<3.13"
-# Exact pins per the Phase 0 brief. Django stays on the 5.2 LTS line (DECISIONS D-17).
+# Exact pins, newest release of each at pin time (Alex, 2026-09-19: "update all packages
+# and libraries to their latest versions"; Django moved off the 5.2 LTS line the same day,
+# ADR 0025 supersedes D-17).
 # A pin that fails to resolve is replaced by the nearest working version and the change
 # is recorded in the Phase 0 report and the stack ADR.
 dependencies = [
-    "django (==5.2.17)",
+    "django (==6.1.1)",
     "django-ninja (==1.7.0)",
     "psycopg[binary] (==3.3.6)",
     "pgvector (==0.5.0)",
@@ -19,7 +21,7 @@ dependencies = [
     "django-cors-headers (==4.9.0)",
     "dj-database-url (==3.1.2)",
     "python-json-logger (==4.2.0)",
-    "boto3 (==1.43.97)",
+    "boto3 (==1.43.98)",
 ]
 
 [tool.poetry]
@@ -28,16 +30,15 @@ package-mode = false
 [tool.poetry.group.dev.dependencies]
 ruff = "0.16.8"
 mypy = "2.3.1"
-django-stubs = "5.2.9"
-# django-stubs 5.2.9 references django_stubs_ext.db.*, which the 6.x ext dropped; without
-# this pin Poetry resolves ext 6.1.1 and mypy crashes ("Cannot find component 'db'").
-# Pinned to the same 5.2 line as the stubs.
-django-stubs-ext = "5.2.9"
+django-stubs = "6.1.1"
+# django-stubs and django-stubs-ext must share a line: mixing 5.2 stubs with the 6.x ext
+# crashed mypy ("Cannot find component 'db'") on 2026-09-19, so both are pinned together.
+django-stubs-ext = "6.1.1"
 coverage = "7.16.1"
 # PyYAML reads docs/inputs/openapi.yaml in scripts/contract_drift.py. Not in the brief's
 # pin list; newest at resolve time, recorded in the Phase 0 report.
 pyyaml = "6.0.3"
-types-pyyaml = "6.0.12.20250915"
+types-pyyaml = "6.0.12.20260906"
 
 # ---------------------------------------------------------------------------------------
 # ruff: correctness classes only (playbook 9). Every excluded rule names its reason below.

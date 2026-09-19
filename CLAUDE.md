@@ -43,7 +43,7 @@ Chunks are in `docs/plans/Build_Plan.md`; their state is in
 |---|---|
 | Runtime | Python 3.12 (`py -3.12`), Node 22.18, npm 10.9, Poetry 2.0.1 |
 | Backend | Django 5.2.17 (LTS, D-17), django-ninja 1.7.0, psycopg[binary] 3.3.6, pgvector 0.5.0, celery 5.6.3, redis 8.1.0, webauthn 3.0.0, gunicorn 26.2.0, sentry-sdk 2.69.2, django-cors-headers 4.9.0, dj-database-url 3.1.2, python-json-logger 4.2.0, boto3 1.43.97, whitenoise 6.12.0 (only if needed) |
-| Backend dev | ruff 0.16.8, mypy 2.3.1, django-stubs 5.2.9, coverage 7.16.1 |
+| Backend dev | ruff 0.16.8, mypy 2.3.1, django-stubs and django-stubs-ext 6.1.1, coverage 7.16.1, pyyaml 6.0.3 |
 | Database | PostgreSQL 16 with pgvector (`pgvector/pgvector:pg16`), extensions `vector`, `citext`, `pg_trgm`. Redis 7 |
 | Frontend | next 16.3.5, react 19.3.0, react-dom 19.3.0, typescript newest 5.x (not 7.x), tailwindcss 4.3.3, @tailwindcss/postcss 4.3.3, postcss 8.5.28, @tanstack/react-query 5.103.1, axios 1.20.0, next-themes 0.4.6 |
 | Design | @sebgroup/green-tokens 3.1.8, @sebgroup/green-core 3.23.0, Radix primitives (dialog 1.1.23, dropdown-menu 2.1.24, tooltip 1.2.16, select 2.3.7, popover 1.1.23, tabs 1.1.21, checkbox 1.3.11, switch 1.3.7), class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0, @fontsource-variable/hanken-grotesk 5.3.0, @fontsource-variable/noto-sans-mono 5.3.0 |

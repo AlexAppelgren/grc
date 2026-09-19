@@ -52,7 +52,10 @@ class QueryOrderingGuard(TestCase):
         problems: list[str] = []
         for model in production_models():
             ordering = list(model._meta.ordering or [])
-            meaningful = [f for f in ordering if f.lstrip("-") not in {"id", "pk", model._meta.pk.name}]
+            # Meta.ordering may hold expressions (F(), OrderBy) as well as names; an
+            # expression is always meaningful, a name is unless it is the primary key.
+            primary = {"id", "pk", model._meta.pk.name}
+            meaningful = [f for f in ordering if not isinstance(f, str) or f.lstrip("-") not in primary]
             if not ordering:
                 problems.append(f"{model._meta.label}: no Meta.ordering")
             elif not meaningful:

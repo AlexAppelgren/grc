@@ -496,7 +496,7 @@ jobs:
         shell: bash -eo pipefail {0}
         working-directory: frontend
         run: |
-          npm audit --audit-level=high
+          npm audit --audit-level=moderate
 
   # ---------------------------------------------------------------------------
   # Licences: no copyleft in either tree, Apache attribution for @sebgroup/*.
@@ -572,14 +572,14 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
-      - name: Trivy (HIGH and CRITICAL, fixed or not)
+      - name: Trivy (MEDIUM and above)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: image
           image-ref: compliance-watch/${{ matrix.image }}:ci
           scanners: vuln
           vuln-type: os,library
-          severity: HIGH,CRITICAL
+          severity: MEDIUM,HIGH,CRITICAL
           ignore-unfixed: "false"
           exit-code: "1"
           format: table

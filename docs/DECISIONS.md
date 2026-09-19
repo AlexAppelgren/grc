@@ -23,4 +23,4 @@ the PRD version bumps if behaviour changes.
 | D-14 | Library curation | Platform role `library_editor` in the console. Tenants report problems and propose | The library is shared | Who the first editors are |
 | D-15 | Branching | One branch, `main`, during the build. `staging` and `main` with a second reviewer before the first real tenant | Speed now, change control when it matters | When to switch |
 | D-16 | Hosting | Railway EU West, container-only, nothing Railway-specific in code | The tenant zone may have to move into a bank's environment | Nothing now |
-| D-17 | Django version | 5.2 LTS | Long support window | Nothing |
+| D-17 | Django version | **Superseded 2026-09-19 by Alex:** the newest Django release (6.1.1 at the time), and every other package at its newest release. ADR 0025 | Alex asked for all packages and libraries at their latest versions once Phase 0 was green; Django 6 is supported by every library the stack uses (django-ninja, django-cors-headers, dj-database-url, django-stubs) | Confirmed |

@@ -1,6 +1,6 @@
 # ADR 0017 — Django 5.2 LTS
 
-**Date:** 2026-09-19 · **Status:** accepted by default (DECISIONS D-17; nothing for the owner to confirm)
+**Date:** 2026-09-19 · **Status:** superseded by 0025 (2026-09-19)
 
 ## Context
 
