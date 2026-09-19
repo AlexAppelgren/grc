@@ -18,6 +18,9 @@ The main agent adds a row here whenever a review turns up such a finding.
 | H10 | Gunicorn's default access log writes every query string (`?q=` search text), client IP and user agent to stdout, and Sentry turns those lines into breadcrumbs whose message is not scrubbed | chunk3-rest-T4 review | high | Worktree `wt/log-no-query`, in progress; merges before chunk3-rest-T4 |
 | H11 | The app role can set `cw.maintenance` itself (in any letter case, since PostgreSQL setting names are case-insensitive), which switches every append-only trigger off; only a source lint stands in the way | chunk3-rest-T1 verification | medium | Task H-B below |
 | H12 | The `cw.maintenance` lint is case-sensitive; `LIBRARY_DIFF_MAX_SENTENCES` accepts 0, negatives and huge values (500 takes about 7 s per diff); library texts have no length limit, so a 200 KB text of short sentences costs about 0.5 s in version_diff | chunk3-rest-T1 verification | low | Task H-B below |
+| H13 | Sessions carry platform grants even inside a bank, and a bank invitation does not refuse an address holding a platform role | chunk4-T4 review | medium | Task H-A (cloud, in progress) |
+| H14 | Every deploy resets sort order, active and default on each tenant's own system list rows (`taxonomy/tenant_hooks.py` uses update_or_create), undoing a tenant admin's reorder | scope T01 review | medium | The T01 integration task (local, next) |
+| H15 | `rls_operations(mixed=True)` gives `api_key`, `problem_report`, `ai_generation` and `outbox_event` one FOR ALL policy whose write check equals the mixed read rule, so a bank session can insert, change or delete platform rows at the database level (for example the platform agent's API key); two zones must hold in the database, not only in code | E5 fix, 2026-09-19 | high | Task H-C below, after H-B merges (both touch `migration_helpers.py`) |
 
 ## Task H-A: three small guards (after chunk3-rest-T3 merges, which owns `apps/shared/schemas.py`)
 
@@ -47,3 +50,9 @@ requirements coverage. Security review before merge (authentication).
 2. H12: the lint matches `cw\s*\.\s*maintenance|maintenance_setting` case-insensitively, with an upper-case plant in its test; the diff cap refuses to boot outside 1 to 200; a library text longer than a setting (`LIBRARY_TEXT_MAX_CHARS`, env override) is diffed as one delete and one insert, with a test.
 
 Gates: `apps.shared apps.library` tests under coverage, ruff, mypy, compliance lint, migrate_from_zero. Security review before merge.
+
+## Task H-C: mixed tables write only their own zone
+
+**Owned:** `backend/apps/shared/migration_helpers.py` (`rls_operations`), one new migration per app that owns a mixed table (`api_key`, `problem_report`, `ai_generation`, `outbox_event`, and any other table the helper marks mixed), `backend/apps/shared/tests_rls.py`.
+
+Split every mixed table's policy the way `agent_run` does since the E5 fix: a FOR SELECT policy with the mixed read rule (the tenant's rows and the rows without a tenant), and a FOR ALL policy whose USING and WITH CHECK are `tenant_id IS NOT DISTINCT FROM NULLIF(current_setting('app.tenant_id', true), '')::uuid`, so a bank session writes only its own rows and a session with no tenant writes only platform rows. Keep any narrower policy a table already has (the problem-report exception, if Alex approves it, is designed on top of this). Tests as the real cw_app role, per table: under tenant A, inserting, updating and deleting a platform row is refused or touches 0 rows, moving a row between zones is refused, and reads are unchanged. The RLS guard asserts the policy shape for every mixed table, so a new mixed table cannot get the old shape. Security review before merge.
