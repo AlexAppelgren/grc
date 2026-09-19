@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* Serves FP-01, FP-02, FP-03, AC-FP1 and J-6. The section the prototype called
+/* Serves FP-01, FP-02, FP-03, FP-04, AC-FP1, AC-FP2 and J-6. The section the prototype called
    Footprint is Regulatory scope on screen (docs/plans/briefs/REGULATORY_SCOPE.md
    §2); the code, the route, the permission keys and the FP ids keep the old word.
 
@@ -19,7 +19,12 @@
    hairline cards at 8px, dialogs at 12px) and design/system/pills-and-labels.md;
    the build maps them to Green tokens. Copy is the spec's string table, so this
    card and frontend/src/messages/*.json say the same thing. Counts and titles
-   are sample data. */
+   are sample data.
+
+   States 17 to 19 are the markets panel (ADR 0026, D-27 to D-33): the operating
+   markets are the jurisdictions in the scope above and change only through the
+   request flow of states 3 to 13, and watching is a direct, audited write on the
+   same screen. The note at the foot lists every new string with its catalog key. */
 :root{
   --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
   --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
@@ -103,6 +108,19 @@ legend{padding:0;font-weight:500}
 .check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .check:last-child{border-bottom:0}
 .check input{width:16px;height:16px;margin:2px 0 0;accent-color:var(--primary)}
+
+/* Markets we watch: one row per country, the name on the left and its level on
+   the right, with a hairline between rows. The level is either meta text or the
+   foundations Toggle (32px, 6px radius, off l2/border-neutral-02/muted, on
+   l3-neutral-02/border-neutral-01/text). foundations.md specifies no switch, so
+   the panel uses the Toggle it does specify, as a pressed button. */
+.markets{list-style:none;margin:0;padding:0}
+.markets li{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:6px 0;border-bottom:1px solid var(--line)}
+.markets li:last-child{border-bottom:0}
+.markets .name{min-width:0}
+.toggle{height:32px;padding:0 12px;border:1px solid var(--line-control);border-radius:6px;background:var(--surface);color:var(--muted);font-weight:500;white-space:nowrap}
+.toggle[aria-pressed="true"]{background:var(--accent);border-color:var(--line-strong);color:var(--text)}
+.toggle:hover{background-image:linear-gradient(var(--hover),var(--hover))}
 
 /* Pill: fully rounded, 20px, 13px at 500, no border. */
 .pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
@@ -220,6 +238,17 @@ legend{padding:0;font-weight:500}
       <h3>Client category</h3>
       <p style="margin:0">Not restricted: every option applies.</p>
     </div>
+    <div class="group" data-dimension="jurisdiction">
+      <h3>Jurisdiction</h3>
+      <span class="hint">The markets we operate in.</span>
+      <ul class="terms">
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">European Union <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Sweden <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/></svg><span class="lbl">Denmark <span class="sr">Not in our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/></svg><span class="lbl">Norway <span class="sr">Not in our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/></svg><span class="lbl">Finland <span class="sr">Not in our scope</span></span></li>
+      </ul>
+    </div>
   </div>
 </div>
 
@@ -280,6 +309,15 @@ legend{padding:0;font-weight:500}
       <span class="hint" id="h-client">Leave every option empty and the group does not restrict.</span>
       <label class="check" for="c-retail"><input type="checkbox" id="c-retail" checked>Retail</label>
       <label class="check" for="c-prof"><input type="checkbox" id="c-prof">Professional</label>
+    </fieldset>
+    <fieldset class="group" data-dimension="jurisdiction" aria-describedby="h-juris">
+      <legend>Jurisdiction</legend>
+      <span class="hint" id="h-juris">The markets we operate in.</span>
+      <label class="check" for="c-eu"><input type="checkbox" id="c-eu" checked>European Union</label>
+      <label class="check" for="c-se"><input type="checkbox" id="c-se" checked>Sweden</label>
+      <label class="check" for="c-dk"><input type="checkbox" id="c-dk">Denmark</label>
+      <label class="check" for="c-no"><input type="checkbox" id="c-no">Norway</label>
+      <label class="check" for="c-fi"><input type="checkbox" id="c-fi">Finland</label>
     </fieldset>
   </div>
 </div>
@@ -450,11 +488,56 @@ legend{padding:0;font-weight:500}
 </div>
 
 <h2 class="k">16 · A member without either permission, at /admin/footprint</h2>
-<p class="cap">There is no Admin entry for Regulatory scope, and /admin itself stays hidden unless another admin permission unlocks it.</p>
+<p class="cap">There is no Admin entry for Regulatory scope, and /admin itself stays hidden unless another admin permission unlocks it. The markets panel is part of this page, so it is denied with it; the markets on the footprint read stay readable to every member, because the inventory's "Markets we watch" view needs them.</p>
 <div class="restricted" role="alert">
   <h1>This page is not available to you</h1>
   <p>Your role does not include what this page needs. Ask your administrator if you think it should.</p>
   <p class="meta">Needs footprint request</p>
+</div>
+
+<h2 class="k">17 · Markets we watch — a compliance officer (footprint request)</h2>
+<p class="cap">The last panel on the page, under the scope groups. An operating market is the jurisdiction above and changes only through a request; a Watching toggle saves at once, so there is no Save button and no second person.</p>
+<div class="panel" data-markets>
+  <h2>Markets we watch</h2>
+  <p class="meta" style="margin-bottom:12px">The jurisdictions in our regulatory scope are the markets we operate in. Watching a market hides nothing. What a watched market adds is shown by the "Markets we watch" view of the inventory.</p>
+  <ul class="markets">
+    <li><span class="name">Sweden</span><span class="meta">Operating</span></li>
+    <li><span class="name">Denmark</span><button class="toggle" aria-pressed="true">Watching<span class="sr"> Denmark</span></button></li>
+    <li><span class="name">Norway</span><button class="toggle" aria-pressed="true">Watching<span class="sr"> Norway</span></button></li>
+    <li><span class="name">Finland</span><button class="toggle" aria-pressed="false">Watching<span class="sr"> Finland</span></button></li>
+  </ul>
+  <div class="cols" style="margin-top:16px">
+    <div><h3>Also included</h3><p class="meta" style="margin:0">European Union rules reach Sweden, Denmark, Norway and Finland, so they show wherever those markets do.</p></div>
+    <div><h3>Everywhere else</h3><p class="meta" style="margin:0">Our research sweeps every source in the library for every market, whatever you choose here.</p></div>
+  </div>
+</div>
+
+<h2 class="k">18 · Markets we watch — read-only, for someone who can only approve</h2>
+<p class="cap">The page's existing notice, then the same rows with every level in words. Nothing is a disabled control and nothing sits in the tab order, so watched and unwatched markets stay equally readable.</p>
+<div class="notice">You can see the regulatory scope. Changing it needs footprint request; ask a compliance officer or an administrator.</div>
+<div class="panel" data-markets>
+  <h2>Markets we watch</h2>
+  <p class="meta" style="margin-bottom:12px">The jurisdictions in our regulatory scope are the markets we operate in. Watching a market hides nothing. What a watched market adds is shown by the "Markets we watch" view of the inventory.</p>
+  <ul class="markets">
+    <li><span class="name">Sweden</span><span class="meta">Operating</span></li>
+    <li><span class="name">Denmark</span><span class="meta">Watching</span></li>
+    <li><span class="name">Norway</span><span class="meta">Watching</span></li>
+    <li><span class="name">Finland</span><span class="meta">Not watched</span></li>
+  </ul>
+  <div class="cols" style="margin-top:16px">
+    <div><h3>Also included</h3><p class="meta" style="margin:0">European Union rules reach Sweden, Denmark, Norway and Finland, so they show wherever those markets do.</p></div>
+    <div><h3>Everywhere else</h3><p class="meta" style="margin:0">Our research sweeps every source in the library for every market, whatever you choose here.</p></div>
+  </div>
+</div>
+
+<h2 class="k">19 · A market that could not be saved</h2>
+<p class="cap">The toggle returns to the level the server holds and the reason renders under the list. The page's status line is not used, because nothing else on the page changed.</p>
+<div class="panel" data-markets>
+  <h2>Markets we watch</h2>
+  <ul class="markets">
+    <li><span class="name">Norway</span><button class="toggle" aria-pressed="false">Watching<span class="sr"> Norway</span></button></li>
+  </ul>
+  <div class="notice bad" role="alert" style="margin:12px 0 0">Norway was not saved. Try again.</div>
 </div>
 
 <p class="note">Regulatory scope card (/admin/footprint). The page is restricted to
@@ -488,6 +571,48 @@ requester never sees Approve, and the server's refusal is state 12. Rejection ne
 reason and no step-up, because it changes nothing. Two buttons share a row on a phone,
 the primary on the right. Counts and record titles here are sample data; the app counts
 the obligations a change hides and reveals under the FP-01 rule.</p>
+
+<p class="note">Markets (states 17 to 19; FP-04, AC-FP2, ADR 0026). A market is a
+country the platform covers, and its level is computed: operating when its jurisdiction
+term is in the scope, otherwise watching when a watch row exists, otherwise not followed.
+So the Jurisdiction group, now that the dimension mirrors the jurisdiction rows, is the
+markets we operate in, and it says so under its heading; it is an ordinary group, last
+because its dimension sorts after the prototype's seven, and it is added and removed
+through the same request as every other term. The panel below it writes the other level
+directly: one row per active country, the name and then either "Operating" as meta text or
+a Watching toggle that saves at once, with an audit row and no second person, because
+watching hides nothing. The European Union is not a country, so it has no row; what its
+rules reach is the "Also included" line, rendered from each jurisdiction's parent, Norway
+included through the EEA Agreement. "Everywhere else" says that research sweeps every
+market whatever is chosen here. The control is the foundations Toggle as a pressed button,
+not a switch, because foundations.md specifies no switch. Watching is carried by the
+toggle's border (border-neutral-01, 4.15:1 light and 7.05:1 dark against the card) and by
+the text colour, never by the fill alone, which measures 1.14:1 and would fail WCAG
+1.4.11, exactly as the current tab is carried in navigation.md; aria-pressed carries it
+for a screen reader, and the label stays "Watching", so the accessible name holds the
+visible one and the market's name after it. There is no new pill and no new tone. A waiting scope
+request blocks the operating markets, not these toggles. A repeated watch answers 409 and
+an unwatched market 404; both render as state 19, and the toggle never invents a level the
+server did not send. Order follows the seed: Sweden, Denmark, Norway, Finland. The keys a
+market carries never reach a path or a query string (D-30), so nothing here is linkable.</p>
+
+<p class="note">Strings and their catalog keys, added by f03-T23 to
+frontend/src/messages/en.json and sv.json: <b>footprint.jurisdictionHint</b> "The markets
+we operate in."; <b>footprint.markets.title</b> "Markets we watch";
+<b>footprint.markets.intro</b> "The jurisdictions in our regulatory scope are the markets we
+operate in. Watching a market hides nothing."; <b>footprint.markets.view</b> "What a watched
+market adds is shown by the "Markets we watch" view of the inventory.";
+<b>footprint.markets.operating</b> "Operating"; <b>footprint.markets.watching</b>
+"Watching"; <b>footprint.markets.notWatched</b> "Not watched";
+<b>footprint.markets.alsoIncluded</b> "Also included"; <b>footprint.markets.reach</b>
+"{parent} rules reach {markets}, so they show wherever those markets do.";
+<b>footprint.markets.everywhereElse</b> "Everywhere else"; <b>footprint.markets.sweep</b>
+"Our research sweeps every source in the library for every market, whatever you choose
+here."; <b>footprint.markets.notSaved</b> "{market} was not saved. Try again.". The
+read-only notice is the page's existing <b>footprint.readOnly</b>, and market names are
+data, never strings. <b>footprint.markets.view</b> is the one sentence that is not true in
+every slice: it is added with the inventory view (f03-T37) and the same sentence names the
+watch feed only once chunk 5 carries it.</p>
 
 </main>
 </body>

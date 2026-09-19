@@ -226,7 +226,10 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
 @media (max-width:820px){
   .app{grid-template-columns:1fr}.side{display:none}
   .mbrand{display:block;margin:0 0 12px}.mbrand .logo{width:150px}
-  main{padding:20px 16px 100px}
+  /* The grid item's automatic minimum is its content's min-content width, so the
+     five tabs pushed the whole page sideways at 390px; min-width:0 keeps the
+     horizontal scroll inside .tabs, where overflow-x:auto puts it. */
+  main{padding:20px 16px 100px;min-width:0}
   h1{font-size:1.6rem}
   .home,.pair,.rdetail,.side-by-side,.g11{grid-template-columns:1fr}.feature{padding:20px}.feature h2.lead{font-size:1.45rem}
   .roster{grid-template-columns:1fr!important}.roster .q.none{display:none}
@@ -268,7 +271,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
       <select aria-label="Change type"><option>Any type</option><option>Adopted rule</option><option>EU proposal</option><option>Supervision</option><option>Enforcement</option></select>
       <select aria-label="Urgency"><option>Any urgency</option><option>Act now</option><option>Within 3 months</option><option>6+ months</option><option>Monitor</option><option>No action</option></select>
       <select aria-label="Flag"><option>Any flag</option><option>AI</option><option>Advice perimeter (RIS)</option></select>
-      <button class="chip" aria-pressed="false">Outside our scope</button>
+      <select aria-label="Scope"><option>In our scope</option><option>Markets we watch</option><option>Show outside our scope</option></select>
     </div>
 
     <h2 class="k">Rows (fixed slot order; each opens tenant-change.html)</h2>
@@ -277,6 +280,11 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
       <a class="row" href="#"><div class="meta"><span class="pill notice">Supervision</span><span class="pill">Monitor</span><span class="pill brand">AI</span><span class="pill">Suggested by the agent</span><span>Finansinspektionen, 3 Sep 2026</span></div><h3>FI starts mapping how financial firms use AI</h3><p style="margin:0 0 8px;color:var(--muted);font-size:.92rem"><span style="display:block;color:var(--bronze);font-size:.8rem;font-weight:600">Drafted by AI, not yet confirmed by a person</span><b style="color:var(--text)">So what?</b> No obligation changes yet. Expect questions on governance of AI in customer-facing services and in software development.</p><div class="meta"><span>Needs triage</span><span>Report date not set</span><span>All accounts</span></div></a>
       <a class="row" href="#"><div class="meta"><span class="pill notice">EU proposal</span><span class="pill warning">Within 3 months</span><span>ESMA</span></div><h3>ESMA proposes shorter pre-settlement timeframes ahead of T+1</h3><p style="margin:0 0 8px;color:var(--muted);font-size:.92rem"><b style="color:var(--text)">So what?</b> Order handling and custody teams should check whether same-day allocation and confirmation is achievable for all account types.</p><div class="meta"><span>Needs triage</span><span>Proposed application 7 Dec 2026, in 79 days</span><span>ISK, AF, Depå</span></div></a>
       <a class="row outside" href="#"><div class="meta"><span class="pill notice">Enforcement</span><span class="pill positive">No action</span><span>Finansinspektionen, Dec 2025</span></div><h3>FI sanctions Garantum over advice on complex products</h3><div class="meta"><span>Outside our scope: Advice</span><span>Closed</span></div></a>
+    </div>
+
+    <h2 class="k">"Markets we watch": what watching adds to the feed (chunk 5)</h2>
+    <div class="rows">
+      <a class="row" href="#"><div class="meta"><span class="pill notice">Adopted rule</span><span class="pill">Monitor</span><span>Finanstilsynet (Norge), 11 Sep 2026</span></div><h3>Norway tightens the reconciliation rules for client asset accounts</h3><div class="meta"><span>Needs triage</span><span>In force 1 Jan 2027, in 104 days</span><span>Market we watch: Norway</span></div></a>
     </div>
 
     <h2 class="k">In progress tab (status text from the case category; chunk 9 fills the workflow)</h2>
@@ -293,7 +301,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the feed</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted" role="alert"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p style="font-size:.85rem">Needs watch read</p></div>
     </div>
-    <p class="note">Watch card. Slot order on a row: change type (notice), urgency (tone from the fixed ordinal), flags (brand), then authority and date as text; status, key date, accounts and merged duplicates in the foot. "Suggested by the agent" is a computed information pill shown while any classification on the record is unconfirmed; the detail confirms it. The So what carries the AI label until a person confirms it. Filters store keys. Rows outside our scope appear only with the toggle on, dashed, with the reason. In chunk 5 a new change sits in Needs triage; the triage form arrives with chunk 9.</p>
+    <p class="note">Watch card. Slot order on a row: change type (notice), urgency (tone from the fixed ordinal), flags (brand), then authority and date as text; status, key date, accounts and merged duplicates in the foot. "Suggested by the agent" is a computed information pill shown while any classification on the record is unconfirmed; the detail confirms it. The So what carries the AI label until a person confirms it. Filters store keys. Rows outside our scope appear only with "Show outside our scope" chosen, dashed, with the reason. Scope is the inventory's single filter, with the same three values and the same keys (library.scope.*, library.watchedMarket); a change takes its jurisdiction from its authority, and one without an authority is not restricted by jurisdiction. "Markets we watch" shows only what watching adds, with every other filter still applied, as meta text and no new pill; watching never sets urgency, never opens triage and never notifies. In chunk 5 a new change sits in Needs triage; the triage form arrives with chunk 9, and the watched-market value of the filter with f03-T41.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

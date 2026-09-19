@@ -269,7 +269,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
       <select aria-label="Service"><option>Any service</option><option>Advice</option><option>Custody</option></select>
       <select aria-label="Duty type"><option>Any duty type</option><option>Conduct</option><option>Disclosure</option></select>
       <label class="meta" for="asof">As of</label><input type="date" id="asof" aria-label="As of date">
-      <button class="chip" aria-pressed="false">Show outside our scope</button>
+      <select aria-label="Scope"><option>In our scope</option><option>Markets we watch</option><option>Show outside our scope</option></select>
     </div>
 
     <h2 class="k">Rows (fixed slot order, each opens tenant-obligation.html)</h2>
@@ -285,6 +285,11 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <h2 class="k">Chunk 3 row (library only, before the register overlay lands)</h2>
     <div class="rows"><a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill notice">1 open change</span></div><h3>Pay for third-party research only under the permitted models</h3><div class="meta"><span class="mono">Third-party payments</span><span>Advice, Portfolio management</span><span>Version 2 from 1 Oct 2026</span><span>Verified 30 Jun 2026</span></div></a></div>
 
+    <h2 class="k">"Markets we watch": what watching adds, with the other filters still applied</h2>
+    <div class="rows">
+      <a class="row" href="#"><div class="meta"><span class="pill brand">Kapitalmarkedsloven</span></div><h3>Keep client financial instruments in segregated accounts and reconcile them daily</h3><div class="meta"><span class="mono">Client assets</span><span>Custody</span><span>Market we watch: Denmark</span></div></a>
+    </div>
+
     <h2 class="k">Instruments tab (each opens tenant-instrument.html)</h2>
     <div class="rows">
       <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill">FI regulation</span><span class="pill">Binding</span><span class="pill brand">Sweden</span></div><h3>FFFS 2017:2 om värdepappersrörelse</h3><div class="meta"><span>Finansinspektionen</span><span>In force 3 Jan 2018</span><span>Implements MiFID II delegated directive (EU) 2017/593</span><span>4 obligations</span></div></a>
@@ -294,12 +299,26 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <h2 class="k">"As of" banner, empty, loading, error, denied</h2>
     <div class="notice">Showing the versions in force on 1 June 2026. <a href="#">Back to today</a></div>
     <div class="empty"><h2>No obligations match</h2><p>Clear a filter, or show what is outside our scope.</p><a href="#">Show outside our scope</a></div>
+    <div class="empty" style="margin-top:10px"><h2>The markets we watch add nothing here</h2><p>Denmark and Norway bring no obligation that the other filters allow. EU rules already show, because they reach the markets we operate in.</p></div>
     <div class="empty" style="margin-top:10px"><h2>The library has nothing in our scope yet</h2><p>Sources are checked daily; obligations appear as proposals are approved.</p><a href="#">Check the regulatory scope under Admin</a></div>
     <div class="rows" aria-busy="true" style="margin-top:10px"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the inventory</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted" role="alert"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p style="font-size:.85rem">Needs library read</p></div>
     </div>
-    <p class="note">Inventory card. Filters come from vocabularies (instrument, regime, service, duty type) and store keys. Rows outside our scope render dashed with the reason in the meta, only when "Show outside our scope" is on. The instrument pill is brand, Guidance is information from the binding kind, applicability and compliance status take their tone from the ordinal, "Change waiting for approval" is a computed warning pill and "N open changes" a computed notice pill; the API sends facts, never a phrase. "As of" re-reads every row's version. Every role reads this screen; nothing on it writes.</p>
+    <p class="note">Inventory card. Filters come from vocabularies (instrument, regime, service, duty type) and store keys. Rows outside our scope render dashed with the reason in the meta, only when "Show outside our scope" is on. The instrument pill is brand, Guidance is information from the binding kind, applicability and compliance status take their tone from the ordinal, "Change waiting for approval" is a computed warning pill and "N open changes" a computed notice pill; the API sends facts, never a phrase. "As of" re-reads every row's version. Every role reads this screen; nothing on it writes.
+    Scope is one filter with one value, not a pair of toggles, so no contradictory pair can be
+    sent: "In our scope" (the default), "Markets we watch" and "Show outside our scope" are the
+    three values of the single footprint filter, and the chunk 3 route takes in, watched or all.
+    "Markets we watch" lists only what watching adds: a record that matches the scope plus the
+    watched markets but not the scope alone, so EU rules never appear there, they already reach
+    the markets we operate in, and a Danish obligation scoped to a service we do not provide stays
+    out, because every other dimension still applies. The reason rides as meta text, "Market we
+    watch: Denmark", from the row's own jurisdiction; there is no new pill and no dashed border,
+    which stays with "Show outside our scope", where a row is the exception rather than the whole
+    list. Catalog keys, added by f03-T37: library.scope.label "Scope", library.scope.in "In our
+    scope", library.scope.watched "Markets we watch", library.scope.all "Show outside our scope",
+    library.watchedMarket "Market we watch: {jurisdiction}", library.empty.watched for the empty
+    state. Instrument and obligation titles here are sample data.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

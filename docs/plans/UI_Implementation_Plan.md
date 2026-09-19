@@ -57,7 +57,7 @@ overwritten.
 | `admin-organisation`, `admin-members`, `admin-roles`, `admin-api-keys`, `admin-security-log` | `/admin/*` | tenant | 1 | in build |
 | `admin-vocabularies.html` | `/admin/vocabularies` | tenant | 2 | designed |
 | `admin-vocabulary.html` | `/admin/vocabularies/[list]`; console variant `/console/vocabularies/[list]` | both | 2, 4 | designed |
-| `admin-footprint.html` (on screen: Regulatory scope) | `/admin/footprint` | tenant | 2; markets panel 3 | designed; the markets panel is card pending |
+| `admin-footprint.html` (on screen: Regulatory scope) | `/admin/footprint` | tenant | 2; markets panel 3 | designed, markets panel included (card states 17 to 19) |
 | `picker-create-or-suggest.html` | inside every vocabulary picker | both | 2 (near-duplicate), 8 (suggest) | designed |
 | `tenant-inventory.html` | `/inventory` (Obligations, Instruments tabs) | tenant | 3 | designed |
 | `tenant-obligation.html` | `/inventory/obligations/[obligationId]` | tenant | 3; register panels 8 | designed |
@@ -168,8 +168,8 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | `GET /tenant/footprint-change-requests`, `POST` (path proposed) | `admin-footprint.html` pending banner, Send for approval, History | tenant | `footprint.request` | no | A, CO request; All 7 see the pending banner | FP-S2, FP-S5 | designed |
 | `POST /tenant/footprint-change-requests/{id}/approve` (path proposed) | `admin-footprint.html` Approve | tenant | `footprint.approve` | yes | A, CO, AP; requester sees the refusal, server 409 four_eyes_violation | FP-S2, FP-S3, FP-S5 | designed |
 | `POST .../{id}/reject`, `POST .../{id}/withdraw` (path proposed) | `admin-footprint.html` Reject with reason, Withdraw | tenant | reject `footprint.approve`; withdraw: requester | no | A, CO, AP reject; requester withdraws | FP-S2, FP-S6 | designed |
-| `GET /tenant/footprint` markets block | `admin-footprint.html` "Markets we watch" panel | tenant | any member reads | no | All 7 read; only `footprint.request` may change | FP-S10 | later chunk 3, card pending |
-| `POST /tenant/footprint/watching`, `POST /tenant/footprint/watching/remove` (key in the body, never a path) | `admin-footprint.html` "Markets we watch" panel | tenant | `footprint.request` | no | A, CO; others read-only | FP-S10, FP-S14 | later chunk 3, card pending |
+| `GET /tenant/footprint` markets block | `admin-footprint.html` "Markets we watch" panel | tenant | any member reads | no | All 7 read; only `footprint.request` may change | FP-S10 | later chunk 3, card designed |
+| `POST /tenant/footprint/watching`, `POST /tenant/footprint/watching/remove` (key in the body, never a path) | `admin-footprint.html` "Markets we watch" panel | tenant | `footprint.request` | no | A, CO; others read-only | FP-S10, FP-S14 | later chunk 3, card designed |
 
 ### Library and inventory (chunk 3)
 
