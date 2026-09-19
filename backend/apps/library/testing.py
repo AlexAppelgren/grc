@@ -1,0 +1,151 @@
+"""Library builders for tests (playbook 8.1): an instrument, and an obligation with its
+title, scope terms, tags and summary versions. Each builder writes inside
+`library_write()` and sets every field when it creates a row; nothing here saves or
+updates a row afterwards, because version, summary and text rows are append-only.
+
+This module is the one place outside the reference seeds where a test writes a library
+record: the library fence exempts `testing.py` modules (apps/shared/tests_library_fence.py),
+and apps/shared/factories.py writes no library model. Terms are addressed as
+`dimension:key` and vocabulary rows by key, exactly as the API addresses them."""
+
+from __future__ import annotations
+
+import datetime
+from collections.abc import Iterable, Mapping
+
+from apps.library.models import (
+    Instrument,
+    InstrumentTitle,
+    Jurisdiction,
+    Obligation,
+    ObligationSummary,
+    ObligationTag,
+    ObligationTerm,
+    ObligationTitle,
+    ObligationVersion,
+)
+from apps.proposals.models import OriginType
+from apps.shared.models import Tenant
+from apps.shared.tenancy import library_write
+from apps.taxonomy.models import DutyType, InstrumentLevel, LibraryTag, TaxonomyTerm
+
+REASON = "test builder"
+SOURCE_URL = "https://www.example.test/source"
+DEFAULT_VERSIONS: tuple[tuple[datetime.date | None, Mapping[str, str]], ...] = ((None, {"en": "The duty as it reads."}),)
+
+
+def term(ref: str) -> TaxonomyTerm:
+    """The term `dimension:key`."""
+    dimension, _, key = ref.partition(":")
+    return TaxonomyTerm.objects.select_related("dimension").get(dimension__key=dimension, key=key)
+
+
+def instrument(
+    *,
+    key: str,
+    short_name: str | None = None,
+    regime: str | None = None,
+    level: str = "act",
+    binding: bool = True,
+    owner_tenant: Tenant | None = None,
+) -> Instrument:
+    """A Swedish instrument titled by its short name in English, the original."""
+    with library_write(REASON):
+        row = Instrument.objects.create(
+            stable_key=key,
+            short_name=short_name or key.upper(),
+            official_ref=key.upper(),
+            source_url=SOURCE_URL,
+            level=InstrumentLevel.objects.get(key=level),
+            binding=binding,
+            jurisdiction=Jurisdiction.objects.get(key="se"),
+            regime=term(regime) if regime else None,
+            owner_tenant=owner_tenant,
+            created_origin=OriginType.USER.value,
+        )
+        InstrumentTitle.objects.create(instrument=row, language_id="en", text=row.short_name, is_original=True)
+    return row
+
+
+def _texts(model: type[ObligationTitle] | type[ObligationSummary], parent: str, row: object, texts: Mapping[str, str]) -> None:
+    """The first language is the original; every other one is a machine translation
+    until a person confirms it (INV-05), as the seeded library has them."""
+    for index, (language, text) in enumerate(texts.items()):
+        model.objects.create(**{parent: row}, language_id=language, text=text, is_original=index == 0, is_machine=index > 0)
+
+
+def obligation(
+    on: Instrument,
+    *,
+    key: str,
+    titles: Mapping[str, str] | None = None,
+    ref_label: str = "1 §",
+    duty_type: str = "conduct",
+    terms: Iterable[str] = (),
+    tags: Iterable[str] = (),
+    versions: Iterable[tuple[datetime.date | None, Mapping[str, str]]] = DEFAULT_VERSIONS,
+    owner_tenant: Tenant | None = None,
+    last_verified_at: datetime.datetime | None = None,
+) -> Obligation:
+    """An obligation of `on`. `versions` are `(effective_from, {language: summary})` in
+    version order, numbered from 1; a null date means since always."""
+    with library_write(REASON):
+        row = Obligation.objects.create(
+            stable_key=key,
+            instrument=on,
+            ref_label=ref_label,
+            duty_type=DutyType.objects.get(key=duty_type),
+            owner_tenant=owner_tenant,
+            created_origin=OriginType.USER.value,
+            source_url=SOURCE_URL,
+            source_label=f"{on.official_ref}, {ref_label}",
+            last_verified_at=last_verified_at,
+        )
+        _texts(ObligationTitle, "obligation", row, titles or {"en": key})
+        for ref in terms:
+            ObligationTerm.objects.create(obligation=row, term=term(ref))
+        for tag in tags:
+            ObligationTag.objects.create(obligation=row, tag=LibraryTag.objects.get(key=tag))
+        for number, (effective_from, summaries) in enumerate(versions, start=1):
+            version = ObligationVersion.objects.create(obligation=row, version_number=number, effective_from=effective_from)
+            _texts(ObligationSummary, "version", version, summaries)
+    return row
+
+
+# The shape of a heavy page: two services, two account types, a client category, a channel
+# and a lifecycle stage per obligation, two tags, sv titles with en machine translations,
+# and every third obligation with a second version to come.
+_REGIMES = ("regime:securities", "regime:insurance", "regime:tax", "regime:aml", "regime:data_protection")
+_SERVICES = ("advice", "non_advised", "execution_only", "portfolio_management", "custody", "insurance_distribution")
+_ACCOUNTS = ("isk", "af", "depa", "kf", "pension")
+_STAGES = ("pre_trade", "post_trade", "ongoing", "product_lifecycle", "reporting", "onboarding")
+_TAGS = ("advice", "appropriateness", "costs", "disclosure", "knowledge", "suitability", "warning")
+_DUTIES = ("conduct", "disclosure", "record_keeping", "reporting", "governance")
+
+
+def library_of(count: int) -> list[Obligation]:
+    """`count` obligations spread over five instruments, each as heavy as the seeded
+    library's heaviest rows: for the list read's performance guard."""
+    instruments = [instrument(key=f"bulk-{index}", regime=regime) for index, regime in enumerate(_REGIMES)]
+    return [
+        obligation(
+            instruments[n % len(instruments)],
+            key=f"obl-bulk-{n:03d}",
+            titles={"sv": f"Skyldighet {n} om kundskydd", "en": f"Duty {n} on client protection"},
+            ref_label=f"{n % 12 + 1} kap.",
+            duty_type=_DUTIES[n % len(_DUTIES)],
+            terms=(
+                f"service_type:{_SERVICES[n % 6]}",
+                f"service_type:{_SERVICES[(n + 1) % 6]}",
+                f"account_type:{_ACCOUNTS[n % 5]}",
+                f"account_type:{_ACCOUNTS[(n + 2) % 5]}",
+                f"client_category:{('retail', 'professional')[n % 2]}",
+                f"channel:{('digital', 'branch')[n % 2]}",
+                f"lifecycle_stage:{_STAGES[n % 6]}",
+            ),
+            tags=(_TAGS[n % 7], _TAGS[(n + 3) % 7]),
+            versions=((None, {"sv": f"Sammanfattning {n}.", "en": f"Summary {n}."}),)
+            + (((datetime.date(2026, 10, 1), {"sv": f"Ny lydelse {n}.", "en": f"New wording {n}."}),) if n % 3 == 0 else ()),
+        )
+        for n in range(count)
+    ]

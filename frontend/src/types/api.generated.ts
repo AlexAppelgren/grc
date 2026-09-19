@@ -346,6 +346,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/obligations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Obligations */
+        get: operations["listObligations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/proposals": {
         parameters: {
             query?: never;
@@ -1430,6 +1447,34 @@ export interface components {
             parentKey?: string | null;
         };
         /**
+         * LibraryRef
+         * @description A vocabulary row or a term as every surface reads it: key and kind, and the label in
+         *     the reader's language (playbook 15). A term's kind is null: its dimension is its kind.
+         */
+        LibraryRef: {
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: string | null;
+            /** Label */
+            label: string;
+        };
+        /**
+         * LocalizedText
+         * @description One text in one language (INV-05, D-12): which language it is in, whether it is the
+         *     original and whether a machine translated it, so the screen can label it.
+         */
+        LocalizedText: {
+            /** Ismachine */
+            isMachine: boolean;
+            /** Isoriginal */
+            isOriginal: boolean;
+            /** Language */
+            language: string;
+            /** Text */
+            text: string;
+        };
+        /**
          * MailOutboxMessage
          * @description One message the mock mailer sent, for E2E journeys (playbook 8.3).
          */
@@ -1543,6 +1588,95 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** ObligationInstrumentRef */
+        ObligationInstrumentRef: {
+            /** Key */
+            key: string;
+            /** Shortname */
+            shortName: string;
+        };
+        /** ObligationPage */
+        ObligationPage: {
+            /** Items */
+            items: components["schemas"]["ObligationRow"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ObligationQuery
+         * @description The filters of `GET /obligations`. `instrument` and `dutyType` are keys; `term` is
+         *     `dimension:key` and repeats, every term must be in the obligation's scope. `asOf`
+         *     defaults to today in the tenant's time zone. `outsideFootprint=true` lifts the
+         *     footprint filter and reports why each hidden row would be hidden.
+         */
+        ObligationQuery: {
+            /** Asof */
+            asOf?: string | null;
+            /** Dutytype */
+            dutyType?: string | null;
+            /** Instrument */
+            instrument?: string | null;
+            /**
+             * Outsidefootprint
+             * @default false
+             */
+            outsideFootprint: boolean;
+            /** Q */
+            q?: string | null;
+            /** Term */
+            term?: string[];
+        };
+        /**
+         * ObligationRow
+         * @description One row of `GET /obligations` (INV-03). `version` is the one in force on the read's
+         *     date and `upcomingVersion` the next one after it. The register overlay arrives later:
+         *     `openChangeCount` with the watch feed (chunk 5), `pendingApplicability` and
+         *     `complianceStatus` with the register (chunk 8).
+         */
+        ObligationRow: {
+            /** Binding */
+            binding: boolean;
+            bindingLevel: components["schemas"]["LibraryRef"];
+            complianceStatus: components["schemas"]["LibraryRef"] | null;
+            dutyType: components["schemas"]["LibraryRef"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Infootprint */
+            inFootprint: boolean;
+            instrument: components["schemas"]["ObligationInstrumentRef"];
+            /** Lastverifiedat */
+            lastVerifiedAt: string | null;
+            /** Openchangecount */
+            openChangeCount: number;
+            /** Outsidereason */
+            outsideReason: components["schemas"]["OutsideReason"][];
+            /** Pendingapplicability */
+            pendingApplicability: boolean | null;
+            /** Reflabel */
+            refLabel: string;
+            /** Scope */
+            scope: components["schemas"]["ScopeDimension"][];
+            /** Stablekey */
+            stableKey: string;
+            /** Tags */
+            tags: components["schemas"]["LibraryRef"][];
+            title: components["schemas"]["LocalizedText"] | null;
+            upcomingVersion: components["schemas"]["ObligationVersionRef"] | null;
+            version: components["schemas"]["ObligationVersionRef"] | null;
+        };
+        /**
+         * ObligationVersionRef
+         * @description A summary version by number and the date it takes effect; null means since the
+         *     obligation began (INV-04).
+         */
+        ObligationVersionRef: {
+            effectiveFrom: components["schemas"]["PartialDate"] | null;
+            /** Versionnumber */
+            versionNumber: number;
+        };
         /** Onboarding */
         Onboarding: {
             /** Steps */
@@ -1556,6 +1690,15 @@ export interface components {
             done: boolean;
             /** Key */
             key: string;
+        };
+        /**
+         * OutsideReason
+         * @description A dimension in which none of the record's terms is in the footprint (FP-03).
+         */
+        OutsideReason: {
+            dimension: components["schemas"]["LibraryRef"];
+            /** Terms */
+            terms: components["schemas"]["LibraryRef"][];
         };
         /**
          * PageQuery
@@ -1573,6 +1716,19 @@ export interface components {
              * @default 0
              */
             offset: number;
+        };
+        /**
+         * PartialDate
+         * @description A legal date with its precision: day, month, quarter or year (playbook 4.3, INV-S10).
+         */
+        PartialDate: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Precision */
+            precision: string;
         };
         /** PasskeyAssertBody */
         PasskeyAssertBody: {
@@ -1930,6 +2086,18 @@ export interface components {
             kind?: string | null;
             /** Label */
             label: string;
+        };
+        /**
+         * ScopeDimension
+         * @description The record's terms in one dimension (FP-01). An empty list means no restriction in
+         *     that dimension; `allSelected` means every active term of it is carried.
+         */
+        ScopeDimension: {
+            /** Allselected */
+            allSelected: boolean;
+            dimension: components["schemas"]["LibraryRef"];
+            /** Terms */
+            terms: components["schemas"]["LibraryRef"][];
         };
         /** SecurityEventOut */
         SecurityEventOut: {
@@ -3062,6 +3230,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listObligations: {
+        parameters: {
+            query?: {
+                instrument?: string | null;
+                dutyType?: string | null;
+                term?: string[];
+                q?: string | null;
+                asOf?: string | null;
+                outsideFootprint?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObligationPage"];
+                };
             };
         };
     };

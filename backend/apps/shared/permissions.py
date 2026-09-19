@@ -308,6 +308,7 @@ _CAPABILITY_VOCAB_READ = "Any session reads the list of lists; pickers, filters 
 _LOGIC_LIBRARY_READ = "A person's session, or an agent's key holding library:read; pickers and agents read one endpoint (AGT-02)."
 _LOGIC_VOCAB_WRITE = "vocab.manage writes a tenant list; a library list write is a proposal from proposals.create or library_vocab.manage (VOC-07)."
 _LOGIC_PROPOSE = "A term change is a proposal from proposals.create (tenant) or library_vocab.manage (console); never a direct write (VOC-07)."
+_LOGIC_LIBRARY_RECORDS = "library.read in the caller's tenant, or an agent's key holding library:read; one read serves the inventory and the agents (INV-03, AGT-02)."
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
 UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
@@ -391,6 +392,8 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/reference/jurisdictions"): Ungated(
         UngatedReason.CAPABILITY, "A reference read for pickers; any session may list the jurisdiction rows (I18N-01)."
     ),
+    # Chunk 3 (library reads). apps/taxonomy/http.py require_library_read decides.
+    ("GET", "/obligations"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
 }
 
 

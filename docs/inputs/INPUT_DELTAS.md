@@ -321,3 +321,29 @@ PRD 0.3 (My work, participants, markets and standards), 2026-09-19:
   `standard_term_only_on_standards`, `standard_term_required`,
   `one_conformance_obligation`, `licensed_text`, `not_a_regime`,
   `regime_required`, `units_only_under_standards`, `scope_not_applicable`.
+
+Chunk 3 (library and inventory), 2026-09-19:
+
+- `GET /obligations` (`listObligations`) answers `{items, total}` with `limit` and `offset`
+  instead of a cursor page (playbook 10). Its filters are `instrument` (the instrument's
+  stable key, not the designed `instrumentId`), `dutyType` (a key), `term` (repeatable
+  `dimension:key` instead of `termId`, at most `LIBRARY_TERM_FILTER_MAX`, default 20;
+  every term must be in the obligation's scope, which is its own terms plus its
+  instrument's regime; 422 `unknown_key` naming each term that does not exist), `q` (the
+  title in any language, or the reference label), `asOf` (the
+  version in force on that date; default today in the tenant's time zone) and
+  `outsideFootprint=true`, which lifts the footprint filter instead of the designed
+  `inFootprint`. A row is `{id, stableKey, refLabel, title{text, language, isOriginal,
+  isMachine}, instrument{key, shortName}, bindingLevel{key,kind,label}, binding,
+  dutyType{key,kind,label}, tags[{key,kind,label}], scope[{dimension{key,kind,label},
+  terms[{key,kind,label}], allSelected}], version{versionNumber,
+  effectiveFrom{date,precision}}, upcomingVersion, inFootprint, outsideReason[{dimension,
+  terms}], lastVerifiedAt, openChangeCount, pendingApplicability, complianceStatus}`:
+  keys, kinds, counts and dates, never a phrase. `scope` lists every active dimension,
+  an empty one meaning no restriction, instead of the designed flat `terms`. The register
+  overlay waits for its chunks: `openChangeCount` is 0 until the watch feed (chunk 5), and
+  `pendingApplicability` and `complianceStatus` are null until the register (chunk 8), as
+  are the designed `applicability`, `riskRating` and `owner` and the `applicability`,
+  `complianceStatus`, `ownerId`, `hasOpenChanges` and `reviewDueBefore` filters. The tag
+  filter is deferred. A person with `library.read` in their tenant, or an API key with
+  `library:read`.

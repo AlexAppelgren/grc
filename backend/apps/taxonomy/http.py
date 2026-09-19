@@ -177,6 +177,19 @@ def require_library_reader(request: HttpRequest) -> Principal:
     return who
 
 
+def require_library_read(request: HttpRequest) -> Principal:
+    """Library records (instruments, provisions, obligations) are read by a person holding
+    `library.read` in their tenant, or by an agent's key with `library:read` (INV-03,
+    AGT-02). Stricter than `require_library_reader`: a record read is filtered by a
+    tenant's footprint, so the caller is always in a tenant."""
+    who = principal(request)
+    if who.kind is PrincipalKind.AGENT:
+        if not who.has_scope(perms.SCOPE_LIBRARY_READ):
+            raise deny(perms.SCOPE_LIBRARY_READ)
+        return who
+    return require_any(request, perms.LIBRARY_READ)
+
+
 def require_proposer(request: HttpRequest) -> Principal:
     """Who may put a proposal in the queue: a tenant member with `proposals.create`, a
     platform editor with `library_vocab.manage`, or an agent's key with `proposals:write`."""

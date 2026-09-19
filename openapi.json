@@ -944,6 +944,66 @@
         "title": "JurisdictionRow",
         "type": "object"
       },
+      "LibraryRef": {
+        "description": "A vocabulary row or a term as every surface reads it: key and kind, and the label in\nthe reader's language (playbook 15). A term's kind is null: its dimension is its kind.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "label"
+        ],
+        "title": "LibraryRef",
+        "type": "object"
+      },
+      "LocalizedText": {
+        "description": "One text in one language (INV-05, D-12): which language it is in, whether it is the\noriginal and whether a machine translated it, so the screen can label it.",
+        "properties": {
+          "isMachine": {
+            "title": "Ismachine",
+            "type": "boolean"
+          },
+          "isOriginal": {
+            "title": "Isoriginal",
+            "type": "boolean"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "language",
+          "isOriginal",
+          "isMachine"
+        ],
+        "title": "LocalizedText",
+        "type": "object"
+      },
       "MailOutboxMessage": {
         "description": "One message the mock mailer sent, for E2E journeys (playbook 8.3).",
         "properties": {
@@ -1280,6 +1340,281 @@
         "title": "MembersPage",
         "type": "object"
       },
+      "ObligationInstrumentRef": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "shortName": {
+            "title": "Shortname",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "shortName"
+        ],
+        "title": "ObligationInstrumentRef",
+        "type": "object"
+      },
+      "ObligationPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ObligationRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ObligationPage",
+        "type": "object"
+      },
+      "ObligationQuery": {
+        "description": "The filters of `GET /obligations`. `instrument` and `dutyType` are keys; `term` is\n`dimension:key` and repeats, every term must be in the obligation's scope. `asOf`\ndefaults to today in the tenant's time zone. `outsideFootprint=true` lifts the\nfootprint filter and reports why each hidden row would be hidden.",
+        "properties": {
+          "asOf": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asof"
+          },
+          "dutyType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dutytype"
+          },
+          "instrument": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instrument"
+          },
+          "outsideFootprint": {
+            "default": false,
+            "title": "Outsidefootprint",
+            "type": "boolean"
+          },
+          "q": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          },
+          "term": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Term",
+            "type": "array"
+          }
+        },
+        "title": "ObligationQuery",
+        "type": "object"
+      },
+      "ObligationRow": {
+        "description": "One row of `GET /obligations` (INV-03). `version` is the one in force on the read's\ndate and `upcomingVersion` the next one after it. The register overlay arrives later:\n`openChangeCount` with the watch feed (chunk 5), `pendingApplicability` and\n`complianceStatus` with the register (chunk 8).",
+        "properties": {
+          "binding": {
+            "title": "Binding",
+            "type": "boolean"
+          },
+          "bindingLevel": {
+            "$ref": "#/components/schemas/LibraryRef"
+          },
+          "complianceStatus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LibraryRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dutyType": {
+            "$ref": "#/components/schemas/LibraryRef"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "inFootprint": {
+            "title": "Infootprint",
+            "type": "boolean"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/ObligationInstrumentRef"
+          },
+          "lastVerifiedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastverifiedat"
+          },
+          "openChangeCount": {
+            "title": "Openchangecount",
+            "type": "integer"
+          },
+          "outsideReason": {
+            "items": {
+              "$ref": "#/components/schemas/OutsideReason"
+            },
+            "title": "Outsidereason",
+            "type": "array"
+          },
+          "pendingApplicability": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pendingapplicability"
+          },
+          "refLabel": {
+            "title": "Reflabel",
+            "type": "string"
+          },
+          "scope": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeDimension"
+            },
+            "title": "Scope",
+            "type": "array"
+          },
+          "stableKey": {
+            "title": "Stablekey",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryRef"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalizedText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "upcomingVersion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObligationVersionRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObligationVersionRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "stableKey",
+          "refLabel",
+          "title",
+          "instrument",
+          "bindingLevel",
+          "binding",
+          "dutyType",
+          "tags",
+          "scope",
+          "version",
+          "upcomingVersion",
+          "inFootprint",
+          "outsideReason",
+          "lastVerifiedAt",
+          "openChangeCount",
+          "pendingApplicability",
+          "complianceStatus"
+        ],
+        "title": "ObligationRow",
+        "type": "object"
+      },
+      "ObligationVersionRef": {
+        "description": "A summary version by number and the date it takes effect; null means since the\nobligation began (INV-04).",
+        "properties": {
+          "effectiveFrom": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartialDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "versionNumber": {
+            "title": "Versionnumber",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "versionNumber",
+          "effectiveFrom"
+        ],
+        "title": "ObligationVersionRef",
+        "type": "object"
+      },
       "Onboarding": {
         "properties": {
           "steps": {
@@ -1319,6 +1654,27 @@
         "title": "OnboardingStep",
         "type": "object"
       },
+      "OutsideReason": {
+        "description": "A dimension in which none of the record's terms is in the footprint (FP-03).",
+        "properties": {
+          "dimension": {
+            "$ref": "#/components/schemas/LibraryRef"
+          },
+          "terms": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryRef"
+            },
+            "title": "Terms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dimension",
+          "terms"
+        ],
+        "title": "OutsideReason",
+        "type": "object"
+      },
       "PageQuery": {
         "description": "Pagination on every list (playbook 10): `limit` default 20, max 100, `offset`.\nThe numbers come from settings; a value above the maximum is a 422, not a clamp.",
         "properties": {
@@ -1337,6 +1693,26 @@
           }
         },
         "title": "PageQuery",
+        "type": "object"
+      },
+      "PartialDate": {
+        "description": "A legal date with its precision: day, month, quarter or year (playbook 4.3, INV-S10).",
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "precision": {
+            "title": "Precision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "precision"
+        ],
+        "title": "PartialDate",
         "type": "object"
       },
       "PasskeyAssertBody": {
@@ -2233,6 +2609,32 @@
           "label"
         ],
         "title": "RoleRef",
+        "type": "object"
+      },
+      "ScopeDimension": {
+        "description": "The record's terms in one dimension (FP-01). An empty list means no restriction in\nthat dimension; `allSelected` means every active term of it is carried.",
+        "properties": {
+          "allSelected": {
+            "title": "Allselected",
+            "type": "boolean"
+          },
+          "dimension": {
+            "$ref": "#/components/schemas/LibraryRef"
+          },
+          "terms": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryRef"
+            },
+            "title": "Terms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dimension",
+          "terms",
+          "allSelected"
+        ],
+        "title": "ScopeDimension",
         "type": "object"
       },
       "SecurityEventOut": {
@@ -4623,6 +5025,149 @@
         "summary": "Revoke My Session",
         "tags": [
           "Identity"
+        ]
+      }
+    },
+    "/api/v1/obligations": {
+      "get": {
+        "operationId": "listObligations",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "instrument",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Instrument"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dutyType",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dutytype"
+            }
+          },
+          {
+            "in": "query",
+            "name": "term",
+            "required": false,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Term",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "asOf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Asof"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outsideFootprint",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Outsidefootprint",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObligationPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "List Obligations",
+        "tags": [
+          "Library"
         ]
       }
     },

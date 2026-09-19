@@ -61,10 +61,18 @@ class RequestIdMiddleware:
 
 
 class RequestIdLogFilter(logging.Filter):
-    """Attaches the current request ID to every log record (settings.LOGGING)."""
+    """Attaches the current request ID to every log record (settings.LOGGING). Django's
+    request logger attaches the request itself to every 4xx and 5xx, and its repr carries
+    the query string, where a person's search (`q`) travels: it is reduced to the method
+    and the route pattern (playbook 4.7)."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.request_id = _request_id.get()
+        request = getattr(record, "request", None)
+        # Django logs a refused request after RequestIdMiddleware has reset the context, so the
+        # id then comes from the request. A record passes each handler's filter in turn.
+        record.request_id = getattr(record, "request_id", None) or _request_id.get() or getattr(request, "request_id", None)
+        if isinstance(request, HttpRequest):
+            record.request = f"{request.method} {loggable_route(request)}"
         return True
 
 

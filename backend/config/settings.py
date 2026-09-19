@@ -343,6 +343,13 @@ API_PAGE_SIZE_MAX = env_int("API_PAGE_SIZE_MAX", 100)
 LIBRARY_DIFF_MAX_SENTENCES = env_int("LIBRARY_DIFF_MAX_SENTENCES", 50)
 
 # ---------------------------------------------------------------------------------------
+# ===== INV-03 library reads ==============================================================
+# The most scope terms (`?term=dimension:key`) one list read accepts; they are resolved
+# in one query, so the bound keeps that query and the URL short.
+# ---------------------------------------------------------------------------------------
+LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------
