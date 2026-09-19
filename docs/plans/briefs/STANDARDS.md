@@ -1380,7 +1380,7 @@ No new permission.
  "title": "Add sector scope and standards to the watch-sweeper prompt",
  "summary": "Replace 'banks and insurers' with the PRD's scope sentence. Add a Scope section: an out_of_scope count, and nothing registered. Add a Standards section:\n- publication facts only;\n- never fetch, quote, summarise, translate or restate a standard's text, from a page or from memory;\n- never propose an obligation per clause or control;\n- a 403 or a challenge is a failed check that is never worked around;\n- never fetch a page of an inactive standards_body source;\n- a law that cites a standard gets no standard term.\nReplace the hard-coded dimensions with 'every dimension whose restricts_footprint is true or whose kind is opt_in'.",
  "owned_paths": [
-  "agents/watch-sweeper/v1/prompt.md"
+  "backend/agents/watch-sweeper/v1/prompt.md"
  ],
  "depends_on": [
   "STD-02"
@@ -1394,7 +1394,7 @@ No new permission.
  "title": "Extend the watch-sweeper definition and run stats",
  "summary": "Add instrument_level, jurisdiction, relation_type, duty_type and provision_kind to vocabularies_read_at_run_start. Mention standards in the description. Accept and show an out_of_scope count in AgentRunFinish and in the run history.",
  "owned_paths": [
-  "agents/watch-sweeper/v1/definition.yaml",
+  "backend/agents/watch-sweeper/v1/definition.yaml",
   "backend/apps/agents/schemas.py",
   "backend/apps/agents/tests_scenarios.py"
  ],
@@ -1412,7 +1412,7 @@ No new permission.
  "summary": "Add authored texts, never copied from a publisher:\n- at least four off-sector rows with expected.in_scope false;\n- a DORA text citing ISO/IEC 27001, with in_scope true and no standard term;\n- three standards rows that expect scope.standard: a new edition with a transition key date, an accreditation transition rule, and a draft for comment.\nDocument in_scope and the authored-text rule in the README.",
  "owned_paths": [
   "backend/eval/classification.jsonl",
-  "agents/watch-sweeper/v1/evals/cases.jsonl",
+  "backend/agents/watch-sweeper/v1/evals/cases.jsonl",
   "backend/eval/README.md"
  ],
  "depends_on": [
@@ -1713,7 +1713,7 @@ No new permission.
 - C:\Users\Alex\projects\grc\backend\scripts\requirements_coverage.py (a PRD requirement without a scenario, or an @e2e scenario without a test or test.fixme title, fails)
 - C:\Users\Alex\projects\grc\backend\apps\register\app.md (REG-01 to REG-07, REG-S1 to REG-S11), cases\app.md CAS-S1 (one case per tenant with footprint_match), watch\app.md WAT-S2 (one record per reform), home\app.md §3 and HOM-S5 (the calendar feed carries public facts only), tenants\app.md TEN-S2 (vocab.manage)
 - C:\Users\Alex\projects\grc\backend\apps\library\fixtures\prototype_data.json (instrument levels with null kind, relation types implements, elaborates and related; source kinds; six regimes; 15 instruments; proposals new_obligation_version, new_obligation and reverification)
-- C:\Users\Alex\projects\grc\agents\watch-sweeper\v1\prompt.md:8-9, :41, :80-81 and definition.yaml:8, :62-70
+- C:\Users\Alex\projects\grc\backend\agents\watch-sweeper\v1\prompt.md:8-9, :41, :80-81 and definition.yaml:8, :62-70
 - C:\Users\Alex\projects\grc\frontend\src\features\library\obligation-presentation.ts (binding pill branch); design\system\pills-and-labels.md
 - Reported by the research maps, not verified here: ISO End Customer Licence Agreement (updated 2026-05-29) https://www.iso.org/terms-conditions-licence-agreement.html; https://www.iso.org/copyright.html; https://www.iso.org/standard/27001
 - Reported, not verified: PCI SSC terms https://www.pcisecuritystandards.org/terms_and_conditions/ and the PCI DSS v4.0.1 notes on blog.pcisecuritystandards.org

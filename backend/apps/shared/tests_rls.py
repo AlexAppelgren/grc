@@ -31,6 +31,10 @@ from apps.shared.models import AuditEvent, Tenant
 # The only tables whose policy carries the identity-lookup clause (apps/shared/tenancy.py):
 # the auth layer reads them before a tenant is known. Adding one here is a review question.
 IDENTITY_LOOKUP_TABLES = frozenset({"invitation", "membership", "user_session", "api_key"})
+# Permissive policies OR together, so any policy beside tenant_isolation widens what a
+# tenant table shows or accepts. agent_run's adds reading library runs (agents 0001).
+# Adding one here is a review question.
+OTHER_POLICIES = frozenset({("agent_run", "library_runs_visible")})
 
 
 def tenant_scoped_models() -> list[type[Model]]:
@@ -54,7 +58,7 @@ class RowLevelSecurityGuard(TestCase):
         self.assertIn("audit_event", tables)
         self.assertIn("outbox_event", tables)
         # instrument and obligation: "shared or mine" on owner_tenant_id (INPUT_DELTAS §5).
-        for table in ("membership", "tenant_role", "invitation", "user_session", "api_key", "login_event", "support_access", "instrument", "obligation", "problem_report"):
+        for table in ("membership", "tenant_role", "invitation", "user_session", "api_key", "login_event", "support_access", "instrument", "obligation", "problem_report", "agent_run"):
             self.assertIn(table, tables)
 
     def test_only_the_named_tables_carry_the_identity_lookup_clause(self) -> None:
@@ -67,6 +71,16 @@ class RowLevelSecurityGuard(TestCase):
             "the identity-lookup clause is for the tables the auth layer reads before a tenant is known; "
             "update IDENTITY_LOOKUP_TABLES and say why",
         )
+
+    def test_only_the_named_policies_sit_beside_the_tenant_policy(self) -> None:
+        tables = [model._meta.db_table for model in tenant_scoped_models()]
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute(
+                "SELECT tablename, policyname FROM pg_policies WHERE tablename = ANY(%s) AND policyname <> %s",
+                [tables, POLICY_NAME],
+            )
+            others = frozenset(cursor.fetchall())
+        self.assertEqual(others, OTHER_POLICIES, "a second policy widens its table; update OTHER_POLICIES and say why")
 
     def test_every_tenant_table_has_forced_rls_and_a_tenant_policy(self) -> None:
         problems: list[str] = []

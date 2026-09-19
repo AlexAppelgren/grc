@@ -45,7 +45,7 @@ earlier ones.
 ### 2.1 Repo shape and stack
 - [x] `docker-compose.yml` and `infra/db/init.sql` (Postgres 16 with pgvector, Redis, roles `cw_migrator` and `cw_app`)
 - [x] Exact version pins in `backend/pyproject.toml` and `frontend/package.json` (ADR 0019); deviations recorded there. 2026-09-19: every package moved to its newest release, Django 6.1.1 and TypeScript 7.0.2 included (ADR 0025)
-- [x] `agents/` directory with the first versioned definition skeleton
+- [x] `agents/` directory with the first versioned definition skeleton (moved to `backend/agents/` in chunk 5, so the API image carries it)
 
 ### 2.2 Backend skeleton
 - [x] `config/settings.py` with the boot guards of playbook 11.1 (deployed detection, DEBUG, SECRET_KEY, E2E flag, mock adapters, database role, local storage)

@@ -102,7 +102,6 @@ passes on an empty app.
 ├── README.md                # quick start + links, nothing else
 ├── .mcp.json                # Green Design System MCP for token and component lookups
 ├── design/                  # prototype/, system/ (cards), brand/ (logo)
-├── agents/                  # versioned agent definitions: prompt, tools, skills, evals
 ├── docs/
 │   ├── PLAYBOOK.md          # this file
 │   ├── CONVENTIONS.md       # architecture and conventions (Sections 4 to 18)
@@ -118,6 +117,7 @@ passes on an empty app.
 ├── backend/                 # Django + Django Ninja, Poetry
 │   ├── apps/<app>/          # models, schemas, logic, api, app.md, tests_*
 │   ├── apps/shared/         # auth, permissions, tenancy, audit, vocabulary base, storage, adapters, seed, guards
+│   ├── agents/              # versioned agent definitions: prompt, tools, skills, evals (the image seeds from them)
 │   ├── config/              # settings.py, test_settings.py, urls.py (/api/v1)
 │   ├── scripts/             # compliance_check.py, coverage_gate.py, requirements_coverage.py, contract_drift.py, search_eval.py
 │   └── run.sh / run.ps1     # Poetry wrapper that unsets VIRTUAL_ENV
@@ -1138,8 +1138,10 @@ always does.
   refuses a mock at boot. Before implementing a real provider, fetch its
   current documentation and record what you relied on in
   `Verification_Log.md`. Provider APIs move and are not to be recalled.
-- **The app is the scheduler of record.** `agents/` holds versioned
-  definitions (prompt, tools, skills) that only the platform changes.
+- **The app is the scheduler of record.** `backend/agents/` holds versioned
+  definitions (prompt, tools, skills) that only the platform changes. They sit
+  under `backend/` because the API image builds from it and the deploy seeds
+  from them.
   `apps/agents` holds per-tenant settings, schedules, research requests, runs
   and budgets. The worker starts runs and updates them from runner events.
 - **A tenant admin controls** which agents are on, cadence within plan

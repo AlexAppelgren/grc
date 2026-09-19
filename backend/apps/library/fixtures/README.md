@@ -148,7 +148,7 @@ to `proposal`, "Supervision", "Enforcement" and "Recurring date" to their keys.
   one label.
 - **The tenant budget** shows a cap and a spent figure with no currency; EUR is assumed
   and noted in the row.
-- **Agent `kind`** in `agents/watch-sweeper/v1/definition.yaml` is `watch`, the Phase 0
+- **Agent `kind`** in `backend/agents/watch-sweeper/v1/definition.yaml` is `watch`, the Phase 0
   skeleton's contract; schema.sql's `agent_kind` enum says `research`. The seed of
   `agent_definition` rows (chunk 5) settles which, and `tenant_agents.agent` here uses the
   definition ids `watch-sweeper`, `reverifier`, `so-what-drafter`, `private-source-watch`;

@@ -1595,7 +1595,7 @@ A change's jurisdiction terms are derived from its authority when matching. GET 
 
 At run start the scheduler builds the scope from the market levels, unless tenant_agent.scope names jurisdictions, and stores a copy on agent_run. The builder never reads tenant rows for a platform run. A new watch-sweeper prompt version orders the budget by level.
 
-**Owned paths:** `backend/apps/agents/logic.py`, `backend/apps/agents/models.py`, `agents/watch-sweeper/v2/prompt.md`
+**Owned paths:** `backend/apps/agents/logic.py`, `backend/apps/agents/models.py`, `backend/agents/watch-sweeper/v2/prompt.md`
 
 **Done when:** test_agt_s11 is green, and AGT-S5 stays green.
 
@@ -1879,7 +1879,7 @@ Escalation goes to the head of the department of the owner's teams, together wit
 - C:\Users\Alex\projects\grc\design\system\navigation.md:15, 71-83 (at most four dock destinations; More sheet)
 - C:\Users\Alex\projects\grc\design\screens\admin-footprint.html:268-282 (Jurisdictions chips designed)
 - C:\Users\Alex\projects\grc\design\screens\tenant-today.html:106-110 (Decide now: triage, sign-offs, agent proposals)
-- C:\Users\Alex\projects\grc\agents\watch-sweeper\v1\prompt.md:16 (scope arrives at run start)
+- C:\Users\Alex\projects\grc\backend\agents\watch-sweeper\v1\prompt.md:16 (scope arrives at run start)
 - git: 7613874 (PRD 0.2), 51f9efa (chunk 3 data layer), e629481 (navigation specification, current main)
 - https://linear.app/docs/my-issues
 - https://linear.app/docs/assigning-issues

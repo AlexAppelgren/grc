@@ -561,8 +561,9 @@ split: `members.manage`, `roles.manage`, `vocab.manage`, `workflow.manage`,
 `llm`, `embedder` and `agent_runner` each have one interface, a mock for
 tests and E2E, and real providers chosen by a setting; production refuses a
 mock at boot; fetch provider docs before implementing one and record them in
-`Verification_Log.md`. The app is the scheduler of record: `agents/` holds
-versioned definitions only the platform changes; `apps/agents` holds
+`Verification_Log.md`. The app is the scheduler of record: `backend/agents/`
+holds versioned definitions only the platform changes (inside the API image,
+which builds from `backend/` and seeds from them); `apps/agents` holds
 per-tenant settings, schedules, research requests, runs and budgets. A tenant
 admin controls which agents are on, cadence within plan limits, scope, run
 now, pause, interrupt, history with findings and cost, a monthly budget cap

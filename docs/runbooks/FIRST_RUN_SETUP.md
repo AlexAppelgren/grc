@@ -19,7 +19,7 @@ in the entrypoint says what silently breaks without it.
 | System vocabularies | Tier-two library vocabularies with their `kind` rows and defaults (instrument levels, provision kinds, change types, duty types, relation types, source kinds, term dimensions, urgency) | Pickers are empty and the vocabulary integrity guard fails |
 | Languages | `en`, `sv`, `da`, `nb`, `fi` with their text search configurations | No translation row can be written; search chunks cannot be indexed |
 | Jurisdictions and authorities | EU, SE, DK, NO, FI and their authorities | Instruments cannot be created |
-| Agent definitions | The versioned definitions under `agents/` | Runs cannot be opened |
+| Agent definitions | The versioned definitions under `backend/agents/` | Runs cannot be opened |
 
 Tenant vocabularies (tier three) are created per tenant from the system
 defaults when the tenant is created, not by the deploy.

@@ -383,11 +383,11 @@ class StepUpAssertion(models.Model):
 
 class ApiKey(models.Model):
     """A scoped key for agents and integrations (ID-10). `tenant` null is a platform key.
-    `agent_id` becomes a foreign key in chunk 5."""
+    A key bound to an `agent` names that agent as the actor of everything it writes."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    agent_id = models.UUIDField(null=True, blank=True)
+    agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="api_keys")
     name = models.CharField(max_length=200)
     key_prefix = models.CharField(max_length=8, unique=True)
     key_hash = models.CharField(max_length=64)

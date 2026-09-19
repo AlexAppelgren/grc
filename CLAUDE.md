@@ -191,10 +191,10 @@ adapters, and starts a production Next build.
 
 ```
 PRD.md  CLAUDE.md  README.md  .mcp.json  docker-compose.yml  generate-types.sh
-design/    prototype/, system/ (cards), screens/, brand/      agents/  versioned definitions
+design/    prototype/, system/ (cards), screens/, brand/
 docs/      PLAYBOOK, CONVENTIONS, DECISIONS, adr/, plans/, inputs/, runbooks/, reviews/, security/, assurance/, TODO_FOR_alex.md
 infra/db/  init.sql (local roles and extensions)
-backend/   apps/<app>/, apps/shared/, config/, scripts/, run.sh, run.ps1   (Django + Ninja, Poetry)
+backend/   apps/<app>/, apps/shared/, agents/ (versioned definitions), config/, scripts/, run.sh, run.ps1   (Django + Ninja, Poetry)
 frontend/  src/app/ ((tenant) and (console) route groups), src/components/ (+ ui/Pill), src/features/<domain>/
            (api.ts, hooks.ts, *-presentation.ts), src/shared/ (api-client, format, logger, navigation, i18n),
            src/messages/, src/styles/ (tokens.generated.css, brand.css), src/types/api.generated.ts,

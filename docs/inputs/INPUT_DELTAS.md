@@ -142,6 +142,24 @@ writes, never an OpenAPI `enum`.
   trigger and requester columns on `agent_run`. Add only a `retag` kind to
   `research_request` and the batch proposal it produces (PRD AGT-05, PRO-04).
   `agent.runtime` and `tenant_agent.environment` become kinds in code.
+- `agent_kind` gains `watch` (chunk 5). Version 0.3 has `research`, `backfill`
+  and `reverify`; the first shipped definition,
+  `backend/agents/watch-sweeper/v1/definition.yaml`, declares `kind: watch`, which is
+  what sweeping registered sources for new documents is. It stays a tier-one
+  kind (§1): the scheduler branches on it and no admin adds one.
+- `agent.name` becomes `agent.key`, an immutable slug holding the definition's
+  `id`, because a library record is addressed by a key that never changes
+  (playbook 15). `agent` also gains `current_version`, the version folder the
+  reference seed loaded, until `agent_version` rows land with AGT-03.
+- `agent_run` gains `api_key_id` (the key that opened the run: R1 runs all come
+  through the agent API) and `idempotency_key`, unique per key, so a retried
+  `POST /agent-runs` returns the run it already opened instead of a second one.
+  A run's `tenant_id` is always its key's: a platform key opens library runs, a
+  tenant's key that tenant's runs. Reads are mixed, writes are not: a tenant
+  reads library runs but writes only its own, and a session with no tenant
+  writes only library runs (agents migration 0001).
+  The remaining v0.3 columns (`tenant_agent_id`, `agent_version_id`, `trigger`,
+  the cost and token columns) arrive with chunk 11.
 - The proposal queue is reviewed in the platform console by `library_editor`.
   The prototype shows the tenant's compliance officer approving agent
   proposals. That is the one place the prototype is wrong.

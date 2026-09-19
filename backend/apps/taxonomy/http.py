@@ -114,10 +114,12 @@ def caller_tenant(request: HttpRequest) -> Any:
 
 
 def actor_for(request: HttpRequest, user: Any = None) -> Actor:
-    """The audit actor. A person's name may be in the audit log (playbook 4.7); an agent is
-    named by its key's id until agents have names of their own (chunk 5)."""
+    """The audit actor. A person's name may be in the audit log (playbook 4.7); an agent's
+    key names its agent (ID-10), and a key bound to none is still named by its own id."""
     who = principal(request)
     if who.kind is PrincipalKind.AGENT:
+        if who.agent_id is not None:
+            return Actor(kind=ActorType.AGENT, id=who.agent_id, label=who.agent_label)
         return Actor(kind=ActorType.AGENT, id=who.subject_id, label=f"api key {who.subject_id}")
     user = user if user is not None else caller_user(request)
     return Actor(kind=ActorType.USER, id=user.id, label=user.name)

@@ -102,7 +102,7 @@ agent on the principal only), `backend/apps/shared/management/commands/seed_refe
 
 Models per `schema.sql` `agent` and `agent_run` (v0.3, R1 columns only). `Agent`: immutable
 key, kind, description, active, current version; loaded idempotently by `seed_reference` from
-`agents/<agent>/v<n>/definition.yaml` (watch-sweeper v1). The definition says kind `watch`,
+`backend/agents/<agent>/v<n>/definition.yaml` (watch-sweeper v1). The definition says kind `watch`,
 which `AgentKind` lacks: add it or map it, and add an INPUT_DELTAS row saying which. `AgentRun`:
 agent, api_key, tenant nullable (null is a platform run for the shared library), started_at,
 finished_at, status (a kind), model, pipeline_version, stats (JSON with a named schema),

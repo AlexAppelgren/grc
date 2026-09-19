@@ -29,7 +29,7 @@ def resolve_api_key(plain: str) -> Principal | None:
     prefix, presented_hash = parsed
     now = timezone.now()
     with tenancy.identity_lookup():
-        key = ApiKey.objects.filter(key_prefix=prefix).first()  # ordering: key_prefix is unique, at most one row
+        key = ApiKey.objects.select_related("agent").filter(key_prefix=prefix).first()  # ordering: key_prefix is unique, at most one row
     if key is None or not tokens.constant_equal(presented_hash, key.key_hash):
         return None
     if key.revoked_at is not None or (key.expires_at is not None and key.expires_at <= now):
@@ -41,7 +41,14 @@ def resolve_api_key(plain: str) -> Principal | None:
         key.last_used_at = now
         key.save(update_fields=["last_used_at"])
         log_event(event=LoginEventKind.KEY_USED, method=LoginMethod.API_KEY, success=True, request=None, tenant_id=key.tenant_id, api_key=key)
-    return Principal(kind=PrincipalKind.AGENT, subject_id=key.id, tenant_id=key.tenant_id, scopes=frozenset(key.scopes))
+    return Principal(
+        kind=PrincipalKind.AGENT,
+        subject_id=key.id,
+        tenant_id=key.tenant_id,
+        scopes=frozenset(key.scopes),
+        agent_id=key.agent_id,
+        agent_label=key.agent.key if key.agent is not None else "",
+    )
 
 
 def _validate_scopes(values: Iterable[str]) -> list[str]:

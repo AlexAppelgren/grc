@@ -10,10 +10,10 @@
 .env.*
 !.env.example
 
-# Documentation, design and agent material never belong in an image
+# Documentation and design material never belong in an image. The agent definitions
+# live in backend/agents/: the API image needs them, because the deploy seeds from them.
 docs
 design
-agents
 *.md
 !frontend/THIRD_PARTY_NOTICES.md
 

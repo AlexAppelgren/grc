@@ -73,7 +73,7 @@ LIBRARY_WRITE_ALLOWLIST = frozenset(
     }
 )
 # Any path under these directories may call it too: reference seeds.
-LIBRARY_WRITE_ALLOWED_DIRS = ("shared/management/commands/", "library/seeds/", "taxonomy/seeds/")
+LIBRARY_WRITE_ALLOWED_DIRS = ("shared/management/commands/", "library/seeds/", "taxonomy/seeds/", "agents/seeds/")
 WRITE_METHODS = frozenset(
     {"save", "create", "update", "delete", "bulk_create", "bulk_update", "update_or_create", "get_or_create"}
 )

@@ -35,13 +35,19 @@ content screen ship (chunk 5). Definitions, tenant controls, research
 requests and the runner adapter are R2 (chunk 11). The first real runner is
 decided after that chunk (D-08).
 
+The records are in place ahead of the routes (AGT-01, `in_progress`): `agent`
+rows loaded from `backend/agents/<agent>/v<n>/definition.yaml` by `seed_reference`,
+`agent_run` as the provenance anchor of everything an agent writes, and
+`api_key.agent` so the audit log names the agent behind a key rather than the
+key's id (ID-10).
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | pending |
+| AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | in_progress |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | pending |
 | AGT-03 | Versioned agent definitions owned by the platform | M | R2 | pending |
 | AGT-04 | Tenant controls: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch | M | R2 | pending |

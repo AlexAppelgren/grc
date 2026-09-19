@@ -131,6 +131,7 @@ attestation window; and the licence and website terms of ISO, IAF, PCI SSC, SIS,
 DS, Standard Norge and SFS. The research reported blocked pages on some of
 these, and a row that cannot be fetched is logged as not verified, with the
 reason.
+- [ ] Agent definitions are read at seed time by a small reader in `backend/apps/agents/seeds/definition.py` instead of PyYAML, because PyYAML is a development dependency, the image installs `--only main`, and `seed_reference` runs on every deploy; changing dependencies was outside the package. It reads the five scalar fields the `agent` row needs and refuses anything else, and a test parses the same file with PyYAML and demands the two agree. Say the word and PyYAML moves to the main dependencies, after which the reader is deleted and the seed loads the whole definition — which is what chunk 11 needs anyway, when tools, budgets and vocabularies become columns.
 
 ## Before the first bank tenant
 - [ ] D-07: contract an EU-pinned inference path.

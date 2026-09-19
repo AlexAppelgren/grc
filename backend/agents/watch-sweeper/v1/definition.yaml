@@ -79,7 +79,7 @@ classification_contract:
 # other reading of it. A hit marks the document risk_flags ["embedded_instructions"];
 # the change is still registered from the factual content, and never acted on.
 content_screen:
-  patterns_in_evals: agents/watch-sweeper/v1/evals/cases.jsonl
+  patterns_in_evals: backend/agents/watch-sweeper/v1/evals/cases.jsonl
   outcome_flag: embedded_instructions
 
 budget_defaults:
