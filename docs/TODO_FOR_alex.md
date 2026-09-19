@@ -167,7 +167,7 @@ adopted. The ISO/IEC 27001:2022 transition MD 26 describes ended on
 
 ## Decisions the parallel build waits on (docs/plans/PARALLEL_PLAN.md section 7)
 
-**Answered 2026-09-19.** q-Q1: problem reports stay inside the bank, and the watch agents find library deviations themselves; retention was changed to "10 years after last use" with two details to confirm. The answers and what they mean are in `docs/plans/briefs/OWNER_RECOMMENDATIONS.md`, section "Alex's answers".
+**Answered 2026-09-19.** q-Q1: problem reports stay inside the bank, and the watch agents find library deviations themselves; retention was changed to "10 years after last use" with two details to confirm. Alex also decided that bleqq's own agents, the general finance regulation watch, are part of the base package and cannot be changed by a tenant; a tenant adds its own agents for its specific needs (item 14). The answers and what they mean are in `docs/plans/briefs/OWNER_RECOMMENDATIONS.md`, section "Alex's answers".
 
 Each involves a product invariant, so it waits for you rather than a default. "Needed by" counts hours from the plan's start on 2026-09-19 evening; answers by hour 6 cost nothing. The main agent's recommendation for the first four is in the chat of 2026-09-19.
 
