@@ -16,6 +16,8 @@ The main agent adds a row here whenever a review turns up such a finding.
 | H8 | Approval's audit rows carry `steppedUp: false` because `apply.py` does not pass the step-up id | chunk4-T3 review | low | chunk4-T6 (already in its task text) |
 | H9 | The obligations count evaluates `taxonomy_in_footprint` for every visible obligation, so the cost grows with the whole library, not the page (about 200 ms per 1,000 obligations) | chunk3-rest-T4 review | low, future risk | A set-based anti-join replacing the per-row function call; before the library passes a few hundred obligations |
 | H10 | Gunicorn's default access log writes every query string (`?q=` search text), client IP and user agent to stdout, and Sentry turns those lines into breadcrumbs whose message is not scrubbed | chunk3-rest-T4 review | high | Worktree `wt/log-no-query`, in progress; merges before chunk3-rest-T4 |
+| H11 | The app role can set `cw.maintenance` itself (in any letter case, since PostgreSQL setting names are case-insensitive), which switches every append-only trigger off; only a source lint stands in the way | chunk3-rest-T1 verification | medium | Task H-B below |
+| H12 | The `cw.maintenance` lint is case-sensitive; `LIBRARY_DIFF_MAX_SENTENCES` accepts 0, negatives and huge values (500 takes about 7 s per diff); library texts have no length limit, so a 200 KB text of short sentences costs about 0.5 s in version_diff | chunk3-rest-T1 verification | low | Task H-B below |
 
 ## Task H-A: three small guards (after chunk3-rest-T3 merges, which owns `apps/shared/schemas.py`)
 
@@ -36,3 +38,12 @@ permissions only), `backend/apps/shared/tests_hardening.py` (new).
 
 Gates: `apps.shared apps.identity apps.governance` tests, ruff, mypy, compliance lint,
 requirements coverage. Security review before merge (authentication).
+
+## Task H-B: the append-only guard the app role cannot switch off
+
+**Owned:** a new migration in `backend/apps/shared/migrations/` that replaces `cw_append_only_guard`, `backend/apps/shared/migration_helpers.py`, `backend/scripts/compliance_check.py`, `backend/apps/shared/tests_compliance_lint.py`, `backend/config/settings.py` (the diff cap's bounds only), `backend/apps/shared/tests_audit_on_write.py` or a new `tests_append_only.py`.
+
+1. H11: the guard function ignores `cw.maintenance` when `current_user` is the app role (compare against the role name the settings already know, never a hard-coded literal that could drift), so only the schema owner in a migration can use the hatch. Tests as `cw_app`: `SET LOCAL cw.maintenance = 'on'` and `SET LOCAL CW.MAINTENANCE = 'on'` still leave UPDATE and DELETE refused on every append-only table; the migration role can still use it inside a migration.
+2. H12: the lint matches `cw\s*\.\s*maintenance|maintenance_setting` case-insensitively, with an upper-case plant in its test; the diff cap refuses to boot outside 1 to 200; a library text longer than a setting (`LIBRARY_TEXT_MAX_CHARS`, env override) is diffed as one delete and one insert, with a test.
+
+Gates: `apps.shared apps.library` tests under coverage, ruff, mypy, compliance lint, migrate_from_zero. Security review before merge.
