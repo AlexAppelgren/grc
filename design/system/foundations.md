@@ -267,6 +267,7 @@ Every text pair the design uses, lowest first. All pass 4.5:1.
 | muted text on accent (count or role on the current row) | 4.69 | 5.66 |
 | muted text on sand | 5.06 | 7.50 |
 | muted text on subtle | 5.13 | 7.93 |
+| negative text on the danger hover tint | 5.24 | 5.40 |
 | muted text on rail | 5.26 | 8.96 |
 | muted text on page / surface | 5.60 | 8.96 / 7.93 |
 | tab label on the tab bar (muted text on surface) | 5.60 | 7.93 |

@@ -91,6 +91,9 @@ const PAIRS: Pair[] = [
   { name: 'on-brand-muted on the brand surface', fg: '--bleqq-on-brand-muted', bg: '--gds-sys-color-l2-brand-01' },
   { name: 'button text on button', fg: '--gds-sys-color-content-neutral-03', bg: '--gds-sys-color-l3-neutral-03' },
   { name: 'negative on surface (danger button)', fg: '--gds-sys-color-content-negative-01', bg: '--gds-sys-color-l2-neutral-02' },
+  // The danger button's hover fill, which differs by theme (theme.css
+  // --negative-hover): l3-negative-02 in light, one step deeper in dark.
+  { name: 'negative on danger hover', fg: '--gds-sys-color-content-negative-01', bg: '--negative-hover' },
   { name: 'warning on surface (date emphasis)', fg: '--gds-sys-color-content-warning-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'positive on surface (date emphasis)', fg: '--gds-sys-color-content-positive-03', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'notice on surface (date emphasis)', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-neutral-02' },

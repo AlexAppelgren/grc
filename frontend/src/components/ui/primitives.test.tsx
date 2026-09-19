@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Button, ButtonBar } from './Button';
 import { CheckGroup, CheckRow, Field, Select, TextArea, TextInput } from './Field';
 import { Modal } from './Modal';
+import { PageHead } from './PageHead';
 import { Meta, Panel, Row, Rows } from './Panel';
 import { ErrorState, LoadingState, NotFoundScreen, ProblemAlert, StatusLine } from './States';
 
@@ -31,6 +32,9 @@ describe('Button and ButtonBar', () => {
     expect(screen.getByRole('button', { name: 'one' })).toHaveAttribute('type', 'button');
     expect(screen.getByRole('button', { name: 'three' })).toHaveAttribute('type', 'submit');
     expect(screen.getByRole('button', { name: 'two' }).className).toContain('text-negative');
+    // The danger hover fill is its own token, because dark needs a deeper one
+    // to keep the label at AA (theme.css --negative-hover).
+    expect(screen.getByRole('button', { name: 'two' }).className).toContain('hover:bg-negative-hover');
     // The primary is last in DOM order, so it sits on the right (playbook 6.8).
     const buttons = screen.getAllByRole('button');
     expect(buttons.at(-1)).toHaveTextContent('three');
@@ -95,6 +99,28 @@ describe('Field family', () => {
     expect(screen.getByLabelText('pick').tagName).toBe('SELECT');
   });
 
+  it('reads the group hint under the legend, before the first option, and describes the fieldset with it', () => {
+    const { container } = render(
+      <CheckGroup legend="Regimes" hint="Not restricted: every option applies.">
+        <CheckRow id="r" label="AML" checked={false} />
+      </CheckGroup>,
+    );
+    const hint = screen.getByText('Not restricted: every option applies.');
+    expect(hint.id).not.toBe('');
+    expect(container.querySelector('fieldset')).toHaveAttribute('aria-describedby', hint.id);
+    // The rule is heard before the options, not after the last one.
+    expect(hint.compareDocumentPosition(screen.getByLabelText('AML')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('leaves the fieldset undescribed when the group has no hint', () => {
+    const { container } = render(
+      <CheckGroup legend="Regimes">
+        <CheckRow id="r" label="AML" checked={false} />
+      </CheckGroup>,
+    );
+    expect(container.querySelector('fieldset')).not.toHaveAttribute('aria-describedby');
+  });
+
   it('check rows report changes and a group shows its error', () => {
     const onChange = vi.fn();
     render(
@@ -108,6 +134,13 @@ describe('Field family', () => {
     expect(screen.getByLabelText(/Admin/)).toBeDisabled();
     expect(screen.getByRole('alert')).toHaveTextContent('Pick at least one role.');
     expect(screen.getByText('Pick some')).toBeInTheDocument();
+  });
+});
+
+describe('PageHead', () => {
+  it('holds the actions in an ml-auto wrapper, so an action that wraps stays on the right', () => {
+    render(<PageHead title="Regulatory scope" actions={<Button variant="danger">Propose a change</Button>} />);
+    expect(screen.getByRole('button', { name: 'Propose a change' }).parentElement?.className).toContain('ml-auto');
   });
 });
 

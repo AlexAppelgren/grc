@@ -6,7 +6,9 @@ import { cn } from '@/shared/utils/cn';
 // foundations.md "Button" (shadcn's Button on Green's colours): 36px, 16px
 // sides, 6px radius, `body` at 500 in sentence case, 8px icon gap. Primary is
 // neutral, never brand green. Hover on outline and ghost is Green's
-// state-neutral-05 overlay (`hover-fill`, theme.css).
+// state-neutral-05 overlay (`hover-fill`, theme.css); danger hovers on
+// `negative-hover`, a fill that goes one step deeper in dark so the label
+// keeps AA on it (theme.css).
 const button = cva(
   'inline-flex items-center justify-center gap-2 rounded-control border text-body font-medium whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:size-4',
   {
@@ -15,7 +17,7 @@ const button = cva(
         primary: 'border-button bg-button text-on-button enabled:hover:bg-[color-mix(in_srgb,var(--color-button)_88%,var(--color-page))]',
         outline: 'border-line-control bg-surface text-fg enabled:hover:hover-fill',
         ghost: 'border-transparent bg-transparent text-fg enabled:hover:hover-fill',
-        danger: 'border-line-control bg-surface text-negative enabled:hover:bg-negative-soft',
+        danger: 'border-line-control bg-surface text-negative enabled:hover:bg-negative-hover',
       },
       size: {
         default: 'h-9 px-4',

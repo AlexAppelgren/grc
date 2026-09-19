@@ -62,6 +62,10 @@
   --color-positive: var(--gds-sys-color-content-positive-03);
   --color-notice: var(--gds-sys-color-content-notice-01);
   --color-negative-soft: var(--gds-sys-color-l3-negative-02);
+  /* The danger button's hover fill. It has to differ by theme: in dark,
+     negative text on l3-negative-02 is 4.47:1 and fails AA, so dark goes one
+     step deeper to -03 (5.40:1). Pinned by contrast.test.ts. */
+  --color-negative-hover: var(--negative-hover);
   --color-warning-soft: var(--gds-sys-color-l3-warning-02);
   --color-positive-soft: var(--gds-sys-color-l3-positive-02);
   --color-notice-soft: var(--gds-sys-color-l3-notice-02);
@@ -181,6 +185,7 @@
   --sidebar-hover: var(--gds-sys-color-state-neutral-05);
   --hairline: var(--gds-sys-color-border-neutral-02);
   --subtle: var(--gds-sys-color-l1-neutral-02);
+  --negative-hover: var(--gds-sys-color-l3-negative-02);
   color-scheme: light;
 }
 
@@ -198,6 +203,9 @@
   --hairline: var(--gds-sys-color-border-neutral-03);
   /* Dark l1-neutral-02 is the page itself, so the muted fill is l2-neutral-01. */
   --subtle: var(--gds-sys-color-l2-neutral-01);
+  /* One step deeper than light's hover fill: negative text on l3-negative-02
+     measures 4.47:1 in dark (foundations.md "Restricted setting"). */
+  --negative-hover: var(--gds-sys-color-l3-negative-03);
   /* color-scheme follows the nearest theme class, so native controls and the
      pill's light-dark() background (Pill.tsx) switch with a .dark wrapper. */
   color-scheme: dark;

@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 
 import { cn } from '@/shared/utils/cn';
 
@@ -60,13 +60,23 @@ export function CheckRow({ id, label, hint, checked, disabled, onChange }: { id:
   );
 }
 
-/** A group of check rows under one legend. */
+/**
+ * A group of check rows under one legend. The hint sits directly under the
+ * legend, so it is read before the options rather than after the last one,
+ * and the fieldset points at it with aria-describedby (foundations.md
+ * "Restricted setting"). The error keeps role="alert".
+ */
 export function CheckGroup({ legend, hint, error, children }: { legend: string; hint?: string; error?: string; children: ReactNode }) {
+  const hintId = `${useId()}-hint`;
   return (
-    <fieldset className="mb-3 grid gap-0 border-0 p-0">
+    <fieldset className="mb-3 grid gap-0 border-0 p-0" aria-describedby={hint !== undefined ? hintId : undefined}>
       <legend className="mb-1 font-medium">{legend}</legend>
+      {hint !== undefined ? (
+        <span id={hintId} className="mb-1.5 text-meta text-muted">
+          {hint}
+        </span>
+      ) : null}
       {children}
-      {hint !== undefined ? <span className="mt-1 text-meta text-muted">{hint}</span> : null}
       {error !== undefined ? (
         <span role="alert" className="mt-1 text-meta text-negative">
           {error}
