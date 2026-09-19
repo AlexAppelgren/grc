@@ -37,7 +37,7 @@ coverage = "7.16.1"
 # PyYAML reads docs/inputs/openapi.yaml in scripts/contract_drift.py. Not in the brief's
 # pin list; newest at resolve time, recorded in the Phase 0 report.
 pyyaml = "6.0.3"
-types-pyyaml = "6.0.12.20250915"
+types-pyyaml = "6.0.12.20260906"
 
 # ---------------------------------------------------------------------------------------
 # ruff: correctness classes only (playbook 9). Every excluded rule names its reason below.
