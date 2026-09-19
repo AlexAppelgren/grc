@@ -358,6 +358,8 @@ Each runs in its own worktree (`docs/runbooks/WORKTREES.md`). T01 waits for chun
 
 ### T01: Seed Banking and Payments, and stop the seed undoing proposals
 
+**Added 2026-09-19 (found by chunk4-T2):** the same fault exists for every library vocabulary list, not only taxonomy terms. `seed_reference` resets sort order, the active flag and the default of library list rows on every deploy, so an approved reorder, retire or default change is undone by the next deploy. T01 applies the same rule to those rows: write sort order, active and default only when the seed creates the row, and prove with a test that an approved reorder survives a second seed run.
+
 **Depends on:** nothing
 
 In the prototype fixture's taxonomy_terms, add regime:banking (Banking / Bankverksamhet, sort_order 7) and regime:payments (Payments / Betalningar, sort_order 8), both from_prototype false. Change the fixture's regime usage note as in spec §5. Add both terms to example-group's footprint_terms (added_by erik, same added_at as the others) and to tenant A in EXPECTED_FOOTPRINTS in e2e_seed.py. In seeds/__init__.py, seed_taxonomy_terms writes sort_order, is_system and active only when it creates a term, and records taxonomy.term_created (system actor seed_reference; after carries dimension, key and labels) for each term it creates, as the library seed does with library.seeded. Add tests: seeding creates both keys with en and sv labels and keeps every earlier (dimension, key); a second run creates and records nothing; a term whose sort_order changed after seeding keeps it on the next run.
