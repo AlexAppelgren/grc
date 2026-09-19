@@ -52,7 +52,10 @@ cutting a corner. The heaviest gates were the local CI mirror's CodeQL, the full
 and the two container scans, run before every push on a 16 GB machine that also hosts the
 parallel worktrees. `main` now reaches GitHub only through `scripts/ship.sh`:
 
-1. The local tiered gates run without the heavy ones (`scripts/prepush.sh --quick`).
+1. The local fast static gates run (`scripts/prepush.sh --quick`: secrets, lockfiles, migration
+   drift, lint, types, compliance, requirements and contract checks, OpenAPI drift). The test
+   suites, coverage floors, production build, E2E, CodeQL and image scans run in step 3, on
+   GitHub's runners, where the whole CI takes about four minutes against more than ten locally.
 2. The commit is pushed to `candidate`, a branch that only ever holds the next candidate for
    `main` and is force-pushed each time. It is not the `staging` of tranche 2 above.
 3. `ci.yml` and `codeql.yml` are started on `candidate` by hand. A manual run in `ci.yml` is a

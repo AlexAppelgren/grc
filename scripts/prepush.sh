@@ -5,9 +5,12 @@
 #
 #   bash scripts/prepush.sh          the gates for what changed since origin/main
 #   bash scripts/prepush.sh --all    every gate, full E2E suite (what the nightly run does)
-#   bash scripts/prepush.sh --quick  the tiered gates without CodeQL, E2E and the container
-#                                    scans; only scripts/ship.sh uses it, because it then runs
-#                                    those in the real CI on `candidate` before main moves
+#   bash scripts/prepush.sh --quick  the fast static gates only (secrets, lockfiles, migration
+#                                    drift, lint, types, compliance, requirements and contract
+#                                    checks, OpenAPI drift). Test suites, coverage, the
+#                                    production build, E2E, CodeQL and image scans are left to
+#                                    the real CI, which scripts/ship.sh runs on `candidate`
+#                                    before main moves
 #
 # "Changed" is the committed, uncommitted and untracked work since origin/main. Tiers
 # mirror the `changes` job in ci.yml: backend, frontend, lockfiles, containers, and a
@@ -99,7 +102,7 @@ while IFS= read -r f; do
   case "$f" in *.py) py=1 ;; *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) js=1 ;; esac
 done <<< "$(git diff --name-only "origin/main...$snapshot")"
 [ "$full" = 1 ] && be=1 fe=1 lock=1 cont=1 py=1 js=1
-[ "$quick" = 1 ] && echo "prepush: quick: CodeQL, E2E and the container scans are left to CI on candidate (scripts/ship.sh)"
+[ "$quick" = 1 ] && echo "prepush: quick: static gates only; tests, build, E2E, CodeQL and image scans run in CI on candidate (scripts/ship.sh)"
 echo "prepush: full=$full backend=$be frontend=$fe lockfiles=$lock containers=$cont codeql-python=$py codeql-js=$js"
 
 timings=()
@@ -164,16 +167,18 @@ done
 
 if [ "$be" = 1 ]; then  # ci.yml `backend`
   gate "Backend: migration drift" backend bash ./run.sh run python manage.py makemigrations --check --dry-run --settings=config.test_settings
-  gate "Backend: migration graph from zero" backend bash ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings
-  gate "Backend: tests under coverage" backend bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput
-  gate "Backend: coverage report" backend bash ./run.sh run coverage report
-  gate "Backend: coverage floors" backend bash ./run.sh run python scripts/coverage_gate.py
+  if [ "$quick" = 0 ]; then
+    gate "Backend: migration graph from zero" backend bash ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings
+    gate "Backend: tests under coverage" backend bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput
+    gate "Backend: coverage report" backend bash ./run.sh run coverage report
+    gate "Backend: coverage floors" backend bash ./run.sh run python scripts/coverage_gate.py
+  fi
   gate "Backend: ruff" backend bash ./run.sh run ruff check .
   gate "Backend: mypy" backend bash ./run.sh run mypy
   gate "Backend: compliance lint" backend bash ./run.sh run python scripts/compliance_check.py --all
   gate "Backend: requirements coverage" backend bash ./run.sh run python scripts/requirements_coverage.py
   gate "Backend: contract drift" backend bash ./run.sh run python scripts/contract_drift.py
-  gate "Backend: search evaluation" backend bash ./run.sh run python scripts/search_eval.py
+  [ "$quick" = 0 ] && gate "Backend: search evaluation" backend bash ./run.sh run python scripts/search_eval.py
 fi
 
 if [ "$be" = 1 ] || [ "$fe" = 1 ]; then  # ci.yml `openapi-types-drift`, against the work before regeneration
@@ -184,7 +189,9 @@ fi
 
 export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:8000}"
 if [ "$fe" = 1 ]; then  # ci.yml `frontend`
-  for step in build:tokens lint typecheck test:coverage check:messages check:copy-drift build; do
+  steps="build:tokens lint typecheck test:coverage check:messages check:copy-drift build"
+  [ "$quick" = 1 ] && steps="build:tokens lint typecheck check:messages check:copy-drift"
+  for step in $steps; do
     gate "Frontend: $step" frontend npm run "$step"
   done
 fi
