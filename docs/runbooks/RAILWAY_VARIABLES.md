@@ -44,6 +44,14 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `MAIL_*` (`MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`) | api, worker | unset | unset | the EU transactional sender | SPF and DKIM on the sending domain |
 | `LLM_PROVIDER` | api, worker | `mock` | `mock` | `anthropic` | `mock`, `anthropic`, `bedrock` (D-07, ADR 0007) |
 | `ANTHROPIC_API_KEY` | api, worker | unset | unset | Railway secret | Only read when `LLM_PROVIDER=anthropic` |
+| `LLM_MODEL` | api, worker | `claude-opus-5` | `claude-opus-5` | `claude-opus-5` | The Messages API model id (E3) |
+| `LLM_MAX_TOKENS` | api, worker | `4096` | `4096` | `4096` | A ceiling: a caller asking for more gets this |
+| `LLM_TIMEOUT_S` | api, worker | `60.0` | `60.0` | `60.0` | Per socket operation (the connect, then each read of the stream), not per call; also the longest a `retry-after` may hold a request |
+| `LLM_MAX_RETRIES` | api, worker | `2` | `2` | `2` | Retried on 408, 409, 429, 5xx and connection failures only, and only before the answer starts |
+| `LLM_RETRY_BACKOFF_S` | api, worker | `0.5` | `0.5` | `0.5` | Doubled per attempt unless `retry-after` says otherwise |
+| `LLM_DEADLINE_S` | api, worker | `180.0` | `180.0` | `180.0` | The whole call, retries and their waits included; a call ends within this plus one `LLM_TIMEOUT_S` |
+| `LLM_MAX_RESPONSE_BYTES` | api, worker | `4194304` | `4194304` | `4194304` | A streamed answer larger than this is refused; raise it with `LLM_MAX_TOKENS` |
+| `LLM_MAX_ERROR_BODY_BYTES` | api, worker | `65536` | `65536` | `65536` | An error body is read only this far, for its error type |
 | `EMBEDDER_PROVIDER` | api, worker | `mock` | `mock` | per D-09 | Plus the provider's key variable once D-09 is decided; until then the test deploy searches by keyword only |
 | `RERANKER_PROVIDER` | api, worker | `mock` | `mock` | `none` until D-09 names one | `mock` is refused when deployed except in `test`; `none` leaves the fused order as the answer |
 | `RERANKER_TOP_K` | api, worker | `50` | `50` | `50` | How many fused hits the reranker is given (SRC-01) |

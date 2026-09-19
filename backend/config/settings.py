@@ -282,6 +282,26 @@ RERANKER_PROVIDER = env_str("RERANKER_PROVIDER", "mock")  # mock | none | <chose
 RERANKER_TOP_K = env_int("RERANKER_TOP_K", 50)
 MOCK_ADAPTER_SETTINGS = ("LLM_PROVIDER", "EMBEDDER_PROVIDER", "RERANKER_PROVIDER", "AGENT_RUNNER", "MAIL_PROVIDER")
 
+# ===== E3: the Anthropic provider behind the LLM adapter (chunks 5 and 7, D-07) =========
+# The key is read from the environment only (ANTHROPIC_API_KEY above); everything the
+# provider needs besides the key is a threshold with an env override. LLM_MAX_TOKENS is a
+# ceiling: a caller asking for more gets this.
+LLM_MODEL = env_str("LLM_MODEL", "claude-opus-5")
+LLM_MAX_TOKENS = env_int("LLM_MAX_TOKENS", 4096)
+# Per socket operation (the connect, then each read of the stream), not per call; also the
+# longest a `retry-after` may hold a request.
+LLM_TIMEOUT_S = float(env_str("LLM_TIMEOUT_S", "60.0"))
+LLM_MAX_RETRIES = env_int("LLM_MAX_RETRIES", 2)
+LLM_RETRY_BACKOFF_S = float(env_str("LLM_RETRY_BACKOFF_S", "0.5"))
+# The whole call, retries and their waits included. No read starts after it, so a call
+# ends within this plus one LLM_TIMEOUT_S (security review of E3, 2026-09-19).
+LLM_DEADLINE_S = float(env_str("LLM_DEADLINE_S", "180.0"))
+# The most a streamed answer may send, events and all, before it is refused. Several
+# times what LLM_MAX_TOKENS can stream; raise the two together.
+LLM_MAX_RESPONSE_BYTES = env_int("LLM_MAX_RESPONSE_BYTES", 4 * 1024 * 1024)
+# An error body is read only this far, for its `error.type`.
+LLM_MAX_ERROR_BODY_BYTES = env_int("LLM_MAX_ERROR_BODY_BYTES", 64 * 1024)
+
 # ---------------------------------------------------------------------------------------
 # File storage (playbook 4.6). local for dev and tests, s3 when deployed. Nothing public.
 # ---------------------------------------------------------------------------------------
