@@ -9,7 +9,7 @@ name alone makes any name deployed.
 
 Each case names the rule of the production-safety block it proves. The subprocess
 environment is built from scratch (no inherited variable), so the runner's own settings
-cannot leak in. Cases run concurrently; each is a ~1 s interpreter start.
+cannot leak in. Cases run three at a time; each is a ~1 s interpreter start.
 
 Proven to fail 2026-09-19 by commenting out rule 4 in settings.py: the E2E case reported
 "booted" where a refusal was expected.
@@ -52,8 +52,12 @@ SETTING_NAMES = (
 
 
 def _with_database(url: str, name: str) -> str:
+    # The boots connect to 127.0.0.1, not "localhost": six of them resolving the name at
+    # once on a loaded machine failed with "failed to resolve host 'localhost'" on
+    # 2026-09-19. An address needs no lookup, so that failure cannot happen.
     parts = urlsplit(url)
-    return urlunsplit((parts.scheme, parts.netloc, f"/{name}", parts.query, parts.fragment))
+    netloc = parts.netloc.replace("@localhost:", "@127.0.0.1:")
+    return urlunsplit((parts.scheme, netloc, f"/{name}", parts.query, parts.fragment))
 
 
 @dataclass(frozen=True)
@@ -269,7 +273,9 @@ class ProductionGuard(TestCase):
 
     def test_every_case_boots_or_refuses_as_the_rules_say(self) -> None:
         cases = self.cases()
-        with ThreadPoolExecutor(max_workers=6) as pool:
+        # Three at a time: each boot starts an interpreter and opens a database connection,
+        # and six at once on a loaded machine lost one with empty output (2026-09-19).
+        with ThreadPoolExecutor(max_workers=3) as pool:
             results = list(pool.map(self._boot, cases))
         failures: list[str] = []
         for case, result in results:
