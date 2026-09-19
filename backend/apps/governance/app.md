@@ -13,8 +13,9 @@ to write an `audit_event` and its `outbox_event`, in the same transaction as
 the change, with a user, agent or system actor, the subject with its title at
 the time, a summary, before and after values, and the step-up assertion when
 one was used. The table is append-only: the model raises on update or delete,
-and a trigger makes that true on Postgres with a `SET LOCAL cw.maintenance`
-escape hatch for a conscious fix.
+and a trigger makes that true on Postgres, with a `SET LOCAL cw.maintenance`
+escape hatch for a conscious fix that only the schema owner, in a migration, can
+use: the trigger ignores the setting when the application role is running.
 
 Every model output is logged in `ai_generation` with purpose, model, version,
 input reference, output, citations, review state and feedback. Problem reports
@@ -82,8 +83,10 @@ When the ORM updates or deletes it
 Then AppendOnlyModel raises
 When raw SQL updates or deletes it
 Then the trigger raises
-When SET LOCAL cw.maintenance is set inside a transaction
+When SET LOCAL cw.maintenance is set inside a migration's transaction
 Then the statement runs and the maintenance intent is visible in the transaction
+When the application role sets it instead, in either letter case
+Then update and delete are still refused
 ```
 
 ### AUD-S3 — The audit log screen shows who did what, with before and after `@e2e` (AUD-01)

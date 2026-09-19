@@ -393,7 +393,8 @@ exactly once, to enrol a passkey, and with a passkey from then on.
   `AppendOnlyModel`, which raises on update or delete, and on Postgres a
   trigger makes the docstring true (`BEFORE UPDATE OR DELETE … RAISE`, with a
   `SET LOCAL cw.maintenance` escape hatch so a conscious fix states its
-  intent).
+  intent; the trigger ignores it for the application role, so the hatch is the
+  schema owner's, in a migration).
 - **No write commits without its audit row.** `record()` writes the
   `audit_event` and the `outbox_event` in the same transaction as the change,
   with a user, agent or system actor and before and after values.

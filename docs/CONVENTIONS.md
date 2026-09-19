@@ -87,7 +87,8 @@ exactly once, to enrol a passkey, and with a passkey from then on.
   effective dates. Evidence is soft-deleted. Ledgers extend `AppendOnlyModel`
   (raises on update or delete) and a Postgres trigger makes it true
   (`BEFORE UPDATE OR DELETE … RAISE`, with `SET LOCAL cw.maintenance` as the
-  escape hatch for a conscious fix).
+  escape hatch for a conscious fix, which the trigger honours for the schema
+  owner in a migration and ignores for the application role).
 - **No write commits without its audit row.** `record()` writes `audit_event`
   and `outbox_event` in the same transaction with a user, agent or system
   actor and before and after values.

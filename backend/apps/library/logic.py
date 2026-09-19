@@ -37,7 +37,8 @@ def in_force(versions: Iterable[V], on: datetime.date) -> V | None:
 # language both have (INV-05). Pure: the read routes resolve the versions and serialize.
 # Nothing here logs, because the texts are the library's content. The texts come from
 # fetched sources through proposals, so both functions stay fast on hostile input:
-# splitting is linear, and aligning is capped at LIBRARY_DIFF_MAX_SENTENCES.
+# splitting is linear and only happens under LIBRARY_TEXT_MAX_CHARS, and aligning is capped
+# at LIBRARY_DIFF_MAX_SENTENCES.
 # ---------------------------------------------------------------------------------------
 DiffOp = Literal["equal", "insert", "delete"]
 Segment = tuple[DiffOp, str]
@@ -64,19 +65,32 @@ def split_sentences(text: str) -> list[str]:
     return [*sentences, rest] if rest else sentences
 
 
+def _whole_text(old: str, new: str) -> list[Segment]:
+    """The coarse answer both caps fall back to: the whole old text deleted and the whole
+    new one inserted, or one equal segment when the two texts are the same."""
+    before, after = old.strip(), new.strip()
+    if before == after:
+        return [("equal", before)] if before else []
+    return [segment for segment in (("delete", before), ("insert", after)) if segment[1]]
+
+
 def sentence_diff(old: str, new: str) -> list[Segment]:
     """The two texts sentence by sentence: a changed sentence is a delete then an insert.
-    Aligning repeated sentences costs up to the cube of their number, so above
+
+    Two caps keep untrusted text cheap. Splitting is linear but unbounded in the length of
+    the text, so above LIBRARY_TEXT_MAX_CHARS on either side neither text is split at all.
+    Aligning repeated sentences then costs up to the cube of their number, so above
     LIBRARY_DIFF_MAX_SENTENCES on either side the old text is one delete and the new one
     one insert: coarse, still correct. autojunk=False because from 200 sentences difflib
     would treat a sentence repeated in over 1% of the new text ("Upphävd.") as junk that
     never matches, and show it as changed; it only matters if the cap is raised past 200."""
+    if max(len(old), len(new)) > settings.LIBRARY_TEXT_MAX_CHARS:
+        return _whole_text(old, new)
     before, after = split_sentences(old), split_sentences(new)
     if before == after:
         return [("equal", sentence) for sentence in before]
     if max(len(before), len(after)) > settings.LIBRARY_DIFF_MAX_SENTENCES:
-        whole: list[Segment] = [("delete", old.strip()), ("insert", new.strip())]
-        return [segment for segment in whole if segment[1]]
+        return _whole_text(old, new)
     segments: list[Segment] = []
     for op, i1, i2, j1, j2 in difflib.SequenceMatcher(a=before, b=after, autojunk=False).get_opcodes():
         if op == "equal":

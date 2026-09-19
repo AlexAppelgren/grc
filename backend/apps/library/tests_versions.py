@@ -11,6 +11,7 @@ from __future__ import annotations
 import time
 import uuid
 from dataclasses import dataclass
+from unittest import mock
 
 from django.conf import settings
 from django.db import DEFAULT_DB_ALIAS, DatabaseError, connection, connections, transaction
@@ -54,11 +55,15 @@ REFUSED = {
     ),
     "verification": ("UPDATE verification SET outcome = 'change_found' WHERE id = %s", "DELETE FROM verification WHERE id = %s"),
 }
+# The maintenance hatch is the schema owner's alone (apps/shared/tests_append_only.py).
+# As cw_app it buys nothing, in either spelling of the case-insensitive setting name.
+HATCHES = ("", "SET LOCAL cw.maintenance = 'on'", "SET LOCAL CW.MAINTENANCE = 'on'")
 
 
 class VersionTablesAreAppendOnly(TransactionTestCase):
     """As cw_app, the production role, a version, text or verification row is inserted and
-    never updated or deleted. Committed rows, so the proof runs on the app connection."""
+    never updated or deleted, with or without the maintenance hatch set. Committed rows, so
+    the proof runs on the app connection."""
 
     databases = {DEFAULT_DB_ALIAS, "app"}
 
@@ -124,9 +129,12 @@ class VersionTablesAreAppendOnly(TransactionTestCase):
             self.assertEqual(cursor.fetchone(), ("cw_app",))
             for table, row_id in rows.items():
                 for statement in REFUSED[table]:
-                    with self.subTest(statement=statement):
-                        with self.assertRaisesMessage(DatabaseError, f"{table} is append-only"), transaction.atomic(using="app"):
-                            cursor.execute(statement, [row_id])
+                    for hatch in HATCHES:
+                        with self.subTest(statement=statement, hatch=hatch):
+                            with self.assertRaisesMessage(DatabaseError, f"{table} is append-only"), transaction.atomic(using="app"):
+                                if hatch:
+                                    cursor.execute(hatch)
+                                cursor.execute(statement, [row_id])
         for model in APPEND_ONLY:
             with self.subTest(table=model._meta.db_table):
                 self.assertEqual(model.objects.using("app").count(), 1, "the row is still there")
@@ -260,8 +268,8 @@ class SentenceDiff(SimpleTestCase):
         old, new = "Upphävd. " * 800, "Upphävd. Ny text. " * 400  # 21 s before the cap
         started = time.perf_counter()
         self.assertEqual(sentence_diff(old, new), [("delete", old.strip()), ("insert", new.strip())])
-        same = "Upphävd. " * 5000
-        self.assertEqual(sentence_diff(same, same), [("equal", "Upphävd.")] * 5000, "unchanged is never a change")
+        same = "Upphävd. " * 2000  # under LIBRARY_TEXT_MAX_CHARS, so both texts are still split
+        self.assertEqual(sentence_diff(same, same), [("equal", "Upphävd.")] * 2000, "unchanged is never a change")
         self.assertLess((time.perf_counter() - started) * 1000, settings.API_BUDGET_MS)
         with override_settings(LIBRARY_DIFF_MAX_SENTENCES=2):
             self.assertEqual(
@@ -271,6 +279,28 @@ class SentenceDiff(SimpleTestCase):
             self.assertEqual(sentence_diff("", " A. B. C. "), [("insert", "A. B. C.")])
             self.assertEqual(sentence_diff("A. B. C.", ""), [("delete", "A. B. C.")])
             self.assertEqual(sentence_diff("A. B.", "A. C."), [("equal", "A."), ("delete", "B."), ("insert", "C.")], "at the cap")
+
+    def test_a_text_longer_than_the_character_cap_is_never_split(self) -> None:
+        """Security review: a text is what a source published, and splitting it is linear in
+        its length with nothing bounding that length. Above LIBRARY_TEXT_MAX_CHARS neither
+        text is split at all, which the patched splitter proves."""
+        cap = settings.LIBRARY_TEXT_MAX_CHARS
+        old, new = "Ab. " * cap, "Cd. " * cap  # four times the cap, 20,000 sentences each
+        with mock.patch("apps.library.logic.split_sentences", side_effect=AssertionError("split")):
+            started = time.perf_counter()
+            self.assertEqual(sentence_diff(old, new), [("delete", old.strip()), ("insert", new.strip())])
+            self.assertLess((time.perf_counter() - started) * 1000, settings.API_BUDGET_MS)
+            self.assertEqual(sentence_diff(old, old), [("equal", old.strip())], "unchanged is never a change")
+            self.assertEqual(sentence_diff(old, ""), [("delete", old.strip())])
+            self.assertEqual(sentence_diff("", new), [("insert", new.strip())])
+        with override_settings(LIBRARY_TEXT_MAX_CHARS=20):
+            self.assertEqual(
+                sentence_diff("Kunden varnas. Beslutet sparas.", "Kunden varnas."),
+                [("delete", "Kunden varnas. Beslutet sparas."), ("insert", "Kunden varnas.")],
+            )
+            self.assertEqual(
+                sentence_diff("Kunden varnas.", "Kunden varnas."), [("equal", "Kunden varnas.")], "short enough to split"
+            )
 
 
 @dataclass(frozen=True)

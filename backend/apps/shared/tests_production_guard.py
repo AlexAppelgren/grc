@@ -7,6 +7,10 @@ treated as production (fail closed): `prod`, `Production`, `demo` and `dev` all 
 guard on, `local`, `test` and `ci` are the only non-deployed names, and a host environment
 name alone makes any name deployed.
 
+One case does not name an environment: LIBRARY_DIFF_MAX_SENTENCES is refused outside 1 to
+200 everywhere, because above 200 one "show what changed" can cost seconds on text a source
+fetched, and DEBUG never relaxes a bound.
+
 Each case names the rule of the production-safety block it proves. The subprocess
 environment is built from scratch (no inherited variable), so the runner's own settings
 cannot leak in. Cases run three at a time; each is a ~1 s interpreter start.
@@ -49,6 +53,7 @@ SETTING_NAMES = (
     "DB_ROLE_GUARD_ENABLED",
     "DJANGO_SETTINGS_MODULE",
     "SENTRY_DSN",
+    "LIBRARY_DIFF_MAX_SENTENCES",
 )
 
 
@@ -273,6 +278,29 @@ class ProductionGuard(TestCase):
                 "owns tables",
                 "rule 7: DEBUG never disarms a guard",
             ),
+            # The sentence cap's bounds (H12): a setting, not a literal, but not any number.
+            Case(
+                "a diff cap of 0 refuses to boot",
+                self._local("local", LIBRARY_DIFF_MAX_SENTENCES="0"),
+                False,
+                "LIBRARY_DIFF_MAX_SENTENCES",
+                "the diff cap's bounds",
+            ),
+            Case(
+                "a negative diff cap refuses to boot",
+                self._local("local", LIBRARY_DIFF_MAX_SENTENCES="-1"),
+                False,
+                "LIBRARY_DIFF_MAX_SENTENCES",
+                "the diff cap's bounds",
+            ),
+            Case(
+                "a diff cap above 200 refuses to boot",
+                self._good_deployed("prod", LIBRARY_DIFF_MAX_SENTENCES="201"),
+                False,
+                "LIBRARY_DIFF_MAX_SENTENCES",
+                "the diff cap's bounds",
+            ),
+            Case("the diff cap boots at its ceiling", self._local("local", LIBRARY_DIFF_MAX_SENTENCES="200"), True),
             Case(
                 "DB_ROLE_GUARD_ENABLED=false does not disarm rule 7 when deployed",
                 self._good_deployed("prod", DATABASE_URL=self.superuser_url, DB_ROLE_GUARD_ENABLED="false"),

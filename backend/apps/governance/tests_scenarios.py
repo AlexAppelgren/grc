@@ -28,6 +28,7 @@ from django.test import override_settings
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories
 # Modules, not classes: a TestCase imported by name would be collected and run here twice.
+from apps.shared import tests_append_only as append_only_guards
 from apps.shared import tests_audit_on_write as audit_guards
 from apps.shared import tests_rls as rls_guards
 from apps.shared.models import AuditEvent
@@ -77,8 +78,12 @@ class GovernanceScenarioTests(ScenarioTestCase):
         """AUD-S2
 
         The audit table rejects update and delete (AUD-01, AC-AUD1).
+
+        The hatch clause is proven for the application role by
+        apps/shared/tests_append_only.py, whose proofs need committed rows on the
+        cw_app connection and so cannot run inside this transaction.
         """
-        self._prove(audit_guards.AppendOnlyHolds)
+        self._prove(audit_guards.AppendOnlyHolds, append_only_guards.EveryAppendOnlyTableRunsAGuard)
 
     @skip("pending: AUD-S4")
     def test_aud_s4(self) -> None:

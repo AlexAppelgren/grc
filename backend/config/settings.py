@@ -341,6 +341,24 @@ API_PAGE_SIZE_MAX = env_int("API_PAGE_SIZE_MAX", 100)
 # against API_BUDGET_MS for the whole request. A summary or a provision is a few sentences.
 # ---------------------------------------------------------------------------------------
 LIBRARY_DIFF_MAX_SENTENCES = env_int("LIBRARY_DIFF_MAX_SENTENCES", 50)
+# Bounded, because this one is a cost ceiling on untrusted text and not a taste: at 0 or
+# below no version is ever compared sentence by sentence and every diff is the whole text;
+# above 200 the cubic cost runs away (211 ms measured at 200, about 7 s at 500). The
+# production-safety block below runs too late for this, so it refuses here
+# (apps/shared/tests_production_guard.py boots all four cases).
+if not 1 <= LIBRARY_DIFF_MAX_SENTENCES <= 200:
+    raise ImproperlyConfigured(
+        f"Refusing to boot: LIBRARY_DIFF_MAX_SENTENCES is {LIBRARY_DIFF_MAX_SENTENCES}, "
+        "which is outside 1 to 200."
+    )
+# The same, one level up: splitting a text into sentences is linear but unbounded in the
+# length of the text, and a text is what a source published, through a proposal. 200 KB of
+# short sentences measured 57 ms on the build machine and about half a second on the loaded
+# laptop where the review found it. Above this many characters on either side the diff is
+# the whole old text deleted and the whole new one inserted, with neither text split. A text
+# that stays under the sentence cap above is a few thousand characters, so this cap only
+# fires on text that would have been shown whole anyway.
+LIBRARY_TEXT_MAX_CHARS = env_int("LIBRARY_TEXT_MAX_CHARS", 20000)
 
 # ---------------------------------------------------------------------------------------
 # ===== INV-03 library reads ==============================================================

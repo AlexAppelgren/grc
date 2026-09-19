@@ -64,7 +64,8 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `E2E_MODE` | api (E2E only) | set by Playwright's `webServer` | set by the E2E job | never | Makes the enrolment code deterministic and enables `seed_e2e`. Refused on two independent legs when deployed |
 | `SENTRY_DSN` | all | unset | unset | optional, EU region DSN | `send_default_pii=False`, bodies never sent, scrubbers on events and transactions |
 | `API_BUDGET_MS` | api | `250` | `250` | `250` | A WARNING with the request ID above it |
-| `LIBRARY_DIFF_MAX_SENTENCES` | api | `50` | `50` | `50` | "Show what changed" compares sentence by sentence up to this many sentences per version, and above it shows the whole old text deleted and the new one inserted. Aligning repeated sentences costs up to the cube of their count: the worst case measured 12 ms at 50, 60 ms at 100 and 211 ms at 200. Raise only after measuring |
+| `LIBRARY_DIFF_MAX_SENTENCES` | api | `50` | `50` | `50` | "Show what changed" compares sentence by sentence up to this many sentences per version, and above it shows the whole old text deleted and the new one inserted. Aligning repeated sentences costs up to the cube of their count: the worst case measured 12 ms at 50, 60 ms at 100 and 211 ms at 200. Raise only after measuring. Outside 1 to 200 the app refuses to boot |
+| `LIBRARY_TEXT_MAX_CHARS` | api | `20000` | `20000` | `20000` | A version text longer than this is never split into sentences: "show what changed" shows the whole old text deleted and the whole new one inserted. Splitting is linear in the length of a text a source published, about 57 ms per 200 KB, and a text under the sentence cap above is a few thousand characters |
 
 ## Web app
 

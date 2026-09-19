@@ -157,7 +157,8 @@ commits without them cannot exist and a failure in `record()` rolls the
 change back. `AppendOnlyModel` raises on update and delete; a trigger on
 each ledger (`BEFORE UPDATE OR DELETE … RAISE`) makes that true for raw SQL,
 with `SET LOCAL cw.maintenance = 'on'` as the escape hatch a conscious fix
-states. The audit-on-write guard fails any mutating route whose scenario
+states, honoured for the schema owner in a migration and ignored when the
+application role sets it. The audit-on-write guard fails any mutating route whose scenario
 wrote no audit row.
 
 ### The adapters

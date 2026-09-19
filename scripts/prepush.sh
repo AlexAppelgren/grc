@@ -123,6 +123,10 @@ gate() { # gate <name> <dir> <command...>: run it, time it, stop on failure
 gitleaks="$(tool gitleaks-8.30.1 gitleaks$x "$gitleaks_url" "$gitleaks_sha")"
 gate "gitleaks" . "$gitleaks" git --config .gitleaks.toml --redact -v --exit-code=2 --log-opts="$snapshot"
 
+# A merge resolved by hand can leave a conflict marker behind, and no other gate reads for
+# one (2026-09-19: a verification log was committed with its markers). Checked in the snapshot.
+gate "No conflict markers" . bash -c '! git grep -nE "^(<<<<<<<|>>>>>>>)( |$)" "$0" -- . ":!*.png" ":!*.jpg"' "$snapshot"
+
 if [ "$lock" = 1 ]; then  # ci.yml `cve` and `licences`
   gate "CVE: lockfiles present and not empty" . test -s backend/poetry.lock -a -s frontend/package-lock.json
   gate "CVE: lockfiles committed" . git ls-files --error-unmatch backend/poetry.lock frontend/package-lock.json

@@ -71,15 +71,20 @@ OUTBOX_GUARD_FUNCTION = "cw_outbox_guard"
 MAINTENANCE_SETTING = "cw.maintenance"
 
 # The escape hatch: `SET LOCAL cw.maintenance = 'on'` inside the fixing transaction states
-# the intent and is itself visible in the session's statement log.
-_MAINTENANCE_CHECK = f"current_setting('{MAINTENANCE_SETTING}', true) = 'on'"
+# the intent and is itself visible in the session's statement log. It is the schema owner's
+# alone. The application role may set the setting (nothing but a superuser could forbid
+# that), so the guards ask who is running instead: as APP_ROLE the setting is ignored and
+# the ledger stays append-only, which means one stray or injected `SET LOCAL` in request
+# code switches nothing off. Written from APP_ROLE, the constant the grants below already
+# use, so a renamed role cannot drift apart from a literal repeated here. `current_user`,
+# because these functions are SECURITY INVOKER: it is the role running the statement, and
+# cw_app is a member of no other role (infra/db/init.sql), so it cannot SET ROLE out of the
+# check (Verification_Log: PostgreSQL 16, session information functions).
+_MAINTENANCE_CHECK = (
+    f"current_setting('{MAINTENANCE_SETTING}', true) = 'on' AND current_user <> '{APP_ROLE}'"
+)
 
-
-def append_only_function_operations() -> list[migrations.RunSQL]:
-    """The trigger functions. Created once (shared 0001); later migrations attach them."""
-    return [
-        migrations.RunSQL(
-            sql=f"""
+APPEND_ONLY_FUNCTION_SQL = f"""
 CREATE OR REPLACE FUNCTION {APPEND_ONLY_FUNCTION}() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -87,15 +92,13 @@ BEGIN
         IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
         RETURN NEW;
     END IF;
-    RAISE EXCEPTION '% is append-only: % refused (set cw.maintenance to state a conscious fix)',
+    RAISE EXCEPTION '% is append-only: % refused (only a migration may set cw.maintenance to state a conscious fix)',
         TG_TABLE_NAME, TG_OP USING ERRCODE = 'raise_exception';
 END;
 $$;
-""",
-            reverse_sql=f"DROP FUNCTION IF EXISTS {APPEND_ONLY_FUNCTION}()",
-        ),
-        migrations.RunSQL(
-            sql=f"""
+"""
+
+OUTBOX_GUARD_FUNCTION_SQL = f"""
 CREATE OR REPLACE FUNCTION {OUTBOX_GUARD_FUNCTION}() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -118,7 +121,19 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-""",
+"""
+
+
+def append_only_function_operations() -> list[migrations.RunSQL]:
+    """The trigger functions. Created once (shared 0001), replaced in place by shared 0003
+    when their text changes; the migrations in between attach them to tables."""
+    return [
+        migrations.RunSQL(
+            sql=APPEND_ONLY_FUNCTION_SQL,
+            reverse_sql=f"DROP FUNCTION IF EXISTS {APPEND_ONLY_FUNCTION}()",
+        ),
+        migrations.RunSQL(
+            sql=OUTBOX_GUARD_FUNCTION_SQL,
             reverse_sql=f"DROP FUNCTION IF EXISTS {OUTBOX_GUARD_FUNCTION}()",
         ),
     ]
