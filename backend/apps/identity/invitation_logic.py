@@ -110,6 +110,21 @@ def has_live_passkey(user: User) -> bool:
     return WebAuthnCredential.objects.filter(user=user, retired_at__isnull=True).exists()
 
 
+def belongs_to_a_tenant(user: User) -> bool:
+    """True when any bank knows this person: a membership, active or deactivated (a
+    deactivated member can be invited back), or a bank invitation not yet accepted or
+    revoked (an expired one counts, because the bank can resend it). bootstrap_platform
+    refuses such a person, since platform staff are separate accounts: a platform role on
+    a bank member's account would reach into their bank session."""
+    with tenancy.identity_lookup():
+        return (
+            Membership.objects.filter(user=user).exists()
+            or Invitation.objects.filter(
+                tenant__isnull=False, email=user.email, accepted_at__isnull=True, revoked_at__isnull=True
+            ).exists()
+        )
+
+
 # ---------------------------------------------------------------------------------------
 # Creating, resending, revoking
 # ---------------------------------------------------------------------------------------

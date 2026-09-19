@@ -6,7 +6,8 @@ in `SEED_LOGINS` has exactly its roles, its passkey (the fixed credential id) or
 that the one user awaiting enrolment holds an open invitation whose token is the E2E
 literal under E2E_MODE; that every login a journey spends (`reserved_for`, playbook 8.3
 rule 4) is reserved for one journey, starts active with its fixed passkey and never holds
-a role another journey needs it for; that the seed is idempotent (a second run changes nothing and adds
+a role another journey needs it for; that two library editors hold the console, so a
+proposal can be decided by someone other than its author; that the seed is idempotent (a second run changes nothing and adds
 no audit row), writes its audit rows through record(), and refuses to run on a deployed
 environment. A journey cannot be hollowed out by a seed change without failing here.
 
@@ -24,7 +25,14 @@ from django.test import TestCase, override_settings
 from apps.identity import tokens
 from apps.identity.models import Invitation, Membership, PlatformRoleAssignment, User, UserStatus, WebAuthnCredential
 from apps.shared import tenancy
-from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, REISSUE_LOGIN_EMAIL, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG
+from apps.shared.e2e_logins import (
+    E2E_INVITATION_TOKEN_ANNA,
+    LIBRARY_EDITOR_ROLE,
+    REISSUE_LOGIN_EMAIL,
+    SEED_LOGINS,
+    TENANT_A_SLUG,
+    TENANT_B_SLUG,
+)
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
 from apps.library.models import Instrument, Obligation, ObligationVersion, Verification
 from apps.shared.e2e_seed import EXPECTED_FOOTPRINTS, EXPECTED_LIBRARY, EXPECTED_PENDING_REQUEST, EXPECTED_TENANTS, SeedRefused, seed_e2e
@@ -128,6 +136,22 @@ class SeedIntegrityGuard(TestCase):
                 self.assertNotIn("reader", set(membership.roles.values_list("key", flat=True)))
         # The approver stays shared: the footprint journeys (FP-S2, FP-S5) sign in as them.
         self.assertEqual(by_email["approver@example-bank.test"].reserved_for, ())
+
+    def test_two_library_editors_hold_the_console_so_four_eyes_can_hold(self) -> None:
+        """PRO-02, AC-PRO2: a proposal is decided by someone other than its author, and in
+        the console the author is a library editor too. One seeded editor would make the
+        queue journeys unrunnable, so the roster carries two, both platform staff (no
+        tenant) with their fixed passkeys."""
+        seed_e2e()
+        editors = [login for login in SEED_LOGINS if LIBRARY_EDITOR_ROLE in login.platform_roles]
+        self.assertGreaterEqual(len(editors), 2, "a proposal needs a second editor to decide it")
+        for login in editors:
+            with self.subTest(login=login.email):
+                self.assertIsNone(login.tenant_slug, "a library editor is platform staff, never a bank's member")
+                self.assertTrue(login.has_passkey)
+                user = User.objects.get(email=login.email)
+                granted = PlatformRoleAssignment.objects.filter(user=user, role__key=LIBRARY_EDITOR_ROLE)
+                self.assertEqual(granted.count(), 1)
 
     def test_the_seed_is_idempotent_and_audited(self) -> None:
         seed_e2e()

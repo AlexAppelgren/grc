@@ -71,7 +71,13 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
         title="Product specialist, payments",
         reserved_for=("ADM-S2",),
     ),
+    # The second library editor. Four eyes holds in the console too (PRO-02, AC-PRO2): the
+    # editor who files a proposal never decides it, so the queue journeys need a second one.
+    SeedLogin(_id(13), "editor2@bleqq.test", "Kari Nygaard", None, (), platform_roles=("library_editor",)),
 )
 
 # The login ADM-S2 spends (above). Named here so the guard and the journey read one value.
 REISSUE_LOGIN_EMAIL = "reissue@example-bank.test"
+
+# The platform role a proposal decision needs on two people at once (four eyes, PRO-02).
+LIBRARY_EDITOR_ROLE = "library_editor"

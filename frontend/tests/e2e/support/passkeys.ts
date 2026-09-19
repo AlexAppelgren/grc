@@ -52,6 +52,11 @@ export const LOGINS = {
   auditor: 'auditor@example-bank.test',
   anna: 'anna@example-bank.test',
   secondBankAdmin: 'admin@second-bank.test',
+  /** Platform staff, no tenant: the console signs in as these. */
+  editor: 'editor@bleqq.test',
+  /** The second library editor, so the console can keep four eyes on a proposal. */
+  editor2: 'editor2@bleqq.test',
+  platform: 'platform@bleqq.test',
   /** Reserved for ADM-S2: it re-issues this member's enrolment, which retires their passkeys. */
   reissue: 'reissue@example-bank.test',
 } as const;

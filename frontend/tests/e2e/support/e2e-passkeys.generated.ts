@@ -74,4 +74,10 @@ export const E2E_PASSKEYS_GENERATED: Readonly<Record<string, SeededPasskey>> = {
     privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgStUqENR4fhKyntTv_MNTC_vy28Ughi8rvzaD8UpCGnChRANCAAT_gvBHAilSDsrejuDpUDB4Bzax3kg21uGVH1ykv3mvGFBxtoKwHBoCDexeSKzv4Jtj2Z5Hj3N4CA5gvi9jKBoq',
     publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE_4LwRwIpUg7K3o7g6VAweAc2sd5INtbhlR9cpL95rxhQcbaCsBwaAg3sXkis7-CbY9meR49zeAgOYL4vYygaKg',
   },
+  'editor2@bleqq.test': {
+    id: 'suqmTkUo_TtcyQzOTs0MFg',
+    userHandle: 'AAAAAAAAQACAAAAAAAABDQ',
+    privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg7NiZmIqngk7iNinf-X95Jzumu9zU92SgwtIRkGbO8UqhRANCAARp764kxYOUYxvqPp4MhYI7KwmBaiJZTywpzpFfp-53Iqfv_t-VRl-4a0g8ur7O_VmVQr8cgX_SEXpIX6HJY8LW',
+    publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEae-uJMWDlGMb6j6eDIWCOysJgWoiWU8sKc6RX6fudyKn7_7flUZfuGtIPLq-zv1ZlUK_HIF_0hF6SF-hyWPC1g',
+  },
 };

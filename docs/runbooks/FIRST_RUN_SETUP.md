@@ -31,7 +31,7 @@ defaults when the tenant is created, not by the deploy.
 | 1 | Create the database roles and extensions (`RAILWAY_DEPLOY.md` role script) and set every variable (`RAILWAY_VARIABLES.md`) | Railway console | Project owner | Nothing |
 | 2 | Deploy `api`; confirm `/health/` answers 200 with every component named | Railway | Project owner | 1 |
 | 3 | Deploy `worker`, `beat`, `web`; attach the test host to `web` and set `WEBAUTHN_RP_ID` to it (`DNS_DOMAINS.md`) | Railway | Project owner | 2 |
-| 4 | `python manage.py bootstrap_platform --admin-email you@…` on the `api` service (the command lands with chunk 1). It creates the first platform admin invitation and prints nothing secret; the link arrives by email | `api` shell | None (a management command; refuses to run if a platform admin already exists) | 3, a working mail sender |
+| 4 | `python manage.py bootstrap_platform --admin-email you@…` on the `api` service (the command lands with chunk 1). It creates the first platform admin invitation and prints nothing secret; the link arrives by email | `api` shell | None (a management command; it refuses a person who already holds a passkey, and any address a bank knows: platform staff are separate accounts) | 3, a working mail sender |
 | 5 | Open the emailed link, enter the code, enrol a passkey, add a second passkey when prompted | Browser | The enrolment session only | 4 |
 | 6 | Create the first tenant with its plan, timezone and language order | Platform console, Tenants | `tenants.manage` | 5 |
 | 7 | Invite the tenant's first admin (the Admin system role) | Platform console, Tenants | `tenants.manage` | 6 |
@@ -40,7 +40,7 @@ defaults when the tenant is created, not by the deploy.
 | 10 | Invite members with roles: at least one compliance officer and one approver, because four eyes needs two people | Tenant admin, Members | `members.manage` | 9 |
 | 11 | Set the footprint: one person requests, a second approves with step-up | Tenant app, Footprint | `footprint.request`, then `footprint.approve` by a different person | 10 |
 | 12 | Review the tenant vocabularies and add what the bank uses (tags, sub-statuses, reasons) | Tenant admin, Vocabularies | `vocab.manage` | 9 |
-| 13 | Name the library editors and invite them to the console | Platform console | `tenants.manage` | 5, D-14 |
+| 13 | Invite each library editor: `python manage.py bootstrap_platform --admin-email them@… --role library_editor` on the `api` service. It grants the `library_editor` role, audits the grant and emails them the one-time enrolment link; they enrol a passkey as in step 5 | `api` shell | None (a management command; it refuses a role that is not a platform role, a person who already holds a passkey, and any address a bank knows, since platform staff are separate accounts. A person who already holds another platform role needs `--add-role`; the output lists every platform role they then hold) | 5, D-14 |
 | 14 | Create an API key for the research agents with the `watch.write` and `proposals.write` scopes; store it in the runner's configuration | Tenant admin, Integrations | `integrations.manage` plus step-up | 10 |
 | 15 | Switch the agents on and set a cadence within the plan | Tenant admin, Agents | `agents.manage` | 14 (R2: chunk 11) |
 | 16 | Optional: `python manage.py seed_demo` (lands with chunk 3) loads the prototype's sample data into a demo tenant. It refuses to run when `ENVIRONMENT` is a production name | `api` shell | None | 6 |

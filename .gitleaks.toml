@@ -154,6 +154,12 @@ regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgStUqENR4fhKyntTv_
 paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
 
 [[allowlists]]
+description = "E2E passkey private key for the seeded user editor2@bleqq.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg7NiZmIqngk7iNinf-X95Jzumu9zU92SgwtIRkGbO8UqhRANCAARp764kxYOUYxvqPp4MhYI7KwmBaiJZTywpzpFfp-53Iqfv_t-VRl-4a0g8ur7O_VmVQr8cgX_SEXpIX6HJY8LW$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+[[allowlists]]
 description = "Stable keys of public legal records in the prototype fixture: CELEX numbers (EU law identifiers) and change keys. The generic-api-key rule reads their length and mix of digits as entropy. Exact literals, pinned to the one file that holds them (2026-09-19)."
 paths = ['''^backend/apps/library/fixtures/prototype_data\.json$''']
 regexes = [
