@@ -1,0 +1,213 @@
+"""One decision per request and one waiting request per organisation, under a real race
+(FP-02, FP-S6).
+
+Each test runs two sessions at once, each on its own cw_app connection (no ownership, no
+BYPASSRLS, row-level security forced) in its own thread and transaction, the way two
+requests reach production. The first session acts and holds its transaction open until
+PostgreSQL reports the second one waiting on it, then commits. That is the interleaving in
+which a status check on an unlocked row lets both through: the second session read
+"pending" before the first committed.
+
+Proven to fail 2026-09-19 without the row lock and the partial unique constraint: in both
+decision races both decisions landed, and the second request never waited on the first, so
+two requests would have waited at once.
+"""
+
+from __future__ import annotations
+
+import time
+import threading
+import uuid
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
+
+from django.core.exceptions import ValidationError
+from django.db import DEFAULT_DB_ALIAS, IntegrityError, connection, connections, transaction
+from django.test import TestCase, TransactionTestCase
+
+from apps.identity.models import User
+from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.shared import factories, tenancy
+from apps.shared.audit import Actor, ActorType
+from apps.shared.models import AuditEvent
+from apps.taxonomy import footprint_logic, terms_logic
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintHistory
+from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+
+WAIT_SECONDS = 10
+LANDED = "landed"
+TERM_EVENTS = ("footprint.term_added", "footprint.term_removed")
+DECISION_EVENTS = ("footprint.change_approved", "footprint.change_rejected", "footprint.change_withdrawn")
+
+
+def _actor(user: Any) -> Actor:
+    return Actor(kind=ActorType.USER, id=user.id, label=user.name)
+
+
+def _seed_library() -> None:
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+
+
+def _session(tenant_id: uuid.UUID, work: Callable[[], object]) -> str:
+    """Run `work` in one transaction on a fresh cw_app connection of this thread's own.
+    Answers "landed" when it committed, or the refusal's code."""
+    connections[DEFAULT_DB_ALIAS] = connections.create_connection("app")
+    try:
+        with transaction.atomic():
+            tenancy.activate(tenant_id)
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_user")
+                assert cursor.fetchone()[0] == connections.settings["app"]["USER"], "a racing session must be cw_app"
+            work()
+        return LANDED
+    except ValidationError as refusal:
+        return str(refusal.code)
+    finally:
+        connections[DEFAULT_DB_ALIAS].close()
+
+
+def _backend_pid() -> int:
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT pg_backend_pid()")
+        return int(cursor.fetchone()[0])
+
+
+def _hold_until_waiting_on_me(other_pid: list[int]) -> None:
+    deadline = time.monotonic() + WAIT_SECONDS
+    while time.monotonic() < deadline:
+        if other_pid:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT pg_backend_pid() = ANY(pg_blocking_pids(%s))", [other_pid[0]])
+                if cursor.fetchone()[0]:
+                    return
+        time.sleep(0.01)
+    raise AssertionError("the second session never waited on the first")
+
+
+class FootprintRaces(TransactionTestCase):
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def setUp(self) -> None:
+        _seed_library()
+        self.tenant = factories.tenant(slug="race")
+        self.officer = factories.member(self.tenant, roles=("compliance_officer",)).user
+        self.approver = factories.member(self.tenant, roles=("approver",)).user
+        self.advice = terms_logic.term_by_ref("service_type", "advice")
+        self.retail = terms_logic.term_by_ref("client_category", "retail")
+        with transaction.atomic():
+            tenancy.activate(self.tenant.id)
+            footprint_logic.seed_terms(tenant=self.tenant, actor=Actor.system("test"), terms=[self.advice])
+
+    # --- helpers --------------------------------------------------------------------------
+    def _request(self) -> FootprintChangeRequest:
+        with transaction.atomic():
+            tenancy.activate(self.tenant.id)
+            return self._create()
+
+    def _create(self) -> FootprintChangeRequest:
+        return footprint_logic.create_request(
+            tenant=self.tenant, requester=self.officer, actor=_actor(self.officer), adds=[self.retail], removes=[self.advice]
+        )
+
+    def _load(self, request_id: uuid.UUID) -> FootprintChangeRequest:
+        # What the route does: an unlocked read by id, then the decision.
+        return FootprintChangeRequest.objects.select_related("requested_by", "decided_by").get(pk=request_id)
+
+    def _approve(self, request_id: uuid.UUID) -> Callable[[], object]:
+        return lambda: footprint_logic.approve(
+            tenant=self.tenant,
+            request=self._load(request_id),
+            decider=self.approver,
+            actor=_actor(self.approver),
+            note="",
+            step_up_assertion_id=uuid.uuid4(),
+            expected_version=1,
+        )
+
+    def _withdraw(self, request_id: uuid.UUID) -> Callable[[], object]:
+        return lambda: footprint_logic.withdraw(
+            tenant=self.tenant,
+            request=self._load(request_id),
+            requester=self.officer,
+            actor=_actor(self.officer),
+            expected_version=1,
+        )
+
+    def _race(self, first: Callable[[], object], second: Callable[[], object]) -> tuple[str, str]:
+        """`first` acts and keeps its transaction open until `second` waits on it."""
+        acted = threading.Event()
+        second_pid: list[int] = []
+
+        def lead() -> None:
+            first()
+            acted.set()
+            _hold_until_waiting_on_me(second_pid)
+
+        def follow() -> None:
+            second_pid.append(_backend_pid())
+            if not acted.wait(WAIT_SECONDS):
+                raise AssertionError("the first session never acted")
+            second()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            leading = pool.submit(_session, self.tenant.id, lead)
+            following = pool.submit(_session, self.tenant.id, follow)
+            return leading.result(), following.result()
+
+    def _assert_one_approval(self, request_id: uuid.UUID) -> None:
+        with transaction.atomic():
+            tenancy.activate(self.tenant.id)
+            request = FootprintChangeRequest.objects.get(pk=request_id)
+            self.assertEqual((request.status, request.version), (ApprovalStatus.APPROVED.value, 2))
+            history = FootprintHistory.objects.filter(tenant=self.tenant, request=request)
+            self.assertEqual(sorted((h.action, h.term.key) for h in history), [("added", "retail"), ("removed", "advice")])
+            events = list(AuditEvent.objects.filter(tenant=self.tenant, action__in=TERM_EVENTS).exclude(actor_type=ActorType.SYSTEM.value))
+            self.assertEqual(sorted(e.action for e in events), sorted(TERM_EVENTS), "one audit event per term")
+            self.assertEqual({(e.after or e.before)["request"] for e in events}, {str(request_id)})
+            decisions = AuditEvent.objects.filter(tenant=self.tenant, subject_id=request_id, action__in=DECISION_EVENTS)
+            self.assertEqual([e.action for e in decisions], ["footprint.change_approved"])
+
+    # --- the races ------------------------------------------------------------------------
+    def test_an_approval_and_a_withdrawal_at_once_land_one_decision(self) -> None:
+        request = self._request()
+        outcomes = self._race(self._approve(request.id), self._withdraw(request.id))
+        self.assertEqual(outcomes, (LANDED, "invalid_transition"))
+        self._assert_one_approval(request.id)
+
+    def test_two_approvals_at_once_land_one(self) -> None:
+        request = self._request()
+        outcomes = self._race(self._approve(request.id), self._approve(request.id))
+        self.assertEqual(outcomes, (LANDED, "invalid_transition"))
+        self._assert_one_approval(request.id)
+
+    def test_two_requests_at_once_leave_one_waiting(self) -> None:
+        outcomes = self._race(self._create, self._create)
+        self.assertEqual(outcomes, (LANDED, "request_pending"))
+        with transaction.atomic():
+            tenancy.activate(self.tenant.id)
+            self.assertEqual(FootprintChangeRequest.objects.filter(tenant=self.tenant, status=ApprovalStatus.PENDING.value).count(), 1)
+            self.assertEqual(AuditEvent.objects.filter(tenant=self.tenant, action="footprint.change_requested").count(), 1)
+
+
+class CreateRequestRefusals(TestCase):
+    def test_another_integrity_error_is_not_reported_as_a_waiting_request(self) -> None:
+        """Only footprint_change_request_one_pending means "a change already waits". Any other
+        refusal on the insert is a fault and surfaces as one, never as a 409 that sends the
+        person off to look for a request that does not exist."""
+        _seed_library()
+        tenant = factories.tenant(slug="refusal")
+        retail = terms_logic.term_by_ref("client_category", "retail")
+        nobody = User(email="nobody@test.example", name="Nobody")  # never saved: no user row
+        tenancy.activate(tenant.id)
+        with connection.cursor() as cursor:
+            # Foreign keys are deferred to commit; checking them now makes the insert refuse.
+            cursor.execute("SET CONSTRAINTS ALL IMMEDIATE")
+        with self.assertRaises(IntegrityError) as caught:
+            footprint_logic.create_request(tenant=tenant, requester=nobody, actor=Actor.system("test"), adds=[retail], removes=[])
+        self.assertIn("requested_by", caught.exception.__cause__.diag.constraint_name)  # type: ignore[union-attr]

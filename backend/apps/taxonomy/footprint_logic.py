@@ -22,6 +22,7 @@ import uuid
 from typing import Any
 
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.shared.audit import Actor, record
@@ -155,6 +156,15 @@ def _validate_change(tenant_id: uuid.UUID, adds: list[Any], removes: list[Any]) 
 # ---------------------------------------------------------------------------------------
 # Writing
 # ---------------------------------------------------------------------------------------
+def _term_state(term: Any, request: FootprintChangeRequest | None) -> dict[str, str]:
+    """A term event's before or after: the term, and the request that caused it when one
+    did, so the audit log ties each term to its request without matching step-up ids."""
+    state = {"dimension": term.dimension.key, "term": term.key}
+    if request is not None:
+        state["request"] = str(request.id)
+    return state
+
+
 def _switch_on(
     *,
     tenant: Tenant,
@@ -190,7 +200,7 @@ def _switch_on(
             subject_title=f"{term.dimension.key}:{term.key}",
             summary=f"Added {term.dimension.key}:{term.key} to the footprint.",
             tenant_id=tenant.id,
-            after={"dimension": term.dimension.key, "term": term.key},
+            after=_term_state(term, request),
             step_up_assertion_id=step_up_assertion_id,
         )
         count += 1
@@ -228,7 +238,7 @@ def _switch_off(
             subject_title=f"{term.dimension.key}:{term.key}",
             summary=f"Removed {term.dimension.key}:{term.key} from the footprint.",
             tenant_id=tenant.id,
-            before={"dimension": term.dimension.key, "term": term.key},
+            before=_term_state(term, request),
             step_up_assertion_id=step_up_assertion_id,
         )
         count += 1
@@ -252,17 +262,25 @@ def create_request(
 ) -> FootprintChangeRequest:
     """One pending request at a time (409 `request_pending`): two people editing the same
     footprint from two previews would each approve a change the other's preview never
-    counted."""
+    counted. The partial unique constraint `footprint_change_request_one_pending` decides,
+    so two requests sent at the same moment cannot both wait; the savepoint keeps the
+    caller's transaction usable after the refusal."""
     _validate_change(tenant.id, adds, removes)
-    if pending(tenant.id) is not None:
+    try:
+        with transaction.atomic():
+            request = FootprintChangeRequest.objects.create(
+                tenant=tenant,
+                requested_by=requester,
+                preview=preview_of(tenant.id, adds, removes).model_dump(by_alias=True),
+            )
+    except IntegrityError as exc:
+        # Only our constraint means "a change already waits"; any other refusal is a fault.
+        diag = getattr(exc.__cause__, "diag", None)
+        if getattr(diag, "constraint_name", None) != "footprint_change_request_one_pending":
+            raise
         raise ValidationError(
             "A footprint change is already waiting for a decision.", code="request_pending"
-        )
-    request = FootprintChangeRequest.objects.create(
-        tenant=tenant,
-        requested_by=requester,
-        preview=preview_of(tenant.id, adds, removes).model_dump(by_alias=True),
-    )
+        ) from exc
     for term in adds:
         FootprintChangeAdd.objects.create(tenant=tenant, request=request, term=term)
     for term in removes:
@@ -284,6 +302,10 @@ def create_request(
 
 
 def _decidable(request: FootprintChangeRequest, expected_version: int | None) -> None:
+    """Lock the row, then check status and version under the lock (FP-S6). Two decisions on
+    one request queue on the lock, and the second reads what the first committed: 409
+    `invalid_transition`, never a stale "pending" that lets both land."""
+    request.refresh_from_db(from_queryset=FootprintChangeRequest.objects.select_for_update())
     if request.status != ApprovalStatus.PENDING.value:
         raise ValidationError(
             "This footprint change has already been decided.", code="invalid_transition"

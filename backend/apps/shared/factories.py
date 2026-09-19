@@ -19,7 +19,7 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, VocabularySuggestion
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -148,7 +148,13 @@ def tenant_role_key(tenant: Tenant) -> SimpleNamespace:
 
 
 def footprint_request(tenant: Tenant) -> FootprintChangeRequest:
-    """The tenant-isolation guard's record for footprint request routes: a pending request."""
+    """The tenant-isolation guard's record for footprint request routes: the tenant's
+    pending request, reused when one waits, because a second cannot (FP-S6)."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        waiting = FootprintChangeRequest.objects.filter(tenant=tenant, status=ApprovalStatus.PENDING.value).first()  # ordering: at most one pending row per tenant, by constraint
+    if waiting is not None:
+        return waiting
     requester = member_user(tenant, roles=("compliance_officer",))
     with transaction.atomic():
         tenancy.activate(tenant.id)

@@ -614,6 +614,15 @@ class FootprintChangeRequest(TenantModel):
     class Meta:
         db_table = "footprint_change_request"
         ordering = ["requested_at", "id"]
+        # One waiting request per tenant: two sent at the same moment cannot both wait
+        # (FP-02, FP-S6). create_request answers 409 `request_pending` from this.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant"],
+                condition=models.Q(status=ApprovalStatus.PENDING.value),
+                name="footprint_change_request_one_pending",
+            )
+        ]
         # The four-eyes check constraint `footprint_change_request_four_eyes` is created by
         # RunSQL in migration 0001 as `decided_by_id IS NULL OR decided_by_id <> requested_by_id`.
         # Django can only spell "not equal" as NOT (a = b AND a IS NOT NULL), which is the

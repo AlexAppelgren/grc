@@ -1,6 +1,7 @@
 """Scenario tests for the taxonomy app (playbook 4.1, Appendix B): one method per
 `@integration` scenario in app.md, each carrying its ID. Chunk 2 un-skips VOC-S1 to S7,
 VOC-S11, VOC-S14, FP-S1 to S4 and I18N-S1, S2 (backend halves; screens follow in chunk 3).
+FP-S6 (one decision per request, one waiting request) came with the regulatory scope work.
 VOC-S8, S9, S10, S12, S13 stay skipped (R2, R3). Never delete a scenario without updating
 app.md.
 
@@ -22,7 +23,7 @@ from typing import Any
 from unittest import mock, skip
 
 from django.apps import apps as django_apps
-from django.db import connection, transaction
+from django.db import IntegrityError, connection, transaction
 from django.test import Client
 from django.db.models import ForeignKey
 
@@ -702,6 +703,39 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(outside, {"advice-only"})
         self.assertEqual(matching.restricting_dimensions(), {"regime", "account_type", "legal_entity", "service_type", "client_category", "jurisdiction", "licensed_activity", "product_type"})
 
+    def test_fp_s6(self) -> None:
+        """FP-S6
+
+        One decision per request, and one waiting request per organisation (FP-02). The races
+        (approve against withdraw, approve against approve, two creates), each on two cw_app
+        connections, are proved in tests_footprint.py.
+        """
+        self._set_footprint(["service_type:advice"])
+        officer = sign_in(self.officer, tenant=self.tenant)
+        approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
+        body = {"adds": [{"dimension": "client_category", "key": "retail"}], "removes": [{"dimension": "service_type", "key": "advice"}]}
+        request = self._post("/tenant/footprint/requests", body, officer).json()
+        again = self._post("/tenant/footprint/requests", body, officer)
+        self.assertEqual(again.status_code, 409, again.content)
+        self.assertEqual(again.json()["code"], "request_pending")
+        # The database refuses a second waiting request on its own.
+        self.activate(self.tenant)
+        with self.assertRaises(IntegrityError) as caught, transaction.atomic():
+            FootprintChangeRequest.objects.create(tenant=self.tenant, requested_by=self.officer)
+        self.assertIn("footprint_change_request_one_pending", str(caught.exception))
+        approved = self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH="1")
+        self.assertEqual(approved.status_code, 200, approved.content)
+        # Each term's event names the request that caused it.
+        self.activate(self.tenant)
+        events = AuditEvent.objects.filter(tenant=self.tenant, action__in=("footprint.term_added", "footprint.term_removed"), actor_id=self.approver.id)
+        self.assertEqual(sorted((e.action, (e.after or e.before)["request"]) for e in events), [("footprint.term_added", request["id"]), ("footprint.term_removed", request["id"])])
+        # A decided request takes no second decision, whoever sends it.
+        for path, headers in (("reject", approver), ("withdraw", officer), ("approve", approver)):
+            late = self._post(f"/tenant/footprint/requests/{request['id']}/{path}", {"note": "Late."}, headers)
+            self.assertEqual((late.status_code, late.json()["code"]), (409, "invalid_transition"), path)
+        # Once decided, the organisation may wait on a new request again.
+        self.assertEqual(self._post("/tenant/footprint/requests", {"adds": [{"dimension": "channel", "key": "digital"}], "removes": []}, officer).status_code, 201)
+
     # --- I18N -----------------------------------------------------------------------------
     def test_i18n_s1(self) -> None:
         """I18N-S1
@@ -778,13 +812,6 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         # Every proposal and library row goes through the same rows: the contract drift rows exist.
         self.assertIn("`GET /taxonomy/terms`", INPUT_DELTAS.read_text(encoding="utf-8"))
         self.assertEqual(Proposal.objects.filter(status=ProposalStatus.OPEN.value, kind=ProposalKind.TERM_CREATE.value).count(), 0)
-
-    @skip("pending: FP-S6 (FP-02)")
-    def test_fp_s6(self) -> None:
-        """FP-S6
-
-        One decision per request, and one waiting request per organisation (FP-02).
-        """
 
     @skip("pending: FP-S8 (FP-04, R1)")
     def test_fp_s8(self) -> None:
