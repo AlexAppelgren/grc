@@ -93,3 +93,31 @@ class RegisterScenarioTests(TestCase):
 
         A stale write on a register row is refused (REG-02).
         """
+
+    @skip("pending: REG-S12 (REG-01, chunk 8)")
+    def test_reg_s12(self) -> None:
+        """REG-S12
+
+        A legal entity follows a standard when its applicability is approved (REG-01, REG-02).
+        """
+
+    @skip("pending: REG-S13 (REG-08, chunk 8)")
+    def test_reg_s13(self) -> None:
+        """REG-S13
+
+        A tenant lists its clauses and controls as units in its own words (REG-08).
+        """
+
+    @skip("pending: REG-S14 (REG-08, chunk 8)")
+    def test_reg_s14(self) -> None:
+        """REG-S14
+
+        Unit decisions are filed from the paste and decided in one call, with four eyes on every row (REG-01, REG-08).
+        """
+
+    @skip("pending: REG-S15 (REG-08, chunk 8)")
+    def test_reg_s15(self) -> None:
+        """REG-S15
+
+        The register filtered by standard and entity is the Statement of Applicability (REG-08).
+        """

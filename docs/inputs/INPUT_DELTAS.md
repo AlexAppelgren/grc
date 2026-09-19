@@ -34,6 +34,59 @@ reasons, `impact_assessment.contributors` (teams or functions, never
 
 Every vocabulary row: immutable `key`, optional `kind`, labels per language,
 `usage_note`, `sort_order`, `active`, `is_system`, `is_default`.
+
+**PRD 0.3 (2026-09-19).** Kinds added to tier 1, each authorised by the bump:
+
+- `term_dimension_kind` gains `opt_in`: a record carrying a term of such a
+  dimension matches only when the regulatory scope names that term (FP-01,
+  INV-08, D-36).
+- A new, optional `instrument_level_kind` whose only value is `standard`. The
+  five existing level rows keep a null kind (INV-01, INV-08, D-37).
+- `jurisdiction_kind` gains `international`, for standards bodies (INV-08,
+  I18N-01, D-38).
+- `WorkReason` (`owner`, `participant`), `WorkBucket` (`overdue`, `due_soon`,
+  `aware`, `open`) and `WorkDateKind`, each value with its reason (HOM-05,
+  D-23).
+- `notification_kind` gains `participant_added`, `involved_item_changed` and
+  `review_due` (COL-02, COL-04, D-34).
+
+**PRD 0.3 structures.** Tables and columns the designed schema does not have,
+or has differently:
+
+- `participant`: a tenant row naming a person or a team on `tenant_obligation`
+  or `change_case`, with composite `(tenant_id, …)` foreign keys to the
+  subject, the team and the membership, soft removal, partial unique and index
+  definitions where it is not removed, and forced row-level security. It
+  replaces `impact_assessment.contributors`, which is dropped: the assessment's
+  contributor teams are the case's team participants (COL-04, CAS-03, D-18,
+  D-20).
+- `team` becomes a tier-3 list carrying its org unit; `team_member` has
+  composite keys and **no** `is_lead`, because a department's head sits on
+  `org_unit.head_user_id` and team notices go to a team's active members
+  (TEN-02, TEN-03, D-21). `team.org_unit_id` and `org_unit.head_user_id` are
+  composite keys, and `tenant_obligation`, `change_case`, `team` and `org_unit`
+  gain `UNIQUE (tenant_id, id)` so the composite keys can point at them.
+- `tenant_obligation_scope` gains `next_review_date`, an applicability reason
+  and an applicability decision time; `applicability_request` gains a nullable
+  scope row and a nullable unit, and its one-pending index covers both with
+  nulls not distinct (REG-01, REG-02, D-42).
+- `soa_unit`: a tenant row per unit per legal entity holding the tenant's own
+  reference and title, applicability with its reason and decision time,
+  compliance status, note and version, unique per scope row and reference, under
+  forced row-level security. `gap` gains a nullable unit. `tenant_obligation`
+  keeps `UNIQUE (tenant_id, obligation_id)` (REG-08, D-41).
+- `licence` gains a nullable validity end date, next audit date and owner, so a
+  certificate is a licence row. It carries no term and decides no span
+  (TEN-02, D-43).
+- `taxonomy_term` gains a nullable unique `jurisdiction_id`: the jurisdiction
+  dimension's terms mirror the jurisdiction rows and are never proposed
+  (FP-04, D-29). `watched_market` is a tenant row naming a jurisdiction, unique
+  per tenant, under forced row-level security (FP-04, D-30).
+- `Jurisdiction.parent` means "the jurisdiction whose rules reach this one", and
+  Norway points at the EU under the EEA Agreement. No new column (FP-04, D-28).
+- `Instrument.regime` becomes NOT NULL, as `schema.sql` already has it; one
+  trigger on `provision` refuses a row under a standard-level instrument
+  (INV-01, INV-08, D-35, D-39).
 In the API every such field is `{key, kind, label}` on reads and `key` on
 writes, never an OpenAPI `enum`.
 
@@ -94,6 +147,10 @@ writes, never an OpenAPI `enum`.
   proposals. That is the one place the prototype is wrong.
 - Footprint changes become a request with preview and second-person approval
   (`footprint_change_request`), replacing the direct `PUT /tenant/footprint`.
+- PRD 0.3: `tenant_agent.scope` has a default rather than being empty. At run
+  start the scheduler builds it from the tenant's market levels, operating
+  first, unless the row names jurisdictions of its own, and stores a copy on the
+  run. A platform library run never reads a tenant's markets (AGT-04, D-32).
 
 ## 6. Audit
 
@@ -217,3 +274,50 @@ Chunk 1 follow-up (enrolment without an address, Alex 2026-09-19):
   `/invite#<token>`: a fragment never reaches a server, proxy or `Referer`, and the page
   clears it before its first request. Same `auth:ip` rate limit, 202 `{}`, and 410
   `invitation_expired` for an expired, revoked, consumed or unknown token.
+
+PRD 0.3 (My work, participants, markets and standards), 2026-09-19:
+
+- `GET /me/work` is reshaped and moves screens. The designed `MyWork` fed
+  Today's "Decide now"; instead Today reads the queue counts on `GET /me`,
+  which gain applicability, and `/me/work` becomes the My work page from chunk
+  8. It answers `{items, total, counts}` with the shared `limit`/`offset` and an
+  optional bucket filter, where an item carries its kind, key, record name,
+  reason, who, via, date kind and date, and the kinds the reader may not see are
+  listed as permission-limited rather than refused (HOM-05, D-23).
+- `GET /me` gains `headOf`, the departments the caller heads (HOM-05, TEN-02).
+- `GET`, `POST /obligations/{obligationId}/participants` and
+  `DELETE /obligations/{obligationId}/participants/{participantId}`, and the
+  same three on `/changes/{changeId}`, are new: add needs `register.edit` or
+  `cases.contribute`, and the delete is gated in logic because a person may
+  always remove their own row (COL-04, D-19).
+- `GET /reference/people` is new: active members' ids and names only, a plain
+  array like the other reference reads, ungated for a member session and
+  refused for an enrolment session. Teams come from the team vocabulary list
+  (COL-04, TEN-03).
+- `PUT /tenant/members/{userId}/teams` is new, under `members.manage`, writing
+  one audit event per call (TEN-03, D-21).
+- `GET /me/comments?about=written|mentioned` is new, paginated and filtered by
+  the subject's read permission, with the permission-limited kinds named
+  (COL-01, D-22).
+- `GET /tenant/footprint` gains `markets` (jurisdiction, operating, watching),
+  and `POST /tenant/footprint/watching` and
+  `POST /tenant/footprint/watching/remove` take the jurisdiction **in the body**
+  under `footprint.request`. The key never rides in a path or query string,
+  because the access log and error reports keep the request line (FP-04, D-30).
+- The list filter `inFootprint`/`outsideFootprint` becomes one value,
+  `footprint=in|all|watched`, on `GET /instruments`, `GET /obligations` and
+  `GET /changes`, so no contradictory pair can be sent; those rows also return
+  the record's jurisdiction (FP-04, D-29).
+- A route under `applicability.approve` with a step-up decides many pending
+  applicability requests in one call, taking a list of request ids each with a
+  decision and a note, capped by `REGISTER_BULK_MAX`; a request the caller filed
+  answers 409 `four_eyes_violation` and nothing is decided (REG-01, D-44).
+- A unit paste route under `register.edit` takes one entity's lines with a dry
+  run, and files one pending applicability request per row when the line carries
+  an applicability (REG-08, D-41).
+- New refusal codes, all with their evidence beside the code: 409
+  `already_participant`, `already_watching`, `unit_has_history`; 422
+  `participant_cannot_read`, `too_many_participants`,
+  `standard_term_only_on_standards`, `standard_term_required`,
+  `one_conformance_obligation`, `licensed_text`, `not_a_regime`,
+  `regime_required`, `units_only_under_standards`, `scope_not_applicable`.

@@ -777,3 +777,80 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         # Every proposal and library row goes through the same rows: the contract drift rows exist.
         self.assertIn("`GET /taxonomy/terms`", INPUT_DELTAS.read_text(encoding="utf-8"))
         self.assertEqual(Proposal.objects.filter(status=ProposalStatus.OPEN.value, kind=ProposalKind.TERM_CREATE.value).count(), 0)
+
+    @skip("pending: FP-S6 (FP-02)")
+    def test_fp_s6(self) -> None:
+        """FP-S6
+
+        One decision per request, and one waiting request per organisation (FP-02).
+        """
+
+    @skip("pending: FP-S8 (FP-04, R1)")
+    def test_fp_s8(self) -> None:
+        """FP-S8
+
+        Turning on a country brings the EU rules that reach it (FP-04, AC-FP2).
+        """
+
+    @skip("pending: FP-S9 (FP-04, R1)")
+    def test_fp_s9(self) -> None:
+        """FP-S9
+
+        A record's jurisdiction comes from its instrument, and EU rules reach the member countries and Norway (FP-04, AC-FP2).
+        """
+
+    @skip("pending: FP-S10 (FP-04, R1)")
+    def test_fp_s10(self) -> None:
+        """FP-S10
+
+        Watching a market is one audited write that hides nothing (FP-04, AC-FP2).
+        """
+
+    @skip("pending: FP-S11 (FP-04, R1)")
+    def test_fp_s11(self) -> None:
+        """FP-S11
+
+        A market's level is computed, and operating comes first (FP-04).
+        """
+
+    @skip("pending: FP-S12 (FP-04, R1)")
+    def test_fp_s12(self) -> None:
+        """FP-S12
+
+        Jurisdiction terms mirror the jurisdiction rows and cannot be proposed (FP-04).
+        """
+
+    @skip("pending: FP-S13 (FP-04, chunk 3)")
+    def test_fp_s13(self) -> None:
+        """FP-S13
+
+        The watched-market view of the inventory shows only what watching adds (FP-04).
+        """
+
+    @skip("pending: FP-S14 (FP-04, R1)")
+    def test_fp_s14(self) -> None:
+        """FP-S14
+
+        Markets stay inside the tenant and out of logs and error reports (FP-04, NFR-01).
+        """
+
+    @skip("pending: FP-S15 (FP-04, chunk 5)")
+    def test_fp_s15(self) -> None:
+        """FP-S15
+
+        A change's jurisdiction comes from its authority, and the feed has the watched-market view (FP-04).
+        """
+
+    @skip("pending: FP-S16 (FP-01, INV-08, chunk 3)")
+    def test_fp_s16(self) -> None:
+        """FP-S16
+
+        A standard shows only to tenants whose regulatory scope names it (FP-01, INV-08, AC-FP3).
+        """
+
+    @skip("pending: FP-S17 (FP-01, chunk 3)")
+    def test_fp_s17(self) -> None:
+        """FP-S17
+
+        The pure rule and the SQL function agree on opt-in dimensions (FP-01).
+        """

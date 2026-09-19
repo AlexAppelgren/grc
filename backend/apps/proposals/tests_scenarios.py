@@ -253,3 +253,17 @@ class ProposalsScenarioTests(ScenarioTestCase):
         again = self._post(f"/proposals/{proposal['id']}/approve", {}, sign_in(self.second_editor, step_up=True))
         self.assertEqual(again.status_code, 409)
         self.assertEqual(again.json()["code"], "invalid_transition")
+
+    @skip("pending: PRO-S10 (INV-08, chunks 4 and 5)")
+    def test_pro_s10(self) -> None:
+        """PRO-S10
+
+        Licensed text and extra obligations never enter a standard (INV-08, PRO-01, PRO-02).
+        """
+
+    @skip("pending: PRO-S11 (INV-08, chunk 4)")
+    def test_pro_s11(self) -> None:
+        """PRO-S11
+
+        A standard term never sits on a law's obligation (FP-01, INV-08).
+        """

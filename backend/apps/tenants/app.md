@@ -1,15 +1,17 @@
 # tenants — Tenant and organisation
 
-> **App spec.** Source: `PRD.md` Module TEN (TEN-01–TEN-06), ADM-01 and ADM-03,
-> journey J-8, playbook 4.2 (support access), 14, 15.
+> **App spec.** Source: `PRD.md` Module TEN (TEN-01–TEN-06, AC-TEN1), ADM-01 and ADM-03,
+> journeys J-8 and J-9, playbook 4.2 (support access), 14, 15.
 > The PRD is the source of truth; on any conflict the PRD wins. Update this
 > file whenever the PRD version bumps or a feature lands.
 
 ## 1. Business / user context
 
 A tenant is one bank. It has a profile, a timezone, default languages, legal
-entities with licences, products described the way obligations are scoped,
-and teams that own work so ownership survives a person leaving. The tenant
+entities with the licences and certificates they hold, products described the
+way obligations are scoped, departments (business areas, units and functions)
+with a head, and the teams inside them that own work and take part in it, so
+ownership survives a person leaving. The tenant
 admin surfaces live here: organisation, members and invitations, roles,
 security policy, data and the audit log view. Admin duties are separate
 permissions so a bank can keep user administration apart from business
@@ -20,7 +22,10 @@ support access grant the tenant can see, time-boxed and logged.
 
 Deliberately simplified for R1: only the profile, members, invitations,
 re-enrolment and sessions land in chunk 1. Entities, products, teams,
-delegation, bulk reassignment and support access follow in chunk 8.
+delegation, bulk reassignment and support access follow in chunk 8. A
+department is the org unit of kind business area, business unit or function
+with a head; team leads are not built, because notices go to a team's active
+members (D-21, D-34).
 
 ## 2. Requirements
 
@@ -29,12 +34,12 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | TEN-01 | Tenant profile, timezone, default languages, onboarding checklist | M | R1 | built |
-| TEN-02 | Legal entities with licences, and products described the way obligations are scoped | M | R2 | pending |
-| TEN-03 | Teams as owners, so ownership survives a person leaving | S | R2 | pending |
+| TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments with a head and the teams in them, and products described the way obligations are scoped | M | R2 | pending |
+| TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | pending |
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | pending |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | pending |
 | TEN-06 | Support access grants: visible to the tenant, time-boxed, logged | M | R2 | pending |
-| ADM-01 | Tenant admin: organisation, members and invitations, passkey re-enrolment, sessions, roles, footprint, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
+| ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
 | ADM-03 | Admin duties are separate permissions | M | R1 | built |
 
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -42,6 +47,10 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 The PRD states no lettered criterion for this module. The criteria below are
 the PRD rows and the playbook rules read as tests:
 
+- **AC-TEN1** A certificate's expiry and next audit appear on the roadmap as
+  "Our deadline" with its owner, disappear once it is withdrawn, and never
+  appear in the calendar feed. The certificate sits on the entity's licence
+  row, carries no term and decides no span.
 - The tenant profile holds timezone (default `Europe/Stockholm`, storage UTC)
   and a content language order; deadlines and digests convert through it.
 - Entities and products carry the same taxonomy terms obligations are scoped
@@ -79,6 +88,7 @@ And a deadline of 2026-10-01 renders as a Helsinki date on every screen
 Given an admin with vocab.manage
 When they add the legal entity "Bank AB" with the licence "credit institution" and the product "Custody"
 Then both carry taxonomy terms from the same dimensions obligations use
+And a licence row may also hold a certificate with its validity, next audit and owner, carrying no term
 And the register can hold a compliance status for "Bank AB" separately from another entity
 ```
 
@@ -122,11 +132,14 @@ When the two hours pass
 Then the platform admin's reads answer 404 again
 ```
 
-### TEN-S7 — J-8: tenant B cannot see tenant A `@e2e` (TEN-06, J-8)
+### TEN-S7 — J-8: tenant B cannot see tenant A `@e2e` (TEN-06, COL-04, J-8)
 ```gherkin
-Given seeded tenants A and B and a case with evidence and comments in A
+Given seeded tenants A and B, a case with evidence, comments and a participant in A, and A watching Norway
 When B's compliance officer signs in and opens A's case URL, evidence URL and vocabulary screen
 Then each answers 404 and the UI shows "Not found", never the data and never a 403
+When B opens the participants of a shared obligation on which A has participants
+Then B sees only its own participants
+And B's regulatory scope screen shows no market that A watches
 And B's lists show only B's records
 ```
 
@@ -155,4 +168,43 @@ And another with vocab.manage and workflow.manage only
 When each opens the admin area
 Then each sees only their own screens
 And neither can call the other's endpoints
+```
+
+### TEN-S8 — A department has a head and teams, and team membership is set on the member row `@integration` `@e2e` (TEN-02, TEN-03)
+```gherkin
+Given an admin with vocab.manage
+When they add the department "Retail Banking" with Karin as head and the team "Retail compliance" in it
+Then GET /me for Karin lists "Retail Banking" among the departments she heads
+Given an admin with members.manage
+When they put Anna and Johan in "Retail compliance"
+Then one audit event is written per call, holding the team keys before and after
+When they put a user who is a member only of another tenant in the team
+Then the answer is 422 with code "unknown_member"
+And the database refuses a team membership, a team's department or a department head that belongs to another tenant
+Given a person without members.manage
+When they change a member's teams
+Then the answer is 403
+```
+
+### TEN-S9 — Removing a member ends their participations and team memberships `@integration` (TEN-05, COL-04)
+```gherkin
+Given Erik owns one obligation, takes part in three items and is in the teams "Legal" and "Cards"
+When an admin opens his removal
+Then the screen lists what he owns by kind, "Takes part in 3 items" and his two teams
+And nothing changes until the admin confirms
+When the admin confirms with a new owner for the obligation
+Then the obligation is reassigned, his three participations and two team memberships end, and he is removed, in one transaction
+And one audit event is written per item
+And the participations of his teams are unchanged
+```
+
+### TEN-S10 — A legal entity records a certificate it holds `@integration` `@e2e` (TEN-02, AC-TEN1)
+```gherkin
+Given an admin with vocab.manage and the legal entity "Example Bank AB"
+When they record the licence "ISO/IEC 27001:2022 certificate, issued by Example Certification AB" with a certificate number, a scope statement, an issue date, a validity end date, a next audit date and an owner
+Then the entity screen lists it under "Licences and certificates" with its validity and next audit
+And the write is audited with before and after values
+And no obligation, scope row or applicability changes
+When they set a withdrawal date
+Then the row reads as withdrawn and stays in the history
 ```

@@ -206,3 +206,16 @@ test.describe('tenants journeys', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Roles' })).toBeVisible();
   });
 });
+
+// PRD 0.3: departments with heads and team membership (TEN-02, TEN-03) and
+// certificates on a legal entity (TEN-02, AC-TEN1). Each stays test.fixme
+// until the task in docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
+test.describe('departments, teams and certificates', () => {
+  test.fixme("TEN-S8: A department has a head and teams, and team membership is set on the member row", async () => {
+    // pending: TEN-S8 (TEN-02, TEN-03)
+  });
+
+  test.fixme("TEN-S10: A legal entity records a certificate it holds", async () => {
+    // pending: TEN-S10 (TEN-02, AC-TEN1)
+  });
+});

@@ -1,6 +1,6 @@
 # library — Inventory (the shared library)
 
-> **App spec.** Source: `PRD.md` Module INV (INV-01–INV-07, AC-INV1), playbook 4.3
+> **App spec.** Source: `PRD.md` Module INV (INV-01–INV-08, AC-INV1, AC-INV2), playbook 4.3
 > and 14, D-11, D-12.
 > The PRD is the source of truth; on any conflict the PRD wins. Update this
 > file whenever the PRD version bumps or a feature lands.
@@ -20,6 +20,14 @@ effective dates, which is what makes "as of" reads and "show what changed"
 possible. Text lives in its original language with translations as rows and
 machine translations labelled.
 
+A standard within the sector scope is an instrument like any other, one per
+edition, and the library holds only its public facts plus exactly one duty to
+conform written in our own words. Its licensed text, clause and control titles
+and any paraphrase of them stay out: a check at proposal creation, at a
+reviewer's correction and at apply refuses them, and a database trigger refuses
+a provision under a standard whatever the write path. Every instrument carries
+a regime, which is the sector boundary.
+
 Deliberately simplified for R1: the provision tree is Should, and tenant-private
 instruments from a bank's own sources wait for R3. The R1 library is seeded from
 the prototype's sample data.
@@ -30,19 +38,25 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| INV-01 | Instruments with level, binding force, official reference, ELI where available, jurisdiction, authority, in-force dates and lineage | M | R1 | in_progress |
-| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes | S | R1 | in_progress |
+| INV-01 | Instruments with level (a standard's level says so), binding force, official reference, ELI where available, jurisdiction (International for standards bodies), authority, a regime, in-force dates and lineage | M | R1 | in_progress |
+| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes; never for a standard, whose text is licensed | S | R1 | in_progress |
 | INV-03 | Obligations: plain-language duty, duty type, scope facets, trigger, retention, sanction exposure, provenance, related obligations | M | R1 | in_progress |
 | INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | in_progress |
 | INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | in_progress |
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | in_progress |
 | INV-07 | Tenant-private instruments and obligations from the tenant's own sources | C | R3 | pending |
+| INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere | M | R1 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
 - **AC-INV1** "As of" a date returns the version in force on it (the latest
   effective date on or before the date), and the diff shows what changed between
   two versions at sentence level.
+- **AC-INV2** A provision or provision-version proposal under a standard is
+  refused at creation, through `POST /proposals` and the agent API, with 422
+  `licensed_text`. A provision row under a standard is refused by the database.
+  The Ask evaluation row about a standard's control expects "no answer", and it
+  gates the release.
 - **Playbook 4.3:** library tables carry no `tenant_id`; instruments, provisions
   and obligations carry an immutable key; legal dates are plain dates with a
   precision (day, month, quarter, year), never timestamps; every model output
@@ -62,14 +76,15 @@ updating this file.
 ### INV-S1 — An instrument carries its identity, dates and lineage `@integration` `@e2e` (INV-01)
 ```gherkin
 Given the seeded instrument "FFFS 2017:2" from the Swedish FSA
-Then it holds level, binding force, official reference, ELI, jurisdiction SE, authority, in-force date with precision and the instrument it amends
-And the instrument screen shows the short name as a brand pill, the regime as information and "Guidance, comply or explain" only when it is not binding
+Then it holds level, binding force, official reference, ELI, jurisdiction SE, authority, a regime, in-force date with precision and the instrument it amends
+And the API returns the binding level as key, kind and label
+And the instrument screen shows the short name as a brand pill, the regime as information and "Guidance, comply or explain" only when it is not binding and the level kind is not standard
 And the record carries no tenant_id and is readable by every tenant
 ```
 
 ### INV-S2 — The provision tree holds verbatim text versions `@integration` `@e2e` (INV-02)
 ```gherkin
-Given an instrument with chapters, sections and paragraphs
+Given an instrument with chapters, sections and paragraphs, whose level kind is not standard
 When a provision's text is replaced by an amendment in force on 2026-11-01
 Then a new text version row exists with that effective date and a transitional note
 And the tree screen shows the current text with "Show what changed" opening the diff
@@ -79,7 +94,7 @@ And the tree screen shows the current text with "Show what changed" opening the 
 ```gherkin
 Given a seeded obligation
 Then it holds a plain-language duty, a duty type key, scope facet terms, a trigger, retention, sanction exposure, provenance to its provision and related obligations
-And the obligation header shows instrument, regime, binding level and compliance status in that order
+And the obligation header shows instrument, regime, binding level and compliance status in that order, and reads "Standard" in the binding slot when the level kind is standard
 And the scope block shows one brand pill per term, "All services" when every service is selected and "Not client-specific" when the client list is empty
 ```
 
@@ -139,4 +154,23 @@ Given an in-force date known only to the quarter
 When it is stored
 Then the row holds the date and precision "quarter", never a timestamp
 And the API and the screen show it as "Q4 2026" in the user's language
+```
+
+### INV-S11 — An edition of a standard is an instrument with public facts and no text `@integration` `@e2e` (INV-01, INV-02, INV-08)
+```gherkin
+Given the instrument "ISO/IEC 27001:2022" at the level "Standard" under the jurisdiction "International" and the authority "ISO/IEC"
+Then it holds its official reference, publication date with precision, catalogue link and regime
+And the API returns bindingLevel with kind "standard", and a null kind for every other level
+And the obligation header and the obligation row show "Standard" in the binding slot, never "Guidance, comply or explain"
+And the provision tree reads "The text of this standard is licensed and not held here" with the catalogue link
+And the instrument has exactly one obligation and no provision
+```
+
+### INV-S12 — Every instrument carries a regime from the regime dimension `@integration` (INV-01, INV-08)
+```gherkin
+Given an instrument row written without a regime
+Then the database refuses it
+And every seeded instrument's regime is a term of the regime dimension
+When an instrument proposal names a term of the dimension "Service" as its regime and a library editor approves it
+Then the apply answers 422 with code "not_a_regime" and nothing is written
 ```

@@ -34,3 +34,28 @@ test.describe('register journeys', () => {
     // pending: REG-S9 (REG-06)
   });
 });
+
+// PRD 0.3: a legal entity follows a standard and lists its units (REG-01,
+// REG-08, J-10). Each stays test.fixme until the task in
+// docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
+test.describe('standards per legal entity', () => {
+  test.fixme("REG-S12: A legal entity follows a standard when its applicability is approved", async () => {
+    // pending: REG-S12 (REG-01, REG-02)
+  });
+
+  test.fixme("REG-S13: A tenant lists its clauses and controls as units in its own words", async () => {
+    // pending: REG-S13 (REG-08)
+  });
+
+  test.fixme("REG-S14: Unit decisions are filed from the paste and decided in one call, with four eyes on every row", async () => {
+    // pending: REG-S14 (REG-01, REG-08, AC-REG1)
+  });
+
+  test.fixme("REG-S15: The register filtered by standard and entity is the Statement of Applicability", async () => {
+    // pending: REG-S15 (REG-08)
+  });
+
+  test.fixme("REG-S16: J-10: a legal entity follows a standard from regulatory scope to Statement of Applicability", async () => {
+    // pending: REG-S16 (FP-02, TEN-02, REG-01, REG-08, J-10)
+  });
+});

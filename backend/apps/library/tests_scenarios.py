@@ -86,3 +86,17 @@ class LibraryScenarioTests(TestCase):
 
         Legal dates are plain dates with a precision (INV-01, INV-02).
         """
+
+    @skip("pending: INV-S11 (INV-08, chunk 3)")
+    def test_inv_s11(self) -> None:
+        """INV-S11
+
+        An edition of a standard is an instrument with public facts and no text (INV-01, INV-02, INV-08).
+        """
+
+    @skip("pending: INV-S12 (INV-08, chunk 3)")
+    def test_inv_s12(self) -> None:
+        """INV-S12
+
+        Every instrument carries a regime from the regime dimension (INV-01, INV-08).
+        """

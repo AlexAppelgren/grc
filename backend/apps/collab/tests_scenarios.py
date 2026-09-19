@@ -51,3 +51,52 @@ class CollabScenarioTests(TestCase):
 
         Comment text never reaches a log (COL-01).
         """
+
+    @skip("pending: COL-S6 (COL-04, chunk 8)")
+    def test_col_s6(self) -> None:
+        """COL-S6
+
+        A person or a team is added to a register entry, audited, and gains no access (COL-04, AC-COL1).
+        """
+
+    @skip("pending: COL-S7 (COL-04, chunk 8)")
+    def test_col_s7(self) -> None:
+        """COL-S7
+
+        A participant leaves a register entry on their own (COL-04).
+        """
+
+    @skip("pending: COL-S8 (COL-04, chunk 8)")
+    def test_col_s8(self) -> None:
+        """COL-S8
+
+        Register-entry participant routes refuse other tenants, strangers and people who cannot read (COL-04, NFR-01).
+        """
+
+    @skip("pending: COL-S9 (COL-04, chunk 9)")
+    def test_col_s9(self) -> None:
+        """COL-S9
+
+        Case participants are managed by those who contribute, and refused across tenants (COL-04, NFR-01).
+        """
+
+    @skip("pending: COL-S10 (COL-02, COL-04, chunk 10)")
+    def test_col_s10(self) -> None:
+        """COL-S10
+
+        Participation, confirmed links and new versions notify the people involved, once, if they can read (COL-02, COL-04).
+        """
+
+    @skip("pending: COL-S11 (COL-02, chunk 10)")
+    def test_col_s11(self) -> None:
+        """COL-S11
+
+        Review reminders reach the people responsible, once (COL-02).
+        """
+
+    @skip("pending: COL-S12 (COL-01, HOM-05, chunk 10)")
+    def test_col_s12(self) -> None:
+        """COL-S12
+
+        My comments and mentions are found on My work, limited to what I can read, and never logged (COL-01, HOM-05).
+        """

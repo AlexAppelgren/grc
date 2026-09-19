@@ -1,6 +1,6 @@
 # watch — Regulatory watch
 
-> **App spec.** Source: `PRD.md` Module WAT (WAT-01–WAT-06, AC-WAT1–AC-WAT2), playbook
+> **App spec.** Source: `PRD.md` Module WAT (WAT-01–WAT-07, AC-WAT1–AC-WAT2, AC-AGT1), playbook
 > 4.3 (idempotency), 6.7 (change pill slots), 16.
 > The PRD is the source of truth; on any conflict the PRD wins. Update this
 > file whenever the PRD version bumps or a feature lands.
@@ -18,6 +18,14 @@ Duplicates are merged: posting a known `stableKey` adds new pages to the
 existing change instead of creating a second one, because agents and senders
 retry.
 
+A standard's revision is watched the same way, from public metadata only: one
+change per edition or amendment, the draft, final draft, publication and
+accreditation rule as timeline entries, and the end of the transition as the
+key date. A publisher's page keeps a URL, a date and a hash and never a
+snapshot, and automated checks run only on publishers whose terms allow them.
+Every change carries at least one regime, the sector boundary, and a standard's
+term only when the authority's jurisdiction is international.
+
 Deliberately simplified for R1: tenant-requested and private sources wait for
 R3.
 
@@ -29,13 +37,17 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | WAT-01 | Source registry and coverage log: what was checked, when, with what result | M | R1 | pending |
 | WAT-02 | One record per reform with a timeline from consultation to in force, partial dates, duplicates merged | M | R1 | pending |
-| WAT-03 | Change types, flags and scope from vocabularies; agent classifications shown as suggestions until confirmed | M | R1 | pending |
+| WAT-03 | Change types, flags and scope from vocabularies, with at least one regime on every change and a standard term only on a change from a standards body; agent classifications shown as suggestions until confirmed | M | R1 | pending |
 | WAT-04 | Links to affected obligations with confidence, confirmed by a person | M | R1 | pending |
 | WAT-05 | A drafted "So what?" per change, labelled AI-drafted until a person confirms or rewrites it per tenant | M | R1 | pending |
 | WAT-06 | Tenants can request a source; private sources are visible to that tenant only | S | R3 | pending |
+| WAT-07 | Standards watched from public metadata: one change per edition or amendment, a timeline from draft to publication, a key date for the end of the transition, no snapshot of a publisher's page, and automated checks only where the terms allow | S | R1 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
+- **AC-AGT1** A change without a regime answers 422 `regime_required`, and a
+  standard's term is accepted only when the authority's jurisdiction kind is
+  international.
 - **AC-WAT1** Posting a known `stableKey` merges new pages as duplicates and
   returns the existing change.
 - **AC-WAT2** An agent submitting an unknown key receives 422 `unknown_key` with
@@ -126,4 +138,28 @@ Given a change of type "amendment", urgency "Act now", one flag and status "Need
 When the feed renders it
 Then the pills read, in order: the type as notice, "Act now" as negative, the flag as brand
 And the header adds "Needs triage" as information, then the authority and date as plain text
+```
+
+### WAT-S10 — A new edition of a standard is one change, and only tenants that follow it see it `@integration` `@e2e` (WAT-02, WAT-07, CAS-01, AC-FP3)
+```gherkin
+Given tenant A follows "ISO/IEC 27001" and tenant B follows no standard
+When an agent registers the change "ISO/IEC 27001 amendment" with the authority "ISO/IEC", the term "ISO/IEC 27001", the regime "AI and ICT", a draft-for-comment timeline entry and a key date labelled "Transition ends"
+And later registers the same stable key with its publication date
+Then one change exists with both timeline entries
+And each tenant has exactly one case for it, tenant A's matching its scope and tenant B's not
+And the change and the transition date appear in tenant A's feed and roadmap and in neither of tenant B's
+```
+
+### WAT-S11 — Every change carries a regime, a standard term needs a standards body, and a publisher's page keeps no snapshot `@integration` (WAT-01, WAT-03, WAT-07, AC-AGT1)
+```gherkin
+Given an agent key with changes:write
+When it registers a change with no regime term
+Then the API answers 422 with code "regime_required" and the valid regime keys
+When it registers a change carrying a standard's term whose authority is a national supervisor
+Then the API answers 422 with code "standard_term_only_on_standards"
+Given the open web sweep fetches a page on a host listed in the standards publisher setting
+Then the stored source document holds the URL, the date and a content hash and no snapshot
+When a change carrying an opt-in term links a document that has a snapshot
+Then the API answers 422 with code "licensed_text"
+And a source of kind "Standards body" registered inactive gets no automated check
 ```

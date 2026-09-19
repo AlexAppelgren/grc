@@ -26,7 +26,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | REP-01 | Dashboard: open changes by urgency, overdue actions, gaps, unconfirmed AI drafts, time to triage, regime by account heatmap, load per owner | S | R3 | pending |
-| REP-02 | Committee pack and exports of inventory, changes, cases and the audit log | S | R3 | pending |
+| REP-02 | Committee pack and exports of inventory (including a dated Statement of Applicability per standard and entity), changes, cases and the audit log | S | R3 | pending |
 | REP-03 | Spreadsheet register import: dry run, near-match mapping asked once per value, then commit | S | R3 | pending |
 | REP-04 | Full tenant export in open formats and verified deletion | M | R3 | pending |
 
@@ -98,4 +98,13 @@ Then a job produces the register, cases, evidence, configuration and audit log i
 When they confirm deletion after the export
 Then tenant rows are deleted, append-only tables keep their rows under retention, and a verification report lists both
 And a later sign-in for the tenant answers 404
+```
+
+### REP-S6 — The Statement of Applicability exports as a dated inventory export `@integration` (REP-02, REG-08)
+```gherkin
+Given a user with exports.create and a fresh step-up
+When they export the inventory filtered by a standard's edition and one legal entity
+Then the job produces a file carrying its export date and, per unit, the reference, the tenant's title, applicability, reason, status, approver and decision date
+And the export writes one audit event
+And the request returns before the file is built
 ```

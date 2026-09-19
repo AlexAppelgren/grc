@@ -51,3 +51,10 @@ class ReportsScenarioTests(TestCase):
 
         A tenant can leave with everything and have deletion verified (REP-04).
         """
+
+    @skip("pending: REP-S6 (REP-02, REG-08, chunk 12)")
+    def test_rep_s6(self) -> None:
+        """REP-S6
+
+        The Statement of Applicability exports as a dated inventory export (REP-02, REG-08).
+        """

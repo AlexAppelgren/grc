@@ -31,9 +31,30 @@ if behaviour changes. Numbering never reuses a number.
 | [0022](0022-database-roles-for-rls.md) | Two database roles so row-level security means something | Playbook 14 | accepted by default |
 | [0023](0023-translations-as-rows.md) | Translations as rows: the full consequences of D-12 | D-12, playbook 17 | accepted by default |
 | [0024](0024-tenant-zone-portability.md) | Tenant-zone portability | Playbook 12, 14, 18 | accepted by default |
+| [0025](0025-newest-releases-and-medium-findings.md) | Newest releases of every package, and MEDIUM findings block | Alex, 2026-09-19 | accepted by default |
+| [0026](0026-markets-footprint-and-watch-list.md) | Markets are the regulatory scope's jurisdictions plus a watch list | D-27 to D-33 | accepted by default |
+| [0027](0027-participants-departments-and-my-work.md) | Participants, departments and one My work service | D-18 to D-21, D-23 to D-26 | accepted by default |
+| [0028](0028-notes-are-shared-comments.md) | Notes are shared comments, and one recipient check serves every notification | D-22, D-34 | accepted by default |
+| [0029](0029-standards-library-holds-public-facts-only.md) | The shared library holds a standard's public facts and one conformance duty | D-35 | accepted by default |
+| [0030](0030-opt-in-dimension-for-standards.md) | A standard is opted into through an opt-in dimension of the regulatory scope | D-36 | accepted by default |
+| [0031](0031-standard-instrument-level-kind.md) | An optional instrument level kind says an instrument is a standard | D-37 | accepted by default |
+| [0032](0032-international-jurisdiction.md) | International is a jurisdiction kind of its own | D-38 | accepted by default |
+| [0033](0033-regime-is-the-sector-boundary.md) | Every instrument and every change carries a regime, and the regime list is the boundary | D-39 | accepted by default |
+| [0034](0034-sector-vocabulary-edges.md) | The sector scope's edges: tax, AI and the licensed-activity dimension | D-40 | accepted by default |
+| [0035](0035-soa-units-in-the-tenant-zone.md) | The Statement of Applicability's units live in the tenant zone | D-41 | accepted by default |
+| [0036](0036-entity-follows-a-standard-by-applicability.md) | A legal entity follows a standard through approved applicability | D-42 | accepted by default |
+| [0037](0037-certificate-on-the-licence-row.md) | A certificate sits on the entity's licence row and reaches the roadmap, not the feed | D-43 | accepted by default |
+| [0038](0038-bulk-decision-of-applicability-requests.md) | Many pending applicability requests are decided in one call, with four eyes on every row | D-44 | accepted by default |
+| [0039](0039-standards-watched-from-public-metadata.md) | Standards are watched from public metadata, and only from cleared publishers | D-45 | accepted by default |
+| [0040](0040-soa-view-now-export-later.md) | The Statement of Applicability is a filtered register view in R2 and an export in R3 | D-46 | accepted by default |
+| [0041](0041-seed-one-standard-first.md) | One standard is seeded first, and the rest arrive by proposal | D-47 | accepted by default |
 
 Still to write, when the playbook's Appendix C says so: the SSO stance (R3),
 the switch from one branch to `staging` and `main` (supersedes 0015), the
 chosen embedding model (fills 0009), the first real agent runner (fills 0008),
 protection of production data from developer writes (playbook 11.3).
-- 0025: Newest releases of every package, and MEDIUM findings block (`0025-newest-releases-and-medium-findings.md`)
+
+PRD 0.3 (2026-09-19) added 0026 to 0041 for decisions D-18 to D-47. D-18 to
+D-21 and D-23 to D-26 share ADR 0027, and D-22 and D-34 share ADR 0028, because
+each group is one design that is accepted or reversed whole. The thirteen
+standards decisions have one ADR each, because each stands or falls on its own.

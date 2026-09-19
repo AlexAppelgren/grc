@@ -1,6 +1,6 @@
 # agents — Research agents
 
-> **App spec.** Source: `PRD.md` Module AGT (AGT-01–AGT-07), journey J-4, playbook 11.2
+> **App spec.** Source: `PRD.md` Module AGT (AGT-01–AGT-08, AC-AGT1), journey J-4, playbook 11.2
 > (fetched content is untrusted), 16, D-07, D-08.
 > The PRD is the source of truth; on any conflict the PRD wins. Update this
 > file whenever the PRD version bumps or a feature lands.
@@ -23,6 +23,13 @@ instructions, tools or direct library writes. Fetched web content is
 untrusted: it is screened for embedded instructions, never executed and never
 rendered as HTML.
 
+Agents stay inside the sector scope. An out-of-scope document is logged as a
+source check and counted, and nothing is registered or proposed from it. A
+standard's text is never fetched, quoted, summarised, translated or restated
+from memory, and a blocked page is a failed check that is never worked around.
+A tenant agent's default scope is the tenant's operating markets first, then
+the watched ones; a platform library run never reads a tenant's markets.
+
 Deliberately simplified for R1: only the agent API, vocabulary reads and the
 content screen ship (chunk 5). Definitions, tenant controls, research
 requests and the runner adapter are R2 (chunk 11). The first real runner is
@@ -37,10 +44,11 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | pending |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | pending |
 | AGT-03 | Versioned agent definitions owned by the platform | M | R2 | pending |
-| AGT-04 | Tenant controls: on and off, cadence, scope, run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch | M | R2 | pending |
+| AGT-04 | Tenant controls: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch | M | R2 | pending |
 | AGT-05 | Research requests: check a source now, research a topic, re-tag existing records | S | R2 | pending |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | pending |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 | in_progress |
+| AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -83,8 +91,9 @@ Then one change row exists and each retry returns it with 200
 ### AGT-S3 — Agents read the vocabularies at run start and may use existing keys only `@integration` (AGT-02)
 ```gherkin
 Given the vocabularies for change types, flags and taxonomy terms
+And the instrument level, jurisdiction, relation type, duty type and provision kind lists
 When a run opens
-Then GET /vocab/{list} returns key, label and usage note for each active row
+Then GET /vocab/{list} returns key, kind, label and usage note for each active row
 When the agent submits a key that is not in the list
 Then the request answers 422 with code "unknown_key" and the valid keys
 And a new term arrives only as a proposal, never as free text
@@ -151,4 +160,27 @@ When the key registers a change and submits a proposal for an obligation summary
 And the editor approves it in the console
 Then the obligation shows version 2 with "Show what changed"
 And the tenant's "Library updates" lists the change
+```
+
+### AGT-S11 — A tenant agent's default scope is the operating markets first, then the watched ones `@integration` (AGT-04)
+```gherkin
+Given a tenant operating in Sweden and watching Norway, and a tenant agent with no scope of its own
+When a run starts
+Then the run's stored scope lists Sweden as operating, Norway as watching and the EU as reaching them, in that order
+And later market changes do not alter that run's scope
+When an admin with agents.manage restricts the agent's scope to Sweden and Finland
+Then the next run's scope is Sweden and Finland only
+When a platform library run starts
+Then its scope contains no tenant's markets and every covered jurisdiction is swept
+```
+
+### AGT-S12 — Out-of-scope documents are counted and never registered, and the eval set gates it `@integration` (AGT-08, SRC-05, AC-AGT1)
+```gherkin
+Given the classification set holds authored texts for a medical-device rule, a construction-safety rule, an environmental permit and an ISO 14001 revision, each expecting in_scope false
+And an authored text for a financial-sector rule that cites a standard, expecting in_scope true and no standard term
+When the evaluation runs
+Then in-scope accuracy and standard-term accuracy are reported and the gate fails when either falls below its tolerance
+Given a run that checked two out-of-scope documents
+When it closes with the stat out_of_scope 2
+Then the run history shows two source checks, no change and no proposal from them, and the count 2
 ```

@@ -86,3 +86,17 @@ class SearchScenarioTests(TestCase):
 
         Only the library is indexed in R1 (SRC-01).
         """
+
+    @skip("pending: SRC-S12 (INV-08, chunk 7)")
+    def test_src_s12(self) -> None:
+        """SRC-S12
+
+        A question about a standard's control gets "no answer" (SRC-03, SRC-05, INV-08).
+        """
+
+    @skip("pending: SRC-S13 (REG-08, chunk 8)")
+    def test_src_s13(self) -> None:
+        """SRC-S13
+
+        Nothing a tenant writes under a standard reaches the index or a model (REG-08, SRC-01).
+        """

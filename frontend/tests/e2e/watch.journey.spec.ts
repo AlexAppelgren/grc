@@ -34,3 +34,12 @@ test.describe('watch journeys', () => {
     // pending: WAT-S9 (WAT-03, NFR-03)
   });
 });
+
+// PRD 0.3: a standard's revision is one watched change that reaches only the
+// tenants that follow it (WAT-07). It stays test.fixme until the task in
+// docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
+test.describe('standards revisions', () => {
+  test.fixme("WAT-S10: A new edition of a standard is one change, and only tenants that follow it see it", async () => {
+    // pending: WAT-S10 (WAT-02, WAT-07, CAS-01, AC-FP3)
+  });
+});

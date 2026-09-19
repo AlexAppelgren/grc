@@ -88,3 +88,13 @@ bump. Add a row whenever the build relies on something external.
 | Finansinspektionen's own subject areas are named "Bank" and "Betalningar", so the two new regime terms take those words: Banking / Bankverksamhet and Payments / Betalningar | Verified | fi.se, the main menu (För konsumenter, Stabilitet, Hållbarhet, Bank, Betalningar, Försäkring, Marknad, Publicerat, Om FI) | 2026-09-19 |
 | Green's checkbox guidance: the read-only pattern shows the selected state without allowing it to be changed and, for a group of choices, keeps enough context to read both the selected and the unselected options; a group must have a header label; vertical is the default alignment, horizontal only for a small set; the hint is `supportingText` | Verified | Green MCP server, `get_component_docs` for `gds-checkbox` (design guidelines), which cites seb.io/patterns/read-only | 2026-09-19 |
 | `react/no-danger` (eslint-plugin-react 7.37.5) flags only the JSX prop `dangerouslySetInnerHTML`, and only on DOM elements unless `customComponentNames` names the components to check (`['*']` for all of them) | Verified | github.com/jsx-eslint/eslint-plugin-react, docs/rules/no-danger.md; the installed `lib/rules/no-danger.js` | 2026-09-19 |
+
+PRD 0.3 (2026-09-19) rests on outside facts that the consolidation session did
+**not** fetch. They are recorded here as not verified, and the work that needs
+them is blocked on `f03-T34` in `docs/plans/briefs/FEATURES_0_3_TASKS.md`.
+
+| Claim | Status | Source | Checked |
+|---|---|---|---|
+| Everything the standards analysis states about ISO, IAF, PCI SSC, Swift, SIS, DS, Standard Norge and SFS: the current ISO/IEC 27001 edition, its stage and amendment; the catalogue page and any per-standard feed; the Annex A exclusion rule; the IAF MD 26 transition dates; the ISO/IEC 17021-1 certification cycle; ISO's systematic review cycle; the Nordic national adoptions; the PCI DSS version and its retirement practice; the Swift CSCF attestation window; and the licence and website terms of each publisher and member body, including any text-and-data-mining reservation | **Not verified** | `docs/plans/briefs/STANDARDS.md` §9 lists what to fetch; `f03-T34` fetches and logs each one, and nothing is seeded before it is green. The research behind the analysis reported blocked pages on some of them | |
+| EU rules reach Norway through the EEA Agreement, which is why the jurisdiction seed gives Norway the EU as its parent (D-28, ADR 0026) | **Not verified** | Fetch the EEA Agreement's own text before this reaches a customer-facing statement. The design consequence is deliberately the safe direction: a Norwegian bank sees EU acts that may not yet be incorporated, and applicability stays a human decision (REG-01) | |
+

@@ -30,3 +30,24 @@ test.describe('home journeys', () => {
     // pending: HOM-S6 (HOM-03)
   });
 });
+
+// PRD 0.3: My work (HOM-05, J-9) and a certificate's dates on the roadmap
+// (HOM-03, TEN-02). Each stays test.fixme until the task in
+// docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
+test.describe('my work and certificate deadlines', () => {
+  test.fixme("HOM-S7: My work lists what I'm responsible for or take part in, most urgent first", async () => {
+    // pending: HOM-S7 (HOM-05, AC-HOM1)
+  });
+
+  test.fixme("HOM-S9: A department head sees the department's work, naming who is responsible", async () => {
+    // pending: HOM-S9 (HOM-05, TEN-02, TEN-03)
+  });
+
+  test.fixme("HOM-S13: J-9: Monday morning", async () => {
+    // pending: HOM-S13 (HOM-05, COL-04, TEN-03, J-9)
+  });
+
+  test.fixme("HOM-S15: A certificate's expiry and next audit are our deadlines, never in the calendar feed", async () => {
+    // pending: HOM-S15 (HOM-03, HOM-04, TEN-02, AC-TEN1)
+  });
+});

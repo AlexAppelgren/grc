@@ -34,3 +34,12 @@ test.describe('library journeys', () => {
     // pending: INV-S7 (INV-06)
   });
 });
+
+// PRD 0.3: a standard is an instrument of public facts with no provision tree
+// (INV-08). It stays test.fixme until the task in
+// docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
+test.describe('standards in the library', () => {
+  test.fixme("INV-S11: An edition of a standard is an instrument with public facts and no text", async () => {
+    // pending: INV-S11 (INV-01, INV-02, INV-08)
+  });
+});

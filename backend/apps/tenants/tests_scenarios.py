@@ -177,3 +177,24 @@ class TenantsScenarioTests(ScenarioTestCase):
         # admin holds neither grant, which is what keeps them off those screens.
         self.assertNotIn(perms.VOCAB_MANAGE, self.client.get("/api/v1/me", **people_admin).json()["permissions"])
         self.assertNotIn(perms.WORKFLOW_MANAGE, self.client.get("/api/v1/me", **people_admin).json()["permissions"])
+
+    @skip("pending: TEN-S8 (TEN-02, TEN-03, chunk 8)")
+    def test_ten_s8(self) -> None:
+        """TEN-S8
+
+        A department has a head and teams, and team membership is set on the member row (TEN-02, TEN-03).
+        """
+
+    @skip("pending: TEN-S9 (TEN-05, COL-04, chunk 8)")
+    def test_ten_s9(self) -> None:
+        """TEN-S9
+
+        Removing a member ends their participations and team memberships (TEN-05, COL-04).
+        """
+
+    @skip("pending: TEN-S10 (TEN-02, chunk 8)")
+    def test_ten_s10(self) -> None:
+        """TEN-S10
+
+        A legal entity records a certificate it holds (TEN-02, AC-TEN1).
+        """

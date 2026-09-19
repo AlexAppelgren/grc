@@ -114,3 +114,10 @@ class CasesScenarioTests(TestCase):
 
         Another tenant's case and evidence answer 404 (CAS-05, CAS-07, NFR-01).
         """
+
+    @skip("pending: CAS-S17 (CAS-03, COL-04, chunk 9)")
+    def test_cas_s17(self) -> None:
+        """CAS-S17
+
+        Contributor teams are the case's team participants (CAS-03, COL-04).
+        """

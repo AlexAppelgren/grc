@@ -1,5 +1,26 @@
 # Regulatory scope (was "Footprint"): spec
 
+## Final IDs (PRD 0.3)
+
+Assigned by the PRD 0.3 consolidation (`PRD_0_3_CONSOLIDATION.md`, 2026-09-19),
+which merged this spec with `MY_WORK_AND_MARKETS.md` and `STANDARDS.md` into one
+bump. **Read the right-hand column, not the drafts below.**
+
+| Drafted here | Final | Note |
+|---|---|---|
+| FP-S6 (one decision per request, one pending request) | FP-S6 | Kept: the tasks below are already planned under it |
+| FP-S7 (members without scope permissions) | FP-S7 | Kept, for the same reason |
+| The PRD glossary line | PRD 0.3, in the note under the version log | Added; the matching item is gone from `docs/TODO_FOR_alex.md` |
+| No requirement text change | FP-01 **is** changed after all | `STANDARDS.md` had to amend it for the opt-in standards dimension. FP-02, FP-03 and AC-FP1 are unchanged, as this spec says |
+| Open questions in §12 | `docs/TODO_FOR_alex.md` | Already there, each with its default |
+| T01 to T14 | `f03-*` | `docs/plans/briefs/FEATURES_0_3_TASKS.md` carries them with their final IDs and dependencies |
+| T15 (docs) | — | Already landed: `design/README.md`, `foundations.md`, `pills-and-labels.md` and the TODO entries are in place |
+
+One thing this spec does not yet cover, decided in the same bump: the standards
+dimension is of kind `opt_in`, so on this page an empty standards group reads
+"None followed", not "Not restricted: every option applies.", and `narrowedGroups()`
+never lists it (D-36, ADR 0030).
+
 Status: final proposal for Alex. It serves FP-01, FP-02, FP-03, AC-FP1, ADM-01 and J-6. No requirement text changes. One PRD glossary line is suggested, for Alex to add.
 
 ## 1. In one paragraph

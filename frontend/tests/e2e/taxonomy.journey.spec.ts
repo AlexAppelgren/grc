@@ -432,3 +432,32 @@ test.describe('taxonomy journeys', () => {
     });
   });
 });
+
+// PRD 0.3: the regulatory scope's restricted page (FP-02), markets (FP-04) and
+// the opt-in standards dimension (INV-08). Each stays test.fixme until the task
+// in docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
+test.describe('regulatory scope, markets and standards', () => {
+  test.fixme("FP-S7: Members without scope permissions cannot open the regulatory scope page", async () => {
+    // pending: FP-S7 (FP-02, ADM-01)
+  });
+
+  test.fixme("FP-S8: Turning on a country brings the EU rules that reach it", async () => {
+    // pending: FP-S8 (FP-04, AC-FP2)
+  });
+
+  test.fixme("FP-S10: Watching a market is one audited write that hides nothing", async () => {
+    // pending: FP-S10 (FP-04, AC-FP2)
+  });
+
+  test.fixme("FP-S13: The watched-market view of the inventory shows only what watching adds", async () => {
+    // pending: FP-S13 (FP-04); needs the chunk 3 inventory
+  });
+
+  test.fixme("FP-S15: A change's jurisdiction comes from its authority, and the feed has the watched-market view", async () => {
+    // pending: FP-S15 (FP-04); needs the chunk 5 watch feed
+  });
+
+  test.fixme("FP-S16: A standard shows only to tenants whose regulatory scope names it", async () => {
+    // pending: FP-S16 (FP-01, FP-02, INV-08, AC-FP3)
+  });
+});

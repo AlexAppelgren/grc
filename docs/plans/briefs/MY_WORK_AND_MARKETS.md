@@ -1,5 +1,36 @@
 # My work, participants and markets: analysis
 
+## Final IDs (PRD 0.3)
+
+Assigned by the PRD 0.3 consolidation (`PRD_0_3_CONSOLIDATION.md`, 2026-09-19),
+which merged this analysis with `REGULATORY_SCOPE.md` and `STANDARDS.md` into
+one bump. **Read the right-hand column, not the drafts below.** Only the FP
+scenario numbers moved: `REGULATORY_SCOPE.md` kept FP-S6 and FP-S7, whose tasks
+were already planned under them, so this analysis's eight FP scenarios shift by
+two.
+
+| Drafted here | Final | Note |
+|---|---|---|
+| D-18 to D-34 | D-18 to D-34 | Unchanged; `docs/DECISIONS.md` ended at D-17 |
+| ADRs "0026, 0027, 0028" | 0026, 0027, 0028 | Unchanged |
+| FP-04, HOM-05, COL-04 | FP-04, HOM-05, COL-04 | Unchanged |
+| AC-FP2, AC-HOM1, AC-COL1 | AC-FP2, AC-HOM1, AC-COL1 | Unchanged |
+| J-8 (changed), J-9 | J-8, J-9 | Unchanged |
+| FP-S6 | **FP-S8** | Turning on a country brings the EU rules that reach it |
+| FP-S7 | **FP-S9** | A record's jurisdiction comes from its instrument |
+| FP-S8 | **FP-S10** | Watching a market is one audited write |
+| FP-S9 | **FP-S11** | A market's level is computed |
+| FP-S10 | **FP-S12** | Jurisdiction terms mirror the jurisdiction rows |
+| FP-S11 | **FP-S13** | The watched-market view of the inventory |
+| FP-S12 | **FP-S14** | Markets stay inside the tenant and out of logs |
+| FP-S13 | **FP-S15** | A change's jurisdiction, and the feed's view |
+| HOM-S7 to HOM-S14 | HOM-S7 to HOM-S14 | Unchanged |
+| COL-S6 to COL-S12 | COL-S6 to COL-S12 | Unchanged |
+| CAS-S17, TEN-S8, TEN-S9, AGT-S11 | same | Unchanged |
+| Amended: CAS-S4, COL-S2, COL-S4, TEN-S7 | same | Unchanged; TEN-S5 needed no wording change, TEN-S9 carries the removal |
+| T-01 to T-08 (documents) | — | Done by the consolidation commit, except the `CHUNK3_TASKS.md` and `CHUNK4_BRIEF.md` edits, which became `f03-T01` and `f03-T02` |
+| T-09 to T-44 | `f03-*` | `docs/plans/briefs/FEATURES_0_3_TASKS.md` carries them with their final IDs and dependencies |
+
 This was read-only analysis. No file in the repository was edited. I checked against `main` at **e629481**, which is 51f9efa (chunk 3's data layer) plus the navigation specification. PRD **0.2** (sector scope, 7613874) is already on main, so the PRD bump below is **0.3**.
 
 **What changed after review**

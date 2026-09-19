@@ -17,6 +17,7 @@ overwritten.
 | 2026-09-19 | Plan created. Chunk 1 operations marked "in build" (cards `auth-*`, `me-*`, `admin-members|roles|api-keys|security-log|organisation` by the identity agent). Chunks 2 to 7 marked "designed" with their cards in `design/screens/`. R2 and R3 operations mapped to the card that will hold them, marked "later chunk, card pending" | design agent |
 | 2026-09-19 | Correction: the tenant never confirms a change's type or flags directly (library facts, PRO-01). `tenant-change.html` shows them as suggested; triage accepts them for the tenant, a library editor corrects them through `PATCH /changes/{id}`, a member reports. The earlier draft of the card had a tenant-side "Confirm classification" button; removed before the card was finished | design agent |
 | 2026-09-19 | Paths for the INPUT_DELTAS additions that the contract does not yet spell out (vocabulary writes, footprint change requests, suggestions) are proposed in this table and marked "path proposed". The chunk that builds them fixes the path and adds a ledger row | design agent |
+| 2026-09-19 | PRD 0.3: `GET /me/work` no longer feeds Today's "Decide now" — Today reads the queue counts on `GET /me`, and `/me/work` becomes the My work page in chunk 8 (D-23). New rows for the participant routes, the people reference, member teams, the watching routes and the unit and bulk-decision routes. `admin-footprint.html` gains the markets panel, and on screen the section is called Regulatory scope (PRD glossary) | docs agent |
 
 ## Honesty rules (playbook 7.5, kept in spirit)
 
@@ -56,7 +57,7 @@ overwritten.
 | `admin-organisation`, `admin-members`, `admin-roles`, `admin-api-keys`, `admin-security-log` | `/admin/*` | tenant | 1 | in build |
 | `admin-vocabularies.html` | `/admin/vocabularies` | tenant | 2 | designed |
 | `admin-vocabulary.html` | `/admin/vocabularies/[list]`; console variant `/console/vocabularies/[list]` | both | 2, 4 | designed |
-| `admin-footprint.html` | `/admin/footprint` | tenant | 2 | designed |
+| `admin-footprint.html` (on screen: Regulatory scope) | `/admin/footprint` | tenant | 2; markets panel 3 | designed; the markets panel is card pending |
 | `picker-create-or-suggest.html` | inside every vocabulary picker | both | 2 (near-duplicate), 8 (suggest) | designed |
 | `tenant-inventory.html` | `/inventory` (Obligations, Instruments tabs) | tenant | 3 | designed |
 | `tenant-obligation.html` | `/inventory/obligations/[obligationId]` | tenant | 3; register panels 8 | designed |
@@ -80,7 +81,11 @@ overwritten.
 | `admin-ai-log.html` | `/admin/ai-log` | tenant | 7 (AUD-02) | card pending |
 | `console-evaluation.html` | `/console/evaluation` | console | 7 (SRC-05) | card pending |
 | `tenant-gaps.html`, register panels | `/inventory/obligations/[id]` right column, `/gaps` | tenant | 8 | card pending; prototype `vGaps()`, `vGap()`, `entityPanel()`, `gapsPanel()`, `historyPanel()`, `interpPanel()` are the cut |
-| `admin-organisation.html` entities, products, teams | `/admin/organisation` | tenant | 8 | extends the chunk 1 card |
+| `admin-organisation.html` entities, licences and certificates, products, departments with heads, teams | `/admin/organisation` | tenant | 8 | extends the chunk 1 card; the department, team and certificate sections are card pending |
+| `admin-members.html` team membership on the member row | `/admin/members` | tenant | 8 | extends the chunk 1 card; card pending |
+| `tenant-my-work.html` | `/work` | tenant | 8 | card pending (HOM-05); scope switch, four sections, the link to Today, the comments and mentions panel from chunk 10 |
+| participants panel on `tenant-obligation.html` and `tenant-change.html` | `/inventory/obligations/[id]`, `/watch/[changeId]` | tenant | 8, 9 | card pending (COL-04) |
+| units list, paste dialog and the Statement of Applicability view on `tenant-obligation.html` | `/inventory/obligations/[id]` | tenant | 8 | card pending (REG-08) |
 | case panels on `tenant-change.html` | `/watch/[changeId]` | tenant | 9 | card pending; prototype `vChange()` work panels are the cut |
 | `tenant-notifications.html`, comments panel | who panel, every record | tenant | 10 | card pending |
 | `admin-agents.html`, `console-agent-definitions.html` | `/admin/agents`, `/console/agents` | both | 11 | card pending; prototype `vAgents()` is the cut |
@@ -113,7 +118,9 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | `POST /auth/sign-out` | who panel (`tenant-shell.html`, `console-shell.html`) | both | any signed-in | no | anyone | ID-S25 | in build |
 | `GET /me` | shell (who panel, registry permissions, queue counts) | both | any signed-in or enrolment | no | anyone | ID-S4, ID-S26 | served, grows in chunk 1 |
 | `PATCH /me` | who panel language switch (chunk 1); notification preferences on `tenant-notifications.html` (chunk 10) | both | any signed-in | no | anyone | ID-S18 | in build (locale); later chunk 10 (preferences), card pending |
-| `GET /me/work` | `tenant-today.html` Decide now | tenant | any signed-in | no | All 7; counts differ by permission | HOM-S1, CAS-S14 | designed (chunk 6); grows in 9 |
+| `GET /me` queue counts (applicability added) | `tenant-today.html` Decide now | tenant | any signed-in | no | All 7; counts differ by permission | HOM-S1, CAS-S14 | designed (chunk 6) |
+| `GET /me/work` (reshaped, INPUT_DELTAS §7) | `tenant-my-work.html` | tenant | any member; each row needs its own read permission | no | All 7; rows and counts filtered, unreadable kinds shown as permission-limited | HOM-S7, HOM-S9, HOM-S13 | later chunk 8, card pending |
+| `GET /me/comments?about=written\|mentioned` | `tenant-my-work.html` Comments and mentions | tenant | any member; filtered by the subject's read permission | no | All 7 | COL-S12 | later chunk 10, card pending |
 | `GET /me/whats-new`, `POST /me/visit` | `tenant-library-updates.html`, count on `tenant-today.html` | tenant | `library.read` | no | All 7 | PRO-S7, AGT-S10 | designed |
 | `GET /me/passkeys`, `PATCH /me/passkeys/{id}`, `DELETE /me/passkeys/{id}` | `me-passkeys.html` | both | any signed-in | no | anyone; last passkey cannot go | ID-S10 | in build |
 | `GET /me/sessions`, `DELETE /me/sessions/{id}` | `me-sessions.html` | both | any signed-in | no | anyone | ID-S11 | in build |
@@ -127,7 +134,9 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | `GET /tenant/members`, `GET /tenant/members/{id}/sessions` | `admin-members.html` | tenant | `members.manage` | no | A | ADM-S2, ADM-S1 | in build |
 | `POST /tenant/members` (invite) | `admin-members.html` | tenant | `members.manage` | no | A | ID-S1, ADM-S2 | in build |
 | `PATCH /tenant/members/{id}` (roles, title) | `admin-members.html` | tenant | `members.manage` | yes (roles) | A; last-admin 409 rendered | ID-S19, ADM-S2 | in build |
-| `DELETE /tenant/members/{id}` (deactivate) | `admin-members.html` | tenant | `members.manage` | yes | A; bulk reassignment in chunk 8 | ADM-S2, TEN-S5 | in build |
+| `DELETE /tenant/members/{id}` (deactivate) | `admin-members.html` | tenant | `members.manage` | yes | A; bulk reassignment, participations and team memberships end in chunk 8 | ADM-S2, TEN-S5, TEN-S9 | in build |
+| `PUT /tenant/members/{userId}/teams` | `admin-members.html` member row | tenant | `members.manage` | no | A | TEN-S8 | later chunk 8, card pending |
+| `GET /reference/people` | every people picker (participants, owners) | tenant | any member session; refused for an enrolment session | no | All 7 | COL-S6, TEN-S8 | later chunk 8, card pending |
 | `DELETE /tenant/members/{id}/sessions` | `admin-members.html` | tenant | `members.manage` | no | A | ID-S11 | in build |
 | `POST /tenant/members/{id}/reissue-enrolment` | `admin-members.html` | tenant | `members.manage` | yes | A | ID-S12 | in build |
 | `GET /tenant/invitations`, `POST .../{id}/resend`, `DELETE .../{id}` | `admin-members.html` Invitations tab | tenant | `members.manage` | no | A | ID-S1, ADM-S2 | in build |
@@ -158,7 +167,9 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | `POST /tenant/footprint/preview` (path proposed) | `admin-footprint.html` preview panel | tenant | `footprint.request` | no | A, CO; others read-only banner | FP-S2, FP-S5 | designed |
 | `GET /tenant/footprint-change-requests`, `POST` (path proposed) | `admin-footprint.html` pending banner, Send for approval, History | tenant | `footprint.request` | no | A, CO request; All 7 see the pending banner | FP-S2, FP-S5 | designed |
 | `POST /tenant/footprint-change-requests/{id}/approve` (path proposed) | `admin-footprint.html` Approve | tenant | `footprint.approve` | yes | A, CO, AP; requester sees the refusal, server 409 four_eyes_violation | FP-S2, FP-S3, FP-S5 | designed |
-| `POST .../{id}/reject`, `POST .../{id}/withdraw` (path proposed) | `admin-footprint.html` Reject with reason, Withdraw | tenant | reject `footprint.approve`; withdraw: requester | no | A, CO, AP reject; requester withdraws | FP-S2 | designed |
+| `POST .../{id}/reject`, `POST .../{id}/withdraw` (path proposed) | `admin-footprint.html` Reject with reason, Withdraw | tenant | reject `footprint.approve`; withdraw: requester | no | A, CO, AP reject; requester withdraws | FP-S2, FP-S6 | designed |
+| `GET /tenant/footprint` markets block | `admin-footprint.html` "Markets we watch" panel | tenant | any member reads | no | All 7 read; only `footprint.request` may change | FP-S10 | later chunk 3, card pending |
+| `POST /tenant/footprint/watching`, `POST /tenant/footprint/watching/remove` (key in the body, never a path) | `admin-footprint.html` "Markets we watch" panel | tenant | `footprint.request` | no | A, CO; others read-only | FP-S10, FP-S14 | later chunk 3, card pending |
 
 ### Library and inventory (chunk 3)
 
@@ -182,6 +193,10 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | `PATCH /obligations/{id}/register` | `tenant-obligation.html` Where we stand, How we handle it, per legal entity | tenant | `register.edit` | no | CO, O edit; others read; `If-Match`, 409 stale_write rendered | REG-S3, REG-S4, REG-S11 | later chunk 8, card pending (prototype `vObligation()` right column) |
 | `GET /applicability-requests`, `POST /obligations/{id}/applicability-requests` | `tenant-obligation.html` Does it apply to us | tenant | `applicability.request` | no | CO, O | REG-S1 | later chunk 8, card pending |
 | `POST /applicability-requests/{id}/approve`, `/reject` | `tenant-obligation.html` Waiting for approval | tenant | `applicability.approve` | approve: yes | CO, AP; requester refused | REG-S1, REG-S2 | later chunk 8, card pending |
+| `POST /applicability-requests/decide` (many at once, path proposed) | `tenant-obligation.html` approver queue, decide selected | tenant | `applicability.approve` | yes | CO, AP; a request the caller filed answers 409 and nothing is decided | REG-S14 | later chunk 8, card pending |
+| `GET/POST` units and the paste with its dry run (paths proposed) | `tenant-obligation.html` units list and paste dialog | tenant | `register.edit`; `applicability.request` when the paste carries applicability | no | CO, O | REG-S13, REG-S15 | later chunk 8, card pending |
+| `GET/POST /obligations/{id}/participants`, `DELETE .../participants/{participantId}` | participants panel on `tenant-obligation.html` | tenant | `register.edit`; anyone may remove their own row | no | CO, O add; the participant leaves | COL-S6, COL-S7 | later chunk 8, card pending |
+| `GET/POST /changes/{id}/participants`, `DELETE .../participants/{participantId}` | participants panel on `tenant-change.html` | tenant | `cases.contribute`; anyone may remove their own row | no | CO, O, C add; the participant leaves | COL-S9, CAS-S17 | later chunk 9, card pending |
 | `GET/POST /obligations/{id}/internal-links`, `DELETE /internal-links/{id}` | `tenant-obligation.html` Linked internal items | tenant | `register.edit` | no | CO, O | REG-S8 | later chunk 8, card pending |
 | `GET/POST /obligations/{id}/attestations` | `tenant-obligation.html` Attestation | tenant | `register.edit` (owner only, server-checked) | no | O | REG-S9 | later chunk 13, card pending |
 | `GET/POST /obligations/{id}/waivers` | `tenant-obligation.html` Waivers | tenant | `risk.accept.approve` | yes | CO, AP | REG-S9, REG-S6 | later chunk 13, card pending |

@@ -23,12 +23,12 @@ commit for the chunk is on `main`. `pending` means none.
 | 0 | Phase 0 bootstrap | R1 | 2026-09-19 | 2026-09-19 | | in progress | Checklist below. Verified waits for the owner to boot it (locally or on Railway) |
 | 1 | Identity and tenant admin basics | R1 | 2026-09-19 | 2026-09-19 | | in progress | Invitation, code (token-bound on the link path, no email field), passkey enrolment with derived names, passkey sign-in, sessions, step-up, roles from permissions, API keys, security log, members admin, organisation profile. Security review in `docs/security/CHUNK1_AUTH_REVIEW_2026-09-19.md`; F29 (token in request paths) open, next task. Cut: ID-07, ID-08 (R2), ID-12, ID-13 (R3) |
 | 2 | Vocabularies, taxonomy and footprint | R1 | 2026-09-19 | 2026-09-19 | | in progress | Library and tenant vocabularies as rows with rename, reorder, retire, restore, merge and the near-duplicate check; library list writes become proposals (VOC-07); footprint change requests with dry-run preview, four eyes and step-up. FP-03 in progress: the rule exists, the surfaces that apply it arrive from chunk 3. VOC-03 (R2) has a backend and no screen. Cut: the tenant view of its own pending library proposals (moves to chunk 4) |
-| 3 | Library and inventory | R1 | | | | pending | |
+| 3 | Library and inventory | R1 | | | | in progress | The data layer is on `main` (51f9efa): models, migrations and the library seed. The read API and the screens are planned in `docs/plans/briefs/CHUNK3_TASKS.md`. PRD 0.3 adds INV-08, FP-04 and FP-01's opt-in rule and regime fold to the chunk (`docs/plans/briefs/FEATURES_0_3_TASKS.md`) |
 | 4 | Proposals and the platform console | R1 | | | | pending | |
 | 5 | Watch and the agent API | R1 | | | | pending | |
 | 6 | Home, briefing, roadmap | R1 | | | | pending | |
 | 7 | Search and ask | R1 | | | | pending | First test deploy target after this chunk |
-| 8 | Register | R2 | | | | pending | |
+| 8 | Register | R2 | | | | pending | PRD 0.3 adds HOM-05, COL-04, REG-08 and the amended TEN-02, TEN-03 and REG-01. HOM-05, COL-04, TEN-02 and TEN-03 sit above the cuttable Should items in the Build plan's list (D-26) |
 | 9 | Case workflow | R2 | | | | pending | |
 | 10 | Collaboration | R2 | | | | pending | |
 | 11 | Tenant-controlled agents | R2 | | | | pending | |

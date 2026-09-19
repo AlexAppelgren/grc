@@ -10,7 +10,7 @@
 
 A case carries one regulatory change through one tenant: created in "Needs
 triage" with its footprint match, triaged with urgency and owner, assessed
-(applies, why, what must change, internal deadline, effort, contributors),
+(applies, why, what must change, internal deadline, effort, contributor teams),
 implemented through actions with owners and due dates, evidenced, and signed
 off by a second person with a passkey step-up. The case file then stands
 alone. Closing a case never edits the inventory; that is a proposal.
@@ -31,7 +31,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | CAS-01 | One case per tenant per change, created in "needs triage" with its footprint match | M | R1 | pending |
 | CAS-02 | Triage needs urgency and owner; dismissal needs a reason and can be restored | M | R2 | pending |
-| CAS-03 | Impact assessment: applies, why, what must change, internal deadline, effort, contributors | M | R2 | pending |
+| CAS-03 | Impact assessment: applies, why, what must change, internal deadline, effort, and contributor teams, recorded as the case's team participants | M | R2 | pending |
 | CAS-04 | Actions with owner and due date, locked while sign-off is pending, exportable as tickets | M | R2 | pending |
 | CAS-05 | Evidence as file, link or reference, scanned, hashed, streamed through permission checks | M | R2 | pending |
 | CAS-06 | Sign-off only with no open action and at least one piece of evidence, only by a second person, with step-up | M | R2 | pending |
@@ -96,8 +96,9 @@ Then the case is back in "Needs triage" and the audit trail shows both moves
 ### CAS-S4 — The impact assessment records what applies and what must change `@integration` `@e2e` (CAS-03)
 ```gherkin
 Given an assigned case and its owner with cases.work
-When they choose "Start assessment" and save applies, why, what must change, an internal deadline, an effort size and two contributor teams
-Then the case moves to assessing and the assessment stores each field with keys for effort and contributors
+When they choose "Start assessment" and save applies, why, what must change, an internal deadline and an effort size, and add two contributor teams
+Then the case moves to assessing and the assessment stores each field with a key for effort
+And the two contributor teams are the case's team participants
 When they save without a why
 Then the request answers 422
 ```
@@ -209,4 +210,15 @@ And the guard declares the one expected 409 on the self sign-off
 Given a case with evidence in tenant A
 When tenant B fetches the case, its evidence file and its case file
 Then each answers 404 and no audit row records a download
+```
+
+### CAS-S17 — Contributor teams are the case's team participants `@integration` (CAS-03, COL-04)
+```gherkin
+Given an assigned case and its owner with cases.work
+When they add the contributor teams "Legal" and "Retail compliance" on the assessment
+Then two team participants exist on the case, each added by its own call, and the assessment stores no separate contributor list
+Given Erik added the team "Cards" to the case after the owner loaded the assessment
+When the owner removes "Legal" and saves the assessment
+Then "Cards" is still a participant, because contributor changes are single adds and removals, never a list replacement
+And the case file shows that "Legal" took part until it was removed
 ```

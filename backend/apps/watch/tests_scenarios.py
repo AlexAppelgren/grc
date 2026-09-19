@@ -72,3 +72,17 @@ class WatchScenarioTests(TestCase):
 
         A tenant requests a source and private sources stay private (WAT-06).
         """
+
+    @skip("pending: WAT-S10 (WAT-07, chunk 5)")
+    def test_wat_s10(self) -> None:
+        """WAT-S10
+
+        A new edition of a standard is one change, and only tenants that follow it see it (WAT-02, WAT-07, CAS-01).
+        """
+
+    @skip("pending: WAT-S11 (WAT-07, chunk 5)")
+    def test_wat_s11(self) -> None:
+        """WAT-S11
+
+        Every change carries a regime, a standard term needs a standards body, and a publisher's page keeps no snapshot (WAT-01, WAT-03, WAT-07).
+        """

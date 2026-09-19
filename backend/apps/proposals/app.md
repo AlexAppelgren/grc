@@ -19,6 +19,12 @@ proposals. That is the one place the prototype is wrong: the queue lives in
 the console with the `library_editor` role. Tenants see library updates and
 can report problems.
 
+One check function guards the standards rules (INV-08) on every door into the
+library: at `POST /proposals`, at the agent's proposal creation, over a
+reviewer's corrections at approval and at apply. A payload is stored when a
+proposal is created, so a check only at apply would leave licensed text in the
+platform database.
+
 Deliberately simplified for R1: batch proposals (re-tag, backfill) with a
 row-by-row review wait for R2.
 
@@ -131,4 +137,31 @@ When the editor rejects it without a reason
 Then the request answers 422
 When they reject it with a reason
 Then the proposal is rejected, the proposer is notified with the reason and an audit event records it
+And the reason list holds the system row "Outside the sector scope", whose usage note names the PRD's sector scope
+```
+
+### PRO-S10 — Licensed text and extra obligations never enter a standard `@integration` (INV-08, PRO-01, PRO-02, AC-INV2)
+```gherkin
+Given the instrument "ISO/IEC 27001:2022" whose level kind is standard
+When a provision or provision_version proposal on it is submitted through POST /proposals or the agent API
+Then it is refused at creation with 422 "licensed_text" and no proposal row is stored
+When a proposal for its conformance obligation carries a field source that is not a URL
+Then it is refused at creation with 422 "licensed_text"
+When a reviewer's correction adds provision text to a pending proposal and approves it
+Then the approval answers 422 "licensed_text" and nothing is written
+When a new_obligation proposal adds a second active obligation under it
+Then the apply answers 422 "one_conformance_obligation"
+When an obligation under it carries no term of an opt-in dimension, or two
+Then the apply answers 422 "standard_term_required"
+And a provision row inserted under it directly, as a seed would, is refused by the database
+```
+
+### PRO-S11 — A standard term never sits on a law's obligation `@integration` (FP-01, INV-08, AC-FP3)
+```gherkin
+Given an obligation under a level whose kind is not standard
+When a new_obligation_version proposal adds a standard's term to it
+Then it is refused at creation with 422 "standard_term_only_on_standards"
+When a reviewer's correction adds that term to a pending proposal and approves it
+Then the approval answers 422 "standard_term_only_on_standards" and nothing is written
+And a tenant whose regulatory scope names no standard still sees the obligation
 ```

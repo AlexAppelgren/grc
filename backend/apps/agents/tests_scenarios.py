@@ -79,3 +79,17 @@ class AgentsScenarioTests(TestCase):
 
         Fetched content is screened for embedded instructions (AGT-07).
         """
+
+    @skip("pending: AGT-S11 (AGT-04, chunk 11)")
+    def test_agt_s11(self) -> None:
+        """AGT-S11
+
+        A tenant agent's default scope is the operating markets first, then the watched ones (AGT-04).
+        """
+
+    @skip("pending: AGT-S12 (AGT-08, SRC-05, chunk 5)")
+    def test_agt_s12(self) -> None:
+        """AGT-S12
+
+        Out-of-scope documents are counted and never registered, and the eval set gates it (AGT-08, SRC-05).
+        """

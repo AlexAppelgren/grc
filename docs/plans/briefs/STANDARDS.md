@@ -1,5 +1,40 @@
 # Standards and certifications within the sector scope
 
+## Final IDs (PRD 0.3)
+
+Assigned by the PRD 0.3 consolidation (`PRD_0_3_CONSOLIDATION.md`, 2026-09-19),
+which merged this analysis with `MY_WORK_AND_MARKETS.md` and `REGULATORY_SCOPE.md`
+into one bump. **Read the right-hand column, not the drafts below.** The decision
+slugs became numbers continuing from D-34, which the markets analysis took.
+
+| Drafted here | Final | ADR |
+|---|---|---|
+| `std-library-facts-only` | D-35 | 0029 |
+| `std-opt-in-dimension` | D-36 | 0030 |
+| `std-level-kind` | D-37 | 0031 |
+| `std-international-jurisdiction` | D-38 | 0032 |
+| `std-regime-boundary` | D-39 | 0033 |
+| `std-sector-vocabulary` | D-40 | 0034 |
+| `std-units-in-tenant-zone` | D-41 | 0035 |
+| `std-entity-follows-by-applicability` | D-42 | 0036 |
+| `std-certificate-on-licence` | D-43 | 0037 |
+| `std-bulk-decide` | D-44 | 0038 |
+| `std-watch-manual-first` | D-45 | 0039 |
+| `std-soa-view-and-export` | D-46 | 0040 |
+| `std-seed-list` | D-47 | 0041 |
+
+| Drafted here | Final | Note |
+|---|---|---|
+| FP-01, INV-01, INV-02, INV-08, WAT-03, WAT-07, AGT-08, TEN-02, REG-01, REG-08, HOM-03, REP-02 | same | Applied; TEN-02 merged with the departments wording of the markets bump |
+| AC-FP3, AC-INV2, AC-REG1, AC-REG2, AC-TEN1, AC-AGT1 | same | AC-FP2 went to the markets bump, so AC-FP3 stands |
+| J-10 | J-10 | Unchanged |
+| FP-S14 | **FP-S16** | The markets analysis's FP scenarios took S8 to S15 |
+| FP-S15 | **FP-S17** | Same reason |
+| INV-S11, INV-S12, PRO-S10, PRO-S11, WAT-S10, WAT-S11, AGT-S12, SRC-S12, SRC-S13, TEN-S10, REG-S12 to REG-S16, HOM-S15, REP-S6 | same | Unchanged |
+| Amended: FP-S1, I18N-S1, INV-S1, INV-S2, INV-S3, PRO-S9, AGT-S3, TEN-S2, REG-S1, REG-S3 | same | Applied in the app.md files |
+| STD-01, STD-02 | — | Done by the consolidation commit |
+| STD-03 to STD-33 | `f03-*` | `docs/plans/briefs/FEATURES_0_3_TASKS.md` carries them with their final IDs and dependencies. STD-03's fetching half is open: nothing from §9 was fetched in that session, so every such fact is listed in `docs/TODO_FOR_alex.md` and **no** Verification log row was written |
+
 This is read-only work against `main` at `bc10e37`. I edited no file.
 
 - **Chunk 3.** Its data layer is on `main` (51f9efa). Its read API and screens are planned in `docs/plans/briefs/CHUNK3_TASKS.md` and not built. `docs/plans/IMPLEMENTATION_STATUS.md` still shows chunk 3 as `pending`, although by the ledger's own definition one commit on `main` makes it `in progress`.

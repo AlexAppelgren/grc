@@ -4,8 +4,17 @@
 |---|---|---|---|
 | 0.1 | 2026-09-19 | First PRD. Consolidates the journey and capability list from the Compliance Watch chat, the data model and API work from the Compliance Data chat, the playbook review, and the decisions on passkeys, Nordic scope, admin-owned vocabularies, the pill system and Green tokens | Alex |
 | 0.2 | 2026-09-19 | Sector scope: regulated financial services only, not a general-purpose GRC product. Standards and certifications within that scope (for example ISO/IEC 27001 followed by some of a tenant's legal entities) are inventoried, watched and worked like regulation; their requirements are being analysed and land in a following version | Alex |
+| 0.3 | 2026-09-19 | Three things Alex asked for in chat, analysed and merged. **My work and participants:** one page of everything a person or their teams are responsible for or take part in, with next reviews and the changes on those items, the same view for a department's head, participants (people or teams) on register entries and cases that grant nothing, departments as org units with a head, and notes as shared comments. **Markets:** each covered country is operating, watching or not followed; operating markets are the regulatory scope's jurisdictions; watching hides nothing and steers tenant agents; EU rules reach every member country and Norway, as data. **Standards within the sector scope:** an edition is an instrument holding public facts and one conformance duty, a tenant opts in through its regulatory scope, a legal entity follows a standard through approved applicability and records its certificate, and the units it lists in its own words per entity form the Statement of Applicability. The sector scope paragraph is sharpened and the regime list becomes the enforced boundary. The wording is Alex's decision; the design defaults under it are `docs/DECISIONS.md` rows D-18 to D-47, each reversible | Alex |
 
 Requirement IDs never appear on screen. Priority is MoSCoW (M, S, C).
+
+**Glossary.** *Footprint* and *regulatory scope* are the same thing. On screen
+the section is called **Regulatory scope** (sv *Regulatorisk omfattning*); in the
+code, the API paths, the permission keys (`footprint.request`, `footprint.approve`)
+and the route `/admin/footprint` the word stays *footprint*, because renaming the
+identifiers would touch contracts, migrations, audit history and tests without
+helping anyone reading the page. *Markets we operate in* are its jurisdiction terms.
+
 Release: R1 makes it useful alone, R2 makes it a system of record, R3 is what
 large buyers require. Every requirement starts at status `pending` in its
 app's `app.md`.
@@ -24,21 +33,39 @@ paragraph-level citations and a plain verdict on every item.
 
 **Sector scope.** Compliance Watch covers regulated financial services only: banking,
 payments, investment services, insurance and pension provision, and asset and wealth
-management, together with the AML, data protection and ICT-risk regimes that apply to
-them. It is not a general-purpose or multi-industry GRC product. It is not built for, and
-has no path to, other regulated sectors such as healthcare, life sciences, construction,
-environmental compliance or workplace safety.
+management. It also covers the AML, data protection and ICT-risk regimes that apply to
+them, and the tax and AI rules as they apply to financial firms and their products. It is
+not a general-purpose or multi-industry GRC product. It is not built for, and has no path
+to, other regulated sectors such as healthcare, life sciences, construction, environmental
+compliance or workplace safety. The regime list is the boundary: every instrument and
+every change carries a regime from it. Nothing outside this scope enters the library, even
+when one of a tenant's entities holds it (for example ISO 9001, ISO 14001 or ISO 45001).
 
-**Standards and certifications.** Within that scope, standards a firm chooses or is
-required by contract to follow are handled like regulation: an information-security,
-business-continuity, privacy or payment-card standard (for example ISO/IEC 27001 followed
-by some of a tenant's legal entities) is kept in the inventory, watched for revisions and
-transition deadlines, and worked through applicability, compliance status, gaps and
-evidence per legal entity. Testing the controls themselves stays out of scope, as below.
+**Standards and certifications.** Within that scope, a firm may follow a standard by
+choice, by contract or because a supervisor expects it, and such a standard is handled
+like regulation. Examples are information-security, business-continuity, privacy and
+payment-card standards, such as ISO/IEC 27001.
 
-**Out of scope by decision.** Control testing, policy management, incidents
-and risk registers. Obligations carry linked internal items and the API lets
-an existing GRC system integrate.
+- **In the library.** Each edition is an instrument in the shared library. It holds the
+  standard's public facts and one duty to conform, written in our own words. The library
+  never holds a standard's licensed text, its clause or control titles, or a paraphrase
+  of them.
+- **Opting in.** A tenant opts in through its regulatory scope. Only then do the
+  standard's records match.
+- **Per legal entity.** An entity follows the standard when its applicability is
+  approved, and it records any certificate with its issuer, scope, validity and next
+  audit.
+- **Statement of Applicability.** For each entity that follows a standard, the tenant
+  lists the clauses and controls it works with, by reference and in its own words. Each
+  has applicability with a reason, a status and gaps. Together they are the Statement of
+  Applicability.
+- **Watch.** Revisions and transition deadlines are watched like any change.
+
+**Out of scope by decision.** Control testing, policy management, incidents,
+and risk registers (including a standard's own risk assessment and treatment
+plan), and certificates or assurance reports received from suppliers.
+Obligations carry linked internal items and the API lets an existing GRC
+system integrate.
 
 **Users.** Compliance officer (triages, curates the register), obligation
 owner (assesses, plans, evidences), approver (second pair of eyes),
@@ -85,8 +112,8 @@ side the library editor and the platform admin.
 | ID | Requirement | P | R |
 |---|---|---|---|
 | TEN-01 | Tenant profile, timezone, default languages, onboarding checklist | M | R1 |
-| TEN-02 | Legal entities with licences, and products described the way obligations are scoped | M | R2 |
-| TEN-03 | Teams as owners, so ownership survives a person leaving | S | R2 |
+| TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments (business areas, units and functions) with a head and the teams in them, and products described the way obligations are scoped | M | R2 |
+| TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 |
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 |
 | TEN-06 | Support access grants: visible to the tenant, time-boxed, logged | M | R2 |
@@ -109,21 +136,23 @@ side the library editor and the platform admin.
 
 | ID | Requirement | P | R |
 |---|---|---|---|
-| FP-01 | Footprint across all taxonomy dimensions. A record matches when every dimension it carries has a term in the footprint. An empty dimension does not restrict | M | R1 |
+| FP-01 | Footprint across all taxonomy dimensions. A record matches when every dimension it carries has a term in the footprint. An empty dimension does not restrict, except the standards dimension: a record carrying a standard matches only when the footprint names that standard. An obligation also needs its instrument's regime in the footprint | M | R1 |
 | FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, and writes one audit event per term | M | R1 |
 | FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it | M | R1 |
+| FP-04 | Markets: each covered country is operating, watching or not followed. Operating markets are the footprint's jurisdictions and change only as FP-02 does. A record's jurisdiction comes from its instrument or its authority, and EU rules reach every member country and Norway (EEA Agreement), recorded as data. A record without a jurisdiction is not restricted by it. Watching is a direct, audited setting that hides nothing, never sets urgency or opens triage, and adds a view on the inventory and the watch feed showing what the watched markets add. Library research sweeps every covered market, whatever a tenant chooses | M | R1 |
 
 ### INV: inventory (library)
 
 | ID | Requirement | P | R |
 |---|---|---|---|
-| INV-01 | Instruments with level, binding force, official reference, ELI where available, jurisdiction, authority, in-force dates and lineage | M | R1 |
-| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes | S | R1 |
+| INV-01 | Instruments with level (a standard's level says so), binding force, official reference, ELI where available, jurisdiction (International for standards bodies), authority, a regime, in-force dates and lineage | M | R1 |
+| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes. Never for a standard, whose text is licensed | S | R1 |
 | INV-03 | Obligations: plain-language duty, duty type, scope facets, trigger, retention, sanction exposure, provenance, related obligations | M | R1 |
 | INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 |
 | INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 |
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 |
 | INV-07 | Tenant-private instruments and obligations from the tenant's own sources | C | R3 |
+| INV-08 | Standards within the sector scope as instruments, one per edition. Each holds publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link, and exactly one conformance duty in our own words, which carries the standard's term. Only a standard's own records carry a standard term. There is no standard text, clause or control title, or paraphrase in the library, the search index, Ask or agent output | M | R1 |
 
 ### PRO: proposals
 
@@ -140,22 +169,24 @@ side the library editor and the platform admin.
 |---|---|---|---|
 | WAT-01 | Source registry and coverage log: what was checked, when, with what result | M | R1 |
 | WAT-02 | One record per reform with a timeline from consultation to in force, partial dates, and duplicates merged | M | R1 |
-| WAT-03 | Change types, flags and scope from vocabularies. Agent classifications shown as suggestions until confirmed | M | R1 |
+| WAT-03 | Change types, flags and scope from vocabularies, with at least one regime on every change and a standard term only on a change from a standards body. Agent classifications shown as suggestions until confirmed | M | R1 |
 | WAT-04 | Links to affected obligations with confidence, confirmed by a person | M | R1 |
 | WAT-05 | A drafted "So what?" per change, labelled AI-drafted until a person confirms or rewrites it per tenant | M | R1 |
 | WAT-06 | Tenants can request a source. Private sources are visible to that tenant only | S | R3 |
+| WAT-07 | Standards are watched from public metadata: one change per edition or amendment, with a timeline from draft to publication and a key date for the end of the transition. A publisher's page keeps no snapshot, and automated checks run only on publishers whose terms allow them | S | R1 |
 
 ### REG: register
 
 | ID | Requirement | P | R |
 |---|---|---|---|
-| REG-01 | Applicability per obligation with a reason, changed only through a request a second person approves | M | R2 |
+| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason. It changes only through a request that a second person approves. Many pending requests can be decided in one call, with four eyes on every row | M | R2 |
 | REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 |
 | REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 |
 | REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 |
 | REG-05 | Linked internal items (policy, procedure, control, process, system) with external references | M | R2 |
 | REG-06 | Yearly attestation by the owner, and waivers | C | R3 |
 | REG-07 | Recurring duties on the roadmap from recurrence rules | S | R2 |
+| REG-08 | Statement of Applicability. For each legal entity that follows a standard, the tenant lists the clauses and controls it works with as units, by reference and in its own words, entered one by one or pasted with a dry run. Each unit has applicability with a reason, a status and gaps. A unit's reference and words are fixed once it has history. The register filtered by standard and entity is the Statement of Applicability. Nothing written under a standard is indexed, sent to a model or shown to another tenant | M | R2 |
 
 ### CAS: case workflow
 
@@ -163,7 +194,7 @@ side the library editor and the platform admin.
 |---|---|---|---|
 | CAS-01 | One case per tenant per change, created in "needs triage" with its footprint match | M | R1 |
 | CAS-02 | Triage needs urgency and owner. Dismissal needs a reason and can be restored | M | R2 |
-| CAS-03 | Impact assessment: applies, why, what must change, internal deadline, effort, contributors | M | R2 |
+| CAS-03 | Impact assessment: applies, why, what must change, internal deadline, effort, and contributor teams, recorded as the case's team participants | M | R2 |
 | CAS-04 | Actions with owner and due date, locked while sign-off is pending, exportable as tickets | M | R2 |
 | CAS-05 | Evidence as file, link or reference, scanned, hashed, streamed through permission checks | M | R2 |
 | CAS-06 | Sign-off only with no open action and at least one piece of evidence, only by a second person, with step-up | M | R2 |
@@ -186,16 +217,18 @@ side the library editor and the platform admin.
 |---|---|---|---|
 | HOM-01 | Timeline home: the next dates as a short list on every screen size, the lead item, what needs a decision, compliance standing, source health | M | R1 |
 | HOM-02 | Weekly briefing, reachable from home with part of it shown there, snapshotted when emailed | M | R1 |
-| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place | M | R1 |
+| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place. From R2, our own deadlines include a certificate's expiry and next audit, which never reach the calendar feed | M | R1 |
 | HOM-04 | Upcoming changes as public facts for agents and newsletters, and a revocable calendar feed | S | R1 |
+| HOM-05 | My work: everything a person or their teams are responsible for or take part in, grouped as overdue, due soon, changes on those items, and the rest. Next reviews are included, also for compliant obligations, per legal entity and for internal items, and each item says why it is there. A department's head sees the same view for the department, naming who is responsible. Every item and count respects the reader's permissions, and the footprint never hides a person's own items. Decisions stay on Today | M | R2 |
 
 ### COL: collaboration
 
 | ID | Requirement | P | R |
 |---|---|---|---|
-| COL-01 | Comments and mentions on any record | S | R2 |
-| COL-02 | Notifications, reminders before due dates, escalation after a threshold, a weekly digest in the user's language | M | R2 |
+| COL-01 | Comments and mentions on any record, and a person's own comments and mentions listed on My work, limited to records they can read | S | R2 |
+| COL-02 | Notifications, reminders before due dates including next reviews, notice to the people responsible and taking part when a change is linked to their obligation or a new version applies, escalation to the head of the owner's department after a threshold, a weekly digest in the user's language. A notification reaches only active members who can read its record, once per event | M | R2 |
 | COL-03 | Follow a record | C | R3 |
+| COL-04 | Participants: people or teams added to a register entry or a case by someone who can edit it. Participation lists and notifies, grants no access, and a participant can leave. Unlike following (COL-03), which a person does alone on library records, participation is on the tenant's own records | M | R2 |
 
 ### AGT: agents
 
@@ -204,17 +237,18 @@ side the library editor and the platform admin.
 | AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 |
 | AGT-03 | Versioned agent definitions owned by the platform | M | R2 |
-| AGT-04 | Tenant controls: on and off, cadence, scope, run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch | M | R2 |
+| AGT-04 | Tenant controls: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch | M | R2 |
 | AGT-05 | Research requests: check a source now, research a topic, re-tag existing records | S | R2 |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 |
+| AGT-08 | Agents stay inside the sector scope. An out-of-scope document is logged as a source check and counted, and nothing is registered or proposed. A standard's text is never fetched, quoted, summarised, translated or restated from memory. A blocked page is a failed check and is never worked around. A law that cites a standard never carries the standard's term | M | R1 |
 
 ### REP, INT: reporting and integration
 
 | ID | Requirement | P | R |
 |---|---|---|---|
 | REP-01 | Dashboard: open changes by urgency, overdue actions, gaps, unconfirmed AI drafts, time to triage, regime by account heatmap, load per owner | S | R3 |
-| REP-02 | Committee pack and exports of inventory, changes, cases and the audit log | S | R3 |
+| REP-02 | Committee pack and exports of inventory (including a dated Statement of Applicability per standard and entity), changes, cases and the audit log | S | R3 |
 | REP-03 | Spreadsheet register import: dry run, near-match mapping asked once per value, then commit | S | R3 |
 | REP-04 | Full tenant export in open formats and verified deletion | M | R3 |
 | INT-01 | Signed webhooks with a delivery log, from a transactional outbox | S | R3 |
@@ -234,7 +268,7 @@ side the library editor and the platform admin.
 
 | ID | Requirement | P | R |
 |---|---|---|---|
-| ADM-01 | Tenant admin: organisation, members and invitations, passkey re-enrolment, sessions, roles, footprint, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3, following the features |
+| ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3, following the features |
 | ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, problem reports, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry) | M | R1 to R3 |
 | ADM-03 | Admin duties are separate permissions, so user administration and business configuration can sit with different people | M | R1 |
 
@@ -257,11 +291,19 @@ side the library editor and the platform admin.
 - **AC-PRO1** No API key scope and no tenant role can change a library record except through an approved proposal. **AC-PRO2** Approving your own proposal answers 409 `four_eyes_violation`.
 - **AC-VOC1** An admin adds a change type, a tag and a sub-status with no deploy: each appears in pickers, filters, agent vocabulary reads and pills, and `openapi.json` is unchanged. **AC-VOC2** Retiring a used value keeps history readable and removes it from pickers. **AC-VOC3** Creating "custody " when "Custody" exists is refused with the near match offered.
 - **AC-FP1** Switching off "Advice" previews the obligations and open cases it hides, waits for a second person, then hides advice-only obligations and changes everywhere.
+- **AC-FP2: markets.** Turning Denmark on in the footprint's jurisdictions previews the change and waits for a second person with step-up, and EU rules keep showing with Denmark. Operating in Norway alone shows EU rules too. Watching Norway is one audited write that changes no default view, and no market key appears in a URL.
+- **AC-FP3: standards are opt-in.** A tenant whose regulatory scope names no standard sees no standard's obligations or changes. Its case for a standard's change is created with `footprintMatch` false and appears in neither its feed nor its roadmap. After an approved change adding ISO/IEC 27001, it sees them. A law's obligation or change never carries a standard term.
 - **AC-INV1** "As of" a date returns the version in force on it, and the diff shows what changed between two versions.
+- **AC-INV2** A provision or provision-version proposal under a standard is refused at creation, through `POST /proposals` and the agent API, with 422 `licensed_text`. A provision row under a standard is refused by the database. The Ask evaluation row about a standard's control expects "no answer", and it gates the release.
+- **AC-REG1** An approver with a fresh step-up decides 93 pending unit requests for one entity in one call, and 93 audit rows are written. A call that includes a request the caller filed answers 409 `four_eyes_violation` and decides nothing. **AC-REG2** Nothing a tenant writes under a standard (units, notes, gaps, assessments, interpretations, links) appears in a search chunk, an embedding input or an AI-generation input. Tenant B receives 404 for it.
+- **AC-TEN1** A certificate's expiry and next audit appear on the roadmap as "Our deadline" with its owner. They disappear once it is withdrawn, and never appear in the calendar feed.
+- **AC-HOM1: My work.** An owner's compliant obligation with a review in 20 days is under "Due soon". An item they own outside the footprint is listed. A role without `register.read` gets no obligation rows or counts and a permission-limited notice, never a page-level 403.
+- **AC-COL1: participants.** A participant still receives 403 on writes their role lacks. Tenant B adding a participant to tenant A's private record, or removing A's participant, gets 404; on a shared record, B's add lands on B's own entry. A user of another tenant gets 422 `unknown_member`, and a member who cannot read the record gets 422 `participant_cannot_read`.
 - **AC-CAS1** Sign-off is refused with `open_actions` or `evidence_missing`, and with `four_eyes_violation` for the requester. **AC-CAS2** Two people saving the same assessment: the second receives `stale_write`.
 - **AC-WAT1** Posting a known `stableKey` merges new pages as duplicates and returns the existing change. **AC-WAT2** An agent submitting an unknown key receives 422 `unknown_key` with the valid keys.
 - **AC-SRC1** "FFFS 2017:2" is won by keyword and "nudging in onboarding" by concept, in one query. **AC-SRC2** Every statement in an answer carries a citation, and a question with no support returns "no answer".
 - **AC-AUD1** Every mutating request leaves an audit row in the same transaction, and the table rejects update and delete.
+- **AC-AGT1** A change without a regime answers 422 `regime_required`. The evaluation set scores in-scope and standard-term accuracy on out-of-sector texts and on a law that cites a standard, and the release gate fails below tolerance.
 - **AC-NFR3** The pill gallery matches the design card in both themes, and every text pair passes WCAG AA.
 
 ## 5. Golden-path journeys (`@smoke`)
@@ -275,7 +317,9 @@ side the library editor and the platform admin.
 | J-5 | Admin adds a flag with a usage note, it appears in the picker, the filter and the agent vocabulary read, renders as a brand pill, and is later renamed and merged without losing history |
 | J-6 | Footprint change with preview and second-person approval hides advice-only records |
 | J-7 | Search by identifier and by concept, then Ask with citations and an "as of" date |
-| J-8 | Tenant B cannot see tenant A's case, evidence, comments or configuration |
+| J-8 | Tenant B cannot see tenant A's case, evidence, comments, participants, watched markets or configuration |
+| J-9 | Monday morning: the owner opens My work and sees an overdue review and a change linked to an obligation they are responsible for; they add a contributor as participant on that obligation; the contributor sees it on their own My work; the department head's view shows it with the owner named; the contributor leaves, and both events are in the audit log |
+| J-10 | The officer adds ISO/IEC 27001 to the regulatory scope and an approver approves it with step-up. The officer records the certificate on an entity and requests "applies" for that entity with the reason "Certified", and the approver approves it. The officer pastes three units with applicability, and the approver decides them in one call. The register filtered by standard and entity shows the decisions, and the next audit is on the roadmap |
 
 ## 6. Permissions and system roles
 
@@ -286,30 +330,35 @@ copy and adapt. `x` means granted.
 |---|---|---|---|---|---|---|---|
 | `library.read`, `watch.read`, `roadmap.read`, `search.use`, `comments.write`, `problems.report` | x | x | x | x | x | x | x |
 | `register.read`, `cases.read`, `reports.read`, `audit.read` | x | x | x | x | x | x | x |
-| `footprint.request` | x | x | | | | | |
+| `footprint.request` (ask for a footprint change, including the markets we operate in; set the markets we watch) | x | x | | | | | |
 | `footprint.approve` | x | x | | x | | | |
 | `cases.triage` | | x | | | | | |
 | `cases.work` (so what, assessment, actions, evidence, request sign-off) | | x | x | | | | |
-| `cases.contribute` (save assessment input, update actions, add evidence) | | x | x | | x | | |
+| `cases.contribute` (save assessment input, update actions, add evidence, add or remove case participants) | | x | x | | x | | |
 | `cases.signoff` | | | | x | | | |
-| `register.edit`, `gaps.edit` | | x | x | | | | |
+| `register.edit`, `gaps.edit` (`register.edit` includes adding or removing participants on a register entry, and adding, pasting, editing or removing a standard's units) | | x | x | | | | |
 | `applicability.request` | | x | x | | | | |
 | `applicability.approve`, `risk.accept.approve` | | x | | x | | | |
 | `proposals.create` | | x | | | | | |
 | `exports.create`, `ai_log.read` | x | x | | x | | | x |
-| `members.manage`, `roles.manage`, `security.manage` | x | | | | | | |
-| `vocab.manage`, `workflow.manage` | x | x | | | | | |
+| `members.manage`, `roles.manage`, `security.manage` (`members.manage` includes team membership) | x | | | | | | |
+| `vocab.manage`, `workflow.manage` (`vocab.manage` includes departments, their heads, teams, and the certificates on a legal entity) | x | x | | | | | |
 | `agents.manage`, `integrations.manage` | x | | | | | | |
 
 Platform roles: `library_editor` (`proposals.review`, `library_vocab.manage`,
 `sources.manage`, `eval.manage`) and `platform_admin` (`tenants.manage`,
 `agent_definitions.manage`, `support_access.grant`, `system.health`). Four
-eyes applies to every approve permission: never the requester.
+eyes applies to every approve permission: never the requester. 0.3 adds no
+permission constant and changes no grant; only the descriptions above grew.
+
+**Actions that need membership only:** viewing My work, your own or any
+department's (each item still needs its read permission, so the department
+view is a filter and not a grant), and leaving your own participation.
 
 ## 7. Release plan
 
 | Release | Outcome | Build plan chunks |
 |---|---|---|
-| R1 | Sign in with a passkey, set the footprint, browse the inventory with versions and diffs, follow the watch feed fed by agents, search and ask, the timeline home, briefing and roadmap, vocabularies managed without a deploy, audit from day one | 0 to 7 |
-| R2 | The system of record: applicability, compliance status per entity, gaps, the full case workflow, collaboration, tenant-controlled agents | 8 to 11 |
+| R1 | Sign in with a passkey, set the footprint and the markets, follow a standard through the regulatory scope and watch its revisions, browse the inventory with versions and diffs, follow the watch feed fed by agents, search and ask, the timeline home, briefing and roadmap, vocabularies managed without a deploy, audit from day one | 0 to 7 |
+| R2 | The system of record: applicability, compliance status per entity, gaps, the full case workflow, legal entities that follow standards and hold certificates with a Statement of Applicability per entity, My work and participants, departments and teams, collaboration, tenant-controlled agents | 8 to 11 |
 | R3 | What large buyers require: reports and exports, import, integrations, SSO, retention, tenant exit, the assurance pack, billing | 12 to 14 |

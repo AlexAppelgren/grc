@@ -4,7 +4,9 @@ with no test, fails the build.
 
 Sources and grammar (agreed with the docs agent, Appendix B):
 
-- PRD.md requirement IDs: table rows `| <PREFIX>-<nn> | ... |` (ID-01, NFR-05, ...).
+- PRD.md requirement IDs: table rows `| <PREFIX>-<nn> | ... |` (ID-01, NFR-05, ...). The
+  journey prefix `J-` is excluded: PRD §5's journey table has the same row shape, so
+  from J-10 onwards a journey would otherwise be read as a requirement (2026-09-19).
 - backend/apps/*/app.md scenario headings, exactly:
       ### <PREFIX>-S<n> — <Title> `@integration`[ `@e2e`] (<refs>)
   where <refs> is a comma-separated list of requirement IDs (ID-03), acceptance criteria
@@ -37,7 +39,7 @@ ROOT = BACKEND.parent
 PRD = ROOT / "PRD.md"
 E2E_DIR = ROOT / "frontend" / "tests" / "e2e"
 
-REQ_ROW = re.compile(r"^\|\s*([A-Z0-9]+-\d{2})\s*\|", re.M)
+REQ_ROW = re.compile(r"^\|\s*(?!J-)([A-Z0-9]+-\d{2})\s*\|", re.M)
 HEADING = re.compile(
     r"^###\s+(?P<id>[A-Z0-9]+-S\d+)\s+—\s+(?P<title>.+?)\s+(?P<tags>(?:`@\w+`\s*)+)\((?P<refs>[^)]*)\)\s*$",
     re.M,
@@ -108,7 +110,7 @@ def main() -> int:
             if not scenario.tags & {"@integration", "@e2e"}:
                 problems.append(f"{scenario.id}: neither @integration nor @e2e")
             for ref in scenario.refs:
-                if re.fullmatch(r"[A-Z0-9]+-\d{2}", ref) and ref not in requirements:
+                if re.fullmatch(r"(?!J-)[A-Z0-9]+-\d{2}", ref) and ref not in requirements:
                     problems.append(f"{scenario.id} references {ref}, which PRD.md does not know")
         all_scenarios.extend(scenarios)
 
