@@ -45,6 +45,8 @@ Inside a worktree, load the slot before any backend or E2E command:
 
 ```bash
 set -a; . ./.env.worktree; set +a
+# or, where a sandbox refuses to source a file:
+export $(grep -v '^#' .env.worktree | xargs)
 ```
 
 `init` refuses to finish on a red baseline: it runs the backend suite in the slot's own

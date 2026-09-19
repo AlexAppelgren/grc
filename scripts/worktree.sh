@@ -70,7 +70,7 @@ link_dir() {
 }
 
 write_env() {
-  local slot="$1" be=$((8000 + slot * 10)) fe=$((3000 + slot * 10)) db="compliance_watch_wt$1"
+  local slot="$1" root="$2" be=$((8000 + slot * 10)) fe=$((3000 + slot * 10)) db="compliance_watch_wt$1"
   cat > .env.worktree <<EOF
 # Written by scripts/worktree.sh. Slot $slot of $MAX_SLOT. Load with: set -a; . ./.env.worktree; set +a
 WORKTREE_SLOT=$slot
@@ -85,6 +85,8 @@ NEXT_PUBLIC_API_URL=http://localhost:$be
 CORS_ALLOWED_ORIGINS=http://localhost:$fe
 WEBAUTHN_ORIGINS=http://localhost:$fe
 APP_BASE_URL=http://localhost:$fe
+# node_modules is linked from the main checkout; Turbopack must see both (frontend/next.config.ts).
+NEXT_TURBOPACK_ROOT=$root
 EOF
 }
 
@@ -102,7 +104,7 @@ cmd_init() {
 
   local slot
   if [ -f .env.worktree ]; then slot="$(sed -n 's/^WORKTREE_SLOT=//p' .env.worktree)"; say "reusing slot $slot"
-  else slot="$(free_slot)"; write_env "$slot"; say "allocated slot $slot"; fi
+  else slot="$(free_slot)"; write_env "$slot" "$root"; say "allocated slot $slot"; fi
 
   if [ "$own_deps" = 1 ]; then
     say "installing own dependencies (this worktree may change them)"
