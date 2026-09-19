@@ -52,6 +52,14 @@ describe('formatPartialDate', () => {
     expect(formatPartialDate('2026', 'year', stockholm)).toBe('2026');
   });
 
+  it('reads a full date the API sends with quarter precision as its quarter', () => {
+    // The library stores a legal date as a day plus a precision (INV-S10).
+    expect(formatPartialDate('2026-10-01', 'quarter', stockholm)).toBe('Q4 2026');
+    expect(formatPartialDate('2026-12-31', 'quarter', stockholm)).toBe('Q4 2026');
+    expect(formatPartialDate('2026-09-30', 'quarter', stockholm)).toBe('Q3 2026');
+    expect(formatPartialDate('2027-01-01', 'quarter', swedish)).toBe('Kv1 2027');
+  });
+
   it('never claims more precision than the value carries', () => {
     expect(formatPartialDate('2026', 'day', stockholm)).toBe('2026');
     expect(formatPartialDate('2026-09', 'day', stockholm)).toBe('September 2026');

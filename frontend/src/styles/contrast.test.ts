@@ -71,6 +71,8 @@ const PAIRS: Pair[] = [
   { name: 'text on subtle (banner, code block)', fg: '--gds-sys-color-content-neutral-01', bg: '--subtle' },
   { name: 'text on a warning banner', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l3-warning-02' },
   { name: 'text on a refusal banner', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l3-negative-02' },
+  { name: 'text on an added sentence (DiffText ins)', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l3-positive-02' },
+  { name: 'text on a removed sentence (DiffText del)', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l3-negative-02' },
   { name: 'warning pill on a warning banner (waiting for approval)', fg: '--gds-sys-color-content-warning-01', bg: '--gds-sys-color-l3-warning-02' },
   { name: 'text on accent (current row, pressed toggle)', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l3-neutral-02' },
   { name: 'text on search highlight', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l3-brand-02-2' },

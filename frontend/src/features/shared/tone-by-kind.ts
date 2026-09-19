@@ -47,16 +47,21 @@ export const applicabilityTone: Record<ApplicabilityKind, PillTone> = {
   not_assessed: 'information',
 };
 
-// Slot tones: fixed by where the pill sits.
+// Slot tones: fixed by where the pill sits. A header's "Guidance, comply or
+// explain" needs attention (warning); a row's short "Guidance" stays a
+// neutral fact (information), as the obligation and instrument cards show.
 export const slotTone = {
   changeType: 'notice',
   instrument: 'brand',
+  jurisdiction: 'brand',
   flag: 'brand',
   libraryTag: 'brand',
   scopeTerm: 'brand',
   regime: 'information',
   workflowStatus: 'information',
+  instrumentLevel: 'information',
   bindingLevel: 'information',
+  guidanceComplyOrExplain: 'warning',
   guidance: 'information',
   tenantTag: 'information',
   source: 'information',

@@ -1,4 +1,5 @@
 import type { PillTone } from '@/components/ui/pill-tones';
+import type { DatePrecision } from '@/shared/utils/format';
 
 // What the API sends: keys, kinds and facts, never a phrase (playbook 6.7).
 // `label` is the vocabulary row's label in the user's language, resolved by
@@ -11,6 +12,12 @@ export interface VocabularyRef {
 
 export interface KindRef<K extends string> extends VocabularyRef {
   kind: K;
+}
+
+/** A legal date: a calendar day plus how much of it is known (INV-S10). */
+export interface PartialDate {
+  date: string;
+  precision: DatePrecision;
 }
 
 export interface PresentedPill {

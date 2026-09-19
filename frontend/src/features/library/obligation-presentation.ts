@@ -6,7 +6,7 @@ import {
   type ApplicabilityKind,
   type ComplianceKind,
 } from '@/features/shared/tone-by-kind';
-import type { Translate } from '@/shared/i18n';
+import type { MessageKey, Translate } from '@/shared/i18n';
 
 // Obligation row and header (design/system/pills-and-labels.md, slot order).
 // Row: instrument, "Guidance" if not binding, applicability, compliance
@@ -63,12 +63,7 @@ export function presentObligation(obligation: ObligationFacts, view: ObligationV
         order: OBLIGATION_SLOT_ORDER.regime,
       });
     }
-    pills.push({
-      key: obligation.binding ? 'binding' : 'guidance',
-      label: obligation.binding ? t('pill.binding') : t('pill.guidanceComplyOrExplain'),
-      tone: slotTone.bindingLevel,
-      order: OBLIGATION_SLOT_ORDER.bindingLevel + 1,
-    });
+    pills.push(presentBindingLevel(obligation.binding, OBLIGATION_SLOT_ORDER.bindingLevel + 1, t));
   } else {
     if (!obligation.binding) {
       pills.push({ key: 'guidance', label: t('pill.guidance'), tone: slotTone.guidance, order: OBLIGATION_SLOT_ORDER.guidance });
@@ -127,22 +122,63 @@ export function presentObligation(obligation: ObligationFacts, view: ObligationV
   return pills.sort(byOrder);
 }
 
-// Scope block: one brand pill per term; "All services" when every term is
-// selected; plain text "Not client-specific" when the list is empty, because
-// empty means no restriction.
+// A header's binding level (obligation and instrument cards): "Binding" is a
+// neutral fact, "Guidance, comply or explain" needs attention.
+export function presentBindingLevel(binding: boolean, order: number, t: Translate): PresentedPill {
+  return binding
+    ? { key: 'binding', label: t('pill.binding'), tone: slotTone.bindingLevel, order }
+    : { key: 'guidance', label: t('pill.guidanceComplyOrExplain'), tone: slotTone.guidanceComplyOrExplain, order };
+}
+
+// Scope block, one dimension at a time: one brand pill per term; "All
+// services" when every service is selected; plain text such as "Not
+// client-specific" when the list is empty, because empty means no
+// restriction. Dimensions are library rows, so one the catalog does not know
+// yet lists its terms, or reads "Not specific" when empty.
+export interface ScopeFacts {
+  /** The dimension's stable key, e.g. "service_type". */
+  dimension: string;
+  terms: readonly VocabularyRef[];
+  allSelected: boolean;
+}
+
 export interface PresentedScope {
   pills: PresentedPill[];
   plainText?: string;
 }
 
-export function presentScope(terms: readonly VocabularyRef[], allSelected: boolean, t: Translate): PresentedScope {
-  if (allSelected) {
-    return { pills: [{ key: 'all', label: t('pill.allServices'), tone: slotTone.scopeTerm, order: 0 }] };
+const ALL_SELECTED: Readonly<Record<string, MessageKey>> = {
+  service_type: 'pill.allServices',
+};
+
+const NOT_SPECIFIC: Readonly<Record<string, MessageKey>> = {
+  regime: 'scope.notRegimeSpecific',
+  legal_entity: 'scope.notEntitySpecific',
+  service_type: 'scope.notServiceSpecific',
+  client_category: 'scope.notClientSpecific',
+  account_type: 'scope.notAccountSpecific',
+  channel: 'scope.notChannelSpecific',
+  lifecycle_stage: 'scope.notStageSpecific',
+  jurisdiction: 'scope.notJurisdictionSpecific',
+  licensed_activity: 'scope.notActivitySpecific',
+  product_type: 'scope.notProductSpecific',
+};
+
+export function presentScope(scope: ScopeFacts, t: Translate): PresentedScope {
+  if (scope.terms.length === 0) {
+    return { pills: [], plainText: t(NOT_SPECIFIC[scope.dimension] ?? 'scope.notSpecific') };
   }
-  if (terms.length === 0) {
-    return { pills: [], plainText: t('scope.notClientSpecific') };
+  const all = ALL_SELECTED[scope.dimension];
+  if (scope.allSelected && all !== undefined) {
+    return { pills: [{ key: 'scope:all', label: t(all), tone: slotTone.scopeTerm, order: 0 }] };
   }
-  return { pills: terms.map((term, i) => ({ key: `scope:${term.key}`, label: term.label, tone: slotTone.scopeTerm, order: i })) };
+  return { pills: scope.terms.map((term, i) => ({ key: `scope:${term.key}`, label: term.label, tone: slotTone.scopeTerm, order: i })) };
+}
+
+// "Outside your footprint: Advice" in the meta line of a row that only shows
+// with "Show outside footprint": the terms that put it outside.
+export function outsideFootprintLabel(terms: readonly VocabularyRef[], t: Translate): string {
+  return t('library.outsideFootprint', { terms: terms.map((term) => term.label).join(', ') });
 }
 
 // "Change pending: in force 1 Oct" on a scope facet whose applicability is

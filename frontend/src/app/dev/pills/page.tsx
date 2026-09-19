@@ -1,12 +1,13 @@
 import { Pill, pillToneNames } from '@/components/ui/Pill';
 import { PillRow } from '@/components/ui/PillRow';
 import { presentRoadmapItem } from '@/features/home/roadmap-presentation';
+import { presentInstrument } from '@/features/library/instrument-presentation';
 import { presentObligation, presentScope } from '@/features/library/obligation-presentation';
 import { presentGap } from '@/features/register/gap-presentation';
 import { presentChange } from '@/features/watch/change-presentation';
 import { createT, defaultLocale, type Locale } from '@/shared/i18n';
 
-import { changes, complianceStatuses, gapStatuses, gaps, obligations, roadmapItems, scopeEntities, severities, urgencies } from './samples';
+import { changes, complianceStatuses, gapStatuses, gaps, instruments, obligations, roadmapItems, scopes, severities, urgencies } from './samples';
 
 // /dev/pills: every tone, every slot, every record type, light and dark side
 // by side (playbook 6.7). A Playwright screenshot pins it in both themes.
@@ -32,9 +33,6 @@ function Meta({ children }: { children: React.ReactNode }) {
 
 function ThemeColumn({ theme, locale }: { theme: 'light' | 'dark'; locale: Locale }) {
   const t = createT(locale);
-  const scope = presentScope(scopeEntities, false, t);
-  const allServices = presentScope([], true, t);
-  const noClients = presentScope([], false, t);
 
   return (
     <div className={`${theme} bg-page px-6 pt-7 pb-10 text-fg`} data-theme-column={theme}>
@@ -89,15 +87,24 @@ function ThemeColumn({ theme, locale }: { theme: 'light' | 'dark'; locale: Local
         ))}
       </Section>
 
+      <Section title={t('dev.pills.instrumentHeader')}>
+        {instruments.map((i) => (
+          <Record key={i.instrument.key}>
+            <PillRow pills={presentInstrument(i, t)} />
+          </Record>
+        ))}
+      </Section>
+
       <Section title={t('dev.pills.scopeBlock')}>
         <Record>
-          <PillRow pills={scope.pills} />
-          <div className="mt-1.5">
-            <PillRow pills={allServices.pills} />
-          </div>
-          <div className="mt-1.5">
-            <Meta>{noClients.plainText}</Meta>
-          </div>
+          {scopes.map((s, i) => {
+            const scope = presentScope(s, t);
+            return (
+              <div key={s.dimension} className={i > 0 ? 'mt-1.5' : undefined}>
+                {scope.plainText === undefined ? <PillRow pills={scope.pills} /> : <Meta>{scope.plainText}</Meta>}
+              </div>
+            );
+          })}
         </Record>
       </Section>
 

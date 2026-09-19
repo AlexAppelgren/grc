@@ -1,7 +1,8 @@
 import type { RoadmapItemFacts } from '@/features/home/roadmap-presentation';
-import type { ObligationFacts } from '@/features/library/obligation-presentation';
+import type { InstrumentFacts } from '@/features/library/instrument-presentation';
+import type { ObligationFacts, ScopeFacts } from '@/features/library/obligation-presentation';
 import type { GapFacts } from '@/features/register/gap-presentation';
-import type { KindRef, VocabularyRef } from '@/features/shared/presentation-types';
+import type { KindRef } from '@/features/shared/presentation-types';
 import type { ComplianceKind, GapKind, SeverityKind, UrgencyKind } from '@/features/shared/tone-by-kind';
 import type { ChangeFacts } from '@/features/watch/change-presentation';
 
@@ -106,9 +107,33 @@ export const obligations: readonly ObligationSample[] = [
   },
 ];
 
-export const scopeEntities: readonly VocabularyRef[] = [
-  { key: 'bank', label: 'Bank' },
-  { key: 'fund-company', label: 'Fund company' },
+export const instruments: readonly InstrumentFacts[] = [
+  {
+    instrument: { key: 'fffs-2017-2', label: 'FFFS 2017:2' },
+    level: { key: 'authority_regulation', label: 'FI regulation' },
+    binding: true,
+    jurisdiction: { key: 'SE', label: 'Sweden' },
+    regime: { key: 'securities', label: 'Securities' },
+  },
+  {
+    instrument: { key: 'esma-gl-appropriateness', label: 'ESMA guidelines' },
+    level: { key: 'eu_guidance', label: 'EU guidance, level 3' },
+    binding: false,
+    jurisdiction: { key: 'EU', label: 'EU' },
+  },
+];
+
+export const scopes: readonly ScopeFacts[] = [
+  {
+    dimension: 'legal_entity',
+    terms: [
+      { key: 'bank', label: 'Bank' },
+      { key: 'fund-company', label: 'Fund company' },
+    ],
+    allSelected: false,
+  },
+  { dimension: 'service_type', terms: [{ key: 'advice', label: 'Advice' }], allSelected: true },
+  { dimension: 'client_category', terms: [], allSelected: false },
 ];
 
 export const gaps: readonly GapFacts[] = [
