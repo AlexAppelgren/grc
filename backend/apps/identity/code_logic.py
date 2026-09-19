@@ -1,5 +1,5 @@
 """The emailed one-time code (ID-02, ID-03, AC-ID1): six digits, single use, ten minutes,
-stored as a salted hash, five attempts, rate limited per address and per IP, compared in
+stored as a keyed, salted hash (`tokens.hash_code`, F30), five attempts, rate limited per address and per IP, compared in
 constant time. All numbers are settings.
 
 The code is an enrolment bootstrap, never a fallback: `request_code` answers every

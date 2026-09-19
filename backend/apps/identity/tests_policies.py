@@ -5,6 +5,7 @@ the API key auth class, the E2E outbox and the bootstrap command."""
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 import secrets
@@ -78,6 +79,18 @@ class TokenHashing(TestCase):
             self.assertTrue(tokens.constant_equal("a" * 64, "a" * 64))
             self.assertFalse(tokens.constant_equal("a" * 64, "b" * 64))
         self.assertEqual(compare.call_count, 2)
+
+    def test_the_code_hash_cannot_be_reproduced_without_the_key(self) -> None:
+        """F30: a salted SHA-256 over six digits falls to a million guesses offline, so a
+        reader of `otp_code` alone could recover a live code. The hash is keyed by a key
+        derived from SECRET_KEY, so the table and its salt are not enough."""
+        code, salt = "042917", tokens.new_salt()
+        stored = tokens.hash_code(code, salt)
+        self.assertEqual(len(stored), 64)
+        self.assertEqual(tokens.hash_code(code, salt), stored, "deterministic under one key")
+        self.assertNotEqual(stored, hashlib.sha256(f"{salt}:{code}".encode()).hexdigest(), "not the unkeyed hash")
+        with override_settings(SECRET_KEY="a-different-secret-key-for-this-test-only"):
+            self.assertNotEqual(tokens.hash_code(code, salt), stored, "another key gives another hash")
 
     @override_settings(E2E_MODE=True)
     def test_the_e2e_code_is_fixed_locally_and_refused_when_deployed(self) -> None:

@@ -1,6 +1,6 @@
 """Tokens, codes and keys (playbook 4.2, chunk 1 brief): every secret is minted from
-`secrets`, stored hashed (SHA-256 for random tokens, a per-row salted SHA-256 for the
-six-digit code), and compared in constant time. The access token is the one exception to
+`secrets`, stored hashed (SHA-256 for random tokens, a per-row salted HMAC-SHA-256 keyed
+from SECRET_KEY for the six-digit code), and compared in constant time. The access token is the one exception to
 "hashed in a table": it is an HMAC over its own claims (session id, kind, expiry) signed
 with SECRET_KEY, so resolving it costs one signature check and one row read.
 
@@ -34,7 +34,14 @@ def b64url_decode(text: str) -> bytes:
 
 
 def hash_token(token: str) -> str:
-    """SHA-256 of a random token (invitation tokens, refresh tokens, API key secrets)."""
+    """SHA-256 of a random token (invitation tokens, refresh tokens, API key secrets).
+
+    Deliberately not a password hash (CodeQL py/weak-sensitive-data-hashing, accepted as
+    F30): every input is 256 random bits from `secrets.token_urlsafe`, which no offline
+    guessing can search, so a fast hash is the standard choice and a lookup by hash stays
+    one indexed read. Slow hashing protects low-entropy human secrets, and the product
+    has none (no passwords, ID-03). The six-digit code is low-entropy, so it gets a keyed
+    hash instead (`hash_code`)."""
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
@@ -64,8 +71,19 @@ def new_salt() -> str:
     return secrets.token_hex(16)
 
 
+ENROLMENT_CODE_KEY_LABEL = b"enrolment-code-v1"
+
+
 def hash_code(code: str, salt: str) -> str:
-    return hashlib.sha256(f"{salt}:{code}".encode()).hexdigest()
+    """HMAC-SHA-256 over the salted code, keyed by a key derived from SECRET_KEY (F30).
+
+    Six digits are a million guesses, so an unkeyed hash lets anyone who can read
+    `otp_code` recover a live code offline in milliseconds; without the key, the table and
+    its salt are not enough. The fixed label keeps this key apart from every other use of
+    SECRET_KEY. Rotating SECRET_KEY invalidates only codes still pending (ten minutes).
+    Both request paths and the verify decoy call this, so their work stays equal (F12)."""
+    key = hmac.new(settings.SECRET_KEY.encode("utf-8"), ENROLMENT_CODE_KEY_LABEL, hashlib.sha256).digest()
+    return hmac.new(key, f"{salt}:{code}".encode(), hashlib.sha256).hexdigest()
 
 
 # ---------------------------------------------------------------------------------------

@@ -139,3 +139,34 @@ link becomes `/invite#<token>`: a URL fragment is never sent to any server, prox
 `Referer` header. The page reads it and posts it in the request body to `/open`, as the new
 `POST /auth/invitations/verify` already does. A test asserts no request line carries a token.
 
+
+## Addendum, 2026-09-19: F30, CodeQL py/weak-sensitive-data-hashing
+
+**Severity:** CodeQL security 7.5 (high), fingerprint `d95493aec7ab92f1:1`, reported at
+`backend/apps/identity/tokens.py` on the `return` line of `hash_token`. It turned `main`'s
+CodeQL gate red. Triage split it into two decisions.
+
+**1. The six-digit enrolment code gets a keyed hash. Fixed.** CodeQL did not flag
+`hash_code`, but it held the real weakness: a per-row salted SHA-256 over a one-in-a-million
+secret. Anyone able to read the `otp_code` table during a code's ten-minute life could
+recover the code offline in milliseconds and enrol their own passkey through
+`POST /auth/code/verify`. `hash_code(code, salt)` is now HMAC-SHA-256 over `salt:code`,
+keyed by `HMAC-SHA-256(SECRET_KEY, "enrolment-code-v1")`. The per-row salt stays, and the
+fixed label keeps this key apart from every other use of `SECRET_KEY`. The database alone is
+no longer enough. Rotating `SECRET_KEY` invalidates only codes still pending (ten minutes),
+so the rotation cost is a person asking for a new code. The constant-time comparison and the
+decoy hashing on the neutral path are unchanged, so both paths still do the same work (F12).
+Test: `tests_policies.TokenHashing.test_the_code_hash_cannot_be_reproduced_without_the_key`
+(the same code and salt give another hash under another `SECRET_KEY`, and differ from the
+unkeyed hash). No migration: `code_hash` stays 64 hex characters.
+
+**2. `hash_token` stays SHA-256. Accepted.** It hashes only random 256-bit secrets from
+`secrets.token_urlsafe`: invitation tokens, refresh tokens and API key secrets. No offline
+guessing can search 2^256, so a fast hash is the standard and correct choice, and it keeps a
+lookup by hash to one indexed read. Slow password hashing protects low-entropy human secrets,
+and the product has none (no passwords, ID-03). The acceptance is in
+`.github/codeql-accepted.json` for fingerprint `d95493aec7ab92f1:1`, and `hash_token`'s
+docstring says why it is not a password hash. The docstring edit sits above the flagged line,
+and CodeQL hashes the text from that line onward, so the fingerprint is unchanged (checked
+with a reimplementation of the codeql-action line hash that reproduces the reported value).
+If a later edit rehashes the line, the gate reports the acceptance as stale: re-triage then.
