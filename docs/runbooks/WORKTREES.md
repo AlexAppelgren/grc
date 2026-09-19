@@ -71,9 +71,11 @@ failures it caused.
    speculative or overbuilt goes back to be cut). Anything touching auth, tenancy, the
    library fence, audit or four eyes also gets a security-review sub-agent. A critical
    finding blocks the merge and goes back to the task.
-5. **Integrate at once.** As soon as a task passes review, merge it into `main` squashed into
-   one commit with a playbook 13.4 message, run the full pre-push checklist and the full E2E
-   suite on `main`, push, and watch CI and CodeQL until green. Then `remove` the worktree.
+5. **Integrate at once.** As soon as a task passes review, merge it into `main` squashed
+   (`git merge --squash wt/<task>`) and run `bash scripts/prepush.sh --all` before every commit
+   to `main`. It mirrors CI including CodeQL and its SARIF gate, and runs the full pre-push
+   checklist and the full E2E suite; a red gate means no commit. Then commit with a playbook
+   13.4 message, push, and watch CI and CodeQL until green. Then `remove` the worktree.
    Never let finished work wait for the rest of the chunk. When a later branch conflicts,
    merge `main` into it inside its own worktree and rerun its gates there.
 

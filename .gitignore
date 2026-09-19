@@ -53,6 +53,8 @@ frontend/playwright/.cache/
 
 # CI and scanner output
 sarif-results/
+# Scanners pinned to CI's versions, downloaded once by scripts/prepush.sh
+.tools/
 .cache/trivy/
 trivy-results.*
 osv-results.*

@@ -116,8 +116,17 @@ it into `main` (`docs/runbooks/WORKTREES.md`, `scripts/worktree.sh`). Inside a w
 load its slot first: `set -a; . ./.env.worktree; set +a`. Commit messages: a plain-English headline
 from the user's or the system's point of view; a body with the why, the
 requirement IDs, what now happens, what was deliberately not done; no model
-or tool names. The owner deploys; never deploy yourself. Pre-push checklist
-(playbook Appendix D, verbatim):
+or tool names. The owner deploys; never deploy yourself.
+
+**Pre-push checklist: run `bash scripts/prepush.sh`** before every commit to
+`main` (`--all` for every gate). It mirrors CI and CodeQL with the same tools,
+versions, flags and thresholds, so a green run predicts a green CI run: CodeQL
+(`security-extended`, then `.github/scripts/codeql_gate.py` with the accepted
+fingerprints), gitleaks, osv-scanner and `npm audit`, licences, the backend and
+frontend gates below, OpenAPI drift, E2E and Trivy on both images. It is tiered
+by what changed since `origin/main` like CI, downloads its scanners once into
+`<main checkout>/.tools/`, and stops at the first red gate with the command
+that reproduces it. The items it runs (playbook Appendix D, verbatim):
 
 Every item is enforced by CI and blocks. Run what the diff touched. All
 commands assume Postgres with pgvector is running (`docker compose up -d db
