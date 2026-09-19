@@ -18,6 +18,7 @@ overwritten.
 | 2026-09-19 | Correction: the tenant never confirms a change's type or flags directly (library facts, PRO-01). `tenant-change.html` shows them as suggested; triage accepts them for the tenant, a library editor corrects them through `PATCH /changes/{id}`, a member reports. The earlier draft of the card had a tenant-side "Confirm classification" button; removed before the card was finished | design agent |
 | 2026-09-19 | Paths for the INPUT_DELTAS additions that the contract does not yet spell out (vocabulary writes, footprint change requests, suggestions) are proposed in this table and marked "path proposed". The chunk that builds them fixes the path and adds a ledger row | design agent |
 | 2026-09-19 | PRD 0.3: `GET /me/work` no longer feeds Today's "Decide now" — Today reads the queue counts on `GET /me`, and `/me/work` becomes the My work page in chunk 8 (D-23). New rows for the participant routes, the people reference, member teams, the watching routes and the unit and bulk-decision routes. `admin-footprint.html` gains the markets panel, and on screen the section is called Regulatory scope (PRD glossary) | docs agent |
+| 2026-09-19 | f03-T60: `tenant-my-work.html` drawn; the participants panel added to `tenant-obligation.html` and `tenant-change.html`; departments with heads and teams added to `admin-organisation.html`; team membership added to `admin-members.html`. My work is not a fifth dock destination: it has no `dockRank` and is reached from the rail and the More sheet | design agent |
 
 ## Honesty rules (playbook 7.5, kept in spirit)
 
@@ -81,10 +82,10 @@ overwritten.
 | `admin-ai-log.html` | `/admin/ai-log` | tenant | 7 (AUD-02) | card pending |
 | `console-evaluation.html` | `/console/evaluation` | console | 7 (SRC-05) | card pending |
 | `tenant-gaps.html`, register panels | `/inventory/obligations/[id]` right column, `/gaps` | tenant | 8 | card pending; prototype `vGaps()`, `vGap()`, `entityPanel()`, `gapsPanel()`, `historyPanel()`, `interpPanel()` are the cut |
-| `admin-organisation.html` entities, licences and certificates, products, departments with heads, teams | `/admin/organisation` | tenant | 8 | extends the chunk 1 card; the department, team and certificate sections are card pending |
-| `admin-members.html` team membership on the member row | `/admin/members` | tenant | 8 | extends the chunk 1 card; card pending |
-| `tenant-my-work.html` | `/work` | tenant | 8 | card pending (HOM-05); scope switch, four sections, the link to Today, the comments and mentions panel from chunk 10 |
-| participants panel on `tenant-obligation.html` and `tenant-change.html` | `/inventory/obligations/[id]`, `/watch/[changeId]` | tenant | 8, 9 | card pending (COL-04) |
+| `admin-organisation.html` entities, licences and certificates, products, departments with heads, teams | `/admin/organisation` | tenant | 8 | extends the chunk 1 card; departments with heads and teams designed (f03-T60); the entity, licence, certificate and product sections are card pending |
+| `admin-members.html` team membership on the member row | `/admin/members` | tenant | 8 | extends the chunk 1 card; designed (f03-T60) |
+| `tenant-my-work.html` | `/work` | tenant | 8 | designed (HOM-05, f03-T60): scope switch, four sections, the link to Today, the permission-limited line, every state, and the comments and mentions panel from chunk 10 |
+| participants panel on `tenant-obligation.html` and `tenant-change.html` | `/inventory/obligations/[id]`, `/watch/[changeId]` | tenant | 8, 9 | designed (COL-04, f03-T60) |
 | units list, paste dialog and the Statement of Applicability view on `tenant-obligation.html` | `/inventory/obligations/[id]` | tenant | 8 | card pending (REG-08) |
 | case panels on `tenant-change.html` | `/watch/[changeId]` | tenant | 9 | card pending; prototype `vChange()` work panels are the cut |
 | `tenant-notifications.html`, comments panel | who panel, every record | tenant | 10 | card pending |

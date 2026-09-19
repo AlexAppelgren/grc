@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: My work (/work)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Serves HOM-05, AC-HOM1, COL-04 and J-9 (chunk 8; the comments and mentions
+   panel is chunk 10). New card: the prototype has no My work page. Written from
+   docs/plans/briefs/MY_WORK_AND_MARKETS.md §3.3 to §3.5, ADR 0027 and ADR 0028,
+   and the scenarios HOM-S7 to HOM-S14, COL-S12 and TEN-S8.
+
+   My work is NOT a fifth dock destination. The registry holds at most four
+   ranked destinations per surface and all four are taken (Today, Watch,
+   Inventory, Search). my-work sits in the secondary group with no dockRank and
+   no permission gate, so the rail lists it from 1024 px and the More sheet holds
+   it below that (design/system/navigation.md §2 and §3). This card draws the
+   page only; the rail and the tab bar are in tenant-shell.html.
+
+   Two reasons (owner, participant) and four sections, in order, each item in the
+   first section it qualifies for. Rows and counts come from the permission
+   filtered set; a kind the reader cannot open is named, never silently dropped.
+   The page does not apply the regulatory scope (D-24) and does not repeat the
+   decisions that live on Today (D-23). Values follow design/system/foundations.md
+   (14px base, 24px page title, hairline cards at 8px, 36px buttons and 32px
+   toggles at a 6px radius) and design/system/pills-and-labels.md; the build maps
+   them to Green tokens. No new pill slot and no new tone: every pill here is one
+   the inventory, the gap list or the feed already draws. Counts, names and dates
+   are sample data. */
+:root{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --negative:#b92f13;--negative-soft:#fdebe8;
+  --warning:#8f530a;--warning-soft:#fce8cf;
+  --positive:#026436;--positive-soft:#dcefdc;
+  --notice:#005fb3;--notice-soft:#e6f3ff;
+  --bronze:#6a5730;--brass-bg:#ece5d6;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;
+}}
+:root[data-theme="dark"]{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#5c170a;
+  --warning:#f5b970;--warning-soft:#5f3707;
+  --positive:#8ae58d;--positive-soft:#003d26;
+  --notice:#66b8ff;--notice-soft:#003666;
+  --bronze:#d9cba9;--brass-bg:#33291a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+a{color:var(--text);text-underline-offset:3px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px}
+p{margin:0 0 8px}
+ul{margin:0;padding:0;list-style:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+main{padding:24px 32px 64px;max-width:1200px;width:100%;margin:0 auto}
+/* The state label above each rendering of the page. Not part of the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-child{margin-top:0}
+.head{margin-bottom:16px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+/* Scope switch: toggles, 32px at a 6px radius. Only a department head sees it. */
+.scope{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px}
+.scope button{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:6px;font-weight:500;background:var(--surface);border:1px solid var(--line-control);color:var(--muted)}
+.scope button[aria-pressed="true"]{background:var(--accent);border-color:var(--line-strong);color:var(--text)}
+.scope button:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+/* Section: a heading, the count as a quiet muted number, then the rows. */
+.section{margin-bottom:24px}
+.section .top{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.section .count{color:var(--muted);font-size:13px;line-height:18px;font-variant-numeric:tabular-nums}
+.items{display:grid;gap:8px}
+.item{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.item .facets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.item h3 a{text-decoration:none}
+.item h3 a:hover{text-decoration:underline}
+.meta{color:var(--muted);font-size:13px;line-height:18px;display:flex;gap:4px 8px;flex-wrap:wrap;align-items:baseline;margin-top:4px}
+.meta b{color:var(--text);font-weight:500;font-variant-numeric:tabular-nums}
+.why{color:var(--muted);font-size:13px;line-height:18px;margin:4px 0 0}
+/* Pill: fully rounded, 20px, 13px at 500, no border. Existing tones only. */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-soft);color:var(--notice)}
+.pill.positive{background:var(--positive-soft);color:var(--positive)}
+.pill.warning{background:var(--warning-soft);color:var(--warning)}
+.pill.negative{background:var(--negative-soft);color:var(--negative)}
+.pill.brand{background:var(--brass-bg);color:var(--bronze)}
+/* Button: 36px, 6px radius, 14px at 500. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap;text-decoration:none}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.outline:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn.small{height:32px;padding:0 12px}
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* The one line that sends decisions to Today. Never a second decision queue. */
+.decide{background:var(--subtle);border-radius:6px;padding:10px 12px;margin:0 0 24px;display:flex;gap:8px 12px;flex-wrap:wrap;align-items:baseline;justify-content:space-between}
+.decide p{margin:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.panel>h2{margin-bottom:12px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 10px;color:var(--muted);font-weight:500}
+.tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--text)}
+.comment{padding:10px 0;border-bottom:1px solid var(--line)}
+.comment:last-of-type{border-bottom:0}
+.field{display:grid;gap:4px;margin-top:12px}
+.field label{font-weight:500}
+.field textarea{min-height:76px;padding:8px 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;resize:vertical;font:inherit;color:inherit}
+.field .hint{color:var(--muted);font-size:13px;line-height:18px}
+.skeleton{height:72px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.skeletons{display:grid;gap:8px}
+.emptystate,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.emptystate h2,.errorstate h2{color:var(--text)}
+.emptystate p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+  .bar{justify-content:flex-end}
+}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · Mine — Anna Nilsson, obligation owner (heads no department, so no scope switch)</h2>
+<div class="head">
+  <h1>My work</h1>
+  <p class="lede">What you and your teams are responsible for or take part in.</p>
+</div>
+
+<section class="section" aria-labelledby="s1a">
+  <div class="top"><h2 id="s1a">Overdue</h2><span class="count">1</span></div>
+  <ul class="items">
+    <li class="item">
+      <div class="facets"><span class="pill brand">FFFS 2017:2</span><span class="pill warning">Partly compliant</span></div>
+      <h3><a href="#">Pay for third-party research only under the permitted models</a></h3>
+      <div class="meta"><span>Obligation</span><span>·</span><b>Review 7 Sep 2026</b><span>12 days overdue</span></div>
+      <p class="why">You're responsible</p>
+    </li>
+  </ul>
+</section>
+
+<section class="section" aria-labelledby="s1b">
+  <div class="top"><h2 id="s1b">Due soon</h2><span class="count">1</span></div>
+  <ul class="items">
+    <li class="item">
+      <div class="facets"><span class="pill negative">Open</span><span class="pill warning">Medium</span></div>
+      <h3><a href="#">Assessment criteria for research quality are not documented</a></h3>
+      <div class="meta"><span>Gap</span><span>·</span><b>Target 28 Sep 2026</b><span>in 9 days</span></div>
+      <p class="why">You're responsible</p>
+    </li>
+  </ul>
+</section>
+
+<section class="section" aria-labelledby="s1c">
+  <div class="top"><h2 id="s1c">Changes on your items</h2><span class="count">2</span></div>
+  <ul class="items">
+    <li class="item">
+      <div class="facets"><span class="pill notice">New rules</span><span class="pill negative">Act now</span></div>
+      <h3><a href="#">FI adopts amended rules on paying for investment research</a></h3>
+      <div class="meta"><span>Change</span><span>·</span><b>In force 1 Oct 2026</b><span>in 12 days</span></div>
+      <p class="why">Linked to Pay for third-party research only under the permitted models</p>
+    </li>
+    <li class="item">
+      <div class="facets"><span class="pill brand">FFFS 2017:2</span><span class="pill positive">Compliant</span></div>
+      <h3><a href="#">Disclose all costs and charges before and after the service</a></h3>
+      <div class="meta"><span>Obligation</span><span>·</span><b>Version 3 applied 15 Sep 2026</b><span>4 days ago</span></div>
+      <p class="why">You're responsible</p>
+    </li>
+  </ul>
+</section>
+
+<section class="section" aria-labelledby="s1d">
+  <div class="top"><h2 id="s1d">Everything you're responsible for</h2><span class="count">2</span></div>
+  <ul class="items">
+    <li class="item">
+      <h3><a href="#">Complaints procedure</a></h3>
+      <div class="meta"><span>Internal item</span><span>·</span><b>Review 29 Oct 2026</b><span>in 40 days</span></div>
+      <p class="why">You're responsible</p>
+    </li>
+    <li class="item">
+      <div class="facets"><span class="pill brand">LVM</span><span class="pill positive">Compliant</span></div>
+      <h3><a href="#">Assess suitability when giving investment advice</a></h3>
+      <div class="meta"><span>Obligation</span><span>·</span><span>No date</span></div>
+      <p class="why">Your team takes part</p>
+    </li>
+  </ul>
+</section>
+
+<div class="decide">
+  <p>Sign-offs and other decisions waiting for you are on Today.</p>
+  <a class="btn outline small" href="#">Open Today</a>
+</div>
+
+<h2 class="k">2 · A department head — Karin Ek opens on her department, and every row names who is responsible</h2>
+<div class="head">
+  <h1>My work</h1>
+  <p class="lede">What you and your teams are responsible for or take part in.</p>
+</div>
+<div class="scope" role="group" aria-label="Scope">
+  <button type="button" aria-pressed="false">Mine</button>
+  <button type="button" aria-pressed="true">Retail Banking</button>
+</div>
+
+<section class="section" aria-labelledby="s2a">
+  <div class="top"><h2 id="s2a">Overdue</h2><span class="count">1</span></div>
+  <ul class="items">
+    <li class="item">
+      <div class="facets"><span class="pill brand">FFFS 2017:2</span><span class="pill warning">Partly compliant</span></div>
+      <h3><a href="#">Pay for third-party research only under the permitted models</a></h3>
+      <div class="meta"><span>Obligation</span><span>·</span><b>Review 7 Sep 2026</b><span>12 days overdue</span></div>
+      <p class="why">Anna is responsible</p>
+    </li>
+  </ul>
+</section>
+
+<section class="section" aria-labelledby="s2b">
+  <div class="top"><h2 id="s2b">Due soon</h2><span class="count">1</span></div>
+  <ul class="items">
+    <li class="item">
+      <div class="facets"><span class="pill brand">DORA</span><span class="pill">Not assessed</span></div>
+      <h3><a href="#">Keep a register of information on ICT third-party arrangements</a></h3>
+      <div class="meta"><span>Obligation</span><span>·</span><b>Review 5 Oct 2026</b><span>in 16 days</span></div>
+      <p class="why">Retail compliance is responsible</p>
+    </li>
+  </ul>
+</section>
+
+<section class="section" aria-labelledby="s2c">
+  <div class="top"><h2 id="s2c">Changes on your items</h2><span class="count">0</span></div>
+  <p class="why">Nothing new on the department's items.</p>
+</section>
+
+<section class="section" aria-labelledby="s2d">
+  <div class="top"><h2 id="s2d">Everything you're responsible for</h2><span class="count">1</span></div>
+  <ul class="items">
+    <li class="item">
+      <div class="facets"><span class="pill brand">LVM</span><span class="pill positive">Compliant</span></div>
+      <h3><a href="#">Assess suitability when giving investment advice</a></h3>
+      <div class="meta"><span>Obligation</span><span>·</span><span>No date</span></div>
+      <p class="why">Erik takes part</p>
+    </li>
+  </ul>
+</section>
+
+<h2 class="k">3 · A kind this reader cannot open — Erik Holm, a Reader whose role lost register read</h2>
+<div class="head">
+  <h1>My work</h1>
+  <p class="lede">What you and your teams are responsible for or take part in.</p>
+</div>
+<div class="decide" role="status">
+  <p>Obligations are not shown here, and are left out of the counts, because your role cannot open them. What you take part in is unchanged.</p>
+</div>
+<section class="section" aria-labelledby="s3a">
+  <div class="top"><h2 id="s3a">Overdue</h2><span class="count">1</span></div>
+  <ul class="items">
+    <li class="item">
+      <div class="facets"><span class="pill notice">New rules</span><span class="pill warning">Within 3 months</span></div>
+      <h3><a href="#">Retail investment strategy, final compromise text</a></h3>
+      <div class="meta"><span>Change</span><span>·</span><b>Our deadline 12 Sep 2026</b><span>7 days overdue</span></div>
+      <p class="why">You take part</p>
+    </li>
+  </ul>
+</section>
+
+<h2 class="k">4 · Nothing to do</h2>
+<div class="head">
+  <h1>My work</h1>
+  <p class="lede">What you and your teams are responsible for or take part in.</p>
+</div>
+<div class="emptystate">
+  <h2>Nothing needs you right now</h2>
+  <p>Obligations, internal items, gaps and changes you or your teams own or take part in appear here, most urgent first.</p>
+  <a class="btn outline small" href="#">Open Today</a>
+</div>
+
+<h2 class="k">5 · Loading, and the error with Try again</h2>
+<div class="skeletons">
+  <div class="skeleton"></div>
+  <div class="skeleton"></div>
+  <div class="skeleton"></div>
+</div>
+<div class="errorstate" role="alert" style="margin-top:12px">
+  <h2>Could not load your work</h2>
+  <p>Check your connection and try again.</p>
+  <button class="btn outline small" type="button">Try again</button>
+</div>
+
+<h2 class="k">6 · Comments and mentions (chunk 10, COL-S12), below the four sections</h2>
+<div class="panel">
+  <h2>Comments and mentions</h2>
+  <div class="tabs" role="tablist" aria-label="Comments and mentions">
+    <button type="button" role="tab" aria-selected="true">Mentions</button>
+    <button type="button" role="tab" aria-selected="false">My comments</button>
+  </div>
+  <div class="comment">
+    <h3><a href="#">FI adopts amended rules on paying for investment research</a></h3>
+    <p class="meta" style="margin-top:2px"><span>Erik Holm mentioned you</span><span>·</span><span>18 Sep 2026 14:20</span></p>
+  </div>
+  <div class="comment">
+    <h3><a href="#">Pay for third-party research only under the permitted models</a></h3>
+    <p class="meta" style="margin-top:2px"><span>Sara Lindqvist mentioned you</span><span>·</span><span>16 Sep 2026 09:02</span></p>
+  </div>
+  <p class="why" style="margin-top:10px">Cases are not shown here, because your role cannot open them.</p>
+  <div class="field">
+    <label for="c">Add a comment</label>
+    <textarea id="c" aria-describedby="ch"></textarea>
+    <span class="hint" id="ch">Everyone in your organisation can read comments.</span>
+  </div>
+  <div class="bar"><button class="btn small" type="button">Comment</button></div>
+</div>
+
+<p class="note">My work card (HOM-05, AC-HOM1, J-9; chunk 8, with the comments and
+mentions panel in chunk 10). The page is "/work" and the destination
+"my-work" is in the registry's secondary group with no
+dockRank and no permission gate: the dock holds four and all four
+are taken, so the rail lists My work from 1024 px and the More sheet holds it
+below that (navigation.md). Any member may open the page and any department
+view; each row still needs its own read permission, so rows and every count come
+from the permission-filtered set, and a kind the reader cannot open is named in
+one line above the sections rather than shown as "Nothing to do". The scope
+switch appears only for someone who heads a department (headOf on
+GET /me); a head opens on their department and the choice is
+remembered on the device in localStorage inside try/catch. Sections are fixed in
+this order and an item appears once, in the first it qualifies for; "Changes on
+your items" holds person-confirmed links to an obligation you are involved in,
+carrying that obligation, and versions applied inside the awareness window, never
+the reader's own acts and never an unconfirmed agent suggestion. Reasons are
+muted text, not pills: "You're responsible", "Your team is responsible", "You
+take part", "Your team takes part", "Linked to {obligation}", and in the
+department view the person or team by name. The date is plain text at medium
+weight with days left in meta; the section, not a colour, says how urgent it is.
+Pills are the ones each record type already has (instrument and legal reference
+brand, compliance status and gap status by kind, change type notice, urgency by
+kind), so there is no new slot and no new tone. Decisions are not repeated here:
+one line links to Today. The regulatory scope never hides a row on this page.
+Counts, names and dates are sample data.</p>
+
+</main>
+</body>
+</html>

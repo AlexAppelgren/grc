@@ -7,7 +7,10 @@
 <style>
 /* Cut from design/prototype/index.html (playbook Section 7, step 4): the
    tenant shell, .tabs, .rows/.row/.meta, .pill, .btn, .field, .check, .kv,
-   .modal. Phone first; two buttons per row, primary on the right. */
+   .modal. Phone first; two buttons per row, primary on the right. TEN-03 adds
+   a member's teams: shown on every row and set on the member (chunk 8, TEN-S8).
+   The teams themselves, and the departments they sit in, are set under
+   Organisation, because that is vocab.manage and this is members.manage. */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;
   --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
@@ -113,10 +116,10 @@ a.row:hover{border-color:var(--text)}
 
     <h2 class="k">Members list (each row opens the member)</h2>
     <div class="rows">
-      <a class="row" href="#"><h3>Erik Holm</h3><div class="facets"><span class="pill">Administrator</span></div><div class="meta"><span>erik.holm@example-bank.test</span><span>Head of IT</span><span>Last seen 19 Sep 2026 09:58</span><span>2 passkeys</span><span>1 session</span></div></a>
-      <a class="row" href="#"><h3>Sara Lindqvist</h3><div class="facets"><span class="pill">Compliance officer</span></div><div class="meta"><span>sara.lindqvist@example-bank.test</span><span>Compliance officer</span><span>Last seen 19 Sep 2026 10:04</span><span>1 passkey</span><span>2 sessions</span></div></a>
-      <a class="row" href="#"><h3>Anna Nilsson</h3><div class="facets"><span class="pill">Compliance officer</span><span class="pill">Reader</span><span class="pill amber">Awaiting enrolment</span></div><div class="meta"><span>anna@example-bank.test</span><span>Never signed in</span><span>No passkey</span></div></a>
-      <a class="row" href="#"><h3>Johan Berg</h3><div class="facets"><span class="pill">Obligation owner</span><span class="pill">Deactivated</span></div><div class="meta"><span>johan.berg@example-bank.test</span><span>Last seen 2 Jul 2026 15:12</span></div></a>
+      <a class="row" href="#"><h3>Erik Holm</h3><div class="facets"><span class="pill">Administrator</span></div><div class="meta"><span>erik.holm@example-bank.test</span><span>Head of IT</span><span>No team</span><span>Last seen 19 Sep 2026 09:58</span><span>2 passkeys</span><span>1 session</span></div></a>
+      <a class="row" href="#"><h3>Sara Lindqvist</h3><div class="facets"><span class="pill">Compliance officer</span></div><div class="meta"><span>sara.lindqvist@example-bank.test</span><span>Compliance officer</span><span>Legal</span><span>Last seen 19 Sep 2026 10:04</span><span>1 passkey</span><span>2 sessions</span></div></a>
+      <a class="row" href="#"><h3>Anna Nilsson</h3><div class="facets"><span class="pill">Compliance officer</span><span class="pill">Reader</span><span class="pill amber">Awaiting enrolment</span></div><div class="meta"><span>anna@example-bank.test</span><span>Retail compliance</span><span>Never signed in</span><span>No passkey</span></div></a>
+      <a class="row" href="#"><h3>Johan Berg</h3><div class="facets"><span class="pill">Obligation owner</span><span class="pill">Deactivated</span></div><div class="meta"><span>johan.berg@example-bank.test</span><span>Retail compliance, Cards</span><span>Last seen 2 Jul 2026 15:12</span></div></a>
     </div>
 
     <h2 class="k">Invitations tab</h2>
@@ -152,6 +155,15 @@ a.row:hover{border-color:var(--text)}
       <p class="hint" style="color:var(--muted);font-size:.82rem">Changing roles asks for your passkey.</p>
       <div class="bar" style="justify-content:flex-end"><button class="btn">Save</button></div>
     </div>
+    <div class="panel"><h2>Teams</h2>
+      <div class="field"><label>Teams</label>
+        <label class="check"><input type="checkbox" checked> <span>Retail compliance<small>Retail Banking</small></span></label>
+        <label class="check"><input type="checkbox"> <span>Cards<small>Cards and payments</small></span></label>
+        <label class="check"><input type="checkbox"> <span>Legal<small>Risk control</small></span></label>
+      </div>
+      <p class="hint" style="color:var(--muted);font-size:.82rem">A team owns work and takes part in it, and reaches its active members. Teams themselves are set up under Organisation.</p>
+      <div class="bar" style="justify-content:flex-end"><button class="btn">Save teams</button></div>
+    </div>
     <div class="panel"><h2>Sessions</h2><div class="rows"><div class="row"><h3>Chrome on Windows</h3><div class="meta"><span>Signed in 19 Sep 2026 08:12</span><span>Last seen 19 Sep 2026 10:04</span></div></div></div><div class="bar"><button class="btn danger small">Revoke all sessions</button></div></div>
     <div class="panel"><h2>Passkeys</h2><p style="color:var(--muted)">If this person lost every passkey, re-issue their enrolment. Every session ends, every passkey is retired, and they get a new invitation by email.</p><div class="bar"><button class="btn danger small">Re-issue enrolment</button></div></div>
     <div class="panel"><h2>Access</h2><p style="color:var(--muted)">Deactivating ends every session and keeps the history.</p><p class="err" role="alert">This is the last member who can manage members. Give someone else that role first.</p><div class="bar"><button class="btn danger small">Deactivate</button></div></div>
@@ -163,7 +175,7 @@ a.row:hover{border-color:var(--text)}
     <div class="restricted"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Back to Members</a></div>
     </div>
 
-    <p class="note">Members card. Role pills are information pills labelled from the role rows; "Awaiting enrolment" is a warning pill from the invited kind, "Deactivated" an information pill. Re-issue enrolment, role changes and deactivation ask for a passkey (auth-step-up.html); "last admin" answers the server's 409 in place. Another tenant's member URL renders "Not found", never Restricted. Two buttons share one row on phones, primary on the right.</p>
+    <p class="note">Members card. Role pills are information pills labelled from the role rows; "Awaiting enrolment" is a warning pill from the invited kind, "Deactivated" an information pill. Re-issue enrolment, role changes and deactivation ask for a passkey (auth-step-up.html); "last admin" answers the server's 409 in place. Another tenant's member URL renders "Not found", never Restricted. Two buttons share one row on phones, primary on the right. Teams (TEN-03, chunk 8) are shown on every row and set here, because team membership is members.manage while the teams themselves are vocab.manage and live under Organisation. Saving teams writes one audit event holding the team keys before and after, and a member of another tenant is refused the same way an unknown id is. Changing teams grants nothing and needs no step-up. Deactivating a member also ends their participations and their team memberships, and the removal preview that shows this is designed with TEN-05.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Search</button><button>More</button></nav>

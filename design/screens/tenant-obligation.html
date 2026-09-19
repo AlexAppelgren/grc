@@ -289,10 +289,44 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
       <div class="panel"><h2>Where it comes from</h2><dl class="kv"><dt>Instrument</dt><dd><a href="#">FFFS 2017:2 om värdepappersrörelse</a></dd><dt>Official reference</dt><dd class="mono">FFFS 2017:2, 9 kap. 6 §</dd><dt>Level</dt><dd>FI regulation</dd><dt>Implements</dt><dd>MiFID II delegated directive (EU) 2017/593, art. 13</dd><dt>Source</dt><dd><a href="#" rel="noopener">fi.se, consolidated text</a></dd><dt>Last verified</dt><dd>30 Jun 2026 by Sara Lindqvist</dd><dt>Created</dt><dd>12 Mar 2026 by Research agent 0.3, through proposal review</dd></dl>
         <div class="bar"><button class="btn ghost small">This looks wrong</button></div></div>
       <div class="panel"><h2>Related changes</h2><p><a href="#">FI adopts amended rules on paying for investment research</a><br><span class="meta"><span class="pill negative">Act now</span> Needs triage</span></p></div>
+      <div class="panel"><h2>Participants</h2>
+        <dl class="kv" style="grid-template-columns:150px 1fr;margin-bottom:12px"><dt>First-line owner</dt><dd>Anna Nilsson</dd><dt>Compliance contact</dt><dd>Sara Lindqvist</dd><dt>Owner team</dt><dd>Retail compliance</dd></dl>
+        <div class="rows">
+          <div class="row"><h3>Erik Holm</h3><div class="meta"><span>Added 19 Sep 2026 by Anna Nilsson</span></div><div class="bar"><button class="btn ghost small">Remove</button></div></div>
+          <div class="row"><h3>Legal</h3><div class="meta"><span>Team</span><span>Added 18 Sep 2026 by Anna Nilsson</span></div><div class="bar"><button class="btn ghost small">Remove</button></div></div>
+        </div>
+        <p class="meta" style="display:block;margin-top:10px">Taking part lists the item on a person's My work and notifies them. It grants no access.</p>
+        <div class="bar"><button class="btn small">Add a participant</button></div></div>
       <div class="panel" style="border-style:dashed"><h2 style="color:var(--muted)">Does it apply to us, where we stand, gaps</h2><p class="meta" style="display:block">The register overlay arrives with chunk 8.</p></div>
     </div></div>
 
     <div class="states">
+    <h2 class="k">Participants, seen by Erik, who takes part and cannot edit the register</h2>
+    <div class="panel"><h2>Participants</h2>
+      <dl class="kv" style="grid-template-columns:150px 1fr;margin-bottom:12px"><dt>First-line owner</dt><dd>Anna Nilsson</dd><dt>Compliance contact</dt><dd>Sara Lindqvist</dd><dt>Owner team</dt><dd>Retail compliance</dd></dl>
+      <div class="rows">
+        <div class="row"><h3>Erik Holm</h3><div class="meta"><span class="pill positive">You</span><span>Added 19 Sep 2026 by Anna Nilsson</span></div><div class="bar"><button class="btn ghost small">Leave</button></div></div>
+        <div class="row"><h3>Legal</h3><div class="meta"><span>Team</span><span>Added 18 Sep 2026 by Anna Nilsson</span></div></div>
+      </div>
+      <p class="meta" style="display:block;margin-top:10px">Taking part lists the item on a person's My work and notifies them. It grants no access.</p></div>
+
+    <h2 class="k">Add a participant (people and teams in one picker), with no participants yet</h2>
+    <div class="modal"><form class="box" aria-labelledby="ap"><h2 id="ap">Add a participant</h2>
+      <div class="field"><label for="who">Person or team</label><input id="who" placeholder="Search people and teams" value="er">
+        <div class="rows" style="margin-top:8px">
+          <div class="row sel"><h3>Erik Holm</h3><div class="meta"><span>Person</span></div></div>
+          <div class="row"><h3>Retail compliance</h3><div class="meta"><span>Team</span></div></div>
+        </div>
+        <span class="hint">Teams reach their active members. Everyone keeps the access they already had.</span></div>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Add</button></div>
+    </form></div>
+
+    <h2 class="k">The answers when a participant cannot be added (rendered above the buttons)</h2>
+    <div class="panel"><p class="err" role="alert">Erik Holm already takes part in this obligation.</p>
+      <p class="err" role="alert">Erik Holm's roles cannot open this obligation, so adding them would tell them nothing.</p>
+      <p class="err" role="alert">This obligation already has 50 participants. Remove one before adding another.</p>
+      <p class="err" role="alert">Only a member who can edit the register may add or remove participants. Needs register edit.</p></div>
+
     <h2 class="k">Original language selected (no label), and a language with no translation</h2>
     <div class="lagrum"><div class="margin"><b>§</b><small>FFFS 2017:2<br>Third-party payments</small></div><div class="body" lang="sv">Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor som anges i reglerna. Institutet ska fastställa kriterier för en årlig bedömning av kvaliteten, användbarheten och värdet av den analys som används.</div></div>
     <div class="empty" style="margin-top:10px"><h2>No Finnish text yet</h2><p>The original Swedish and the English translation are available.</p><a href="#">Show the original</a></div>
@@ -312,7 +346,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load this obligation</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Back to Inventory</a></div>
     </div>
-    <p class="note">Obligation card. Header slots: instrument (brand), regime (information), binding level (information "Binding" or warning "Guidance, comply or explain"), then compliance status once chunk 8 lands. The legal text block shows one version in one language; "Show what changed" marks sentences added and removed against the previous version; "As of" picks the version in force on that date. Translations are rows: the original carries no label, a machine translation carries the label above the text. Scope terms are brand pills, "All services" when every term is selected, "Not client-specific" when the list is empty. Library tags follow as brand pills, tenant tags outlined. Nothing here edits the library: re-verification and corrections happen in the console; a member reports.</p>
+    <p class="note">Obligation card. Header slots: instrument (brand), regime (information), binding level (information "Binding" or warning "Guidance, comply or explain"), then compliance status once chunk 8 lands. The legal text block shows one version in one language; "Show what changed" marks sentences added and removed against the previous version; "As of" picks the version in force on that date. Translations are rows: the original carries no label, a machine translation carries the label above the text. Scope terms are brand pills, "All services" when every term is selected, "Not client-specific" when the list is empty. Library tags follow as brand pills, tenant tags outlined. Nothing here edits the library: re-verification and corrections happen in the console; a member reports. Participants (COL-04, chunk 8) hang on the register entry, which is created on its first write, not on the library record: the owners sit read-only above the list, each participant names who added them, adding needs register edit and anyone may leave their own row. A person or a team is one picker over the people reference and the team list; a team reaches its active members. Participation lists and notifies and grants nothing, so it needs no step-up and no second person; the server's refusals (already a participant, cannot open the record, the participant cap, the missing permission) render in place.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

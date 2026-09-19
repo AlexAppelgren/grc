@@ -6,9 +6,15 @@
 <title>Screen card: organisation (/admin/organisation)</title>
 <style>
 /* Cut from design/prototype/index.html (playbook Section 7, step 4): the
-   tenant shell, .panel, .field, .pair, .check, .btn. TEN-01 only: profile,
-   timezone, languages and the onboarding checklist. Entities, licences,
-   products and teams arrive in chunk 8. */
+   tenant shell, .panel, .field, .pair, .check, .btn. TEN-01: profile,
+   timezone, languages and the onboarding checklist. TEN-02 and TEN-03 add the
+   departments with their head and the teams in them (chunk 8, ADR 0027,
+   HOM-S9 and TEN-S8): a department is the org unit of kind business area,
+   business unit or function, and a team belongs to one. Team membership is set
+   on the member row, in admin-members.html, because it is members.manage and
+   not vocab.manage. Legal entities, licences and products still arrive with
+   chunk 8. Team leads are not built: a department has a head, and a team's
+   notifications reach its active members. */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;
   --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
@@ -65,6 +71,11 @@ main{padding:32px 36px 96px;max-width:1100px;width:100%}
 .meter{height:10px;border-radius:999px;background:var(--grey-soft);overflow:hidden;margin:10px 0 6px}
 .meter i{display:block;height:100%;border-radius:999px;background:var(--brand);width:25%}
 .empty{color:var(--muted);padding:28px;text-align:center;border:1px dashed var(--line-strong);border-radius:16px}
+.rows{display:grid;gap:10px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.row h3{font-size:1rem;font-weight:600;margin:0 0 4px}
+.row .meta{color:var(--muted);font-size:.86rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row .bar{margin-top:0}
 .empty h2{color:var(--text);margin-bottom:8px}
 .states h2.k{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:28px 0 10px}
 .note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
@@ -120,6 +131,32 @@ main{padding:32px 36px 96px;max-width:1100px;width:100%}
       </div>
     </div>
 
+    <div class="panel" style="margin-top:16px"><h2>Departments</h2>
+      <p style="color:var(--muted);margin-bottom:12px">A department has a head, who sees the department's work on My work. Teams sit in a department.</p>
+      <div class="rows">
+        <div class="row"><div><h3>Retail Banking</h3><div class="meta"><span>Business area</span><span>Head: Karin Ek</span><span>2 teams</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+        <div class="row"><div><h3>Cards and payments</h3><div class="meta"><span>Business unit</span><span>In Retail Banking</span><span>Head: Marcus Dahl</span><span>1 team</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+        <div class="row"><div><h3>Risk control</h3><div class="meta"><span>Function</span><span>Head: Sara Lindqvist</span><span>1 team</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+      </div>
+      <div class="bar"><button class="btn small">Add a department</button></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px"><h2>Teams</h2>
+      <p style="color:var(--muted);margin-bottom:12px">A team owns work and takes part in it, so ownership survives a person leaving. Who is in a team is set on the member.</p>
+      <div class="rows">
+        <div class="row"><div><h3>Retail compliance</h3><div class="meta"><span>Retail Banking</span><span>4 members</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+        <div class="row"><div><h3>Cards</h3><div class="meta"><span>Cards and payments</span><span>3 members</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+        <div class="row"><div><h3>Legal</h3><div class="meta"><span>Risk control</span><span>2 members</span></div></div><div class="bar"><button class="btn ghost small">Edit</button></div></div>
+      </div>
+      <div class="bar"><button class="btn small">Add a team</button></div>
+    </div>
+
+    <h2 class="k">A department and a team, before anything is set up</h2>
+    <div class="empty"><h2>No departments yet</h2><p>Add the business areas, units and functions you work in, give each one a head, and put your teams in them.</p><button class="btn small">Add a department</button></div>
+
+    <h2 class="k">Retiring a team that still owns open work (the server's 409, rendered in place)</h2>
+    <div class="panel"><p class="err" role="alert">Retail compliance owns 3 open items. Give them another owner before retiring the team.</p><div class="bar"><button class="btn ghost small">See the items</button></div></div>
+
     <h2 class="k">Refused by the server (the 403 rendered as is, for a member without security manage)</h2>
     <div class="panel"><p class="err" role="alert">Only a member who manages security can change the profile. Needs security manage.</p></div>
 
@@ -128,7 +165,7 @@ main{padding:32px 36px 96px;max-width:1100px;width:100%}
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the organisation</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     </div>
 
-    <p class="note">Organisation card (TEN-01). Any member may read the profile; saving needs security manage and the server's 403 renders in place with its detail and the missing grant. Languages come from the language rows as key and label; the timezone is a free IANA name with Nordic suggestions. The checklist is computed by the server; each undone step links to where it is done.</p>
+    <p class="note">Organisation card (TEN-01; departments and teams TEN-02 and TEN-03, chunk 8). Any member may read the profile; saving needs security manage and the server's 403 renders in place with its detail and the missing grant. Languages come from the language rows as key and label; the timezone is a free IANA name with Nordic suggestions. The checklist is computed by the server; each undone step links to where it is done. Departments and teams need vocab.manage, as the legal entities do; they need no step-up and no second person, because neither grants access. A department is an org unit whose kind is business area, business unit or function, shown as plain meta text and not as a pill because this card adds no pill slot; it may sit under another, and its head is a member of this tenant. Naming a head is what puts the department on that person's scope switch on My work; the view itself is a filter any member may open. Who is in a team is set on the member row under Members, because that is members.manage. Retiring a team that still owns open work is refused, and merging two teams re-points the owner-team and participant rows.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Search</button><button>More</button></nav>
