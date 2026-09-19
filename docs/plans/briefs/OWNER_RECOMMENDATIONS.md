@@ -8,6 +8,26 @@ Prepared 2026-09-19 for Alex. Each answer was researched against the repository 
 - Five answers need a PRD 0.4 change: support access, private records, SSO, retention and tenant exit. The other eight need only an ADR and a DECISIONS row, or nothing.
 - Problem reports, private records, platform counters and the search index all build on hardening task H-C, which has not landed, so schedule it first. H-B is already on main (f336cce). New ADRs start at 0042 and decisions at D-48, numbered as each one lands.
 
+## Alex's answers (2026-09-19, in chat)
+
+| # | Key | Answer | What it means for the build |
+|---|---|---|---|
+| 1 | q-urgency | OK | Recommendation accepted |
+| 2 | q-support-access | OK | Recommendation accepted (PRD 0.4 change) |
+| 3 | q-Q1 | Not yet: Alex asked for a fuller explanation | Still open; the build keeps chunk 4's Q1 tail waiting |
+| 4 | q-search-fence | OK | Recommendation accepted |
+| 5 | q-feed-token | OK | Recommendation accepted |
+| 6 | q-retention | "10 yrs after last use" | Changes the recommendation: a record is deleted 10 years after its last use, not after a period each bank sets from closure. Two details to confirm before `c12-retention-contract` starts: what counts as "use" (proposed: the latest of closure, removal, a change, or a reference from a live record; reads do not count) and whether a bank may change the 10 years (proposed: no, one fixed period). Still bends the append-only rule, so CLAUDE.md §5 gets the named exception (PRD 0.4 change) |
+| 7 | q-eu-guards | OK | Recommendation accepted: production agents run on Bedrock in an EU region |
+| 8 | q-credential | OK | Recommendation accepted |
+| 9 | q-exit | OK | Recommendation accepted, including deleting audit rows at exit (bends the append-only rule: CLAUDE.md §5 exception, PRD 0.4 change) |
+| 10 | q-private | YES | Recommendation accepted (PRD 0.4 change) |
+| 11 | q-sso | YES | Recommendation accepted (PRD 0.4 change) |
+| 12 | q-platform-counters | OK | Recommendation accepted |
+| 13 | q-private-notes | YES | Read as accepting the recommendation, no private notes, unless Alex says he meant the opposite |
+
+Nothing is built from these yet: Alex paused the build on 2026-09-19 (usage limit). The ADRs, DECISIONS rows, PRD 0.4 and the CLAUDE.md §5 exceptions land with the packages that need them.
+
 ---
 
 ## 1. Can anyone add or re-rank urgency levels? (q-urgency)

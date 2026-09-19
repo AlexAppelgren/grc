@@ -167,6 +167,8 @@ adopted. The ISO/IEC 27001:2022 transition MD 26 describes ended on
 
 ## Decisions the parallel build waits on (docs/plans/PARALLEL_PLAN.md section 7)
 
+**Answered 2026-09-19** except q-Q1, which Alex asked to have explained further; retention was changed to "10 years after last use" with two details to confirm. The answers and what they mean are in `docs/plans/briefs/OWNER_RECOMMENDATIONS.md`, section "Alex's answers".
+
 Each involves a product invariant, so it waits for you rather than a default. "Needed by" counts hours from the plan's start on 2026-09-19 evening; answers by hour 6 cost nothing. The main agent's recommendation for the first four is in the chat of 2026-09-19.
 
 | Key | Question | Blocks | Needed by | If late |
