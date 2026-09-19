@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: platform agent keys (/console/agent-keys)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Serves ID-10 and AGT-01, AGT-02 (chunk 5). The prototype has no console, and
+   design/screens/admin-api-keys.html is the tenant's own page: a key an
+   organisation makes for its own integrations. This card is the platform half,
+   the keys the research agents themselves run on. A platform key belongs to no
+   organisation (api_key.tenant_id null) and is bound to one agent, so every
+   write it makes is recorded with that agent as the actor.
+
+   Designed where the PRD and the prototype are silent: the agent a key is bound
+   to, the scope list read from the fixed set, the passkey step-up that key
+   creation always needs, the plain key shown once and never again, and revoke.
+
+   Values follow design/system/foundations.md and design/system/pills-and-labels.md;
+   the build maps them to Green tokens. Names, prefixes and dates are sample data,
+   and the key drawn here is not a real one. */
+/* Values: design/system/foundations.md (14px base, 36px buttons at a 6px radius,
+   hairline cards at 8px, dialogs at 12px) and design/system/pills-and-labels.md.
+   Every colour is a Green token from green-tokens 3.1.8, with the brand pair as
+   frontend/src/styles/brand.css overrides it, never SEB's values. */
+:root{
+  --page:#ffffff;            /* l1-neutral-01 */
+  --surface:#ffffff;         /* l2-neutral-02 */
+  --subtle:#f4f5f5;          /* l1-neutral-02 */
+  --accent:#eaebeb;          /* l3-neutral-02 */
+  --hover:rgba(0,0,0,.06);   /* state-neutral-05 */
+  --line:#dfe1e1;            /* border-neutral-02 */
+  --line-control:#dfe1e1;    /* border-neutral-02 */
+  --line-strong:#777e7c;     /* border-neutral-01 */
+  --text:#0a0b0b;            /* content-neutral-01 */
+  --muted:#636967;           /* content-neutral-02 */
+  --primary:#0a0b0b;         /* l3-neutral-03 */
+  --on-primary:#ffffff;      /* content-neutral-03 */
+  --focus:#005fb3;           /* content-notice-01 */
+  --notice:#005fb3;--notice-pill:#e6f3ff;          /* content-notice-01 on l3-notice-02 */
+  --positive:#026436;--positive-pill:#dcefdc;      /* content-positive-03 on l3-positive-02 */
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;  /* l3-warning-02 */
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;            /* brand.css content-brand-02 on l3-brand-02 */
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+/* Dark: the four status tones take Green's -03 step on pills; a warn or bad
+   banner keeps the -02 step and puts every word in the text colour. */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;
+  --positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;
+}}
+/* Fixed-theme frames, so one card shows a state in light AND dark whatever the
+   viewer's system is set to. They carry the same aliases, so nothing inside
+   needs to know which theme it is in. */
+.theme{border:1px solid var(--line);border-radius:8px;padding:16px;background:var(--page);color:var(--text)}
+.theme.light{
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --notice:#005fb3;--notice-pill:#e6f3ff;--positive:#026436;--positive-pill:#dcefdc;
+  --warning:#8f530a;--warning-pill:#fce8cf;--warning-soft:#fce8cf;
+  --negative:#b92f13;--negative-pill:#fdebe8;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --brand:#6a5730;--brand-pill:#ece5d6;
+}
+.theme.dark{
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --notice:#66b8ff;--notice-pill:#003666;--positive:#8ae58d;--positive-pill:#003d26;
+  --warning:#f5b970;--warning-pill:#5f3707;--warning-soft:#774508;
+  --negative:#f08975;--negative-pill:#5c170a;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --brand:#d9cba9;--brand-pill:#33291a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px;font-weight:500}
+p{margin:0 0 8px}
+b{font-weight:600}
+a{color:inherit;text-underline-offset:3px}
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%;margin:0 auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.meta{color:var(--muted);font-size:13px;line-height:18px}
+.mono{font-family:var(--mono);font-size:13px}
+.microlabel{font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+/* State labels. They belong to the card, not to the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-of-type{margin-top:24px}
+.cap{color:var(--muted);font-size:13px;line-height:18px;margin:0 0 10px}
+
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 16px;margin-bottom:20px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.head .acts{margin-left:auto}
+.back{background:none;border:0;padding:0;margin:0 0 8px;color:var(--muted);font-size:13px;line-height:18px;text-decoration:underline;text-underline-offset:3px}
+.status{margin:0 0 12px;font-weight:500}
+.status:empty{display:none}
+
+/* Notice (banner): a tone fill, no coloured edge, 6px radius. Every word inside
+   a warn or bad notice is the text colour (foundations.md). */
+.notice{background:var(--subtle);color:var(--text);border-radius:6px;padding:10px 12px;margin:0 0 16px}
+.notice.warn{background:var(--warning-soft)}
+.notice.bad{background:var(--negative-soft)}
+.notice p:last-child{margin-bottom:0}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.panel>h2{margin-bottom:12px}
+.panel>.cap{margin-top:-6px}
+.cols{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.cols>*{min-width:0}
+@media (min-width:768px){.cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Pill: fully rounded, 20px, 13px at 500, no border. Tone comes from the slot
+   or the kind, never from a person (pills-and-labels.md). */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.notice{background:var(--notice-pill);color:var(--notice)}
+.pill.positive{background:var(--positive-pill);color:var(--positive)}
+.pill.warning{background:var(--warning-pill);color:var(--warning)}
+.pill.negative{background:var(--negative-pill);color:var(--negative)}
+.pill.brand{background:var(--brand-pill);color:var(--brand)}
+.pill .x{margin-left:6px;font-weight:400}
+.pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pills.line{gap:6px 10px}
+
+/* Button: 36px, 6px radius, body at 500. Primary is neutral; danger is an
+   outline button with negative text. */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--line-control)}
+.btn.small{height:32px;padding:0 12px}
+.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn.danger:hover{background:var(--negative-hover)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* Actions right, two per row on a phone, the primary last and so on the right. */
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar.left{justify-content:flex-start}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* List rows: 12 by 16px, a hairline card at 8px. */
+.rows{display:grid;gap:8px}
+.row{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;text-decoration:none;color:inherit}
+a.row:hover,button.row:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.row h3{margin:6px 0 4px;font-weight:600}
+.row .meta{display:flex;flex-wrap:wrap;gap:4px 12px}
+
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-weight:500}
+.field input,.field select,.field textarea{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;color:var(--text)}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted);font-style:italic}
+.field input[aria-invalid="true"],.field select[aria-invalid="true"]{border-color:var(--negative)}
+.field .hint,.field .err{font-size:13px;line-height:18px}
+.field .hint{color:var(--muted)}
+.field .err{color:var(--negative)}
+.pair{display:grid;gap:0 16px;grid-template-columns:minmax(0,1fr)}
+.pair>*{min-width:0}
+@media (min-width:768px){.pair{grid-template-columns:repeat(2,minmax(0,1fr))}}
+fieldset{border:0;margin:0;padding:0}
+legend{padding:0;font-weight:500}
+.check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:16px;height:16px;height:16px;margin:2px 0 0;accent-color:var(--primary);flex:none}
+.check small{display:block;color:var(--muted);font-size:13px;line-height:18px}
+
+/* Dialog: 12px radius, at most 560px, over the scrim. */
+.modal{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,11,11,.6);border-radius:8px;margin-bottom:16px}
+.modal .box{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.modal .box>h2{margin-bottom:12px}
+
+.skeleton{height:72px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.empty,.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.empty h2,.errorstate h2{color:var(--text)}
+.empty p,.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{max-width:60ch;margin:0 auto;padding:48px 0;text-align:center}
+.restricted p{margin:12px 0 0;color:var(--muted)}
+/* Grid items must be allowed to shrink, or the 390px phone frame inside one
+   widens its track and the page scrolls sideways. */
+.statebox{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.statebox>*{min-width:0}
+@media (min-width:768px){.statebox{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* A 390px frame, so the narrow layout can be read on a wide screen. */
+.phone{width:390px;max-width:100%;padding:12px;background:var(--page);border:1px solid var(--line);border-radius:8px}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
+}
+
+/* The plain key, shown once: monospace, wrapping, on the subtle surface. */
+.secret{font-family:var(--mono);font-size:13px;line-height:20px;word-break:break-all;background:var(--subtle);border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:0 0 8px}
+/* Key facts under a row title: label, then value. */
+.kv{display:grid;grid-template-columns:1fr;gap:2px 16px;margin:8px 0 0}
+@media (min-width:768px){.kv{grid-template-columns:132px minmax(0,1fr)}}
+.kv dt{color:var(--muted);font-size:13px;line-height:18px}
+.kv dd{margin:0 0 6px}
+@media (min-width:768px){.kv dd{margin-bottom:2px}}
+</style>
+</head>
+<body>
+<main>
+
+<h2 class="k">1 · The list (a platform admin)</h2>
+<div class="head">
+  <div>
+    <h1>Agent keys</h1>
+    <p class="lede">The keys our research agents run on. No key can change the library, and none reaches an organisation's own records.</p>
+  </div>
+  <div class="acts"><button class="btn">Create a key</button></div>
+</div>
+<p class="status" role="status" tabindex="-1"></p>
+<div class="rows">
+  <div class="row">
+    <div class="pills"><span class="pill brand">Watch sweeper v1</span><span class="pill positive">Active</span></div>
+    <h3>Watch sweeper, nightly</h3>
+    <dl class="kv">
+      <dt>Key</dt><dd class="mono">cw_a1b2c3d4…</dd>
+      <dt>Scopes</dt><dd><div class="pills"><span class="pill">agent runs write</span><span class="pill">sources write</span><span class="pill">changes write</span><span class="pill">proposals write</span><span class="pill">search read</span></div></dd>
+      <dt>Created</dt><dd>16 Sep 2026 06:40 by Kari Nygaard</dd>
+      <dt>Last used</dt><dd>19 Sep 2026 06:58</dd>
+      <dt>Expires</dt><dd>16 Sep 2027</dd>
+    </dl>
+    <div class="bar"><button class="btn danger small">Revoke</button></div>
+  </div>
+  <div class="row">
+    <div class="pills"><span class="pill brand">Watch sweeper v1</span><span class="pill">Never used</span></div>
+    <h3>Watch sweeper, staging run</h3>
+    <dl class="kv">
+      <dt>Key</dt><dd class="mono">cw_7e6d5c4b…</dd>
+      <dt>Scopes</dt><dd><div class="pills"><span class="pill">agent runs write</span><span class="pill">search read</span></div></dd>
+      <dt>Created</dt><dd>18 Sep 2026 11:20 by Maria Ek</dd>
+      <dt>Expires</dt><dd>No expiry</dd>
+    </dl>
+    <div class="bar"><button class="btn danger small">Revoke</button></div>
+  </div>
+  <div class="row">
+    <div class="pills"><span class="pill brand">Watch sweeper v1</span><span class="pill warning">Revoked</span></div>
+    <h3>Watch sweeper, first trial</h3>
+    <dl class="kv">
+      <dt>Key</dt><dd class="mono">cw_f00dbeef…</dd>
+      <dt>Scopes</dt><dd><div class="pills"><span class="pill">agent runs write</span><span class="pill">changes write</span></div></dd>
+      <dt>Created</dt><dd>2 Sep 2026 12:30 by Kari Nygaard</dd>
+      <dt>Last used</dt><dd>17 Sep 2026 06:02</dd>
+      <dt>Revoked</dt><dd>18 Sep 2026 09:00 by Maria Ek</dd>
+    </dl>
+  </div>
+  <div class="row">
+    <div class="pills"><span class="pill brand">Watch sweeper v1</span><span class="pill warning">Expired</span></div>
+    <h3>Watch sweeper, pilot</h3>
+    <dl class="kv">
+      <dt>Key</dt><dd class="mono">cw_0ldc0nn3…</dd>
+      <dt>Scopes</dt><dd><div class="pills"><span class="pill">agent runs write</span><span class="pill">library read</span></div></dd>
+      <dt>Created</dt><dd>1 Mar 2026</dd>
+      <dt>Expired</dt><dd>1 Sep 2026</dd>
+    </dl>
+  </div>
+</div>
+
+<h2 class="k">2 · Create a key</h2>
+<form class="panel" aria-labelledby="ck">
+  <h2 id="ck">Create a key</h2>
+  <div class="pair">
+    <div class="field">
+      <label for="ka">Agent</label>
+      <select id="ka" aria-describedby="kah"><option selected>Watch sweeper v1</option></select>
+      <span class="hint" id="kah">Everything this key writes is recorded as this agent.</span>
+    </div>
+    <div class="field">
+      <label for="kn">Name</label>
+      <input id="kn" placeholder="e.g. Watch sweeper, nightly">
+      <span class="hint">Yours to recognise it by, in the list and in the security log.</span>
+    </div>
+  </div>
+  <div class="field">
+    <label for="ke">Expires</label>
+    <input id="ke" type="date">
+    <span class="hint">Optional. Leave it empty and the key works until someone revokes it.</span>
+  </div>
+  <fieldset class="field" aria-describedby="ksh">
+    <legend>Scopes</legend>
+    <span class="hint" id="ksh">Give the key the least it needs. None of these writes to the library: an agent proposes, and a library editor approves.</span>
+    <label class="check" for="s1"><input type="checkbox" id="s1" checked><span>agent runs write<small>Open a run, log source checks and close it</small></span></label>
+    <label class="check" for="s2"><input type="checkbox" id="s2" checked><span>sources write<small>Record that a source was checked, and with what result</small></span></label>
+    <label class="check" for="s3"><input type="checkbox" id="s3" checked><span>changes write<small>Register a regulatory change and its documents</small></span></label>
+    <label class="check" for="s4"><input type="checkbox" id="s4"><span>proposals write<small>Submit a proposal to the queue</small></span></label>
+    <label class="check" for="s5"><input type="checkbox" id="s5"><span>search read<small>Find records close to a text, to spot a reform already tracked</small></span></label>
+    <label class="check" for="s6"><input type="checkbox" id="s6"><span>library read<small>Read instruments and obligations</small></span></label>
+    <label class="check" for="s7"><input type="checkbox" id="s7"><span>upcoming read<small>Read upcoming dates</small></span></label>
+    <label class="check" for="s8"><input type="checkbox" id="s8"><span>tenant read<small>Read a tenant profile. A platform key never has this</small></span></label>
+  </fieldset>
+  <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn" type="submit">Create the key</button></div>
+  <p class="meta" style="margin:8px 0 0">Creating a key asks for your passkey.</p>
+</form>
+
+<h2 class="k">3 · The two refusals, before anything is created</h2>
+<div class="panel">
+  <div class="field">
+    <label for="kn2">Name</label>
+    <input id="kn2" aria-invalid="true" aria-describedby="kn2e" placeholder="e.g. Watch sweeper, nightly">
+    <span class="err" id="kn2e" role="alert">Give the key a name.</span>
+  </div>
+  <fieldset class="field">
+    <legend>Scopes</legend>
+    <label class="check" for="s9"><input type="checkbox" id="s9"><span>agent runs write<small>Open a run, log source checks and close it</small></span></label>
+    <span class="err" role="alert">Pick at least one scope.</span>
+  </fieldset>
+</div>
+
+<h2 class="k">4 · The passkey step-up, every time a key is created</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="su" aria-describedby="sud">
+    <h2 id="su">Use your passkey to create this key</h2>
+    <p id="sud" class="meta">Watch sweeper, nightly · Watch sweeper v1 · agent runs write, sources write, changes write</p>
+    <p>A new key can read and write on its own from the moment it exists, so we ask for your passkey first.</p>
+    <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Continue with passkey</button></div>
+  </div>
+</div>
+
+<h2 class="k">5 · The key itself, shown once</h2>
+<div class="panel" role="status">
+  <h2>Copy the key now</h2>
+  <p class="secret">cw_a1b2c3d4_9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c6b5a4938271605f4e3d2c1b0a</p>
+  <p class="meta">We keep only a hash of it, so this is the last time it is on screen. Put it where the agent runner keeps its secrets.</p>
+  <div class="bar"><button class="btn outline">Done</button><button class="btn">Copy the key</button></div>
+</div>
+
+<h2 class="k">6 · What a reload shows instead</h2>
+<div class="rows">
+  <div class="row">
+    <div class="pills"><span class="pill brand">Watch sweeper v1</span><span class="pill">Never used</span></div>
+    <h3>Watch sweeper, nightly</h3>
+    <dl class="kv">
+      <dt>Key</dt><dd class="mono">cw_a1b2c3d4…</dd>
+      <dt>Created</dt><dd>19 Sep 2026 09:41 by Kari Nygaard</dd>
+    </dl>
+    <div class="bar"><button class="btn danger small">Revoke</button></div>
+  </div>
+</div>
+
+<h2 class="k">7 · Revoke</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="rv" aria-describedby="rvd">
+    <h2 id="rv">Revoke "Watch sweeper, nightly"?</h2>
+    <p id="rvd">The agent stops working the moment you do, and a run it has open will fail. The key stays in the list and in the security log; it cannot be turned back on.</p>
+    <div class="bar"><button class="btn outline">Cancel</button><button class="btn danger">Revoke the key</button></div>
+  </div>
+</div>
+<p class="status" role="status" tabindex="-1">Revoked. Watch sweeper, nightly stopped working.</p>
+
+<h2 class="k">8 · Empty, loading, error and denied, in both themes</h2>
+<p class="cap">Each pair is the same markup with the light and the dark aliases fixed, so both read on any screen. Denied is what a library editor without the platform admin permission sees at this address.</p>
+<div class="statebox">
+  <div class="theme light">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Light</p>
+    <div class="empty"><h2>No agent keys</h2><p>Create one when an agent needs to reach the API.</p><button class="btn outline small">Create a key</button></div>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load the agent keys</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs agent definitions manage</p></div>
+  </div>
+  <div class="theme dark">
+    <p class="microlabel" style="color:var(--muted);margin:0 0 10px">Dark</p>
+    <div class="empty"><h2>No agent keys</h2><p>Create one when an agent needs to reach the API.</p><button class="btn outline small">Create a key</button></div>
+    <div role="status" aria-busy="true" style="display:grid;gap:8px;margin:16px 0"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+    <div class="errorstate" role="alert"><h2>Could not load the agent keys</h2><p>Check your connection and try again.</p><button class="btn outline small">Try again</button></div>
+    <div class="restricted" role="alert" style="padding:24px 0"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p class="meta">Needs agent definitions manage</p></div>
+  </div>
+</div>
+
+<h2 class="k">9 · A row and the shown-once key at 390 px, light and dark</h2>
+<div class="statebox">
+  <div class="theme light" style="padding:0;border:0">
+    <div class="phone">
+      <div class="row">
+        <div class="pills"><span class="pill brand">Watch sweeper v1</span><span class="pill positive">Active</span></div>
+        <h3>Watch sweeper, nightly</h3>
+        <dl class="kv"><dt>Key</dt><dd class="mono">cw_a1b2c3d4…</dd><dt>Last used</dt><dd>19 Sep 2026 06:58</dd></dl>
+        <div class="bar"><button class="btn danger small">Revoke</button></div>
+      </div>
+      <div class="panel" style="margin:12px 0 0">
+        <h2>Copy the key now</h2>
+        <p class="secret">cw_a1b2c3d4_9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c6b5a4938271605f4e3d2c1b0a</p>
+        <div class="bar"><button class="btn outline">Done</button><button class="btn">Copy the key</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="theme dark" style="padding:0;border:0">
+    <div class="phone">
+      <div class="row">
+        <div class="pills"><span class="pill brand">Watch sweeper v1</span><span class="pill positive">Active</span></div>
+        <h3>Watch sweeper, nightly</h3>
+        <dl class="kv"><dt>Key</dt><dd class="mono">cw_a1b2c3d4…</dd><dt>Last used</dt><dd>19 Sep 2026 06:58</dd></dl>
+        <div class="bar"><button class="btn danger small">Revoke</button></div>
+      </div>
+      <div class="panel" style="margin:12px 0 0">
+        <h2>Copy the key now</h2>
+        <p class="secret">cw_a1b2c3d4_9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c6b5a4938271605f4e3d2c1b0a</p>
+        <div class="bar"><button class="btn outline">Done</button><button class="btn">Copy the key</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="note">Agent keys card (/console/agent-keys). It sits in the console rail
+under the platform admin's group, beside Tenants, and its denied state names the
+permission it needs; a library editor reviewing proposals never sees it. Each key
+belongs to no organisation and to exactly one agent, so the actor behind every row
+the key writes is that agent and not the person who made the key. The scope list is
+the fixed one the API knows, shown as information pills on a row and as a checkbox
+with a plain description in the form; nothing here writes to the library, because an
+agent proposes and a person approves. The agent version is a brand pill, Active and a
+finished state are positive, Revoked and Expired are warning, and "Never used" is a
+plain information pill: every one of them comes from the row's own facts, never from a
+choice. Creating a key asks for a passkey, as every key creation does, because the key
+can act on its own from the moment it exists; revoking asks once in a dialog and needs
+no passkey, because it only takes access away. The plain key is shown once, on the
+surface and not in a coloured banner, and only its prefix survives a reload, because
+the server keeps a hash. Revoked and expired keys stay in the list so the security log
+and the audit trail still have something to point at. The permission drawn here is the
+platform admin's agent definitions manage, the documented default for platform-owned
+agent work; the names, prefixes and dates are sample data and the key on screen is not
+a real one.</p>
+
+</main>
+</body>
+</html>

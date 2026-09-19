@@ -9,7 +9,8 @@
    (design/README.md: the queue moves from the tenant's Watch tab to the
    platform console). Designed in the prototype's shell language: the same green
    rail with a "Platform console" kicker, destinations Queue, Vocabularies,
-   Sources, Languages and jurisdictions, Problem reports, Tenants, Health,
+   Sources, Languages and jurisdictions, Problem reports, Tenants, Agent keys,
+   Health,
    each visible only with its permission. Below 1024px the tab bar carries the
    ranked console destinations, then More (design/system/navigation.md,
    section 13). No tenant query fires on this surface. */
@@ -255,7 +256,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
 <div class="app">
   <aside class="side">
     <div class="brand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg><small>Platform console</small></div>
-    <nav class="nav" aria-label="Main"><button aria-current="page">Queue <span class="count">3</span></button><button>Vocabularies</button><button>Sources</button><button>Languages and jurisdictions</button><button>Problem reports <span class="count">2</span></button><hr><button>Tenants</button><button>Health</button></nav>
+    <nav class="nav" aria-label="Main"><button aria-current="page">Queue <span class="count">3</span></button><button>Vocabularies</button><button>Sources</button><button>Languages and jurisdictions</button><button>Problem reports <span class="count">2</span></button><hr><button>Tenants</button><button>Agent keys</button><button>Health</button></nav>
     <div class="who">Signed in as<b>Kari Nygaard</b>Library editor</div>
   </aside>
   <main id="main" tabindex="-1">
@@ -267,7 +268,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <h2 class="k">Rail by permission (what each platform role sees)</h2>
     <div class="grid g11">
       <div class="panel"><h3>Library editor</h3><p class="meta" style="display:block">proposals review, library vocabulary manage, sources manage, evaluation manage</p><div class="facets"><span class="pill">Queue</span><span class="pill">Vocabularies</span><span class="pill">Sources</span><span class="pill">Languages and jurisdictions</span><span class="pill">Problem reports</span></div></div>
-      <div class="panel"><h3>Platform admin</h3><p class="meta" style="display:block">tenants manage, agent definitions manage, support access grant, system health</p><div class="facets"><span class="pill">Tenants</span><span class="pill">Health</span></div></div>
+      <div class="panel"><h3>Platform admin</h3><p class="meta" style="display:block">tenants manage, agent definitions manage, support access grant, system health</p><div class="facets"><span class="pill">Tenants</span><span class="pill">Agent keys</span><span class="pill">Health</span></div></div>
     </div>
     <p class="meta" style="margin-top:8px">A person with both roles sees every destination. Evaluation sets join the rail with chunk 7 and Agent definitions with chunk 11.</p>
 
@@ -279,7 +280,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="rows" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the console</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     </div>
-    <p class="note">Console shell card. Same rail, same tokens, one kicker so nobody mistakes the surface. The navigation registry holds these destinations with surface "console" and their permission; below 1024px the tab bar holds up to four ranked destinations plus More, as on the tenant side (design/system/navigation.md, section 13). Today that is Queue, Vocabularies and Sources; Reports joins as the fourth tab once the registry ranks it, and More holds only the account until the console has a destination without a rank. The full-width brand bar drawn here is the old style; the console chunk restyles it. Counts on Queue and Problem reports are facts from the API. Tenants and Health are platform_admin destinations drawn in chunk 11 and 14 cards.</p>
+    <p class="note">Console shell card. Same rail, same tokens, one kicker so nobody mistakes the surface. The navigation registry holds these destinations with surface "console" and their permission; below 1024px the tab bar holds up to four ranked destinations plus More, as on the tenant side (design/system/navigation.md, section 13). Today that is Queue, Vocabularies and Sources; Reports joins as the fourth tab once the registry ranks it, and More holds only the account until the console has a destination without a rank. The full-width brand bar drawn here is the old style; the console chunk restyles it. Counts on Queue and Problem reports are facts from the API. Tenants and Health are platform_admin destinations drawn in chunk 11 and 14 cards. Agent keys is the platform_admin destination for the keys the research agents run on (design/screens/console-agent-keys.html); it has no dock rank, so below 1024px it is the first console destination the More sheet carries.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Queue<span class="dot">3</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h9a3 3 0 0 1 3 3v11H7a3 3 0 0 0-3 3z"/><path d="M20 5h-4v14h4z"/></svg>Vocabularies</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>Sources</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>Reports<span class="dot">2</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>
