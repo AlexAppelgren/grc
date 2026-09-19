@@ -2,320 +2,493 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Screen card: footprint with change requests (/admin/footprint)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Screen card: regulatory scope with change requests (/admin/footprint)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* Serves FP-01, FP-02, FP-03, ADM-01, AC-FP1, J-6 (chunk 2). Cut from
-   design/prototype/index.html, vSettings() (the chip groups). The prototype
-   applied a toggle at once, which INPUT_DELTAS §5 replaces: a change becomes a
-   request with a preview of what it hides and reveals, a second person approves
-   it behind step-up, and one audit event per term is written. The pending
-   request banner, the preview, the four-eyes refusal and the read-only variant
-   are designed here. Dimensions come from term_dimension rows with
-   restricts_footprint; "Jurisdictions" and "Channels" join the prototype's five. */
+/* Serves FP-01, FP-02, FP-03, AC-FP1 and J-6. The section the prototype called
+   Footprint is Regulatory scope on screen (docs/plans/briefs/REGULATORY_SCOPE.md
+   §2); the code, the route, the permission keys and the FP ids keep the old word.
+
+   The page is restricted and opens read-only: every option is a checkbox glyph,
+   ticked or empty, and nothing is a form control until "Propose a change". A
+   change is a request. Someone else approves it behind a passkey step-up or
+   rejects it with a reason; the requester can withdraw it. Values follow
+   design/system/foundations.md (14px base, 36px buttons at a 6px radius,
+   hairline cards at 8px, dialogs at 12px) and design/system/pills-and-labels.md;
+   the build maps them to Green tokens. Copy is the spec's string table, so this
+   card and frontend/src/messages/*.json say the same thing. Counts and titles
+   are sample data. */
 :root{
-  --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;
-  --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
-  --accent:#003824;--btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;
-  --red:#b92f13;--red-soft:#fdebe8;--amber:#8f530a;--amber-soft:#fce8cf;--green:#026436;--green-soft:#dcefdc;
-  --blue:#005fb3;--blue-soft:#e6f3ff;--grey-soft:#eaebeb;
-  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+  --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
+  --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
+  --primary:#0a0b0b;--on-primary:#ffffff;--focus:#005fb3;
+  --negative:#b92f13;--negative-soft:#fdebe8;--negative-hover:#fdebe8;
+  --warning:#8f530a;--warning-soft:#fce8cf;--warning-pill:#fce8cf;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
 }
+/* Dark: the four status tones take Green's -03 step on pills (pills-and-labels.md);
+   the danger button's hover is l3-negative-03 there, the new --color-negative-hover. */
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--sand-3:#453921;
-  --line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
-  --accent:#d6c7a8;--btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;
-  --red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;
-  --blue:#66b8ff;--blue-soft:#10273d;--grey-soft:#313533;
+  --page:#0a0b0b;--surface:#191a1a;--subtle:#191a1a;--accent:#313533;--hover:rgba(255,255,255,.12);
+  --line:#282a29;--line-control:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;
+  --primary:#d5d7d7;--on-primary:#0a0b0b;--focus:#66b8ff;
+  --negative:#f08975;--negative-soft:#731d0c;--negative-hover:#5c170a;
+  --warning:#f5b970;--warning-soft:#774508;--warning-pill:#5f3707;
 }}
-:root[data-theme="dark"]{
-  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--sand-3:#453921;
-  --line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
-  --accent:#d6c7a8;--btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;
-  --red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;
-  --blue:#66b8ff;--blue-soft:#10273d;--grey-soft:#313533;
-}
-/* Fixed-theme swatches so a card shows a pill in light AND dark whatever the viewer's theme */
-.swatch{display:inline-flex;gap:6px;align-items:center;padding:6px 8px;border-radius:10px;border:1px solid var(--line)}
-.swatch.light{--surface:#ffffff;--sand-2:#efe9dc;--text:#0a0b0b;--bronze:#685631;--line-strong:#777e7c;--red:#b92f13;--red-soft:#fdebe8;--amber:#8f530a;--amber-soft:#fce8cf;--green:#026436;--green-soft:#dcefdc;--blue:#005fb3;--blue-soft:#e6f3ff;--grey-soft:#eaebeb;background:#f4f5f5;color:#0a0b0b}
-.swatch.dark{--surface:#191a1a;--sand-2:#342b18;--text:#f7f8f7;--bronze:#d6c7a8;--line-strong:#a0a6a4;--red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;--blue:#66b8ff;--blue-soft:#10273d;--grey-soft:#313533;background:#0a0b0b;color:#f7f8f7}
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
-button,input,select,textarea{font:inherit;color:inherit}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--sans);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
-:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
-a{color:var(--text);text-underline-offset:3px}
-h1,h2,h3{font-weight:500;line-height:1.2;margin:0;letter-spacing:-.01em}
-h1{font-size:2rem;font-weight:400}h2{font-size:1.25rem}h3{font-size:1rem}
-p{margin:0 0 .75rem}
-.mono{font-family:var(--mono);font-size:.9em}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1,h2,h3{margin:0;font-weight:600}
+h1{font-size:24px;line-height:32px;letter-spacing:-.02em}
+h2{font-size:16px;line-height:24px;letter-spacing:-.01em}
+h3{font-size:14px;line-height:20px;font-weight:500}
+p{margin:0 0 8px}
+b{font-weight:600}
+main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-area-inset-left));max-width:1200px;width:100%;margin:0 auto}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.meta{color:var(--muted);font-size:13px;line-height:18px}
+.microlabel{font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
 
-.app{display:grid;grid-template-columns:200px 1fr;min-height:100vh}
-.side::-webkit-scrollbar{display:none}
-.side{background:var(--brand);color:#fff;padding:24px 14px;position:sticky;top:0;height:100vh;overflow:auto;scrollbar-width:none}
-.brand{padding:0 8px 20px}
-.brand small{display:block;color:rgba(255,255,255,.7);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;margin-top:6px}
-.logo{display:block;width:100%;height:auto;max-width:150px}
-.mbrand{display:none}
-.nav button{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:0;color:#fff;text-align:left;padding:10px 12px;border-radius:999px;font-size:.95rem}
-.nav button:hover{background:rgba(255,255,255,.12)}
-.nav button[aria-current="page"]{background:#f8f6f1;color:#003824;font-weight:600}
-.nav button[aria-current="page"] .count{background:#003824;color:#fff}
-.nav .count{background:#efe9dc;color:#003824;border-radius:999px;font-size:.75rem;font-weight:700;padding:1px 8px}
-.nav hr{border:0;border-top:1px solid rgba(255,255,255,.18);margin:12px 8px}
-.who{margin:18px 4px 0;padding:12px;border:1px solid rgba(255,255,255,.25);border-radius:12px;font-size:.85rem;color:rgba(255,255,255,.75)}
-.who b{display:block;color:#fff;font-weight:600}
+/* State labels. They belong to the card, not to the screen. */
+.k{color:var(--muted);font-size:11px;line-height:16px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin:40px 0 10px}
+.k:first-of-type{margin-top:24px}
+.cap{color:var(--muted);font-size:13px;line-height:18px;margin:0 0 10px}
 
-main{padding:32px 36px 96px;max-width:1100px;width:100%}
-.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
-.head p{color:var(--muted);margin:6px 0 0;max-width:70ch}
-.back{background:none;border:0;color:var(--text);padding:0;margin-bottom:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px}
-.notice{background:var(--sand);color:var(--text);border-left:3px solid var(--bronze);padding:10px 14px;font-size:.92rem;margin-bottom:20px;border-radius:0 12px 12px 0}
-.notice .bar{margin-top:8px}
-.notice.warn{border-left-color:var(--amber)}
-.notice.bad{border-left-color:var(--red)}
+/* PageHead: kicker, h1, a lede in meta, actions on the right. The actions
+   wrapper takes ml-auto (spec T05) so an action that wraps stays on the right. */
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 16px;margin-bottom:20px}
+.head .lede{margin:4px 0 0;max-width:72ch;color:var(--muted);font-size:13px;line-height:18px}
+.head .acts{margin-left:auto}
+/* One status line under the head, empty until used; focus moves to it after a
+   send, an approval, a rejection or a withdrawal. */
+.status{margin:0 0 12px;font-weight:500}
+.status:empty{display:none}
 
-.grid{display:grid;gap:16px}.grid>*{min-width:0}
-.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:1.4fr 1fr}.g11{grid-template-columns:1fr 1fr}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
-.panel>h2,.panel>h3{margin-bottom:12px}
-.panel.sand{background:var(--sand);border-color:var(--sand-2)}
-.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:left;width:100%}
-.stat b{display:block;font-size:2.25rem;font-weight:400;line-height:1;letter-spacing:-.02em;margin-bottom:4px}
-.stat span{color:var(--muted);font-size:.9rem}
+/* Notice (banner): a tone fill, no coloured edge, 6px radius. All text inside a
+   warn or bad notice is the text colour: muted on the dark warning fill is
+   3.62:1 and negative text 3.24:1, both below AA. */
+.notice{background:var(--subtle);color:var(--text);border-radius:6px;padding:10px 12px;margin:0 0 16px}
+.notice.warn{background:var(--warning-soft)}
+.notice.bad{background:var(--negative-soft)}
+.notice p:last-child{margin-bottom:0}
+.notice .bar{margin-top:12px}
 
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
-.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;color:var(--muted);white-space:nowrap;font-weight:500}
-.tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--text);font-weight:600}
-.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
-.filters select,.filters input[type=date],.field input,.field select,.field textarea,.search input,.kv select,.inline input{background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 12px;min-height:44px}
-.field input::placeholder,.search input::placeholder,.field textarea::placeholder{color:var(--muted);font-style:italic}
-.chip{background:var(--surface);border:1px solid var(--line-strong);border-radius:999px;padding:6px 14px;font-size:.88rem;min-height:36px}
-.chip[aria-pressed="true"]{background:var(--btn);border-color:var(--btn);color:var(--btn-text);font-weight:600}
-.chip.off{opacity:.55;text-decoration:line-through}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.panel>h2{margin-bottom:12px}
 
-.rows{display:grid;gap:10px}
-.row{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;text-decoration:none}
-button.row:hover,a.row:hover{border-color:var(--text)}
-.row h3{font-weight:600;font-size:1.02rem;margin:6px 0}
-.row.outside{border-style:dashed}
-.row.sel{border-color:var(--text);background:var(--sand)}
-.meta{color:var(--muted);font-size:.86rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:600;background:var(--grey-soft);color:var(--text);white-space:nowrap}
-.pill.notice{background:var(--blue-soft);color:var(--blue)}
-.pill.positive{background:var(--green-soft);color:var(--green)}
-.pill.warning{background:var(--amber-soft);color:var(--amber)}
-.pill.negative{background:var(--red-soft);color:var(--red)}
-.pill.brand{background:var(--sand-2);color:var(--bronze)}
-.pill.outlined{background:transparent;box-shadow:inset 0 0 0 1px var(--line-strong)}
-.pill .x{margin-left:6px;opacity:.7;font-weight:400}
-.empty{color:var(--muted);padding:28px;text-align:center;border:1px dashed var(--line-strong);border-radius:16px}
-.empty h2{color:var(--text);font-size:1.25rem;font-weight:500;margin:0 0 8px}
-.empty a{color:var(--text);font-weight:600}
-.skeleton{height:84px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
-
-.btn{background:var(--btn);color:var(--btn-text);border:1px solid var(--btn);border-radius:999px;padding:10px 20px;font-weight:600;min-height:44px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
-.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-strong)}
-.btn.ghost:hover{border-color:var(--text)}
-.btn.danger{background:transparent;color:var(--red);border-color:var(--red)}
-.btn.small{padding:6px 14px;min-height:36px;font-size:.86rem}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:flex-end}
-.bar.left{justify-content:flex-start}
-.barwrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.barwrap .bar{margin-top:2px}
-
-.sowhat{background:var(--sand);border-radius:12px;padding:12px 14px;margin:14px 0;line-height:1.5}
-.feature .sowhat,.panel.sand .sowhat,.answer .sowhat{background:var(--surface)}
-.sowhat .ai{font-size:.8rem;color:var(--bronze);font-weight:600;display:block;margin-bottom:2px}
-.kicker{color:var(--muted);font-size:.95rem;margin:0 0 6px}
-.feature{background:var(--sand);border:1px solid var(--sand-2);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:14px}
-.feature h2.lead{font-size:1.9rem;font-weight:400;max-width:24ch;line-height:1.15}
-.home{display:grid;grid-template-columns:1fr 1.7fr;gap:16px;align-items:stretch}
-.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.dates{display:flex;flex-direction:column;gap:16px}
-.dates>div{display:flex;gap:12px;align-items:flex-start}
-.dates i{width:12px;height:12px;border-radius:50%;margin-top:6px;flex-shrink:0;background:var(--text)}
-.dates i.negative{background:var(--red)}.dates i.warning{background:var(--amber)}.dates i.notice{background:var(--blue)}.dates i.brand{background:var(--bronze)}
-.dates b{font-weight:700}.dates b.negative{color:var(--red)}.dates b.warning{color:var(--amber)}.dates b.notice{color:var(--blue)}.dates b.brand{color:var(--bronze)}
-.dates a{text-decoration:none}.dates a:hover{text-decoration:underline}
-.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.9rem;margin-top:16px}
-.brief{padding:0 0 16px;margin-bottom:16px;border-bottom:1px solid var(--line)}
-.brief:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
-.brief a{font-weight:600;font-size:1.04rem;text-decoration:none}.brief a:hover{text-decoration:underline}
-.brief p{color:var(--muted);font-size:.92rem;margin:6px 0 8px}
-.roster{display:grid;gap:12px;align-items:start;margin-bottom:18px}
-.roster .q{display:flex;flex-direction:column;gap:8px;min-width:0}
-.roster .qh{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px;border-bottom:2px solid var(--text);font-weight:600;font-size:.95rem}
-.roster .qh span{color:var(--muted);font-weight:400;font-size:.82rem}
-.rcard{text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:10px 12px;min-height:44px;display:flex;flex-direction:column;gap:3px;width:100%}
-.rcard:hover{border-color:var(--line-strong)}
-.rcard[aria-pressed="true"]{background:var(--sand);border-color:var(--text)}
-.rcard b{font-size:.9rem}.rcard b.negative{color:var(--red)}.rcard b.warning{color:var(--amber)}.rcard b.notice{color:var(--blue)}.rcard b.brand{color:var(--bronze)}
-.rcard span{font-size:.84rem;line-height:1.35}.rcard small{font-size:.76rem;color:var(--muted)}
-.rdetail{display:grid;grid-template-columns:1.6fr 1fr;gap:28px}
-.inline-detail{display:none}
-.timeline{list-style:none;padding:0;margin:0}
-.timeline li{position:relative;padding:0 0 14px 24px;color:var(--muted);font-size:.92rem}
-.timeline li:before{content:"";position:absolute;left:4px;top:7px;width:9px;height:9px;border-radius:50%;border:2px solid var(--line-strong);background:var(--surface)}
-.timeline li:after{content:"";position:absolute;left:8px;top:18px;bottom:0;width:1px;background:var(--line)}
-.timeline li:last-child:after{display:none}
-.timeline li.done{color:var(--text)}.timeline li.done:before{background:var(--accent);border-color:var(--accent)}
-.timeline li.next:before{border-color:var(--bronze);background:var(--bronze)}
-
-.lagrum{display:grid;grid-template-columns:96px 1fr;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.lagrum .margin{background:var(--sand);color:var(--bronze);padding:20px 10px;text-align:center}
-.lagrum .margin b{display:block;font-size:2.2rem;font-weight:400;line-height:1}
-.lagrum .margin small{font-size:.76rem;line-height:1.3;display:block;margin-top:8px;font-family:var(--mono)}
-.lagrum .body{padding:20px 24px;font-size:1.12rem;line-height:1.65;max-width:70ch}
-.lagrum .body .mt{display:block;color:var(--bronze);font-size:.8rem;font-weight:600;margin-bottom:8px}
-.lagrum ins{background:var(--green-soft);color:var(--green);text-decoration:none;padding:1px 3px;border-radius:4px}
-.lagrum del{background:var(--red-soft);color:var(--red);padding:1px 3px;border-radius:4px}
-.kv{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;font-size:.94rem;margin:0}
-.kv dt{color:var(--muted)}.kv dd{margin:0}
-.facets{display:flex;gap:6px;flex-wrap:wrap}
-
-.field{display:grid;gap:5px;margin-bottom:14px}
-.field label{font-weight:600;font-size:.9rem}
-.field textarea{min-height:76px;resize:vertical}
-.field .hint{color:var(--muted);font-size:.82rem}
-.err{color:var(--red);font-size:.88rem;margin-top:6px}
-.ok{color:var(--green);font-size:.88rem;margin-top:6px}
-.check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+/* One column on phones, two from md, three from xl, all inside one panel. */
+.groups{display:grid;gap:16px 24px;grid-template-columns:1fr}
+@media (min-width:768px){.groups{grid-template-columns:1fr 1fr}}
+@media (min-width:1280px){.groups{grid-template-columns:1fr 1fr 1fr}}
+.group h3{margin-bottom:4px}
+/* The hint sits under the legend and is linked with aria-describedby, so it is
+   heard before the options (spec T05). */
+.group .hint{display:block;color:var(--muted);font-size:13px;line-height:18px;margin-bottom:4px}
+/* Read state: a checkbox-shaped glyph and a label. Not a form control, so the
+   browser greys nothing out, nothing sits in the tab order, and held and unheld
+   terms are equally visible. */
+.terms{list-style:none;margin:0;padding:0}
+.terms li{display:flex;align-items:flex-start;gap:8px;padding:4px 0;min-width:0}
+.terms svg{width:16px;height:16px;flex:none;margin-top:2px}
+.terms rect{fill:none;stroke:var(--line-strong)}
+.terms path{fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.terms .lbl{min-width:0}
+/* Edit state: one native checkbox group per dimension. */
+fieldset{border:0;margin:0;padding:0}
+legend{padding:0;font-weight:500}
+.check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .check:last-child{border-bottom:0}
-.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--brand)}
-.check small{display:block;color:var(--muted);font-size:.82rem}
+.check input{width:16px;height:16px;margin:2px 0 0;accent-color:var(--primary)}
 
-.search{display:flex;gap:8px;margin-bottom:12px}.search input{flex:1 1 0;min-width:0;font-size:1.05rem}
-mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
-.answer{background:var(--sand);border:1px solid var(--sand-2);border-radius:16px;padding:20px;margin-bottom:16px}
-.answer ol{margin:8px 0 0;padding-left:20px;font-size:.9rem;color:var(--muted)}
-.answer sup{font-weight:600;color:var(--bronze)}
-.log{font-size:.9rem}.log div{padding:10px 0;border-bottom:1px solid var(--line)}.log div:last-child{border-bottom:0}.log time{color:var(--muted);font-size:.8rem;display:block}
-.tree{list-style:none;margin:0;padding:0}.tree ul{list-style:none;margin:0;padding-left:22px;border-left:1px solid var(--line)}
-.tree li{padding:6px 0}.tree summary{cursor:pointer;font-weight:600}.tree .ref{font-family:var(--mono);font-size:.85rem;color:var(--bronze);margin-right:8px}
+/* Pill: fully rounded, 20px, 13px at 500, no border. */
+.pill{display:inline-flex;align-items:center;height:20px;border-radius:999px;padding:0 8px;font-size:13px;line-height:18px;font-weight:500;white-space:nowrap;background:var(--accent);color:var(--text)}
+.pill.warning{background:var(--warning-pill);color:var(--warning)}
 
-.vrow{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
-.vrow .grip{color:var(--line-strong);font-size:1.1rem;cursor:grab;text-align:center;user-select:none}
-.vrow .lbl{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.vrow .lbl small{color:var(--muted);font-size:.82rem}
-.vrow .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.vrow.retired{opacity:.6;border-style:dashed}
-.vrow.dragging{border-color:var(--text);box-shadow:0 6px 18px rgba(0,0,0,.12)}
-.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.inline input{min-height:40px;padding:6px 10px}
-.combo{position:relative}
-.combo .menu{background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;margin-top:6px;overflow:hidden}
-.combo .menu button{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 14px;border-bottom:1px solid var(--line)}
-.combo .menu button:last-child{border-bottom:0}
-.combo .menu button:hover,.combo .menu button[aria-selected="true"]{background:var(--sand)}
-.combo .menu small{display:block;color:var(--muted);font-size:.82rem}
-.side-by-side{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-.quote{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:.95rem;line-height:1.6}
-.quote cite{display:block;color:var(--muted);font-style:normal;font-size:.82rem;margin-top:8px}
-.states h2.k{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:28px 0 10px}
-.restricted{text-align:center;padding:64px 16px;max-width:60ch;margin:0 auto}
-.restricted p{color:var(--muted)}
-.modal{background:rgba(10,11,11,.6);display:flex;align-items:center;justify-content:center;padding:16px;border-radius:16px;margin-top:20px}
-.modal .box{background:var(--surface);border-radius:20px;padding:24px;max-width:560px;width:100%;border:1px solid var(--line)}
-.modal pre{white-space:pre-wrap;font-family:var(--mono);font-size:.88rem;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px;overflow:auto}
-.box h2{margin-bottom:12px}
-.toast{display:inline-block;background:#0a0b0b;color:#fff;padding:12px 18px;border-radius:999px;font-size:.92rem;border:1px solid rgba(255,255,255,.2)}
-.note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
-.tabbar{display:none}
-@media (max-width:820px){
-  .app{grid-template-columns:1fr}.side{display:none}
-  .mbrand{display:block;margin:0 0 12px}.mbrand .logo{width:150px}
-  main{padding:20px 16px 100px}
-  h1{font-size:1.6rem}
-  .home,.pair,.rdetail,.side-by-side,.g11{grid-template-columns:1fr}.feature{padding:20px}.feature h2.lead{font-size:1.45rem}
-  .roster{grid-template-columns:1fr!important}.roster .q.none{display:none}
-  .below-detail{display:none}.inline-detail{display:block;padding:4px 2px 12px}
-  .bar{justify-content:flex-end;flex-wrap:nowrap}
-  .bar .btn{order:2;flex:0 1 auto;min-width:0;padding:10px 16px;font-size:.94rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .bar .btn.small{padding:6px 12px;font-size:.86rem}
-  .bar .btn:not(.ghost):not(.danger){order:3}
-  .barwrap{flex-direction:column;align-items:flex-end;gap:6px}.barwrap .bar{align-self:stretch}
-  .head>.btn{margin-left:auto}
-  .g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}
-  .kv{grid-template-columns:1fr;gap:2px 0}.kv dd{margin-bottom:10px}
-  .lagrum{grid-template-columns:1fr}.lagrum .margin{display:flex;gap:10px;align-items:baseline;text-align:left;padding:10px 16px}
-  .lagrum .margin b{font-size:1.4rem}.lagrum .margin small{margin:0}.lagrum .body{padding:16px}
-  .vrow{grid-template-columns:28px 1fr}.vrow .acts{grid-column:2;justify-content:flex-end}
-  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--brand);z-index:30;padding-bottom:env(safe-area-inset-bottom)}
-  .tabbar button{background:none;border:0;color:rgba(255,255,255,.7);padding:10px 2px 8px;font-size:.72rem;display:grid;justify-items:center;gap:3px;position:relative}
-  .tabbar button[aria-current="page"]{color:#fff;font-weight:600}
-  .tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-  .tabbar .dot{position:absolute;top:6px;right:calc(50% - 20px);background:#efe9dc;color:#003824;border-radius:999px;font-size:.65rem;font-weight:700;padding:0 6px}
+/* Button: 36px, 6px radius, 14px at 500. Primary is neutral; danger is an
+   outline button with negative text (6.04:1 light, 7.09:1 dark). */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:var(--on-primary);font-weight:500;white-space:nowrap}
+.btn.outline{background:var(--surface);color:var(--text);border-color:var(--line-control)}
+.btn.ghost{background:transparent;color:var(--text);border-color:transparent}
+.btn.danger{background:var(--surface);color:var(--negative);border-color:var(--line-control)}
+.btn.small{height:32px;padding:0 12px}
+.btn.outline:hover,.btn.ghost:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.btn.danger:hover{background:var(--negative-hover)}
+/* Actions right, two per row on a phone, the primary last and so on the right. */
+.bar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:8px;margin-top:16px}
+.bar .btn{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.disclose{display:block;margin-top:8px}
+
+.cols{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:768px){.cols{grid-template-columns:1fr 1fr}}
+.cols h3{margin-bottom:6px}
+.cols ul{list-style:none;margin:4px 0 0;padding:0;color:var(--muted);font-size:13px;line-height:18px}
+.cols li{padding:2px 0}
+
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-weight:500}
+.field textarea{min-height:76px;padding:8px 10px;background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;resize:vertical}
+.field textarea[aria-invalid="true"]{border-color:var(--negative)}
+.field .hint,.field .err{font-size:13px;line-height:18px}
+.field .hint{color:var(--muted)}
+.field .err{color:var(--negative)}
+
+/* Dialog: 12px radius, at most 560px, over the scrim. */
+.modal{display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,11,11,.6);border-radius:8px}
+.modal .box{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.modal .box>h2{margin-bottom:12px}
+
+.log div{padding:10px 0;border-bottom:1px solid var(--line)}
+.log div:last-child{border-bottom:0}
+.log time{display:block;color:var(--muted);font-size:13px;line-height:18px}
+.skeleton{height:72px;border-radius:8px;background:var(--subtle);border:1px solid var(--line)}
+.errorstate{border:1px dashed var(--line-control);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
+.errorstate h2{color:var(--text)}
+.errorstate p{margin:8px auto 16px;max-width:60ch}
+.restricted{max-width:60ch;margin:0 auto;padding:64px 0;text-align:center}
+.restricted p{margin:12px 0 0;color:var(--muted)}
+/* A 375px frame, so the narrow layout can be read on a wide screen. */
+.phone{width:375px;max-width:100%;padding:12px;background:var(--page);border:1px solid var(--line);border-radius:8px}
+.note{margin-top:40px;padding:8px 12px;border-left:2px solid var(--line-control);color:var(--muted);font-size:13px;line-height:18px;max-width:72ch}
+@media (max-width:767px){
+  main{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+  h1{font-size:20px;line-height:28px}
 }
-@media (max-width:380px){.bar .btn{padding:10px 12px;font-size:.9rem}.bar .btn.small{padding:6px 10px}}
 </style>
 </head>
 <body>
-<div class="app">
-  <aside class="side">
-    <div class="brand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
-    <nav class="nav" aria-label="Main"><button>Today</button><button>Watch <span class="count">3</span></button><button>Inventory</button><button>Roadmap</button><button>Search and ask</button><hr><button aria-current="page">Admin</button></nav>
-    <div class="who">Signed in as<b>Erik Holm</b>Example Bank AB · Administrator</div>
-  </aside>
-  <main id="main" tabindex="-1">
-    <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
-<button class="back">← Admin</button>
-    <div class="head"><div><h1>Footprint</h1><p>What the feed, the inventory and the roadmap show you</p></div></div>
-    <div class="states">
+<main>
 
-    <h2 class="k">Pending request banner (approver's view; requester sees no Approve)</h2>
-    <div class="notice warn"><span class="pill warning">Waiting for approval</span> <b>Switch off Advice.</b> Requested by Sara Lindqvist, 18 Sep 2026. Hides 4 obligations and 2 open changes.
-      <div class="bar left" style="justify-content:flex-start"><button class="btn ghost small">See the preview</button><button class="btn ghost small">Reject</button><button class="btn small">Approve</button></div></div>
-    <div class="notice warn"><span class="pill warning">Waiting for approval</span> <b>Switch off Advice.</b> You requested this on 18 Sep 2026. A second person with footprint approval has to approve it. <button class="btn ghost small" style="margin-left:8px">Withdraw</button></div>
-
-    <h2 class="k">Dimensions (chips; a struck chip is a pending switch-off)</h2>
-    <div class="panel">
-      <h3 style="margin:0 0 8px;font-size:.95rem;font-weight:600">Regimes</h3><div class="filters"><button class="chip" aria-pressed="true">Securities</button><button class="chip" aria-pressed="true">Insurance</button><button class="chip" aria-pressed="true">Tax</button><button class="chip" aria-pressed="true">Data protection</button><button class="chip" aria-pressed="true">AML</button><button class="chip" aria-pressed="true">AI and ICT</button></div>
-      <h3 style="margin:6px 0 8px;font-size:.95rem;font-weight:600">Jurisdictions</h3><div class="filters"><button class="chip" aria-pressed="true">EU</button><button class="chip" aria-pressed="true">Sweden</button><button class="chip" aria-pressed="false">Denmark</button><button class="chip" aria-pressed="false">Norway</button><button class="chip" aria-pressed="false">Finland</button></div>
-      <h3 style="margin:6px 0 8px;font-size:.95rem;font-weight:600">Legal entity kinds</h3><div class="filters"><button class="chip" aria-pressed="true">Bank</button><button class="chip" aria-pressed="true">Insurer</button><button class="chip" aria-pressed="true">Fund company</button></div>
-      <h3 style="margin:6px 0 8px;font-size:.95rem;font-weight:600">Services we provide</h3><div class="filters"><button class="chip off" aria-pressed="true">Advice</button><button class="chip" aria-pressed="true">Non-advised</button><button class="chip" aria-pressed="true">Execution only</button><button class="chip" aria-pressed="true">Portfolio management</button><button class="chip" aria-pressed="true">Custody</button><button class="chip" aria-pressed="true">Insurance distribution</button></div>
-      <h3 style="margin:6px 0 8px;font-size:.95rem;font-weight:600">Account types</h3><div class="filters"><button class="chip" aria-pressed="true">ISK</button><button class="chip" aria-pressed="true">AF</button><button class="chip" aria-pressed="true">Depå</button><button class="chip" aria-pressed="true">KF</button><button class="chip" aria-pressed="true">Pension</button></div>
-      <h3 style="margin:6px 0 8px;font-size:.95rem;font-weight:600">Client categories</h3><div class="filters"><button class="chip" aria-pressed="true">Retail</button><button class="chip" aria-pressed="true">Professional</button></div>
-      <h3 style="margin:6px 0 8px;font-size:.95rem;font-weight:600">Channels</h3><div class="filters"><button class="chip" aria-pressed="true">Digital</button><button class="chip" aria-pressed="true">Branch</button></div>
-      <p class="meta">A record with no term in a dimension is not restricted by it.</p>
-    </div>
-
-    <h2 class="k">Preview after toggling (before sending)</h2>
-    <div class="panel sand" style="margin-top:16px"><h2>Your change: switch off Advice</h2>
-      <div class="grid g11">
-        <div><h3 style="margin-bottom:8px">Hides</h3>
-          <p style="margin:0 0 4px"><b>4 obligations</b></p>
-          <p class="meta" style="display:block;margin:0 0 2px">Assess suitability when giving investment advice · LVM 9 kap.</p>
-          <p class="meta" style="display:block;margin:0 0 2px">Pay for third-party research only under the permitted models · FFFS 2017:2</p>
-          <p class="meta" style="display:block;margin:0 0 2px">Establish demands and needs for insurance-based investment products · LFD</p>
-          <p class="meta" style="display:block;margin:0 0 8px">Document the reasons when advising a switch · FFFS 2018:10</p>
-          <p style="margin:0 0 4px"><b>2 open changes</b></p>
-          <p class="meta" style="display:block;margin:0 0 2px">FI adopts amended rules on paying for investment research · Needs triage</p>
-          <p class="meta" style="display:block;margin:0">Retail Investment Strategy moves towards publication · Assessment in progress</p></div>
-        <div><h3 style="margin-bottom:8px">Reveals</h3><p style="color:var(--muted)">Nothing. No record is hidden only by Advice being on.</p></div>
-      </div>
-      <div class="barwrap" style="margin-top:14px"><div class="bar"><button class="btn ghost">Discard</button><button class="btn">Send for approval</button></div><span class="meta">A second person approves it with a passkey</span></div></div>
-
-    <h2 class="k">Approve (step-up), and the four-eyes refusal</h2>
-    <div class="modal"><div class="box" role="dialog" aria-labelledby="ap"><h2 id="ap">Approve "Switch off Advice"?</h2><p>4 obligations and 2 open changes leave the feed, the inventory, the roadmap and the briefing. One audit entry per term. Your passkey will be asked.</p><div class="bar"><button class="btn ghost">Cancel</button><button class="btn">Approve with passkey</button></div></div></div>
-    <div class="notice bad" role="alert"><b>You requested this change.</b> A second person with footprint approval has to approve it.</div>
-
-    <h2 class="k">Reject with a reason</h2>
-    <div class="modal"><form class="box" aria-labelledby="rj"><h2 id="rj">Reject this change</h2><div class="field"><label for="rr">Reason</label><textarea id="rr" placeholder="e.g. We still advise in private banking"></textarea><span class="hint">Shown to the requester and kept in the audit log.</span></div><div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn danger" type="submit">Reject</button></div></form></div>
-
-    <h2 class="k">History (decided requests)</h2>
-    <div class="panel log"><div><time>18 Sep 2026 14:02</time><b>Maria Ek</b> approved "Add Fund company" requested by Erik Holm. 2 obligations revealed.</div><div><time>2 Sep 2026 09:40</time><b>Maria Ek</b> rejected "Switch off Tax" requested by Sara Lindqvist: "ISK tax reporting is ours."</div></div>
-
-    <h2 class="k">Read-only (no footprint request permission), loading, error, denied</h2>
-    <p class="notice">You can see the footprint. Changing it needs footprint request; ask a compliance officer or an administrator.</p>
-    <div class="rows" aria-busy="true"><div class="skeleton" style="height:120px"></div></div>
-    <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the footprint</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
-    <div class="restricted" role="alert"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p style="font-size:.85rem">Needs library read</p></div>
-    </div>
-    <p class="note">Footprint card. Toggling a chip never writes: it builds a request whose preview lists what it hides and reveals, and Send for approval stores it as Waiting for approval. The approver (footprint approve, never the requester) approves behind a passkey step-up, or rejects with a reason. While a request is pending, the chips are read-only and the struck chip shows what is about to change. Every surface that respects the footprint offers "Show outside footprint" (tenant-inventory.html, tenant-watch.html). Two buttons per row on phones, primary on the right.</p>
-  </main>
+<h2 class="k">1 · Read — a compliance officer (regulatory scope request and approve)</h2>
+<div class="head">
+  <div>
+    <h1>Regulatory scope</h1>
+    <p class="lede">Which rules apply to us, what we do and for whom</p>
+  </div>
+  <div class="acts"><button class="btn danger">Propose a change</button></div>
 </div>
-<nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>
+<p class="status" role="status" tabindex="-1"></p>
+<div class="notice">Changes apply to every member once someone else approves them with a passkey.</div>
+<div class="panel">
+  <div class="groups">
+    <div class="group" data-dimension="regime">
+      <h3>Regime</h3>
+      <ul class="terms">
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Securities <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Insurance <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Tax <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Data protection <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">AML <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">AI and ICT <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Banking <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Payments <span class="sr">In our scope</span></span></li>
+      </ul>
+    </div>
+    <div class="group" data-dimension="account_type">
+      <h3>Account type</h3>
+      <ul class="terms">
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">ISK <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">AF <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Depå <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">KF <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Pension <span class="sr">In our scope</span></span></li>
+      </ul>
+    </div>
+    <div class="group" data-dimension="legal_entity">
+      <h3>Legal entity type</h3>
+      <ul class="terms">
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Bank <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Insurer <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Fund company <span class="sr">In our scope</span></span></li>
+      </ul>
+    </div>
+    <div class="group" data-dimension="service_type">
+      <h3>Service</h3>
+      <ul class="terms">
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Advice <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Non-advised <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Execution only <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Portfolio management <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Custody <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/></svg><span class="lbl">Insurance distribution <span class="sr">Not in our scope</span></span></li>
+      </ul>
+    </div>
+    <div class="group" data-dimension="client_category">
+      <h3>Client category</h3>
+      <p style="margin:0">Not restricted: every option applies.</p>
+    </div>
+  </div>
+</div>
+
+<h2 class="k">2 · Read — someone who can only approve (no "Propose a change")</h2>
+<p class="cap">The groups read exactly as above. Only the page head differs.</p>
+<div class="head">
+  <div>
+    <h1>Regulatory scope</h1>
+    <p class="lede">Which rules apply to us, what we do and for whom</p>
+  </div>
+</div>
+<div class="notice">Changes apply to every member once someone else approves them with a passkey.</div>
+
+<h2 class="k">3 · Editing, after "Propose a change" (focus on the first checkbox)</h2>
+<p class="cap">Three columns from 1280px, two from 768px, one below. The hint sits under the legend; a group the draft leaves empty says what empty means.</p>
+<div class="panel">
+  <div class="groups">
+    <fieldset class="group" data-dimension="regime" aria-describedby="h-regime">
+      <legend>Regime</legend>
+      <span class="hint" id="h-regime">Securities, insurance, tax, data protection, AML, AI and ICT, banking, payments.</span>
+      <label class="check" for="c-sec"><input type="checkbox" id="c-sec" checked>Securities</label>
+      <label class="check" for="c-ins"><input type="checkbox" id="c-ins" checked>Insurance</label>
+      <label class="check" for="c-tax"><input type="checkbox" id="c-tax" checked>Tax</label>
+      <label class="check" for="c-dp"><input type="checkbox" id="c-dp" checked>Data protection</label>
+      <label class="check" for="c-aml"><input type="checkbox" id="c-aml" checked>AML</label>
+      <label class="check" for="c-ai"><input type="checkbox" id="c-ai" checked>AI and ICT</label>
+      <label class="check" for="c-bank"><input type="checkbox" id="c-bank" checked>Banking</label>
+      <label class="check" for="c-pay"><input type="checkbox" id="c-pay" checked>Payments</label>
+    </fieldset>
+    <fieldset class="group" data-dimension="account_type" aria-describedby="h-account">
+      <legend>Account type</legend>
+      <span class="hint" id="h-account">The Swedish account wrappers.</span>
+      <label class="check" for="c-isk"><input type="checkbox" id="c-isk" checked>ISK</label>
+      <label class="check" for="c-af"><input type="checkbox" id="c-af" checked>AF</label>
+      <label class="check" for="c-depa"><input type="checkbox" id="c-depa" checked>Depå</label>
+      <label class="check" for="c-kf"><input type="checkbox" id="c-kf" checked>KF</label>
+      <label class="check" for="c-pen"><input type="checkbox" id="c-pen" checked>Pension</label>
+    </fieldset>
+    <fieldset class="group" data-dimension="legal_entity" aria-describedby="h-entity">
+      <legend>Legal entity type</legend>
+      <span class="hint" id="h-entity">The kinds of company in the group.</span>
+      <label class="check" for="c-bankle"><input type="checkbox" id="c-bankle" checked>Bank</label>
+      <label class="check" for="c-insurer"><input type="checkbox" id="c-insurer" checked>Insurer</label>
+      <label class="check" for="c-fund"><input type="checkbox" id="c-fund" checked>Fund company</label>
+    </fieldset>
+    <fieldset class="group" data-dimension="service_type" aria-describedby="h-service">
+      <legend>Service</legend>
+      <span class="hint" id="h-service">The investment or insurance services we provide.</span>
+      <label class="check" for="c-adv"><input type="checkbox" id="c-adv">Advice</label>
+      <label class="check" for="c-nonadv"><input type="checkbox" id="c-nonadv" checked>Non-advised</label>
+      <label class="check" for="c-exec"><input type="checkbox" id="c-exec" checked>Execution only</label>
+      <label class="check" for="c-pm"><input type="checkbox" id="c-pm" checked>Portfolio management</label>
+      <label class="check" for="c-cust"><input type="checkbox" id="c-cust" checked>Custody</label>
+      <label class="check" for="c-idd"><input type="checkbox" id="c-idd" checked>Insurance distribution</label>
+    </fieldset>
+    <fieldset class="group" data-dimension="client_category" aria-describedby="h-client">
+      <legend>Client category</legend>
+      <span class="hint" id="h-client">Leave every option empty and the group does not restrict.</span>
+      <label class="check" for="c-retail"><input type="checkbox" id="c-retail" checked>Retail</label>
+      <label class="check" for="c-prof"><input type="checkbox" id="c-prof">Professional</label>
+    </fieldset>
+  </div>
+</div>
+
+<h2 class="k">4 · The change panel while nothing differs</h2>
+<div class="panel" data-draft-preview>
+  <h2>Your change</h2>
+  <p>Nothing changed yet.</p>
+  <div class="bar"><button class="btn outline">Cancel</button></div>
+</div>
+
+<h2 class="k">5 · The change panel once the draft differs</h2>
+<div class="panel" data-draft-preview>
+  <h2>Your change: Add Insurance distribution and Retail, remove Advice</h2>
+  <div class="cols">
+    <div>
+      <h3>Hides</h3>
+      <p style="margin:0"><b>2 obligations</b></p>
+      <ul>
+        <li>Assess suitability when giving investment advice · LVM 9 kap.</li>
+        <li>Pay for third-party research only under the permitted models · FFFS 2017:2</li>
+      </ul>
+      <p class="meta" style="margin:8px 0 0">Open cases: not counted yet</p>
+    </div>
+    <div>
+      <h3>Reveals</h3>
+      <p style="margin:0"><b>2 obligations</b></p>
+      <ul>
+        <li>Provide a key information document before the customer is bound · PRIIPs</li>
+        <li>Honour the policyholder's right to transfer pension insurance · FAL</li>
+      </ul>
+      <p class="meta" style="margin:8px 0 0">Open cases: not counted yet</p>
+    </div>
+  </div>
+  <div class="notice warn" style="margin:16px 0 0">
+    <p>What this hides leaves the feed, the inventory, the roadmap and the briefing for every member.</p>
+    <p style="margin:0">Client category will start to filter: records tagged only with other options in it are hidden from every member.</p>
+  </div>
+  <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Request approval</button></div>
+</div>
+
+<h2 class="k">6 · The status line after sending (focus moves to it)</h2>
+<p class="status" role="status" tabindex="-1">Sent for approval.</p>
+
+<h2 class="k">7 · Waiting — the requester's view, with the terms the request changes</h2>
+<div class="notice warn" data-pending-request>
+  <p><span class="pill warning">Waiting for approval</span> <b>Add Insurance distribution and Retail, remove Advice</b></p>
+  <p>You requested this on 18 Sep 2026.</p>
+  <p style="margin:0">No other change can be proposed until this one is decided.</p>
+  <button class="btn ghost small disclose" aria-expanded="false">See the preview</button>
+  <div class="bar"><button class="btn outline">Withdraw</button></div>
+</div>
+<div class="panel">
+  <div class="groups">
+    <div class="group" data-dimension="service_type">
+      <h3>Service</h3>
+      <ul class="terms">
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Advice <span class="sr">In our scope</span> <span class="pill warning">Removed when approved</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Non-advised <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Execution only <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Portfolio management <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/><path d="M4.5 8.2l2.4 2.4 4.6-5"/></svg><span class="lbl">Custody <span class="sr">In our scope</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/></svg><span class="lbl">Insurance distribution <span class="sr">Not in our scope</span> <span class="pill warning">Added when approved</span></span></li>
+      </ul>
+    </div>
+    <div class="group" data-dimension="client_category">
+      <h3>Client category</h3>
+      <ul class="terms">
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/></svg><span class="lbl">Retail <span class="sr">Not in our scope</span> <span class="pill warning">Added when approved</span></span></li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3"/></svg><span class="lbl">Professional <span class="sr">Not in our scope</span></span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h2 class="k">8 · Waiting — an approver's view, with the preview open</h2>
+<div class="notice warn" data-pending-request>
+  <p><span class="pill warning">Waiting for approval</span> <b>Add Insurance distribution and Retail, remove Advice</b></p>
+  <p>Requested by Sara Lindqvist, 18 Sep 2026. Hides 2 obligations and reveals 2 obligations.</p>
+  <button class="btn ghost small disclose" aria-expanded="true">See the preview</button>
+  <div class="bar"><button class="btn outline">Reject</button><button class="btn">Approve</button></div>
+</div>
+<div class="panel">
+  <div class="cols">
+    <div>
+      <h3>Hides</h3>
+      <p style="margin:0"><b>2 obligations</b></p>
+      <ul>
+        <li>Assess suitability when giving investment advice · LVM 9 kap.</li>
+        <li>Pay for third-party research only under the permitted models · FFFS 2017:2</li>
+      </ul>
+      <p class="meta" style="margin:8px 0 0">Open cases: not counted yet</p>
+    </div>
+    <div>
+      <h3>Reveals</h3>
+      <p style="margin:0"><b>2 obligations</b></p>
+      <ul>
+        <li>Provide a key information document before the customer is bound · PRIIPs</li>
+        <li>Honour the policyholder's right to transfer pension insurance · FAL</li>
+      </ul>
+      <p class="meta" style="margin:8px 0 0">Open cases: not counted yet</p>
+    </div>
+  </div>
+</div>
+
+<h2 class="k">9 · Waiting — someone who can request but not approve (no buttons)</h2>
+<div class="notice warn" data-pending-request>
+  <p><span class="pill warning">Waiting for approval</span> <b>Add Insurance distribution and Retail, remove Advice</b></p>
+  <p>Requested by Sara Lindqvist, 18 Sep 2026. Hides 2 obligations and reveals 2 obligations.</p>
+  <p style="margin:0">No other change can be proposed until this one is decided.</p>
+  <button class="btn ghost small disclose" aria-expanded="false">See the preview</button>
+</div>
+
+<h2 class="k">10 · The approver's banner in Swedish, 375 px wide</h2>
+<div class="phone" lang="sv">
+  <div class="notice warn" data-pending-request style="margin:0">
+    <p><span class="pill warning">Väntar på godkännande</span> <b>Lägg till Försäkringsdistribution och Icke-professionell, ta bort Rådgivning</b></p>
+    <p>Begärd av Sara Lindqvist, 18 sep 2026. Döljer 2 skyldigheter och visar 2 skyldigheter.</p>
+    <button class="btn ghost small disclose" aria-expanded="false">Se förhandsvisningen</button>
+    <div class="bar"><button class="btn outline">Avvisa</button><button class="btn">Godkänn</button></div>
+  </div>
+</div>
+
+<h2 class="k">11 · Approve, behind the passkey step-up</h2>
+<div class="modal">
+  <div class="box" role="dialog" aria-labelledby="ap" aria-describedby="apd">
+    <h2 id="ap">Approve "Add Insurance distribution and Retail, remove Advice"?</h2>
+    <p id="apd" class="meta">Hides 2 obligations and reveals 2 obligations.</p>
+    <div class="notice warn" style="margin:12px 0 0">
+      <p>What this hides leaves the feed, the inventory, the roadmap and the briefing for every member.</p>
+      <p style="margin:0">Client category will start to filter: records tagged only with other options in it are hidden from every member.</p>
+    </div>
+    <div class="bar"><button class="btn outline">Cancel</button><button class="btn">Approve with passkey</button></div>
+  </div>
+</div>
+
+<h2 class="k">12 · The four-eyes refusal, in the approve dialog above the buttons</h2>
+<div class="notice bad" role="alert">You requested this change, so someone else has to approve it.</div>
+
+<h2 class="k">13 · Reject, with a reason that was left blank</h2>
+<div class="modal">
+  <form class="box" aria-labelledby="rj">
+    <h2 id="rj">Reject this change</h2>
+    <div class="field">
+      <label for="rr">Reason</label>
+      <textarea id="rr" aria-describedby="rrh rre" aria-invalid="true" aria-required="true" placeholder="e.g. We still advise in private banking"></textarea>
+      <span class="hint" id="rrh">Shown to the requester and kept in the audit log.</span>
+      <span class="err" id="rre" role="alert">Give a reason.</span>
+    </div>
+    <div class="bar"><button class="btn outline" type="button">Cancel</button><button class="btn danger" type="submit">Reject</button></div>
+  </form>
+</div>
+
+<h2 class="k">14 · History, newest first</h2>
+<div class="panel log" data-footprint-history>
+  <h2>History</h2>
+  <div><time>18 Sep 2026 14:02</time><b>Maria Ek</b> approved "Add Fund company" requested by Erik Holm.</div>
+  <div><time>2 Sep 2026 09:40</time><b>Maria Ek</b> rejected "Remove Tax" requested by Sara Lindqvist: "ISK tax reporting is ours."</div>
+  <div><time>28 Aug 2026 16:20</time><b>Sara Lindqvist</b> withdrew "Remove Custody".</div>
+</div>
+
+<h2 class="k">15 · Loading, and the error with Try again</h2>
+<div role="status" aria-busy="true" style="display:grid;gap:8px;margin-bottom:16px"><span class="sr">Loading…</span><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div></div>
+<div class="errorstate" role="alert">
+  <h2>Could not load the regulatory scope</h2>
+  <p>Check your connection and try again.</p>
+  <button class="btn outline small">Try again</button>
+</div>
+
+<h2 class="k">16 · A member without either permission, at /admin/footprint</h2>
+<p class="cap">There is no Admin entry for Regulatory scope, and /admin itself stays hidden unless another admin permission unlocks it.</p>
+<div class="restricted" role="alert">
+  <h1>This page is not available to you</h1>
+  <p>Your role does not include what this page needs. Ask your administrator if you think it should.</p>
+  <p class="meta">Needs footprint request</p>
+</div>
+
+<p class="note">Regulatory scope card (/admin/footprint). The page is restricted to
+holders of footprint request or footprint approve; everyone else gets state 16, and
+FP-03 shows the scope to other members only where lists offer "Show outside our
+scope". It opens read-only: the options are checkbox glyphs with visually hidden "In
+our scope" or "Not in our scope", not disabled controls, so held and unheld terms
+stay equally readable and nothing sits in the tab order. A group with no held term
+says "Not restricted: every option applies.", because an empty group means no
+restriction (FP-01). Only dimensions that restrict and have active terms show, so
+channel, lifecycle stage, theme and the termless jurisdiction, licensed activity and
+product type are absent; jurisdiction joins as an ordinary group once it has terms.
+Order is by dimension, then by term. "Propose a change" is the one danger button on
+the page and shows only while nothing waits: it turns the groups into checkbox groups
+and opens the change panel, and nothing is written until "Request approval". The
+preview is a dry run on every keystroke of the draft, so it costs no audit row; cases
+read "not counted yet" until the case workflow lands. One warn notice at most sits
+above the groups, and while a request waits it is the banner, not the rule. All text
+inside a warn or bad notice is the text colour: muted text on the dark warning fill
+is 3.62:1 and negative text 3.24:1, both below AA, and the change is stated in plain
+words rather than coloured insertion and deletion marks for the same reason. In light
+the warning pill and the warn banner share Green's l3-warning-02 fill, so on the banner
+the pill reads as its label in warning text (5.16:1, AA) rather than as a shape; on the
+surface, and in dark, where the pill takes the -03 step, it is a pill. The
+status line under the head is empty until a send, an approval, a rejection or a
+withdrawal puts "Sent for approval.", "Approved. The regulatory scope has changed.",
+"Rejected." or "Withdrawn." in it and moves focus there. A failed withdrawal, and the
+409s for a request that someone else sent first or a decision that came second, render
+under the banner. Approval needs a second person and a fresh passkey assertion; the
+requester never sees Approve, and the server's refusal is state 12. Rejection needs a
+reason and no step-up, because it changes nothing. Two buttons share a row on a phone,
+the primary on the right. Counts and record titles here are sample data; the app counts
+the obligations a change hides and reveals under the FP-01 rule.</p>
+
+</main>
 </body>
 </html>
