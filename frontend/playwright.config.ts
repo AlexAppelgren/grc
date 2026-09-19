@@ -58,7 +58,9 @@ export default defineConfig({
       timeout: 300_000,
       reuseExistingServer: !isCI,
       env: {
-        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? `http://127.0.0.1:${BACKEND_PORT}`,
+        // Same site as the web app (localhost, docs/runbooks/DNS_DOMAINS.md): the
+        // refresh cookie is SameSite=Strict, and 127.0.0.1 would be another site.
+        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? `http://localhost:${BACKEND_PORT}`,
         NEXT_TELEMETRY_DISABLED: '1',
       },
     },

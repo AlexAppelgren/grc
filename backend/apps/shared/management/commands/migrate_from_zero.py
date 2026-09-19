@@ -27,7 +27,16 @@ import psycopg
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-SCRATCH_DB_NAME = "compliance_watch_scratch"
+SCRATCH_SUFFIX = "_scratch"
+
+
+def default_scratch_name(migrator_url: str) -> str:
+    """The configured database's name plus `_scratch`: `compliance_watch_scratch` on a normal
+    checkout, `compliance_watch_wt3_scratch` in worktree slot 3. Derived rather than fixed so
+    parallel worktrees (scripts/worktree.sh, docs/runbooks/WORKTREES.md) never drop each
+    other's scratch database mid-run, which a shared constant would do."""
+    name = urlsplit(migrator_url).path.lstrip("/") or "compliance_watch"
+    return f"{name}{SCRATCH_SUFFIX}"
 
 
 def _with_database(url: str, name: str) -> str:
@@ -42,15 +51,15 @@ class Command(BaseCommand):
         parser.add_argument("--keep", action="store_true", help="Keep the database afterwards.")
         parser.add_argument(
             "--name",
-            default=SCRATCH_DB_NAME,
-            help=f"Database to drop, recreate and migrate (default {SCRATCH_DB_NAME}).",
+            default=None,
+            help="Database to drop, recreate and migrate (default: the configured database's name + _scratch).",
         )
 
     def handle(self, *args: Any, **options: Any) -> None:  # compliance: allow-kwargs Django command signature
         if settings.IS_DEPLOYED_ENVIRONMENT:
             raise CommandError("migrate_from_zero never runs on a deployed environment.")
         migrator_url = settings.MIGRATOR_DATABASE_URL
-        name = str(options["name"])
+        name = str(options["name"] or default_scratch_name(migrator_url))
         if not name.replace("_", "").isalnum():
             raise CommandError(f"database name {name!r} must be letters, digits and underscores")
         maintenance_url = _with_database(migrator_url, "postgres")

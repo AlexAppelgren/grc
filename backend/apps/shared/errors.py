@@ -16,6 +16,31 @@ from django.http import JsonResponse
 
 PROBLEM_CONTENT_TYPE = "application/problem+json"
 
+# logic.py raises Django's ValidationError with a `code`; config/api.py turns it into a
+# problem response with the status this table names (playbook 4.4). Anything not listed
+# is a 422 (a field or rule the caller can fix). One table so a code never means two
+# statuses in two apps.
+STATUS_BY_CODE: dict[str, int] = {
+    "not_found": 404,
+    "unauthenticated": 401,
+    "signin_failed": 401,
+    "invalid_code": 400,
+    "code_locked": 400,
+    "step_up_failed": 400,
+    "invalid_credential": 400,
+    "registration_failed": 400,
+    "challenge_expired": 400,
+    "invitation_expired": 410,
+    "invitation_closed": 409,
+    "last_admin": 409,
+    "last_passkey": 409,
+    "already_member": 409,
+    "duplicate_key": 409,
+    "role_in_use": 409,
+    "stale_write": 409,
+    "four_eyes_violation": 409,
+}
+
 
 class ProblemError(Exception):
     def __init__(

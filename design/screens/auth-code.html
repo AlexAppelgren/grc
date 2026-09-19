@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen card: code entry (/enrol, step one)</title>
+<style>
+/* Cut from design/prototype/index.html (playbook Section 7, step 4): the
+   prototype's .field and .btn, on the auth surface of auth-sign-in.html. */
+:root{
+  --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--sand:#f8f6f1;--sand-2:#efe9dc;
+  --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
+  --btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--green:#026436;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0b0b;--surface:#191a1a;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;
+}}
+:root[data-theme="dark"]{
+  --bg:#0a0b0b;--surface:#191a1a;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+h1,h2{margin:0;letter-spacing:-.01em;line-height:1.2}h1{font-size:2rem;font-weight:400}h2{font-size:1.25rem;font-weight:500}
+p{margin:0 0 .75rem}
+.auth{min-height:100vh;display:grid;place-items:start center;padding:48px 16px 96px}
+.auth .logo{display:block;width:150px;height:auto;margin:0 auto 28px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;width:100%;max-width:440px}
+.panel>h1{margin-bottom:8px}
+.lede{color:var(--muted);margin-bottom:20px}
+.steps{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:6px}
+.field{display:grid;gap:5px;margin-bottom:14px}
+.field label{font-weight:600;font-size:.9rem}
+.field input{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 12px;min-height:44px}
+.field input::placeholder{color:var(--muted);font-style:italic}
+.field .hint{color:var(--muted);font-size:.82rem}
+/* The code: one real input (autocomplete one-time-code, numeric keyboard,
+   paste fills every slot) behind six visual slots; input-otp in the app. */
+.otp{display:flex;gap:8px}
+.otp span{display:flex;align-items:center;justify-content:center;width:44px;height:48px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);font-family:var(--mono);font-size:1.3rem}
+.otp span.active{outline:2px solid var(--focus);outline-offset:2px}
+.otp.invalid span{border-color:var(--red)}
+.btn{background:var(--btn);color:var(--btn-text);border:1px solid var(--btn);border-radius:999px;padding:10px 20px;font-weight:600;min-height:44px}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-strong)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:flex-end}
+.err{color:var(--red);font-size:.88rem;margin-top:10px}
+.status{color:var(--muted);font-size:.88rem;margin-top:10px}
+.note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+.states{display:grid;gap:24px;width:100%;max-width:440px}
+.states h2{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+@media (max-width:820px){
+  .auth{padding:28px 16px 80px}h1{font-size:1.6rem}
+  .bar{flex-wrap:nowrap}.bar .btn{flex:0 1 auto;min-width:0;padding:10px 16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .btn:not(.ghost){order:3}
+}
+</style>
+</head>
+<body>
+<div class="auth">
+  <div class="states">
+    <svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg>
+
+    <h2>Ready (from the invitation link)</h2>
+    <form class="panel" aria-labelledby="t1">
+      <p class="steps">Step 1 of 3</p>
+      <h1 id="t1">Enter your code</h1>
+      <p class="lede">The code was sent to the invited address. It works once and for ten minutes.</p>
+      <div class="field"><label for="code">Code</label><div class="otp" id="code" role="presentation"><span class="active"></span><span></span><span></span><span></span><span></span><span></span></div><span class="hint">Six digits.</span></div>
+      <div class="bar"><button class="btn ghost" type="button">Send a new code</button><button class="btn" type="submit">Continue</button></div>
+    </form>
+    <h2>After "Send a new code" (the same invitation opened again)</h2>
+    <form class="panel">
+      <p class="steps">Step 1 of 3</p>
+      <h1>Enter your code</h1>
+      <div class="field"><label>Code</label><div class="otp"><span class="active"></span><span></span><span></span><span></span><span></span><span></span></div></div>
+      <p class="status" role="status">A new code is on its way to the invited address.</p>
+      <div class="bar"><button class="btn ghost" type="button">Send a new code</button><button class="btn" type="submit">Continue</button></div>
+    </form>
+    <h2>Refused</h2>
+    <form class="panel">
+      <p class="steps">Step 1 of 3</p>
+      <h1>Enter your code</h1>
+      <div class="field"><label>Code</label><div class="otp invalid" aria-describedby="err3"><span>1</span><span>1</span><span>1</span><span>1</span><span>1</span><span class="active">1</span></div></div>
+      <p class="err" id="err3" role="alert">That code is not right.</p>
+      <div class="bar"><button class="btn ghost" type="button">Send a new code</button><button class="btn" type="submit">Continue</button></div>
+    </form>
+    <h2>Locked after five attempts</h2>
+    <form class="panel">
+      <p class="steps">Step 1 of 3</p>
+      <h1>Enter your code</h1>
+      <p class="err" role="alert">Too many attempts. Send a new code and try again.</p>
+      <div class="bar"><button class="btn ghost" type="button">Send a new code</button><button class="btn" type="submit" disabled>Continue</button></div>
+    </form>
+    <h2>Reloaded (the token held in memory is gone)</h2>
+    <section class="panel">
+      <p class="steps">Step 1 of 3</p>
+      <h1>Enter your code</h1>
+      <p class="lede">To get a code, open the link in your invitation email again.</p>
+      <div class="bar"><button class="btn ghost" type="button">Go to sign in</button></div>
+    </section>
+    <h2>From the sign-in page ("First time here?")</h2>
+    <form class="panel">
+      <p class="steps">Step 1 of 3</p>
+      <h1>Enter your code</h1>
+      <p class="lede">The code was sent to the invited address. It works once and for ten minutes.</p>
+      <div class="field"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" placeholder="e.g. anna@bank.example"></div>
+      <div class="field"><label>Code</label><div class="otp"><span></span><span></span><span></span><span></span><span></span><span></span></div><span class="hint">Six digits.</span></div>
+      <p class="status" role="status">If that address is awaiting enrolment, a new code is on its way.</p>
+      <div class="bar"><button class="btn ghost" type="button">Send a new code</button><button class="btn" type="submit">Continue</button></div>
+    </form>
+    <p class="note">Code card, step one of enrolment. From the invitation link the page asks for the code alone: the link's token names the account and is verified with the code (POST /auth/invitations/verify, token in the body), held in memory only, never in the address or storage. "Send a new code" opens the same invitation again. After a reload the token is gone, so the card asks for the link again rather than an address. The sign-in page's "First time here?" path asks for the address too, and its "Send a new code" always answers the same neutral sentence (an enrolled address gets nothing and learns nothing). The code is one input behind six slots: paste fills them all, the phone offers the code from the mail, and the form submits on the sixth digit. The wrong-code and locked states branch on the server's code, never its text. Submitting a right code moves to auth-enrol.html.</p>
+  </div>
+</div>
+</body>
+</html>

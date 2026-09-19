@@ -4,6 +4,244 @@
  */
 
 export interface paths {
+    "/api/v1/auth/code/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request Code */
+        post: operations["requestCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/code/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify Code */
+        post: operations["verifyCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/invitations/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify Invitation Code */
+        post: operations["verifyInvitationCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/invitations/{token}/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open Invitation */
+        post: operations["openInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/authenticate/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Passkey Authenticate Options */
+        post: operations["passkeyAuthenticateOptions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/authenticate/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Passkey Authenticate Verify */
+        post: operations["passkeyAuthenticateVerify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/register/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Passkey Register Options */
+        post: operations["passkeyRegisterOptions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/register/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Passkey Register Verify */
+        post: operations["passkeyRegisterVerify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh Session */
+        post: operations["refreshSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sign-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign Out */
+        post: operations["signOut"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/step-up/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Step Up Options */
+        post: operations["stepUpOptions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/step-up/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Step Up Verify */
+        post: operations["stepUpVerify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/console/tenants/{tenant_id}/members/{user_id}/reissue-enrolment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Console Reissue Enrolment */
+        post: operations["consoleReissueEnrolment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/e2e/mail-outbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** E2E Mail Outbox */
+        get: operations["e2eMailOutbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -12,7 +250,197 @@ export interface paths {
             cookie?: never;
         };
         /** Get Me */
-        get: operations["apps_shared_api_get_me"];
+        get: operations["getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Me */
+        patch: operations["updateMe"];
+        trace?: never;
+    };
+    "/api/v1/me/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List My Passkeys */
+        get: operations["listMyPasskeys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/passkeys/{passkey_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove My Passkey */
+        delete: operations["removeMyPasskey"];
+        options?: never;
+        head?: never;
+        /** Rename My Passkey */
+        patch: operations["renameMyPasskey"];
+        trace?: never;
+    };
+    "/api/v1/me/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List My Sessions */
+        get: operations["listMySessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke My Session */
+        delete: operations["revokeMySession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Proposals */
+        get: operations["listProposals"];
+        put?: never;
+        /** Create Proposal */
+        post: operations["createProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proposals/{proposal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Proposal */
+        get: operations["getProposal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proposals/{proposal_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Proposal */
+        post: operations["approveProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proposals/{proposal_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject Proposal */
+        post: operations["rejectProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reference/jurisdictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Jurisdictions */
+        get: operations["listJurisdictions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reference/languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Languages */
+        get: operations["listLanguages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reference/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Permissions */
+        get: operations["listPermissions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -29,9 +457,563 @@ export interface paths {
             cookie?: never;
         };
         /** Get Product */
-        get: operations["apps_shared_api_get_product"];
+        get: operations["getProduct"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/taxonomy/dimensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Taxonomy Dimensions */
+        get: operations["listTaxonomyDimensions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/taxonomy/terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Terms */
+        get: operations["listTerms"];
+        put?: never;
+        /** Create Term */
+        post: operations["createTerm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/taxonomy/terms/{term_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Term */
+        patch: operations["updateTerm"];
+        trace?: never;
+    };
+    "/api/v1/tenant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Tenant */
+        get: operations["getTenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Tenant */
+        patch: operations["updateTenant"];
+        trace?: never;
+    };
+    "/api/v1/tenant/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Api Keys */
+        get: operations["listApiKeys"];
+        put?: never;
+        /** Create Api Key */
+        post: operations["createApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/api-keys/{key_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Api Key */
+        delete: operations["revokeApiKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/footprint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Footprint */
+        get: operations["getFootprint"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/footprint/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Footprint Requests */
+        get: operations["listFootprintRequests"];
+        put?: never;
+        /** Create Footprint Request */
+        post: operations["createFootprintRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/footprint/requests/{request_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Footprint Request */
+        post: operations["approveFootprintRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/footprint/requests/{request_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject Footprint Request */
+        post: operations["rejectFootprintRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/footprint/requests/{request_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw Footprint Request */
+        post: operations["withdrawFootprintRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Invitations */
+        get: operations["listInvitations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/invitations/{invitation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Invitation */
+        delete: operations["revokeInvitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/invitations/{invitation_id}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resend Invitation */
+        post: operations["resendInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Members */
+        get: operations["listMembers"];
+        put?: never;
+        /** Invite Member */
+        post: operations["inviteMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/members/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deactivate Member */
+        delete: operations["deactivateMember"];
+        options?: never;
+        head?: never;
+        /** Update Member */
+        patch: operations["updateMember"];
+        trace?: never;
+    };
+    "/api/v1/tenant/members/{user_id}/reissue-enrolment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reissue Enrolment */
+        post: operations["reissueEnrolment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/members/{user_id}/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Member Sessions */
+        get: operations["listMemberSessions"];
+        put?: never;
+        post?: never;
+        /** Revoke Member Sessions */
+        delete: operations["revokeMemberSessions"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Roles */
+        get: operations["listRoles"];
+        put?: never;
+        /** Create Role */
+        post: operations["createRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/roles/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Role */
+        patch: operations["updateRole"];
+        trace?: never;
+    };
+    "/api/v1/tenant/roles/{key}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire Role */
+        post: operations["retireRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/security-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Security Log */
+        get: operations["listSecurityLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vocab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Vocabularies */
+        get: operations["listVocabularies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vocab/{list_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Vocabulary Rows */
+        get: operations["listVocabularyRows"];
+        put?: never;
+        /** Create Vocabulary Row */
+        post: operations["createVocabularyRow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vocab/{list_name}/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reorder Vocabulary */
+        post: operations["reorderVocabulary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vocab/{list_name}/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suggest Vocabulary Row */
+        post: operations["suggestVocabularyRow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vocab/{list_name}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Vocabulary Suggestions */
+        get: operations["listVocabularySuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vocab/{list_name}/suggestions/{suggestion_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline Vocabulary Suggestion */
+        post: operations["declineVocabularySuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vocab/{list_name}/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Vocabulary Row */
+        get: operations["getVocabularyRow"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Vocabulary Row */
+        patch: operations["updateVocabularyRow"];
+        trace?: never;
+    };
+    "/api/v1/vocab/{list_name}/{key}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge Vocabulary Row */
+        post: operations["mergeVocabularyRow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vocab/{list_name}/{key}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Vocabulary Row */
+        post: operations["restoreVocabularyRow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vocab/{list_name}/{key}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire Vocabulary Row */
+        post: operations["retireVocabularyRow"];
         delete?: never;
         options?: never;
         head?: never;
@@ -42,30 +1024,1447 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /**
-         * MeResponse
-         * @description Phase 0 shape of GET /me: the principal only. Chunk 1 adds the user, tenant, roles
-         *     and queue counts of the designed `Me` (contract_drift_pending.txt).
-         */
-        MeResponse: {
-            /** Kind */
-            kind: string;
-            /** Permissions */
-            permissions: string[];
+        /** ApiKeyCreate */
+        ApiKeyCreate: {
+            /** Expiresat */
+            expiresAt?: string | null;
+            /** Name */
+            name: string;
             /** Scopes */
             scopes: string[];
+        };
+        /** ApiKeyCreated */
+        ApiKeyCreated: {
             /**
-             * Subjectid
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Expiresat */
+            expiresAt: string | null;
+            /**
+             * Id
              * Format: uuid
              */
-            subjectId: string;
-            /** Tenantid */
-            tenantId: string | null;
+            id: string;
+            /** Keyprefix */
+            keyPrefix: string;
+            /** Name */
+            name: string;
+            /** Plainkey */
+            plainKey: string;
+            /** Scopes */
+            scopes: string[];
+        };
+        /** ApiKeyOut */
+        ApiKeyOut: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Expiresat */
+            expiresAt: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Keyprefix */
+            keyPrefix: string;
+            /** Lastusedat */
+            lastUsedAt: string | null;
+            /** Name */
+            name: string;
+            /** Revokedat */
+            revokedAt: string | null;
+            /** Scopes */
+            scopes: string[];
+        };
+        /** ApiKeysPage */
+        ApiKeysPage: {
+            /** Items */
+            items: components["schemas"]["ApiKeyOut"][];
+            /** Total */
+            total: number;
+        };
+        /** CodeRequestBody */
+        CodeRequestBody: {
+            /** Email */
+            email: string;
+        };
+        /** CodeVerifyBody */
+        CodeVerifyBody: {
+            /** Code */
+            code: string;
+            /** Email */
+            email: string;
+        };
+        /** ConsoleReissueBody */
+        ConsoleReissueBody: {
+            /** Outofbandcheck */
+            outOfBandCheck: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Ticketref
+             * @default
+             */
+            ticketRef: string;
+        };
+        /**
+         * Empty
+         * @description `{}`: the neutral answer of the code request and the accepted re-issue.
+         */
+        Empty: Record<string, never>;
+        /** FootprintDecisionBody */
+        FootprintDecisionBody: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** FootprintDimension */
+        FootprintDimension: {
+            /**
+             * Allselected
+             * @default false
+             */
+            allSelected: boolean;
+            dimension: components["schemas"]["TaxonomyDimensionRef"];
+            /** Restrictsfootprint */
+            restrictsFootprint: boolean;
+            /** Terms */
+            terms?: components["schemas"]["TermRef"][];
+        };
+        /**
+         * FootprintDryRun
+         * @description `POST /tenant/footprint/requests?dryRun=true` (playbook 15: dry run, preview,
+         *     commit): what the change would hide and reveal, with nothing persisted, no audit event
+         *     and no approval started. The same `adds`, `removes` and `preview` the created request
+         *     would carry, so the screen renders the preview and the request from one shape.
+         */
+        FootprintDryRun: {
+            /** Adds */
+            adds?: components["schemas"]["FootprintTermRef"][];
+            /**
+             * Dryrun
+             * @default true
+             */
+            dryRun: boolean;
+            preview: components["schemas"]["FootprintPreview"];
+            /** Removes */
+            removes?: components["schemas"]["FootprintTermRef"][];
+        };
+        /**
+         * FootprintPreview
+         * @description The named schema behind `footprint_change_request.preview` (JSONField).
+         */
+        FootprintPreview: {
+            cases?: components["schemas"]["FootprintPreviewCount"];
+            obligations?: components["schemas"]["FootprintPreviewCount"];
+        };
+        /**
+         * FootprintPreviewCount
+         * @description What a change would hide and reveal for one record kind. `available` is false while
+         *     the table does not exist yet (chunk 2 has no obligations or cases): zeros with
+         *     `available:false` say "not counted", never "none" (playbook 4.4).
+         */
+        FootprintPreviewCount: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /**
+             * Hidden
+             * @default 0
+             */
+            hidden: number;
+            /**
+             * Revealed
+             * @default 0
+             */
+            revealed: number;
+        };
+        /** FootprintRequestBody */
+        FootprintRequestBody: {
+            /** Adds */
+            adds?: components["schemas"]["FootprintTermSelector"][];
+            /** Removes */
+            removes?: components["schemas"]["FootprintTermSelector"][];
+        };
+        /** FootprintRequestPage */
+        FootprintRequestPage: {
+            /** Items */
+            items: components["schemas"]["FootprintRequestRow"][];
+            /** Total */
+            total: number;
+        };
+        /** FootprintRequestQuery */
+        FootprintRequestQuery: {
+            /**
+             * Dryrun
+             * @default false
+             */
+            dryRun: boolean;
+        };
+        /** FootprintRequestRow */
+        FootprintRequestRow: {
+            /** Adds */
+            adds?: components["schemas"]["FootprintTermRef"][];
+            /** Decidedat */
+            decidedAt?: string | null;
+            decidedBy?: components["schemas"]["PersonRef"] | null;
+            /**
+             * Decisionnote
+             * @default
+             */
+            decisionNote: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            preview: components["schemas"]["FootprintPreview"];
+            /** Removes */
+            removes?: components["schemas"]["FootprintTermRef"][];
+            /**
+             * Requestedat
+             * Format: date-time
+             */
+            requestedAt: string;
+            requestedBy?: components["schemas"]["PersonRef"] | null;
+            /** Status */
+            status: string;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /** FootprintTermRef */
+        FootprintTermRef: {
+            /** Dimension */
+            dimension: string;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind?: string | null;
+            /** Label */
+            label: string;
+        };
+        /** FootprintTermSelector */
+        FootprintTermSelector: {
+            /** Dimension */
+            dimension: string;
+            /** Key */
+            key: string;
+        };
+        /** FootprintView */
+        FootprintView: {
+            /** Dimensions */
+            dimensions: components["schemas"]["FootprintDimension"][];
+            pendingRequest?: components["schemas"]["FootprintRequestRow"] | null;
+        };
+        /**
+         * InvitationCodeVerifyBody
+         * @description The invitation path: the link's token names the account, so no address travels.
+         *     The token rides in the body, never the path, so no access log holds it (F6).
+         */
+        InvitationCodeVerifyBody: {
+            /** Code */
+            code: string;
+            /** Token */
+            token: string;
+        };
+        /** InvitationOut */
+        InvitationOut: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Email */
+            email: string;
+            /**
+             * Expiresat
+             * Format: date-time
+             */
+            expiresAt: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Roles */
+            roles: components["schemas"]["RoleRef"][];
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+        };
+        /** InvitationsPage */
+        InvitationsPage: {
+            /** Items */
+            items: components["schemas"]["InvitationOut"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * JurisdictionRow
+         * @description `GET /reference/jurisdictions` (I18N-01). A reference read: a short fixed list that
+         *     never paginates, like `GET /reference/languages` (INPUT_DELTAS §7).
+         */
+        JurisdictionRow: {
+            defaultLanguage?: components["schemas"]["TermRef"] | null;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind?: string | null;
+            /** Label */
+            label: string;
+            /** Parentkey */
+            parentKey?: string | null;
+        };
+        /**
+         * MailOutboxMessage
+         * @description One message the mock mailer sent, for E2E journeys (playbook 8.3).
+         */
+        MailOutboxMessage: {
+            /** Body */
+            body: string;
+            /** Subject */
+            subject: string;
+            /** To */
+            to: string;
+        };
+        /** Me */
+        Me: {
+            /** Enrolmentpending */
+            enrolmentPending: boolean;
+            /** Passkeycount */
+            passkeyCount: number;
+            /** Permissions */
+            permissions: string[];
+            /** Platformroles */
+            platformRoles: components["schemas"]["RoleRef"][];
+            /** Roles */
+            roles: components["schemas"]["RoleRef"][];
+            /** Stepupvaliduntil */
+            stepUpValidUntil: string | null;
+            tenant: components["schemas"]["MeTenant"] | null;
+            user: components["schemas"]["MeUser"];
+        };
+        /** MePatch */
+        MePatch: {
+            /** Locale */
+            locale?: string | null;
+            /** Name */
+            name?: string | null;
+        };
+        /** MeTenant */
+        MeTenant: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Timezone */
+            timezone: string;
+        };
+        /** MeUser */
+        MeUser: {
+            /** Email */
+            email: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Locale */
+            locale: string | null;
+            /** Name */
+            name: string;
+        };
+        /** MemberInvite */
+        MemberInvite: {
+            /** Email */
+            email: string;
+            /** Rolekeys */
+            roleKeys: string[];
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** MemberOut */
+        MemberOut: {
+            /** Activesessions */
+            activeSessions: number;
+            /** Email */
+            email: string;
+            /** Lastseenat */
+            lastSeenAt: string | null;
+            /** Name */
+            name: string;
+            /** Passkeycount */
+            passkeyCount: number;
+            /** Roles */
+            roles: components["schemas"]["RoleRef"][];
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+            /**
+             * Userid
+             * Format: uuid
+             */
+            userId: string;
+        };
+        /** MemberPatch */
+        MemberPatch: {
+            /** Rolekeys */
+            roleKeys?: string[] | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** MembersPage */
+        MembersPage: {
+            /** Items */
+            items: components["schemas"]["MemberOut"][];
+            /** Total */
+            total: number;
+        };
+        /** Onboarding */
+        Onboarding: {
+            /** Steps */
+            steps: components["schemas"]["OnboardingStep"][];
+            /** Stepsdone */
+            stepsDone: number;
+        };
+        /** OnboardingStep */
+        OnboardingStep: {
+            /** Done */
+            done: boolean;
+            /** Key */
+            key: string;
+        };
+        /**
+         * PageQuery
+         * @description Pagination on every list (playbook 10): `limit` default 20, max 100, `offset`.
+         *     The numbers come from settings; a value above the maximum is a 422, not a clamp.
+         */
+        PageQuery: {
+            /**
+             * Limit
+             * @default 20
+             */
+            limit: number;
+            /**
+             * Offset
+             * @default 0
+             */
+            offset: number;
+        };
+        /** PasskeyAssertBody */
+        PasskeyAssertBody: {
+            credential: components["schemas"]["PasskeyAuthenticationCredential"];
+        };
+        /**
+         * PasskeyAuthenticationCredential
+         * @description What the browser returns from `get()`, serialised with base64url fields.
+         */
+        PasskeyAuthenticationCredential: {
+            /** Authenticatorattachment */
+            authenticatorAttachment?: string | null;
+            /** Clientextensionresults */
+            clientExtensionResults?: {
+                [key: string]: unknown;
+            } | null;
+            /** Id */
+            id: string;
+            /** Rawid */
+            rawId: string;
+            response: components["schemas"]["WebAuthnAssertionResponse"];
+            /** Type */
+            type: string;
+        };
+        /** PasskeyOut */
+        PasskeyOut: {
+            /** Backedup */
+            backedUp: boolean;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Devicetype */
+            deviceType: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Lastusedat */
+            lastUsedAt: string | null;
+            /** Nickname */
+            nickname: string;
+            /** Transports */
+            transports: string[];
+        };
+        /** PasskeyPatch */
+        PasskeyPatch: {
+            /** Nickname */
+            nickname: string;
+        };
+        /** PasskeyRegisterBody */
+        PasskeyRegisterBody: {
+            credential: components["schemas"]["PasskeyRegistrationCredential"];
+            /** Nickname */
+            nickname?: string | null;
+        };
+        /** PasskeyRegistered */
+        PasskeyRegistered: {
+            /** Accesstoken */
+            accessToken: string | null;
+            /** Expiresin */
+            expiresIn: number | null;
+            passkey: components["schemas"]["PasskeyOut"];
+            /** Sessionkind */
+            sessionKind: string;
+        };
+        /**
+         * PasskeyRegistrationCredential
+         * @description What the browser returns from `create()`, serialised with base64url fields.
+         */
+        PasskeyRegistrationCredential: {
+            /** Authenticatorattachment */
+            authenticatorAttachment?: string | null;
+            /** Clientextensionresults */
+            clientExtensionResults?: {
+                [key: string]: unknown;
+            } | null;
+            /** Id */
+            id: string;
+            /** Rawid */
+            rawId: string;
+            response: components["schemas"]["WebAuthnAttestationResponse"];
+            /** Type */
+            type: string;
+        };
+        /** PermissionOut */
+        PermissionOut: {
+            /** Description */
+            description: string;
+            /** Group */
+            group: string;
+            /** Key */
+            key: string;
+        };
+        /**
+         * PersonRef
+         * @description A person on a record: id and name, the only personal data a screen or a log may carry
+         *     about them (playbook 4.7).
+         */
+        PersonRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** ProductInfo */
         ProductInfo: {
             /** Productname */
             productName: string;
+        };
+        /**
+         * ProposalAccepted
+         * @description 202 from a library-list write (VOC-07): nothing changed, a proposal is waiting.
+         */
+        ProposalAccepted: {
+            proposal: components["schemas"]["ProposalRow"];
+        };
+        /** ProposalActorRef */
+        ProposalActorRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** ProposalApproveBody */
+        ProposalApproveBody: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** ProposalCreateBody */
+        ProposalCreateBody: {
+            /** Agentrunid */
+            agentRunId?: string | null;
+            /** Changeid */
+            changeId?: string | null;
+            /** Effectivefrom */
+            effectiveFrom?: string | null;
+            /** Fieldsources */
+            fieldSources?: {
+                [key: string]: unknown;
+            };
+            /** Kind */
+            kind: string;
+            /**
+             * Model
+             * @default
+             */
+            model: string;
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Sourcelabel
+             * @default
+             */
+            sourceLabel: string;
+            /**
+             * Sourceurl
+             * @default
+             */
+            sourceUrl: string;
+            /** Targetid */
+            targetId?: string | null;
+            /**
+             * Targettype
+             * @default
+             */
+            targetType: string;
+            /** Title */
+            title: string;
+        };
+        /** ProposalPage */
+        ProposalPage: {
+            /** Items */
+            items: components["schemas"]["ProposalRow"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ProposalQuery
+         * @description Filters of the review queue, each optional: `status` and `kind` take one value or a
+         *     comma-separated list; `targetList` is a vocabulary list name or a taxonomy dimension
+         *     key and matches the proposals that change it (`payload.list` or `payload.dimension`).
+         */
+        ProposalQuery: {
+            /** Kind */
+            kind?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Targetlist */
+            targetList?: string | null;
+        };
+        /** ProposalRejectBody */
+        ProposalRejectBody: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /**
+             * Rejectioncode
+             * @default
+             */
+            rejectionCode: string;
+        };
+        /** ProposalRow */
+        ProposalRow: {
+            /** Agentrunid */
+            agentRunId?: string | null;
+            /** Appliedat */
+            appliedAt?: string | null;
+            /** Changeid */
+            changeId?: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Effectivefrom */
+            effectiveFrom?: string | null;
+            /** Fieldsources */
+            fieldSources?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Model
+             * @default
+             */
+            model: string;
+            /** Origin */
+            origin: string;
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            };
+            proposedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /**
+             * Rejectioncode
+             * @default
+             */
+            rejectionCode: string;
+            /**
+             * Reviewnote
+             * @default
+             */
+            reviewNote: string;
+            /** Reviewedat */
+            reviewedAt?: string | null;
+            reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** Scopesuggestion */
+            scopeSuggestion?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Sourcelabel
+             * @default
+             */
+            sourceLabel: string;
+            /**
+             * Sourceurl
+             * @default
+             */
+            sourceUrl: string;
+            /** Status */
+            status: string;
+            /** Targetid */
+            targetId?: string | null;
+            /**
+             * Targettype
+             * @default
+             */
+            targetType: string;
+            /** Title */
+            title: string;
+        };
+        /** RefreshResult */
+        RefreshResult: {
+            /** Accesstoken */
+            accessToken: string;
+            /** Expiresin */
+            expiresIn: number;
+        };
+        /** RoleCreate */
+        RoleCreate: {
+            /** Key */
+            key: string;
+            /** Labels */
+            labels: {
+                [key: string]: string;
+            };
+            /** Permissions */
+            permissions: string[];
+            /**
+             * Usagenote
+             * @default
+             */
+            usageNote: string;
+        };
+        /** RoleOut */
+        RoleOut: {
+            /** Active */
+            active: boolean;
+            /** Issystem */
+            isSystem: boolean;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: string | null;
+            /** Label */
+            label: string;
+            /** Labels */
+            labels: {
+                [key: string]: string;
+            };
+            /** Permissions */
+            permissions: string[];
+            /** Usagenote */
+            usageNote: string;
+        };
+        /** RolePatch */
+        RolePatch: {
+            /** Labels */
+            labels?: {
+                [key: string]: string;
+            } | null;
+            /** Permissions */
+            permissions?: string[] | null;
+            /** Usagenote */
+            usageNote?: string | null;
+        };
+        /** RoleRef */
+        RoleRef: {
+            /** Key */
+            key: string;
+            /** Kind */
+            kind?: string | null;
+            /** Label */
+            label: string;
+        };
+        /** SecurityEventOut */
+        SecurityEventOut: {
+            /** Email */
+            email: string;
+            /** Event */
+            event: string;
+            /** Failurereason */
+            failureReason: string;
+            /** Id */
+            id: number;
+            /** Ip */
+            ip: string | null;
+            /** Method */
+            method: string;
+            /**
+             * Occurredat
+             * Format: date-time
+             */
+            occurredAt: string;
+            /** Success */
+            success: boolean;
+            /** Useragent */
+            userAgent: string;
+            /** Userid */
+            userId: string | null;
+        };
+        /** SecurityLogPage */
+        SecurityLogPage: {
+            /** Items */
+            items: components["schemas"]["SecurityEventOut"][];
+            /** Total */
+            total: number;
+        };
+        /** SessionOut */
+        SessionOut: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Current */
+            current: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Ip */
+            ip: string | null;
+            /**
+             * Lastseenat
+             * Format: date-time
+             */
+            lastSeenAt: string;
+            /** Useragent */
+            userAgent: string;
+        };
+        /** SessionTokens */
+        SessionTokens: {
+            /** Accesstoken */
+            accessToken: string;
+            /** Expiresin */
+            expiresIn: number;
+            /** Sessionkind */
+            sessionKind: string;
+        };
+        /** StepUpResult */
+        StepUpResult: {
+            /**
+             * Assertionid
+             * Format: uuid
+             */
+            assertionId: string;
+            /**
+             * Expiresat
+             * Format: date-time
+             */
+            expiresAt: string;
+        };
+        /** TaxonomyDimensionPage */
+        TaxonomyDimensionPage: {
+            /** Items */
+            items: components["schemas"]["VocabularyRow"][];
+            /** Total */
+            total: number;
+        };
+        /** TaxonomyDimensionRef */
+        TaxonomyDimensionRef: {
+            /** Key */
+            key: string;
+            /** Kind */
+            kind?: string | null;
+            /** Label */
+            label: string;
+        };
+        /** TaxonomyTermCreateBody */
+        TaxonomyTermCreateBody: {
+            /** Dimension */
+            dimension: string;
+            /** Key */
+            key?: string | null;
+            /** Labels */
+            labels: {
+                [key: string]: string;
+            };
+            /** Parent */
+            parent?: string | null;
+            /**
+             * Usagenote
+             * @default
+             */
+            usageNote: string;
+        };
+        /** TaxonomyTermPage */
+        TaxonomyTermPage: {
+            /** Items */
+            items: components["schemas"]["TaxonomyTermRow"][];
+            /** Total */
+            total: number;
+        };
+        /** TaxonomyTermQuery */
+        TaxonomyTermQuery: {
+            /** Dimension */
+            dimension?: string | null;
+            /**
+             * Includeretired
+             * @default false
+             */
+            includeRetired: boolean;
+        };
+        /** TaxonomyTermRow */
+        TaxonomyTermRow: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            dimension: components["schemas"]["TaxonomyDimensionRef"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Issystem
+             * @default false
+             */
+            isSystem: boolean;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind?: string | null;
+            /** Label */
+            label: string;
+            /** Labels */
+            labels?: {
+                [key: string]: string;
+            };
+            /** Parentkey */
+            parentKey?: string | null;
+            /**
+             * Sortorder
+             * @default 0
+             */
+            sortOrder: number;
+            /**
+             * Usagenote
+             * @default
+             */
+            usageNote: string;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /** TenantOut */
+        TenantOut: {
+            /** Contentlanguages */
+            contentLanguages: components["schemas"]["RoleRef"][];
+            defaultLanguage: components["schemas"]["RoleRef"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            onboarding: components["schemas"]["Onboarding"];
+            /** Slug */
+            slug: string;
+            /** Status */
+            status: string;
+            /** Timezone */
+            timezone: string;
+        };
+        /** TenantPatch */
+        TenantPatch: {
+            /** Contentlanguages */
+            contentLanguages?: string[] | null;
+            /** Defaultlanguage */
+            defaultLanguage?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+        };
+        /** TermRef */
+        TermRef: {
+            /** Key */
+            key: string;
+            /** Kind */
+            kind?: string | null;
+            /** Label */
+            label: string;
+        };
+        /**
+         * VocabularyCreateBody
+         * @description `key` is optional: it is slugified from the English label when absent, because a
+         *     person types a label and never a key. `force` is how a holder of vocab.manage insists
+         *     past the near-duplicate hint (VOC-03, AC-VOC3).
+         */
+        VocabularyCreateBody: {
+            /** Extra */
+            extra?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+            /** Key */
+            key?: string | null;
+            /** Kind */
+            kind?: string | null;
+            /** Labels */
+            labels: {
+                [key: string]: string;
+            };
+            /** Sortorder */
+            sortOrder?: number | null;
+            /**
+             * Usagenote
+             * @default
+             */
+            usageNote: string;
+        };
+        /**
+         * VocabularyListEntry
+         * @description One row of `GET /vocab`: the list of lists the admin screens and the agents read.
+         */
+        VocabularyListEntry: {
+            /** Count */
+            count: number;
+            /** Kind */
+            kind?: string | null;
+            /** Kinds */
+            kinds?: string[];
+            /** List */
+            list: string;
+            /** Proposable */
+            proposable: boolean;
+            /** Retiredcount */
+            retiredCount: number;
+            /** Tier */
+            tier: number;
+        };
+        /** VocabularyListPage */
+        VocabularyListPage: {
+            /** Items */
+            items: components["schemas"]["VocabularyListEntry"][];
+            /** Total */
+            total: number;
+        };
+        /** VocabularyMergeBody */
+        VocabularyMergeBody: {
+            /** Into */
+            into: string;
+        };
+        /** VocabularyMergeQuery */
+        VocabularyMergeQuery: {
+            /**
+             * Dryrun
+             * @default false
+             */
+            dryRun: boolean;
+        };
+        /**
+         * VocabularyMerged
+         * @description Both the dry run and the commit answer this shape, so the screen renders one
+         *     preview and one result from the same fields (playbook 15: dry run, preview, commit).
+         */
+        VocabularyMerged: {
+            /** Dryrun */
+            dryRun: boolean;
+            /** From */
+            from: string;
+            /** Into */
+            into: string;
+            /** Repointed */
+            repointed: number;
+            /** Usagecount */
+            usageCount: number;
+        };
+        /** VocabularyPatchBody */
+        VocabularyPatchBody: {
+            /** Extra */
+            extra?: {
+                [key: string]: unknown;
+            } | null;
+            /** Labels */
+            labels?: {
+                [key: string]: string;
+            } | null;
+            /** Sortorder */
+            sortOrder?: number | null;
+            /** Usagenote */
+            usageNote?: string | null;
+        };
+        /** VocabularyQuery */
+        VocabularyQuery: {
+            /**
+             * Includeretired
+             * @default false
+             */
+            includeRetired: boolean;
+        };
+        /** VocabularyReorderBody */
+        VocabularyReorderBody: {
+            /** Keys */
+            keys: string[];
+        };
+        /** VocabularyRestored */
+        VocabularyRestored: {
+            /** Key */
+            key: string;
+            /** Restored */
+            restored: boolean;
+            /** Usagecount */
+            usageCount: number;
+        };
+        /** VocabularyRetireBody */
+        VocabularyRetireBody: {
+            /**
+             * Confirm
+             * @default false
+             */
+            confirm: boolean;
+        };
+        /** VocabularyRetired */
+        VocabularyRetired: {
+            /** Key */
+            key: string;
+            /** Retired */
+            retired: boolean;
+            /** Usagecount */
+            usageCount: number;
+        };
+        /**
+         * VocabularyRow
+         * @description One vocabulary row as every surface reads it (playbook 15). `extra` carries the
+         *     list's own columns (an urgency's ordinal and SLA days, a dimension's
+         *     `restrictsFootprint`) so one schema serves every list and the contract does not grow a
+         *     shape per list.
+         */
+        VocabularyRow: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Extra */
+            extra?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Isdefault
+             * @default false
+             */
+            isDefault: boolean;
+            /**
+             * Issystem
+             * @default false
+             */
+            isSystem: boolean;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind?: string | null;
+            /** Label */
+            label: string;
+            /** Labels */
+            labels?: {
+                [key: string]: string;
+            };
+            /**
+             * Sortorder
+             * @default 0
+             */
+            sortOrder: number;
+            /**
+             * Usagecount
+             * @default 0
+             */
+            usageCount: number;
+            /**
+             * Usagenote
+             * @default
+             */
+            usageNote: string;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /**
+         * VocabularyRowDetail
+         * @description `GET /vocab/{list}/{key}`: the row plus which label is the original and which are
+         *     machine translations (I18N-01, D-12).
+         */
+        VocabularyRowDetail: {
+            /**
+             * Active
+             * @default true
+             */
+            active: boolean;
+            /** Extra */
+            extra?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Isdefault
+             * @default false
+             */
+            isDefault: boolean;
+            /**
+             * Issystem
+             * @default false
+             */
+            isSystem: boolean;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind?: string | null;
+            /** Label */
+            label: string;
+            /** Labels */
+            labels?: {
+                [key: string]: string;
+            };
+            /** Machinelanguages */
+            machineLanguages?: string[];
+            /** Originallanguage */
+            originalLanguage?: string | null;
+            /**
+             * Sortorder
+             * @default 0
+             */
+            sortOrder: number;
+            /**
+             * Usagecount
+             * @default 0
+             */
+            usageCount: number;
+            /**
+             * Usagenote
+             * @default
+             */
+            usageNote: string;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /** VocabularyRowPage */
+        VocabularyRowPage: {
+            /** Items */
+            items: components["schemas"]["VocabularyRow"][];
+            /** Total */
+            total: number;
+        };
+        /** VocabularySuggestBody */
+        VocabularySuggestBody: {
+            /** Key */
+            key?: string | null;
+            /** Labels */
+            labels: {
+                [key: string]: string;
+            };
+            /**
+             * Usagenote
+             * @default
+             */
+            usageNote: string;
+        };
+        /** VocabularySuggestionPage */
+        VocabularySuggestionPage: {
+            /** Items */
+            items: components["schemas"]["VocabularySuggestionRow"][];
+            /** Total */
+            total: number;
+        };
+        /** VocabularySuggestionRow */
+        VocabularySuggestionRow: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Labels */
+            labels?: {
+                [key: string]: string;
+            };
+            /** List */
+            list: string;
+            /** Status */
+            status: string;
+            suggestedBy?: components["schemas"]["PersonRef"] | null;
+            /**
+             * Usagenote
+             * @default
+             */
+            usageNote: string;
+        };
+        /** WebAuthnAssertionResponse */
+        WebAuthnAssertionResponse: {
+            /** Authenticatordata */
+            authenticatorData: string;
+            /** Clientdatajson */
+            clientDataJSON: string;
+            /** Signature */
+            signature: string;
+            /** Userhandle */
+            userHandle?: string | null;
+        };
+        /** WebAuthnAttestationResponse */
+        WebAuthnAttestationResponse: {
+            /** Attestationobject */
+            attestationObject: string;
+            /** Clientdatajson */
+            clientDataJSON: string;
+            /** Transports */
+            transports?: string[] | null;
+        };
+        /** WebAuthnAuthenticatorSelection */
+        WebAuthnAuthenticatorSelection: {
+            /** Authenticatorattachment */
+            authenticatorAttachment?: string | null;
+            /** Requireresidentkey */
+            requireResidentKey?: boolean | null;
+            /** Residentkey */
+            residentKey?: string | null;
+            /** Userverification */
+            userVerification?: string | null;
+        };
+        /**
+         * WebAuthnCreationOptions
+         * @description `navigator.credentials.create({publicKey: ...})`, bytes as base64url.
+         */
+        WebAuthnCreationOptions: {
+            /** Attestation */
+            attestation?: string | null;
+            authenticatorSelection?: components["schemas"]["WebAuthnAuthenticatorSelection"] | null;
+            /** Challenge */
+            challenge: string;
+            /** Excludecredentials */
+            excludeCredentials?: components["schemas"]["WebAuthnCredentialDescriptor"][] | null;
+            /** Hints */
+            hints?: string[] | null;
+            /** Pubkeycredparams */
+            pubKeyCredParams: components["schemas"]["WebAuthnPubKeyCredParam"][];
+            rp: components["schemas"]["WebAuthnRpEntity"];
+            /** Timeout */
+            timeout?: number | null;
+            user: components["schemas"]["WebAuthnUserEntity"];
+        };
+        /** WebAuthnCredentialDescriptor */
+        WebAuthnCredentialDescriptor: {
+            /** Id */
+            id: string;
+            /** Transports */
+            transports?: string[] | null;
+            /** Type */
+            type: string;
+        };
+        /** WebAuthnPubKeyCredParam */
+        WebAuthnPubKeyCredParam: {
+            /** Alg */
+            alg: number;
+            /** Type */
+            type: string;
+        };
+        /**
+         * WebAuthnRequestOptions
+         * @description `navigator.credentials.get({publicKey: ...})`, bytes as base64url.
+         */
+        WebAuthnRequestOptions: {
+            /** Allowcredentials */
+            allowCredentials?: components["schemas"]["WebAuthnCredentialDescriptor"][] | null;
+            /** Challenge */
+            challenge: string;
+            /** Rpid */
+            rpId?: string | null;
+            /** Timeout */
+            timeout?: number | null;
+            /** Userverification */
+            userVerification?: string | null;
+        };
+        /** WebAuthnRpEntity */
+        WebAuthnRpEntity: {
+            /** Id */
+            id?: string | null;
+            /** Name */
+            name: string;
+        };
+        /** WebAuthnUserEntity */
+        WebAuthnUserEntity: {
+            /** Displayname */
+            displayName: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
         };
     };
     responses: never;
@@ -76,7 +2475,101 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    apps_shared_api_get_me: {
+    requestCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeRequestBody"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Empty"];
+                };
+            };
+        };
+    };
+    verifyCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodeVerifyBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionTokens"];
+                };
+            };
+        };
+    };
+    verifyInvitationCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationCodeVerifyBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionTokens"];
+                };
+            };
+        };
+    };
+    openInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Empty"];
+                };
+            };
+        };
+    };
+    passkeyAuthenticateOptions: {
         parameters: {
             query?: never;
             header?: never;
@@ -91,12 +2584,550 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MeResponse"];
+                    "application/json": components["schemas"]["WebAuthnRequestOptions"];
                 };
             };
         };
     };
-    apps_shared_api_get_product: {
+    passkeyAuthenticateVerify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyAssertBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionTokens"];
+                };
+            };
+        };
+    };
+    passkeyRegisterOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebAuthnCreationOptions"];
+                };
+            };
+        };
+    };
+    passkeyRegisterVerify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyRegisterBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyRegistered"];
+                };
+            };
+        };
+    };
+    refreshSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefreshResult"];
+                };
+            };
+        };
+    };
+    signOut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    stepUpOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebAuthnRequestOptions"];
+                };
+            };
+        };
+    };
+    stepUpVerify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyAssertBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StepUpResult"];
+                };
+            };
+        };
+    };
+    consoleReissueEnrolment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsoleReissueBody"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Empty"];
+                };
+            };
+        };
+    };
+    e2eMailOutbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailOutboxMessage"][];
+                };
+            };
+        };
+    };
+    getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    updateMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    listMyPasskeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOut"][];
+                };
+            };
+        };
+    };
+    removeMyPasskey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    renameMyPasskey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOut"];
+                };
+            };
+        };
+    };
+    listMySessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"][];
+                };
+            };
+        };
+    };
+    revokeMySession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listProposals: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                kind?: string | null;
+                targetList?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalPage"];
+                };
+            };
+        };
+    };
+    createProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposalCreateBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalRow"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalRow"];
+                };
+            };
+        };
+    };
+    getProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalRow"];
+                };
+            };
+        };
+    };
+    approveProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposalApproveBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalRow"];
+                };
+            };
+        };
+    };
+    rejectProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposalRejectBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalRow"];
+                };
+            };
+        };
+    };
+    listJurisdictions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JurisdictionRow"][];
+                };
+            };
+        };
+    };
+    listLanguages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleRef"][];
+                };
+            };
+        };
+    };
+    listPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionOut"][];
+                };
+            };
+        };
+    };
+    getProduct: {
         parameters: {
             query?: never;
             header?: never;
@@ -112,6 +3143,1046 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductInfo"];
+                };
+            };
+        };
+    };
+    listTaxonomyDimensions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomyDimensionPage"];
+                };
+            };
+        };
+    };
+    listTerms: {
+        parameters: {
+            query?: {
+                dimension?: string | null;
+                includeRetired?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomyTermPage"];
+                };
+            };
+        };
+    };
+    createTerm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaxonomyTermCreateBody"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalAccepted"];
+                };
+            };
+        };
+    };
+    updateTerm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                term_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VocabularyPatchBody"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalAccepted"];
+                };
+            };
+        };
+    };
+    getTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantOut"];
+                };
+            };
+        };
+    };
+    updateTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantOut"];
+                };
+            };
+        };
+    };
+    listApiKeys: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeysPage"];
+                };
+            };
+        };
+    };
+    createApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiKeyCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyCreated"];
+                };
+            };
+        };
+    };
+    revokeApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getFootprint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FootprintView"];
+                };
+            };
+        };
+    };
+    listFootprintRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FootprintRequestPage"];
+                };
+            };
+        };
+    };
+    createFootprintRequest: {
+        parameters: {
+            query?: {
+                dryRun?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FootprintRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FootprintDryRun"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FootprintRequestRow"];
+                };
+            };
+        };
+    };
+    approveFootprintRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FootprintDecisionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FootprintRequestRow"];
+                };
+            };
+        };
+    };
+    rejectFootprintRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FootprintDecisionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FootprintRequestRow"];
+                };
+            };
+        };
+    };
+    withdrawFootprintRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FootprintRequestRow"];
+                };
+            };
+        };
+    };
+    listInvitations: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationsPage"];
+                };
+            };
+        };
+    };
+    revokeInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resendInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationOut"];
+                };
+            };
+        };
+    };
+    listMembers: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembersPage"];
+                };
+            };
+        };
+    };
+    inviteMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberInvite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationOut"];
+                };
+            };
+        };
+    };
+    deactivateMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberOut"];
+                };
+            };
+        };
+    };
+    reissueEnrolment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Empty"];
+                };
+            };
+        };
+    };
+    listMemberSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"][];
+                };
+            };
+        };
+    };
+    revokeMemberSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleOut"][];
+                };
+            };
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleOut"];
+                };
+            };
+        };
+    };
+    updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RolePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleOut"];
+                };
+            };
+        };
+    };
+    retireRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleOut"];
+                };
+            };
+        };
+    };
+    listSecurityLog: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityLogPage"];
+                };
+            };
+        };
+    };
+    listVocabularies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyListPage"];
+                };
+            };
+        };
+    };
+    listVocabularyRows: {
+        parameters: {
+            query?: {
+                includeRetired?: boolean;
+            };
+            header?: never;
+            path: {
+                list_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyRowPage"];
+                };
+            };
+        };
+    };
+    createVocabularyRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VocabularyCreateBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyRow"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalAccepted"];
+                };
+            };
+        };
+    };
+    reorderVocabulary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VocabularyReorderBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyRowPage"];
+                };
+            };
+        };
+    };
+    suggestVocabularyRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VocabularySuggestBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularySuggestionRow"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalAccepted"];
+                };
+            };
+        };
+    };
+    listVocabularySuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularySuggestionPage"];
+                };
+            };
+        };
+    };
+    declineVocabularySuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_name: string;
+                suggestion_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularySuggestionRow"];
+                };
+            };
+        };
+    };
+    getVocabularyRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_name: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyRowDetail"];
+                };
+            };
+        };
+    };
+    updateVocabularyRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_name: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VocabularyPatchBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyRow"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalAccepted"];
+                };
+            };
+        };
+    };
+    mergeVocabularyRow: {
+        parameters: {
+            query?: {
+                dryRun?: boolean;
+            };
+            header?: never;
+            path: {
+                list_name: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VocabularyMergeBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyMerged"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalAccepted"];
+                };
+            };
+        };
+    };
+    restoreVocabularyRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_name: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyRestored"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalAccepted"];
+                };
+            };
+        };
+    };
+    retireVocabularyRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_name: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VocabularyRetireBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyRetired"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalAccepted"];
                 };
             };
         };

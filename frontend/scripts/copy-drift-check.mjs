@@ -52,8 +52,9 @@ for (const file of specs) {
   for (const m of src.matchAll(literal)) {
     const text = m[1] ?? m[2];
     if (text === undefined || text === '') continue;
-    // getByRole('button') with no name: the first quoted string is the role.
-    if (/^getByRole\(\s*['"][^'"]*['"]\s*\)$/.test(m[0])) continue;
+    // getByRole('button') with no name: the first quoted string is the role,
+    // not copy. The match stops at that string when there is no `name:`.
+    if (m[0].startsWith('getByRole(') && !/name:/.test(m[0])) continue;
     checked += 1;
     if (!known(text)) findings.push(`${relative(root, file)}: "${text}" is not in messages/en.json`);
   }

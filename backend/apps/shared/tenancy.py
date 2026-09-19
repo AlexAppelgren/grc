@@ -26,6 +26,15 @@ from typing import Any, TypeVar
 from django.db import DEFAULT_DB_ALIAS, connections, models, transaction
 
 TENANT_SETTING = "app.tenant_id"
+# The identity-lookup flag (chunk 1). Four tables are read by the auth layer before any
+# tenant is known: an invitation by its token or address, a membership at passkey sign-in
+# (to pick the session's tenant), a session by its refresh cookie, an API key by its
+# prefix. Their policies add `OR current_setting('app.identity_lookup', true) = 'on'`, and
+# `identity_lookup()` below switches the flag on for the shortest possible block, then
+# clears it. The RLS guard lists exactly which tables carry the clause
+# (apps/shared/tests_rls.py, IDENTITY_LOOKUP_TABLES) and an AST guard restricts callers
+# to apps/shared/authentication.py and the identity app's logic modules.
+IDENTITY_LOOKUP_SETTING = "app.identity_lookup"
 
 _active_tenant: ContextVar[uuid.UUID | None] = ContextVar("active_tenant", default=None)
 _library_write_reason: ContextVar[str | None] = ContextVar("library_write_reason", default=None)
@@ -66,6 +75,29 @@ def database_tenant_id(*, using: str = DEFAULT_DB_ALIAS) -> uuid.UUID | None:
         row = cursor.fetchone()
     value = row[0] if row else None
     return uuid.UUID(value) if value else None
+
+
+@contextmanager
+def identity_lookup(*, using: str = DEFAULT_DB_ALIAS) -> Iterator[None]:
+    """Read identity rows of any tenant for the duration of the block, inside the open
+    transaction, then switch the flag off again. Only the auth layer may use it."""
+    connection = connections[using]
+    if not connection.in_atomic_block:
+        raise NotInTransaction("tenancy.identity_lookup() needs an open transaction: SET LOCAL is a no-op outside one.")
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT set_config(%s, %s, true)", [IDENTITY_LOOKUP_SETTING, "on"])
+    try:
+        yield
+    finally:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT set_config(%s, %s, true)", [IDENTITY_LOOKUP_SETTING, ""])
+
+
+def identity_lookup_active(*, using: str = DEFAULT_DB_ALIAS) -> bool:
+    with connections[using].cursor() as cursor:
+        cursor.execute("SELECT current_setting(%s, true)", [IDENTITY_LOOKUP_SETTING])
+        row = cursor.fetchone()
+    return bool(row and row[0] == "on")
 
 
 F = TypeVar("F", bound=Callable[..., Any])

@@ -71,3 +71,8 @@ desktop.ini
 *.log
 tmp/
 .tmp/
+
+# Local agent worktrees (scripts/worktree.sh, docs/runbooks/WORKTREES.md) and this
+# machine's preview-server config. Neither belongs in the repository.
+.claude/worktrees/
+.claude/launch.json

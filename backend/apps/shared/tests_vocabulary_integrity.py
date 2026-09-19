@@ -18,7 +18,9 @@ from django.db import ProgrammingError, connection, models, transaction
 from apps.shared.testing import production_models
 from django.test import TestCase
 
-from apps.shared.vocabulary import Vocabulary, VocabularyLabel, label_for
+from apps.shared import factories
+from apps.shared.management.commands.seed_reference import REFERENCE_SEEDS
+from apps.shared.vocabulary import TenantVocabulary, Vocabulary, VocabularyLabel, label_for
 
 
 def concrete_vocabularies() -> list[type[Vocabulary]]:
@@ -37,18 +39,29 @@ def label_model_for(vocabulary: type[Vocabulary]) -> type[VocabularyLabel] | Non
 
 class VocabularyIntegrityGuard(TestCase):
     def test_every_vocabulary_has_labels_system_rows_per_kind_and_a_default(self) -> None:
+        # The reference seeds fill the shared lists; a tenant's own lists are seeded when
+        # the tenant is created (factories.tenant runs ensure_system_roles).
+        for _name, seed, _breaks in REFERENCE_SEEDS:
+            seed()
+        # factories.tenant() seeds the tenant's own lists through the tenant-creation hook
+        # (apps/taxonomy/tenant_hooks.py), exactly as a new tenant gets them.
+        tenant = factories.tenant()
         problems: list[str] = []
+        self.assertGreater(len(concrete_vocabularies()), 0, "no concrete vocabulary found; the enumeration is broken")
         for vocabulary in concrete_vocabularies():
             name = vocabulary.__name__
             if label_model_for(vocabulary) is None:
                 problems.append(f"{name}: no VocabularyLabel model with a `vocabulary` foreign key to it")
             kinds = [key for key, _ in getattr(vocabulary, "KIND_CHOICES", [])]
+            rows = vocabulary._default_manager.all()
+            if issubclass(vocabulary, TenantVocabulary):
+                rows = rows.filter(tenant=tenant)  # type: ignore[misc]
             try:
                 with transaction.atomic():
                     for kind in kinds:
-                        if not vocabulary._default_manager.filter(kind=kind, active=True, is_system=True).exists():
+                        if not rows.filter(kind=kind, active=True, is_system=True).exists():
                             problems.append(f"{name}: kind {kind!r} has no active system row (seed one)")
-                    if not vocabulary._default_manager.filter(is_default=True, active=True).exists():
+                    if not rows.filter(is_default=True, active=True).exists():
                         problems.append(f"{name}: no active default row")
             except ProgrammingError:
                 problems.append(f"{name}: table {vocabulary._meta.db_table} does not exist (no migration)")

@@ -16,3 +16,4 @@ alwaysApply: true
 10. Permissions, never role names, in endpoints and UI; four eyes with a passkey step-up on approvals; no passwords, the emailed code is enrolment-only.
 11. Safe logging: a person's name and id at most, never tenant content, tokens or contact details; `logger` only, never `console.log`; nothing tenant-owned reaches Sentry or an unapproved model.
 12. Pills only through `Pill` with one of six tones chosen by slot or kind; no string literals in JSX; E2E signs in through the UI with a virtual passkey and never mocks an API.
+13. Simplicity first: the least code that solves the stated problem, no speculative features, abstractions or configuration; but never simplify away an invariant, a trust-boundary check, a test, a gate or a required setting. Security and quality win.

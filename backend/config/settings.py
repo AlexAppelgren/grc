@@ -87,6 +87,9 @@ PRODUCT_NAME = env_str("PRODUCT_NAME", "Compliance Watch")
 INSTALLED_APPS = [
     "ninja",
     "corsheaders",
+    # For ArrayField (role permissions, key scopes, credential transports). No auth, no
+    # sessions, no admin: nobody has a password (tests_no_passwords.py pins the list).
+    "django.contrib.postgres",
     "apps.shared",
     "apps.identity",
     "apps.tenants",
@@ -227,7 +230,7 @@ SECURE_HSTS_SECONDS = 0 if DEBUG else env_int("SECURE_HSTS_SECONDS", 60 * 60 * 2
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_REFERRER_POLICY = "same-origin"
+SECURE_REFERRER_POLICY = "no-referrer"  # the invitation token rides a URL (F28)
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 SESSION_COOKIE_SECURE = not DEBUG
@@ -292,6 +295,9 @@ STORAGE_S3_SECRET_ACCESS_KEY = env_str("STORAGE_S3_SECRET_ACCESS_KEY", "")
 WEBAUTHN_RP_ID = env_str("WEBAUTHN_RP_ID", "localhost")
 WEBAUTHN_RP_NAME = PRODUCT_NAME
 WEBAUTHN_ORIGINS = env_list("WEBAUTHN_ORIGINS", "http://localhost:3000")
+# The public URL of the web app, used in the emailed invitation link (ID-01). Defaults to
+# the first CORS origin, which is the web app on every environment we run.
+APP_BASE_URL = env_str("APP_BASE_URL", CORS_ALLOWED_ORIGINS[0] if CORS_ALLOWED_ORIGINS else "http://localhost:3000")
 
 # ---------------------------------------------------------------------------------------
 # ===== NFR-02 performance budgets (playbook 10) ==========================================
@@ -319,6 +325,19 @@ ENROLMENT_CODE_TTL_MINUTES = env_int("ENROLMENT_CODE_TTL_MINUTES", 10)
 ENROLMENT_CODE_MAX_ATTEMPTS = env_int("ENROLMENT_CODE_MAX_ATTEMPTS", 5)
 ENROLMENT_CODE_RATE_PER_ADDRESS_PER_HOUR = env_int("ENROLMENT_CODE_RATE_PER_ADDRESS_PER_HOUR", 5)
 ENROLMENT_CODE_RATE_PER_IP_PER_HOUR = env_int("ENROLMENT_CODE_RATE_PER_IP_PER_HOUR", 20)
+# Every other auth ceremony endpoint (verify code, passkey sign-in, refresh) per IP.
+AUTH_RATE_PER_IP_PER_MINUTE = env_int("AUTH_RATE_PER_IP_PER_MINUTE", 30)
+# How many proxies of ours append to X-Forwarded-For before a request reaches the app.
+# 0 (the default) means the socket address is the client: the header is then ignored,
+# because a caller can write anything into it and would otherwise pick its own address
+# for the per-IP limits and the security log. Set to 1 behind one edge proxy (Railway).
+TRUSTED_PROXY_HOPS = env_int("TRUSTED_PROXY_HOPS", 0)
+# A WebAuthn challenge lives this long (registration, sign-in and step-up ceremonies).
+CHALLENGE_TTL_SECONDS = env_int("CHALLENGE_TTL_SECONDS", 120)
+# The one deterministic code E2E journeys type (playbook 8.3). Read only when E2E_MODE is
+# on, which the production-safety block refuses when deployed (rule 4) and the code logic
+# refuses again on its own leg.
+E2E_FIXED_CODE = "123456"
 
 # ---------------------------------------------------------------------------------------
 # ===== ID-06, ID-08 sessions and step-up (DECISIONS D-06) ================================
@@ -330,6 +349,14 @@ SESSION_ABSOLUTE_HOURS_MAX = env_int("SESSION_ABSOLUTE_HOURS_MAX", 24)
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 10)
 REFRESH_REPLAY_GRACE_SECONDS = env_int("REFRESH_REPLAY_GRACE_SECONDS", 30)
 STEP_UP_FRESHNESS_MINUTES = env_int("STEP_UP_FRESHNESS_MINUTES", 5)
+# The rotating refresh token's cookie (ADR 0006): HttpOnly, Secure outside DEBUG,
+# SameSite=Strict, scoped to the auth path so no other route ever receives it.
+REFRESH_COOKIE_NAME = "cw_refresh"
+REFRESH_COOKIE_PATH = "/api/v1/auth"
+REFRESH_COOKIE_SECURE = not DEBUG
+# An API key's last_used_at (and its key_used security-log row) is written at most this
+# often, so a busy agent does not turn every call into a write (ID-10).
+API_KEY_LAST_USED_THROTTLE_SECONDS = env_int("API_KEY_LAST_USED_THROTTLE_SECONDS", 60)
 
 # ---------------------------------------------------------------------------------------
 # ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========
@@ -415,6 +442,9 @@ if SENTRY_DSN:
 #     apps.shared.db_role_guard (superuser, table owner, BYPASSRLS all skip policies:
 #     Verification_Log, PostgreSQL row security). It cannot be checked here because
 #     settings must not open connections; SharedConfig.ready() does it.
+#  8. The WebAuthn RP ID is the exact app host (ADR 0002). A deployed environment that
+#     still says `localhost` would enrol passkeys nobody can use from the real host, so
+#     it refuses to boot until WEBAUTHN_RP_ID and WEBAUTHN_ORIGINS name the host.
 # ---------------------------------------------------------------------------------------
 def _refuse(reason: str) -> None:
     raise ImproperlyConfigured(f"Refusing to boot: {reason}")
@@ -442,6 +472,13 @@ if IS_DEPLOYED_ENVIRONMENT and ENVIRONMENT != MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT
         )
 if IS_DEPLOYED_ENVIRONMENT and STORAGE_BACKEND == "local":
     _refuse(f"STORAGE_BACKEND=local on deployed environment {ENVIRONMENT!r}. Rule 6.")
+if IS_DEPLOYED_ENVIRONMENT and (
+    WEBAUTHN_RP_ID in {"", "localhost"} or any("localhost" in origin for origin in WEBAUTHN_ORIGINS)
+):
+    _refuse(
+        f"WEBAUTHN_RP_ID={WEBAUTHN_RP_ID!r} / WEBAUTHN_ORIGINS={WEBAUTHN_ORIGINS!r} on deployed "
+        f"environment {ENVIRONMENT!r}. Rule 8: set both to the app host (ADR 0002)."
+    )
 if STORAGE_BACKEND not in {"local", "s3"}:
     _refuse(f"STORAGE_BACKEND={STORAGE_BACKEND!r} is not one of local, s3.")
 

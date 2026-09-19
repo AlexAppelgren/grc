@@ -28,11 +28,16 @@ from apps.shared.permissions import (
 
 # (table, constraint name). The constraint must compare the requester and approver
 # columns: CHECK (approved_by_id IS NULL OR approved_by_id <> requested_by_id).
-FOUR_EYES_TABLES: list[tuple[str, str]] = []
+# Chunk 2 adds the footprint change request (FP-02) and the proposal (PRO-02).
+FOUR_EYES_TABLES: list[tuple[str, str]] = [
+    ("footprint_change_request", "footprint_change_request_four_eyes"),
+    ("proposal", "proposal_four_eyes"),
+]
 
 
 class FourEyesGuard(TestCase):
     def test_every_four_eyes_table_has_its_check_constraint(self) -> None:
+        self.assertGreaterEqual(len(FOUR_EYES_TABLES), 2, "chunk 2 registered the footprint request and the proposal")
         missing: list[str] = []
         with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
             for table, constraint in FOUR_EYES_TABLES:

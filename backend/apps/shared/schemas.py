@@ -5,11 +5,11 @@ shapes carry the app prefix."""
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
+from django.conf import settings
 from ninja import Schema
-from pydantic import ConfigDict, RootModel
+from pydantic import ConfigDict, Field, RootModel
 from pydantic.alias_generators import to_camel
 
 
@@ -21,15 +21,20 @@ class ProductInfo(CamelSchema):
     product_name: str
 
 
-class MeResponse(CamelSchema):
-    """Phase 0 shape of GET /me: the principal only. Chunk 1 adds the user, tenant, roles
-    and queue counts of the designed `Me` (contract_drift_pending.txt)."""
+class PageQuery(Schema):
+    """Pagination on every list (playbook 10): `limit` default 20, max 100, `offset`.
+    The numbers come from settings; a value above the maximum is a 422, not a clamp."""
 
-    kind: str
-    subject_id: uuid.UUID
-    tenant_id: uuid.UUID | None
-    permissions: list[str]
-    scopes: list[str]
+    limit: int = Field(default=settings.API_PAGE_SIZE_DEFAULT, ge=1, le=settings.API_PAGE_SIZE_MAX)
+    offset: int = Field(default=0, ge=0)
+
+
+class MailOutboxMessage(CamelSchema):
+    """One message the mock mailer sent, for E2E journeys (playbook 8.3)."""
+
+    to: str
+    subject: str
+    body: str
 
 
 class VocabularyEntry(CamelSchema):

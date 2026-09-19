@@ -1,12 +1,771 @@
 {
   "components": {
     "schemas": {
-      "MeResponse": {
-        "description": "Phase 0 shape of GET /me: the principal only. Chunk 1 adds the user, tenant, roles\nand queue counts of the designed `Me` (contract_drift_pending.txt).",
+      "ApiKeyCreate": {
         "properties": {
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "scopes"
+        ],
+        "title": "ApiKeyCreate",
+        "type": "object"
+      },
+      "ApiKeyCreated": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "keyPrefix": {
+            "title": "Keyprefix",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "plainKey": {
+            "title": "Plainkey",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "keyPrefix",
+          "scopes",
+          "createdAt",
+          "expiresAt",
+          "plainKey"
+        ],
+        "title": "ApiKeyCreated",
+        "type": "object"
+      },
+      "ApiKeyOut": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "keyPrefix": {
+            "title": "Keyprefix",
+            "type": "string"
+          },
+          "lastUsedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastusedat"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revokedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revokedat"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "keyPrefix",
+          "scopes",
+          "createdAt",
+          "expiresAt",
+          "revokedAt",
+          "lastUsedAt"
+        ],
+        "title": "ApiKeyOut",
+        "type": "object"
+      },
+      "ApiKeysPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ApiKeysPage",
+        "type": "object"
+      },
+      "CodeRequestBody": {
+        "properties": {
+          "email": {
+            "maxLength": 254,
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "CodeRequestBody",
+        "type": "object"
+      },
+      "CodeVerifyBody": {
+        "properties": {
+          "code": {
+            "maxLength": 12,
+            "title": "Code",
+            "type": "string"
+          },
+          "email": {
+            "maxLength": 254,
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "code"
+        ],
+        "title": "CodeVerifyBody",
+        "type": "object"
+      },
+      "ConsoleReissueBody": {
+        "properties": {
+          "outOfBandCheck": {
+            "maxLength": 1000,
+            "title": "Outofbandcheck",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "title": "Reason",
+            "type": "string"
+          },
+          "ticketRef": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Ticketref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "outOfBandCheck"
+        ],
+        "title": "ConsoleReissueBody",
+        "type": "object"
+      },
+      "Empty": {
+        "description": "`{}`: the neutral answer of the code request and the accepted re-issue.",
+        "properties": {},
+        "title": "Empty",
+        "type": "object"
+      },
+      "FootprintDecisionBody": {
+        "properties": {
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "FootprintDecisionBody",
+        "type": "object"
+      },
+      "FootprintDimension": {
+        "properties": {
+          "allSelected": {
+            "default": false,
+            "title": "Allselected",
+            "type": "boolean"
+          },
+          "dimension": {
+            "$ref": "#/components/schemas/TaxonomyDimensionRef"
+          },
+          "restrictsFootprint": {
+            "title": "Restrictsfootprint",
+            "type": "boolean"
+          },
+          "terms": {
+            "items": {
+              "$ref": "#/components/schemas/TermRef"
+            },
+            "title": "Terms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dimension",
+          "restrictsFootprint"
+        ],
+        "title": "FootprintDimension",
+        "type": "object"
+      },
+      "FootprintDryRun": {
+        "description": "`POST /tenant/footprint/requests?dryRun=true` (playbook 15: dry run, preview,\ncommit): what the change would hide and reveal, with nothing persisted, no audit event\nand no approval started. The same `adds`, `removes` and `preview` the created request\nwould carry, so the screen renders the preview and the request from one shape.",
+        "properties": {
+          "adds": {
+            "items": {
+              "$ref": "#/components/schemas/FootprintTermRef"
+            },
+            "title": "Adds",
+            "type": "array"
+          },
+          "dryRun": {
+            "default": true,
+            "title": "Dryrun",
+            "type": "boolean"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/FootprintPreview"
+          },
+          "removes": {
+            "items": {
+              "$ref": "#/components/schemas/FootprintTermRef"
+            },
+            "title": "Removes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "preview"
+        ],
+        "title": "FootprintDryRun",
+        "type": "object"
+      },
+      "FootprintPreview": {
+        "description": "The named schema behind `footprint_change_request.preview` (JSONField).",
+        "properties": {
+          "cases": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FootprintPreviewCount"
+              }
+            ]
+          },
+          "obligations": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FootprintPreviewCount"
+              }
+            ]
+          }
+        },
+        "title": "FootprintPreview",
+        "type": "object"
+      },
+      "FootprintPreviewCount": {
+        "description": "What a change would hide and reveal for one record kind. `available` is false while\nthe table does not exist yet (chunk 2 has no obligations or cases): zeros with\n`available:false` say \"not counted\", never \"none\" (playbook 4.4).",
+        "properties": {
+          "available": {
+            "default": false,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "hidden": {
+            "default": 0,
+            "title": "Hidden",
+            "type": "integer"
+          },
+          "revealed": {
+            "default": 0,
+            "title": "Revealed",
+            "type": "integer"
+          }
+        },
+        "title": "FootprintPreviewCount",
+        "type": "object"
+      },
+      "FootprintRequestBody": {
+        "properties": {
+          "adds": {
+            "items": {
+              "$ref": "#/components/schemas/FootprintTermSelector"
+            },
+            "title": "Adds",
+            "type": "array"
+          },
+          "removes": {
+            "items": {
+              "$ref": "#/components/schemas/FootprintTermSelector"
+            },
+            "title": "Removes",
+            "type": "array"
+          }
+        },
+        "title": "FootprintRequestBody",
+        "type": "object"
+      },
+      "FootprintRequestPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FootprintRequestRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "FootprintRequestPage",
+        "type": "object"
+      },
+      "FootprintRequestQuery": {
+        "properties": {
+          "dryRun": {
+            "default": false,
+            "title": "Dryrun",
+            "type": "boolean"
+          }
+        },
+        "title": "FootprintRequestQuery",
+        "type": "object"
+      },
+      "FootprintRequestRow": {
+        "properties": {
+          "adds": {
+            "items": {
+              "$ref": "#/components/schemas/FootprintTermRef"
+            },
+            "title": "Adds",
+            "type": "array"
+          },
+          "decidedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decidedat"
+          },
+          "decidedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decisionNote": {
+            "default": "",
+            "title": "Decisionnote",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/FootprintPreview"
+          },
+          "removes": {
+            "items": {
+              "$ref": "#/components/schemas/FootprintTermRef"
+            },
+            "title": "Removes",
+            "type": "array"
+          },
+          "requestedAt": {
+            "format": "date-time",
+            "title": "Requestedat",
+            "type": "string"
+          },
+          "requestedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "requestedAt",
+          "preview"
+        ],
+        "title": "FootprintRequestRow",
+        "type": "object"
+      },
+      "FootprintTermRef": {
+        "properties": {
+          "dimension": {
+            "title": "Dimension",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "dimension"
+        ],
+        "title": "FootprintTermRef",
+        "type": "object"
+      },
+      "FootprintTermSelector": {
+        "properties": {
+          "dimension": {
+            "title": "Dimension",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dimension",
+          "key"
+        ],
+        "title": "FootprintTermSelector",
+        "type": "object"
+      },
+      "FootprintView": {
+        "properties": {
+          "dimensions": {
+            "items": {
+              "$ref": "#/components/schemas/FootprintDimension"
+            },
+            "title": "Dimensions",
+            "type": "array"
+          },
+          "pendingRequest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FootprintRequestRow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "dimensions"
+        ],
+        "title": "FootprintView",
+        "type": "object"
+      },
+      "InvitationCodeVerifyBody": {
+        "description": "The invitation path: the link's token names the account, so no address travels.\nThe token rides in the body, never the path, so no access log holds it (F6).",
+        "properties": {
+          "code": {
+            "maxLength": 12,
+            "title": "Code",
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 128,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "code"
+        ],
+        "title": "InvitationCodeVerifyBody",
+        "type": "object"
+      },
+      "InvitationOut": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
           "kind": {
             "title": "Kind",
             "type": "string"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleRef"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "roles",
+          "title",
+          "kind",
+          "status",
+          "createdAt",
+          "expiresAt"
+        ],
+        "title": "InvitationOut",
+        "type": "object"
+      },
+      "InvitationsPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InvitationOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "InvitationsPage",
+        "type": "object"
+      },
+      "JurisdictionRow": {
+        "description": "`GET /reference/jurisdictions` (I18N-01). A reference read: a short fixed list that\nnever paginates, like `GET /reference/languages` (INPUT_DELTAS \u00a77).",
+        "properties": {
+          "defaultLanguage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TermRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "parentKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentkey"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "JurisdictionRow",
+        "type": "object"
+      },
+      "MailOutboxMessage": {
+        "description": "One message the mock mailer sent, for E2E journeys (playbook 8.3).",
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "to": {
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "subject",
+          "body"
+        ],
+        "title": "MailOutboxMessage",
+        "type": "object"
+      },
+      "Me": {
+        "properties": {
+          "enrolmentPending": {
+            "title": "Enrolmentpending",
+            "type": "boolean"
+          },
+          "passkeyCount": {
+            "title": "Passkeycount",
+            "type": "integer"
           },
           "permissions": {
             "items": {
@@ -15,39 +774,650 @@
             "title": "Permissions",
             "type": "array"
           },
-          "scopes": {
+          "platformRoles": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/RoleRef"
             },
-            "title": "Scopes",
+            "title": "Platformroles",
             "type": "array"
           },
-          "subjectId": {
-            "format": "uuid",
-            "title": "Subjectid",
-            "type": "string"
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleRef"
+            },
+            "title": "Roles",
+            "type": "array"
           },
-          "tenantId": {
+          "stepUpValidUntil": {
             "anyOf": [
               {
-                "format": "uuid",
+                "format": "date-time",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Tenantid"
+            "title": "Stepupvaliduntil"
+          },
+          "tenant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeTenant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "user": {
+            "$ref": "#/components/schemas/MeUser"
           }
         },
         "required": [
-          "kind",
-          "subjectId",
-          "tenantId",
+          "user",
+          "tenant",
+          "roles",
           "permissions",
-          "scopes"
+          "platformRoles",
+          "enrolmentPending",
+          "passkeyCount",
+          "stepUpValidUntil"
         ],
-        "title": "MeResponse",
+        "title": "Me",
+        "type": "object"
+      },
+      "MePatch": {
+        "properties": {
+          "locale": {
+            "anyOf": [
+              {
+                "maxLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "MePatch",
+        "type": "object"
+      },
+      "MeTenant": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "timezone"
+        ],
+        "title": "MeTenant",
+        "type": "object"
+      },
+      "MeUser": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "locale"
+        ],
+        "title": "MeUser",
+        "type": "object"
+      },
+      "MemberInvite": {
+        "properties": {
+          "email": {
+            "maxLength": 254,
+            "title": "Email",
+            "type": "string"
+          },
+          "roleKeys": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Rolekeys",
+            "type": "array"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "roleKeys"
+        ],
+        "title": "MemberInvite",
+        "type": "object"
+      },
+      "MemberOut": {
+        "properties": {
+          "activeSessions": {
+            "title": "Activesessions",
+            "type": "integer"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastseenat"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "passkeyCount": {
+            "title": "Passkeycount",
+            "type": "integer"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleRef"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "userId": {
+            "format": "uuid",
+            "title": "Userid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "email",
+          "name",
+          "status",
+          "roles",
+          "title",
+          "lastSeenAt",
+          "passkeyCount",
+          "activeSessions"
+        ],
+        "title": "MemberOut",
+        "type": "object"
+      },
+      "MemberPatch": {
+        "properties": {
+          "roleKeys": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rolekeys"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "MemberPatch",
+        "type": "object"
+      },
+      "MembersPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MemberOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "MembersPage",
+        "type": "object"
+      },
+      "Onboarding": {
+        "properties": {
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/OnboardingStep"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "stepsDone": {
+            "title": "Stepsdone",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "stepsDone",
+          "steps"
+        ],
+        "title": "Onboarding",
+        "type": "object"
+      },
+      "OnboardingStep": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "done"
+        ],
+        "title": "OnboardingStep",
+        "type": "object"
+      },
+      "PageQuery": {
+        "description": "Pagination on every list (playbook 10): `limit` default 20, max 100, `offset`.\nThe numbers come from settings; a value above the maximum is a 422, not a clamp.",
+        "properties": {
+          "limit": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Offset",
+            "type": "integer"
+          }
+        },
+        "title": "PageQuery",
+        "type": "object"
+      },
+      "PasskeyAssertBody": {
+        "properties": {
+          "credential": {
+            "$ref": "#/components/schemas/PasskeyAuthenticationCredential"
+          }
+        },
+        "required": [
+          "credential"
+        ],
+        "title": "PasskeyAssertBody",
+        "type": "object"
+      },
+      "PasskeyAuthenticationCredential": {
+        "description": "What the browser returns from `get()`, serialised with base64url fields.",
+        "properties": {
+          "authenticatorAttachment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authenticatorattachment"
+          },
+          "clientExtensionResults": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientextensionresults"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "rawId": {
+            "title": "Rawid",
+            "type": "string"
+          },
+          "response": {
+            "$ref": "#/components/schemas/WebAuthnAssertionResponse"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "rawId",
+          "type",
+          "response"
+        ],
+        "title": "PasskeyAuthenticationCredential",
+        "type": "object"
+      },
+      "PasskeyOut": {
+        "properties": {
+          "backedUp": {
+            "title": "Backedup",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "deviceType": {
+            "title": "Devicetype",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lastUsedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastusedat"
+          },
+          "nickname": {
+            "title": "Nickname",
+            "type": "string"
+          },
+          "transports": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Transports",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "nickname",
+          "deviceType",
+          "backedUp",
+          "transports",
+          "createdAt",
+          "lastUsedAt"
+        ],
+        "title": "PasskeyOut",
+        "type": "object"
+      },
+      "PasskeyPatch": {
+        "properties": {
+          "nickname": {
+            "maxLength": 100,
+            "title": "Nickname",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nickname"
+        ],
+        "title": "PasskeyPatch",
+        "type": "object"
+      },
+      "PasskeyRegisterBody": {
+        "properties": {
+          "credential": {
+            "$ref": "#/components/schemas/PasskeyRegistrationCredential"
+          },
+          "nickname": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nickname"
+          }
+        },
+        "required": [
+          "credential"
+        ],
+        "title": "PasskeyRegisterBody",
+        "type": "object"
+      },
+      "PasskeyRegistered": {
+        "properties": {
+          "accessToken": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accesstoken"
+          },
+          "expiresIn": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresin"
+          },
+          "passkey": {
+            "$ref": "#/components/schemas/PasskeyOut"
+          },
+          "sessionKind": {
+            "title": "Sessionkind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "passkey",
+          "accessToken",
+          "sessionKind",
+          "expiresIn"
+        ],
+        "title": "PasskeyRegistered",
+        "type": "object"
+      },
+      "PasskeyRegistrationCredential": {
+        "description": "What the browser returns from `create()`, serialised with base64url fields.",
+        "properties": {
+          "authenticatorAttachment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authenticatorattachment"
+          },
+          "clientExtensionResults": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clientextensionresults"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "rawId": {
+            "title": "Rawid",
+            "type": "string"
+          },
+          "response": {
+            "$ref": "#/components/schemas/WebAuthnAttestationResponse"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "rawId",
+          "type",
+          "response"
+        ],
+        "title": "PasskeyRegistrationCredential",
+        "type": "object"
+      },
+      "PermissionOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "group",
+          "description"
+        ],
+        "title": "PermissionOut",
+        "type": "object"
+      },
+      "PersonRef": {
+        "description": "A person on a record: id and name, the only personal data a screen or a log may carry\nabout them (playbook 4.7).",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "PersonRef",
         "type": "object"
       },
       "ProductInfo": {
@@ -62,9 +1432,2152 @@
         ],
         "title": "ProductInfo",
         "type": "object"
+      },
+      "ProposalAccepted": {
+        "description": "202 from a library-list write (VOC-07): nothing changed, a proposal is waiting.",
+        "properties": {
+          "proposal": {
+            "$ref": "#/components/schemas/ProposalRow"
+          }
+        },
+        "required": [
+          "proposal"
+        ],
+        "title": "ProposalAccepted",
+        "type": "object"
+      },
+      "ProposalActorRef": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ProposalActorRef",
+        "type": "object"
+      },
+      "ProposalApproveBody": {
+        "properties": {
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "ProposalApproveBody",
+        "type": "object"
+      },
+      "ProposalCreateBody": {
+        "properties": {
+          "agentRunId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agentrunid"
+          },
+          "changeId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changeid"
+          },
+          "effectiveFrom": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effectivefrom"
+          },
+          "fieldSources": {
+            "additionalProperties": true,
+            "title": "Fieldsources",
+            "type": "object"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "model": {
+            "default": "",
+            "title": "Model",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "sourceLabel": {
+            "default": "",
+            "title": "Sourcelabel",
+            "type": "string"
+          },
+          "sourceUrl": {
+            "default": "",
+            "title": "Sourceurl",
+            "type": "string"
+          },
+          "targetId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Targetid"
+          },
+          "targetType": {
+            "default": "",
+            "title": "Targettype",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title"
+        ],
+        "title": "ProposalCreateBody",
+        "type": "object"
+      },
+      "ProposalPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProposalRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ProposalPage",
+        "type": "object"
+      },
+      "ProposalQuery": {
+        "description": "Filters of the review queue, each optional: `status` and `kind` take one value or a\ncomma-separated list; `targetList` is a vocabulary list name or a taxonomy dimension\nkey and matches the proposals that change it (`payload.list` or `payload.dimension`).",
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "targetList": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Targetlist"
+          }
+        },
+        "title": "ProposalQuery",
+        "type": "object"
+      },
+      "ProposalRejectBody": {
+        "properties": {
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "rejectionCode": {
+            "default": "",
+            "title": "Rejectioncode",
+            "type": "string"
+          }
+        },
+        "title": "ProposalRejectBody",
+        "type": "object"
+      },
+      "ProposalRow": {
+        "properties": {
+          "agentRunId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agentrunid"
+          },
+          "appliedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appliedat"
+          },
+          "changeId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changeid"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effectivefrom"
+          },
+          "fieldSources": {
+            "additionalProperties": true,
+            "title": "Fieldsources",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "model": {
+            "default": "",
+            "title": "Model",
+            "type": "string"
+          },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "proposedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposalActorRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rejectionCode": {
+            "default": "",
+            "title": "Rejectioncode",
+            "type": "string"
+          },
+          "reviewNote": {
+            "default": "",
+            "title": "Reviewnote",
+            "type": "string"
+          },
+          "reviewedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewedat"
+          },
+          "reviewedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposalActorRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scopeSuggestion": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Scopesuggestion",
+            "type": "array"
+          },
+          "sourceLabel": {
+            "default": "",
+            "title": "Sourcelabel",
+            "type": "string"
+          },
+          "sourceUrl": {
+            "default": "",
+            "title": "Sourceurl",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "targetId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Targetid"
+          },
+          "targetType": {
+            "default": "",
+            "title": "Targettype",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "title",
+          "origin",
+          "createdAt"
+        ],
+        "title": "ProposalRow",
+        "type": "object"
+      },
+      "RefreshResult": {
+        "properties": {
+          "accessToken": {
+            "title": "Accesstoken",
+            "type": "string"
+          },
+          "expiresIn": {
+            "title": "Expiresin",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "accessToken",
+          "expiresIn"
+        ],
+        "title": "RefreshResult",
+        "type": "object"
+      },
+      "RoleCreate": {
+        "properties": {
+          "key": {
+            "maxLength": 80,
+            "title": "Key",
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Permissions",
+            "type": "array"
+          },
+          "usageNote": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Usagenote",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "labels",
+          "permissions"
+        ],
+        "title": "RoleCreate",
+        "type": "object"
+      },
+      "RoleOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "isSystem": {
+            "title": "Issystem",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Permissions",
+            "type": "array"
+          },
+          "usageNote": {
+            "title": "Usagenote",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "label",
+          "labels",
+          "usageNote",
+          "permissions",
+          "isSystem",
+          "active"
+        ],
+        "title": "RoleOut",
+        "type": "object"
+      },
+      "RolePatch": {
+        "properties": {
+          "labels": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labels"
+          },
+          "permissions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissions"
+          },
+          "usageNote": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usagenote"
+          }
+        },
+        "title": "RolePatch",
+        "type": "object"
+      },
+      "RoleRef": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "RoleRef",
+        "type": "object"
+      },
+      "SecurityEventOut": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "event": {
+            "title": "Event",
+            "type": "string"
+          },
+          "failureReason": {
+            "title": "Failurereason",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "ip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "title": "Occurredat",
+            "type": "string"
+          },
+          "success": {
+            "title": "Success",
+            "type": "boolean"
+          },
+          "userAgent": {
+            "title": "Useragent",
+            "type": "string"
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userid"
+          }
+        },
+        "required": [
+          "id",
+          "occurredAt",
+          "method",
+          "event",
+          "success",
+          "failureReason",
+          "userId",
+          "email",
+          "ip",
+          "userAgent"
+        ],
+        "title": "SecurityEventOut",
+        "type": "object"
+      },
+      "SecurityLogPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SecurityEventOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "SecurityLogPage",
+        "type": "object"
+      },
+      "SessionOut": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "current": {
+            "title": "Current",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "ip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "title": "Lastseenat",
+            "type": "string"
+          },
+          "userAgent": {
+            "title": "Useragent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "current",
+          "createdAt",
+          "lastSeenAt",
+          "ip",
+          "userAgent"
+        ],
+        "title": "SessionOut",
+        "type": "object"
+      },
+      "SessionTokens": {
+        "properties": {
+          "accessToken": {
+            "title": "Accesstoken",
+            "type": "string"
+          },
+          "expiresIn": {
+            "title": "Expiresin",
+            "type": "integer"
+          },
+          "sessionKind": {
+            "title": "Sessionkind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken",
+          "sessionKind",
+          "expiresIn"
+        ],
+        "title": "SessionTokens",
+        "type": "object"
+      },
+      "StepUpResult": {
+        "properties": {
+          "assertionId": {
+            "format": "uuid",
+            "title": "Assertionid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assertionId",
+          "expiresAt"
+        ],
+        "title": "StepUpResult",
+        "type": "object"
+      },
+      "TaxonomyDimensionPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VocabularyRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "TaxonomyDimensionPage",
+        "type": "object"
+      },
+      "TaxonomyDimensionRef": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "TaxonomyDimensionRef",
+        "type": "object"
+      },
+      "TaxonomyTermCreateBody": {
+        "properties": {
+          "dimension": {
+            "title": "Dimension",
+            "type": "string"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent"
+          },
+          "usageNote": {
+            "default": "",
+            "title": "Usagenote",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dimension",
+          "labels"
+        ],
+        "title": "TaxonomyTermCreateBody",
+        "type": "object"
+      },
+      "TaxonomyTermPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyTermRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "TaxonomyTermPage",
+        "type": "object"
+      },
+      "TaxonomyTermQuery": {
+        "properties": {
+          "dimension": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dimension"
+          },
+          "includeRetired": {
+            "default": false,
+            "title": "Includeretired",
+            "type": "boolean"
+          }
+        },
+        "title": "TaxonomyTermQuery",
+        "type": "object"
+      },
+      "TaxonomyTermRow": {
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "dimension": {
+            "$ref": "#/components/schemas/TaxonomyDimensionRef"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "isSystem": {
+            "default": false,
+            "title": "Issystem",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
+          "parentKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentkey"
+          },
+          "sortOrder": {
+            "default": 0,
+            "title": "Sortorder",
+            "type": "integer"
+          },
+          "usageNote": {
+            "default": "",
+            "title": "Usagenote",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "label",
+          "dimension"
+        ],
+        "title": "TaxonomyTermRow",
+        "type": "object"
+      },
+      "TenantOut": {
+        "properties": {
+          "contentLanguages": {
+            "items": {
+              "$ref": "#/components/schemas/RoleRef"
+            },
+            "title": "Contentlanguages",
+            "type": "array"
+          },
+          "defaultLanguage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoleRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "onboarding": {
+            "$ref": "#/components/schemas/Onboarding"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "timezone",
+          "status",
+          "defaultLanguage",
+          "contentLanguages",
+          "onboarding"
+        ],
+        "title": "TenantOut",
+        "type": "object"
+      },
+      "TenantPatch": {
+        "properties": {
+          "contentLanguages": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contentlanguages"
+          },
+          "defaultLanguage": {
+            "anyOf": [
+              {
+                "maxLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Defaultlanguage"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          }
+        },
+        "title": "TenantPatch",
+        "type": "object"
+      },
+      "TermRef": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "TermRef",
+        "type": "object"
+      },
+      "VocabularyCreateBody": {
+        "description": "`key` is optional: it is slugified from the English label when absent, because a\nperson types a label and never a key. `force` is how a holder of vocab.manage insists\npast the near-duplicate hint (VOC-03, AC-VOC3).",
+        "properties": {
+          "extra": {
+            "additionalProperties": true,
+            "title": "Extra",
+            "type": "object"
+          },
+          "force": {
+            "default": false,
+            "title": "Force",
+            "type": "boolean"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
+          "sortOrder": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sortorder"
+          },
+          "usageNote": {
+            "default": "",
+            "title": "Usagenote",
+            "type": "string"
+          }
+        },
+        "required": [
+          "labels"
+        ],
+        "title": "VocabularyCreateBody",
+        "type": "object"
+      },
+      "VocabularyListEntry": {
+        "description": "One row of `GET /vocab`: the list of lists the admin screens and the agents read.",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "kinds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Kinds",
+            "type": "array"
+          },
+          "list": {
+            "title": "List",
+            "type": "string"
+          },
+          "proposable": {
+            "title": "Proposable",
+            "type": "boolean"
+          },
+          "retiredCount": {
+            "title": "Retiredcount",
+            "type": "integer"
+          },
+          "tier": {
+            "title": "Tier",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "list",
+          "tier",
+          "count",
+          "retiredCount",
+          "proposable"
+        ],
+        "title": "VocabularyListEntry",
+        "type": "object"
+      },
+      "VocabularyListPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VocabularyListEntry"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "VocabularyListPage",
+        "type": "object"
+      },
+      "VocabularyMergeBody": {
+        "properties": {
+          "into": {
+            "title": "Into",
+            "type": "string"
+          }
+        },
+        "required": [
+          "into"
+        ],
+        "title": "VocabularyMergeBody",
+        "type": "object"
+      },
+      "VocabularyMergeQuery": {
+        "properties": {
+          "dryRun": {
+            "default": false,
+            "title": "Dryrun",
+            "type": "boolean"
+          }
+        },
+        "title": "VocabularyMergeQuery",
+        "type": "object"
+      },
+      "VocabularyMerged": {
+        "description": "Both the dry run and the commit answer this shape, so the screen renders one\npreview and one result from the same fields (playbook 15: dry run, preview, commit).",
+        "properties": {
+          "dryRun": {
+            "title": "Dryrun",
+            "type": "boolean"
+          },
+          "from": {
+            "title": "From",
+            "type": "string"
+          },
+          "into": {
+            "title": "Into",
+            "type": "string"
+          },
+          "repointed": {
+            "title": "Repointed",
+            "type": "integer"
+          },
+          "usageCount": {
+            "title": "Usagecount",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from",
+          "into",
+          "usageCount",
+          "repointed",
+          "dryRun"
+        ],
+        "title": "VocabularyMerged",
+        "type": "object"
+      },
+      "VocabularyPatchBody": {
+        "properties": {
+          "extra": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labels"
+          },
+          "sortOrder": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sortorder"
+          },
+          "usageNote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usagenote"
+          }
+        },
+        "title": "VocabularyPatchBody",
+        "type": "object"
+      },
+      "VocabularyQuery": {
+        "properties": {
+          "includeRetired": {
+            "default": false,
+            "title": "Includeretired",
+            "type": "boolean"
+          }
+        },
+        "title": "VocabularyQuery",
+        "type": "object"
+      },
+      "VocabularyReorderBody": {
+        "properties": {
+          "keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Keys",
+            "type": "array"
+          }
+        },
+        "required": [
+          "keys"
+        ],
+        "title": "VocabularyReorderBody",
+        "type": "object"
+      },
+      "VocabularyRestored": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "restored": {
+            "title": "Restored",
+            "type": "boolean"
+          },
+          "usageCount": {
+            "title": "Usagecount",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "usageCount",
+          "restored"
+        ],
+        "title": "VocabularyRestored",
+        "type": "object"
+      },
+      "VocabularyRetireBody": {
+        "properties": {
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "title": "VocabularyRetireBody",
+        "type": "object"
+      },
+      "VocabularyRetired": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "usageCount": {
+            "title": "Usagecount",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "usageCount",
+          "retired"
+        ],
+        "title": "VocabularyRetired",
+        "type": "object"
+      },
+      "VocabularyRow": {
+        "description": "One vocabulary row as every surface reads it (playbook 15). `extra` carries the\nlist's own columns (an urgency's ordinal and SLA days, a dimension's\n`restrictsFootprint`) so one schema serves every list and the contract does not grow a\nshape per list.",
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "extra": {
+            "additionalProperties": true,
+            "title": "Extra",
+            "type": "object"
+          },
+          "isDefault": {
+            "default": false,
+            "title": "Isdefault",
+            "type": "boolean"
+          },
+          "isSystem": {
+            "default": false,
+            "title": "Issystem",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
+          "sortOrder": {
+            "default": 0,
+            "title": "Sortorder",
+            "type": "integer"
+          },
+          "usageCount": {
+            "default": 0,
+            "title": "Usagecount",
+            "type": "integer"
+          },
+          "usageNote": {
+            "default": "",
+            "title": "Usagenote",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "VocabularyRow",
+        "type": "object"
+      },
+      "VocabularyRowDetail": {
+        "description": "`GET /vocab/{list}/{key}`: the row plus which label is the original and which are\nmachine translations (I18N-01, D-12).",
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "extra": {
+            "additionalProperties": true,
+            "title": "Extra",
+            "type": "object"
+          },
+          "isDefault": {
+            "default": false,
+            "title": "Isdefault",
+            "type": "boolean"
+          },
+          "isSystem": {
+            "default": false,
+            "title": "Issystem",
+            "type": "boolean"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
+          "machineLanguages": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Machinelanguages",
+            "type": "array"
+          },
+          "originalLanguage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Originallanguage"
+          },
+          "sortOrder": {
+            "default": 0,
+            "title": "Sortorder",
+            "type": "integer"
+          },
+          "usageCount": {
+            "default": 0,
+            "title": "Usagecount",
+            "type": "integer"
+          },
+          "usageNote": {
+            "default": "",
+            "title": "Usagenote",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "VocabularyRowDetail",
+        "type": "object"
+      },
+      "VocabularyRowPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VocabularyRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "VocabularyRowPage",
+        "type": "object"
+      },
+      "VocabularySuggestBody": {
+        "properties": {
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
+          "usageNote": {
+            "default": "",
+            "title": "Usagenote",
+            "type": "string"
+          }
+        },
+        "required": [
+          "labels"
+        ],
+        "title": "VocabularySuggestBody",
+        "type": "object"
+      },
+      "VocabularySuggestionPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VocabularySuggestionRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "VocabularySuggestionPage",
+        "type": "object"
+      },
+      "VocabularySuggestionRow": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
+          "list": {
+            "title": "List",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "suggestedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "usageNote": {
+            "default": "",
+            "title": "Usagenote",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "list",
+          "key",
+          "status",
+          "createdAt"
+        ],
+        "title": "VocabularySuggestionRow",
+        "type": "object"
+      },
+      "WebAuthnAssertionResponse": {
+        "properties": {
+          "authenticatorData": {
+            "title": "Authenticatordata",
+            "type": "string"
+          },
+          "clientDataJSON": {
+            "title": "Clientdatajson",
+            "type": "string"
+          },
+          "signature": {
+            "title": "Signature",
+            "type": "string"
+          },
+          "userHandle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userhandle"
+          }
+        },
+        "required": [
+          "clientDataJSON",
+          "authenticatorData",
+          "signature"
+        ],
+        "title": "WebAuthnAssertionResponse",
+        "type": "object"
+      },
+      "WebAuthnAttestationResponse": {
+        "properties": {
+          "attestationObject": {
+            "title": "Attestationobject",
+            "type": "string"
+          },
+          "clientDataJSON": {
+            "title": "Clientdatajson",
+            "type": "string"
+          },
+          "transports": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transports"
+          }
+        },
+        "required": [
+          "clientDataJSON",
+          "attestationObject"
+        ],
+        "title": "WebAuthnAttestationResponse",
+        "type": "object"
+      },
+      "WebAuthnAuthenticatorSelection": {
+        "properties": {
+          "authenticatorAttachment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authenticatorattachment"
+          },
+          "requireResidentKey": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requireresidentkey"
+          },
+          "residentKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Residentkey"
+          },
+          "userVerification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userverification"
+          }
+        },
+        "title": "WebAuthnAuthenticatorSelection",
+        "type": "object"
+      },
+      "WebAuthnCreationOptions": {
+        "description": "`navigator.credentials.create({publicKey: ...})`, bytes as base64url.",
+        "properties": {
+          "attestation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attestation"
+          },
+          "authenticatorSelection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebAuthnAuthenticatorSelection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "challenge": {
+            "title": "Challenge",
+            "type": "string"
+          },
+          "excludeCredentials": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WebAuthnCredentialDescriptor"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excludecredentials"
+          },
+          "hints": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hints"
+          },
+          "pubKeyCredParams": {
+            "items": {
+              "$ref": "#/components/schemas/WebAuthnPubKeyCredParam"
+            },
+            "title": "Pubkeycredparams",
+            "type": "array"
+          },
+          "rp": {
+            "$ref": "#/components/schemas/WebAuthnRpEntity"
+          },
+          "timeout": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeout"
+          },
+          "user": {
+            "$ref": "#/components/schemas/WebAuthnUserEntity"
+          }
+        },
+        "required": [
+          "rp",
+          "user",
+          "challenge",
+          "pubKeyCredParams"
+        ],
+        "title": "WebAuthnCreationOptions",
+        "type": "object"
+      },
+      "WebAuthnCredentialDescriptor": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "transports": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transports"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type"
+        ],
+        "title": "WebAuthnCredentialDescriptor",
+        "type": "object"
+      },
+      "WebAuthnPubKeyCredParam": {
+        "properties": {
+          "alg": {
+            "title": "Alg",
+            "type": "integer"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "alg"
+        ],
+        "title": "WebAuthnPubKeyCredParam",
+        "type": "object"
+      },
+      "WebAuthnRequestOptions": {
+        "description": "`navigator.credentials.get({publicKey: ...})`, bytes as base64url.",
+        "properties": {
+          "allowCredentials": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WebAuthnCredentialDescriptor"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowcredentials"
+          },
+          "challenge": {
+            "title": "Challenge",
+            "type": "string"
+          },
+          "rpId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rpid"
+          },
+          "timeout": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeout"
+          },
+          "userVerification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userverification"
+          }
+        },
+        "required": [
+          "challenge"
+        ],
+        "title": "WebAuthnRequestOptions",
+        "type": "object"
+      },
+      "WebAuthnRpEntity": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "WebAuthnRpEntity",
+        "type": "object"
+      },
+      "WebAuthnUserEntity": {
+        "properties": {
+          "displayName": {
+            "title": "Displayname",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "displayName"
+        ],
+        "title": "WebAuthnUserEntity",
+        "type": "object"
       }
     },
     "securitySchemes": {
+      "ApiKeyAuth": {
+        "in": "header",
+        "name": "X-API-Key",
+        "type": "apiKey"
+      },
       "EnrolmentAuth": {
         "scheme": "bearer",
         "type": "http"
@@ -82,16 +3595,453 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/api/v1/me": {
-      "get": {
-        "operationId": "apps_shared_api_get_me",
+    "/api/v1/auth/code/request": {
+      "post": {
+        "operationId": "requestCode",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "summary": "Request Code",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/code/verify": {
+      "post": {
+        "operationId": "verifyCode",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeVerifyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTokens"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Verify Code",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/invitations/verify": {
+      "post": {
+        "operationId": "verifyInvitationCode",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationCodeVerifyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTokens"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Verify Invitation Code",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/invitations/{token}/open": {
+      "post": {
+        "operationId": "openInvitation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "summary": "Open Invitation",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/passkeys/authenticate/options": {
+      "post": {
+        "operationId": "passkeyAuthenticateOptions",
         "parameters": [],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MeResponse"
+                  "$ref": "#/components/schemas/WebAuthnRequestOptions"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Passkey Authenticate Options",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/passkeys/authenticate/verify": {
+      "post": {
+        "operationId": "passkeyAuthenticateVerify",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyAssertBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTokens"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Passkey Authenticate Verify",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/passkeys/register/options": {
+      "post": {
+        "operationId": "passkeyRegisterOptions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebAuthnCreationOptions"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "EnrolmentAuth": []
+          }
+        ],
+        "summary": "Passkey Register Options",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/passkeys/register/verify": {
+      "post": {
+        "operationId": "passkeyRegisterVerify",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyRegisterBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyRegistered"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "EnrolmentAuth": []
+          }
+        ],
+        "summary": "Passkey Register Verify",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "refreshSession",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshResult"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Refresh Session",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/sign-out": {
+      "post": {
+        "operationId": "signOut",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "summary": "Sign Out",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/step-up/options": {
+      "post": {
+        "operationId": "stepUpOptions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebAuthnRequestOptions"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Step Up Options",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/auth/step-up/verify": {
+      "post": {
+        "operationId": "stepUpVerify",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyAssertBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepUpResult"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Step Up Verify",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/console/tenants/{tenant_id}/members/{user_id}/reissue-enrolment": {
+      "post": {
+        "operationId": "consoleReissueEnrolment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsoleReissueBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Console Reissue Enrolment",
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/api/v1/e2e/mail-outbox": {
+      "get": {
+        "operationId": "e2eMailOutbox",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MailOutboxMessage"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "E2E Mail Outbox",
+        "tags": [
+          "Shared"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
                 }
               }
             },
@@ -108,13 +4058,566 @@
         ],
         "summary": "Get Me",
         "tags": [
-          "Shared"
+          "Identity"
+        ]
+      },
+      "patch": {
+        "operationId": "updateMe",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Update Me",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/me/passkeys": {
+      "get": {
+        "operationId": "listMyPasskeys",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PasskeyOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List My Passkeys",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/me/passkeys/{passkey_id}": {
+      "delete": {
+        "operationId": "removeMyPasskey",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "passkey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Passkey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Remove My Passkey",
+        "tags": [
+          "Identity"
+        ]
+      },
+      "patch": {
+        "operationId": "renameMyPasskey",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "passkey_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Passkey Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Rename My Passkey",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/me/sessions": {
+      "get": {
+        "operationId": "listMySessions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SessionOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List My Sessions",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/me/sessions/{session_id}": {
+      "delete": {
+        "operationId": "revokeMySession",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Revoke My Session",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/proposals": {
+      "get": {
+        "operationId": "listProposals",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "targetList",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Targetlist"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Proposals",
+        "tags": [
+          "Proposals"
+        ]
+      },
+      "post": {
+        "operationId": "createProposal",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalCreateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalRow"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalRow"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Create Proposal",
+        "tags": [
+          "Proposals"
+        ]
+      }
+    },
+    "/api/v1/proposals/{proposal_id}": {
+      "get": {
+        "operationId": "getProposal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "title": "Proposal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalRow"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Get Proposal",
+        "tags": [
+          "Proposals"
+        ]
+      }
+    },
+    "/api/v1/proposals/{proposal_id}/approve": {
+      "post": {
+        "operationId": "approveProposal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "title": "Proposal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalApproveBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalRow"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Approve Proposal",
+        "tags": [
+          "Proposals"
+        ]
+      }
+    },
+    "/api/v1/proposals/{proposal_id}/reject": {
+      "post": {
+        "operationId": "rejectProposal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "title": "Proposal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalRejectBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalRow"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Reject Proposal",
+        "tags": [
+          "Proposals"
+        ]
+      }
+    },
+    "/api/v1/reference/jurisdictions": {
+      "get": {
+        "operationId": "listJurisdictions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JurisdictionRow"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Jurisdictions",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/reference/languages": {
+      "get": {
+        "operationId": "listLanguages",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RoleRef"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Languages",
+        "tags": [
+          "Library"
+        ]
+      }
+    },
+    "/api/v1/reference/permissions": {
+      "get": {
+        "operationId": "listPermissions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PermissionOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Permissions",
+        "tags": [
+          "Identity"
         ]
       }
     },
     "/api/v1/reference/product": {
       "get": {
-        "operationId": "apps_shared_api_get_product",
+        "operationId": "getProduct",
         "parameters": [],
         "responses": {
           "200": {
@@ -131,6 +4634,1818 @@
         "summary": "Get Product",
         "tags": [
           "Shared"
+        ]
+      }
+    },
+    "/api/v1/taxonomy/dimensions": {
+      "get": {
+        "operationId": "listTaxonomyDimensions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyDimensionPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "List Taxonomy Dimensions",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/taxonomy/terms": {
+      "get": {
+        "operationId": "listTerms",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "dimension",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dimension"
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeRetired",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Includeretired",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomyTermPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "List Terms",
+        "tags": [
+          "Taxonomy"
+        ]
+      },
+      "post": {
+        "operationId": "createTerm",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaxonomyTermCreateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalAccepted"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Create Term",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/taxonomy/terms/{term_id}": {
+      "patch": {
+        "operationId": "updateTerm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "term_id",
+            "required": true,
+            "schema": {
+              "title": "Term Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VocabularyPatchBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalAccepted"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Update Term",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/tenant": {
+      "get": {
+        "operationId": "getTenant",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Get Tenant",
+        "tags": [
+          "Tenants"
+        ]
+      },
+      "patch": {
+        "operationId": "updateTenant",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Update Tenant",
+        "tags": [
+          "Tenants"
+        ]
+      }
+    },
+    "/api/v1/tenant/api-keys": {
+      "get": {
+        "operationId": "listApiKeys",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeysPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Api Keys",
+        "tags": [
+          "Identity"
+        ]
+      },
+      "post": {
+        "operationId": "createApiKey",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyCreated"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Create Api Key",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/api-keys/{key_id}": {
+      "delete": {
+        "operationId": "revokeApiKey",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Key Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Revoke Api Key",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/footprint": {
+      "get": {
+        "operationId": "getFootprint",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FootprintView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Get Footprint",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/tenant/footprint/requests": {
+      "get": {
+        "operationId": "listFootprintRequests",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FootprintRequestPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Footprint Requests",
+        "tags": [
+          "Taxonomy"
+        ]
+      },
+      "post": {
+        "operationId": "createFootprintRequest",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "dryRun",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Dryrun",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FootprintRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FootprintDryRun"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FootprintRequestRow"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Create Footprint Request",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/tenant/footprint/requests/{request_id}/approve": {
+      "post": {
+        "operationId": "approveFootprintRequest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FootprintDecisionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FootprintRequestRow"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Approve Footprint Request",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/tenant/footprint/requests/{request_id}/reject": {
+      "post": {
+        "operationId": "rejectFootprintRequest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FootprintDecisionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FootprintRequestRow"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Reject Footprint Request",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/tenant/footprint/requests/{request_id}/withdraw": {
+      "post": {
+        "operationId": "withdrawFootprintRequest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FootprintRequestRow"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Withdraw Footprint Request",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/tenant/invitations": {
+      "get": {
+        "operationId": "listInvitations",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationsPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Invitations",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/invitations/{invitation_id}": {
+      "delete": {
+        "operationId": "revokeInvitation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invitation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Revoke Invitation",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/invitations/{invitation_id}/resend": {
+      "post": {
+        "operationId": "resendInvitation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invitation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Resend Invitation",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/members": {
+      "get": {
+        "operationId": "listMembers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembersPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Members",
+        "tags": [
+          "Identity"
+        ]
+      },
+      "post": {
+        "operationId": "inviteMember",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberInvite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationOut"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Invite Member",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/members/{user_id}": {
+      "delete": {
+        "operationId": "deactivateMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Deactivate Member",
+        "tags": [
+          "Identity"
+        ]
+      },
+      "patch": {
+        "operationId": "updateMember",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Update Member",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/members/{user_id}/reissue-enrolment": {
+      "post": {
+        "operationId": "reissueEnrolment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Reissue Enrolment",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/members/{user_id}/sessions": {
+      "delete": {
+        "operationId": "revokeMemberSessions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Revoke Member Sessions",
+        "tags": [
+          "Identity"
+        ]
+      },
+      "get": {
+        "operationId": "listMemberSessions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SessionOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Member Sessions",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/roles": {
+      "get": {
+        "operationId": "listRoles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RoleOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Roles",
+        "tags": [
+          "Identity"
+        ]
+      },
+      "post": {
+        "operationId": "createRole",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleOut"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Create Role",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/roles/{key}": {
+      "patch": {
+        "operationId": "updateRole",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RolePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Update Role",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/roles/{key}/retire": {
+      "post": {
+        "operationId": "retireRole",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Retire Role",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/tenant/security-log": {
+      "get": {
+        "operationId": "listSecurityLog",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityLogPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Security Log",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/vocab": {
+      "get": {
+        "operationId": "listVocabularies",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularyListPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Vocabularies",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/vocab/{list_name}": {
+      "get": {
+        "operationId": "listVocabularyRows",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list_name",
+            "required": true,
+            "schema": {
+              "title": "List Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeRetired",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Includeretired",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularyRowPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "List Vocabulary Rows",
+        "tags": [
+          "Taxonomy"
+        ]
+      },
+      "post": {
+        "operationId": "createVocabularyRow",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list_name",
+            "required": true,
+            "schema": {
+              "title": "List Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VocabularyCreateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularyRow"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalAccepted"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Create Vocabulary Row",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/vocab/{list_name}/reorder": {
+      "post": {
+        "operationId": "reorderVocabulary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list_name",
+            "required": true,
+            "schema": {
+              "title": "List Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VocabularyReorderBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularyRowPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Reorder Vocabulary",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/vocab/{list_name}/suggest": {
+      "post": {
+        "operationId": "suggestVocabularyRow",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list_name",
+            "required": true,
+            "schema": {
+              "title": "List Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VocabularySuggestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularySuggestionRow"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalAccepted"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Suggest Vocabulary Row",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/vocab/{list_name}/suggestions": {
+      "get": {
+        "operationId": "listVocabularySuggestions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list_name",
+            "required": true,
+            "schema": {
+              "title": "List Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularySuggestionPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Vocabulary Suggestions",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/vocab/{list_name}/suggestions/{suggestion_id}/decline": {
+      "post": {
+        "operationId": "declineVocabularySuggestion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list_name",
+            "required": true,
+            "schema": {
+              "title": "List Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "suggestion_id",
+            "required": true,
+            "schema": {
+              "title": "Suggestion Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularySuggestionRow"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Decline Vocabulary Suggestion",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/vocab/{list_name}/{key}": {
+      "get": {
+        "operationId": "getVocabularyRow",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list_name",
+            "required": true,
+            "schema": {
+              "title": "List Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularyRowDetail"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Get Vocabulary Row",
+        "tags": [
+          "Taxonomy"
+        ]
+      },
+      "patch": {
+        "operationId": "updateVocabularyRow",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list_name",
+            "required": true,
+            "schema": {
+              "title": "List Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VocabularyPatchBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularyRow"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalAccepted"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Update Vocabulary Row",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/vocab/{list_name}/{key}/merge": {
+      "post": {
+        "operationId": "mergeVocabularyRow",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list_name",
+            "required": true,
+            "schema": {
+              "title": "List Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dryRun",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Dryrun",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VocabularyMergeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularyMerged"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalAccepted"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Merge Vocabulary Row",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/vocab/{list_name}/{key}/restore": {
+      "post": {
+        "operationId": "restoreVocabularyRow",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list_name",
+            "required": true,
+            "schema": {
+              "title": "List Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularyRestored"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalAccepted"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Restore Vocabulary Row",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/vocab/{list_name}/{key}/retire": {
+      "post": {
+        "operationId": "retireVocabularyRow",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "list_name",
+            "required": true,
+            "schema": {
+              "title": "List Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VocabularyRetireBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocabularyRetired"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalAccepted"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Retire Vocabulary Row",
+        "tags": [
+          "Taxonomy"
         ]
       }
     }

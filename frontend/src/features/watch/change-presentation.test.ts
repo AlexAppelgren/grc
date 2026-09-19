@@ -38,7 +38,7 @@ describe('presentChange', () => {
   });
 
   it('urgency tone follows the kind, never the label', () => {
-    const tones = (['act_now', 'within_3_months', 'six_plus_months', 'monitor', 'no_action'] as const).map(
+    const tones = (['act_now', 'within_3_months', 'six_months_plus', 'monitor', 'no_action'] as const).map(
       (kind) => presentChange({ ...change, urgency: { key: kind, kind, label: 'Any label' } }, 'row')[1]?.tone,
     );
     expect(tones).toEqual(['negative', 'warning', 'notice', 'information', 'positive']);

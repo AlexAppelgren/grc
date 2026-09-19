@@ -1,16 +1,22 @@
-"""Mailer adapter (playbook 16). `mock` records every message in memory so a test can
-assert exactly what was (not) sent, which is how AC-ID1 ("a code request for an enrolled
-user sends nothing") is proven. `smtp` uses Django's SMTP backend with the MAIL_* settings.
+"""Mailer adapter (playbook 16). `mock` records every message in the cache so a test,
+and an E2E journey reading `GET /api/v1/e2e/mail-outbox` from the API process while a
+real worker sent the mail, can assert exactly what was (not) sent: that is how AC-ID1
+("a code request for an enrolled user sends nothing") is proven. Locmem in tests, Redis
+in E2E (security review 2026-09-19, finding F12). `smtp` uses Django's SMTP backend with
+the MAIL_* settings.
 
 Nothing here logs a recipient address or a body (playbook 4.7)."""
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from dataclasses import dataclass
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.mail import EmailMessage, get_connection
+
+MOCK_OUTBOX_CACHE_KEY = "mock-mailer:outbox"
 
 
 @dataclass(frozen=True)
@@ -27,19 +33,28 @@ class MailerAdapter(ABC):
     def send(self, mail: OutgoingMail) -> None: ...
 
 
-class MockMailer(MailerAdapter):
-    """Class-level outbox so the instance the code under test builds and the instance the
-    test inspects see the same list. `reset()` between tests."""
+class _OutboxMeta(ABCMeta):
+    """`MockMailer.sent` reads the outbox from the cache on every access, so the API
+    process sees what the worker process sent."""
+
+    @property
+    def sent(cls) -> list[OutgoingMail]:
+        return [OutgoingMail(to=to, subject=subject, body=body) for to, subject, body in cache.get(MOCK_OUTBOX_CACHE_KEY) or []]
+
+
+class MockMailer(MailerAdapter, metaclass=_OutboxMeta):
+    """The outbox is one cache entry that never expires; `reset()` between tests."""
 
     name = "mock"
-    sent: list[OutgoingMail] = []
 
     def send(self, mail: OutgoingMail) -> None:
-        MockMailer.sent.append(mail)
+        items: list[tuple[str, str, str]] = list(cache.get(MOCK_OUTBOX_CACHE_KEY) or [])
+        items.append((mail.to, mail.subject, mail.body))
+        cache.set(MOCK_OUTBOX_CACHE_KEY, items, timeout=None)
 
     @classmethod
     def reset(cls) -> None:
-        cls.sent.clear()
+        cache.delete(MOCK_OUTBOX_CACHE_KEY)
 
 
 class SmtpMailer(MailerAdapter):

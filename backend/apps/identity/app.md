@@ -32,17 +32,17 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| ID-01 | Invitation only, roles set at invite | M | R1 | pending |
-| ID-02 | First sign-in by one-time emailed code straight into passkey enrolment; the enrolment session can do nothing else | M | R1 | pending |
-| ID-03 | After the first passkey, passkey only; the code stops working for that account; no password anywhere | M | R1 | pending |
-| ID-04 | Users manage passkeys (add, rename, remove, never the last) and see and revoke sessions | M | R1 | pending |
-| ID-05 | Recovery: tenant admin re-issues enrolment behind step-up, audited, with notices; the last admin goes through platform support with an out-of-band check | M | R1 | pending |
-| ID-06 | Step-up by fresh passkey assertion on the sensitive actions of playbook 4.2, recorded on the audit event | M | R1 | pending |
+| ID-01 | Invitation only, roles set at invite | M | R1 | built |
+| ID-02 | First sign-in by one-time emailed code straight into passkey enrolment; the enrolment session can do nothing else | M | R1 | built |
+| ID-03 | After the first passkey, passkey only; the code stops working for that account; no password anywhere | M | R1 | built |
+| ID-04 | Users manage passkeys (add, rename, remove, never the last) and see and revoke sessions | M | R1 | built |
+| ID-05 | Recovery: tenant admin re-issues enrolment behind step-up, audited, with notices; the last admin goes through platform support with an out-of-band check | M | R1 | built |
+| ID-06 | Step-up by fresh passkey assertion on the sensitive actions of playbook 4.2, recorded on the audit event | M | R1 | built |
 | ID-07 | Tenant credential policy: synced passkeys allowed, or attested device-bound authenticators required | S | R2 | pending |
 | ID-08 | Tenant session policy: idle and absolute limits within platform maximums | S | R2 | pending |
-| ID-09 | Permissions are code, roles are rows: seeded system roles plus tenant-defined roles; a tenant always keeps one admin | M | R1 | pending |
-| ID-10 | Scoped API keys for agents and integrations, shown once, stored hashed, revocable, with last use | M | R1 | pending |
-| ID-11 | Security log of sign-ins, failures, enrolments, recoveries and key use | M | R1 | pending |
+| ID-09 | Permissions are code, roles are rows: seeded system roles plus tenant-defined roles; a tenant always keeps one admin | M | R1 | built |
+| ID-10 | Scoped API keys for agents and integrations, shown once, stored hashed, revocable, with last use | M | R1 | built |
+| ID-11 | Security log of sign-ins, failures, enrolments, recoveries and key use | M | R1 | built |
 | ID-12 | SSO (OIDC, SAML), verified domains and SCIM as a tenant option | C | R3 | pending |
 | ID-13 | Optional IP allow-list per tenant | C | R3 | pending |
 
@@ -87,6 +87,8 @@ Given a valid invitation link
 When the invitee opens it
 Then one six-digit code is sent to the invited address through the mailer adapter
 And the code is stored hashed with a 10 minute expiry and 5 allowed attempts (settings)
+And the invitee verifies with the link's token and the code alone, both in the request body, and holds an enrolment session
+And a code issued for any other address does not verify with that token
 And a sixth request for the same address within the window answers 429
 ```
 
@@ -113,8 +115,11 @@ Then it answers 403 with code "enrolment_only"
 ### ID-S5 — The first passkey activates the account and asks for a second one `@integration` `@e2e` (ID-02, ID-03)
 ```gherkin
 Given Anna holds an enrolment session and registers a passkey with user verification
+And she is not asked to name it
 When the registration verifies
 Then a webauthn_credential row stores credential id, public key, sign count, transports, AAGUID, backup flags, nickname, created and last used
+And the nickname is derived, not supplied: the authenticator's name from its AAGUID, else the browser and platform ("Chrome on Windows"), else the transport ("Security key", "Phone", "Passkey")
+And the confirmation shows that name
 And her account becomes active and the enrolment session is replaced by a normal session
 And the screen prompts her to add a second passkey, which she may skip
 ```
@@ -159,12 +164,13 @@ Then it answers 401 and the whole session is revoked
 
 ### ID-S10 — A user adds and renames passkeys and can never remove the last one `@integration` `@e2e` (ID-04)
 ```gherkin
-Given Anna holds one passkey named "Laptop"
-When she adds a second passkey and names it "Phone"
-Then "My passkeys" lists both with created and last used
-When she renames "Phone" to "Work phone"
+Given Anna enrolled a passkey from Chrome on Windows, named "Chrome on Windows"
+When she adds a second passkey from the same browser without naming it
+Then it is named "Chrome on Windows (2)", because a derived name is unique per person
+And "My passkeys" lists both with created and last used
+When she renames "Chrome on Windows (2)" to "Work phone"
 Then the nickname changes and nothing else does
-When she removes "Laptop"
+When she removes "Chrome on Windows"
 Then it is gone
 When she tries to remove "Work phone"
 Then the request answers 409 with code "last_passkey"
@@ -295,9 +301,9 @@ Then the request answers 403 with code "ip_not_allowed" and the security log rec
 ### ID-S25 — J-1: invitation to passkey sign-in `@e2e` (ID-01, ID-02, ID-03, AC-ID1, J-1)
 ```gherkin
 Given the seeded user awaiting enrolment and the E2E flag making the code deterministic
-When they open the invitation link, enter the code, enrol a passkey through the virtual authenticator, sign out and sign in with the passkey
+When they open the invitation link, enter only the code, enrol a passkey through the virtual authenticator, sign out and sign in with the passkey
 Then every step succeeds through the real UI
-When they request a code for their address
+When they request a code for their address from the sign-in page's "First time here?" path
 Then the page shows the same neutral message and the mailer sent nothing
 ```
 

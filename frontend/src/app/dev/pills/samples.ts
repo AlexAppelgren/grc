@@ -12,7 +12,7 @@ import type { ChangeFacts } from '@/features/watch/change-presentation';
 export const urgencies: readonly KindRef<UrgencyKind>[] = [
   { key: 'act-now', kind: 'act_now', label: 'Act now' },
   { key: 'within-3-months', kind: 'within_3_months', label: 'Within 3 months' },
-  { key: '6-plus-months', kind: 'six_plus_months', label: '6+ months' },
+  { key: '6-plus-months', kind: 'six_months_plus', label: '6+ months' },
   { key: 'monitor', kind: 'monitor', label: 'Monitor' },
   { key: 'no-action', kind: 'no_action', label: 'No action' },
 ];

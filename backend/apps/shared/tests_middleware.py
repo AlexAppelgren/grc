@@ -10,7 +10,7 @@ import logging
 from typing import Any, cast
 from unittest import mock
 
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.test.client import RequestFactory
 
@@ -66,13 +66,29 @@ class ServerTiming(TestCase):
         self.assertRegex(response["Server-Timing"], r"^app;dur=\d+\.\d$")
 
     @override_settings(API_BUDGET_MS=0)
-    def test_over_budget_logs_a_warning_with_the_path_only(self) -> None:
+    def test_over_budget_logs_a_warning_with_the_route_only(self) -> None:
         with self.assertLogs("apps.shared.middleware", level="WARNING") as logs:
             self.client.get("/api/v1/reference/product?secret=1")
         record = logs.records[0]
-        self.assertEqual(getattr(record, "path"), "/api/v1/reference/product")  # noqa: B009
+        self.assertIn("reference/product", getattr(record, "route"))  # noqa: B009
+        self.assertFalse(hasattr(record, "path"))
         self.assertEqual(getattr(record, "budget_ms"), 0)  # noqa: B009
         self.assertNotIn("secret", record.getMessage())
+
+    @override_settings(API_BUDGET_MS=0)
+    def test_over_budget_never_logs_a_path_parameter(self) -> None:
+        """Security review 2026-09-19, finding F6: the invitation token travels in the
+        path, so the over-budget warning logs the matched route, not the concrete path,
+        and a 404 logs no more than the first two segments."""
+        token = "secret-invitation-token-123"
+        with self.assertLogs("apps.shared.middleware", level="WARNING") as logs:
+            self.client.post(f"/api/v1/auth/invitations/{token}/open")
+        route = getattr(logs.records[0], "route")  # noqa: B009
+        self.assertNotIn(token, route)
+        self.assertIn("invitations", route)
+        with self.assertLogs("apps.shared.middleware", level="WARNING") as logs:
+            self.client.get(f"/no/such/{token}")
+        self.assertNotIn(token, getattr(logs.records[0], "route"))  # noqa: B009
 
 
 class ContentSecurityPolicy(SimpleTestCase):
@@ -84,6 +100,26 @@ class ContentSecurityPolicy(SimpleTestCase):
         response = self._run("/api/v1/me")
         self.assertIn("default-src 'none'", response["Content-Security-Policy"])
         self.assertIn("frame-ancestors 'none'", response["Content-Security-Policy"])
+
+    def test_every_response_carries_no_referrer_and_nosniff(self) -> None:
+        """Security review 2026-09-19, F28 (backend half): the invitation token is a URL
+        segment on the web app, so the API never lets a referrer out, and nothing it
+        answers may be sniffed into another content type."""
+        from django.conf import settings
+
+        response = self._run("/api/v1/reference/product")
+        self.assertEqual(response["Referrer-Policy"], "no-referrer")
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(settings.SECURE_REFERRER_POLICY, "no-referrer")
+        self.assertTrue(settings.SECURE_CONTENT_TYPE_NOSNIFF)
+        request = RequestFactory().get("/api/v1/me")
+
+        def already_set(_request: HttpRequest) -> HttpResponse:
+            answer = HttpResponse("ok")
+            answer["Referrer-Policy"] = "same-origin"
+            return answer
+
+        self.assertEqual(middleware.ContentSecurityPolicyMiddleware(already_set)(request)["Referrer-Policy"], "same-origin")
 
     @override_settings(CONTENT_SECURITY_POLICY_DOCS_PREFIXES=("/api/v1/docs",))
     def test_the_docs_page_gets_the_relaxed_policy(self) -> None:
@@ -127,6 +163,16 @@ class SentryScrubbers(SimpleTestCase):
             self.assertEqual(event["extra"]["record_id"], "r1")
             self.assertEqual(event["extra"]["nested"], {"comment": sentry_scrub.REDACTED, "ok": 1})
             self.assertEqual(event["breadcrumbs"]["values"][0]["data"]["question"], sentry_scrub.REDACTED)
+
+    def test_the_invitation_token_never_leaves_in_the_request_url(self) -> None:
+        """Security review 2026-09-19, finding F6: `request.url` is not covered by
+        `max_request_body_size`, and the invitation path carries the single-use token."""
+        event = self._event()
+        event["request"]["url"] = "https://api.example/api/v1/auth/invitations/tok-123_abc/open"
+        for hook in (sentry_scrub.before_send, sentry_scrub.before_send_transaction):
+            scrubbed = cast(dict, hook(cast(Any, dict(event, request=dict(event["request"]))), {}))
+            self.assertEqual(scrubbed["request"]["url"], f"https://api.example/api/v1/auth/invitations/{sentry_scrub.REDACTED}/open")
+        self.assertEqual(sentry_scrub.scrub_url("https://api.example/api/v1/reference/product?x=1"), "https://api.example/api/v1/reference/product?x=1")
 
     def test_settings_initialise_sentry_with_the_safe_flags_only_when_a_dsn_is_set(self) -> None:
         import importlib

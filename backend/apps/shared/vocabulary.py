@@ -28,8 +28,12 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.db import models
 
-# Content languages are rows (I18N-01); a label row references one by its code until the
-# language table lands in chunk 2, when this becomes a foreign key.
+from apps.shared.tenancy import LibraryModel
+
+# Content languages are rows (I18N-01); a label row references one by its code. The
+# `language` table exists since chunk 1; the column stays a code (validated against the
+# active rows by the logic that writes it) because turning it into a foreign key would
+# rewrite the identity app's role label tables, which chunk 2 does not touch.
 LANGUAGE_CODE_MAX_LENGTH = 8
 
 
@@ -73,6 +77,18 @@ class Vocabulary(models.Model):
         )
 
 
+class TenantVocabulary(Vocabulary):
+    """A tier-3 vocabulary: rows one tenant manages, under forced RLS (playbook 15). Keys
+    are unique per tenant. Declared here rather than by inheriting TenantModel beside
+    Vocabulary so there is exactly one `id` and the tenant column is explicit."""
+
+    tenant = models.ForeignKey("shared.Tenant", on_delete=models.PROTECT, related_name="+")
+
+    class Meta:
+        abstract = True
+        ordering = ["sort_order", "key"]
+
+
 class VocabularyLabel(models.Model):
     """One label of one vocabulary row in one language. `is_original` marks the language
     the row was written in; `is_machine` labels machine translations (D-12)."""
@@ -89,6 +105,41 @@ class VocabularyLabel(models.Model):
 
     def __str__(self) -> str:
         return f"{self.language}: {self.text}"
+
+
+class LibraryVocabulary(Vocabulary, LibraryModel):
+    """A tier-2 vocabulary (playbook 15): shared rows the platform curates, written only
+    by an approved proposal (apps/proposals/apply.py) or a reference seed, because a
+    change alters footprint matching and pickers for every tenant (VOC-07). The library
+    fence (LibraryModel) refuses any other write. `version` backs If-Match on the
+    proposal that relabels a row."""
+
+    version = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        abstract = True
+        ordering = ["sort_order", "key"]
+
+
+class LibraryVocabularyLabel(VocabularyLabel, LibraryModel):
+    """A label of a library vocabulary row or taxonomy term: under the same fence as the
+    row, because a relabel is a proposal (VOC-07)."""
+
+    class Meta:
+        abstract = True
+        ordering = ["language"]
+
+
+class TenantListVocabulary(TenantVocabulary):
+    """A tier-3 vocabulary a tenant admin manages through the generic vocabulary routes
+    (VOC-02). `version` backs If-Match on PATCH. Declared apart from TenantVocabulary so
+    the role tables of chunk 1 keep their column set."""
+
+    version = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        abstract = True
+        ordering = ["sort_order", "key"]
 
 
 def label_for(row: Vocabulary, language_order: list[str]) -> str:

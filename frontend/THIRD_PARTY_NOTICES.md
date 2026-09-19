@@ -30,6 +30,18 @@ to this notice. Modifications: the design tokens are compiled into
 `src/styles/tokens.generated.css` by `scripts/build-tokens.mjs`; the token
 values are not altered. Brand overrides live in `src/styles/brand.css`.
 
+## Passkey provider names (community list, no licence published)
+
+A new passkey is named after its provider ("Windows Hello", "Google Password
+Manager", "1Password") from the community-sourced list at
+https://github.com/passkeydeveloper/passkey-authenticator-aaguids
+(`aaguid.json`, fetched 2026-09-19). The names only, not the icons, are
+vendored in `backend/apps/identity/data/passkey_aaguid_names.tsv`, whose
+header records the commit. The repository publishes no licence, so no notice
+is required; this credit is a courtesy, and the list is used only for the one
+purpose its README names: naming passkeys in a person's own passkey list.
+Provider and product names belong to their owners.
+
 ## Adding a package that needs attribution
 
 When a new `@sebgroup/*` package is installed, add it to the list above; the

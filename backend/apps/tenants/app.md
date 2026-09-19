@@ -28,14 +28,14 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| TEN-01 | Tenant profile, timezone, default languages, onboarding checklist | M | R1 | pending |
+| TEN-01 | Tenant profile, timezone, default languages, onboarding checklist | M | R1 | built |
 | TEN-02 | Legal entities with licences, and products described the way obligations are scoped | M | R2 | pending |
 | TEN-03 | Teams as owners, so ownership survives a person leaving | S | R2 | pending |
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | pending |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | pending |
 | TEN-06 | Support access grants: visible to the tenant, time-boxed, logged | M | R2 | pending |
-| ADM-01 | Tenant admin: organisation, members and invitations, passkey re-enrolment, sessions, roles, footprint, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | pending |
-| ADM-03 | Admin duties are separate permissions | M | R1 | pending |
+| ADM-01 | Tenant admin: organisation, members and invitations, passkey re-enrolment, sessions, roles, footprint, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
+| ADM-03 | Admin duties are separate permissions | M | R1 | built |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 

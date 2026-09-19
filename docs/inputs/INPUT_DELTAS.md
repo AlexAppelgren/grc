@@ -110,8 +110,103 @@ here names it with its backticked `METHOD /path`.
   authentication. It answers 200 with every component named, or 503 naming
   the failing one (playbook 2.2).
 - `GET /me` exists from Phase 0 with the principal only (`SessionAuth` and
-  `EnrolmentAuth`, AC-ID2). Chunk 1 grows it to the designed shape.
+  `EnrolmentAuth`, AC-ID2). Chunk 1 gives it the shape the chunk 1 brief specifies:
+  `{user, tenant|null, roles[{key,kind,label}], permissions[], platformRoles[],
+  enrolmentPending, passkeyCount, stepUpValidUntil}`. The designed `counts` and
+  `lastVisitAt` wait for the home chunk (6), when there is a queue to count.
+- `PATCH /me` takes `{name?, locale?}` (chunk 1 brief); the designed
+  `notificationPrefs` move to the membership row and land with collaboration (chunk 10).
+- `GET /tenant` and `PATCH /tenant` (TEN-01, chunk 1 brief): explicit columns instead of
+  the designed `settings` blob and `region`. The response is `{id, name, slug, timezone,
+  status, defaultLanguage{key,kind,label}, contentLanguages[...], onboarding{stepsDone,
+  steps[{key,done}]}}`; the patch takes `{name?, timezone?, defaultLanguage?,
+  contentLanguages?}` as keys. Reminder, escalation and retention settings land with
+  the workflow policy (chunk 9) as columns of their own.
+- `GET /tenant/members` answers a page `{items, total}` (playbook 10: every list
+  paginates) of `{userId, email, name, status, roles[{key,kind,label}], title,
+  lastSeenAt, passkeyCount, activeSessions}` rather than a bare array of the designed
+  `Member`; `POST /tenant/members` takes `{email, roleKeys[], title?}` (roles are rows
+  addressed by key, INPUT_DELTAS §1) and answers 201 with the invitation it created
+  (`{id, email, roles, title, kind, status, createdAt, expiresAt}`), because a person
+  becomes a member when the first passkey is stored (ID-02), not when invited;
+  `PATCH /tenant/members/{userId}` takes `{roleKeys?, title?}` and answers the member.
+- `GET /reference/languages` is not in the designed contract (it used a `Lang` enum,
+  section 3): it answers `[{key, kind: null, label}]` from the language rows for the
+  locale and tenant-language pickers, any session.
+- `GET /tenant/api-keys` answers a page `{items, total}`; `POST /tenant/api-keys` takes
+  `{name, scopes[], expiresAt?}` (no `agentId` until agents exist, chunk 5) and answers
+  `{id, name, keyPrefix, scopes, createdAt, expiresAt, plainKey}` in one flat object
+  instead of the designed `{key, secret}` pair (chunk 1 brief; `plainKey` is the only
+  place the secret appears).
 - `GET /evidence/{evidenceId}/download` and `GET /exports/{exportId}/download`
   are the presigned-link operations section 4 removes; chunks 9 and 12
   replace them with streaming endpoints of the same paths that answer the
   file itself, permission-checked and audited (D-11).
+
+Chunk 2 (vocabularies, taxonomy, footprint, proposals), 2026-09-19:
+
+- Reference reads are short fixed lists answered as a plain array, never a page:
+  `GET /reference/languages` (above) and the new `GET /reference/jurisdictions`
+  (`[{key, kind, label, parentKey, defaultLanguage{key,kind,label}}]`, I18N-01, any
+  session). Every other list answers `{items, total}` (playbook 10).
+- `GET /taxonomy/terms` (`listTerms`) answers `{items, total}` of `{id, key, kind: null,
+  label, labels{<lang>: text}, dimension{key,kind,label}, parentKey, usageNote, sortOrder,
+  active, isSystem, version}` instead of a bare array of the designed `Term`; filters
+  `?dimension=<key>&includeRetired=true`. The designed `code`, `labelEn` and `labelSv` are
+  the immutable `key` and translation rows (sections 1 and 3). Any session, or an API key
+  with `library:read` (AGT-02).
+- `POST /taxonomy/terms` (`createTerm`) and `PATCH /taxonomy/terms/{termId}` (`updateTerm`)
+  answer 202 `{proposal}` instead of the designed 201 and 200 `Term`: a term is a library
+  row and every library change is a proposal (VOC-07, PRO-01). The bodies are
+  `{dimension, key?, labels{}, usageNote?, parent?}` and `{labels?, usageNote?, sortOrder?}`
+  with `If-Match` carrying the term's `version`. `proposals.create` (tenant) or
+  `library_vocab.manage` (console); an API key is 401 (AC-PRO1).
+- `GET /tenant/footprint` (`getFootprint`) answers `{dimensions[{dimension{key,kind,label},
+  restrictsFootprint, terms[{key,kind,label}], allSelected}], pendingRequest|null}` instead
+  of `{terms, updatedAt}`: the screen states the rule per dimension (an empty dimension does
+  not restrict, FP-01) and shows the one change waiting (FP-02). The history of changes is
+  the request list, so `updatedAt` has no single meaning. `PUT /tenant/footprint` is
+  removed (section 5); a change is a request: `POST /tenant/footprint/requests` (201
+  `FootprintRequestRow`; with `?dryRun=true`, 200 `{adds, removes, preview, dryRun}` and
+  nothing written), `GET /tenant/footprint/requests` (`{items, total}`), and
+  `POST /tenant/footprint/requests/{requestId}/approve` (step-up, four eyes, `If-Match`),
+  `/reject` and `/withdraw` (the requester only).
+- `GET /proposals` (`listProposals`) answers `{items, total}` instead of a cursor page, and
+  filters by `status` and `kind` (each one value or a comma-separated list) and
+  `targetList` (a vocabulary list name or a taxonomy dimension key, matching
+  `payload.list` or `payload.dimension`). `proposals.review` only (PRO-03).
+- `GET /proposals/{proposalId}` (`getProposal`), `POST /proposals` (`createProposal`),
+  `POST /proposals/{proposalId}/approve` (`approveProposal`) and
+  `POST /proposals/{proposalId}/reject` (`rejectProposal`) carry `rejectionCode` beside
+  `reviewNote` on the proposal. Reject takes `{rejectionCode, note}` instead of the
+  designed `{reason}`: a code the proposer's screen can branch on and a sentence they read,
+  both required (422 `reason_required`). Approve takes `{note}`; the designed
+  `payloadOverrides` lands with obligation proposals in chunk 4 (PRO-S4). `POST /proposals`
+  answers 200 with the existing proposal when an `Idempotency-Key` is replayed with the same
+  body, 409 `idempotency_conflict` with a different one. Payloads are named per kind in
+  `apps/proposals/schemas.py`; chunk 2 kinds are `vocabulary_create`,
+  `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore`, `vocabulary_merge`,
+  `term_create`, `term_update`.
+- New in chunk 2 and not in the design, one generic set for every vocabulary list
+  (VOC-01, AC-VOC1: adding a list never moves the contract): `GET /vocab` (the list of
+  lists), `GET /vocab/{list}` and `GET /vocab/{list}/{key}` (any session, or `library:read`),
+  `POST /vocab/{list}`, `PATCH /vocab/{list}/{key}`, `POST /vocab/{list}/{key}/retire`,
+  `/restore` and `/merge` (`?dryRun=true` previews and writes nothing), `POST
+  /vocab/{list}/reorder`, `POST /vocab/{list}/suggest`, `GET /vocab/{list}/suggestions` and
+  `POST /vocab/{list}/suggestions/{suggestionId}/decline`, and `GET /taxonomy/dimensions`.
+  A tenant list is written directly under `vocab.manage`; every write to a library list
+  answers 202 `{proposal}` (VOC-07). Refusals carry their evidence beside the code:
+  `candidates[{key,label}]` on 409 `duplicate_key` and 422 `near_duplicate`, `usageCount`
+  on 409 `in_use`; `system_row` and `invalid_transition` are 409.
+
+Chunk 1 follow-up (enrolment without an address, Alex 2026-09-19):
+
+- `POST /auth/invitations/verify` (`verifyInvitationCode`) is new and not in the design:
+  the invitation path verifies the emailed code with `{token, code}` and no address,
+  because the link's token already names the account and is a secret only the
+  recipient holds. The token rides in the body, never the path, so no access log
+  holds it (security review F6). It answers the same `SessionTokens` and refresh cookie
+  as `POST /auth/code/verify`, 410 `invitation_expired` for an expired, revoked,
+  consumed or unknown invitation, and verifies only a code issued for that
+  invitation's address. `POST /auth/code/verify` with `{email, code}` stays for the
+  sign-in page's "First time here?" path (J-1).

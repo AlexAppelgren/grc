@@ -18,8 +18,13 @@ from ninja import NinjaAPI
 from ninja.errors import AuthenticationError, HttpError
 from ninja.errors import ValidationError as NinjaValidationError
 
+from apps.identity.api import router as identity_router
+from apps.library.api import router as library_router
+from apps.proposals.api import router as proposals_router
 from apps.shared.api import router as shared_router
-from apps.shared.errors import ProblemError, problem_response
+from apps.shared.errors import STATUS_BY_CODE, ProblemError, problem_response
+from apps.taxonomy.api import router as taxonomy_router
+from apps.tenants.api import router as tenants_router
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +44,11 @@ api = NinjaAPI(
 )
 
 api.add_router("", shared_router)
+api.add_router("", identity_router)
+api.add_router("", tenants_router)
+api.add_router("", library_router)
+api.add_router("", taxonomy_router)
+api.add_router("", proposals_router)
 
 
 @api.exception_handler(ProblemError)
@@ -48,6 +58,14 @@ def handle_problem(request: HttpRequest, exc: ProblemError) -> HttpResponse:
 
 @api.exception_handler(AuthenticationError)
 def handle_authentication(request: HttpRequest, exc: AuthenticationError) -> HttpResponse:
+    # The enrolment session reaches only the passkey registration ceremony and GET /me;
+    # everywhere else it is refused with 403 enrolment_only, not 401 (ID-02, AC-ID2).
+    from apps.identity.session_logic import enrolment_token_presented
+
+    if enrolment_token_presented(request):
+        return problem_response(
+            ProblemError(status=403, code="enrolment_only", detail="Finish enrolling a passkey first.")
+        )
     return problem_response(
         ProblemError(
             status=401, code="unauthenticated", detail="Sign in to continue."
@@ -83,10 +101,11 @@ def handle_django_validation(request: HttpRequest, exc: DjangoValidationError) -
     # logic.py raises ValidationError with user-facing text (playbook 4.4). The message
     # is the detail; the code is the exception's own code or a generic one.
     messages = exc.messages if hasattr(exc, "messages") else [str(exc)]
+    code = getattr(exc, "code", None) or "validation_error"
     return problem_response(
         ProblemError(
-            status=422,
-            code=getattr(exc, "code", None) or "validation_error",
+            status=STATUS_BY_CODE.get(code, 422),
+            code=code,
             detail=" ".join(messages),
         )
     )

@@ -25,8 +25,12 @@ from django.test import TestCase, TransactionTestCase
 
 from apps.shared import factories, tenancy
 from apps.shared.audit import ActorType
-from apps.shared.migration_helpers import POLICY_NAME, TENANT_SETTING
+from apps.shared.migration_helpers import IDENTITY_LOOKUP_SETTING, POLICY_NAME, TENANT_SETTING
 from apps.shared.models import AuditEvent, Tenant
+
+# The only tables whose policy carries the identity-lookup clause (apps/shared/tenancy.py):
+# the auth layer reads them before a tenant is known. Adding one here is a review question.
+IDENTITY_LOOKUP_TABLES = frozenset({"invitation", "membership", "user_session", "api_key"})
 
 
 def tenant_scoped_models() -> list[type[Model]]:
@@ -49,6 +53,19 @@ class RowLevelSecurityGuard(TestCase):
         tables = sorted(model._meta.db_table for model in tenant_scoped_models())
         self.assertIn("audit_event", tables)
         self.assertIn("outbox_event", tables)
+        for table in ("membership", "tenant_role", "invitation", "user_session", "api_key", "login_event", "support_access"):
+            self.assertIn(table, tables)
+
+    def test_only_the_named_tables_carry_the_identity_lookup_clause(self) -> None:
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute("SELECT tablename, qual FROM pg_policies WHERE policyname = %s", [POLICY_NAME])
+            with_clause = {table for table, qual in cursor.fetchall() if IDENTITY_LOOKUP_SETTING in (qual or "")}
+        self.assertEqual(
+            with_clause,
+            IDENTITY_LOOKUP_TABLES,
+            "the identity-lookup clause is for the tables the auth layer reads before a tenant is known; "
+            "update IDENTITY_LOOKUP_TABLES and say why",
+        )
 
     def test_every_tenant_table_has_forced_rls_and_a_tenant_policy(self) -> None:
         problems: list[str] = []

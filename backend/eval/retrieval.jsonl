@@ -1,1 +1,60 @@
-# retrieval questions: filled in chunk 7 (Search and ask). One JSON object per line.
+# Retrieval evaluation set (SRC-05, AC-SRC1, playbook 16). One JSON object per line; lines starting with # are comments.
+# Corpus: the obligations, provisions and changes of backend/apps/library/fixtures/prototype_data.json, as seed_demo loads them.
+# Fields: id, language (content language of the query), query, expected (stable keys, every one relevant), match_kind
+#   (keyword: an identifier wins by keyword; concept: phrasing wins by vector; both: one query with both), as_of (optional,
+#   the version effective on that date is the one expected), note. A row may carry predictions (list of keys) for the mock retriever.
+# 53 questions: en 16, sv 16, da 7, nb 7, fi 7. Danish, Norwegian and Finnish questions target the same
+#   obligations as the English and Swedish ones so the embedding model is tested across all five languages (D-09).
+{"id": "r-en-01", "language": "en", "query": "FFFS 2017:2", "expected": ["obl-costs-charges", "obl-research-payments", "obl-product-governance", "obl-client-assets"], "match_kind": "keyword", "note": "AC-SRC1: an identifier is won by keyword. Every obligation under the instrument is relevant."}
+{"id": "r-en-02", "language": "en", "query": "nudging in onboarding", "expected": ["obl-esma-warnings"], "match_kind": "concept", "note": "AC-SRC1: phrasing is won by concept; no obligation contains the word nudging in its summary."}
+{"id": "r-en-03", "language": "en", "query": "FFFS 2017:2 nudging in onboarding", "expected": ["obl-esma-warnings", "obl-costs-charges", "obl-research-payments", "obl-product-governance", "obl-client-assets"], "match_kind": "both", "note": "AC-SRC1: one query, keyword and concept fused by rank."}
+{"id": "r-en-04", "language": "en", "query": "SFS 2007:528", "expected": ["sfs-2007-528/9", "obl-appropriateness", "obl-suitability"], "match_kind": "keyword"}
+{"id": "r-en-05", "language": "en", "query": "GDPR Article 22 automated decisions", "expected": ["celex-32016r0679/art-22", "obl-gdpr-article-22"], "match_kind": "both"}
+{"id": "r-en-06", "language": "en", "query": "When do we have to tell clients about costs and fees?", "expected": ["obl-costs-charges"], "match_kind": "concept"}
+{"id": "r-en-07", "language": "en", "query": "paying brokers for research with client money", "expected": ["obl-research-payments"], "match_kind": "concept", "as_of": "2026-09-16", "note": "Version 1 is the only version as of this date; the proposal for version 2 is open, not applied."}
+{"id": "r-en-08", "language": "en", "query": "what can be held on an investment savings account", "expected": ["obl-isk-approved-assets"], "match_kind": "concept"}
+{"id": "r-en-09", "language": "en", "query": "annual tax reporting of standard income", "expected": ["obl-isk-control-statements"], "match_kind": "concept"}
+{"id": "r-en-10", "language": "en", "query": "register of cloud providers and AI vendors", "expected": ["obl-dora-ict-register"], "match_kind": "concept"}
+{"id": "r-en-11", "language": "en", "query": "ESMA35-43-3006", "expected": ["obl-esma-warnings"], "match_kind": "keyword"}
+{"id": "r-en-12", "language": "en", "query": "Garantum sanction", "expected": ["chg-fi-2025-garantum-sanction"], "match_kind": "keyword"}
+{"id": "r-en-13", "language": "en", "query": "moving pension savings to another insurer, fee cap", "expected": ["obl-pension-transfer-right"], "match_kind": "concept"}
+{"id": "r-en-14", "language": "en", "query": "key information document before the customer signs", "expected": ["obl-priips-kid"], "match_kind": "concept", "as_of": "2026-09-16"}
+{"id": "r-en-15", "language": "en", "query": "target market review for products we distribute", "expected": ["obl-product-governance"], "match_kind": "concept"}
+{"id": "r-en-16", "language": "en", "query": "client funds kept separate and reconciled", "expected": ["obl-client-assets"], "match_kind": "concept"}
+{"id": "r-sv-01", "language": "sv", "query": "FFFS 2018:10", "expected": ["obl-switch-documentation"], "match_kind": "keyword"}
+{"id": "r-sv-02", "language": "sv", "query": "passandebedömning komplicerade instrument", "expected": ["obl-appropriateness", "obl-esma-warnings"], "match_kind": "concept"}
+{"id": "r-sv-03", "language": "sv", "query": "lämplighetsbedömning hållbarhetspreferenser", "expected": ["obl-suitability"], "match_kind": "concept"}
+{"id": "r-sv-04", "language": "sv", "query": "schablonintäkt kontrolluppgift", "expected": ["obl-isk-control-statements"], "match_kind": "keyword", "note": "Both words are tags and appear in the Swedish summary."}
+{"id": "r-sv-05", "language": "sv", "query": "varning som kunden kan klicka bort", "expected": ["obl-esma-warnings"], "match_kind": "concept"}
+{"id": "r-sv-06", "language": "sv", "query": "byte av underliggande placeringar i kapitalförsäkring", "expected": ["obl-switch-documentation"], "match_kind": "concept"}
+{"id": "r-sv-07", "language": "sv", "query": "faktablad innan kunden blir bunden", "expected": ["obl-priips-kid"], "match_kind": "concept"}
+{"id": "r-sv-08", "language": "sv", "query": "flytträtt pensionsförsäkring avgifter", "expected": ["obl-pension-transfer-right"], "match_kind": "concept"}
+{"id": "r-sv-09", "language": "sv", "query": "register över IKT-leverantörer", "expected": ["obl-dora-ict-register"], "match_kind": "concept"}
+{"id": "r-sv-10", "language": "sv", "query": "SFS 2011:1268", "expected": ["obl-isk-approved-assets"], "match_kind": "keyword"}
+{"id": "r-sv-11", "language": "sv", "query": "kundernas medel hålls åtskilda och stäms av", "expected": ["obl-client-assets"], "match_kind": "concept"}
+{"id": "r-sv-12", "language": "sv", "query": "krav och behov försäkringsbaserad investeringsprodukt", "expected": ["obl-idd-demands-needs"], "match_kind": "concept"}
+{"id": "r-sv-13", "language": "sv", "query": "9 kap. lagen om värdepappersmarknaden", "expected": ["sfs-2007-528/9", "obl-appropriateness", "obl-suitability"], "match_kind": "both"}
+{"id": "r-sv-14", "language": "sv", "query": "hur får vi betala för extern analys", "expected": ["obl-research-payments"], "match_kind": "concept", "as_of": "2026-09-01"}
+{"id": "r-sv-15", "language": "sv", "query": "Riksgälden statslåneränta 30 november", "expected": ["chg-rgk-2026-borrowing-rate"], "match_kind": "keyword"}
+{"id": "r-sv-16", "language": "sv", "query": "får kunden ett automatiserat beslut överklagas till en människa", "expected": ["obl-gdpr-article-22"], "match_kind": "concept"}
+{"id": "r-da-01", "language": "da", "query": "skal vi advare kunden, hvis produktet ikke er hensigtsmæssigt", "expected": ["obl-appropriateness", "obl-esma-warnings"], "match_kind": "concept"}
+{"id": "r-da-02", "language": "da", "query": "oplysning om samlede omkostninger før og efter handlen", "expected": ["obl-costs-charges"], "match_kind": "concept"}
+{"id": "r-da-03", "language": "da", "query": "betaling for analyse fra tredjepart", "expected": ["obl-research-payments"], "match_kind": "concept"}
+{"id": "r-da-04", "language": "da", "query": "adskillelse af kunders værdipapirer og midler", "expected": ["obl-client-assets"], "match_kind": "concept"}
+{"id": "r-da-05", "language": "da", "query": "register over it-leverandører efter DORA", "expected": ["obl-dora-ict-register"], "match_kind": "both"}
+{"id": "r-da-06", "language": "da", "query": "automatiske afgørelser med betydelig virkning, artikel 22", "expected": ["obl-gdpr-article-22", "celex-32016r0679/art-22"], "match_kind": "both"}
+{"id": "r-da-07", "language": "da", "query": "central investorinformation før kunden binder sig", "expected": ["obl-priips-kid"], "match_kind": "concept"}
+{"id": "r-nb-01", "language": "nb", "query": "egnethetsvurdering ved investeringsrådgivning", "expected": ["obl-suitability"], "match_kind": "concept"}
+{"id": "r-nb-02", "language": "nb", "query": "hensiktsmessighetstest før handel i komplekse instrumenter", "expected": ["obl-appropriateness"], "match_kind": "concept"}
+{"id": "r-nb-03", "language": "nb", "query": "målgruppe og distribusjonsstrategi for hvert produkt", "expected": ["obl-product-governance"], "match_kind": "concept"}
+{"id": "r-nb-04", "language": "nb", "query": "flytting av pensjonsforsikring til et annet selskap", "expected": ["obl-pension-transfer-right"], "match_kind": "concept"}
+{"id": "r-nb-05", "language": "nb", "query": "dokumentere bytte av underliggende investeringer", "expected": ["obl-switch-documentation"], "match_kind": "concept"}
+{"id": "r-nb-06", "language": "nb", "query": "T+1 oppgjør", "expected": ["chg-eu-t1-settlement", "chg-esma-2026-pre-settlement"], "match_kind": "keyword"}
+{"id": "r-nb-07", "language": "nb", "query": "kostnader og gebyrer skal opplyses årlig", "expected": ["obl-costs-charges"], "match_kind": "concept"}
+{"id": "r-fi-01", "language": "fi", "query": "asianmukaisuusarviointi monimutkaisissa rahoitusvälineissä", "expected": ["obl-appropriateness"], "match_kind": "concept"}
+{"id": "r-fi-02", "language": "fi", "query": "soveltuvuusarviointi sijoitusneuvonnassa ja kestävyysmieltymykset", "expected": ["obl-suitability"], "match_kind": "concept"}
+{"id": "r-fi-03", "language": "fi", "query": "kulujen ja veloitusten ilmoittaminen etukäteen ja vuosittain", "expected": ["obl-costs-charges"], "match_kind": "concept"}
+{"id": "r-fi-04", "language": "fi", "query": "asiakkaiden varojen erottaminen ja täsmäytys", "expected": ["obl-client-assets"], "match_kind": "concept"}
+{"id": "r-fi-05", "language": "fi", "query": "avaintietoasiakirja ennen sopimuksen tekemistä", "expected": ["obl-priips-kid"], "match_kind": "concept"}
+{"id": "r-fi-06", "language": "fi", "query": "kolmannen osapuolen ICT-palveluntarjoajien rekisteri", "expected": ["obl-dora-ict-register"], "match_kind": "concept"}
+{"id": "r-fi-07", "language": "fi", "query": "vakuutusmuotoinen sijoitustuote, vaatimukset ja tarpeet", "expected": ["obl-idd-demands-needs"], "match_kind": "concept"}

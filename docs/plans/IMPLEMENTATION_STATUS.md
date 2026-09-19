@@ -21,8 +21,8 @@ commit for the chunk is on `main`. `pending` means none.
 | # | Chunk | Release | Implemented | Tested | Verified | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | 0 | Phase 0 bootstrap | R1 | 2026-09-19 | 2026-09-19 | | in progress | Checklist below. Verified waits for the owner to boot it (locally or on Railway) |
-| 1 | Identity and tenant admin basics | R1 | | | | pending | Inputs landed 2026-09-19; next chunk |
-| 2 | Vocabularies, taxonomy and footprint | R1 | | | | pending | |
+| 1 | Identity and tenant admin basics | R1 | 2026-09-19 | 2026-09-19 | | in progress | Invitation, code (token-bound on the link path, no email field), passkey enrolment with derived names, passkey sign-in, sessions, step-up, roles from permissions, API keys, security log, members admin, organisation profile. Security review in `docs/security/CHUNK1_AUTH_REVIEW_2026-09-19.md`; F29 (token in request paths) open, next task. Cut: ID-07, ID-08 (R2), ID-12, ID-13 (R3) |
+| 2 | Vocabularies, taxonomy and footprint | R1 | 2026-09-19 | 2026-09-19 | | in progress | Library and tenant vocabularies as rows with rename, reorder, retire, restore, merge and the near-duplicate check; library list writes become proposals (VOC-07); footprint change requests with dry-run preview, four eyes and step-up. FP-03 in progress: the rule exists, the surfaces that apply it arrive from chunk 3. VOC-03 (R2) has a backend and no screen. Cut: the tenant view of its own pending library proposals (moves to chunk 4) |
 | 3 | Library and inventory | R1 | | | | pending | |
 | 4 | Proposals and the platform console | R1 | | | | pending | |
 | 5 | Watch and the agent API | R1 | | | | pending | |

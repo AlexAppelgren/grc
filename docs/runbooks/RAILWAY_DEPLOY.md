@@ -40,6 +40,7 @@ at a role that can bypass row-level security.
 | `REDIS_URL`, `SECRET_KEY`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` | api, worker, beat | |
 | `PRODUCT_NAME` | api, web | `bleqq compliance` |
 | `WEBAUTHN_RP_ID`, `WEBAUTHN_ORIGINS` | api | the exact test host, and its `https://` origin |
+| `TRUSTED_PROXY_HOPS` | api | `1`: Railway's edge is the one proxy writing `X-Forwarded-For`, so the per-IP rate limits and the security log read the client address from it. Left at `0` the header is ignored and every request keys on the proxy's address |
 | `STORAGE_*` | api, worker | bucket endpoint, name, keys |
 | `MAIL_*` | api, worker | the transactional sender |
 | `LLM_PROVIDER`, `ANTHROPIC_API_KEY` | api, worker | `anthropic` |

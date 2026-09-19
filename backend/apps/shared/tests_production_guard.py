@@ -35,6 +35,8 @@ SETTING_NAMES = (
     "DEBUG",
     "SECRET_KEY",
     "E2E_MODE",
+    "WEBAUTHN_RP_ID",
+    "WEBAUTHN_ORIGINS",
     "LLM_PROVIDER",
     "EMBEDDER_PROVIDER",
     "AGENT_RUNNER",
@@ -89,6 +91,8 @@ class ProductionGuard(TestCase):
             "MAIL_PROVIDER": "smtp",
             "STORAGE_BACKEND": "s3",
             "STORAGE_S3_BUCKET": "bucket",
+            "WEBAUTHN_RP_ID": "compliance.example.test",
+            "WEBAUTHN_ORIGINS": "https://compliance.example.test",
             "DATABASE_URL": self.app_url,
             "MIGRATOR_DATABASE_URL": self.migrator_url,
         }
@@ -181,6 +185,22 @@ class ProductionGuard(TestCase):
                 "rule 4",
             ),
             Case("local allows E2E_MODE", self._local("local", E2E_MODE="true"), True),
+            # Rule 8: a deployed environment must name its WebAuthn host (ADR 0002).
+            Case(
+                "prod refuses a localhost RP ID",
+                self._good_deployed("prod", WEBAUTHN_RP_ID="localhost"),
+                False,
+                "WEBAUTHN_RP_ID",
+                "rule 8",
+            ),
+            Case(
+                "prod refuses a localhost origin",
+                self._good_deployed("prod", WEBAUTHN_ORIGINS="http://localhost:3000"),
+                False,
+                "WEBAUTHN_RP_ID",
+                "rule 8",
+            ),
+            Case("local allows the localhost RP ID", self._local("local", WEBAUTHN_RP_ID="localhost"), True),
             # Rule 5: mocks only on the deployed environment named test.
             Case(
                 "prod refuses mock mailer",

@@ -1,0 +1,187 @@
+"""Taxonomy terms and dimensions: reads only (VOC-07, FP-01).
+
+Every write to a term or a dimension is a proposal applied by apps/proposals/apply.py, so
+this module never calls a write method. That is also what keeps the library fence's AST
+guard quiet: it refuses any module outside the allowlist that names a `LibraryModel` and
+calls `save`, `create`, `update`, `delete` or their bulk and get-or-create forms
+(apps/shared/tests_library_fence.py).
+
+`term_by_ref()` is the one place a `dimension:key` pair becomes a row. An unknown pair is
+422 `unknown_key` naming the keys that would have worked, because an agent (AGT-02) and a
+person both need to be told what they may say, not merely that they were wrong.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from django.core.exceptions import ValidationError
+
+from apps.taxonomy.models import TaxonomyTerm, TermDimension
+from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.schemas import TaxonomyDimensionRef, TaxonomyTermRow, TermRef
+
+MAX_KEYS_IN_MESSAGE = 12
+
+
+def dimension_by_key(key: str) -> TermDimension:
+    dimension = TermDimension.objects.filter(key=key, active=True).order_by("sort_order", "key").first()
+    if dimension is None:
+        valid = list(TermDimension.objects.filter(active=True).order_by("sort_order", "key").values_list("key", flat=True))
+        raise ValidationError(
+            f"{key!r} is not a taxonomy dimension. Valid dimensions: {', '.join(valid)}.",
+            code="unknown_key",
+        )
+    return dimension
+
+
+def term_by_ref(dimension_key: str, key: str) -> TaxonomyTerm:
+    """The term `dimension_key:key`, or 422 `unknown_key` listing what would have worked."""
+    dimension = dimension_by_key(dimension_key)
+    term = TaxonomyTerm.objects.filter(dimension=dimension, key=key, active=True).order_by("sort_order", "key").first()
+    if term is None:
+        valid = list(
+            TaxonomyTerm.objects.filter(dimension=dimension, active=True)
+            .order_by("sort_order", "key")
+            .values_list("key", flat=True)[:MAX_KEYS_IN_MESSAGE]
+        )
+        raise ValidationError(
+            f"{key!r} is not a term of {dimension_key!r}. Valid keys: {', '.join(valid)}.",
+            code="unknown_key",
+        )
+    return term
+
+
+def term_exists(dimension_key: str, key: str) -> bool:
+    """Case-insensitively, retired terms included: a retired key is still taken (playbook
+    4.3: stable keys are never reused for something else)."""
+    return TaxonomyTerm.objects.filter(dimension__key=dimension_key, key__iexact=key).exists()
+
+
+def term_by_id(term_id: Any) -> TaxonomyTerm:
+    term = TaxonomyTerm.objects.select_related("dimension").filter(pk=term_id).first()  # ordering: pk lookup, at most one row
+    if term is None:
+        raise ValidationError("That term is not here.", code="not_found")
+    return term
+
+
+def terms_of(dimension_key: str | None, *, include_retired: bool = False) -> list[TaxonomyTerm]:
+    queryset = TaxonomyTerm.objects.select_related("dimension", "parent").order_by("dimension__sort_order", "sort_order", "key")
+    if dimension_key:
+        queryset = queryset.filter(dimension=dimension_by_key(dimension_key))
+    if not include_retired:
+        queryset = queryset.filter(active=True)
+    return list(queryset)
+
+
+def dimension_ref(dimension: TermDimension, labels: dict[str, str], order: list[str]) -> TaxonomyDimensionRef:
+    return TaxonomyDimensionRef(
+        key=dimension.key,
+        kind=dimension.kind,
+        label=label_of(labels, order, original=None, key=dimension.key),
+    )
+
+
+def dimension_labels(dimensions: list[Any]) -> Labels:
+    from apps.taxonomy.models import TermDimensionLabel
+
+    return Labels.for_rows(TermDimensionLabel, dimensions)
+
+
+def term_ref(term: TaxonomyTerm, labels: dict[str, str], order: list[str]) -> TermRef:
+    # A term carries no kind of its own: its dimension is its kind (models.py). The picker
+    # still reads `kind` so one pill component renders a term like any other vocabulary row.
+    return TermRef(key=term.key, kind=None, label=label_of(labels, order, original=None, key=term.key))
+
+
+def term_rows(terms: list[TaxonomyTerm], order: list[str]) -> list[TaxonomyTermRow]:
+    from apps.taxonomy.models import TaxonomyTermLabel
+
+    labels = Labels.for_rows(TaxonomyTermLabel, terms, field="term")
+    dimensions = {term.dimension_id: term.dimension for term in terms}
+    dimension_texts = dimension_labels(list(dimensions.values()))
+    rows: list[TaxonomyTermRow] = []
+    for term in terms:
+        texts = labels.texts(term.id)
+        rows.append(
+            TaxonomyTermRow(
+                id=term.id,
+                key=term.key,
+                kind=None,
+                label=label_of(texts, order, original=labels.original(term.id), key=term.key),
+                labels=texts,
+                dimension=dimension_ref(term.dimension, dimension_texts.texts(term.dimension_id), order),
+                parent_key=term.parent.key if term.parent is not None else None,
+                usage_note=term.usage_note,
+                sort_order=term.sort_order,
+                active=term.active,
+                is_system=term.is_system,
+                version=term.version,
+            )
+        )
+    return rows
+
+
+def terms_by_selectors(selectors: list[Any]) -> list[TaxonomyTerm]:
+    """`[{dimension, key}, …]` as rows, in the order given, each validated (FP-02)."""
+    return [term_by_ref(selector.dimension, selector.key) for selector in selectors]
+
+
+# ---------------------------------------------------------------------------------------
+# The footprint read (FP-01). It lives here rather than in footprint_logic.py because it
+# names the library term and dimension tables, and footprint_logic.py writes: a module may
+# do one or the other, never both, or the library fence cannot tell them apart.
+# ---------------------------------------------------------------------------------------
+def dimensions_for_footprint(order: list[str]) -> list[tuple[TaxonomyDimensionRef, bool, int]]:
+    """Every active dimension as `(ref, restricts_footprint, active term count)`, in the
+    picker's order. The count is what `allSelected` is measured against."""
+    from django.db.models import Count, Q
+
+    rows = list(
+        TermDimension.objects.filter(active=True)
+        .annotate(term_count=Count("terms", filter=Q(terms__active=True)))
+        .order_by("sort_order", "key")
+    )
+    texts = dimension_labels(rows)
+    return [
+        (dimension_ref(row, texts.texts(row.id), order), row.restricts_footprint, row.term_count)
+        for row in rows
+    ]
+
+
+def selected_terms_by_dimension(tenant_id: Any, order: list[str]) -> dict[str, list[TermRef]]:
+    """The activated tenant's footprint as dimension key -> term references, labelled. Reads
+    under row-level security; the id is the belt to the policy's braces."""
+    from apps.taxonomy.models import FootprintTerm, TaxonomyTermLabel
+
+    rows = list(
+        FootprintTerm.objects.filter(tenant_id=tenant_id)
+        .select_related("term", "term__dimension")
+        .order_by("term__dimension__sort_order", "term__sort_order", "term__key")
+    )
+    terms = [row.term for row in rows]
+    labels = Labels.for_rows(TaxonomyTermLabel, terms, field="term")
+    selected: dict[str, list[TermRef]] = {}
+    for row in rows:
+        selected.setdefault(row.term.dimension.key, []).append(
+            term_ref(row.term, labels.texts(row.term.id), order)
+        )
+    return selected
+
+
+def labelled_term_refs(terms: list[Any], order: list[str]) -> list[Any]:
+    """`FootprintTermRef`s for the terms of one change request (FP-02): the key, the label
+    a person reads in the decision mail and on the screen, and the dimension."""
+    from apps.taxonomy.models import TaxonomyTermLabel
+    from apps.taxonomy.schemas import FootprintTermRef
+
+    labels = Labels.for_rows(TaxonomyTermLabel, terms, field="term")
+    return [
+        FootprintTermRef(
+            key=term.key,
+            kind=None,
+            label=label_of(labels.texts(term.id), order, original=labels.original(term.id), key=term.key),
+            dimension=term.dimension.key,
+        )
+        for term in terms
+    ]

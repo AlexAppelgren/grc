@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen card: my passkeys (/me/passkeys)</title>
+<style>
+/* Cut from design/prototype/index.html (playbook Section 7, step 4): the
+   tenant shell (design/screens/tenant-shell.html), .rows/.row/.meta, .pill,
+   .btn, .field, .modal. Phone first; two buttons per row, primary right. */
+:root{
+  --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;
+  --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
+  --btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--red-soft:#fdebe8;--amber:#8f530a;--amber-soft:#fce8cf;
+  --green:#026436;--green-soft:#dcefdc;--blue:#005fb3;--blue-soft:#e6f3ff;--grey-soft:#eaebeb;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--mono:"Noto Sans Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;--blue:#66b8ff;--blue-soft:#10273d;--grey-soft:#313533;
+}}
+:root[data-theme="dark"]{
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--red-soft:#3a1a14;--amber:#f5b970;--amber-soft:#3a2810;--green:#8ae58d;--green-soft:#12301c;--blue:#66b8ff;--blue-soft:#10273d;--grey-soft:#313533;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+h1,h2,h3{margin:0;letter-spacing:-.01em;line-height:1.2;font-weight:500}h1{font-size:2rem;font-weight:400}h2{font-size:1.25rem}h3{font-size:1rem}
+p{margin:0 0 .75rem}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--brand);color:#fff;padding:24px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:0 8px 20px}.logo{display:block;width:100%;height:auto;max-width:196px}
+.nav button{display:flex;width:100%;background:none;border:0;color:#fff;text-align:left;padding:10px 12px;border-radius:999px;font-size:.95rem}
+.nav hr{border:0;border-top:1px solid rgba(255,255,255,.18);margin:12px 8px}
+.who{margin:18px 4px 0;padding:12px;border:1px solid rgba(255,255,255,.25);border-radius:12px;font-size:.85rem;color:rgba(255,255,255,.75)}
+.who b{display:block;color:#fff;font-weight:600}.who a{color:#fff;display:block;margin-top:6px}
+.who button{margin-top:10px;background:none;border:1px solid rgba(255,255,255,.6);color:#fff;border-radius:999px;padding:6px 10px;font-size:.82rem;width:100%}
+main{padding:32px 36px 96px;max-width:1100px;width:100%}
+.mbrand{display:none}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.head p{color:var(--muted);margin:6px 0 0;max-width:70ch}
+.rows{display:grid;gap:10px}
+.row{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:grid;grid-template-columns:1fr auto;gap:8px 16px;align-items:center}
+.row h3{font-weight:600;font-size:1.02rem;margin:0 0 4px}
+.meta{color:var(--muted);font-size:.86rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:600;background:var(--grey-soft);color:var(--text)}
+.pill.green{background:var(--green-soft);color:var(--green)}
+.btn{background:var(--btn);color:var(--btn-text);border:1px solid var(--btn);border-radius:999px;padding:10px 20px;font-weight:600;min-height:44px}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-strong)}
+.btn.danger{background:transparent;color:var(--red);border-color:var(--red)}
+.btn.small{padding:6px 14px;min-height:36px;font-size:.86rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.row .bar{margin:0;justify-content:flex-end}
+.empty{color:var(--muted);padding:28px;text-align:center;border:1px dashed var(--line-strong);border-radius:16px}
+.empty h2{color:var(--text);margin-bottom:8px}
+.err{color:var(--red);font-size:.88rem;margin-top:6px}
+.ok{color:var(--green);font-size:.88rem;margin:0 0 12px}
+.lede{color:var(--muted);margin-bottom:20px}
+.field{display:grid;gap:5px;margin-bottom:14px}.field label{font-weight:600;font-size:.9rem}
+.field input{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 12px;min-height:44px}
+.field input::placeholder{color:var(--muted);font-style:italic}
+.modal{background:rgba(10,11,11,.6);display:flex;align-items:center;justify-content:center;padding:16px;border-radius:16px;margin-top:20px}
+.modal .box{background:var(--surface);border-radius:20px;padding:24px;max-width:440px;width:100%;border:1px solid var(--line)}
+.box h2{margin-bottom:12px}
+.skeleton{height:84px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
+.states h2.k{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:28px 0 10px}
+.note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+.tabbar{display:none}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}.side{display:none}
+  .mbrand{display:block;margin:0 0 12px}.mbrand .logo{width:150px}
+  main{padding:20px 16px 100px}h1{font-size:1.6rem}
+  .row{grid-template-columns:1fr}
+  .bar{justify-content:flex-end;flex-wrap:nowrap}
+  .bar .btn{order:2;flex:0 1 auto;min-width:0;padding:10px 16px;font-size:.94rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .btn.small{padding:6px 12px;font-size:.86rem}
+  .bar .btn:not(.ghost):not(.danger){order:3}
+  .head>.btn{margin-left:auto}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--brand);z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar button{background:none;border:0;color:rgba(255,255,255,.7);padding:10px 2px 8px;font-size:.72rem}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
+    <nav class="nav" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Roadmap</button><button>Search and ask</button><hr><button>Admin</button></nav>
+    <div class="who">Signed in as<b>Sara Lindqvist</b>Example Bank AB · Compliance officer<a href="#">My passkeys</a><a href="#">My sessions</a><button>Sign out</button></div>
+  </aside>
+  <main id="main" tabindex="-1">
+    <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
+    <div class="head"><div><h1>My passkeys</h1><p>Keep at least two, on different devices.</p></div><button class="btn">Add a passkey</button></div>
+
+    <div class="states">
+    <div class="rows">
+      <div class="row">
+        <div><h3>Google Password Manager</h3><div class="meta"><span class="pill">Synced</span><span>Added 3 Sep 2026</span><span>Last used 19 Sep 2026 10:04</span></div></div>
+        <div class="bar"><button class="btn ghost small">Rename</button><button class="btn danger small">Remove</button></div>
+      </div>
+      <div class="row">
+        <div><h3>Security key</h3><div class="meta"><span class="pill">Device-bound</span><span>Added 12 Sep 2026</span><span>Never used</span></div></div>
+        <div class="bar"><button class="btn ghost small">Rename</button><button class="btn danger small">Remove</button></div>
+      </div>
+    </div>
+
+    <h2 class="k">The last passkey cannot go (409 last_passkey)</h2>
+    <div class="rows">
+      <div class="row">
+        <div><h3>Google Password Manager</h3><div class="meta"><span class="pill">Synced</span><span>Added 3 Sep 2026</span><span>Last used 19 Sep 2026 10:04</span></div><p class="err" role="alert">This is your only passkey. Add another one before removing it.</p></div>
+        <div class="bar"><button class="btn ghost small">Rename</button><button class="btn danger small">Remove</button></div>
+      </div>
+    </div>
+
+    <h2 class="k">Rename (inline)</h2>
+    <div class="rows"><div class="row">
+      <form><div class="field"><label for="rn">Name</label><input id="rn" value="Security key"></div><div class="bar"><button class="btn ghost small" type="button">Cancel</button><button class="btn small" type="submit">Save</button></div></form>
+    </div></div>
+
+    <h2 class="k">Add (modal, same ceremony as enrolment; no name asked)</h2>
+    <div class="modal"><div class="box" role="dialog" aria-modal="true" aria-labelledby="ad"><h2 id="ad">Add a passkey</h2>
+      <p class="lede">Your device will ask you to confirm with a fingerprint, face or PIN.</p>
+      <div class="bar" style="justify-content:flex-end"><button class="btn ghost">Cancel</button><button class="btn">Create passkey</button></div>
+    </div></div>
+
+    <h2 class="k">Just added (the name the server derived, above the list)</h2>
+    <p class="ok" role="status">Windows Hello added</p>
+    <div class="rows">
+      <div class="row">
+        <div><h3>Windows Hello</h3><div class="meta"><span class="pill">Device-bound</span><span>Added 19 Sep 2026</span><span>Last used 19 Sep 2026 10:12</span></div></div>
+        <div class="bar"><button class="btn ghost small">Rename</button><button class="btn danger small">Remove</button></div>
+      </div>
+    </div>
+
+    <h2 class="k">Loading</h2>
+    <div class="rows" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div></div>
+
+    <h2 class="k">Error</h2>
+    <div class="empty" role="alert"><h2>Could not load your passkeys</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
+
+    <h2 class="k">Empty (never on a real account: enrolment creates the first one)</h2>
+    <div class="empty"><h2>No passkeys</h2><p>Add a passkey to sign in on this device.</p></div>
+    </div>
+
+    <p class="note">My passkeys card. Rows show nickname, a kind pill (synced or device-bound, an information tone from the credential's kind), added and last used through formatDate and formatDateTime. Remove asks once and answers the server's 409 last_passkey in place. Add opens the same registration ceremony as enrolment and asks for no name (Alex, 2026-09-19): the server names the passkey from the device (the authenticator's name from its AAGUID, else the browser and platform such as "Chrome on Windows", else "Security key", "Phone" or "Passkey"), adds a counter when the person already holds that name ("Windows Hello (2)"), and the page confirms it in a positive status line. Rename is how a person changes it.</p>
+  </main>
+</div>
+<nav class="tabbar" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Search</button><button>More</button></nav>
+</body>
+</html>

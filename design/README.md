@@ -3,6 +3,7 @@
 | Path | What it is |
 |---|---|
 | `prototype/index.html` | The interactive prototype ("bleqq: compliance inventory and watch"). Open it in a browser. It is the contract for flow, wording, labels and pills. Its sample data seeds `seed_e2e` and `seed_demo` |
+| `system/foundations.md` | Type roles, radius, spacing, the component specs and the Green token behind every colour |
 | `system/pills-and-labels.md` and `.html` | The pill and label contract, and a rendered card |
 | `brand/` | The phonetic wordmark `[blɛkː]`, the favicon, and the brand layer placeholders |
 | `screens/` | Empty. Cut one card per screen from the prototype as each chunk starts (playbook Section 7) |
@@ -12,10 +13,44 @@
 Timeline home showing the next dates as the same short list on phone and
 desktop, with part of the weekly briefing on it and the full briefing one tap
 away. The full calendar lives on its own roadmap page, where a card expands
-in place. Restraint in the style of wealth and asset management: a very dark
-green, sand surfaces, brass for identity, Hanken Grotesk for text and Noto
-Sans Mono for legal references and the wordmark. Phone first. On phones,
-actions sit on the right, two buttons share one row, primary on the right.
+in place. Phone first. On phones, actions sit on the right, two buttons share
+one row, primary on the right.
+
+**The look (Alex, 2026-09-19; ADR 0020 amendment "Foundations").** "Still not
+happy with this, looks big, clumsy and childish. Take much less inspiration
+from seb.io (maybe only keep colour schemes) and more from shadcn ui
+components and other modern and professional styles. We can also reduce the
+logo size a bit more." So: a dense, professional dashboard at shadcn/ui's
+proportions in Green's colours. A 14 px base, a 24 px semibold page title,
+16 px section titles; 36 px buttons with a 6 px radius in primary, outline
+and ghost, never fully rounded; cards on a hairline with an 8 px radius, 16 px
+padding and no shadow or fill; 32 px sidebar rows with 16 px icons. Colour
+keeps Green's neutral scale for surfaces, borders and text and the brand pair
+through `brand.css`: white page in light, near black in dark, a neutral
+primary, brand green only for meters and the timeline, sand only on the
+AI-drafted callout and the legal margin, brass on `brand` pills. Hanken
+Grotesk for text, Noto Sans Mono for legal references and the wordmark, which
+is about 68 px wide. Every value is in `system/foundations.md`.
+
+**The rail (Alex, 2026-09-19; ADR 0020 amendment).** The green rail with white
+text, fully rounded buttons, count bubbles and a bordered "who" card read as a
+consumer app, not software a compliance officer uses all day. The rail is now
+shadcn/ui's Sidebar structure in the restraint of seb.io's own left rail: a
+neutral surface barely distinct from the page (one step below it in light,
+flush in dark) with a hairline border, compact 32 px rows of a 16 px icon and a
+14 px label in normal weight, groups separated by space rather than headings or
+rules, and no scrollbar. The current row is shadcn's treatment, not seb.io's
+pill: full width, a 6 px radius, a neutral tint, medium weight. The fully
+rounded shape belongs to the six pill tones alone. The phonetic wordmark
+`[blɛkː]` sits alone on top in the text colour, about 68 px wide: a signature,
+not a banner (Alex, 2026-09-19, twice: the mark took too much room). The
+signed-in person is one quiet row at the bottom (name, then organisation and
+role) opening a menu with My passkeys, My sessions and Sign out, followed by
+"Minimise menu". Minimised (or ctrl/cmd+b), the rail keeps only icons with a
+tooltip each and the open e alone as the mark, and remembers the choice on the
+device. On phones there is no dock: a menu button on the right of the header
+opens the same rail as a sheet, so every destination is reachable. A count,
+once a screen feeds one, is a quiet muted number at the end of its row.
 
 ## Where the prototype is wrong or silent
 

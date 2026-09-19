@@ -15,6 +15,8 @@ export interface AllowedFailure {
 
 export interface ApiGuard {
   allow(pattern: RegExp | string, status: number, reason: string): void;
+  /** Guards a page from another browser context, e.g. the second person of a four-eyes journey. */
+  watch(page: Page): void;
 }
 
 // Known smells awaiting a fix. Each entry is a task; delete it when the task
@@ -67,6 +69,13 @@ export const test = base.extend<{ apiGuard: ApiGuard }>({
         allow(pattern, status, reason) {
           const regex = typeof pattern === 'string' ? new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) : pattern;
           allowed.push({ pattern: regex, status, reason });
+        },
+        // A second person in their own browser context (four eyes) is held to
+        // the same rules as the fixture's page: their undeclared failures fail
+        // the journey too.
+        watch(other) {
+          watch(other, allowed, failures);
+          other.context().on('page', (opened) => watch(opened, allowed, failures));
         },
       });
 

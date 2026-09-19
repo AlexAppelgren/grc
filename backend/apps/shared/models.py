@@ -10,6 +10,7 @@ is visible to everyone, a tenant row only to its tenant. The migration writes th
 
 from __future__ import annotations
 
+import enum
 import uuid
 
 from django.db import models
@@ -17,13 +18,32 @@ from django.db import models
 from apps.shared.audit import ACTOR_TYPE_CHOICES, AppendOnlyModel
 
 
+class TenantStatus(enum.StrEnum):
+    """Tier-one kind (apps/shared/kinds.py)."""
+
+    ACTIVE = "active"
+    DEACTIVATED = "deactivated"
+
+
+TENANT_STATUS_CHOICES = [(kind.value, kind.value) for kind in TenantStatus]
+
+
 class Tenant(models.Model):
-    """One company. Minimal in Phase 0; TEN-01 adds profile, languages and onboarding."""
+    """One company (TEN-01). Explicit columns instead of a settings blob (chunk 1 brief):
+    the default language and the ordered content languages are foreign keys to language
+    rows, and `status` is a kind."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=80, unique=True)
     timezone = models.CharField(max_length=64, default="Europe/Stockholm")
+    status = models.CharField(max_length=16, choices=TENANT_STATUS_CHOICES, default=TenantStatus.ACTIVE.value)
+    default_language = models.ForeignKey(
+        "library.Language", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    content_languages = models.ManyToManyField(
+        "library.Language", through="shared.TenantContentLanguage", related_name="+", blank=True
+    )
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -32,6 +52,26 @@ class Tenant(models.Model):
 
     def __str__(self) -> str:
         return self.slug
+
+
+class TenantContentLanguage(models.Model):
+    """The ordered content languages of one tenant (TEN-01). A tenant table: RLS is forced
+    by shared 0002."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="content_language_links")
+    language = models.ForeignKey("library.Language", on_delete=models.PROTECT, related_name="+")
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "tenant_content_language"
+        ordering = ["sort_order", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "language"], name="tenant_content_language_unique"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.tenant_id}:{self.language_id}"
 
 
 class AuditEvent(AppendOnlyModel):

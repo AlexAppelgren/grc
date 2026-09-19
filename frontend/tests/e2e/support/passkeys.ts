@@ -1,4 +1,6 @@
-import type { BrowserContext } from '@playwright/test';
+import type { APIRequestContext, BrowserContext, Page } from '@playwright/test';
+
+import { expect, type ApiGuard } from './api-guard';
 
 // Passkey fixtures for journeys (playbook 8.3, ID-*). Playwright 1.61+
 // exposes `browserContext.credentials`, a virtual WebAuthn authenticator
@@ -11,6 +13,13 @@ import type { BrowserContext } from '@playwright/test';
 //   credentials.delete(id)                     removes one
 // Call install() before navigating to a page that uses WebAuthn. Never
 // inject tokens or cookies; the sign-in page runs a real ceremony.
+//
+// The fixed key pairs live in ./e2e-passkeys.generated.ts, written by
+// backend/scripts/generate_e2e_passkeys.py so both halves come from one
+// source: seed_e2e stores the COSE public keys and the generated file carries
+// the private keys, allowlisted by exact literal in .gitleaks.toml.
+
+import { E2E_PASSKEYS_GENERATED } from './e2e-passkeys.generated';
 
 export interface SeededPasskey {
   /** Base64url credential id. */
@@ -23,13 +32,32 @@ export interface SeededPasskey {
   publicKey: string;
 }
 
-// Fixed test credentials, one per seeded login. seed_e2e stores the public
-// keys; the private keys below are test-only and allowlisted by exact
-// literal in .gitleaks.toml. Empty until the backend's seed lands: generate
-// with `generatePasskey()` once and paste both halves here and into the seed.
-export const E2E_PASSKEYS: Readonly<Record<string, SeededPasskey>> = {};
+export const E2E_PASSKEYS: Readonly<Record<string, SeededPasskey>> = E2E_PASSKEYS_GENERATED;
 
 export const E2E_RP_ID = process.env.E2E_RP_ID ?? 'localhost';
+export const BACKEND_URL = process.env.E2E_BACKEND_URL ?? `http://localhost:${process.env.E2E_BACKEND_PORT ?? '8000'}`;
+
+// The seeded logins (apps/shared/e2e_seed.py): one per system role in tenant
+// A, the admin of tenant B, the one user awaiting enrolment, and the logins a
+// single journey spends in a way the UI cannot undo (`reserved_for` in
+// apps/shared/e2e_logins.py). Only the journey named beside a reserved login
+// may use it (playbook 8.3 rule 4).
+export const LOGINS = {
+  admin: 'admin@example-bank.test',
+  complianceOfficer: 'compliance_officer@example-bank.test',
+  owner: 'owner@example-bank.test',
+  approver: 'approver@example-bank.test',
+  contributor: 'contributor@example-bank.test',
+  reader: 'reader@example-bank.test',
+  auditor: 'auditor@example-bank.test',
+  anna: 'anna@example-bank.test',
+  secondBankAdmin: 'admin@second-bank.test',
+  /** Reserved for ADM-S2: it re-issues this member's enrolment, which retires their passkeys. */
+  reissue: 'reissue@example-bank.test',
+} as const;
+
+export const ANNA_INVITE_TOKEN = 'e2e-invite-anna';
+export const E2E_FIXED_CODE = '123456';
 
 export async function installAuthenticator(context: BrowserContext): Promise<void> {
   await context.credentials.install();
@@ -47,18 +75,77 @@ export async function seedPasskey(context: BrowserContext, passkey: SeededPasske
 export async function seedPasskeyFor(context: BrowserContext, login: string, rpId: string = E2E_RP_ID): Promise<SeededPasskey> {
   const passkey = E2E_PASSKEYS[login];
   if (passkey === undefined) {
-    throw new Error(`passkeys: no fixed credential for "${login}". Add it to E2E_PASSKEYS and to seed_e2e.`);
+    throw new Error(`passkeys: no fixed credential for "${login}". Add it to the backend roster (apps/shared/e2e_logins.py) and re-run generate_e2e_passkeys.py.`);
   }
   await installAuthenticator(context);
+  // One login per authenticator: a discoverable ceremony answers with the
+  // first credential it holds, so a key seeded earlier in this context
+  // (a journey that signs in as two people) must go first.
+  for (const held of await context.credentials.get({ rpId })) {
+    if (held.id !== passkey.id) await context.credentials.delete(held.id);
+  }
   await seedPasskey(context, passkey, rpId);
   return passkey;
 }
 
+// A fresh browser context holds no refresh cookie, so the client's one
+// cold-load refresh answers 401 before the first screen. Every journey
+// declares it once, here.
+export function allowFreshContext(apiGuard: ApiGuard): void {
+  apiGuard.allow(/\/api\/v1\/auth\/refresh$/, 401, 'no refresh cookie on a fresh browser context');
+}
+
+// The real ceremony on /sign-in: the seeded key answers the discoverable
+// request and the who panel shows the person.
+export async function signInAs(page: Page, login: string): Promise<SeededPasskey> {
+  const passkey = await seedPasskeyFor(page.context(), login);
+  await page.goto('/sign-in');
+  await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
+  await expect(page.locator('[data-who-panel]')).toBeVisible({ timeout: 15_000 });
+  return passkey;
+}
+
+/** The quiet Restricted screen, distinct from Next's own route announcer (also role=alert). */
+export function restrictedScreen(page: Page) {
+  return page.getByRole('alert').filter({ hasText: 'This page is not available to you' });
+}
+
+export async function signOut(page: Page): Promise<void> {
+  // Sign out lives in the account menu since the sidebar rebuild (2026-09-19): open the
+  // account row first, then choose the menu item.
+  await page.locator('[data-who-panel]').getByRole('button', { name: /, account menu$/ }).click();
+  await page.getByRole('menuitem', { name: 'Sign out' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
+}
+
 // One-off helper to mint a fixed credential for a new seeded login: run it
-// in a spec, copy the returned object into E2E_PASSKEYS and its publicKey
-// and id into the backend seed.
+// in a spec, copy the returned object into the backend seed's key list.
 export async function generatePasskey(context: BrowserContext, rpId: string = E2E_RP_ID): Promise<SeededPasskey> {
   await installAuthenticator(context);
   const created = await context.credentials.create(rpId);
   return { id: created.id, userHandle: created.userHandle, privateKey: created.privateKey, publicKey: created.publicKey };
+}
+
+export interface OutboxMessage {
+  to: string;
+  subject: string;
+  body: string;
+}
+
+// The mock mailer's outbox, an E2E-only route (GET /api/v1/e2e/mail-outbox).
+export async function mailOutbox(request: APIRequestContext): Promise<OutboxMessage[]> {
+  const response = await request.get(`${BACKEND_URL}/api/v1/e2e/mail-outbox`);
+  expect(response.ok(), `mail outbox answered ${response.status()}`).toBe(true);
+  const body: unknown = await response.json();
+  return Array.isArray(body) ? (body as OutboxMessage[]) : ((body as { items?: OutboxMessage[] }).items ?? []);
+}
+
+export function mailsTo(outbox: OutboxMessage[], address: string): OutboxMessage[] {
+  return outbox.filter((m) => m.to.toLowerCase() === address.toLowerCase());
+}
+
+/** The `/invite/<token>` path in a mail body, or null. */
+export function invitePathFrom(message: OutboxMessage): string | null {
+  const match = /\/invite\/([A-Za-z0-9_\-.~]+)/.exec(message.body);
+  return match === null ? null : `/invite/${match[1]}`;
 }

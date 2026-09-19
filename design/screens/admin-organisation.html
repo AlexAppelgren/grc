@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen card: organisation (/admin/organisation)</title>
+<style>
+/* Cut from design/prototype/index.html (playbook Section 7, step 4): the
+   tenant shell, .panel, .field, .pair, .check, .btn. TEN-01 only: profile,
+   timezone, languages and the onboarding checklist. Entities, licences,
+   products and teams arrive in chunk 8. */
+:root{
+  --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;
+  --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
+  --btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;--green:#026436;--grey-soft:#eaebeb;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;
+}}
+:root[data-theme="dark"]{
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;--green:#8ae58d;--grey-soft:#313533;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+h1,h2,h3{margin:0;letter-spacing:-.01em;line-height:1.2;font-weight:500}h1{font-size:2rem;font-weight:400}h2{font-size:1.25rem}
+p{margin:0 0 .75rem}a{color:var(--text);text-underline-offset:3px}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--brand);color:#fff;padding:24px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:0 8px 20px}.logo{display:block;width:100%;height:auto;max-width:196px}
+.nav button{display:flex;width:100%;background:none;border:0;color:#fff;text-align:left;padding:10px 12px;border-radius:999px;font-size:.95rem}
+.nav button[aria-current="page"]{background:#f8f6f1;color:#003824;font-weight:600}
+.nav hr{border:0;border-top:1px solid rgba(255,255,255,.18);margin:12px 8px}
+.who{margin:18px 4px 0;padding:12px;border:1px solid rgba(255,255,255,.25);border-radius:12px;font-size:.85rem;color:rgba(255,255,255,.75)}
+.who b{display:block;color:#fff;font-weight:600}
+main{padding:32px 36px 96px;max-width:1100px;width:100%}
+.mbrand{display:none}
+.back{background:none;border:0;color:var(--text);padding:0;margin-bottom:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.head p{color:var(--muted);margin:6px 0 0;max-width:70ch}
+.g2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.panel.sand{background:var(--sand);border-color:var(--sand-2)}
+.panel>h2{margin-bottom:12px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field{display:grid;gap:5px;margin-bottom:14px}.field label{font-weight:600;font-size:.9rem}
+.field input,.field select{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 12px;min-height:44px}
+.field .hint{color:var(--muted);font-size:.82rem}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--brand)}
+.check .done{text-decoration:line-through;color:var(--muted)}
+.check small{display:block;color:var(--muted);font-size:.82rem}
+.btn{background:var(--btn);color:var(--btn-text);border:1px solid var(--btn);border-radius:999px;padding:10px 20px;font-weight:600;min-height:44px}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-strong)}
+.btn.small{padding:6px 14px;min-height:36px;font-size:.86rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:flex-end}
+.err{color:var(--red);font-size:.88rem;margin-top:6px}
+.ok{color:var(--green);font-size:.88rem;margin-top:6px}
+.meter{height:10px;border-radius:999px;background:var(--grey-soft);overflow:hidden;margin:10px 0 6px}
+.meter i{display:block;height:100%;border-radius:999px;background:var(--brand);width:25%}
+.empty{color:var(--muted);padding:28px;text-align:center;border:1px dashed var(--line-strong);border-radius:16px}
+.empty h2{color:var(--text);margin-bottom:8px}
+.states h2.k{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:28px 0 10px}
+.note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+.tabbar{display:none}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}.side{display:none}
+  .mbrand{display:block;margin:0 0 12px}.mbrand .logo{width:150px}
+  main{padding:20px 16px 100px}h1{font-size:1.6rem}
+  .g2,.pair{grid-template-columns:1fr}
+  .bar{flex-wrap:nowrap}.bar .btn{order:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar .btn:not(.ghost){order:3}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--brand);z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar button{background:none;border:0;color:rgba(255,255,255,.7);padding:10px 2px 8px;font-size:.72rem}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
+    <nav class="nav" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Roadmap</button><button>Search and ask</button><hr><button aria-current="page">Admin</button></nav>
+    <div class="who">Signed in as<b>Erik Holm</b>Example Bank AB · Administrator</div>
+  </aside>
+  <main id="main" tabindex="-1">
+    <div class="mbrand"><svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg></div>
+    <button class="back">← Admin</button>
+    <div class="head"><div><h1>Organisation</h1><p>Deadlines and digests follow this timezone and these languages.</p></div></div>
+
+    <div class="states">
+    <div class="g2">
+      <form class="panel" aria-labelledby="pf"><h2 id="pf">Profile</h2>
+        <div class="field"><label for="n">Name</label><input id="n" value="Example Bank AB"></div>
+        <div class="pair">
+          <div class="field"><label for="tz">Timezone</label><input id="tz" list="tzs" value="Europe/Stockholm"><datalist id="tzs"><option>Europe/Stockholm</option><option>Europe/Helsinki</option><option>Europe/Oslo</option><option>Europe/Copenhagen</option></datalist><span class="hint">Deadlines are shown in this timezone.</span></div>
+          <div class="field"><label for="dl">Default language</label><select id="dl"><option>English</option><option selected>Swedish</option><option>Danish</option><option>Norwegian</option><option>Finnish</option></select></div>
+        </div>
+        <div class="field"><label>Content languages, in order</label>
+          <label class="check"><input type="checkbox" checked> <span>Swedish</span></label>
+          <label class="check"><input type="checkbox" checked> <span>English</span></label>
+          <label class="check"><input type="checkbox"> <span>Danish</span></label>
+          <label class="check"><input type="checkbox"> <span>Norwegian</span></label>
+          <label class="check"><input type="checkbox"> <span>Finnish</span></label>
+          <span class="hint">Summaries are offered in these languages, first one first.</span>
+        </div>
+        <p class="ok" role="status">Saved.</p>
+        <div class="bar"><button class="btn" type="submit">Save</button></div>
+      </form>
+      <div class="panel sand"><h2>Getting started</h2>
+        <div class="meter"><i></i></div><p style="color:var(--muted);font-size:.9rem">1 of 4 done</p>
+        <label class="check"><input type="checkbox" checked disabled> <span class="done">Set the profile</span></label>
+        <label class="check"><input type="checkbox" disabled> <span>Invite the first member<small><a href="#">Members</a></small></span></label>
+        <label class="check"><input type="checkbox" disabled> <span>Set the footprint<small>Comes with the next release</small></span></label>
+        <label class="check"><input type="checkbox" disabled> <span>An administrator enrols a passkey</span></label>
+      </div>
+    </div>
+
+    <h2 class="k">Refused by the server (the 403 rendered as is, for a member without security manage)</h2>
+    <div class="panel"><p class="err" role="alert">Only a member who manages security can change the profile. Needs security manage.</p></div>
+
+    <h2 class="k">Loading and error</h2>
+    <div class="panel" aria-busy="true" style="height:160px;background:var(--surface-2)"></div>
+    <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the organisation</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
+    </div>
+
+    <p class="note">Organisation card (TEN-01). Any member may read the profile; saving needs security manage and the server's 403 renders in place with its detail and the missing grant. Languages come from the language rows as key and label; the timezone is a free IANA name with Nordic suggestions. The checklist is computed by the server; each undone step links to where it is done.</p>
+  </main>
+</div>
+<nav class="tabbar" aria-label="Main"><button>Today</button><button>Watch</button><button>Inventory</button><button>Search</button><button>More</button></nav>
+</body>
+</html>

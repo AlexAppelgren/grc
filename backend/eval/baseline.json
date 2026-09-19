@@ -1,6 +1,26 @@
 {
-  "_comment": "Last accepted metric values. Phase 0: no runner, no rows; zeros until chunk 7 records the first run.",
-  "retrieval_recall_at_10": 0.0,
-  "retrieval_mrr": 0.0,
-  "classification_accuracy": 0.0
+  "_comment": "Last accepted metric values (playbook 16: evaluation is a gate). recorded is false until a real evaluator scores a track and search_eval.py --record writes it here; while a track is not recorded a missing evaluator passes as 'not available yet', afterwards it fails. Metrics: retrieval recall@10 and MRR over eval/retrieval.jsonl; classification accuracy per field over eval/classification.jsonl (change type exact, flags set equality, scope mean Jaccard over the named dimensions, screen = AGT-07 risk flags set equality). Never edit the numbers by hand: an accepted improvement is re-recorded with --record in the same commit as the change that earned it.",
+  "recorded": false,
+  "tracks": {
+    "retrieval": {
+      "recorded": false,
+      "recorded_at": null,
+      "evaluator": null,
+      "rows": null
+    },
+    "classification": {
+      "recorded": false,
+      "recorded_at": null,
+      "evaluator": null,
+      "rows": null
+    }
+  },
+  "metrics": {
+    "retrieval_recall_at_10": null,
+    "retrieval_mrr": null,
+    "classification_change_type_accuracy": null,
+    "classification_flags_accuracy": null,
+    "classification_scope_accuracy": null,
+    "classification_screen_accuracy": null
+  }
 }

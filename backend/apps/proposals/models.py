@@ -1,3 +1,90 @@
-"""Models of the proposals app. Empty after Phase 0 (PHASE0_BRIEF: no domain tables yet). Read
-app.md before adding one; tenant models extend TenantModel, library models LibraryModel,
-admin-managed lists Vocabulary, ledgers AppendOnlyModel (playbook 4.1)."""
+"""Models of the proposals app (PRO-01, PRO-02, AC-PRO2; schema v0.3 `proposal`).
+
+`Proposal` is the door into the library, not the library: it lives in the library zone
+(no tenant column, visible to every tenant's proposer and to the console) but is a plain
+model rather than a `LibraryModel`, because people and agents create proposals from
+apps/proposals/logic.py while the fence reserves library writes for
+apps/proposals/apply.py, which applies an approved payload inside `library_write()`.
+
+`kind` and `status` are tier-one kinds (apps/shared/kinds.py). The payload's shape is
+named per kind in apps/proposals/schemas.py and validated when the proposal is created.
+The check constraint `proposal_four_eyes` (RunSQL in migration 0001) is the database's word
+on "never the proposer".
+"""
+
+from __future__ import annotations
+
+import enum
+import uuid
+
+from django.db import models
+
+
+def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
+    return [(member.value, member.value) for member in kind]
+
+
+class ProposalKind(enum.StrEnum):
+    """What a proposal changes; apply() branches on it. Chunk 2: the vocabulary and term
+    kinds. Chunk 4 adds the instrument, provision and obligation kinds of schema v0.3."""
+
+    VOCABULARY_CREATE = "vocabulary_create"
+    VOCABULARY_RELABEL = "vocabulary_relabel"
+    VOCABULARY_RETIRE = "vocabulary_retire"
+    VOCABULARY_MERGE = "vocabulary_merge"
+    VOCABULARY_RESTORE = "vocabulary_restore"
+    TERM_CREATE = "term_create"
+    TERM_UPDATE = "term_update"
+
+
+class ProposalStatus(enum.StrEnum):
+    OPEN = "open"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    SUPERSEDED = "superseded"
+
+
+class OriginType(enum.StrEnum):
+    """Where a record came from (schema v0.3 `origin_type`): an agent or a person."""
+
+    AGENT = "agent"
+    USER = "user"
+
+
+class Proposal(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    kind = models.CharField(max_length=40, choices=_choices(ProposalKind))
+    target_type = models.CharField(max_length=64, blank=True)
+    target_id = models.UUIDField(null=True, blank=True)
+    change_id = models.UUIDField(null=True, blank=True)
+    title = models.CharField(max_length=500)
+    payload = models.JSONField(default=dict, blank=True)  # schema: ProposalPayload
+    field_sources = models.JSONField(default=dict, blank=True)  # schema: ProposalFieldSources
+    source_label = models.CharField(max_length=500, blank=True)
+    source_url = models.URLField(max_length=2000, blank=True)
+    effective_from = models.DateField(null=True, blank=True)
+    origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    agent_run_id = models.UUIDField(null=True, blank=True)
+    model = models.CharField(max_length=200, blank=True)
+    proposed_by_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    proposed_by_api_key = models.ForeignKey("identity.ApiKey", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    idempotency_key = models.CharField(max_length=200, null=True, blank=True, unique=True)
+    status = models.CharField(max_length=16, choices=_choices(ProposalStatus), default=ProposalStatus.OPEN.value)
+    reviewed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    rejection_code = models.CharField(max_length=64, blank=True)
+    review_note = models.TextField(blank=True)
+    applied_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "proposal"
+        ordering = ["created_at", "id"]
+        indexes = [models.Index(fields=["status", "created_at"], name="proposal_queue_idx")]
+        # The four-eyes check constraint `proposal_four_eyes` is created by RunSQL in
+        # migration 0001 as `reviewed_by_id IS NULL OR proposed_by_user_id IS NULL OR
+        # reviewed_by_id <> proposed_by_user_id`: Django cannot spell `<>`, and the
+        # four-eyes guard reads the definition back from pg_constraint.
+
+    def __str__(self) -> str:
+        return f"{self.kind} {self.id}"

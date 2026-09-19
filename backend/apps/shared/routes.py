@@ -45,4 +45,16 @@ def iter_operations(api: NinjaAPI) -> Iterator[RegisteredOperation]:
 # (method, path, model label, factory name); the guard builds the record with the
 # factory in apps/shared/factories.py. Phase 0 has none, and the guard enumerates
 # an empty registry rather than skipping.
-TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = []
+TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
+    ("PATCH", "/tenant/members/{user_id}", "identity.Membership", "member_user"),
+    ("DELETE", "/tenant/members/{user_id}", "identity.Membership", "member_user"),
+    ("GET", "/tenant/members/{user_id}/sessions", "identity.Membership", "member_user"),
+    ("DELETE", "/tenant/members/{user_id}/sessions", "identity.Membership", "member_user"),
+    ("DELETE", "/tenant/invitations/{invitation_id}", "identity.Invitation", "invitation"),
+    ("PATCH", "/tenant/roles/{key}", "identity.TenantRole", "tenant_role_key"),
+    ("DELETE", "/tenant/api-keys/{key_id}", "identity.ApiKey", "api_key"),
+    ("POST", "/tenant/footprint/requests/{request_id}/approve", "taxonomy.FootprintChangeRequest", "footprint_request"),
+    ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
+    ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
+    ("POST", "/vocab/{list_name}/suggestions/{suggestion_id}/decline", "taxonomy.VocabularySuggestion", "vocabulary_suggestion"),
+]

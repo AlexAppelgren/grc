@@ -4,20 +4,30 @@ Taken from the prototype. The build reproduces it and the agents feed it.
 
 ## Six tones
 
-| Tone | Background token | Text token | Means |
-|---|---|---|---|
-| `information` | `l3-neutral-02` | `content-neutral-01` | Neutral fact: regime, workflow status, "Guidance", "Monitor", "Not assessed", risk, match kind |
-| `notice` | `l3-notice-02` | `content-notice-01` | What kind of change this is, and counts: change type, "2 open changes", "6+ months", a running agent |
-| `positive` | `l3-positive-02` | `content-positive-03` | Good on a severity scale: "Compliant", "No action", "Closed" gap, a finished run |
-| `warning` | `l3-warning-02` | `content-warning-01` | Needs attention: "Within 3 months", "Partly compliant", "Remediating", "Waiting for approval", "Guidance, comply or explain" |
-| `negative` | `l3-negative-02` | `content-negative-01` | Bad on a severity scale: "Act now", "Gap", an open gap, high severity |
-| `brand` | `l3-brand-02` | `content-brand-02` | Identity and scope from the shared library: instrument short name, legal entity, service, client category, flags, library tags, "Lead", "Our deadline", agent version |
+| Tone | Background token (light / dark) | Text token | Contrast light / dark | Means |
+|---|---|---|---|---|
+| `information` | `l3-neutral-02` | `content-neutral-01` | 16.50 / 11.69 | Neutral fact: regime, workflow status, "Guidance", "Monitor", "Not assessed", risk, match kind |
+| `notice` | `l3-notice-02` / `l3-notice-03` | `content-notice-01` | 5.67 / 5.74 | What kind of change this is, and counts: change type, "2 open changes", "6+ months", a running agent |
+| `positive` | `l3-positive-02` / `l3-positive-03` | `content-positive-03` | 6.05 / 8.06 | Good on a severity scale: "Compliant", "No action", "Closed" gap, a finished run |
+| `warning` | `l3-warning-02` / `l3-warning-03` | `content-warning-01` | 5.16 / 5.92 | Needs attention: "Within 3 months", "Partly compliant", "Remediating", "Waiting for approval", "Guidance, comply or explain" |
+| `negative` | `l3-negative-02` / `l3-negative-03` | `content-negative-01` | 5.24 / 5.40 | Bad on a severity scale: "Act now", "Gap", an open gap, high severity |
+| `brand` | `l3-brand-02` | `content-brand-02` | 5.55 / 8.87 | Identity and scope from the shared library: instrument short name, legal entity, service, client category, flags, library tags, "Lead", "Our deadline", agent version |
 
 Token names are Green's (`--gds-sys-color-…`), with the `brand` pair
 overridden in `brand.css`. Note Green's naming: `information` is the grey
 one and `notice` is blue. Tenant tags use an outlined `information` pill.
-Shape: fully rounded, 2 px by 10 px padding, 600 weight, the `meta` type
-role. There is no seventh tone and no component accepts a colour.
+Shape (foundations.md, 2026-09-19): fully rounded, 20 px tall, 8 px side
+padding, the `meta` type role (13 / 18) at 500 weight, no border. shadcn's
+current Badge is fully rounded too; buttons, toggles and the current nav row
+are 6 px, so the round shape stays the pill's alone. Was 2 by 10 px at 600.
+
+Dark theme: the four status tones take Green's `-03` background step. At
+`-02`, dark `negative` measures 4.47:1 and fails AA (dark `warning` 4.57:1,
+`notice` 4.61:1, too close to the line); at `-03` the lowest is 5.40:1.
+Light is unchanged. `frontend/src/components/ui/pill-tones.ts` maps one
+background per tone for both themes, so it needs a dark mapping to match.
+
+There is no seventh tone and no component accepts a colour.
 
 ## Where tone comes from
 

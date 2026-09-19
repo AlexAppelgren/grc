@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import enum
 import functools
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
@@ -203,25 +204,80 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
 }
 
 # ---------------------------------------------------------------------------------------
-# API key scopes (ID-10). Named here so `@requires_scope` and the key console share them.
-# No scope allows a library edit (AC-PRO1); the agent writes proposals and changes only.
+# API key scopes (ID-10), named as schema v0.3 names them (`api_key.scopes` check). Named
+# here so `@requires_scope` and the key console share them. No scope allows a library
+# edit (AC-PRO1, ID-S21): the agent writes changes and proposals only.
 # ---------------------------------------------------------------------------------------
-SCOPE_AGENT_RUNS = "agent.runs"
-SCOPE_CHANGES_WRITE = "changes.write"
-SCOPE_PROPOSALS_WRITE = "proposals.write"
-SCOPE_VOCAB_READ = "vocab.read"
-SCOPE_SEARCH = "search.use"
-SCOPE_UPCOMING_READ = "upcoming.read"
+SCOPE_AGENT_RUNS_WRITE = "agent-runs:write"
+SCOPE_SOURCES_WRITE = "sources:write"
+SCOPE_CHANGES_WRITE = "changes:write"
+SCOPE_PROPOSALS_WRITE = "proposals:write"
+SCOPE_SEARCH_READ = "search:read"
+SCOPE_LIBRARY_READ = "library:read"
+SCOPE_UPCOMING_READ = "upcoming:read"
+SCOPE_TENANT_READ = "tenant:read"
 ALL_SCOPES: frozenset[str] = frozenset(
     {
-        SCOPE_AGENT_RUNS,
+        SCOPE_AGENT_RUNS_WRITE,
+        SCOPE_SOURCES_WRITE,
         SCOPE_CHANGES_WRITE,
         SCOPE_PROPOSALS_WRITE,
-        SCOPE_VOCAB_READ,
-        SCOPE_SEARCH,
+        SCOPE_SEARCH_READ,
+        SCOPE_LIBRARY_READ,
         SCOPE_UPCOMING_READ,
+        SCOPE_TENANT_READ,
     }
 )
+
+# ---------------------------------------------------------------------------------------
+# The permission catalogue for the role editor (`GET /reference/permissions`, ID-09):
+# a one-line description per constant. The group is the word before the dot.
+# ---------------------------------------------------------------------------------------
+PERMISSION_DESCRIPTIONS: dict[str, str] = {
+    LIBRARY_READ: "Read the shared library of instruments, provisions and obligations.",
+    WATCH_READ: "Read the watch feed of regulatory changes.",
+    ROADMAP_READ: "Read the roadmap of dated changes.",
+    SEARCH_USE: "Search and ask questions of the library.",
+    COMMENTS_WRITE: "Write comments on cases and records.",
+    PROBLEMS_REPORT: "Report a problem with a library record.",
+    REGISTER_READ: "Read the obligation register and its statuses.",
+    CASES_READ: "Read change cases.",
+    REPORTS_READ: "Read reports.",
+    AUDIT_READ: "Read the audit log.",
+    FOOTPRINT_REQUEST: "Request a footprint change.",
+    FOOTPRINT_APPROVE: "Approve a footprint change requested by someone else.",
+    CASES_TRIAGE: "Triage new cases: urgency and owner.",
+    CASES_WORK: "Work a case: so what, assessment, actions, evidence, request sign-off.",
+    CASES_CONTRIBUTE: "Contribute to a case: assessment input, actions, evidence.",
+    CASES_SIGNOFF: "Sign off a case worked by someone else.",
+    REGISTER_EDIT: "Edit register entries.",
+    GAPS_EDIT: "Edit gaps.",
+    APPLICABILITY_REQUEST: "Request an applicability decision.",
+    APPLICABILITY_APPROVE: "Approve an applicability decision requested by someone else.",
+    RISK_ACCEPT_APPROVE: "Approve a risk acceptance requested by someone else.",
+    PROPOSALS_CREATE: "Propose a change to the shared library.",
+    EXPORTS_CREATE: "Create exports.",
+    AI_LOG_READ: "Read the AI generation log.",
+    MEMBERS_MANAGE: "Invite, change and deactivate members; re-issue enrolment; revoke sessions.",
+    ROLES_MANAGE: "Create and change the tenant's roles.",
+    SECURITY_MANAGE: "Change the security policy and read the security log.",
+    VOCAB_MANAGE: "Manage the tenant's vocabularies.",
+    WORKFLOW_MANAGE: "Manage workflow policy.",
+    AGENTS_MANAGE: "Switch agents on and off and set their cadence and budget.",
+    INTEGRATIONS_MANAGE: "Manage integrations and API keys.",
+    PROPOSALS_REVIEW: "Review proposals in the platform console.",
+    LIBRARY_VOCAB_MANAGE: "Manage the library vocabularies.",
+    SOURCES_MANAGE: "Manage sources.",
+    EVAL_MANAGE: "Manage evaluation sets.",
+    TENANTS_MANAGE: "Manage tenants and plans.",
+    AGENT_DEFINITIONS_MANAGE: "Manage agent definitions.",
+    SUPPORT_ACCESS_GRANT: "Enter a tenant under a logged support access grant.",
+    SYSTEM_HEALTH: "Read system health.",
+}
+
+
+def permission_group(permission: str) -> str:
+    return permission.split(".", 1)[0]
 
 
 # ---------------------------------------------------------------------------------------
@@ -243,15 +299,97 @@ class Ungated:
     note: str  # one sentence a reviewer can disagree with
 
 
+_SELF_ME = "Acts only on the caller's own account: the session is the grant (ID-04)."
+_SELF_STEP_UP = "A fresh assertion on the caller's own session (ID-06)."
+_BOOTSTRAP_AUTH = "An auth ceremony step that runs before any principal exists; rate limited (ID-02, ID-03)."
+_CAPABILITY_ENROL = "The enrolment or full session itself is the capability to add a passkey (ID-02, AC-ID2)."
+_CAPABILITY_MEMBER = "Any member's session is the grant: pickers and the shell need labels and the profile (TEN-01)."
+_CAPABILITY_VOCAB_READ = "Any session reads the list of lists; pickers, filters and pills need every list (VOC-01)."
+_LOGIC_LIBRARY_READ = "A person's session, or an agent's key holding library:read; pickers and agents read one endpoint (AGT-02)."
+_LOGIC_VOCAB_WRITE = "vocab.manage writes a tenant list; a library list write is a proposal from proposals.create or library_vocab.manage (VOC-07)."
+_LOGIC_PROPOSE = "A term change is a proposal from proposals.create (tenant) or library_vocab.manage (console); never a direct write (VOC-07)."
+
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
 UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/me"): Ungated(
         UngatedReason.SELF,
         "Returns the caller's own principal; the enrolment session may call it too (AC-ID2).",
     ),
+    ("PATCH", "/me"): Ungated(UngatedReason.SELF, _SELF_ME),
+    ("GET", "/me/passkeys"): Ungated(UngatedReason.SELF, _SELF_ME),
+    ("PATCH", "/me/passkeys/{passkey_id}"): Ungated(UngatedReason.SELF, _SELF_ME),
+    ("DELETE", "/me/passkeys/{passkey_id}"): Ungated(UngatedReason.SELF, _SELF_ME),
+    ("GET", "/me/sessions"): Ungated(UngatedReason.SELF, _SELF_ME),
+    ("DELETE", "/me/sessions/{session_id}"): Ungated(UngatedReason.SELF, _SELF_ME),
+    ("POST", "/auth/step-up/options"): Ungated(UngatedReason.SELF, _SELF_STEP_UP),
+    ("POST", "/auth/step-up/verify"): Ungated(UngatedReason.SELF, _SELF_STEP_UP),
     ("GET", "/reference/product"): Ungated(
         UngatedReason.BOOTSTRAP,
         "The sign-in page needs the product name before anyone has signed in.",
+    ),
+    ("POST", "/auth/invitations/{token}/open"): Ungated(
+        UngatedReason.PUBLIC_TOKEN, "The single-use invitation token in the URL is the grant (ID-01)."
+    ),
+    ("POST", "/auth/invitations/verify"): Ungated(
+        UngatedReason.PUBLIC_TOKEN,
+        "The single-use invitation token and the emailed code, both in the body, are the grant; rate limited (ID-02).",
+    ),
+    ("POST", "/auth/code/request"): Ungated(UngatedReason.BOOTSTRAP, _BOOTSTRAP_AUTH),
+    ("POST", "/auth/code/verify"): Ungated(UngatedReason.BOOTSTRAP, _BOOTSTRAP_AUTH),
+    ("POST", "/auth/passkeys/authenticate/options"): Ungated(UngatedReason.BOOTSTRAP, _BOOTSTRAP_AUTH),
+    ("POST", "/auth/passkeys/authenticate/verify"): Ungated(UngatedReason.BOOTSTRAP, _BOOTSTRAP_AUTH),
+    ("POST", "/auth/refresh"): Ungated(
+        UngatedReason.BOOTSTRAP, "The refresh cookie is the credential; no access token exists yet (D-06)."
+    ),
+    ("POST", "/auth/sign-out"): Ungated(
+        UngatedReason.BOOTSTRAP, "Revokes the session named by the refresh cookie, which may already be stale (D-06)."
+    ),
+    ("POST", "/auth/passkeys/register/options"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_ENROL),
+    ("POST", "/auth/passkeys/register/verify"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_ENROL),
+    ("GET", "/tenant"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/tenant/roles"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
+    ("GET", "/reference/languages"): Ungated(
+        UngatedReason.CAPABILITY, "A reference read for pickers; any session may list the language rows (I18N-01)."
+    ),
+    ("GET", "/reference/permissions"): Ungated(
+        UngatedReason.CAPABILITY,
+        "The permission constants are public within a session; the role editor lists them (ID-09).",
+    ),
+    ("GET", "/e2e/mail-outbox"): Ungated(
+        UngatedReason.BOOTSTRAP,
+        "Exists only under E2E_MODE (404 otherwise) so journeys can prove the mailer sent nothing (AC-ID1).",
+    ),
+    # Chunk 2 (vocabularies, taxonomy, footprint, proposals). A logic gate here means one
+    # route serves more than one principal or permission; apps/taxonomy/http.py decides and
+    # still answers the structured 403 with requiredPermission.
+    ("GET", "/vocab"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_VOCAB_READ),
+    ("GET", "/vocab/{list_name}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_READ),
+    ("GET", "/vocab/{list_name}/{key}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_READ),
+    ("POST", "/vocab/{list_name}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_VOCAB_WRITE),
+    ("PATCH", "/vocab/{list_name}/{key}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_VOCAB_WRITE),
+    ("POST", "/vocab/{list_name}/{key}/retire"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_VOCAB_WRITE),
+    ("POST", "/vocab/{list_name}/{key}/restore"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_VOCAB_WRITE),
+    ("POST", "/vocab/{list_name}/{key}/merge"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_VOCAB_WRITE),
+    ("POST", "/vocab/{list_name}/suggest"): Ungated(
+        UngatedReason.CAPABILITY,
+        "Any member may suggest a value; it lands with vocab.manage holders or in the proposal queue (VOC-03).",
+    ),
+    ("GET", "/taxonomy/dimensions"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_READ),
+    ("GET", "/taxonomy/terms"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_READ),
+    ("POST", "/taxonomy/terms"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSE),
+    ("PATCH", "/taxonomy/terms/{term_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSE),
+    ("POST", "/proposals"): Ungated(
+        UngatedReason.LOGIC_GATE,
+        "proposals.create from a tenant, library_vocab.manage from the console or the proposals:write scope (PRO-01).",
+    ),
+    ("GET", "/tenant/footprint"): Ungated(
+        UngatedReason.CAPABILITY, "Every member reads the footprint that filters every surface they see (FP-03)."
+    ),
+    ("GET", "/tenant/footprint/requests"): Ungated(
+        UngatedReason.CAPABILITY, "Every member may see which footprint changes were asked for and decided (FP-02)."
+    ),
+    ("GET", "/reference/jurisdictions"): Ungated(
+        UngatedReason.CAPABILITY, "A reference read for pickers; any session may list the jurisdiction rows (I18N-01)."
     ),
 }
 
@@ -321,25 +459,48 @@ def requires_scope(scope: str) -> Callable[[F], F]:
     return decorate
 
 
+def enforce_step_up(request: HttpRequest) -> uuid.UUID:
+    """Demand a passkey assertion younger than STEP_UP_FRESHNESS_MINUTES on the caller's
+    session (ID-06, AC-ID3); put its id on `request.step_up_assertion_id` and return it so
+    logic passes it to `record()`. Used by `@requires_step_up` and, for actions whose
+    sensitivity depends on the body (a role change inside a member PATCH), by the route."""
+    principal = _principal(request)
+    if principal.kind is not PrincipalKind.USER:
+        raise ProblemError(status=403, code="step_up_required", detail="A person must confirm this with a passkey.")
+    freshness = timedelta(minutes=settings.STEP_UP_FRESHNESS_MINUTES)
+    if (
+        principal.step_up_at is None
+        or principal.step_up_assertion_id is None
+        or timezone.now() - principal.step_up_at > freshness
+    ):
+        raise ProblemError(status=403, code="step_up_required", detail="Confirm this action with your passkey.")
+    request.step_up_assertion_id = principal.step_up_assertion_id  # type: ignore[attr-defined]
+    return principal.step_up_assertion_id
+
+
+def enforce_recent_sign_in_or_step_up(request: HttpRequest) -> uuid.UUID | None:
+    """Adding or removing a passkey from a full session (security review F9, narrowed):
+    allowed while the session is younger than STEP_UP_FRESHNESS_MINUTES (its creation,
+    which a refresh does not move), or with a fresh assertion. Returns the assertion id
+    when there is one. A sign-in never counts as a step-up for `@requires_step_up`."""
+    principal = _principal(request)
+    try:
+        return enforce_step_up(request)
+    except ProblemError:
+        created = principal.session_created_at
+        if principal.kind is PrincipalKind.USER and created is not None and timezone.now() - created <= timedelta(minutes=settings.STEP_UP_FRESHNESS_MINUTES):
+            return None
+        raise
+
+
 def requires_step_up(view: F) -> F:
     """A fresh passkey assertion within STEP_UP_FRESHNESS_MINUTES (ID-06, AC-ID3). The
-    assertion reference is stored on the audit event by the logic that completes the
-    action; this decorator only refuses stale sessions with 403 `step_up_required`."""
+    assertion reference is put on `request.step_up_assertion_id` for the logic to store
+    on the audit event; a stale session is refused with 403 `step_up_required`."""
 
     @functools.wraps(view)
     def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> Any:
-        principal = _principal(request)
-        if principal.kind is not PrincipalKind.USER:
-            raise ProblemError(
-                status=403, code="step_up_required", detail="A person must confirm this with a passkey."
-            )
-        freshness = timedelta(minutes=settings.STEP_UP_FRESHNESS_MINUTES)
-        if principal.step_up_at is None or timezone.now() - principal.step_up_at > freshness:
-            raise ProblemError(
-                status=403,
-                code="step_up_required",
-                detail="Confirm this action with your passkey.",
-            )
+        enforce_step_up(request)
         return view(request, *args, **kwargs)
 
     wrapper.__cw_step_up__ = True  # type: ignore[attr-defined]

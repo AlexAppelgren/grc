@@ -5,7 +5,7 @@ import type { PillTone } from '@/components/ui/pill-tones';
 // vocabulary rows an admin manages carry a kind and inherit its tone. A new
 // compliance sub-status inherits the tone of its category.
 
-export type UrgencyKind = 'act_now' | 'within_3_months' | 'six_plus_months' | 'monitor' | 'no_action';
+export type UrgencyKind = 'act_now' | 'within_3_months' | 'six_months_plus' | 'monitor' | 'no_action';
 export type ComplianceKind = 'compliant' | 'partly' | 'gap' | 'not_assessed';
 export type GapKind = 'open' | 'remediating' | 'risk_accepted' | 'closed';
 export type SeverityKind = 'high' | 'medium' | 'low';
@@ -14,7 +14,7 @@ export type ApplicabilityKind = 'applies' | 'does_not_apply' | 'not_assessed';
 export const urgencyTone: Record<UrgencyKind, PillTone> = {
   act_now: 'negative',
   within_3_months: 'warning',
-  six_plus_months: 'notice',
+  six_months_plus: 'notice',
   monitor: 'information',
   no_action: 'positive',
 };

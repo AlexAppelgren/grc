@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { catalogs } from '@/shared/i18n/messages';
 
-import { destinations, dockDestinations, findDestination, isCurrent, unlocks, visibleDestinations } from './registry';
+import { ACCOUNT_PARENT, childDestinations, destinations, dockDestinations, findDestination, isCurrent, unlocks, visibleDestinations } from './registry';
 
 describe('navigation registry (playbook 6.2)', () => {
   it('seeds the prototype destinations on the tenant surface and the console ones', () => {
@@ -45,6 +45,31 @@ describe('navigation registry (playbook 6.2)', () => {
     expect(isCurrent(watch, '/watch/123')).toBe(true);
     expect(isCurrent(watch, '/watchlist')).toBe(false);
     expect(findDestination('nope')).toBeUndefined();
+  });
+
+  it('keeps admin sections and account links under their parent, gated by their own permission', () => {
+    expect(childDestinations('admin', ['members.manage']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-members']);
+    expect(childDestinations('admin', ['roles.manage', 'integrations.manage', 'security.manage']).map((d) => d.id)).toEqual([
+      'admin-organisation',
+      'admin-roles',
+      'admin-api-keys',
+      'admin-security-log',
+    ]);
+    // Chunk 2: the vocabulary screen needs vocab.manage; the footprint screen
+    // opens for either footprint grant and is read-only without the first.
+    expect(childDestinations('admin', ['vocab.manage']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-vocabularies']);
+    expect(childDestinations('admin', ['footprint.request']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint']);
+    expect(childDestinations('admin', ['footprint.approve']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint']);
+    // An approver who holds nothing else still reaches /admin to find it.
+    expect(visibleDestinations('tenant', ['footprint.approve']).map((d) => d.id)).toEqual(['today', 'admin']);
+    expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions']);
+    // Children never reach the rail or the dock.
+    const all = destinations.flatMap((d) => d.anyOfPermissions);
+    expect(visibleDestinations('tenant', all).every((d) => d.parent === undefined)).toBe(true);
+    expect(dockDestinations('tenant', all).map((d) => d.id)).toEqual(['today', 'watch', 'inventory', 'search']);
+    for (const child of destinations.filter((d) => d.parent !== undefined && d.parent !== ACCOUNT_PARENT)) {
+      expect(findDestination(child.parent ?? '')).toBeDefined();
+    }
   });
 
   it('has unique ids and hrefs, and a label in every language', () => {

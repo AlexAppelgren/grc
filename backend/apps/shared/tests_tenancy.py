@@ -7,13 +7,15 @@ readable while the fence is open. The AST half lives in tests_library_fence.py.
 
 from __future__ import annotations
 
-from typing import cast
 
 from django.db import connection, models
+from django.db import DEFAULT_DB_ALIAS, connections
 from django.test import TestCase
 
+from apps.shared import tenancy
 from apps.shared.tenancy import (
     LibraryModel,
+    LibraryQuerySet,
     LibraryWriteRefused,
     TenantModel,
     library_write,
@@ -23,6 +25,10 @@ from apps.shared.tenancy import (
 
 class ProbeLibraryRecord(LibraryModel):
     key = models.CharField(max_length=40)
+    # The fenced manager LibraryModel declares, declared again so django-stubs binds it to this
+    # model: a test module's models never reach the plugin's app registry, so the inherited
+    # one is typed as LibraryModel's (whose only field is `id`). Same queryset, same fence.
+    objects = LibraryQuerySet.as_manager()
 
     class Meta:
         app_label = "shared"
@@ -84,7 +90,66 @@ class LibraryFenceAtRuntime(TestCase):
 
     def test_tenant_model_carries_the_tenant_foreign_key(self) -> None:
         field = ProbeTenantRecord._meta.get_field("tenant")
-        related = cast(type[models.Model], field.related_model)
+        related = field.related_model
+        assert isinstance(related, type)
         self.assertEqual(related._meta.label, "shared.Tenant")
         self.assertEqual(getattr(field.remote_field, "on_delete").__name__, "PROTECT")  # noqa: B009
         self.assertTrue(ProbeTenantRecord._meta.pk.name == "id")
+
+
+class IdentityLookupMode(TestCase):
+    """`tenancy.identity_lookup()` (chunk 1): the auth layer's window onto identity rows
+    of every tenant before a tenant is known, switched off again on exit, and callable
+    only from the auth layer (an AST guard below)."""
+
+    def test_lookup_mode_sees_every_tenant_and_ends_with_the_block(self) -> None:
+        from apps.shared import factories
+        from apps.identity.models import Membership
+
+        tenant_a = factories.tenant(slug="lookup-a")
+        tenant_b = factories.tenant(slug="lookup-b")
+        factories.member(tenant_a)
+        factories.member(tenant_b)
+        tenancy.activate(tenant_a.id)
+        self.assertEqual(set(Membership.objects.values_list("tenant_id", flat=True)), {tenant_a.id})
+        with tenancy.identity_lookup():
+            self.assertTrue(tenancy.identity_lookup_active())
+            self.assertEqual(set(Membership.objects.values_list("tenant_id", flat=True)), {tenant_a.id, tenant_b.id})
+        self.assertFalse(tenancy.identity_lookup_active())
+        self.assertEqual(set(Membership.objects.values_list("tenant_id", flat=True)), {tenant_a.id})
+
+    def test_lookup_mode_refuses_to_run_outside_a_transaction(self) -> None:
+        connection = connections[DEFAULT_DB_ALIAS]
+        original = connection.in_atomic_block
+        connection.in_atomic_block = False
+        try:
+            with self.assertRaises(tenancy.NotInTransaction):
+                with tenancy.identity_lookup():
+                    pass
+        finally:
+            connection.in_atomic_block = original
+
+    def test_only_the_auth_layer_calls_identity_lookup(self) -> None:
+        import ast
+        from pathlib import Path
+
+        allowed = {
+            "shared/tenancy.py",
+            "identity/session_logic.py",
+            "identity/invitation_logic.py",
+            "identity/api_keys_logic.py",
+        }
+        apps_dir = Path(__file__).resolve().parent.parent
+        offenders: list[str] = []
+        for path in sorted(apps_dir.rglob("*.py")):
+            rel = path.relative_to(apps_dir).as_posix()
+            if "/migrations/" in rel or rel.split("/")[-1].startswith("tests_") or rel.endswith("/testing.py"):
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    func = node.func
+                    name = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else None
+                    if name == "identity_lookup" and rel not in allowed:
+                        offenders.append(f"apps/{rel}:{node.lineno}")
+        self.assertEqual(offenders, [], f"identity_lookup() is for the auth layer only; allowed: {sorted(allowed)}")

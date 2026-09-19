@@ -22,17 +22,29 @@ TENANT_SETTING = "app.tenant_id"
 TENANT_EXPRESSION = f"NULLIF(current_setting('{TENANT_SETTING}', true), '')::uuid"
 
 
-def rls_operations(table: str, *, mixed: bool = False) -> list[migrations.RunSQL]:
+IDENTITY_LOOKUP_SETTING = "app.identity_lookup"
+IDENTITY_LOOKUP_EXPRESSION = f"current_setting('{IDENTITY_LOOKUP_SETTING}', true) = 'on'"
+
+
+def rls_operations(
+    table: str, *, mixed: bool = False, identity_lookup: bool = False
+) -> list[migrations.RunSQL]:
     """ENABLE and FORCE row-level security and create the tenant policy on `table`.
 
     `mixed=True` is for tables that hold library rows (tenant_id NULL, visible to every
     tenant) beside tenant rows (visible to their tenant): audit_event, outbox_event,
     ai_generation, problem_report, api_key (playbook 14).
+
+    `identity_lookup=True` adds the clause the auth layer needs on the four tables it
+    reads before a tenant is known (apps/shared/tenancy.py, `identity_lookup()`):
+    invitation, membership, user_session, api_key. The RLS guard pins that list.
     """
     if mixed:
         using = f"tenant_id IS NULL OR tenant_id = {TENANT_EXPRESSION}"
     else:
         using = f"tenant_id = {TENANT_EXPRESSION}"
+    if identity_lookup:
+        using = f"({using}) OR {IDENTITY_LOOKUP_EXPRESSION}"
     return [
         migrations.RunSQL(
             sql=f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY',

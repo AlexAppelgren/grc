@@ -82,6 +82,23 @@ Weakening any of these is a stop: ask the owner (Alex) first.
   endpoint. PostgreSQL with pgvector everywhere; there is no SQLite.
 - Never lower a gate, skip or quarantine a test, or mock an API in E2E.
 
+### Simplicity first, never at the cost of security or quality
+
+Write the least code that fully solves the stated problem (Alex, 2026-09-19).
+No features beyond what was asked. No abstraction for code used once. No
+flexibility or configuration nobody asked for. No error handling for cases that
+cannot happen. If 200 lines could be 50, rewrite it. The test: would a senior
+engineer call this overcomplicated? If yes, simplify.
+
+Security and quality win whenever they pull against simplicity, so never
+simplify away: an invariant above or the guard and test that enforce it;
+validation at a trust boundary (input from a user, an agent, the network or an
+external service is never an impossible case); a test, gate or coverage floor;
+an audit row, permission check or step-up; or a setting the playbook requires
+(windows, caps, rates and thresholds are settings by rule, not speculation).
+Simplify the design, not the safeguards: fewer moving parts is itself a
+security property.
+
 ## 6. Performance budgets
 
 API endpoint under 250 ms server time (`Server-Timing: app`, a WARNING above
@@ -92,8 +109,11 @@ Paginate (default 20, max 100). Measure against `next start`, never `next dev`.
 
 ## 7. Git workflow and the pre-push checklist
 
-One branch, `main`, during the build (D-15); small commits per whole slice,
-each passing the checklist below. Commit messages: a plain-English headline
+One pushed branch, `main`, during the build (D-15); small commits per whole
+slice, each passing the checklist below. Parallel sub-agents work in local worktrees on
+short-lived `wt/*` branches that are never pushed; the main agent reviews each and merges
+it into `main` (`docs/runbooks/WORKTREES.md`, `scripts/worktree.sh`). Inside a worktree,
+load its slot first: `set -a; . ./.env.worktree; set +a`. Commit messages: a plain-English headline
 from the user's or the system's point of view; a body with the why, the
 requirement IDs, what now happens, what was deliberately not done; no model
 or tool names. The owner deploys; never deploy yourself. Pre-push checklist

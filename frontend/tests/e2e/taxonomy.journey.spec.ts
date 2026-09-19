@@ -1,56 +1,434 @@
-import { test } from './support/api-guard';
+import type { Browser, Page, TestInfo } from '@playwright/test';
+
+import { expect, test, type ApiGuard } from './support/api-guard';
+import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
 
 // taxonomy: the @e2e scenarios from backend/apps/taxonomy/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
 // the title is what scripts/requirements_coverage.py looks for. Never delete a
 // stub: un-fixme it when the journey is real.
+//
+// Chunk 2 builds the vocabulary screens (VOC-01, VOC-02, VOC-07) and the
+// footprint screen (FP-01, FP-02). The halves of a scenario that need a
+// surface a later chunk builds (a record picker, the feed filter, the
+// inventory, the platform console) are named where they would go.
+//
+// Values are created by the journeys themselves, with labels that are not
+// near each other, so journeys running in parallel never trip each other's
+// near-duplicate check. Vocabulary labels come from rows, not the catalog, so
+// they are found by data attribute or by pattern, never by a quoted literal.
+
+const TAGS = 'tenant_tag';
+const FLAGS = 'flag';
+const SERVICES = 'service_type';
+
+// The server refuses a new value two ways (apps/taxonomy/tenant_lists_logic.py,
+// its VOC-S7 test): 409 duplicate_key for the same label, 422 near_duplicate
+// for a close one. Each is declared where it is provoked.
+function allowDuplicateRefusals(apiGuard: ApiGuard, list: string): void {
+  const route = new RegExp(`/api/v1/vocab/${list}$`);
+  apiGuard.allow(route, 409, 'duplicate_key: the same label, case and space aside (AC-VOC3)');
+  apiGuard.allow(route, 422, 'near_duplicate: a close label, the near match offered (AC-VOC3)');
+}
+
+async function openList(page: Page, list: string): Promise<void> {
+  await page.goto(`/admin/vocabularies/${list}`);
+  await expect(page.locator(`[data-vocabulary-values="${list}"]`).or(page.locator('[data-empty-state]')).first()).toBeVisible();
+}
+
+function valueRow(page: Page, label: string) {
+  return page.locator('[data-value-key]').filter({ has: page.locator('[data-swatch="light"]', { hasText: new RegExp(`^${label}$`) }) });
+}
+
+async function addTenantValue(page: Page, label: string, usageNote = ''): Promise<void> {
+  await page.getByRole('button', { name: 'Add a value' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Add a value' });
+  await dialog.getByLabel('Label', { exact: true }).fill(label);
+  if (usageNote !== '') await dialog.getByLabel('Usage note').fill(usageNote);
+  await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(valueRow(page, label)).toHaveCount(1);
+}
+
+/** The second person of a four-eyes journey, in their own browser, held to the same API guard. */
+async function secondPerson(browser: Browser, apiGuard: ApiGuard, testInfo: TestInfo, login: string): Promise<Page> {
+  const context = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
+  const page = await context.newPage();
+  apiGuard.watch(page);
+  await signInAs(page, login);
+  return page;
+}
 
 test.describe('taxonomy journeys', () => {
-  test.fixme("VOC-S2: An admin adds a change type, a tag and a sub-status without a deploy", async () => {
-    // pending: VOC-S2 (VOC-01, AC-VOC1)
+  test("VOC-S2: An admin adds a change type, a tag and a sub-status without a deploy", async ({ page, apiGuard }) => {
+    // pending: VOC-S2 (VOC-01, AC-VOC1) -> built in chunk 2, the tenant tag half.
+    // The change type is a library list, so it arrives as a proposal the
+    // console approves (VOC-S11 covers the tenant side of that door). The
+    // sub-status screen is R2 (chunk 8). The picker, the filter and the
+    // record pills that show the tag land with the screens that host them.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.admin);
+    await page.goto('/admin/vocabularies');
+    await expect(page.getByRole('heading', { level: 1, name: 'Vocabularies' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Our lists' })).toHaveAttribute('aria-selected', 'true');
+    await page.locator(`[data-vocabulary-list="${TAGS}"]`).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Tenant tags' })).toBeVisible();
+
+    await addTenantValue(page, 'Custody', 'Anything about safekeeping client assets');
+    // A tenant tag is always an outlined information pill: the slot decides, never a person.
+    const pills = valueRow(page, 'Custody').locator('[data-pill]');
+    await expect(pills).toHaveCount(2);
+    for (const pill of await pills.all()) {
+      await expect(pill).toHaveAttribute('data-pill', 'information');
+      await expect(pill).toHaveAttribute('data-outlined', '');
+    }
+    // Without a deploy: the list of lists counts it straight away.
+    await page.goto('/admin/vocabularies');
+    await expect(page.locator(`[data-vocabulary-list="${TAGS}"]`)).toContainText(/\d+ active/);
   });
 
-  test.fixme("VOC-S3: The vocabulary screen renders the real pill with usage count, rename and reorder", async () => {
-    // pending: VOC-S3 (VOC-02)
+  test("VOC-S3: The vocabulary screen renders the real pill with usage count, rename and reorder", async ({ page, apiGuard }) => {
+    // pending: VOC-S3 (VOC-02) -> built in chunk 2. "Every record shows the new
+    // label" needs a record screen (chunk 3); the order pickers follow is
+    // proved here by the stored order surviving a reload.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.admin);
+    await openList(page, TAGS);
+    await addTenantValue(page, 'Pension transfers');
+    await addTenantValue(page, 'Onboarding journeys');
+
+    // The real pill, light and dark, with its usage count.
+    const row = valueRow(page, 'Pension transfers');
+    await expect(row.locator('[data-swatch="light"] [data-pill]')).toHaveCount(1);
+    await expect(row.locator('[data-swatch="dark"] [data-pill]')).toHaveCount(1);
+    await expect(row.getByText('Not used yet')).toBeVisible();
+
+    // Inline rename with a translation; the key stays.
+    const key = await row.getAttribute('data-value-key');
+    await row.getByRole('button', { name: 'Rename' }).click();
+    const form = page.locator(`[data-rename-form="${key}"]`);
+    await expect(form.getByText(/^Records keep the key .+; only the label changes$/)).toBeVisible();
+    await form.getByLabel('New label').fill('Pension transfer rights');
+    await form.getByLabel('Label in Swedish').fill('Flytträtt för pension');
+    await form.getByRole('button', { name: 'Save' }).click();
+    const renamed = valueRow(page, 'Pension transfer rights');
+    await expect(renamed).toHaveCount(1);
+    await expect(renamed).toHaveAttribute('data-value-key', key ?? '');
+
+    // Reorder with the keyboard on the grip: "Onboarding journeys" moves above it.
+    const keys = async () => page.locator('[data-value-active]').evaluateAll((rows) => rows.map((r) => r.getAttribute('data-value-key')));
+    const onboarding = await valueRow(page, 'Onboarding journeys').getAttribute('data-value-key');
+    const before = await keys();
+    const steps = before.indexOf(onboarding) - before.indexOf(key);
+    expect(steps).toBeGreaterThan(0);
+    const grip = page.locator(`[data-grip="${onboarding}"]`);
+    await grip.focus();
+    for (let i = 0; i < steps; i += 1) await grip.press('ArrowUp');
+    await expect.poll(async () => (await keys()).indexOf(onboarding) < (await keys()).indexOf(key)).toBe(true);
+
+    await page.reload();
+    await expect(valueRow(page, 'Onboarding journeys')).toHaveCount(1);
+    await expect.poll(async () => (await keys()).indexOf(onboarding) < (await keys()).indexOf(key)).toBe(true);
   });
 
-  test.fixme("VOC-S4: Retiring a used value keeps history readable and leaves pickers", async () => {
-    // pending: VOC-S4 (VOC-02, AC-VOC2)
+  test("VOC-S4: Retiring a used value keeps history readable and leaves pickers", async ({ page, apiGuard }) => {
+    // pending: VOC-S4 (VOC-02, AC-VOC2) -> built in chunk 2. Obligations that
+    // carry the tag arrive with chunk 3; here the count shown first is the
+    // row's own, and the row survives with active false under Retired.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.admin);
+    await openList(page, TAGS);
+    await addTenantValue(page, 'Legacy archive');
+    const row = valueRow(page, 'Legacy archive');
+    const key = await row.getAttribute('data-value-key');
+
+    try {
+      await row.getByRole('button', { name: 'Retire' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Retire "Legacy archive"?' });
+      // The usage count comes before the confirmation.
+      await expect(dialog.getByText(/^(Nothing uses it yet|It is used by \d+ records?)\./)).toBeVisible();
+      await dialog.getByRole('button', { name: 'Retire' }).click();
+      await expect(dialog).toBeHidden();
+      await expect(page.locator(`[data-value-key="${key}"][data-value-active]`)).toHaveCount(0);
+
+      await page.getByRole('button', { name: 'Retired' }).click();
+      const retired = page.locator(`[data-value-key="${key}"]`);
+      await expect(retired).toHaveCount(1);
+      await expect(retired.locator('[data-value-active]')).toHaveCount(0);
+    } finally {
+      // Restore it, so the list reads as it did.
+      await openList(page, TAGS);
+      await page.getByRole('button', { name: 'Retired' }).click();
+      const retired = page.locator(`[data-value-key="${key}"]`);
+      if ((await retired.count()) > 0) {
+        await retired.getByRole('button', { name: 'Restore' }).click();
+        await expect(page.locator(`[data-value-key="${key}"]`)).toHaveCount(0);
+      }
+    }
   });
 
-  test.fixme("VOC-S5: Merging re-points duplicates in one audited transaction", async () => {
-    // pending: VOC-S5 (VOC-02)
+  test("VOC-S5: Merging re-points duplicates in one audited transaction", async ({ page, apiGuard }) => {
+    // pending: VOC-S5 (VOC-02) -> built in chunk 2. The dry run previews the
+    // count, the commit retires the merged value. Records that carry it and
+    // the audit entry's keys are proved by the backend's VOC-S5 test.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.admin);
+    await openList(page, TAGS);
+    await addTenantValue(page, 'Settlement');
+    await addTenantValue(page, 'Safe deposit boxes');
+    const from = await valueRow(page, 'Safe deposit boxes').getAttribute('data-value-key');
+    const into = await valueRow(page, 'Settlement').getAttribute('data-value-key');
+
+    await valueRow(page, 'Safe deposit boxes').getByRole('button', { name: 'Merge into…' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Merge "Safe deposit boxes" into…' });
+    await dialog.getByLabel('Keep').selectOption(into ?? '');
+    const preview = dialog.locator('[data-merge-preview]');
+    await expect(preview.getByText('What happens')).toBeVisible();
+    await expect(preview.getByText('One audit entry with both keys and the count moved.')).toBeVisible();
+    await expect(preview.getByText(/^"Safe deposit boxes" is retired and its history stays readable\.$/)).toBeVisible();
+    await dialog.getByRole('button', { name: /^Merge \d+ records?$/ }).click();
+    await expect(dialog).toBeHidden();
+
+    await expect(page.locator(`[data-value-key="${from}"][data-value-active]`)).toHaveCount(0);
+    await expect(page.locator(`[data-value-key="${into}"][data-value-active]`)).toHaveCount(1);
+    await page.getByRole('button', { name: 'Retired' }).click();
+    await expect(page.locator(`[data-value-key="${from}"]`)).toHaveCount(1);
   });
 
   test.fixme("VOC-S6: Create where you use it offers Create or Suggest by permission", async () => {
-    // pending: VOC-S6 (VOC-03)
+    // pending: VOC-S6 (VOC-03). VOC-03 is priority S, release R2 (decided with
+    // the coordinator in chunk 2). The picker component exists
+    // (components/vocabularies/VocabularyPicker.tsx, with Create and Propose
+    // and unit tests); this journey needs a record screen that hosts it and
+    // the Suggest path for members without vocab.manage, both R2.
   });
 
-  test.fixme("VOC-S7: A near-duplicate is refused with the near match offered", async () => {
-    // pending: VOC-S7 (VOC-03, AC-VOC3)
+  test("VOC-S7: A near-duplicate is refused with the near match offered", async ({ page, apiGuard }) => {
+    // pending: VOC-S7 (VOC-03, AC-VOC3) -> the near-duplicate check is live
+    // from chunk 2 (picker card); proved here on the add form.
+    allowFreshContext(apiGuard);
+    allowDuplicateRefusals(apiGuard, TAGS);
+    await signInAs(page, LOGINS.admin);
+    await openList(page, TAGS);
+    await addTenantValue(page, 'Derivatives');
+
+    // The same label with a trailing space and another case is the value that is there (409).
+    // A typo is a near match, asked as a question, with the match offered (422).
+    for (const [attempt, refusal] of [
+      [' derivatives ', '"Derivatives" already exists.'],
+      ['Derivatves', 'Did you mean Derivatives?'],
+    ] as const) {
+      await page.getByRole('button', { name: 'Add a value' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Add a value' });
+      await dialog.getByLabel('Label', { exact: true }).fill(attempt);
+      await dialog.getByRole('button', { name: 'Add', exact: true }).click();
+      await expect(dialog.getByText(refusal, { exact: true })).toBeVisible();
+      await dialog.getByRole('button', { name: 'Use Derivatives' }).click();
+      await expect(dialog).toBeHidden();
+    }
+    // Nothing was added: one row carries the label.
+    await expect(page.locator('[data-value-key]').filter({ hasText: /derivat/i })).toHaveCount(1);
   });
 
-  test.fixme("VOC-S11: A library vocabulary change goes through the proposal queue", async () => {
-    // pending: VOC-S11 (VOC-07)
+  test("VOC-S11: A library vocabulary change goes through the proposal queue", async ({ page, apiGuard }) => {
+    // pending: VOC-S11 (VOC-07) -> built in chunk 2, the tenant side of the
+    // door: a write to a library list answers with a proposal, shows as
+    // waiting and does not change the list. The second editor's approval is
+    // the platform console's (console chunk). Proposing needs proposals.create,
+    // which the seeded compliance officer holds and the admin does not.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto('/admin/vocabularies');
+    await page.getByRole('tab', { name: 'Shared library lists' }).click();
+    await page.locator(`[data-vocabulary-list="${FLAGS}"]`).click();
+    await expect(page.getByText('These lists are shared by every organisation. Suggest a change and a library editor reviews it.')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Suggest a change' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Add a value' });
+    await dialog.getByLabel('Label', { exact: true }).fill('Outsourcing');
+    await dialog.getByRole('button', { name: 'Send for review' }).click();
+    await expect(dialog.getByText(/is waiting for a library editor\.$/)).toBeVisible();
+    await dialog.getByRole('button', { name: 'Done' }).click();
+
+    // Not in the list until a library editor approves it. The proposal is
+    // confirmed where it was sent; a list of what this tenant proposed comes
+    // with chunk 4's tenant-scoped read.
+    await expect(valueRow(page, 'Outsourcing')).toHaveCount(0);
+    await expect(page.locator('[data-pending-proposals]')).toHaveCount(0);
   });
 
   test.fixme("VOC-S12: Bulk tagging from a list previews and writes one audit entry", async () => {
     // pending: VOC-S12 (VOC-08)
   });
 
-  test.fixme("VOC-S15 J-5 @smoke: a flag is added, used, rendered as brand, renamed and merged", async () => {
-    // pending: VOC-S15 (VOC-01, VOC-02, VOC-07, AC-VOC1, AC-VOC2, J-5)
+  test("VOC-S15 J-5 @smoke: a flag is added, used, rendered as brand, renamed and merged", async ({ page, apiGuard }) => {
+    // pending: VOC-S15 (VOC-01, VOC-02, VOC-07, AC-VOC1, AC-VOC2, J-5) -> built
+    // in chunk 2 up to the library door. Flags are a library list, so adding
+    // and renaming are proposals (VOC-07); every flag renders brand in both
+    // themes. Using the new flag on a change, the feed filter and merging it
+    // wait for the console's approval and the watch screens (chunk 4). The
+    // proposer is the seeded compliance officer: a library change is a
+    // proposal, and proposing needs proposals.create.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openList(page, FLAGS);
+
+    // Every flag is a brand pill, in the light and the dark swatch.
+    const flagPills = page.locator('[data-value-active] [data-swatch] [data-pill]');
+    await expect(flagPills.first()).toBeVisible();
+    for (const pill of await flagPills.all()) await expect(pill).toHaveAttribute('data-pill', 'brand');
+
+    // Added with a usage note: previewed as brand before it is sent.
+    await page.getByRole('button', { name: 'Suggest a change' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Add a value' });
+    await dialog.getByLabel('Label', { exact: true }).fill('Client money');
+    await dialog.getByLabel('Usage note').fill('The change concerns how client money is held and segregated.');
+    await expect(dialog.locator('[data-swatch-pair] [data-pill="brand"]')).toHaveCount(2);
+    await dialog.getByRole('button', { name: 'Send for review' }).click();
+    await expect(dialog.getByText(/is waiting for a library editor\.$/)).toBeVisible();
+    await dialog.getByRole('button', { name: 'Done' }).click();
+
+    // Renamed: a system flag can be relabelled, and on a library list that is a proposal too.
+    const first = page.locator('[data-value-active]').first();
+    const key = await first.getAttribute('data-value-key');
+    await first.getByRole('button', { name: 'Rename' }).click();
+    const form = page.locator(`[data-rename-form="${key}"]`);
+    await form.getByLabel('Label in Swedish').fill('Nytt namn för granskning');
+    await form.getByRole('button', { name: 'Send for review' }).click();
+    await expect(page.locator('[data-rename-proposed]').getByText(/is waiting for a library editor\.$/)).toBeVisible();
   });
 
-  test.fixme("FP-S2: A footprint change previews, waits for a second person and audits per term", async () => {
-    // pending: FP-S2 (FP-02, AC-FP1)
-  });
+  test.describe('footprint', () => {
+    // Both journeys change the one footprint of tenant A, so they run in
+    // order in one worker. Each settles on whether a request is already
+    // waiting (the seed leaves one for J-6) before it branches.
+    test.describe.configure({ mode: 'default' });
 
-  test.fixme("FP-S4: Every surface respects the footprint and offers a way to look outside it", async () => {
-    // pending: FP-S4 (FP-03)
-  });
+    /** Opens the footprint as the officer, withdrawing a request of theirs that is still waiting. */
+    async function officerStartsClean(page: Page): Promise<void> {
+      await page.goto('/admin/footprint');
+      // The banner's text spans lines (pill, title, sentence), so the match is unanchored.
+      const mine = page.locator('[data-pending-request]').filter({ hasText: /You requested this on/ });
+      const dimensions = page.locator('[data-footprint-dimensions]');
+      await expect(mine.or(dimensions).first()).toBeVisible();
+      if ((await mine.count()) > 0) {
+        await mine.getByRole('button', { name: 'Withdraw' }).click();
+        await expect(page.locator('[data-pending-request]')).toHaveCount(0);
+      }
+    }
 
-  test.fixme("FP-S5 J-6 @smoke: footprint change with preview and second-person approval", async () => {
-    // pending: FP-S5 (FP-01, FP-02, FP-03, AC-FP1, J-6)
+    function adviceChip(page: Page) {
+      return page.locator(`[data-dimension="${SERVICES}"]`).getByRole('button', { name: /^Advice$/ });
+    }
+
+    async function officerSwitchesOffAdvice(page: Page): Promise<void> {
+      await expect(adviceChip(page)).toHaveAttribute('aria-pressed', 'true');
+      await adviceChip(page).click();
+      const draft = page.locator('[data-draft-preview]');
+      await expect(draft.getByText('Your change: Switch off Advice')).toBeVisible();
+      await expect(draft.locator('[data-preview-side="hides"]').getByText('Hides')).toBeVisible();
+      await expect(draft.locator('[data-preview-side="reveals"]').getByText('Reveals')).toBeVisible();
+      await expect(draft.getByText('Loading…')).toHaveCount(0);
+      await draft.getByRole('button', { name: 'Send for approval' }).click();
+      await expect(page.getByText('Sent for approval.')).toBeVisible();
+      const banner = page.locator('[data-pending-request]');
+      await expect(banner.getByText('Waiting for approval')).toBeVisible();
+      await expect(banner.getByText('Switch off Advice')).toBeVisible();
+      // Four eyes on screen: the requester is offered Withdraw, never Approve.
+      await expect(banner.getByRole('button', { name: 'Approve' })).toHaveCount(0);
+      await expect(banner.getByRole('button', { name: 'Withdraw' })).toBeVisible();
+      // While it waits, the chips are read-only and Advice is struck.
+      await expect(page.getByText('While a request is waiting for approval, the terms cannot be changed.')).toBeVisible();
+      await expect(adviceChip(page)).toBeDisabled();
+      await expect(adviceChip(page)).toHaveAttribute('data-struck', '');
+    }
+
+    async function approveWithPasskey(approver: Page): Promise<void> {
+      await approver.goto('/admin/footprint');
+      const banner = approver.locator('[data-pending-request]');
+      await banner.getByRole('button', { name: 'Approve' }).click();
+      const dialog = approver.getByRole('dialog', { name: /^Approve ".+"\?$/ });
+      await dialog.getByRole('button', { name: 'Approve with passkey' }).click();
+      // Step-up: settle on the prompt or the outcome, since a sign-in moments ago may still count.
+      const prompt = approver.getByRole('dialog', { name: 'Confirm with your passkey' });
+      const done = approver.getByText('Approved. The footprint has changed.');
+      await expect(prompt.or(done).first()).toBeVisible();
+      if (await prompt.isVisible()) await prompt.getByRole('button', { name: 'Use passkey' }).click();
+      await expect(done).toBeVisible();
+      await expect(approver.locator('[data-pending-request]')).toHaveCount(0);
+    }
+
+    test("FP-S2: A footprint change previews, waits for a second person and audits per term", async ({ page, browser, apiGuard }, testInfo) => {
+      // pending: FP-S2 (FP-02, AC-FP1) -> built in chunk 2. What the change
+      // hides "everywhere" and the per-term audit events are proved by the
+      // backend's FP-S2 test; the surfaces arrive with chunk 3.
+      allowFreshContext(apiGuard);
+      await signInAs(page, LOGINS.complianceOfficer);
+      await officerStartsClean(page);
+      await expect(page.getByRole('heading', { level: 1, name: 'Footprint' })).toBeVisible();
+
+      await officerSwitchesOffAdvice(page);
+      // The stored request shows its counted preview on demand.
+      await page.locator('[data-pending-request]').getByRole('button', { name: 'See the preview' }).click();
+      await expect(page.locator('[data-pending-preview]').getByText('Hides')).toBeVisible();
+
+      // The second person decides: here, a rejection with a reason.
+      const approver = await secondPerson(browser, apiGuard, testInfo, LOGINS.approver);
+      await approver.goto('/admin/footprint');
+      const banner = approver.locator('[data-pending-request]');
+      await expect(banner.getByText(/^Requested by .+, .+\./)).toBeVisible();
+      await banner.getByRole('button', { name: 'Reject' }).click();
+      const dialog = approver.getByRole('dialog', { name: 'Reject this change' });
+      await dialog.getByLabel('Reason').fill('We still advise in private banking');
+      await dialog.getByRole('button', { name: 'Reject' }).click();
+      await expect(approver.getByText('Rejected.')).toBeVisible();
+      await expect(approver.locator('[data-history-entry="rejected"]').first()).toBeVisible();
+      await approver.context().close();
+
+      // Rejected, so Advice is still held and the officer may change the terms again.
+      await page.reload();
+      await expect(page.locator('[data-pending-request]')).toHaveCount(0);
+      await expect(adviceChip(page)).toHaveAttribute('aria-pressed', 'true');
+      await expect(adviceChip(page)).toBeEnabled();
+    });
+
+    test.fixme("FP-S4: Every surface respects the footprint and offers a way to look outside it", async () => {
+      // pending: FP-S4 (FP-03). The footprint rule is built and tested in the
+      // backend in chunk 2 (apps/taxonomy/matching.py and its SQL twin); the
+      // surfaces it names (feed, inventory, roadmap, briefing, reports) and
+      // "Show outside footprint" arrive from chunk 3 on, per CHUNK2_BRIEF.md.
+    });
+
+    test("FP-S5 J-6 @smoke: footprint change with preview and second-person approval", async ({ page, browser, apiGuard }, testInfo) => {
+      // pending: FP-S5 (FP-01, FP-02, FP-03, AC-FP1, J-6) -> built in chunk 2.
+      // "The inventory no longer lists the advice-only obligation" waits for
+      // the inventory (chunk 3); the per-term audit events for the audit log
+      // screen. Here: the officer's request with its preview, the approver's
+      // passkey step-up, and the footprint changed on screen.
+      allowFreshContext(apiGuard);
+      apiGuard.allow(/\/api\/v1\/tenant\/footprint\/requests\/[^/]+\/approve$/, 403, 'the first attempt answers step_up_required and opens the prompt');
+      await signInAs(page, LOGINS.complianceOfficer);
+      await officerStartsClean(page);
+      await officerSwitchesOffAdvice(page);
+
+      const approver = await secondPerson(browser, apiGuard, testInfo, LOGINS.approver);
+      try {
+        await approveWithPasskey(approver);
+        await expect(approver.locator('[data-history-entry="approved"]').first()).toBeVisible();
+        await page.reload();
+        await expect(adviceChip(page)).toHaveAttribute('aria-pressed', 'false');
+      } finally {
+        // Put Advice back through the same door, so the footprint reads as seeded.
+        await page.goto('/admin/footprint');
+        await expect(page.locator('[data-footprint-dimensions]')).toBeVisible();
+        if ((await page.locator('[data-pending-request]').count()) === 0 && (await adviceChip(page).getAttribute('aria-pressed')) === 'false') {
+          await adviceChip(page).click();
+          await page.locator('[data-draft-preview]').getByRole('button', { name: 'Send for approval' }).click();
+          await expect(page.getByText('Sent for approval.')).toBeVisible();
+          await approveWithPasskey(approver);
+        }
+        await approver.context().close();
+      }
+    });
   });
 });

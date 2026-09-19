@@ -13,15 +13,31 @@ assertion below is raised in the same commit so the guard cannot stay vacuous.
 
 from __future__ import annotations
 
+from typing import Any
+import re
+import uuid
+
 from django.test import TestCase
+from django.utils import timezone
 
 from apps.shared import factories
+from apps.shared.authentication import Principal, PrincipalKind
+from apps.shared.permissions import TENANT_PERMISSIONS
 from apps.shared.routes import TENANT_SCOPED_ROUTES, iter_operations
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, stub_session, user_principal
 from config.api import api
 
-# Raise this in the commit that registers the first tenant-scoped route.
-EXPECTED_MINIMUM_TENANT_ROUTES = 0
+# Raised in the commit that registered the first tenant-scoped routes (chunk 1).
+EXPECTED_MINIMUM_TENANT_ROUTES = 11
+PATH_PARAMETER = re.compile(r"\{[^}]+\}")
+
+
+def fill_path(path: str, record: Any) -> str:
+    """A record may name some path parameters itself (a suggestion's list); every other
+    parameter is the record's id."""
+    named: dict[str, object] = getattr(record, "params", {})
+    record_id = record.id
+    return PATH_PARAMETER.sub(lambda m: str(named.get(m.group(0)[1:-1], record_id)), path)
 
 
 class TenantIsolationGuard(TestCase):
@@ -37,13 +53,27 @@ class TenantIsolationGuard(TestCase):
     def test_other_tenants_record_answers_404_for_each_route(self) -> None:
         tenant_a = factories.tenant(slug="iso-a")
         tenant_b = factories.tenant(slug="iso-b")
-        member_of_b = user_principal(tenant_id=tenant_b.id)
+        # Every tenant permission and a fresh step-up, so the only thing between the
+        # request and the record is tenancy: a 403 here would hide a leak.
+        person_in_b = factories.member_user(tenant_b, roles=("admin",))
+        member_of_b = Principal(
+            kind=PrincipalKind.USER,
+            subject_id=person_in_b.id,
+            tenant_id=tenant_b.id,
+            permissions=TENANT_PERMISSIONS,
+            step_up_at=timezone.now(),
+            step_up_assertion_id=uuid.uuid4(),
+        )
         for method, path, _model_label, factory_name in TENANT_SCOPED_ROUTES:
             record = getattr(factories, factory_name)(tenant=tenant_a)
-            url = "/api/v1" + path.replace("{id}", str(record.id))
+            url = "/api/v1" + fill_path(path, record)
             with self.subTest(route=f"{method} {path}"), stub_session(member_of_b):
                 response = self.client.generic(
-                    method, url, HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}"
+                    method,
+                    url,
+                    data="{}",
+                    content_type="application/json",
+                    HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}",
                 )
                 self.assertEqual(response.status_code, 404, f"{method} {path} leaked or refused instead of 404")
                 self.assertEqual(response.json()["code"], "not_found")

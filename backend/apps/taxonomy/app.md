@@ -33,20 +33,19 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| VOC-01 | Every extendable list is rows in three tiers; only kinds are code | M | R1 | pending |
-| VOC-02 | One vocabulary screen per surface: real pill in light and dark, usage count, inline rename, drag to reorder, retire, merge | M | R1 | pending |
-| VOC-03 | Create where you use it: "Create" with `vocab.manage`, "Suggest" without, both with a near-duplicate hint | S | R2 | pending |
+| VOC-01 | Every extendable list is rows in three tiers; only kinds are code | M | R1 | built |
+| VOC-02 | One vocabulary screen per surface: real pill in light and dark, usage count, inline rename, drag to reorder, retire, merge | M | R1 | built |
+| VOC-03 | Create where you use it: "Create" with `vocab.manage`, "Suggest" without, both with a near-duplicate hint | S | R2 | in_progress |
 | VOC-04 | Statuses are tenant-defined inside fixed categories; a category never goes empty | M | R2 | pending |
 | VOC-05 | Tenant scales for compliance status and risk mapped to fixed ordinals | S | R2 | pending |
 | VOC-06 | Reason lists for dismissal, closure and risk acceptance | S | R2 | pending |
-| VOC-07 | Library vocabulary changes go through the proposal queue | M | R1 | pending |
+| VOC-07 | Library vocabulary changes go through the proposal queue | M | R1 | built |
 | VOC-08 | Bulk tagging from list views with preview and one audit entry | S | R2 | pending |
 | VOC-09 | Tenant configuration is versioned, exportable and importable | S | R3 | pending |
-| FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict | M | R1 | pending |
-| FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, one audit event per term | M | R1 | pending |
-| FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it | M | R1 | pending |
-| I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | pending |
-
+| FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict | M | R1 | built |
+| FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, one audit event per term | M | R1 | built |
+| FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it | M | R1 | in_progress |
+| I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
 ## 3. Acceptance criteria (from PRD, condensed)
 
 - **AC-VOC1** An admin adds a change type, a tag and a sub-status with no deploy:
@@ -131,10 +130,11 @@ Then the picker offers "Suggest" and the suggestion lands with the admin
 ```gherkin
 Given the tag "Custody" exists
 When someone creates "custody " with trailing space and different case
-Then the request answers 409 with code "near_duplicate" and the near match "Custody"
-And the screen asks "Did you mean Custody?"
+Then the request answers 409 with code "duplicate_key" and the existing "Custody"
+And the screen says the value already exists
 When someone creates "Custdy"
-Then the trigram check answers the same with "Custody" offered
+Then the request answers 422 with code "near_duplicate" and "Custody" offered
+And the screen asks "Did you mean Custody?"
 ```
 
 ### VOC-S8 — Statuses live inside fixed categories and a category never goes empty `@integration` (VOC-04)
@@ -202,8 +202,10 @@ And GET /vocab/urgency returns key, kind and label per language for each row and
 
 ### VOC-S15 — J-5: a flag is added, used, rendered as brand, renamed and merged `@e2e` (VOC-01, VOC-02, VOC-07, AC-VOC1, AC-VOC2, J-5)
 ```gherkin
-Given the seeded tenant admin
-When they add the flag "Client money" with a usage note
+Given the seeded compliance officer
+When they propose the flag "Client money" with a usage note, and a library editor approves it
+(flags are a library list, so every change is a proposal; PRD section 6 gives
+proposals.create to the compliance officer, not the admin, see TODO_FOR_alex.md)
 Then it appears in the change picker, the feed filter and the agent vocabulary read
 And it renders as a brand pill on a change
 When they rename it and later merge it into another flag

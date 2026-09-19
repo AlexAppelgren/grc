@@ -15,6 +15,8 @@ and by running one test module only (exit 2, partial run refused), then restored
 
 Measured 2026-09-19, Phase 0 close: 128 tests (296 collected, 168 scenario stubs
 skipped), aggregate 97% over 1448 statements.
+Measured 2026-09-19, chunk 1 close: 190 tests (334 collected, 144 scenario stubs
+skipped), aggregate 96% over 3696 statements.
 """
 
 from __future__ import annotations
@@ -37,16 +39,51 @@ PARTIAL_RUN_MARGIN = 15.0
 FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/shared/tenancy.py": (96, 100, 85, "2026-09-19"),
     "apps/shared/authentication.py": (96, 100, 55, "2026-09-19"),
-    "apps/shared/permissions.py": (97, 100, 127, "2026-09-19"),
+    "apps/shared/permissions.py": (97, 99, 142, "2026-09-19"),
     "apps/shared/audit.py": (96, 100, 45, "2026-09-19"),
     "apps/shared/db_role_guard.py": (86, 90, 53, "2026-09-19"),
     "apps/shared/health_check.py": (88, 92, 65, "2026-09-19"),
     "apps/shared/middleware.py": (96, 100, 60, "2026-09-19"),
     "apps/shared/sentry_scrub.py": (89, 93, 41, "2026-09-19"),
     "apps/shared/storage.py": (95, 99, 62, "2026-09-19"),
-    "apps/shared/vocabulary.py": (91, 95, 50, "2026-09-19"),
-    "apps/shared/e2e_seed.py": (96, 100, 34, "2026-09-19"),
-    "config/settings.py": (85, 88, 156, "2026-09-19"),
+    "apps/shared/vocabulary.py": (91, 96, 55, "2026-09-19"),
+    "apps/shared/e2e_seed.py": (96, 97, 93, "2026-09-19"),
+    "config/settings.py": (85, 87, 166, "2026-09-19"),
+    # Chunk 1 (identity and tenant admin basics): the modules that let the wrong person
+    # through, measured at the chunk's close on 2026-09-19.
+    "apps/identity/tokens.py": (94, 98, 84, "2026-09-19"),
+    "apps/identity/rate_limit.py": (96, 100, 19, "2026-09-19"),
+    "apps/identity/session_logic.py": (92, 95, 160, "2026-09-19"),
+    "apps/identity/code_logic.py": (92, 96, 77, "2026-09-19"),
+    "apps/identity/invitation_logic.py": (91, 94, 134, "2026-09-19"),
+    "apps/identity/passkey_logic.py": (90, 93, 181, "2026-09-19"),
+    "apps/identity/api_keys_logic.py": (92, 96, 67, "2026-09-19"),
+    "apps/identity/roles_logic.py": (92, 95, 137, "2026-09-19"),
+    "apps/identity/members_logic.py": (96, 99, 101, "2026-09-19"),
+    "apps/identity/me_logic.py": (89, 93, 45, "2026-09-19"),
+    "apps/identity/security_log.py": (89, 93, 22, "2026-09-19"),
+    "apps/identity/mail.py": (96, 100, 20, "2026-09-19"),
+    "apps/identity/api.py": (95, 98, 215, "2026-09-19"),
+    "apps/tenants/logic.py": (87, 91, 91, "2026-09-19"),
+    "apps/tenants/api.py": (96, 100, 31, "2026-09-19"),
+    "apps/library/seeds.py": (96, 100, 9, "2026-09-19"),
+    # Chunk 2 (vocabularies, taxonomy, footprint, proposals): footprint matching, vocabulary
+    # retire and merge, four eyes and proposal apply, measured 2026-09-19 over 409 tests
+    # (284 run, 125 scenario stubs skipped), aggregate 97% over 6221 statements.
+    "apps/proposals/apply.py": (90, 93, 148, "2026-09-19"),
+    "apps/proposals/logic.py": (97, 100, 123, "2026-09-19"),
+    "apps/proposals/api.py": (96, 100, 44, "2026-09-19"),
+    "apps/taxonomy/api.py": (96, 99, 216, "2026-09-19"),
+    "apps/taxonomy/footprint_logic.py": (97, 100, 109, "2026-09-19"),
+    "apps/taxonomy/http.py": (93, 96, 103, "2026-09-19"),
+    "apps/taxonomy/library_lists_logic.py": (94, 98, 86, "2026-09-19"),
+    "apps/taxonomy/matching.py": (96, 100, 31, "2026-09-19"),
+    "apps/taxonomy/reading.py": (82, 86, 63, "2026-09-19"),
+    "apps/taxonomy/registry.py": (96, 100, 38, "2026-09-19"),
+    "apps/taxonomy/repoint.py": (96, 100, 19, "2026-09-19"),
+    "apps/taxonomy/tenant_hooks.py": (96, 100, 37, "2026-09-19"),
+    "apps/taxonomy/tenant_lists_logic.py": (94, 97, 304, "2026-09-19"),
+    "apps/taxonomy/terms_logic.py": (94, 98, 72, "2026-09-19"),
 }
 
 

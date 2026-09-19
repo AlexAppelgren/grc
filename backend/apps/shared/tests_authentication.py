@@ -1,17 +1,21 @@
 """The three auth classes and the /me and /reference/product routes (playbook 4.2, ID-02,
-AC-ID2). The token resolvers are stubbed (chunk 1 fills them); what is pinned here is the
-contract: a missing or unknown credential is 401 in the problem shape, SessionAuth
-accepts only user principals, EnrolmentAuth only enrolment principals, ApiKeyAuth only
-agent principals, and `request.auth` is a Principal with the documented shape.
+AC-ID2). The contract pinned here: a missing or unknown credential is 401 in the problem
+shape, an enrolment token on any other route is 403 enrolment_only, SessionAuth accepts
+only user principals, EnrolmentAuth only enrolment principals, ApiKeyAuth only agent
+principals (by header or `cw_` bearer), and `request.auth` is a Principal with the
+documented shape. The resolvers are the real ones since chunk 1; the stubs remain for
+scenarios that need a principal without a ceremony.
 """
 
 from __future__ import annotations
 
 import uuid
+from unittest import mock
 
 from django.test import TestCase
 from django.test.client import RequestFactory
 
+from apps.shared import authentication
 from apps.shared.authentication import (
     ApiKeyAuth,
     EnrolmentAuth,
@@ -36,11 +40,12 @@ from apps.shared.testing import (
 )
 
 
-class ResolversInPhaseZero(TestCase):
-    def test_nothing_authenticates_until_chunk_one(self) -> None:
+class Resolvers(TestCase):
+    def test_an_unknown_credential_resolves_to_nothing(self) -> None:
         self.assertIsNone(resolve_session_token("anything"))
         self.assertIsNone(resolve_api_key("anything"))
         self.assertIsNone(resolve_enrolment_token("anything"))
+        self.assertIsNone(resolve_api_key("cw_deadbeef_nope"))
 
 
 class AuthClasses(TestCase):
@@ -68,12 +73,20 @@ class AuthClasses(TestCase):
 
     def test_api_key_auth_accepts_only_agent_principals(self) -> None:
         request = self.factory.get("/", HTTP_X_API_KEY=API_KEY_FOR_TESTS)
-        agent = agent_principal(scopes={"changes.write"})
+        agent = agent_principal(scopes={"changes:write"})
         with stub_api_key(agent):
             self.assertIs(ApiKeyAuth()(request), agent)
             self.assertIsNone(ApiKeyAuth()(self.factory.get("/")))
         with stub_api_key(user_principal()):
             self.assertIsNone(ApiKeyAuth()(request))
+
+    def test_api_key_auth_also_reads_a_cw_bearer_token(self) -> None:
+        """Chunk 1 brief: `Authorization: Bearer cw_<prefix>_<secret>`; a session bearer is
+        not offered to the key resolver at all."""
+        agent = agent_principal(scopes={"changes:write"})
+        with mock.patch.object(authentication, "resolve_api_key", lambda key: agent if key == "cw_abc_def" else None):
+            self.assertIs(ApiKeyAuth()(self.factory.get("/", HTTP_AUTHORIZATION="Bearer cw_abc_def")), agent)
+            self.assertIsNone(ApiKeyAuth()(self.factory.get("/", HTTP_AUTHORIZATION="Bearer v1.session.token")))
 
     def test_principal_shape(self) -> None:
         subject = uuid.uuid4()
@@ -83,15 +96,18 @@ class AuthClasses(TestCase):
         )
         self.assertTrue(person.has_permission(LIBRARY_READ))
         self.assertFalse(person.has_permission("cases.signoff"))
-        self.assertFalse(person.has_scope("changes.write"))
-        agent = Principal(kind=PrincipalKind.AGENT, subject_id=subject, scopes=frozenset({"changes.write"}))
-        self.assertTrue(agent.has_scope("changes.write"))
+        self.assertFalse(person.has_scope("changes:write"))
+        agent = Principal(kind=PrincipalKind.AGENT, subject_id=subject, scopes=frozenset({"changes:write"}))
+        self.assertTrue(agent.has_scope("changes:write"))
         self.assertFalse(agent.has_permission(LIBRARY_READ))
         self.assertIsNone(person.step_up_at)
         self.assertFalse(person.is_platform_staff)
 
 
 class MeRoute(TestCase):
+    """`GET /me` in its chunk 1 shape (identity app): user, tenant, roles, permissions,
+    platform roles, enrolment state, passkey count, step-up validity."""
+
     def test_401_without_a_session_in_the_problem_shape(self) -> None:
         response = self.client.get("/api/v1/me")
         self.assertEqual(response.status_code, 401)
@@ -106,26 +122,40 @@ class MeRoute(TestCase):
         response = self.client.get("/api/v1/me", HTTP_AUTHORIZATION="Bearer nope")
         self.assertEqual(response.status_code, 401)
 
-    def test_200_with_a_stubbed_session_in_camel_case(self) -> None:
-        person = user_principal(permissions={LIBRARY_READ}, tenant_id=uuid.uuid4())
-        with stub_session(person):
-            response = self.client.get("/api/v1/me", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}")
+    def test_200_with_a_real_session_in_camel_case(self) -> None:
+        from apps.shared import factories
+        from apps.shared.testing import sign_in
+
+        tenant = factories.tenant()
+        membership = factories.member(tenant, roles=("reader",))
+        response = self.client.get("/api/v1/me", **sign_in(membership.user, tenant=tenant))
         self.assertEqual(response.status_code, 200)
         body = response.json()
-        self.assertEqual(body["kind"], "user")
-        self.assertEqual(body["subjectId"], str(person.subject_id))
-        self.assertEqual(body["tenantId"], str(person.tenant_id))
-        self.assertEqual(body["permissions"], [LIBRARY_READ])
-        self.assertEqual(body["scopes"], [])
+        self.assertEqual(body["user"]["id"], str(membership.user.id))
+        self.assertEqual(body["tenant"]["slug"], tenant.slug)
+        self.assertEqual([role["key"] for role in body["roles"]], ["reader"])
+        self.assertEqual(body["roles"][0]["label"], "Reader")
+        self.assertIn(LIBRARY_READ, body["permissions"])
+        self.assertEqual(body["platformRoles"], [])
+        self.assertFalse(body["enrolmentPending"])
+        self.assertEqual(body["passkeyCount"], 0)
+        self.assertIsNone(body["stepUpValidUntil"])
         self.assertNotIn("subject_id", body, "the API is camelCase (playbook 4.1)")
 
-    def test_the_enrolment_session_may_call_me(self) -> None:
-        enrolling = enrolment_principal()
-        with stub_enrolment(enrolling):
-            response = self.client.get("/api/v1/me", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}")
+    def test_the_enrolment_session_may_call_me_and_nothing_else(self) -> None:
+        from apps.shared import factories
+        from apps.shared.testing import sign_in
+
+        tenant = factories.tenant()
+        person = factories.user(status=__import__("apps.identity.models", fromlist=["UserStatus"]).UserStatus.INVITED)
+        headers = sign_in(person, tenant=tenant, kind="enrolment")
+        response = self.client.get("/api/v1/me", **headers)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["kind"], "enrolment")
+        self.assertTrue(response.json()["enrolmentPending"])
         self.assertEqual(response.json()["permissions"], [])
+        refused = self.client.get("/api/v1/tenant/roles", **headers)
+        self.assertEqual(refused.status_code, 403)
+        self.assertEqual(refused.json()["code"], "enrolment_only")
 
     def test_an_api_key_cannot_call_me(self) -> None:
         with stub_api_key(agent_principal()):

@@ -27,7 +27,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| NFR-01 | Tenant isolation by row-level security, proven per route | M | R1 | pending |
+| NFR-01 | Tenant isolation by row-level security, proven per route | M | R1 | built |
 | NFR-02 | Performance budgets of playbook 10 | M | R1 | pending |
 | NFR-03 | The design is reproduced: flow, labels, six-tone pill system, light and dark, WCAG AA | M | R1 | pending |
 | NFR-04 | EU-only hosting and the assurance pack of playbook 18 | M | R3 | pending |

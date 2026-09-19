@@ -43,8 +43,6 @@
   --color-on-brand-muted: var(--bleqq-on-brand-muted);
   --color-on-brand-line: var(--bleqq-on-brand-line);
   --color-on-brand-hover: var(--bleqq-on-brand-hover);
-  --color-rail-current: var(--bleqq-rail-current-bg);
-  --color-on-rail-current: var(--bleqq-rail-current-fg);
 
   --color-line: var(--gds-sys-color-border-neutral-02);
   --color-line-strong: var(--gds-sys-color-border-neutral-01);
@@ -62,6 +60,19 @@
 
   --color-button: var(--gds-sys-color-l3-neutral-03);
   --color-on-button: var(--gds-sys-color-content-neutral-03);
+
+  /* The rail (shadcn Sidebar API, ADR 0020 amendment 2026-09-19). Every one
+     of these points at a --sidebar-* alias defined at the bottom of this
+     file, which in turn points at a Green token. No brand value is involved:
+     the rail is a neutral surface, so brand.css still owns the brand pair and
+     a rebrand stays one file. */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
 
   /* --- type: the named scale, replacing the numbered one --- */
   --text-*: initial;
@@ -90,6 +101,11 @@
   --font-sans: 'Hanken Grotesk Variable', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   --font-mono: 'Noto Sans Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
+  /* shadcn's rail uses `rounded-md` for the active row. Tailwind's own
+     --radius-md happens to be 6px, but a copied value is a copied value, so
+     it is remapped onto Green's 6px step (playbook 6.3). */
+  --radius-md: var(--gds-sys-radius-2xs);
+
   --radius-xs: var(--gds-sys-radius-xs);
   --radius-s: var(--gds-sys-radius-s);
   --radius-m: var(--gds-sys-radius-m);
@@ -106,4 +122,47 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+/*
+ * The rail's own tokens (ADR 0020 amendment 2026-09-19). Alex asked for the
+ * shadcn Sidebar structure in SEB's design language, taking seb.io's own left
+ * rail as the reference: a quiet neutral surface barely distinct from the
+ * page, a hairline separator, compact rows, no loud brand colour. None of
+ * shadcn's colour variables are used; each name below resolves to a Green
+ * token, so brand.css keeps every brand value.
+ *
+ * Light and dark pick a different surface on purpose. On light, the rail sits
+ * one step above the page (l2-neutral-01 #f7f8f7 against l1-neutral-02
+ * #f4f5f5) because a rail flush with a light page reads as unfinished. On
+ * dark, it sits flush with the page (l1-neutral-02 #0a0b0b), because a
+ * lighter rail there reads as a raised panel and loses the restraint; that is
+ * what seb.io's own dark rail does. In both themes the hairline does the
+ * separating.
+ *
+ * The active row's accent is a solid L3 neutral, not a --gds-sys-color-state-*
+ * overlay: the state tokens are rgba, and a translucent background cannot be
+ * pinned by contrast.test.ts, which composites one pair of real colours.
+ * l3-neutral-02 lands on #eaebeb light and #313533 dark, the latter the same
+ * value seb.io uses for its own current item.
+ */
+:root,
+.light {
+  --sidebar: var(--gds-sys-color-l2-neutral-01);
+  --sidebar-foreground: var(--gds-sys-color-content-neutral-01);
+  --sidebar-muted-foreground: var(--gds-sys-color-content-neutral-02);
+  --sidebar-border: var(--gds-sys-color-border-neutral-02);
+  --sidebar-accent: var(--gds-sys-color-l3-neutral-02);
+  --sidebar-accent-foreground: var(--gds-sys-color-content-neutral-01);
+  --sidebar-ring: var(--gds-sys-color-border-notice-01);
+}
+
+.dark {
+  --sidebar: var(--gds-sys-color-l1-neutral-02);
+  --sidebar-foreground: var(--gds-sys-color-content-neutral-01);
+  --sidebar-muted-foreground: var(--gds-sys-color-content-neutral-02);
+  --sidebar-border: var(--gds-sys-color-border-neutral-02);
+  --sidebar-accent: var(--gds-sys-color-l3-neutral-02);
+  --sidebar-accent-foreground: var(--gds-sys-color-content-neutral-01);
+  --sidebar-ring: var(--gds-sys-color-border-notice-01);
 }

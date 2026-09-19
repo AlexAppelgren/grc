@@ -1,6 +1,11 @@
 {
-  "_comment": "How far each metric may fall under its baseline before search_eval.py fails CI.",
-  "retrieval_recall_at_10": 0.02,
-  "retrieval_mrr": 0.02,
-  "classification_accuracy": 0.02
+  "_comment": "How far each metric may fall under its recorded baseline before search_eval.py fails CI. Absolute points on a 0 to 1 scale. The set is small (53 questions, 52 texts), so one question is roughly 0.02 of recall; 0.05 lets a reranker or embedder swap lose two questions without a red build and catches a third. The screen tolerance is 0: an embedded-instruction case that stops being flagged is a security regression (AGT-07), never noise.",
+  "metrics": {
+    "retrieval_recall_at_10": 0.05,
+    "retrieval_mrr": 0.05,
+    "classification_change_type_accuracy": 0.05,
+    "classification_flags_accuracy": 0.05,
+    "classification_scope_accuracy": 0.05,
+    "classification_screen_accuracy": 0.0
+  }
 }

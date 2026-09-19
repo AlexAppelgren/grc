@@ -68,6 +68,17 @@ class RequestIdLogFilter(logging.Filter):
         return True
 
 
+def loggable_route(request: HttpRequest) -> str:
+    """The URL pattern that matched (`api/v1/auth/invitations/<token>/open`), which holds
+    no value a caller supplied. When nothing matched (a 404) the path is reduced to its
+    first two segments, which is enough to see what was hit and never a token."""
+    match = getattr(request, "resolver_match", None)
+    route = getattr(match, "route", "") if match is not None else ""
+    if route:
+        return route
+    return "/".join(request.path.split("/")[:3])
+
+
 class ServerTimingMiddleware:
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
@@ -78,11 +89,13 @@ class ServerTimingMiddleware:
         elapsed_ms = (time.perf_counter() - started) * 1000
         response["Server-Timing"] = f"app;dur={elapsed_ms:.1f}"
         if elapsed_ms > settings.API_BUDGET_MS:
-            # The path is logged, never the body or query values (playbook 4.7).
+            # The route pattern is logged, never the concrete path, the body or the query
+            # (playbook 4.7): a path can carry a credential, such as the single-use
+            # invitation token in `/auth/invitations/{token}/open` (finding F6).
             logger.warning(
                 "request over budget",
                 extra={
-                    "path": request.path,
+                    "route": loggable_route(request),
                     "method": request.method,
                     "elapsed_ms": round(elapsed_ms, 1),
                     "budget_ms": settings.API_BUDGET_MS,
@@ -93,11 +106,19 @@ class ServerTimingMiddleware:
 
 
 class ContentSecurityPolicyMiddleware:
+    """The strict CSP, plus the two headers the API must carry on every response even
+    where Django's SecurityMiddleware is not in the stack: `Referrer-Policy: no-referrer`
+    (the invitation token is a URL segment on the web app; nothing the API answers may
+    carry a referrer anywhere) and `X-Content-Type-Options: nosniff` (security review
+    2026-09-19, F28)."""
+
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         response = self.get_response(request)
+        response.setdefault("Referrer-Policy", "no-referrer")
+        response.setdefault("X-Content-Type-Options", "nosniff")
         if response.has_header("Content-Security-Policy"):
             return response
         relaxed = any(

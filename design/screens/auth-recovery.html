@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen card: lost passkeys, ask your admin (/sign-in, recovery panel)</title>
+<style>
+/* Cut from design/prototype/index.html (playbook Section 7, step 4); the
+   auth surface of auth-sign-in.html. There is no self-service reset, so this
+   panel only says who to ask. */
+:root{
+  --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--sand:#f8f6f1;--sand-2:#efe9dc;
+  --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
+  --btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0b0b;--surface:#191a1a;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;
+}}
+:root[data-theme="dark"]{
+  --bg:#0a0b0b;--surface:#191a1a;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+h1{margin:0 0 8px;letter-spacing:-.01em;line-height:1.2;font-size:2rem;font-weight:400}
+p{margin:0 0 .75rem}
+.auth{min-height:100vh;display:grid;place-items:start center;padding:48px 16px 96px}
+.auth .logo{display:block;width:150px;height:auto;margin:0 auto 28px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;width:100%;max-width:440px}
+.lede{color:var(--muted)}
+.sowhat{background:var(--sand);border-radius:12px;padding:12px 14px;margin:14px 0}
+.btn{background:var(--btn);color:var(--btn-text);border:1px solid var(--btn);border-radius:999px;padding:10px 20px;font-weight:600;min-height:44px}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-strong)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:flex-end}
+.note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+@media (max-width:820px){.auth{padding:28px 16px 80px}h1{font-size:1.6rem}.bar{flex-wrap:nowrap}.bar .btn{white-space:nowrap}.bar .btn:not(.ghost){order:3}}
+</style>
+</head>
+<body>
+<div class="auth">
+  <div style="width:100%;max-width:440px">
+    <svg class="logo" viewBox="0 0 196 44" role="img" aria-label="bleqq, pronounced blek"><text x="0" y="32" font-family="Noto Sans Mono, monospace" font-size="34" font-weight="500" letter-spacing="1.4" fill="currentColor">[blɛkː]</text></svg>
+    <section class="panel" aria-labelledby="t1">
+      <h1 id="t1">Lost your passkeys?</h1>
+      <p class="lede">There is no reset link and no password to fall back on.</p>
+      <div class="sowhat">Ask an administrator in your organisation to re-issue your enrolment. You will get a new invitation by email, enter a code once, and create a new passkey.</div>
+      <p class="lede">If you are the only administrator, contact bleqq support; they will check who you are before doing the same.</p>
+      <div class="bar"><button class="btn ghost">Back to sign in</button></div>
+    </section>
+    <p class="note">Recovery card, reached from "Lost your passkeys?" on the sign-in screen. It is a panel state of /sign-in, not a route. The only action is the way back. No email field: the address is never asked for here, so nothing can be enumerated.</p>
+  </div>
+</div>
+</body>
+</html>

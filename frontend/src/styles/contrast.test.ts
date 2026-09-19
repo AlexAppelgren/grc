@@ -6,12 +6,14 @@ import { computeVars, readStyle, resolveName, type Theme, type VarMap } from './
 
 // Playbook 6.3: contrast is pinned by a unit test against WCAG AA for every
 // text-on-surface pair the design uses, in both themes, including all six
-// pill tones. Values are resolved from tokens.generated.css + brand.css.
+// pill tones. Values are resolved from tokens.generated.css + brand.css, then
+// theme.css for the rail's --sidebar-* aliases (ADR 0020 amendment 2026-09-19).
 
 const AA_NORMAL_TEXT = 4.5;
 
 const tokens = readStyle('tokens.generated.css');
 const brand = readStyle('brand.css');
+const themeCss = readStyle('theme.css');
 
 type Rgba = { r: number; g: number; b: number; a: number };
 
@@ -72,9 +74,8 @@ const PAIRS: Pair[] = [
   { name: 'brass on sand (legal margin)', fg: '--gds-sys-color-content-brand-02', bg: '--gds-sys-color-l2-brand-02' },
   { name: 'brass on surface (AI note)', fg: '--gds-sys-color-content-brand-02', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'accent on surface', fg: '--bleqq-accent', bg: '--gds-sys-color-l2-neutral-02' },
-  { name: 'on-brand on side rail', fg: '--bleqq-on-brand', bg: '--gds-sys-color-l2-brand-01' },
-  { name: 'on-brand-muted on side rail (who panel)', fg: '--bleqq-on-brand-muted', bg: '--gds-sys-color-l2-brand-01' },
-  { name: 'current nav item', fg: '--bleqq-rail-current-fg', bg: '--bleqq-rail-current-bg' },
+  { name: 'on-brand on the brand surface', fg: '--bleqq-on-brand', bg: '--gds-sys-color-l2-brand-01' },
+  { name: 'on-brand-muted on the brand surface', fg: '--bleqq-on-brand-muted', bg: '--gds-sys-color-l2-brand-01' },
   { name: 'button text on button', fg: '--gds-sys-color-content-neutral-03', bg: '--gds-sys-color-l3-neutral-03' },
   { name: 'negative on surface (danger button)', fg: '--gds-sys-color-content-negative-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'warning on surface (date emphasis)', fg: '--gds-sys-color-content-warning-01', bg: '--gds-sys-color-l2-neutral-02' },
@@ -84,10 +85,16 @@ const PAIRS: Pair[] = [
   ...Object.entries(pillTones).map(([tone, { background, text }]) => ({ name: `pill ${tone}`, fg: text, bg: background })),
   { name: 'outlined information pill on surface', fg: pillTones.information.text, bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'outlined information pill on sand', fg: pillTones.information.text, bg: '--gds-sys-color-l2-brand-02' },
+  // The rail: a neutral surface with a hairline, shadcn's structure in
+  // seb.io's restraint. Every text the rail sets, on every surface it sets it.
+  { name: 'rail: destination label on the rail', fg: '--sidebar-foreground', bg: '--sidebar' },
+  { name: 'rail: role line, count and minimise on the rail', fg: '--sidebar-muted-foreground', bg: '--sidebar' },
+  { name: 'rail: current and hovered row', fg: '--sidebar-accent-foreground', bg: '--sidebar-accent' },
+  { name: 'rail: role line and count on a current or hovered row', fg: '--sidebar-muted-foreground', bg: '--sidebar-accent' },
 ];
 
 function varsFor(theme: Theme): VarMap {
-  return computeVars([tokens, brand], theme);
+  return computeVars([tokens, brand, themeCss], theme);
 }
 
 describe('WCAG AA contrast for every text-on-surface pair (playbook 6.3)', () => {

@@ -7,7 +7,7 @@ import type { MessageKey } from '@/shared/i18n';
 // The server's structured 403 remains the enforcer.
 
 export type Surface = 'tenant' | 'console';
-export type NavGroup = 'primary' | 'secondary' | 'admin';
+export type NavGroup = 'primary' | 'secondary' | 'admin' | 'account';
 
 export interface Destination {
   id: string;
@@ -19,7 +19,15 @@ export interface Destination {
   /** Present on destinations that sit in the phone dock, lowest first. */
   dockRank?: number;
   group: NavGroup;
+  /**
+   * A child sits under its parent's screen (the Admin index, the who panel's
+   * account links) and never in the rail or the dock. `account` is a virtual
+   * parent: the who panel lists its children.
+   */
+  parent?: string;
 }
+
+export const ACCOUNT_PARENT = 'account';
 
 const TENANT_ADMIN_PERMISSIONS = [
   'members.manage',
@@ -29,7 +37,15 @@ const TENANT_ADMIN_PERMISSIONS = [
   'workflow.manage',
   'agents.manage',
   'integrations.manage',
+  // A compliance officer may hold nothing but these two and still needs the
+  // way in to the footprint screen (FP-01, FP-02).
+  'footprint.request',
+  'footprint.approve',
 ] as const;
+
+// Seeing the footprint is enough to request a change or to approve one; the
+// chips are editable only with `footprint.request`, and the screen says so.
+const FOOTPRINT_PERMISSIONS = ['footprint.request', 'footprint.approve'] as const;
 
 export const destinations: readonly Destination[] = [
   { id: 'today', href: '/', labelKey: 'nav.today', surface: 'tenant', anyOfPermissions: [], dockRank: 1, group: 'primary' },
@@ -38,6 +54,18 @@ export const destinations: readonly Destination[] = [
   { id: 'roadmap', href: '/roadmap', labelKey: 'nav.roadmap', surface: 'tenant', anyOfPermissions: ['roadmap.read'], group: 'secondary' },
   { id: 'search', href: '/search', labelKey: 'nav.search', surface: 'tenant', anyOfPermissions: ['search.use'], dockRank: 4, group: 'primary' },
   { id: 'admin', href: '/admin', labelKey: 'nav.admin', surface: 'tenant', anyOfPermissions: TENANT_ADMIN_PERMISSIONS, group: 'admin' },
+  // Admin sections (ADM-03): each gated by its own permission. The
+  // organisation profile is readable by any member; the server refuses edits.
+  { id: 'admin-organisation', href: '/admin/organisation', labelKey: 'nav.admin.organisation', surface: 'tenant', anyOfPermissions: [], group: 'admin', parent: 'admin' },
+  { id: 'admin-members', href: '/admin/members', labelKey: 'nav.admin.members', surface: 'tenant', anyOfPermissions: ['members.manage'], group: 'admin', parent: 'admin' },
+  { id: 'admin-roles', href: '/admin/roles', labelKey: 'nav.admin.roles', surface: 'tenant', anyOfPermissions: ['roles.manage'], group: 'admin', parent: 'admin' },
+  { id: 'admin-vocabularies', href: '/admin/vocabularies', labelKey: 'nav.admin.vocabularies', surface: 'tenant', anyOfPermissions: ['vocab.manage'], group: 'admin', parent: 'admin' },
+  { id: 'admin-footprint', href: '/admin/footprint', labelKey: 'nav.admin.footprint', surface: 'tenant', anyOfPermissions: FOOTPRINT_PERMISSIONS, group: 'admin', parent: 'admin' },
+  { id: 'admin-api-keys', href: '/admin/api-keys', labelKey: 'nav.admin.apiKeys', surface: 'tenant', anyOfPermissions: ['integrations.manage'], group: 'admin', parent: 'admin' },
+  { id: 'admin-security-log', href: '/admin/security-log', labelKey: 'nav.admin.securityLog', surface: 'tenant', anyOfPermissions: ['security.manage'], group: 'admin', parent: 'admin' },
+  // Account: any signed-in person, from the who panel.
+  { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
+  { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'console-queue', href: '/console/queue', labelKey: 'nav.console.queue', surface: 'console', anyOfPermissions: ['proposals.review'], dockRank: 1, group: 'primary' },
   { id: 'console-vocabularies', href: '/console/vocabularies', labelKey: 'nav.console.vocabularies', surface: 'console', anyOfPermissions: ['library_vocab.manage'], dockRank: 2, group: 'primary' },
   { id: 'console-sources', href: '/console/sources', labelKey: 'nav.console.sources', surface: 'console', anyOfPermissions: ['sources.manage'], dockRank: 3, group: 'primary' },
@@ -48,8 +76,14 @@ export function unlocks(anyOfPermissions: readonly string[], permissions: readon
   return anyOfPermissions.some((permission) => permissions.includes(permission));
 }
 
+/** Top-level destinations of a surface the permission list unlocks: the rail and the More menu. */
 export function visibleDestinations(surface: Surface, permissions: readonly string[]): Destination[] {
-  return destinations.filter((d) => d.surface === surface && unlocks(d.anyOfPermissions, permissions));
+  return destinations.filter((d) => d.surface === surface && d.parent === undefined && unlocks(d.anyOfPermissions, permissions));
+}
+
+/** Children of a destination (or of the virtual `account` parent) the permission list unlocks. */
+export function childDestinations(parent: string, permissions: readonly string[]): Destination[] {
+  return destinations.filter((d) => d.parent === parent && unlocks(d.anyOfPermissions, permissions));
 }
 
 export function dockDestinations(surface: Surface, permissions: readonly string[]): Destination[] {

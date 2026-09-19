@@ -8,6 +8,7 @@ only sentry_sdk's type aliases.
 
 from __future__ import annotations
 
+import re
 from typing import Any, cast
 
 from sentry_sdk.types import Event, Hint
@@ -42,6 +43,7 @@ SENSITIVE_KEYS = frozenset(
     }
 )
 REDACTED = "[redacted]"
+_TOKEN_PATH = re.compile(r"(/auth/invitations/)[^/?#]+")
 
 
 def _scrub_mapping(mapping: dict[str, Any], sensitive: frozenset[str]) -> dict[str, Any]:
@@ -56,6 +58,12 @@ def _scrub_mapping(mapping: dict[str, Any], sensitive: frozenset[str]) -> dict[s
     return cleaned
 
 
+def scrub_url(url: str) -> str:
+    """A path can carry a credential: the single-use invitation token in
+    `/auth/invitations/{token}/open` (security review 2026-09-19, finding F6)."""
+    return _TOKEN_PATH.sub(rf"\1{REDACTED}", url)
+
+
 def scrub_event(event: dict[str, Any]) -> dict[str, Any]:
     request = event.get("request")
     if isinstance(request, dict):
@@ -65,6 +73,8 @@ def scrub_event(event: dict[str, Any]) -> dict[str, Any]:
         for key in ("cookies", "data", "query_string", "env"):
             if key in request:
                 request[key] = REDACTED
+        if isinstance(request.get("url"), str):
+            request["url"] = scrub_url(request["url"])
     user = event.get("user")
     if isinstance(user, dict):
         # A person's id is permitted (playbook 4.7); nothing else about them is.

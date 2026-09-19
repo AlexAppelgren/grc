@@ -60,7 +60,9 @@ class Matrix(SimpleTestCase):
 
     def test_no_scope_allows_a_library_edit(self) -> None:
         for scope in p.ALL_SCOPES:
-            self.assertNotIn("library", scope.split(".")[0], f"{scope} would let an agent edit the library (AC-PRO1)")
+            resource, _, action = scope.partition(":")
+            self.assertFalse(resource == "library" and action != "read", f"{scope} would let an agent edit the library (AC-PRO1)")
+            self.assertNotIn(resource, {"instruments", "provisions", "obligations"}, f"{scope} names a library table (AC-PRO1)")
 
 
 def _view(request: Any) -> str:
@@ -101,7 +103,7 @@ class Decorators(SimpleTestCase):
         self.assertEqual(p.gate_of(gated), p.Gate("scope", p.SCOPE_CHANGES_WRITE))
         self.assertEqual(gated(self._request(agent_principal(scopes={p.SCOPE_CHANGES_WRITE}))), "ok")
         with self.assertRaises(ProblemError) as caught:
-            gated(self._request(agent_principal(scopes={p.SCOPE_VOCAB_READ})))
+            gated(self._request(agent_principal(scopes={p.SCOPE_LIBRARY_READ})))
         self.assertEqual(caught.exception.status, 403)
         with self.assertRaises(ProblemError):
             gated(self._request(user_principal(permissions=p.ALL_PERMISSIONS)))

@@ -8,7 +8,7 @@
  * a generated value.
  *
  * Placeholders until Alex picks the real values (design/brand/README.md):
- *   green  #0a3a2a  (side rail, brand-01)      sand #f6f3ec  (brand-02 surface)
+ *   green  #0a3a2a  (brand-01)                 sand #f6f3ec  (brand-02 surface)
  *   brass pill background  #ece5d6 light / #33291a dark
  *   brass text             #6a5730 light / #d9cba9 dark
  *
@@ -64,10 +64,6 @@
   --bleqq-on-brand-muted: rgba(255, 255, 255, 0.75);
   --bleqq-on-brand-line: rgba(255, 255, 255, 0.25);
   --bleqq-on-brand-hover: var(--gds-sys-color-state-brand-01);
-  /* The side rail stays dark green in both themes, so its current item is
-     always light sand with green text (prototype .nav [aria-current]). */
-  --bleqq-rail-current-bg: #f6f3ec;
-  --bleqq-rail-current-fg: #0a3a2a;
 }
 
 .dark {
@@ -101,6 +97,4 @@
   --bleqq-on-brand-muted: rgba(255, 255, 255, 0.75);
   --bleqq-on-brand-line: rgba(255, 255, 255, 0.25);
   --bleqq-on-brand-hover: rgba(246, 243, 236, 0.12);
-  --bleqq-rail-current-bg: #f6f3ec;
-  --bleqq-rail-current-fg: #0a3a2a;
 }

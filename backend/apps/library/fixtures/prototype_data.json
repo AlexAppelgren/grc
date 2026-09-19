@@ -1,0 +1,4771 @@
+{
+ "_meta": {
+  "what": "The bleqq prototype's sample data (design/prototype/index.html, script from line 242) extracted into rows keyed by schema table and column (docs/inputs/data-model.md section 5, docs/inputs/schema.sql, INPUT_DELTAS section 1).",
+  "generated_from": "design/prototype/index.html, sample data evaluated with Node and mapped; text fields are verbatim.",
+  "anchor_date": "2026-09-16",
+  "anchor_note": "The prototype's relative dates ('today', 'yesterday', '3 days ago' on sources) are resolved against this date, the day the agent audit rows carry.",
+  "timezone": "Europe/Stockholm",
+  "date_format": "ISO 8601. A partial date in the prototype ('2025-12') is stored as the first day of that period with a precision column set to 'month'.",
+  "references": "A field named <table> or <table>s holds that table's stable key. Term references are '<dimension>:<key>'. Users are referenced by their prototype id.",
+  "tenant": "example-group",
+  "vocabulary_note": "Swedish labels of vocabularies and taxonomy terms are authored here; the prototype shows English labels only. The English labels are the prototype's.",
+  "kinds_used": {
+   "applicability": [
+    "applies",
+    "under_assessment"
+   ],
+   "proposal_kind": [
+    "new_obligation_version",
+    "new_obligation",
+    "reverification"
+   ],
+   "proposal_status": [
+    "open"
+   ],
+   "case_status": [
+    "new",
+    "assigned",
+    "assessing",
+    "implementing",
+    "closed"
+   ],
+   "check_status": [
+    "ok",
+    "failed"
+   ],
+   "date_precision": [
+    "day",
+    "month"
+   ],
+   "origin_type": [
+    "agent",
+    "user"
+   ],
+   "actor_type": [
+    "user",
+    "agent"
+   ],
+   "assessment_applies": [
+    "yes"
+   ],
+   "effort_size": [
+    "S",
+    "L"
+   ],
+   "gap_status": [
+    "open",
+    "remediating"
+   ],
+   "gap_source": [
+    "assessment",
+    "change_case"
+   ],
+   "run_status": [
+    "succeeded"
+   ],
+   "evidence_kind": [
+    "file"
+   ],
+   "record_status": [
+    "active"
+   ],
+   "change_status": [
+    "active"
+   ]
+  }
+ },
+ "vocabularies": {
+  "instrument_level": {
+   "eu_regulation": {
+    "label_en": "EU regulation",
+    "label_sv": "EU-förordning",
+    "kind": null,
+    "rank": 10,
+    "binding_default": true,
+    "usage_note": "Directly applicable across the Union. Level 1."
+   },
+   "eu_directive": {
+    "label_en": "EU directive",
+    "label_sv": "EU-direktiv",
+    "kind": null,
+    "rank": 20,
+    "binding_default": true,
+    "usage_note": "Binding on Member States, applied through national law. Only anchors relations here; the prototype shows none as its own row."
+   },
+   "eu_guidance": {
+    "label_en": "EU guidance, level 3",
+    "label_sv": "EU-riktlinjer, nivå 3",
+    "kind": null,
+    "rank": 30,
+    "binding_default": false,
+    "usage_note": "ESA guidelines and Q&As. Comply or explain, applied by the national supervisor."
+   },
+   "act": {
+    "label_en": "Act",
+    "label_sv": "Lag",
+    "kind": null,
+    "rank": 40,
+    "binding_default": true,
+    "usage_note": "A statute passed by the national legislature (SFS in Sweden). Jurisdiction comes from the instrument, never from the level."
+   },
+   "authority_regulation": {
+    "label_en": "Supervisory regulation",
+    "label_sv": "Myndighetsföreskrift",
+    "kind": null,
+    "rank": 50,
+    "binding_default": true,
+    "usage_note": "Binding rules issued by the supervisor under delegation (FFFS in Sweden)."
+   }
+  },
+  "change_type": {
+   "proposal": {
+    "label_en": "Proposal",
+    "label_sv": "Förslag",
+    "kind": "pre_adoption",
+    "usage_note": "A draft rule or final report proposed for adoption. Dates are proposed, not decided."
+   },
+   "adopted": {
+    "label_en": "Adopted",
+    "label_sv": "Antagen",
+    "kind": "adopted",
+    "usage_note": "Decided by the legislator or authority, application still ahead. The prototype's 'Adopted rule', 'EU legislation' and 'EU regulation' land here until they apply."
+   },
+   "supervision": {
+    "label_en": "Supervision",
+    "label_sv": "Tillsyn",
+    "kind": "supervisory",
+    "usage_note": "Surveys, thematic reviews, supervisory statements. No new rule."
+   },
+   "enforcement": {
+    "label_en": "Enforcement",
+    "label_sv": "Sanktion",
+    "kind": "supervisory",
+    "usage_note": "A decision against a named firm. Structured facts live in enforcement_decision."
+   },
+   "recurring_date": {
+    "label_en": "Recurring date",
+    "label_sv": "Återkommande datum",
+    "kind": "recurring",
+    "usage_note": "A date the law repeats every year, such as a rate fixing or a reporting deadline."
+   },
+   "consultation": {
+    "label_en": "Consultation",
+    "label_sv": "Remiss",
+    "kind": "pre_adoption",
+    "usage_note": "A draft open for comments with a closing date. No prototype row uses it; the evaluation set does."
+   },
+   "in_force": {
+    "label_en": "In force",
+    "label_sv": "I kraft",
+    "kind": "in_force",
+    "usage_note": "The rule applies from the date given. No prototype row uses it; the evaluation set does."
+   },
+   "guidance": {
+    "label_en": "Guidance",
+    "label_sv": "Vägledning",
+    "kind": "supervisory",
+    "usage_note": "Guidelines, Q&As, circulars and position papers from an authority. No prototype row uses it; the evaluation set does."
+   },
+   "court_ruling": {
+    "label_en": "Court ruling",
+    "label_sv": "Domstolsavgörande",
+    "kind": "supervisory",
+    "usage_note": "A judgment that settles how a rule reads. No prototype row uses it; the evaluation set does."
+   }
+  },
+  "urgency": {
+   "act_now": {
+    "label_en": "Act now",
+    "label_sv": "Agera nu",
+    "kind": null,
+    "ordinal": 1,
+    "tone": "critical",
+    "sla_days": 14,
+    "usage_note": "Something must change within weeks."
+   },
+   "within_3_months": {
+    "label_en": "Within 3 months",
+    "label_sv": "Inom 3 månader",
+    "kind": null,
+    "ordinal": 2,
+    "tone": "warning",
+    "sla_days": 90,
+    "usage_note": "Work must start this quarter."
+   },
+   "six_months_plus": {
+    "label_en": "6+ months",
+    "label_sv": "6+ månader",
+    "kind": null,
+    "ordinal": 3,
+    "tone": "info",
+    "sla_days": 180,
+    "usage_note": "Plan it, no rush."
+   },
+   "monitor": {
+    "label_en": "Monitor",
+    "label_sv": "Bevaka",
+    "kind": null,
+    "ordinal": 4,
+    "tone": "neutral",
+    "sla_days": null,
+    "usage_note": "Nothing to do yet, watch for the next step."
+   },
+   "no_action": {
+    "label_en": "No action",
+    "label_sv": "Ingen åtgärd",
+    "kind": null,
+    "ordinal": 5,
+    "tone": "positive",
+    "sla_days": null,
+    "usage_note": "Noted, nothing changes for us."
+   }
+  },
+  "flag": {
+   "ai": {
+    "label_en": "AI",
+    "label_sv": "AI",
+    "kind": null,
+    "usage_note": "The change concerns artificial intelligence in financial services, including the AI Act."
+   },
+   "advice_perimeter": {
+    "label_en": "Advice perimeter",
+    "label_sv": "Rådgivningens gränser",
+    "kind": null,
+    "usage_note": "The change moves the line between advice and non-advised services."
+   }
+  },
+  "duty_type": {
+   "conduct": {
+    "label_en": "Conduct",
+    "label_sv": "Uppförande",
+    "kind": null,
+    "usage_note": "How the firm must act towards the client."
+   },
+   "disclosure": {
+    "label_en": "Disclosure",
+    "label_sv": "Information",
+    "kind": null,
+    "usage_note": "What the client must be told, and when."
+   },
+   "record_keeping": {
+    "label_en": "Record-keeping",
+    "label_sv": "Dokumentation",
+    "kind": null,
+    "usage_note": "What must be documented and kept."
+   },
+   "reporting": {
+    "label_en": "Reporting",
+    "label_sv": "Rapportering",
+    "kind": null,
+    "usage_note": "What must be sent to an authority."
+   },
+   "governance": {
+    "label_en": "Governance",
+    "label_sv": "Styrning",
+    "kind": null,
+    "usage_note": "Organisation, policies, registers and oversight."
+   },
+   "technical": {
+    "label_en": "Technical",
+    "label_sv": "Teknisk",
+    "kind": null,
+    "usage_note": "A rule a system enforces, such as eligibility of an asset."
+   }
+  },
+  "term_dimension": {
+   "regime": {
+    "label_en": "Regime",
+    "label_sv": "Regelområde",
+    "kind": null,
+    "restricts_footprint": true,
+    "usage_note": "The body of law: securities, insurance, tax, data protection, AML, AI and ICT."
+   },
+   "account_type": {
+    "label_en": "Account type",
+    "label_sv": "Kontotyp",
+    "kind": null,
+    "restricts_footprint": true,
+    "usage_note": "The Swedish account wrappers: ISK, AF, depå, KF, pension."
+   },
+   "legal_entity": {
+    "label_en": "Legal entity type",
+    "label_sv": "Typ av juridisk person",
+    "kind": null,
+    "restricts_footprint": true,
+    "usage_note": "Bank, insurer, fund company."
+   },
+   "service_type": {
+    "label_en": "Service",
+    "label_sv": "Tjänst",
+    "kind": null,
+    "restricts_footprint": true,
+    "usage_note": "The investment or insurance service offered."
+   },
+   "client_category": {
+    "label_en": "Client category",
+    "label_sv": "Kundkategori",
+    "kind": null,
+    "restricts_footprint": true,
+    "usage_note": "Retail or professional."
+   },
+   "channel": {
+    "label_en": "Channel",
+    "label_sv": "Kanal",
+    "kind": null,
+    "restricts_footprint": false,
+    "usage_note": "Digital or branch. Describes the obligation, never narrows the footprint."
+   },
+   "lifecycle_stage": {
+    "label_en": "Lifecycle stage",
+    "label_sv": "Skede",
+    "kind": null,
+    "restricts_footprint": false,
+    "usage_note": "Where in the client or product lifecycle the duty bites. Descriptive only."
+   }
+  },
+  "compliance_status": {
+   "compliant": {
+    "label_en": "Compliant",
+    "label_sv": "Uppfylld",
+    "kind": null,
+    "ordinal": 1,
+    "tone": "positive",
+    "usage_note": "We meet the obligation and can show it."
+   },
+   "partly_compliant": {
+    "label_en": "Partly compliant",
+    "label_sv": "Delvis uppfylld",
+    "kind": null,
+    "ordinal": 2,
+    "tone": "warning",
+    "usage_note": "Met in part; the status note says what is missing."
+   },
+   "gap": {
+    "label_en": "Gap",
+    "label_sv": "Brist",
+    "kind": null,
+    "ordinal": 3,
+    "tone": "critical",
+    "usage_note": "Not met. A gap record with an owner and a date is expected."
+   },
+   "not_assessed": {
+    "label_en": "Not assessed",
+    "label_sv": "Ej bedömd",
+    "kind": null,
+    "ordinal": 0,
+    "tone": "neutral",
+    "usage_note": "No assessment recorded yet."
+   }
+  },
+  "risk_rating": {
+   "low": {
+    "label_en": "Low",
+    "label_sv": "Låg",
+    "kind": null,
+    "ordinal": 1,
+    "usage_note": "Tenant scale, mapped to a fixed ordinal."
+   },
+   "medium": {
+    "label_en": "Medium",
+    "label_sv": "Medel",
+    "kind": null,
+    "ordinal": 2,
+    "usage_note": "Tenant scale, mapped to a fixed ordinal."
+   },
+   "high": {
+    "label_en": "High",
+    "label_sv": "Hög",
+    "kind": null,
+    "ordinal": 3,
+    "usage_note": "Tenant scale, mapped to a fixed ordinal."
+   }
+  },
+  "relation_type": {
+   "implements": {
+    "label_en": "Implements",
+    "label_sv": "Genomför",
+    "kind": null,
+    "usage_note": "National law that transposes or gives effect to an EU directive."
+   },
+   "elaborates": {
+    "label_en": "Elaborates",
+    "label_sv": "Preciserar",
+    "kind": null,
+    "usage_note": "Guidance or delegated rules that detail a higher instrument."
+   }
+  },
+  "source_kind": {
+   "authority_site": {
+    "label_en": "Authority website",
+    "label_sv": "Myndighetens webbplats",
+    "kind": null,
+    "usage_note": "The publisher's own site, checked on a schedule."
+   },
+   "legal_database": {
+    "label_en": "Legal database",
+    "label_sv": "Rättsdatabas",
+    "kind": null,
+    "usage_note": "Consolidated texts: riksdagen.se, EUR-Lex."
+   },
+   "open_web_sweep": {
+    "label_en": "Open web sweep",
+    "label_sv": "Öppen webbsökning",
+    "kind": null,
+    "usage_note": "A search across the open web for anything the registered sources missed."
+   },
+   "tenant_private": {
+    "label_en": "Private source",
+    "label_sv": "Privat källa",
+    "kind": null,
+    "usage_note": "A source only one tenant follows. Findings never enter the shared library."
+   }
+  },
+  "link_kind": {
+   "policy": {
+    "label_en": "Policy",
+    "label_sv": "Policy",
+    "kind": null,
+    "usage_note": "An internal policy document."
+   },
+   "procedure": {
+    "label_en": "Procedure",
+    "label_sv": "Rutin",
+    "kind": null,
+    "usage_note": "An internal procedure or instruction."
+   },
+   "control": {
+    "label_en": "Control",
+    "label_sv": "Kontroll",
+    "kind": null,
+    "usage_note": "A recurring control or sample test."
+   }
+  }
+ },
+ "taxonomy_terms": [
+  {
+   "dimension": "regime",
+   "key": "securities",
+   "label_en": "Securities",
+   "label_sv": "Värdepapper",
+   "sort_order": 1,
+   "from_prototype": true
+  },
+  {
+   "dimension": "regime",
+   "key": "insurance",
+   "label_en": "Insurance",
+   "label_sv": "Försäkring",
+   "sort_order": 2,
+   "from_prototype": true
+  },
+  {
+   "dimension": "regime",
+   "key": "tax",
+   "label_en": "Tax",
+   "label_sv": "Skatt",
+   "sort_order": 3,
+   "from_prototype": true
+  },
+  {
+   "dimension": "regime",
+   "key": "data_protection",
+   "label_en": "Data protection",
+   "label_sv": "Dataskydd",
+   "sort_order": 4,
+   "from_prototype": true
+  },
+  {
+   "dimension": "regime",
+   "key": "aml",
+   "label_en": "AML",
+   "label_sv": "Penningtvätt",
+   "sort_order": 5,
+   "from_prototype": true
+  },
+  {
+   "dimension": "regime",
+   "key": "ai_ict",
+   "label_en": "AI and ICT",
+   "label_sv": "AI och IKT",
+   "sort_order": 6,
+   "from_prototype": true
+  },
+  {
+   "dimension": "account_type",
+   "key": "isk",
+   "label_en": "ISK",
+   "label_sv": "ISK",
+   "sort_order": 1,
+   "from_prototype": true
+  },
+  {
+   "dimension": "account_type",
+   "key": "af",
+   "label_en": "AF",
+   "label_sv": "AF",
+   "sort_order": 2,
+   "from_prototype": true
+  },
+  {
+   "dimension": "account_type",
+   "key": "depa",
+   "label_en": "Depå",
+   "label_sv": "Depå",
+   "sort_order": 3,
+   "from_prototype": true
+  },
+  {
+   "dimension": "account_type",
+   "key": "kf",
+   "label_en": "KF",
+   "label_sv": "KF",
+   "sort_order": 4,
+   "from_prototype": true
+  },
+  {
+   "dimension": "account_type",
+   "key": "pension",
+   "label_en": "Pension",
+   "label_sv": "Pension",
+   "sort_order": 5,
+   "from_prototype": true
+  },
+  {
+   "dimension": "legal_entity",
+   "key": "bank",
+   "label_en": "Bank",
+   "label_sv": "Bank",
+   "sort_order": 1,
+   "from_prototype": true
+  },
+  {
+   "dimension": "legal_entity",
+   "key": "insurer",
+   "label_en": "Insurer",
+   "label_sv": "Försäkringsbolag",
+   "sort_order": 2,
+   "from_prototype": true
+  },
+  {
+   "dimension": "legal_entity",
+   "key": "fund_company",
+   "label_en": "Fund company",
+   "label_sv": "Fondbolag",
+   "sort_order": 3,
+   "from_prototype": true
+  },
+  {
+   "dimension": "service_type",
+   "key": "advice",
+   "label_en": "Advice",
+   "label_sv": "Rådgivning",
+   "sort_order": 1,
+   "from_prototype": true
+  },
+  {
+   "dimension": "service_type",
+   "key": "non_advised",
+   "label_en": "Non-advised",
+   "label_sv": "Utan rådgivning",
+   "sort_order": 2,
+   "from_prototype": true
+  },
+  {
+   "dimension": "service_type",
+   "key": "execution_only",
+   "label_en": "Execution only",
+   "label_sv": "Endast utförande",
+   "sort_order": 3,
+   "from_prototype": true
+  },
+  {
+   "dimension": "service_type",
+   "key": "portfolio_management",
+   "label_en": "Portfolio management",
+   "label_sv": "Portföljförvaltning",
+   "sort_order": 4,
+   "from_prototype": true
+  },
+  {
+   "dimension": "service_type",
+   "key": "custody",
+   "label_en": "Custody",
+   "label_sv": "Förvaring",
+   "sort_order": 5,
+   "from_prototype": true
+  },
+  {
+   "dimension": "service_type",
+   "key": "insurance_distribution",
+   "label_en": "Insurance distribution",
+   "label_sv": "Försäkringsdistribution",
+   "sort_order": 6,
+   "from_prototype": true
+  },
+  {
+   "dimension": "client_category",
+   "key": "retail",
+   "label_en": "Retail",
+   "label_sv": "Icke-professionell",
+   "sort_order": 1,
+   "from_prototype": true
+  },
+  {
+   "dimension": "client_category",
+   "key": "professional",
+   "label_en": "Professional",
+   "label_sv": "Professionell",
+   "sort_order": 2,
+   "from_prototype": true
+  },
+  {
+   "dimension": "channel",
+   "key": "digital",
+   "label_en": "Digital",
+   "label_sv": "Digital",
+   "sort_order": 1,
+   "from_prototype": true
+  },
+  {
+   "dimension": "channel",
+   "key": "branch",
+   "label_en": "Branch",
+   "label_sv": "Kontor",
+   "sort_order": 2,
+   "from_prototype": true
+  },
+  {
+   "dimension": "lifecycle_stage",
+   "key": "pre_trade",
+   "label_en": "Pre-trade",
+   "label_sv": "Före affär",
+   "sort_order": 1,
+   "from_prototype": true
+  },
+  {
+   "dimension": "lifecycle_stage",
+   "key": "post_trade",
+   "label_en": "Post-trade",
+   "label_sv": "Efter affär",
+   "sort_order": 2,
+   "from_prototype": true
+  },
+  {
+   "dimension": "lifecycle_stage",
+   "key": "ongoing",
+   "label_en": "Ongoing",
+   "label_sv": "Löpande",
+   "sort_order": 3,
+   "from_prototype": true
+  },
+  {
+   "dimension": "lifecycle_stage",
+   "key": "product_lifecycle",
+   "label_en": "Product lifecycle",
+   "label_sv": "Produktens livscykel",
+   "sort_order": 4,
+   "from_prototype": true
+  },
+  {
+   "dimension": "lifecycle_stage",
+   "key": "reporting",
+   "label_en": "Reporting",
+   "label_sv": "Rapportering",
+   "sort_order": 5,
+   "from_prototype": true
+  },
+  {
+   "dimension": "lifecycle_stage",
+   "key": "onboarding",
+   "label_en": "Onboarding",
+   "label_sv": "Kundanslutning",
+   "sort_order": 6,
+   "from_prototype": false
+  }
+ ],
+ "tags": [
+  {
+   "key": "advice",
+   "label_en": "advice",
+   "label_sv": "advice"
+  },
+  {
+   "key": "analysis",
+   "label_en": "analysis",
+   "label_sv": "analysis"
+  },
+  {
+   "key": "appropriateness",
+   "label_en": "appropriateness",
+   "label_sv": "appropriateness"
+  },
+  {
+   "key": "approved_assets",
+   "label_en": "approved assets",
+   "label_sv": "approved assets"
+  },
+  {
+   "key": "automated",
+   "label_en": "automated",
+   "label_sv": "automated"
+  },
+  {
+   "key": "charges",
+   "label_en": "charges",
+   "label_sv": "charges"
+  },
+  {
+   "key": "client_assets",
+   "label_en": "client assets",
+   "label_sv": "client assets"
+  },
+  {
+   "key": "cloud",
+   "label_en": "cloud",
+   "label_sv": "cloud"
+  },
+  {
+   "key": "control_statements",
+   "label_en": "control statements",
+   "label_sv": "control statements"
+  },
+  {
+   "key": "cost_benefit",
+   "label_en": "cost-benefit",
+   "label_sv": "cost-benefit"
+  },
+  {
+   "key": "costs",
+   "label_en": "costs",
+   "label_sv": "costs"
+  },
+  {
+   "key": "custody",
+   "label_en": "custody",
+   "label_sv": "custody"
+  },
+  {
+   "key": "decision",
+   "label_en": "decision",
+   "label_sv": "decision"
+  },
+  {
+   "key": "demands_and_needs",
+   "label_en": "demands and needs",
+   "label_sv": "demands and needs"
+  },
+  {
+   "key": "disclosure",
+   "label_en": "disclosure",
+   "label_sv": "disclosure"
+  },
+  {
+   "key": "distribution",
+   "label_en": "distribution",
+   "label_sv": "distribution"
+  },
+  {
+   "key": "documentation",
+   "label_en": "documentation",
+   "label_sv": "documentation"
+  },
+  {
+   "key": "dora",
+   "label_en": "dora",
+   "label_sv": "dora"
+  },
+  {
+   "key": "esma",
+   "label_en": "esma",
+   "label_sv": "esma"
+  },
+  {
+   "key": "ex_ante",
+   "label_en": "ex ante",
+   "label_sv": "ex ante"
+  },
+  {
+   "key": "ex_post",
+   "label_en": "ex post",
+   "label_sv": "ex post"
+  },
+  {
+   "key": "execution",
+   "label_en": "execution",
+   "label_sv": "execution"
+  },
+  {
+   "key": "faktablad",
+   "label_en": "faktablad",
+   "label_sv": "faktablad"
+  },
+  {
+   "key": "fees",
+   "label_en": "fees",
+   "label_sv": "fees"
+  },
+  {
+   "key": "flyttratt",
+   "label_en": "flytträtt",
+   "label_sv": "flytträtt"
+  },
+  {
+   "key": "gdpr",
+   "label_en": "gdpr",
+   "label_sv": "gdpr"
+  },
+  {
+   "key": "guidelines",
+   "label_en": "guidelines",
+   "label_sv": "guidelines"
+  },
+  {
+   "key": "ibip",
+   "label_en": "ibip",
+   "label_sv": "ibip"
+  },
+  {
+   "key": "ict",
+   "label_en": "ict",
+   "label_sv": "ict"
+  },
+  {
+   "key": "inducements",
+   "label_en": "inducements",
+   "label_sv": "inducements"
+  },
+  {
+   "key": "insurance",
+   "label_en": "insurance",
+   "label_sv": "insurance"
+  },
+  {
+   "key": "investment_savings_account",
+   "label_en": "investment savings account",
+   "label_sv": "investment savings account"
+  },
+  {
+   "key": "isk",
+   "label_en": "isk",
+   "label_sv": "isk"
+  },
+  {
+   "key": "kapitalforsakring",
+   "label_en": "kapitalförsäkring",
+   "label_sv": "kapitalförsäkring"
+  },
+  {
+   "key": "key_information",
+   "label_en": "key information",
+   "label_sv": "key information"
+  },
+  {
+   "key": "kid",
+   "label_en": "kid",
+   "label_sv": "kid"
+  },
+  {
+   "key": "knowledge",
+   "label_en": "knowledge",
+   "label_sv": "knowledge"
+  },
+  {
+   "key": "kontrolluppgift",
+   "label_en": "kontrolluppgift",
+   "label_sv": "kontrolluppgift"
+  },
+  {
+   "key": "non_advised",
+   "label_en": "non-advised",
+   "label_sv": "non-advised"
+  },
+  {
+   "key": "nudging",
+   "label_en": "nudging",
+   "label_sv": "nudging"
+  },
+  {
+   "key": "outsourcing",
+   "label_en": "outsourcing",
+   "label_sv": "outsourcing"
+  },
+  {
+   "key": "pension",
+   "label_en": "pension",
+   "label_sv": "pension"
+  },
+  {
+   "key": "priips",
+   "label_en": "priips",
+   "label_sv": "priips"
+  },
+  {
+   "key": "product_governance",
+   "label_en": "product governance",
+   "label_sv": "product governance"
+  },
+  {
+   "key": "profiling",
+   "label_en": "profiling",
+   "label_sv": "profiling"
+  },
+  {
+   "key": "reconciliation",
+   "label_en": "reconciliation",
+   "label_sv": "reconciliation"
+  },
+  {
+   "key": "register",
+   "label_en": "register",
+   "label_sv": "register"
+  },
+  {
+   "key": "research",
+   "label_en": "research",
+   "label_sv": "research"
+  },
+  {
+   "key": "robot",
+   "label_en": "robot",
+   "label_sv": "robot"
+  },
+  {
+   "key": "safeguarding",
+   "label_en": "safeguarding",
+   "label_sv": "safeguarding"
+  },
+  {
+   "key": "schablonintakt",
+   "label_en": "schablonintäkt",
+   "label_sv": "schablonintäkt"
+  },
+  {
+   "key": "standard_income",
+   "label_en": "standard income",
+   "label_sv": "standard income"
+  },
+  {
+   "key": "suitability",
+   "label_en": "suitability",
+   "label_sv": "suitability"
+  },
+  {
+   "key": "sustainability",
+   "label_en": "sustainability",
+   "label_sv": "sustainability"
+  },
+  {
+   "key": "switch",
+   "label_en": "switch",
+   "label_sv": "switch"
+  },
+  {
+   "key": "target_market",
+   "label_en": "target market",
+   "label_sv": "target market"
+  },
+  {
+   "key": "tax",
+   "label_en": "tax",
+   "label_sv": "tax"
+  },
+  {
+   "key": "third_party",
+   "label_en": "third-party",
+   "label_sv": "third-party"
+  },
+  {
+   "key": "third_party_payments",
+   "label_en": "third-party payments",
+   "label_sv": "third-party payments"
+  },
+  {
+   "key": "transfer",
+   "label_en": "transfer",
+   "label_sv": "transfer"
+  },
+  {
+   "key": "warning",
+   "label_en": "warning",
+   "label_sv": "warning"
+  }
+ ],
+ "jurisdictions": [
+  {
+   "code": "EU",
+   "name": "European Union",
+   "parent_code": null,
+   "kind": "supranational"
+  },
+  {
+   "code": "SE",
+   "name": "Sweden",
+   "parent_code": "EU",
+   "kind": "country"
+  },
+  {
+   "code": "DK",
+   "name": "Denmark",
+   "parent_code": "EU",
+   "kind": "country"
+  },
+  {
+   "code": "NO",
+   "name": "Norway",
+   "parent_code": null,
+   "kind": "country"
+  },
+  {
+   "code": "FI",
+   "name": "Finland",
+   "parent_code": "EU",
+   "kind": "country"
+  }
+ ],
+ "authorities": [
+  {
+   "key": "fi",
+   "code": "FI",
+   "name": "Finansinspektionen",
+   "jurisdiction": "SE",
+   "url": "https://www.fi.se/"
+  },
+  {
+   "key": "esma",
+   "code": "ESMA",
+   "name": "European Securities and Markets Authority",
+   "jurisdiction": "EU",
+   "url": "https://www.esma.europa.eu/"
+  },
+  {
+   "key": "skv",
+   "code": "SKV",
+   "name": "Skatteverket",
+   "jurisdiction": "SE",
+   "url": "https://www.skatteverket.se/"
+  },
+  {
+   "key": "imy",
+   "code": "IMY",
+   "name": "Integritetsskyddsmyndigheten",
+   "jurisdiction": "SE",
+   "url": "https://www.imy.se/"
+  },
+  {
+   "key": "riksgalden",
+   "code": "RGK",
+   "name": "Riksgälden",
+   "jurisdiction": "SE",
+   "url": "https://www.riksgalden.se/"
+  },
+  {
+   "key": "riksdagen",
+   "code": "RIKSDAGEN",
+   "name": "Sveriges riksdag",
+   "jurisdiction": "SE",
+   "url": "https://www.riksdagen.se/"
+  },
+  {
+   "key": "regeringen",
+   "code": "REGERINGEN",
+   "name": "Regeringskansliet",
+   "jurisdiction": "SE",
+   "url": "https://www.regeringen.se/"
+  },
+  {
+   "key": "eu-legislator",
+   "code": "EUPC",
+   "name": "European Parliament and Council of the EU",
+   "jurisdiction": "EU",
+   "url": "https://www.consilium.europa.eu/"
+  }
+ ],
+ "instruments": [
+  {
+   "stable_key": "sfs-2007-528",
+   "short_name": "LVM",
+   "name": "Lag (2007:528) om värdepappersmarknaden",
+   "regime": "regime:securities",
+   "level": "act",
+   "binding": true,
+   "official_ref": "SFS 2007:528",
+   "eli_uri": null,
+   "source_url": "https://www.riksdagen.se/",
+   "authority": "riksdagen",
+   "jurisdiction": "SE",
+   "in_force_from": "2007-11-01",
+   "in_force_to": null,
+   "implements_note": "MiFID II, Directive 2014/65/EU",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "LVM",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "fffs-2017-2",
+   "short_name": "FFFS 2017:2",
+   "name": "FFFS 2017:2 om värdepappersrörelse",
+   "regime": "regime:securities",
+   "level": "authority_regulation",
+   "binding": true,
+   "official_ref": "FFFS 2017:2",
+   "eli_uri": null,
+   "source_url": "https://www.fi.se/",
+   "authority": "fi",
+   "jurisdiction": "SE",
+   "in_force_from": "2018-01-03",
+   "in_force_to": null,
+   "implements_note": "MiFID II delegated directive (EU) 2017/593",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "FFFS172",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "esma-35-43-3006",
+   "short_name": "ESMA guidelines",
+   "name": "ESMA guidelines on appropriateness and execution-only",
+   "regime": "regime:securities",
+   "level": "eu_guidance",
+   "binding": false,
+   "official_ref": "ESMA35-43-3006",
+   "eli_uri": null,
+   "source_url": "https://www.esma.europa.eu/",
+   "authority": "esma",
+   "jurisdiction": "EU",
+   "in_force_from": null,
+   "in_force_to": null,
+   "implements_note": "Elaborates MiFID II Article 25(3) and (4)",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "ESMAGL",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "sfs-2011-1268",
+   "short_name": "ISK-lagen",
+   "name": "Lag (2011:1268) om investeringssparkonto",
+   "regime": "regime:tax",
+   "level": "act",
+   "binding": true,
+   "official_ref": "SFS 2011:1268",
+   "eli_uri": null,
+   "source_url": "https://www.riksdagen.se/",
+   "authority": "riksdagen",
+   "jurisdiction": "SE",
+   "in_force_from": "2012-01-01",
+   "in_force_to": null,
+   "implements_note": "National rule",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "ISKL",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "sfs-2011-1244",
+   "short_name": "SFL",
+   "name": "Skatteförfarandelag (2011:1244)",
+   "regime": "regime:tax",
+   "level": "act",
+   "binding": true,
+   "official_ref": "SFS 2011:1244",
+   "eli_uri": null,
+   "source_url": "https://www.riksdagen.se/",
+   "authority": "riksdagen",
+   "jurisdiction": "SE",
+   "in_force_from": "2012-01-01",
+   "in_force_to": null,
+   "implements_note": "National rule",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "SFL",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "sfs-2018-1219",
+   "short_name": "LFD",
+   "name": "Lag (2018:1219) om försäkringsdistribution",
+   "regime": "regime:insurance",
+   "level": "act",
+   "binding": true,
+   "official_ref": "SFS 2018:1219",
+   "eli_uri": null,
+   "source_url": "https://www.riksdagen.se/",
+   "authority": "riksdagen",
+   "jurisdiction": "SE",
+   "in_force_from": "2018-10-01",
+   "in_force_to": null,
+   "implements_note": "IDD, Directive (EU) 2016/97",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "LFD",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "fffs-2018-10",
+   "short_name": "FFFS 2018:10",
+   "name": "FFFS 2018:10 om försäkringsdistribution",
+   "regime": "regime:insurance",
+   "level": "authority_regulation",
+   "binding": true,
+   "official_ref": "FFFS 2018:10",
+   "eli_uri": null,
+   "source_url": "https://www.fi.se/",
+   "authority": "fi",
+   "jurisdiction": "SE",
+   "in_force_from": "2018-10-01",
+   "in_force_to": null,
+   "implements_note": "IDD, Directive (EU) 2016/97",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "FFFS1810",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "celex-32014r1286",
+   "short_name": "PRIIPs",
+   "name": "Regulation (EU) No 1286/2014 (PRIIPs)",
+   "regime": "regime:insurance",
+   "level": "eu_regulation",
+   "binding": true,
+   "official_ref": "CELEX 32014R1286",
+   "eli_uri": "http://data.europa.eu/eli/reg/2014/1286/oj",
+   "source_url": "https://eur-lex.europa.eu/eli/reg/2014/1286/oj/eng",
+   "authority": "eu-legislator",
+   "jurisdiction": "EU",
+   "in_force_from": "2014-12-29",
+   "in_force_to": null,
+   "implements_note": "Directly applicable",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "PRIIPS",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "sfs-2005-104",
+   "short_name": "FAL",
+   "name": "Försäkringsavtalslag (2005:104)",
+   "regime": "regime:insurance",
+   "level": "act",
+   "binding": true,
+   "official_ref": "SFS 2005:104",
+   "eli_uri": null,
+   "source_url": "https://www.riksdagen.se/",
+   "authority": "riksdagen",
+   "jurisdiction": "SE",
+   "in_force_from": "2006-01-01",
+   "in_force_to": null,
+   "implements_note": "National rule",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "FAL",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "celex-32022r2554",
+   "short_name": "DORA",
+   "name": "Regulation (EU) 2022/2554 (DORA)",
+   "regime": "regime:ai_ict",
+   "level": "eu_regulation",
+   "binding": true,
+   "official_ref": "CELEX 32022R2554",
+   "eli_uri": "http://data.europa.eu/eli/reg/2022/2554/oj",
+   "source_url": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj/eng",
+   "authority": "eu-legislator",
+   "jurisdiction": "EU",
+   "in_force_from": "2023-01-16",
+   "in_force_to": null,
+   "implements_note": "Directly applicable",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "DORA",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "celex-32016r0679",
+   "short_name": "GDPR",
+   "name": "Regulation (EU) 2016/679 (GDPR)",
+   "regime": "regime:data_protection",
+   "level": "eu_regulation",
+   "binding": true,
+   "official_ref": "CELEX 32016R0679",
+   "eli_uri": "http://data.europa.eu/eli/reg/2016/679/oj",
+   "source_url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj/eng",
+   "authority": "eu-legislator",
+   "jurisdiction": "EU",
+   "in_force_from": "2016-05-24",
+   "in_force_to": null,
+   "implements_note": "Directly applicable",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "GDPR",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "celex-32024r1624",
+   "short_name": "AMLR",
+   "name": "Regulation (EU) 2024/1624 (AMLR)",
+   "regime": "regime:aml",
+   "level": "eu_regulation",
+   "binding": true,
+   "official_ref": "CELEX 32024R1624",
+   "eli_uri": "http://data.europa.eu/eli/reg/2024/1624/oj",
+   "source_url": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj/eng",
+   "authority": "eu-legislator",
+   "jurisdiction": "EU",
+   "in_force_from": "2024-07-09",
+   "in_force_to": null,
+   "implements_note": "Directly applicable",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "AMLR",
+   "from_prototype": true
+  },
+  {
+   "stable_key": "celex-32014l0065",
+   "short_name": "MiFID II",
+   "name": "Directive 2014/65/EU (MiFID II)",
+   "regime": "regime:securities",
+   "level": "eu_directive",
+   "binding": true,
+   "official_ref": "CELEX 32014L0065",
+   "eli_uri": "http://data.europa.eu/eli/dir/2014/65/oj",
+   "source_url": "https://eur-lex.europa.eu/eli/dir/2014/65/oj/eng",
+   "authority": "eu-legislator",
+   "jurisdiction": "EU",
+   "in_force_from": "2014-07-02",
+   "in_force_to": null,
+   "implements_note": null,
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": null,
+   "from_prototype": false,
+   "note": "Anchor for the implements/elaborates relations of LVM and the ESMA guidelines."
+  },
+  {
+   "stable_key": "celex-32017l0593",
+   "short_name": "MiFID II delegated directive",
+   "name": "Commission Delegated Directive (EU) 2017/593",
+   "regime": "regime:securities",
+   "level": "eu_directive",
+   "binding": true,
+   "official_ref": "CELEX 32017L0593",
+   "eli_uri": "http://data.europa.eu/eli/dir_del/2017/593/oj",
+   "source_url": "https://eur-lex.europa.eu/eli/dir_del/2017/593/oj/eng",
+   "authority": "eu-legislator",
+   "jurisdiction": "EU",
+   "in_force_from": "2017-04-27",
+   "in_force_to": null,
+   "implements_note": null,
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": null,
+   "from_prototype": false,
+   "note": "Anchor for the implements relation of FFFS 2017:2."
+  },
+  {
+   "stable_key": "celex-32016l0097",
+   "short_name": "IDD",
+   "name": "Directive (EU) 2016/97 (IDD)",
+   "regime": "regime:insurance",
+   "level": "eu_directive",
+   "binding": true,
+   "official_ref": "CELEX 32016L0097",
+   "eli_uri": "http://data.europa.eu/eli/dir/2016/97/oj",
+   "source_url": "https://eur-lex.europa.eu/eli/dir/2016/97/oj/eng",
+   "authority": "eu-legislator",
+   "jurisdiction": "EU",
+   "in_force_from": "2016-02-22",
+   "in_force_to": null,
+   "implements_note": null,
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": null,
+   "from_prototype": false,
+   "note": "Anchor for the implements relations of LFD and FFFS 2018:10."
+  }
+ ],
+ "instrument_relations": [
+  {
+   "from_instrument": "sfs-2007-528",
+   "to_instrument": "celex-32014l0065",
+   "relation": "implements",
+   "from_ref": null,
+   "to_ref": null,
+   "note": "MiFID II, Directive 2014/65/EU"
+  },
+  {
+   "from_instrument": "fffs-2017-2",
+   "to_instrument": "celex-32017l0593",
+   "relation": "implements",
+   "from_ref": null,
+   "to_ref": null,
+   "note": "MiFID II delegated directive (EU) 2017/593"
+  },
+  {
+   "from_instrument": "esma-35-43-3006",
+   "to_instrument": "celex-32014l0065",
+   "relation": "elaborates",
+   "from_ref": null,
+   "to_ref": "Article 25(3) and (4)",
+   "note": "Elaborates MiFID II Article 25(3) and (4)"
+  },
+  {
+   "from_instrument": "sfs-2018-1219",
+   "to_instrument": "celex-32016l0097",
+   "relation": "implements",
+   "from_ref": null,
+   "to_ref": null,
+   "note": "IDD, Directive (EU) 2016/97"
+  },
+  {
+   "from_instrument": "fffs-2018-10",
+   "to_instrument": "celex-32016l0097",
+   "relation": "implements",
+   "from_ref": null,
+   "to_ref": null,
+   "note": "IDD, Directive (EU) 2016/97"
+  }
+ ],
+ "provisions": [
+  {
+   "stable_key": "sfs-2007-528/9",
+   "instrument": "sfs-2007-528",
+   "parent": null,
+   "kind": "chapter",
+   "ref": "9 kap.",
+   "heading": "Rörelseregler",
+   "path": "LVM > 9 kap.",
+   "ordinal": 9
+  },
+  {
+   "stable_key": "celex-32016r0679/art-22",
+   "instrument": "celex-32016r0679",
+   "parent": null,
+   "kind": "article",
+   "ref": "Article 22",
+   "heading": "Automated individual decision-making, including profiling",
+   "path": "GDPR > Article 22",
+   "ordinal": 22
+  }
+ ],
+ "obligation_provisions": [
+  {
+   "obligation": "obl-appropriateness",
+   "provision": "sfs-2007-528/9"
+  },
+  {
+   "obligation": "obl-suitability",
+   "provision": "sfs-2007-528/9"
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "provision": "celex-32016r0679/art-22"
+  }
+ ],
+ "obligations": [
+  {
+   "stable_key": "obl-appropriateness",
+   "instrument": "sfs-2007-528",
+   "ref_label": "9 kap.",
+   "title": "Assess appropriateness before non-advised trades in complex instruments",
+   "duty_type": "conduct",
+   "product_scope": "Complex instruments",
+   "trigger_frequency": "Per order in a complex instrument",
+   "retention": "5 years",
+   "sanction_exposure": "FI remark, warning or sanction fee",
+   "tags": [
+    "appropriateness",
+    "knowledge",
+    "warning",
+    "non_advised",
+    "execution"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-08-28",
+   "prototype_id": "o-approp"
+  },
+  {
+   "stable_key": "obl-suitability",
+   "instrument": "sfs-2007-528",
+   "ref_label": "9 kap.",
+   "title": "Assess suitability when giving investment advice",
+   "duty_type": "conduct",
+   "product_scope": "All instruments",
+   "trigger_frequency": "Per advice session",
+   "retention": "5 years",
+   "sanction_exposure": "FI remark, warning or sanction fee",
+   "tags": [
+    "suitability",
+    "advice",
+    "documentation",
+    "sustainability"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-08-28",
+   "prototype_id": "o-suit"
+  },
+  {
+   "stable_key": "obl-esma-warnings",
+   "instrument": "esma-35-43-3006",
+   "ref_label": "Guideline on warnings",
+   "title": "Make appropriateness warnings prominent and do not encourage clients to ignore them",
+   "duty_type": "conduct",
+   "product_scope": "Complex instruments",
+   "trigger_frequency": "Per warning shown",
+   "retention": "5 years",
+   "sanction_exposure": "Supervisory expectation, FI applies the guidelines",
+   "tags": [
+    "warning",
+    "nudging",
+    "appropriateness",
+    "guidelines",
+    "esma"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-05-30",
+   "prototype_id": "o-esma"
+  },
+  {
+   "stable_key": "obl-costs-charges",
+   "instrument": "fffs-2017-2",
+   "ref_label": "Costs and charges",
+   "title": "Disclose all costs and charges before and after the service",
+   "duty_type": "disclosure",
+   "product_scope": "All instruments",
+   "trigger_frequency": "Before the service, then annually",
+   "retention": "5 years",
+   "sanction_exposure": "FI remark, warning or sanction fee",
+   "tags": [
+    "costs",
+    "charges",
+    "fees",
+    "disclosure",
+    "ex_ante",
+    "ex_post"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-07-15",
+   "prototype_id": "o-costs"
+  },
+  {
+   "stable_key": "obl-research-payments",
+   "instrument": "fffs-2017-2",
+   "ref_label": "Third-party payments",
+   "title": "Pay for third-party research only under the permitted models",
+   "duty_type": "governance",
+   "product_scope": "Third-party research",
+   "trigger_frequency": "Annual assessment from 1 October 2026",
+   "retention": "5 years",
+   "sanction_exposure": "FI remark, warning or sanction fee",
+   "tags": [
+    "research",
+    "inducements",
+    "third_party_payments",
+    "analysis"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-06-30",
+   "prototype_id": "o-research"
+  },
+  {
+   "stable_key": "obl-product-governance",
+   "instrument": "fffs-2017-2",
+   "ref_label": "Product governance",
+   "title": "Define a target market and distribution strategy for each product",
+   "duty_type": "governance",
+   "product_scope": "All products manufactured or distributed",
+   "trigger_frequency": "Per product, reviewed regularly",
+   "retention": "5 years",
+   "sanction_exposure": "FI remark, warning or sanction fee",
+   "tags": [
+    "product_governance",
+    "target_market",
+    "distribution"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-05-20",
+   "prototype_id": "o-pog"
+  },
+  {
+   "stable_key": "obl-client-assets",
+   "instrument": "fffs-2017-2",
+   "ref_label": "Client assets",
+   "title": "Keep clients' instruments and funds separate and reconciled",
+   "duty_type": "record_keeping",
+   "product_scope": "All instruments and client funds",
+   "trigger_frequency": "Continuous, reconciled regularly",
+   "retention": "5 years",
+   "sanction_exposure": "FI remark, warning or sanction fee",
+   "tags": [
+    "custody",
+    "client_assets",
+    "safeguarding",
+    "reconciliation"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-04-11",
+   "prototype_id": "o-assets"
+  },
+  {
+   "stable_key": "obl-isk-approved-assets",
+   "instrument": "sfs-2011-1268",
+   "ref_label": "Approved assets",
+   "title": "Hold only approved investment assets on an ISK",
+   "duty_type": "technical",
+   "product_scope": "Assets held on ISK",
+   "trigger_frequency": "Continuous",
+   "retention": "7 years",
+   "sanction_exposure": "Tax consequences for the customer",
+   "tags": [
+    "isk",
+    "approved_assets",
+    "investment_savings_account"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-03-02",
+   "prototype_id": "o-iskassets"
+  },
+  {
+   "stable_key": "obl-isk-control-statements",
+   "instrument": "sfs-2011-1244",
+   "ref_label": "Control statements",
+   "title": "Report ISK standard income to Skatteverket every year",
+   "duty_type": "reporting",
+   "product_scope": "ISK and KF",
+   "trigger_frequency": "Annual",
+   "retention": "7 years",
+   "sanction_exposure": "Penalty fees from Skatteverket",
+   "tags": [
+    "tax",
+    "standard_income",
+    "schablonintakt",
+    "control_statements",
+    "kontrolluppgift"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-02-10",
+   "prototype_id": "o-ku"
+  },
+  {
+   "stable_key": "obl-idd-demands-needs",
+   "instrument": "sfs-2018-1219",
+   "ref_label": "Conduct rules",
+   "title": "Establish demands and needs and assess suitability for insurance-based investment products",
+   "duty_type": "conduct",
+   "product_scope": "Insurance-based investment products",
+   "trigger_frequency": "Before each contract",
+   "retention": "5 years",
+   "sanction_exposure": "FI remark, warning or sanction fee",
+   "tags": [
+    "insurance",
+    "demands_and_needs",
+    "suitability",
+    "kapitalforsakring",
+    "ibip"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-08-01",
+   "prototype_id": "o-idd"
+  },
+  {
+   "stable_key": "obl-switch-documentation",
+   "instrument": "fffs-2018-10",
+   "ref_label": "Documentation",
+   "title": "Document the reasons when advising a switch of underlying investments",
+   "duty_type": "record_keeping",
+   "product_scope": "Underlying assets in KF and pension insurance",
+   "trigger_frequency": "Per switch advised",
+   "retention": "5 years",
+   "sanction_exposure": "FI remark, warning or sanction fee",
+   "tags": [
+    "switch",
+    "documentation",
+    "cost_benefit",
+    "advice"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-01-20",
+   "prototype_id": "o-switch"
+  },
+  {
+   "stable_key": "obl-priips-kid",
+   "instrument": "celex-32014r1286",
+   "ref_label": "Key information document",
+   "title": "Provide a key information document before the customer is bound",
+   "duty_type": "disclosure",
+   "product_scope": "Insurance-based investment products",
+   "trigger_frequency": "Before the customer is bound",
+   "retention": "5 years",
+   "sanction_exposure": "FI remark, warning or sanction fee",
+   "tags": [
+    "kid",
+    "key_information",
+    "priips",
+    "faktablad"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-05-05",
+   "prototype_id": "o-kid"
+  },
+  {
+   "stable_key": "obl-pension-transfer-right",
+   "instrument": "sfs-2005-104",
+   "ref_label": "Transfer right",
+   "title": "Honour the policyholder's right to transfer pension insurance savings",
+   "duty_type": "conduct",
+   "product_scope": "Pension insurance",
+   "trigger_frequency": "On customer request",
+   "retention": "10 years",
+   "sanction_exposure": "Civil liability, FI supervision",
+   "tags": [
+    "transfer",
+    "flyttratt",
+    "pension",
+    "fees"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-04-22",
+   "prototype_id": "o-flytt"
+  },
+  {
+   "stable_key": "obl-dora-ict-register",
+   "instrument": "celex-32022r2554",
+   "ref_label": "ICT third parties",
+   "title": "Keep a register of information on ICT third-party arrangements",
+   "duty_type": "governance",
+   "product_scope": "ICT services",
+   "trigger_frequency": "Continuous, reported on request",
+   "retention": "5 years",
+   "sanction_exposure": "FI remark, warning or sanction fee",
+   "tags": [
+    "ict",
+    "third_party",
+    "outsourcing",
+    "cloud",
+    "register",
+    "dora"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-08-12",
+   "prototype_id": "o-dora"
+  },
+  {
+   "stable_key": "obl-gdpr-article-22",
+   "instrument": "celex-32016r0679",
+   "ref_label": "Article 22",
+   "title": "Apply safeguards to solely automated decisions with significant effects",
+   "duty_type": "conduct",
+   "product_scope": "Automated outcomes",
+   "trigger_frequency": "Per automated decision",
+   "retention": "As long as needed for the purpose",
+   "sanction_exposure": "IMY fine up to 4 percent of turnover",
+   "tags": [
+    "automated",
+    "profiling",
+    "gdpr",
+    "robot",
+    "decision"
+   ],
+   "status": "active",
+   "created_origin": "agent",
+   "created_by_agent_run": null,
+   "created_model": "agent pipeline 0.4",
+   "created_by_label": "Research agent",
+   "verified_by": "sara",
+   "last_verified_at": "2026-06-18",
+   "prototype_id": "o-art22"
+  }
+ ],
+ "obligation_versions": [
+  {
+   "obligation": "obl-appropriateness",
+   "version_no": 1,
+   "summary_en": "Before providing a non-advised service in a complex financial instrument, the institution asks about the client's knowledge and experience and assesses whether the service or product is appropriate. If it is not appropriate, or information is missing, the client is warned.",
+   "summary_sv": "Innan en tjänst utan rådgivning tillhandahålls i ett komplicerat finansiellt instrument ska institutet begära uppgifter om kundens kunskap och erfarenhet och bedöma om tjänsten eller produkten passar kunden. Om den inte passar, eller om uppgifter saknas, ska kunden varnas.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-suitability",
+   "version_no": 1,
+   "summary_en": "When giving investment advice, the institution obtains information on the client's knowledge, experience, financial situation and objectives, including sustainability preferences, and recommends only what is suitable. The reasons are documented and given to the client.",
+   "summary_sv": "Vid investeringsrådgivning ska institutet inhämta uppgifter om kundens kunskap, erfarenhet, ekonomiska situation och mål, inklusive hållbarhetspreferenser, och bara rekommendera det som är lämpligt. Skälen ska dokumenteras och lämnas till kunden.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-esma-warnings",
+   "version_no": 1,
+   "summary_en": "Warnings given after an appropriateness assessment are clear, prominent and not misleading. The firm does not downplay a warning or encourage the client to proceed despite it, and keeps records of warnings and of whether the client went ahead.",
+   "summary_sv": "Varningar efter en passandebedömning ska vara tydliga, framträdande och inte vilseledande. Företaget får inte tona ned en varning eller uppmuntra kunden att gå vidare trots den, och ska dokumentera varningar och om kunden ändå genomförde affären.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "version_no": 1,
+   "summary_en": "Clients receive aggregated information on all costs and charges of the service and the instrument in good time before the service, and at least annually afterwards, with the effect of costs on return.",
+   "summary_sv": "Kunder ska i god tid få sammanställd information om alla kostnader och avgifter för tjänsten och instrumentet, och därefter minst årligen, med kostnadernas effekt på avkastningen.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-research-payments",
+   "version_no": 1,
+   "summary_en": "Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules.",
+   "summary_sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor som anges i reglerna.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-product-governance",
+   "version_no": 1,
+   "summary_en": "For every financial instrument manufactured or distributed, the institution defines a target market, checks that the distribution strategy fits it, and reviews both regularly.",
+   "summary_sv": "För varje finansiellt instrument som produceras eller distribueras ska institutet fastställa en målgrupp, säkerställa att distributionsstrategin passar den och regelbundet se över båda.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-client-assets",
+   "version_no": 1,
+   "summary_en": "Clients' financial instruments and funds are kept separate from the institution's own, records allow each client's holdings to be identified at any time, and holdings are reconciled regularly.",
+   "summary_sv": "Kunders finansiella instrument och medel ska hållas åtskilda från institutets egna, registren ska när som helst visa varje kunds innehav, och innehaven ska stämmas av regelbundet.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-isk-approved-assets",
+   "version_no": 1,
+   "summary_en": "Only approved investment assets may be held on an investment savings account. Assets that stop qualifying must be moved out within the period the act allows.",
+   "summary_sv": "På ett investeringssparkonto får endast godkända investeringstillgångar förvaras. Tillgångar som upphör att vara godkända ska flyttas från kontot inom den tid lagen anger.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-isk-control-statements",
+   "version_no": 1,
+   "summary_en": "The institution calculates the standard income for each investment savings account and reports it to Skatteverket in the annual control statement.",
+   "summary_sv": "Institutet ska beräkna schablonintäkten för varje investeringssparkonto och lämna den till Skatteverket i den årliga kontrolluppgiften.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-idd-demands-needs",
+   "version_no": 1,
+   "summary_en": "Before an insurance-based investment product is concluded, the distributor specifies the customer's demands and needs and, when advising, assesses whether the product and its underlying assets are suitable.",
+   "summary_sv": "Innan ett avtal om en försäkringsbaserad investeringsprodukt ingås ska distributören klargöra kundens krav och behov och, vid rådgivning, bedöma om produkten och dess underliggande tillgångar är lämpliga.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-switch-documentation",
+   "version_no": 1,
+   "summary_en": "When advice involves switching underlying investments, the distributor documents why the benefits of the switch outweigh its costs and gives the customer an explanation of how the advice meets their preferences and objectives.",
+   "summary_sv": "När rådgivningen innebär byte av underliggande placeringar ska distributören dokumentera varför fördelarna med bytet överväger kostnaderna och förklara för kunden hur rådet motsvarar kundens önskemål och mål.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-priips-kid",
+   "version_no": 1,
+   "summary_en": "Retail customers receive a key information document for the packaged or insurance-based investment product in good time before they are bound by a contract.",
+   "summary_sv": "Icke-professionella kunder ska få ett faktablad för den paketerade eller försäkringsbaserade investeringsprodukten i god tid innan de blir bundna av ett avtal.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-pension-transfer-right",
+   "version_no": 1,
+   "summary_en": "A policyholder may transfer the value of a pension insurance to another insurer. Fees for the transfer are limited by law.",
+   "summary_sv": "En försäkringstagare har rätt att flytta värdet av en pensionsförsäkring till en annan försäkringsgivare. Avgifterna för flytten är begränsade i lag.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "version_no": 1,
+   "summary_en": "The financial entity maintains an up-to-date register of all contractual arrangements with ICT third-party service providers and identifies those supporting critical or important functions.",
+   "summary_sv": "Den finansiella entiteten ska föra ett aktuellt register över alla avtal med tredjepartsleverantörer av IKT-tjänster och ange vilka som stöder kritiska eller viktiga funktioner.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "version_no": 1,
+   "summary_en": "A person has the right not to be subject to a decision based solely on automated processing that significantly affects them, unless an exception applies and safeguards such as human intervention are in place.",
+   "summary_sv": "En person har rätt att inte bli föremål för ett beslut som enbart grundas på automatiserad behandling och som i betydande grad påverkar personen, om inte ett undantag gäller och skyddsåtgärder som mänskligt ingripande finns.",
+   "original_language": "sv",
+   "effective_from": null,
+   "effective_to": null,
+   "change": null,
+   "proposal": null,
+   "approved_by": null
+  }
+ ],
+ "obligation_terms": [
+  {
+   "obligation": "obl-appropriateness",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-appropriateness",
+   "term": "account_type:af"
+  },
+  {
+   "obligation": "obl-appropriateness",
+   "term": "account_type:depa"
+  },
+  {
+   "obligation": "obl-appropriateness",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-appropriateness",
+   "term": "service_type:non_advised"
+  },
+  {
+   "obligation": "obl-appropriateness",
+   "term": "service_type:execution_only"
+  },
+  {
+   "obligation": "obl-appropriateness",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-appropriateness",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-appropriateness",
+   "term": "channel:branch"
+  },
+  {
+   "obligation": "obl-appropriateness",
+   "term": "lifecycle_stage:pre_trade"
+  },
+  {
+   "obligation": "obl-suitability",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-suitability",
+   "term": "account_type:af"
+  },
+  {
+   "obligation": "obl-suitability",
+   "term": "account_type:depa"
+  },
+  {
+   "obligation": "obl-suitability",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-suitability",
+   "term": "service_type:advice"
+  },
+  {
+   "obligation": "obl-suitability",
+   "term": "service_type:portfolio_management"
+  },
+  {
+   "obligation": "obl-suitability",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-suitability",
+   "term": "client_category:professional"
+  },
+  {
+   "obligation": "obl-suitability",
+   "term": "channel:branch"
+  },
+  {
+   "obligation": "obl-suitability",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-suitability",
+   "term": "lifecycle_stage:pre_trade"
+  },
+  {
+   "obligation": "obl-esma-warnings",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-esma-warnings",
+   "term": "account_type:af"
+  },
+  {
+   "obligation": "obl-esma-warnings",
+   "term": "account_type:depa"
+  },
+  {
+   "obligation": "obl-esma-warnings",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-esma-warnings",
+   "term": "service_type:non_advised"
+  },
+  {
+   "obligation": "obl-esma-warnings",
+   "term": "service_type:execution_only"
+  },
+  {
+   "obligation": "obl-esma-warnings",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-esma-warnings",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-esma-warnings",
+   "term": "lifecycle_stage:pre_trade"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "account_type:af"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "account_type:depa"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "service_type:advice"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "service_type:non_advised"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "service_type:execution_only"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "service_type:portfolio_management"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "client_category:professional"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "channel:branch"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "lifecycle_stage:pre_trade"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "term": "lifecycle_stage:ongoing"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "term": "account_type:af"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "term": "account_type:depa"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "term": "account_type:kf"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "term": "service_type:advice"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "term": "service_type:portfolio_management"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "term": "client_category:professional"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "term": "lifecycle_stage:ongoing"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "account_type:af"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "account_type:depa"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "account_type:kf"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "account_type:pension"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "legal_entity:insurer"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "service_type:advice"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "service_type:non_advised"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "service_type:execution_only"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "service_type:portfolio_management"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "service_type:custody"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "service_type:insurance_distribution"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "client_category:professional"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "channel:branch"
+  },
+  {
+   "obligation": "obl-product-governance",
+   "term": "lifecycle_stage:product_lifecycle"
+  },
+  {
+   "obligation": "obl-client-assets",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-client-assets",
+   "term": "account_type:af"
+  },
+  {
+   "obligation": "obl-client-assets",
+   "term": "account_type:depa"
+  },
+  {
+   "obligation": "obl-client-assets",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-client-assets",
+   "term": "service_type:custody"
+  },
+  {
+   "obligation": "obl-client-assets",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-client-assets",
+   "term": "client_category:professional"
+  },
+  {
+   "obligation": "obl-client-assets",
+   "term": "lifecycle_stage:post_trade"
+  },
+  {
+   "obligation": "obl-isk-approved-assets",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-isk-approved-assets",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-isk-approved-assets",
+   "term": "service_type:custody"
+  },
+  {
+   "obligation": "obl-isk-approved-assets",
+   "term": "service_type:non_advised"
+  },
+  {
+   "obligation": "obl-isk-approved-assets",
+   "term": "service_type:execution_only"
+  },
+  {
+   "obligation": "obl-isk-approved-assets",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-isk-approved-assets",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-isk-approved-assets",
+   "term": "channel:branch"
+  },
+  {
+   "obligation": "obl-isk-approved-assets",
+   "term": "lifecycle_stage:pre_trade"
+  },
+  {
+   "obligation": "obl-isk-approved-assets",
+   "term": "lifecycle_stage:ongoing"
+  },
+  {
+   "obligation": "obl-isk-control-statements",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-isk-control-statements",
+   "term": "account_type:kf"
+  },
+  {
+   "obligation": "obl-isk-control-statements",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-isk-control-statements",
+   "term": "legal_entity:insurer"
+  },
+  {
+   "obligation": "obl-isk-control-statements",
+   "term": "service_type:custody"
+  },
+  {
+   "obligation": "obl-isk-control-statements",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-isk-control-statements",
+   "term": "lifecycle_stage:reporting"
+  },
+  {
+   "obligation": "obl-idd-demands-needs",
+   "term": "account_type:kf"
+  },
+  {
+   "obligation": "obl-idd-demands-needs",
+   "term": "account_type:pension"
+  },
+  {
+   "obligation": "obl-idd-demands-needs",
+   "term": "legal_entity:insurer"
+  },
+  {
+   "obligation": "obl-idd-demands-needs",
+   "term": "service_type:insurance_distribution"
+  },
+  {
+   "obligation": "obl-idd-demands-needs",
+   "term": "service_type:advice"
+  },
+  {
+   "obligation": "obl-idd-demands-needs",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-idd-demands-needs",
+   "term": "channel:branch"
+  },
+  {
+   "obligation": "obl-idd-demands-needs",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-idd-demands-needs",
+   "term": "lifecycle_stage:pre_trade"
+  },
+  {
+   "obligation": "obl-switch-documentation",
+   "term": "account_type:kf"
+  },
+  {
+   "obligation": "obl-switch-documentation",
+   "term": "account_type:pension"
+  },
+  {
+   "obligation": "obl-switch-documentation",
+   "term": "legal_entity:insurer"
+  },
+  {
+   "obligation": "obl-switch-documentation",
+   "term": "service_type:insurance_distribution"
+  },
+  {
+   "obligation": "obl-switch-documentation",
+   "term": "service_type:advice"
+  },
+  {
+   "obligation": "obl-switch-documentation",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-switch-documentation",
+   "term": "channel:branch"
+  },
+  {
+   "obligation": "obl-switch-documentation",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-switch-documentation",
+   "term": "lifecycle_stage:pre_trade"
+  },
+  {
+   "obligation": "obl-priips-kid",
+   "term": "account_type:kf"
+  },
+  {
+   "obligation": "obl-priips-kid",
+   "term": "legal_entity:insurer"
+  },
+  {
+   "obligation": "obl-priips-kid",
+   "term": "service_type:insurance_distribution"
+  },
+  {
+   "obligation": "obl-priips-kid",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-priips-kid",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-priips-kid",
+   "term": "channel:branch"
+  },
+  {
+   "obligation": "obl-priips-kid",
+   "term": "lifecycle_stage:pre_trade"
+  },
+  {
+   "obligation": "obl-pension-transfer-right",
+   "term": "account_type:pension"
+  },
+  {
+   "obligation": "obl-pension-transfer-right",
+   "term": "legal_entity:insurer"
+  },
+  {
+   "obligation": "obl-pension-transfer-right",
+   "term": "service_type:insurance_distribution"
+  },
+  {
+   "obligation": "obl-pension-transfer-right",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-pension-transfer-right",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-pension-transfer-right",
+   "term": "channel:branch"
+  },
+  {
+   "obligation": "obl-pension-transfer-right",
+   "term": "lifecycle_stage:ongoing"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "account_type:af"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "account_type:depa"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "account_type:kf"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "account_type:pension"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "legal_entity:insurer"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "service_type:advice"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "service_type:non_advised"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "service_type:execution_only"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "service_type:portfolio_management"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "service_type:custody"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "service_type:insurance_distribution"
+  },
+  {
+   "obligation": "obl-dora-ict-register",
+   "term": "lifecycle_stage:ongoing"
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "term": "account_type:isk"
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "term": "account_type:af"
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "term": "account_type:depa"
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "term": "legal_entity:bank"
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "term": "service_type:non_advised"
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "term": "service_type:execution_only"
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "term": "client_category:retail"
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "term": "channel:digital"
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "term": "lifecycle_stage:pre_trade"
+  }
+ ],
+ "obligation_relations": [
+  {
+   "obligation": "obl-appropriateness",
+   "related_obligation": "obl-esma-warnings",
+   "relation": "related"
+  },
+  {
+   "obligation": "obl-esma-warnings",
+   "related_obligation": "obl-appropriateness",
+   "relation": "related"
+  },
+  {
+   "obligation": "obl-idd-demands-needs",
+   "related_obligation": "obl-switch-documentation",
+   "relation": "related"
+  },
+  {
+   "obligation": "obl-switch-documentation",
+   "related_obligation": "obl-idd-demands-needs",
+   "relation": "related"
+  },
+  {
+   "obligation": "obl-gdpr-article-22",
+   "related_obligation": "obl-appropriateness",
+   "relation": "related"
+  }
+ ],
+ "regulatory_changes": [
+  {
+   "stable_key": "chg-fi-2026-research-payments",
+   "title": "FI adopts amended rules on paying for investment research",
+   "change_type": "adopted",
+   "change_type_label_in_prototype": "Adopted rule",
+   "authority": "fi",
+   "authority_label": "Finansinspektionen",
+   "published_on": "2026-09-15",
+   "published_precision": "day",
+   "summary": "FI's board decided on 15 September 2026 to amend three regulations in the securities area following changed EU rules. Institutions that receive research must set criteria for an annual assessment of its quality, usability and value, and take action if the research does not contribute to better investment decisions.",
+   "so_what_draft": "Teams that pay for external research should confirm that documented criteria for an annual quality assessment exist before the rules take effect. Two weeks of runway.",
+   "suggested_urgency": "act_now",
+   "key_date": "2026-10-01",
+   "key_date_precision": "day",
+   "key_date_label": "In force",
+   "recurrence_rule": null,
+   "flags": [],
+   "source_label": "Finansinspektionen",
+   "source_url": "https://www.fi.se/",
+   "status": "active",
+   "origin": "agent",
+   "agent_run": "run-watch-r3",
+   "model": "agent pipeline 0.4",
+   "duplicate_count_in_prototype": 1,
+   "prototype_id": "c1"
+  },
+  {
+   "stable_key": "chg-fi-2026-ai-mapping",
+   "title": "FI starts mapping how financial firms use AI",
+   "change_type": "supervision",
+   "change_type_label_in_prototype": "Supervision",
+   "authority": "fi",
+   "authority_label": "Finansinspektionen",
+   "published_on": "2026-09-03",
+   "published_precision": "day",
+   "summary": "FI launched a survey-based mapping of AI use in financial firms on 3 September 2026, including how firms are affected by the AI Act. A report and supervisory follow-up can be expected.",
+   "so_what_draft": "No obligation changes yet. Expect questions on governance of AI in customer-facing services and in software development, so keep the AI tooling register current.",
+   "suggested_urgency": "monitor",
+   "key_date": null,
+   "key_date_precision": null,
+   "key_date_label": null,
+   "recurrence_rule": null,
+   "flags": [
+    "ai"
+   ],
+   "source_label": "Finansinspektionen",
+   "source_url": "https://www.fi.se/",
+   "status": "active",
+   "origin": "agent",
+   "agent_run": "run-watch-r3",
+   "model": "agent pipeline 0.4",
+   "duplicate_count_in_prototype": 0,
+   "prototype_id": "c2"
+  },
+  {
+   "stable_key": "chg-esma-2026-pre-settlement",
+   "title": "ESMA proposes shorter pre-settlement timeframes ahead of T+1",
+   "change_type": "proposal",
+   "change_type_label_in_prototype": "EU proposal",
+   "authority": "esma",
+   "authority_label": "ESMA",
+   "published_on": null,
+   "published_precision": null,
+   "summary": "ESMA has proposed that shorter timeframes for allocation and confirmation apply from 7 December 2026, as a step towards T+1 settlement in October 2027. Status of adoption should be confirmed.",
+   "so_what_draft": "Order handling and custody teams should check whether same-day allocation and confirmation is achievable for all account types.",
+   "suggested_urgency": "within_3_months",
+   "key_date": "2026-12-07",
+   "key_date_precision": "day",
+   "key_date_label": "Proposed application",
+   "recurrence_rule": null,
+   "flags": [],
+   "source_label": "ESMA",
+   "source_url": "https://www.esma.europa.eu/",
+   "status": "active",
+   "origin": "agent",
+   "agent_run": "run-watch-r3",
+   "model": "agent pipeline 0.4",
+   "duplicate_count_in_prototype": 0,
+   "prototype_id": "c3"
+  },
+  {
+   "stable_key": "chg-eu-ris-publication",
+   "title": "Retail Investment Strategy moves towards publication",
+   "change_type": "adopted",
+   "change_type_label_in_prototype": "EU legislation",
+   "authority": "eu-legislator",
+   "authority_label": "EU Council and Parliament",
+   "published_on": "2026-06-12",
+   "published_precision": "day",
+   "summary": "Political agreement was reached on 18 December 2025 and Member States approved the text on 12 June 2026. Transposition is due 24 months and application 30 months after publication, with PRIIPs changes after 18 months.",
+   "so_what_draft": "The package touches appropriateness, costs, inducements and marketing at once. Start the gap analysis now, since level 2 work will fix the detail during 2027.",
+   "suggested_urgency": "six_months_plus",
+   "key_date": null,
+   "key_date_precision": null,
+   "key_date_label": "Publication pending",
+   "recurrence_rule": null,
+   "flags": [
+    "advice_perimeter"
+   ],
+   "source_label": "Council of the EU",
+   "source_url": "https://www.consilium.europa.eu/",
+   "status": "active",
+   "origin": "agent",
+   "agent_run": null,
+   "model": "agent pipeline 0.4",
+   "duplicate_count_in_prototype": 0,
+   "prototype_id": "c4"
+  },
+  {
+   "stable_key": "chg-eu-amlr-application",
+   "title": "AMLR applies directly across the EU",
+   "change_type": "adopted",
+   "change_type_label_in_prototype": "EU regulation",
+   "authority": "eu-legislator",
+   "authority_label": "EU",
+   "published_on": "2024-06-19",
+   "published_precision": "day",
+   "summary": "Regulation (EU) 2024/1624 replaces national customer due diligence rules with directly applicable requirements from 10 July 2027.",
+   "so_what_draft": "Onboarding and periodic review data must be mapped against the new requirements well before mid-2027.",
+   "suggested_urgency": "six_months_plus",
+   "key_date": "2027-07-10",
+   "key_date_precision": "day",
+   "key_date_label": "Applies",
+   "recurrence_rule": null,
+   "flags": [],
+   "source_label": "EUR-Lex",
+   "source_url": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj/eng",
+   "status": "active",
+   "origin": "agent",
+   "agent_run": null,
+   "model": "agent pipeline 0.4",
+   "duplicate_count_in_prototype": 0,
+   "prototype_id": "c5"
+  },
+  {
+   "stable_key": "chg-fi-2025-garantum-sanction",
+   "title": "FI sanctions Garantum over advice on complex products",
+   "change_type": "enforcement",
+   "change_type_label_in_prototype": "Enforcement",
+   "authority": "fi",
+   "authority_label": "Finansinspektionen",
+   "published_on": "2025-12-01",
+   "published_precision": "month",
+   "summary": "FI issued remarks and sanctions of 15 MSEK and 1 MSEK for deficient suitability explanations and undocumented switching, under both the securities and the insurance distribution rules.",
+   "so_what_draft": "Confirms that switch documentation is enforced for assets inside insurance wrappers. Our sample test covered it.",
+   "suggested_urgency": "no_action",
+   "key_date": null,
+   "key_date_precision": null,
+   "key_date_label": null,
+   "recurrence_rule": null,
+   "flags": [],
+   "source_label": "Finansinspektionen",
+   "source_url": "https://www.fi.se/sv/publicerat/sanktioner/finansiella-foretag/2025/fi-ger-garantum-anmarkningar-och-sanktionsavgifter/",
+   "status": "active",
+   "origin": "agent",
+   "agent_run": null,
+   "model": "agent pipeline 0.4",
+   "duplicate_count_in_prototype": 0,
+   "prototype_id": "c6"
+  },
+  {
+   "stable_key": "chg-rgk-2026-borrowing-rate",
+   "title": "Riksgälden fixes the government borrowing rate used for ISK and KF tax",
+   "change_type": "recurring_date",
+   "change_type_label_in_prototype": "Recurring date",
+   "authority": "riksgalden",
+   "authority_label": "Riksgälden",
+   "published_on": null,
+   "published_precision": null,
+   "summary": "The rate on 30 November sets the standard income for the following tax year. The tax-free base level is 300 000 SEK from 2026.",
+   "so_what_draft": "Customer communication and the tax calculator need the new rate in early December.",
+   "suggested_urgency": "monitor",
+   "key_date": "2026-11-30",
+   "key_date_precision": "day",
+   "key_date_label": "Rate fixing",
+   "recurrence_rule": "FREQ=YEARLY;BYMONTH=11;BYMONTHDAY=30",
+   "flags": [],
+   "source_label": "Riksgälden",
+   "source_url": "https://www.riksgalden.se/",
+   "status": "active",
+   "origin": "agent",
+   "agent_run": null,
+   "model": "agent pipeline 0.4",
+   "duplicate_count_in_prototype": 0,
+   "prototype_id": "c7"
+  },
+  {
+   "stable_key": "chg-eu-t1-settlement",
+   "title": "EU moves to T+1 settlement",
+   "change_type": "adopted",
+   "change_type_label_in_prototype": "EU regulation",
+   "authority": "eu-legislator",
+   "authority_label": "EU",
+   "published_on": null,
+   "published_precision": null,
+   "summary": "Securities transactions settle one business day after trade date from 11 October 2027.",
+   "so_what_draft": "Funding, FX and corporate action cut-offs all move. Plan testing with the custodian during 2027.",
+   "suggested_urgency": "six_months_plus",
+   "key_date": "2027-10-11",
+   "key_date_precision": "day",
+   "key_date_label": "Applies",
+   "recurrence_rule": null,
+   "flags": [],
+   "source_label": "ESMA",
+   "source_url": "https://www.esma.europa.eu/",
+   "status": "active",
+   "origin": "agent",
+   "agent_run": null,
+   "model": "agent pipeline 0.4",
+   "duplicate_count_in_prototype": 0,
+   "prototype_id": "c9"
+  }
+ ],
+ "change_events": [
+  {
+   "change": "chg-fi-2026-research-payments",
+   "label": "Consultation closed",
+   "event_date": "2026-06-01",
+   "date_precision": "day",
+   "occurred": true,
+   "sort_order": 1,
+   "source_url": null
+  },
+  {
+   "change": "chg-fi-2026-research-payments",
+   "label": "Board decision",
+   "event_date": "2026-09-15",
+   "date_precision": "day",
+   "occurred": true,
+   "sort_order": 2,
+   "source_url": null
+  },
+  {
+   "change": "chg-fi-2026-research-payments",
+   "label": "In force",
+   "event_date": "2026-10-01",
+   "date_precision": "day",
+   "occurred": false,
+   "sort_order": 3,
+   "source_url": null
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "label": "Survey launched",
+   "event_date": "2026-09-03",
+   "date_precision": "day",
+   "occurred": true,
+   "sort_order": 1,
+   "source_url": null
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "label": "Report",
+   "event_date": null,
+   "date_precision": null,
+   "occurred": false,
+   "sort_order": 2,
+   "source_url": null
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "label": "ESMA final report",
+   "event_date": null,
+   "date_precision": null,
+   "occurred": true,
+   "sort_order": 1,
+   "source_url": null
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "label": "Proposed application",
+   "event_date": "2026-12-07",
+   "date_precision": "day",
+   "occurred": false,
+   "sort_order": 2,
+   "source_url": null
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "label": "T+1 settlement",
+   "event_date": "2027-10-11",
+   "date_precision": "day",
+   "occurred": false,
+   "sort_order": 3,
+   "source_url": null
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "label": "Political agreement",
+   "event_date": "2025-12-18",
+   "date_precision": "day",
+   "occurred": true,
+   "sort_order": 1,
+   "source_url": null
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "label": "Member State approval",
+   "event_date": "2026-06-12",
+   "date_precision": "day",
+   "occurred": true,
+   "sort_order": 2,
+   "source_url": null
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "label": "Official Journal publication",
+   "event_date": null,
+   "date_precision": null,
+   "occurred": false,
+   "sort_order": 3,
+   "source_url": null
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "label": "Application, 30 months later",
+   "event_date": null,
+   "date_precision": null,
+   "occurred": false,
+   "sort_order": 4,
+   "source_url": null
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "label": "Published",
+   "event_date": "2024-06-19",
+   "date_precision": "day",
+   "occurred": true,
+   "sort_order": 1,
+   "source_url": null
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "label": "Applies",
+   "event_date": "2027-07-10",
+   "date_precision": "day",
+   "occurred": false,
+   "sort_order": 2,
+   "source_url": null
+  },
+  {
+   "change": "chg-fi-2025-garantum-sanction",
+   "label": "Decision",
+   "event_date": "2025-12-01",
+   "date_precision": "month",
+   "occurred": true,
+   "sort_order": 1,
+   "source_url": null
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "label": "Rate fixing",
+   "event_date": "2026-11-30",
+   "date_precision": "day",
+   "occurred": false,
+   "sort_order": 1,
+   "source_url": null
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "label": "Regulation adopted",
+   "event_date": null,
+   "date_precision": null,
+   "occurred": true,
+   "sort_order": 1,
+   "source_url": null
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "label": "Applies",
+   "event_date": "2027-10-11",
+   "date_precision": "day",
+   "occurred": false,
+   "sort_order": 2,
+   "source_url": null
+  }
+ ],
+ "change_documents": [
+  {
+   "change": "chg-fi-2026-research-payments",
+   "url": "https://www.fi.se/",
+   "title": "FI adopts amended rules on paying for investment research",
+   "publisher": "Finansinspektionen",
+   "fetched_at": null,
+   "content_hash": null,
+   "is_primary": true,
+   "is_duplicate": false,
+   "risk_flags": []
+  },
+  {
+   "change": "chg-fi-2026-research-payments",
+   "url": "https://www.fi.se/#duplicate-1",
+   "title": "FI adopts amended rules on paying for investment research",
+   "publisher": "Finansinspektionen",
+   "fetched_at": null,
+   "content_hash": null,
+   "is_primary": false,
+   "is_duplicate": true,
+   "risk_flags": [],
+   "note": "Placeholder URL. The prototype only counts merged duplicates; it shows no second page."
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "url": "https://www.fi.se/",
+   "title": "FI starts mapping how financial firms use AI",
+   "publisher": "Finansinspektionen",
+   "fetched_at": null,
+   "content_hash": null,
+   "is_primary": true,
+   "is_duplicate": false,
+   "risk_flags": []
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "url": "https://www.esma.europa.eu/",
+   "title": "ESMA proposes shorter pre-settlement timeframes ahead of T+1",
+   "publisher": "ESMA",
+   "fetched_at": null,
+   "content_hash": null,
+   "is_primary": true,
+   "is_duplicate": false,
+   "risk_flags": []
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "url": "https://www.consilium.europa.eu/",
+   "title": "Retail Investment Strategy moves towards publication",
+   "publisher": "Council of the EU",
+   "fetched_at": null,
+   "content_hash": null,
+   "is_primary": true,
+   "is_duplicate": false,
+   "risk_flags": []
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "url": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj/eng",
+   "title": "AMLR applies directly across the EU",
+   "publisher": "EUR-Lex",
+   "fetched_at": null,
+   "content_hash": null,
+   "is_primary": true,
+   "is_duplicate": false,
+   "risk_flags": []
+  },
+  {
+   "change": "chg-fi-2025-garantum-sanction",
+   "url": "https://www.fi.se/sv/publicerat/sanktioner/finansiella-foretag/2025/fi-ger-garantum-anmarkningar-och-sanktionsavgifter/",
+   "title": "FI sanctions Garantum over advice on complex products",
+   "publisher": "Finansinspektionen",
+   "fetched_at": null,
+   "content_hash": null,
+   "is_primary": true,
+   "is_duplicate": false,
+   "risk_flags": []
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "url": "https://www.riksgalden.se/",
+   "title": "Riksgälden fixes the government borrowing rate used for ISK and KF tax",
+   "publisher": "Riksgälden",
+   "fetched_at": null,
+   "content_hash": null,
+   "is_primary": true,
+   "is_duplicate": false,
+   "risk_flags": []
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "url": "https://www.esma.europa.eu/",
+   "title": "EU moves to T+1 settlement",
+   "publisher": "ESMA",
+   "fetched_at": null,
+   "content_hash": null,
+   "is_primary": true,
+   "is_duplicate": false,
+   "risk_flags": []
+  }
+ ],
+ "change_terms": [
+  {
+   "change": "chg-fi-2026-research-payments",
+   "term": "regime:securities"
+  },
+  {
+   "change": "chg-fi-2026-research-payments",
+   "term": "account_type:isk"
+  },
+  {
+   "change": "chg-fi-2026-research-payments",
+   "term": "account_type:af"
+  },
+  {
+   "change": "chg-fi-2026-research-payments",
+   "term": "account_type:depa"
+  },
+  {
+   "change": "chg-fi-2026-research-payments",
+   "term": "account_type:kf"
+  },
+  {
+   "change": "chg-fi-2026-research-payments",
+   "term": "service_type:advice"
+  },
+  {
+   "change": "chg-fi-2026-research-payments",
+   "term": "service_type:portfolio_management"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "regime:ai_ict"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "account_type:isk"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "account_type:af"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "account_type:depa"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "account_type:kf"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "account_type:pension"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "service_type:advice"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "service_type:non_advised"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "service_type:execution_only"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "service_type:portfolio_management"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "service_type:custody"
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "term": "service_type:insurance_distribution"
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "term": "regime:securities"
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "term": "account_type:isk"
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "term": "account_type:af"
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "term": "account_type:depa"
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "term": "service_type:non_advised"
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "term": "service_type:execution_only"
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "term": "service_type:custody"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "regime:securities"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "regime:insurance"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "account_type:isk"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "account_type:af"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "account_type:depa"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "account_type:kf"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "account_type:pension"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "service_type:advice"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "service_type:non_advised"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "service_type:execution_only"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "service_type:portfolio_management"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "service_type:custody"
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "term": "service_type:insurance_distribution"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "regime:aml"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "account_type:isk"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "account_type:af"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "account_type:depa"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "account_type:kf"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "account_type:pension"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "service_type:advice"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "service_type:non_advised"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "service_type:execution_only"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "service_type:portfolio_management"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "service_type:custody"
+  },
+  {
+   "change": "chg-eu-amlr-application",
+   "term": "service_type:insurance_distribution"
+  },
+  {
+   "change": "chg-fi-2025-garantum-sanction",
+   "term": "regime:securities"
+  },
+  {
+   "change": "chg-fi-2025-garantum-sanction",
+   "term": "regime:insurance"
+  },
+  {
+   "change": "chg-fi-2025-garantum-sanction",
+   "term": "account_type:kf"
+  },
+  {
+   "change": "chg-fi-2025-garantum-sanction",
+   "term": "account_type:pension"
+  },
+  {
+   "change": "chg-fi-2025-garantum-sanction",
+   "term": "account_type:depa"
+  },
+  {
+   "change": "chg-fi-2025-garantum-sanction",
+   "term": "service_type:advice"
+  },
+  {
+   "change": "chg-fi-2025-garantum-sanction",
+   "term": "service_type:insurance_distribution"
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "term": "regime:tax"
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "term": "account_type:isk"
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "term": "account_type:kf"
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "term": "service_type:advice"
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "term": "service_type:non_advised"
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "term": "service_type:execution_only"
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "term": "service_type:portfolio_management"
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "term": "service_type:custody"
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "term": "service_type:insurance_distribution"
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "term": "regime:securities"
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "term": "account_type:isk"
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "term": "account_type:af"
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "term": "account_type:depa"
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "term": "service_type:non_advised"
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "term": "service_type:execution_only"
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "term": "service_type:custody"
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "term": "service_type:advice"
+  }
+ ],
+ "change_obligations": [
+  {
+   "change": "chg-fi-2026-research-payments",
+   "obligation": "obl-research-payments",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "obligation": "obl-dora-ict-register",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-fi-2026-ai-mapping",
+   "obligation": "obl-gdpr-article-22",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-esma-2026-pre-settlement",
+   "obligation": "obl-client-assets",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "obligation": "obl-appropriateness",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "obligation": "obl-suitability",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "obligation": "obl-costs-charges",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "obligation": "obl-idd-demands-needs",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-eu-ris-publication",
+   "obligation": "obl-priips-kid",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-fi-2025-garantum-sanction",
+   "obligation": "obl-switch-documentation",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-fi-2025-garantum-sanction",
+   "obligation": "obl-suitability",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-rgk-2026-borrowing-rate",
+   "obligation": "obl-isk-control-statements",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  },
+  {
+   "change": "chg-eu-t1-settlement",
+   "obligation": "obl-client-assets",
+   "origin": "agent",
+   "confidence": null,
+   "confirmed_by": null,
+   "confirmed_at": null
+  }
+ ],
+ "proposals": [
+  {
+   "stable_key": "prop-research-payments-v2",
+   "kind": "new_obligation_version",
+   "kind_label_in_prototype": "New version",
+   "target_type": "obligation",
+   "target": "obl-research-payments",
+   "change": "chg-fi-2026-research-payments",
+   "title": "Add version 2 of the research payment obligation, in force 1 October 2026",
+   "source_label": "Finansinspektionen, board decision 15 September 2026",
+   "source_url": "https://www.fi.se/",
+   "effective_from": "2026-10-01",
+   "origin": "agent",
+   "agent_run": "run-watch-r3",
+   "model": "agent pipeline 0.4",
+   "status": "open",
+   "prototype_id": "p1",
+   "payload": {
+    "version_no": 2,
+    "summary_en": "Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules. The institution sets criteria for an annual assessment of the quality, usability and value of the research it uses. If the research does not contribute to better investment decisions, the institution takes corrective action.",
+    "summary_sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor som anges i reglerna. Institutet ska fastställa kriterier för en årlig bedömning av kvaliteten, användbarheten och värdet av den analys som används. Om analysen inte bidrar till bättre investeringsbeslut ska institutet vidta åtgärder.",
+    "effective_from": "2026-10-01"
+   },
+   "field_sources": {
+    "summary_en": "https://www.fi.se/",
+    "summary_sv": "https://www.fi.se/"
+   }
+  },
+  {
+   "stable_key": "prop-amlr-customer-due-diligence",
+   "kind": "new_obligation",
+   "kind_label_in_prototype": "New obligation",
+   "target_type": null,
+   "target": null,
+   "change": "chg-eu-amlr-application",
+   "title": "Add obligation: apply AMLR customer due diligence from 10 July 2027",
+   "source_label": "EUR-Lex, Regulation (EU) 2024/1624",
+   "source_url": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj/eng",
+   "effective_from": null,
+   "origin": "agent",
+   "agent_run": "run-watch-r3",
+   "model": "agent pipeline 0.4",
+   "status": "open",
+   "prototype_id": "p2",
+   "payload": {
+    "instrument": "celex-32024r1624",
+    "title": "Apply AMLR customer due diligence",
+    "duty_type": "conduct",
+    "effective_from": "2027-07-10",
+    "scope_text_in_prototype": "Bank, Insurer | All services | Retail, Professional | Onboarding and ongoing | Conduct",
+    "terms": [
+     "legal_entity:bank",
+     "legal_entity:insurer",
+     "service_type:advice",
+     "service_type:non_advised",
+     "service_type:execution_only",
+     "service_type:portfolio_management",
+     "service_type:custody",
+     "service_type:insurance_distribution",
+     "client_category:retail",
+     "client_category:professional",
+     "lifecycle_stage:onboarding",
+     "lifecycle_stage:ongoing"
+    ]
+   },
+   "field_sources": {
+    "title": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj/eng"
+   }
+  },
+  {
+   "stable_key": "prop-reverify-isk-approved-assets",
+   "kind": "reverification",
+   "kind_label_in_prototype": "Re-verification",
+   "target_type": "obligation",
+   "target": "obl-isk-approved-assets",
+   "change": null,
+   "title": "Mark 'Hold only approved investment assets on an ISK' as re-verified, no change found",
+   "source_label": "Riksdagen, consolidated text",
+   "source_url": "https://www.riksdagen.se/",
+   "effective_from": null,
+   "origin": "agent",
+   "agent_run": "run-verify-r4",
+   "model": "agent pipeline 0.4",
+   "status": "open",
+   "prototype_id": "p3",
+   "payload": {
+    "outcome": "no_change",
+    "checked_source": "Riksdagen, consolidated text"
+   },
+   "field_sources": {}
+  }
+ ],
+ "sources": [
+  {
+   "key": "fi_se",
+   "name": "fi.se",
+   "url": "https://www.fi.se/",
+   "kind": "authority_site",
+   "authority": "fi",
+   "check_frequency": "weekly",
+   "active": true,
+   "owner_tenant": null
+  },
+  {
+   "key": "regeringen_se",
+   "name": "regeringen.se",
+   "url": "https://www.regeringen.se/",
+   "kind": "authority_site",
+   "authority": "regeringen",
+   "check_frequency": "weekly",
+   "active": true,
+   "owner_tenant": null
+  },
+  {
+   "key": "riksdagen_se",
+   "name": "riksdagen.se",
+   "url": "https://www.riksdagen.se/",
+   "kind": "legal_database",
+   "authority": "riksdagen",
+   "check_frequency": "weekly",
+   "active": true,
+   "owner_tenant": null
+  },
+  {
+   "key": "skatteverket_se",
+   "name": "skatteverket.se",
+   "url": "https://www.skatteverket.se/",
+   "kind": "authority_site",
+   "authority": "skv",
+   "check_frequency": "weekly",
+   "active": true,
+   "owner_tenant": null
+  },
+  {
+   "key": "imy_se",
+   "name": "imy.se",
+   "url": "https://www.imy.se/",
+   "kind": "authority_site",
+   "authority": "imy",
+   "check_frequency": "weekly",
+   "active": true,
+   "owner_tenant": null
+  },
+  {
+   "key": "esma_europa_eu",
+   "name": "esma.europa.eu",
+   "url": "https://www.esma.europa.eu/",
+   "kind": "authority_site",
+   "authority": "esma",
+   "check_frequency": "weekly",
+   "active": true,
+   "owner_tenant": null
+  },
+  {
+   "key": "eur_lex_europa_eu",
+   "name": "eur-lex.europa.eu",
+   "url": "https://eur-lex.europa.eu/",
+   "kind": "legal_database",
+   "authority": null,
+   "check_frequency": "weekly",
+   "active": true,
+   "owner_tenant": null
+  },
+  {
+   "key": "open_web_sweep",
+   "name": "Open web sweep",
+   "url": null,
+   "kind": "open_web_sweep",
+   "authority": null,
+   "check_frequency": "weekly",
+   "active": true,
+   "owner_tenant": null
+  },
+  {
+   "key": "group_policy_portal_regulatory_notices",
+   "name": "Group policy portal, regulatory notices",
+   "url": "policies.example.internal",
+   "kind": "tenant_private",
+   "authority": null,
+   "check_frequency": "weekly",
+   "active": true,
+   "owner_tenant": "example-group",
+   "visibility_in_prototype": "Private to us"
+  }
+ ],
+ "source_checks": [
+  {
+   "source": "fi_se",
+   "agent_run": "run-watch-r3",
+   "checked_at": "2026-09-16T06:02:00",
+   "checked_label_in_prototype": "today",
+   "status": "ok",
+   "items_found": 0,
+   "error": null
+  },
+  {
+   "source": "regeringen_se",
+   "agent_run": "run-watch-r3",
+   "checked_at": "2026-09-16T06:02:00",
+   "checked_label_in_prototype": "today",
+   "status": "ok",
+   "items_found": 0,
+   "error": null
+  },
+  {
+   "source": "riksdagen_se",
+   "agent_run": "run-watch-r3",
+   "checked_at": "2026-09-16T06:02:00",
+   "checked_label_in_prototype": "today",
+   "status": "ok",
+   "items_found": 0,
+   "error": null
+  },
+  {
+   "source": "skatteverket_se",
+   "agent_run": null,
+   "checked_at": "2026-09-13T06:02:00",
+   "checked_label_in_prototype": "3 days ago",
+   "status": "failed",
+   "items_found": 0,
+   "error": "Fetch failed"
+  },
+  {
+   "source": "imy_se",
+   "agent_run": "run-watch-r3",
+   "checked_at": "2026-09-16T06:02:00",
+   "checked_label_in_prototype": "today",
+   "status": "ok",
+   "items_found": 0,
+   "error": null
+  },
+  {
+   "source": "esma_europa_eu",
+   "agent_run": "run-watch-r3",
+   "checked_at": "2026-09-16T06:02:00",
+   "checked_label_in_prototype": "today",
+   "status": "ok",
+   "items_found": 0,
+   "error": null
+  },
+  {
+   "source": "eur_lex_europa_eu",
+   "agent_run": null,
+   "checked_at": "2026-09-15T06:02:00",
+   "checked_label_in_prototype": "yesterday",
+   "status": "ok",
+   "items_found": 0,
+   "error": null
+  },
+  {
+   "source": "open_web_sweep",
+   "agent_run": "run-watch-r3",
+   "checked_at": "2026-09-16T06:02:00",
+   "checked_label_in_prototype": "today",
+   "status": "ok",
+   "items_found": 0,
+   "error": null
+  }
+ ],
+ "audit_events": [
+  {
+   "tenant": "example-group",
+   "occurred_at": "2026-02-20T10:12:00",
+   "actor_type": "user",
+   "actor_user": "maria",
+   "actor_agent": null,
+   "action": "case.signed_off",
+   "subject_type": "change_case",
+   "subject": "chg-fi-2025-garantum-sanction",
+   "subject_label": "FI sanctions Garantum over advice on complex products",
+   "summary": "Signed off and closed"
+  },
+  {
+   "tenant": null,
+   "occurred_at": "2026-09-16T07:02:00",
+   "actor_type": "agent",
+   "actor_user": null,
+   "actor_agent": "watch-sweeper",
+   "action": "proposal.created",
+   "subject_type": "proposal",
+   "subject": "prop-research-payments-v2",
+   "subject_label": "Add version 2 of the research payment obligation",
+   "summary": "Proposed inventory change"
+  },
+  {
+   "tenant": null,
+   "occurred_at": "2026-09-16T07:01:00",
+   "actor_type": "agent",
+   "actor_user": null,
+   "actor_agent": "watch-sweeper",
+   "action": "change.registered",
+   "subject_type": "change",
+   "subject": "chg-fi-2026-research-payments",
+   "subject_label": "FI adopts amended rules on paying for investment research",
+   "summary": "Added to triage, merged 1 duplicate"
+  }
+ ],
+ "users": [
+  {
+   "id": "sara",
+   "name": "Sara Lindqvist",
+   "role": "compliance_officer",
+   "title": "Compliance officer",
+   "tenant": "example-group"
+  },
+  {
+   "id": "johan",
+   "name": "Johan Berg",
+   "role": "owner",
+   "title": "Obligation owner, digital investing",
+   "tenant": "example-group"
+  },
+  {
+   "id": "maria",
+   "name": "Maria Ek",
+   "role": "approver",
+   "title": "Approver, head of compliance",
+   "tenant": "example-group"
+  },
+  {
+   "id": "erik",
+   "name": "Erik Holm",
+   "role": "admin",
+   "title": "Administrator",
+   "tenant": "example-group"
+  }
+ ],
+ "tenant": {
+  "key": "example-group",
+  "name": "Example Group",
+  "legal_entities": [
+   {
+    "key": "e-bank",
+    "name": "Example Bank AB",
+    "kind": "legal_entity:bank",
+    "org_number": "556000-0001",
+    "licences": [
+     "Banking business",
+     "Securities business, LVM 2 kap."
+    ]
+   },
+   {
+    "key": "e-ins",
+    "name": "Example Liv Försäkring AB",
+    "kind": "legal_entity:insurer",
+    "org_number": "516000-0002",
+    "licences": [
+     "Life insurance business",
+     "Insurance distribution"
+    ]
+   },
+   {
+    "key": "e-fund",
+    "name": "Example Fonder AB",
+    "kind": "legal_entity:fund_company",
+    "org_number": "556000-0003",
+    "licences": [
+     "Fund operations, LVF"
+    ]
+   }
+  ],
+  "products": [
+   {
+    "key": "p-self",
+    "name": "Self-directed trading",
+    "legal_entity": "e-bank",
+    "status": "live",
+    "owner": "johan",
+    "terms": [
+     "account_type:isk",
+     "account_type:af",
+     "account_type:depa",
+     "service_type:non_advised",
+     "service_type:execution_only",
+     "service_type:custody"
+    ]
+   },
+   {
+    "key": "p-guided",
+    "name": "Guided investing",
+    "legal_entity": "e-bank",
+    "status": "planned",
+    "owner": "johan",
+    "terms": [
+     "account_type:isk",
+     "service_type:advice",
+     "service_type:portfolio_management"
+    ]
+   },
+   {
+    "key": "p-kf",
+    "name": "Kapitalförsäkring",
+    "legal_entity": "e-ins",
+    "status": "live",
+    "owner": "johan",
+    "terms": [
+     "account_type:kf",
+     "service_type:insurance_distribution",
+     "service_type:advice"
+    ]
+   },
+   {
+    "key": "p-pension",
+    "name": "Pension insurance",
+    "legal_entity": "e-ins",
+    "status": "live",
+    "owner": "sara",
+    "terms": [
+     "account_type:pension",
+     "service_type:insurance_distribution",
+     "service_type:advice"
+    ]
+   }
+  ],
+  "budget": {
+   "monthly_cap": 40,
+   "spent_this_month": 7.35,
+   "currency": "EUR",
+   "note": "The prototype shows a cap and a spent figure without a currency; EUR is an assumption."
+  }
+ },
+ "footprint_terms": [
+  {
+   "tenant": "example-group",
+   "term": "regime:securities",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "regime:insurance",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "regime:tax",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "regime:data_protection",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "regime:aml",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "regime:ai_ict",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "account_type:isk",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "account_type:af",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "account_type:depa",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "account_type:kf",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "account_type:pension",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "legal_entity:bank",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "legal_entity:insurer",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "legal_entity:fund_company",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "service_type:advice",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "service_type:non_advised",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "service_type:execution_only",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "service_type:portfolio_management",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "service_type:custody",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "service_type:insurance_distribution",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "client_category:retail",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "client_category:professional",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  }
+ ],
+ "tenant_obligations": [
+  {
+   "tenant": "example-group",
+   "obligation": "obl-appropriateness",
+   "applicability": "applies",
+   "applicability_reason": "We offer execution in complex instruments in digital channels.",
+   "applicability_request": null,
+   "compliance_status": "compliant",
+   "status_note": null,
+   "risk_rating": "high",
+   "next_review_date": "2026-12-01",
+   "first_line_owner": "johan",
+   "compliance_contact": "maria",
+   "process": "Digital trading onboarding",
+   "system": "Knowledge test service",
+   "evidence_location": "Test result stored per client and order"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-suitability",
+   "applicability": "applies",
+   "applicability_reason": "Advised services are offered in branch and private banking.",
+   "applicability_request": null,
+   "compliance_status": "compliant",
+   "status_note": null,
+   "risk_rating": "high",
+   "next_review_date": "2026-12-01",
+   "first_line_owner": "johan",
+   "compliance_contact": "maria",
+   "process": "Investment advice",
+   "system": "Advice tool",
+   "evidence_location": "Suitability report per session"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-esma-warnings",
+   "applicability": "applies",
+   "applicability_reason": "Warnings are shown in the digital order flow.",
+   "applicability_request": null,
+   "compliance_status": "gap",
+   "status_note": "The warning can be dismissed with one tap and the choice is not logged.",
+   "risk_rating": "medium",
+   "next_review_date": "2026-10-15",
+   "first_line_owner": "johan",
+   "compliance_contact": "maria",
+   "process": "Digital trading onboarding",
+   "system": "Order flow",
+   "evidence_location": "Warning log with client choice"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-costs-charges",
+   "applicability": "applies",
+   "applicability_reason": "Applies to all securities services to retail clients.",
+   "applicability_request": null,
+   "compliance_status": "partly_compliant",
+   "status_note": "Currency exchange cost is missing from the ex ante view for foreign shares.",
+   "risk_rating": "medium",
+   "next_review_date": "2026-10-15",
+   "first_line_owner": "sara",
+   "compliance_contact": "maria",
+   "process": "Order flow and annual statements",
+   "system": "Cost calculation engine",
+   "evidence_location": "Ex ante view per order, annual cost report"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-research-payments",
+   "applicability": "applies",
+   "applicability_reason": "External research is bought for house view and model portfolios.",
+   "applicability_request": null,
+   "compliance_status": "not_assessed",
+   "status_note": "New version not yet assessed.",
+   "risk_rating": "medium",
+   "next_review_date": "2026-09-30",
+   "first_line_owner": "johan",
+   "compliance_contact": "maria",
+   "process": "Research procurement",
+   "system": null,
+   "evidence_location": "Research budget and assessment minutes"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-product-governance",
+   "applicability": "applies",
+   "applicability_reason": "We both manufacture and distribute instruments.",
+   "applicability_request": null,
+   "compliance_status": "compliant",
+   "status_note": null,
+   "risk_rating": "medium",
+   "next_review_date": "2027-01-31",
+   "first_line_owner": "sara",
+   "compliance_contact": "maria",
+   "process": "Product approval",
+   "system": "Product register",
+   "evidence_location": "Target market decisions and reviews"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-client-assets",
+   "applicability": "applies",
+   "applicability_reason": "Custody is part of every account.",
+   "applicability_request": null,
+   "compliance_status": "compliant",
+   "status_note": null,
+   "risk_rating": "high",
+   "next_review_date": "2026-11-15",
+   "first_line_owner": "sara",
+   "compliance_contact": "maria",
+   "process": "Custody operations",
+   "system": "Securities ledger",
+   "evidence_location": "Reconciliation reports"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-isk-approved-assets",
+   "applicability": "applies",
+   "applicability_reason": "",
+   "applicability_request": null,
+   "compliance_status": "compliant",
+   "status_note": null,
+   "risk_rating": "medium",
+   "next_review_date": "2027-03-01",
+   "first_line_owner": "sara",
+   "compliance_contact": "maria",
+   "process": "Instrument set-up",
+   "system": "Instrument master data",
+   "evidence_location": "Eligibility flag per instrument"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-isk-control-statements",
+   "applicability": "applies",
+   "applicability_reason": "",
+   "applicability_request": null,
+   "compliance_status": "compliant",
+   "status_note": null,
+   "risk_rating": "medium",
+   "next_review_date": "2026-12-10",
+   "first_line_owner": "sara",
+   "compliance_contact": "maria",
+   "process": "Year-end tax reporting",
+   "system": "Tax reporting engine",
+   "evidence_location": "Submitted control statements"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-idd-demands-needs",
+   "applicability": "applies",
+   "applicability_reason": "KF and pension insurance are distributed with advice.",
+   "applicability_request": null,
+   "compliance_status": "compliant",
+   "status_note": null,
+   "risk_rating": "high",
+   "next_review_date": "2026-12-01",
+   "first_line_owner": "johan",
+   "compliance_contact": "maria",
+   "process": "Insurance advice",
+   "system": "Advice tool",
+   "evidence_location": "Demands and needs statement"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-switch-documentation",
+   "applicability": "applies",
+   "applicability_reason": "Sanction practice shows this is enforced for assets inside insurance wrappers.",
+   "applicability_request": null,
+   "compliance_status": "compliant",
+   "status_note": null,
+   "risk_rating": "high",
+   "next_review_date": "2027-02-15",
+   "first_line_owner": "johan",
+   "compliance_contact": "maria",
+   "process": "Insurance advice",
+   "system": "Advice tool",
+   "evidence_location": "Switch cost-benefit note"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-priips-kid",
+   "applicability": "applies",
+   "applicability_reason": "",
+   "applicability_request": null,
+   "compliance_status": "compliant",
+   "status_note": null,
+   "risk_rating": "low",
+   "next_review_date": "2027-05-01",
+   "first_line_owner": "sara",
+   "compliance_contact": "maria",
+   "process": "Insurance sales",
+   "system": "Document service",
+   "evidence_location": "Delivery log"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-pension-transfer-right",
+   "applicability": "applies",
+   "applicability_reason": "",
+   "applicability_request": null,
+   "compliance_status": "compliant",
+   "status_note": null,
+   "risk_rating": "medium",
+   "next_review_date": "2027-04-01",
+   "first_line_owner": "johan",
+   "compliance_contact": "maria",
+   "process": "Transfers",
+   "system": "Policy administration",
+   "evidence_location": "Transfer case log"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-dora-ict-register",
+   "applicability": "applies",
+   "applicability_reason": "Includes AI coding tools and model providers used in delivery.",
+   "applicability_request": null,
+   "compliance_status": "partly_compliant",
+   "status_note": "AI coding tools and model providers are not yet in the register.",
+   "risk_rating": "medium",
+   "next_review_date": "2026-10-31",
+   "first_line_owner": "sara",
+   "compliance_contact": "maria",
+   "process": "Third-party risk management",
+   "system": "Supplier register",
+   "evidence_location": "Register of information"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-gdpr-article-22",
+   "applicability": "under_assessment",
+   "applicability_reason": "Assessing whether automated appropriateness outcomes fall within Article 22.",
+   "applicability_request": null,
+   "compliance_status": "not_assessed",
+   "status_note": null,
+   "risk_rating": "medium",
+   "next_review_date": "2026-10-01",
+   "first_line_owner": "sara",
+   "compliance_contact": "maria",
+   "process": "Digital trading onboarding",
+   "system": "Knowledge test service",
+   "evidence_location": null
+  }
+ ],
+ "internal_links": [
+  {
+   "tenant": "example-group",
+   "obligation": "obl-appropriateness",
+   "link_kind": "procedure",
+   "title": "knowledge test in digital onboarding",
+   "label": "Procedure: knowledge test in digital onboarding"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-suitability",
+   "link_kind": "policy",
+   "title": "investment advice",
+   "label": "Policy: investment advice"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-research-payments",
+   "link_kind": "procedure",
+   "title": "research procurement",
+   "label": "Procedure: research procurement"
+  },
+  {
+   "tenant": "example-group",
+   "obligation": "obl-switch-documentation",
+   "link_kind": "control",
+   "title": "switch documentation sample test",
+   "label": "Control: switch documentation sample test"
+  }
+ ],
+ "change_cases": [
+  {
+   "tenant": "example-group",
+   "change": "chg-fi-2026-research-payments",
+   "status": "new",
+   "urgency": "act_now",
+   "owner": null,
+   "briefing_week": true,
+   "so_what_text": "Teams that pay for external research should confirm that documented criteria for an annual quality assessment exist before the rules take effect. Two weeks of runway.",
+   "so_what_confirmed": false,
+   "signed_by": null,
+   "closed_at": null,
+   "close_reason": null
+  },
+  {
+   "tenant": "example-group",
+   "change": "chg-fi-2026-ai-mapping",
+   "status": "new",
+   "urgency": "monitor",
+   "owner": null,
+   "briefing_week": true,
+   "so_what_text": "No obligation changes yet. Expect questions on governance of AI in customer-facing services and in software development, so keep the AI tooling register current.",
+   "so_what_confirmed": false,
+   "signed_by": null,
+   "closed_at": null,
+   "close_reason": null
+  },
+  {
+   "tenant": "example-group",
+   "change": "chg-esma-2026-pre-settlement",
+   "status": "new",
+   "urgency": "within_3_months",
+   "owner": null,
+   "briefing_week": true,
+   "so_what_text": "Order handling and custody teams should check whether same-day allocation and confirmation is achievable for all account types.",
+   "so_what_confirmed": false,
+   "signed_by": null,
+   "closed_at": null,
+   "close_reason": null
+  },
+  {
+   "tenant": "example-group",
+   "change": "chg-eu-ris-publication",
+   "status": "assessing",
+   "urgency": "six_months_plus",
+   "owner": "johan",
+   "briefing_week": false,
+   "so_what_text": "The package touches appropriateness, costs, inducements and marketing at once. Start the gap analysis now, since level 2 work will fix the detail during 2027.",
+   "so_what_confirmed": true,
+   "signed_by": null,
+   "closed_at": null,
+   "close_reason": null
+  },
+  {
+   "tenant": "example-group",
+   "change": "chg-eu-amlr-application",
+   "status": "implementing",
+   "urgency": "six_months_plus",
+   "owner": "johan",
+   "briefing_week": false,
+   "so_what_text": "Onboarding and periodic review data must be mapped against the new requirements well before mid-2027.",
+   "so_what_confirmed": true,
+   "signed_by": null,
+   "closed_at": null,
+   "close_reason": null
+  },
+  {
+   "tenant": "example-group",
+   "change": "chg-fi-2025-garantum-sanction",
+   "status": "closed",
+   "urgency": "no_action",
+   "owner": "johan",
+   "briefing_week": false,
+   "so_what_text": "Confirms that switch documentation is enforced for assets inside insurance wrappers. Our sample test covered it.",
+   "so_what_confirmed": true,
+   "signed_by": "maria",
+   "closed_at": "2026-02-20",
+   "close_reason": "signed_off"
+  },
+  {
+   "tenant": "example-group",
+   "change": "chg-rgk-2026-borrowing-rate",
+   "status": "assigned",
+   "urgency": "monitor",
+   "owner": "sara",
+   "briefing_week": false,
+   "so_what_text": "Customer communication and the tax calculator need the new rate in early December.",
+   "so_what_confirmed": true,
+   "signed_by": null,
+   "closed_at": null,
+   "close_reason": null
+  },
+  {
+   "tenant": "example-group",
+   "change": "chg-eu-t1-settlement",
+   "status": "assigned",
+   "urgency": "six_months_plus",
+   "owner": "johan",
+   "briefing_week": false,
+   "so_what_text": "Funding, FX and corporate action cut-offs all move. Plan testing with the custodian during 2027.",
+   "so_what_confirmed": true,
+   "signed_by": null,
+   "closed_at": null,
+   "close_reason": null
+  }
+ ],
+ "impact_assessments": [
+  {
+   "tenant": "example-group",
+   "change": "chg-eu-ris-publication",
+   "applies": "yes",
+   "why": "Covers both the securities and the insurance regime for all account types.",
+   "what_must_change": null,
+   "internal_deadline": null,
+   "effort": "L",
+   "contributors": [
+    "Legal",
+    "Product",
+    "Tech"
+   ],
+   "saved": false
+  },
+  {
+   "tenant": "example-group",
+   "change": "chg-eu-amlr-application",
+   "applies": "yes",
+   "why": "All accounts require customer due diligence.",
+   "what_must_change": "Data model for onboarding and periodic review.",
+   "internal_deadline": "2027-03-31",
+   "effort": "L",
+   "contributors": [
+    "AML",
+    "Onboarding",
+    "Tech"
+   ],
+   "saved": true
+  },
+  {
+   "tenant": "example-group",
+   "change": "chg-fi-2025-garantum-sanction",
+   "applies": "yes",
+   "why": "Same rules apply to our advised KF business.",
+   "what_must_change": "None. Sample test of 40 switch cases showed complete documentation.",
+   "internal_deadline": null,
+   "effort": "S",
+   "contributors": [
+    "Advice",
+    "Compliance"
+   ],
+   "saved": true
+  }
+ ],
+ "actions": [
+  {
+   "tenant": "example-group",
+   "change": "chg-eu-amlr-application",
+   "prototype_id": "a1",
+   "title": "Map current KYC data against AMLR requirements",
+   "owner": "johan",
+   "due_on": "2026-12-15",
+   "done": false
+  },
+  {
+   "tenant": "example-group",
+   "change": "chg-eu-amlr-application",
+   "prototype_id": "a2",
+   "title": "Brief the onboarding team",
+   "owner": "sara",
+   "due_on": "2026-09-10",
+   "done": true
+  },
+  {
+   "tenant": "example-group",
+   "change": "chg-fi-2025-garantum-sanction",
+   "prototype_id": "a3",
+   "title": "Sample test 40 switch cases",
+   "owner": "johan",
+   "due_on": "2026-02-15",
+   "done": true
+  }
+ ],
+ "evidence": [
+  {
+   "tenant": "example-group",
+   "change": "chg-fi-2025-garantum-sanction",
+   "kind": "file",
+   "label": "switch-sample-test-2026-02.xlsx",
+   "file_name": "switch-sample-test-2026-02.xlsx"
+  }
+ ],
+ "gaps": [
+  {
+   "tenant": "example-group",
+   "key": "g1",
+   "obligation": "obl-esma-warnings",
+   "title": "The warning can be dismissed with one tap and the choice is not logged",
+   "description": "ESMA expects warnings to be prominent and the client's choice to be recorded. Today the order flow lets the client tap past the warning, and nothing is stored.",
+   "severity": "medium",
+   "source": "assessment",
+   "owner": "johan",
+   "target_date": "2026-11-15",
+   "status": "remediating",
+   "raised_by": "sara",
+   "raised_at": "2026-08-20",
+   "actions": [
+    {
+     "prototype_id": "ga1",
+     "title": "Log the client's choice after each warning",
+     "owner": "johan",
+     "due_on": "2026-10-20",
+     "done": false
+    },
+    {
+     "prototype_id": "ga2",
+     "title": "Redesign the warning so it cannot be passed with one tap",
+     "owner": "johan",
+     "due_on": "2026-11-05",
+     "done": false
+    }
+   ]
+  },
+  {
+   "tenant": "example-group",
+   "key": "g2",
+   "obligation": "obl-research-payments",
+   "title": "No documented research budget per strategy",
+   "description": "The new rules allow joint payment for research and execution only with a documented budget and a yearly quality assessment. Neither exists yet.",
+   "severity": "medium",
+   "source": "change_case",
+   "owner": "johan",
+   "target_date": "2026-10-30",
+   "status": "open",
+   "raised_by": "sara",
+   "raised_at": "2026-09-10",
+   "actions": []
+  }
+ ],
+ "tenant_agents": [
+  {
+   "tenant": "example-group",
+   "agent": "watch-sweeper",
+   "name": "Regulatory watch",
+   "description": "Checks the monitored sources and the open web for changes that touch our footprint. New changes land in triage, and inventory edits go to review.",
+   "writes_to": "Shared library, through review",
+   "cadence": "Weekly",
+   "scope": "Follows the footprint",
+   "pinned_version": "0.4",
+   "enabled": true,
+   "paused": false,
+   "fixed_cadence": false,
+   "prototype_id": "a-watch"
+  },
+  {
+   "tenant": "example-group",
+   "agent": "reverifier",
+   "name": "Re-verification",
+   "description": "Re-checks the obligations that were verified longest ago against their sources, and proposes an update when the source has moved.",
+   "writes_to": "Shared library, through review",
+   "cadence": "Monthly",
+   "scope": "The 20 obligations verified longest ago",
+   "pinned_version": "0.4",
+   "enabled": true,
+   "paused": false,
+   "fixed_cadence": false,
+   "prototype_id": "a-verify"
+  },
+  {
+   "tenant": "example-group",
+   "agent": "so-what-drafter",
+   "name": "So what drafter",
+   "description": "Drafts the So what for each new change against our footprint, our products and our earlier decisions. The text stays labelled as a draft until someone confirms it.",
+   "writes_to": "Our workspace only",
+   "cadence": "On each new change",
+   "scope": "Footprint and products",
+   "pinned_version": "0.2",
+   "enabled": true,
+   "paused": false,
+   "fixed_cadence": true,
+   "prototype_id": "a-sowhat"
+  },
+  {
+   "tenant": "example-group",
+   "agent": "private-source-watch",
+   "name": "Private source watch",
+   "description": "Watches sources that only we care about. What it finds is visible to us alone and never enters the shared library.",
+   "writes_to": "Our workspace only",
+   "cadence": "Weekly",
+   "scope": "Our private sources",
+   "pinned_version": "0.1",
+   "enabled": false,
+   "paused": false,
+   "fixed_cadence": false,
+   "prototype_id": "a-private"
+  }
+ ],
+ "agent_runs": [
+  {
+   "key": "run-watch-r3",
+   "tenant": "example-group",
+   "agent": "watch-sweeper",
+   "agent_version": "0.4",
+   "started_at": "2026-09-14T06:02:00",
+   "trigger": "schedule",
+   "requested_by": null,
+   "status": "succeeded",
+   "duration_minutes": 14,
+   "changes_found": 3,
+   "proposals_made": 2,
+   "cost": 2.1,
+   "prototype_id": "r3"
+  },
+  {
+   "key": "run-watch-r2",
+   "tenant": "example-group",
+   "agent": "watch-sweeper",
+   "agent_version": "0.4",
+   "started_at": "2026-09-07T06:01:00",
+   "trigger": "schedule",
+   "requested_by": null,
+   "status": "succeeded",
+   "duration_minutes": 12,
+   "changes_found": 2,
+   "proposals_made": 1,
+   "cost": 1.85,
+   "prototype_id": "r2"
+  },
+  {
+   "key": "run-watch-r1",
+   "tenant": "example-group",
+   "agent": "watch-sweeper",
+   "agent_version": "0.4",
+   "started_at": "2026-08-31T06:02:00",
+   "trigger": "schedule",
+   "requested_by": null,
+   "status": "succeeded",
+   "duration_minutes": 16,
+   "changes_found": 4,
+   "proposals_made": 2,
+   "cost": 2.3,
+   "prototype_id": "r1"
+  },
+  {
+   "key": "run-verify-r4",
+   "tenant": "example-group",
+   "agent": "reverifier",
+   "agent_version": "0.4",
+   "started_at": "2026-09-01T06:01:00",
+   "trigger": "schedule",
+   "requested_by": null,
+   "status": "succeeded",
+   "duration_minutes": 9,
+   "changes_found": 0,
+   "proposals_made": 1,
+   "cost": 0.92,
+   "prototype_id": "r4"
+  },
+  {
+   "key": "run-sowhat-r5",
+   "tenant": "example-group",
+   "agent": "so-what-drafter",
+   "agent_version": "0.2",
+   "started_at": "2026-09-14T06:19:00",
+   "trigger": "new_change",
+   "requested_by": null,
+   "status": "succeeded",
+   "duration_minutes": 1,
+   "changes_found": 0,
+   "proposals_made": 0,
+   "cost": 0.18,
+   "prototype_id": "r5"
+  }
+ ]
+}

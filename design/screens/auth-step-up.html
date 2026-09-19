@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen card: step-up prompt (modal)</title>
+<style>
+/* Cut from design/prototype/index.html (playbook Section 7, step 4): the
+   prototype's .modal and .box, over a dimmed tenant screen. The modal opens
+   from the api client when the server answers 403 step_up_required and the
+   request is retried once after a fresh passkey assertion. */
+:root{
+  --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;
+  --line:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;--bronze:#685631;
+  --btn:#0a0b0b;--btn-text:#ffffff;--focus:#005fb3;--red:#b92f13;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;
+}}
+:root[data-theme="dark"]{
+  --bg:#0a0b0b;--surface:#191a1a;--surface-2:#282a29;--sand:#231d10;--sand-2:#342b18;--line:#454a48;--line-strong:#a0a6a4;--text:#f7f8f7;--muted:#abb0ae;--bronze:#d6c7a8;
+  --btn:#ffffff;--btn-text:#0a0b0b;--focus:#66b8ff;--red:#f08975;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+h1,h2{margin:0;letter-spacing:-.01em;line-height:1.2}h1{font-size:2rem;font-weight:400}h2{font-size:1.25rem;font-weight:500}
+p{margin:0 0 .75rem}
+main{padding:32px 36px 96px;max-width:1100px}
+.head{margin-bottom:24px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;color:var(--muted)}
+.btn{background:var(--btn);color:var(--btn-text);border:1px solid var(--btn);border-radius:999px;padding:10px 20px;font-weight:600;min-height:44px}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-strong)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;justify-content:flex-end}
+.err{color:var(--red);font-size:.88rem;margin-top:10px}
+.status{color:var(--muted);font-size:.88rem;margin-top:10px}
+
+/* Three copies of the modal are laid out inline here so every state is
+   visible at once; in the app it is one fixed overlay (position:fixed;inset:0). */
+.modal{background:rgba(10,11,11,.6);display:flex;align-items:center;justify-content:center;padding:16px;border-radius:16px;margin-bottom:20px}
+.modal .box{background:var(--surface);border-radius:20px;padding:24px;max-width:440px;width:100%;border:1px solid var(--line)}
+.box h2{margin-bottom:8px}
+.box p{color:var(--muted)}
+.states h3{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:0 0 8px}
+.note{margin-top:32px;padding:12px 14px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:.85rem;max-width:70ch}
+@media (max-width:820px){
+  main{padding:20px 16px 100px}h1{font-size:1.6rem}
+  .bar{flex-wrap:nowrap}.bar .btn{flex:0 1 auto;min-width:0;padding:10px 16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .btn:not(.ghost){order:3}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="head"><h1>Members</h1></div>
+  <div class="panel">The screen underneath keeps its state; the action that needed the confirmation is retried when the prompt succeeds.</div>
+
+  <div class="states" style="margin-top:20px">
+    <h3>Ready</h3>
+    <div class="modal"><div class="box" role="dialog" aria-modal="true" aria-labelledby="s1">
+      <h2 id="s1">Confirm with your passkey</h2>
+      <p>This action needs a fresh confirmation from you. Your device will ask for a fingerprint, face or PIN.</p>
+      <div class="bar"><button class="btn ghost">Cancel</button><button class="btn">Use passkey</button></div>
+    </div></div>
+
+    <h3>Waiting</h3>
+    <div class="modal"><div class="box" role="dialog" aria-modal="true" aria-busy="true">
+      <h2>Confirm with your passkey</h2>
+      <p>This action needs a fresh confirmation from you. Your device will ask for a fingerprint, face or PIN.</p>
+      <p class="status" role="status">Waiting for your passkey…</p>
+      <div class="bar"><button class="btn ghost" disabled>Cancel</button><button class="btn" disabled>Use passkey</button></div>
+    </div></div>
+
+    <h3>Refused</h3>
+    <div class="modal"><div class="box" role="dialog" aria-modal="true">
+      <h2>Confirm with your passkey</h2>
+      <p>This action needs a fresh confirmation from you. Your device will ask for a fingerprint, face or PIN.</p>
+      <p class="err" role="alert">The confirmation did not go through. Try again or cancel.</p>
+      <div class="bar"><button class="btn ghost">Cancel</button><button class="btn">Use passkey</button></div>
+    </div></div>
+  </div>
+
+  <p class="note">Step-up card. Opened by the api client on 403 step_up_required for re-issuing enrolment, role and permission changes, API key creation and (later) sign-off, approvals, footprint and exports. Cancel leaves the action undone and the screen shows its ordinary error. Two buttons share one row on phones, primary on the right.</p>
+</main>
+</body>
+</html>

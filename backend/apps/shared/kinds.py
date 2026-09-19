@@ -55,4 +55,45 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "ungated_reason",
         "Playbook 5: the five shapes a route may give for having no permission gate",
     ),
+    # Chunk 1 (identity and tenant admin basics). Each is something the rules branch on.
+    "TenantStatus": ("tenant_status", "TEN-01: active or deactivated; every request branches on it"),
+    "UserStatus": ("user_status", "ID-02, ID-03: invited, active or deactivated; sign-in branches on it"),
+    "InvitationKind": ("invitation_kind", "ID-01, ID-05: invite or re-enrolment; acceptance branches on it"),
+    "ChallengeKind": ("challenge_kind", "ID-02, ID-06: registration, authentication or step-up ceremony"),
+    "PasskeyDeviceType": ("credential_device_type", "ID-07: single-device or multi-device (synced); policy branches on it"),
+    "SessionKind": ("session_kind", "ID-02, AC-ID2: enrolment or full; the auth classes branch on it"),
+    "LoginMethod": ("login_method", "ID-11, INPUT_DELTAS §2: email_code, passkey, api_key (later oidc, saml)"),
+    "LoginEventKind": ("login_event", "ID-11: what the security log records; the log is a ledger, not a picker"),
+    "SupportAccessLevel": ("support_access_level", "ID-05, TEN-06: read or write support access"),
+    # Chunk 2 (vocabularies, taxonomy and footprint). Each is a category the rules read
+    # off a vocabulary row's fixed `kind`; the row's label, translations and usage note
+    # stay an admin's to change (playbook 15, INPUT_DELTAS §1).
+    "TermDimensionKind": (
+        "term_dimension_kind",
+        "FP-01: a scope dimension may restrict the footprint, a classification never does; matching branches on it",
+    ),
+    "ChangeLifecycleKind": (
+        "change_lifecycle_kind",
+        "WAT-02, HOM-03: pre-adoption, adopted, in force, supervisory or recurring; the feed and roadmap branch on it",
+    ),
+    "ProvisionStructuralKind": (
+        "provision_structural_kind",
+        "INV-02: a division groups provisions, a unit carries legal text, an annex hangs off the instrument; the tree and search chunks branch on it",
+    ),
+    "ComplianceCategory": (
+        "compliance_category",
+        "REG-02, VOC-05: compliant, partly, gap or not assessed; reports and the pill tone read the category, never the tenant's label",
+    ),
+    "JurisdictionKind": (
+        "jurisdiction_kind",
+        "I18N-01, INV-01: supranational or country; instrument relations (implements) branch on it",
+    ),
+    "FootprintAction": (
+        "footprint_action",
+        "FP-02: a history row records a term added or removed; the as-of reconstruction branches on it",
+    ),
+    "SuggestionStatus": (
+        "suggestion_status",
+        "VOC-03: a member's suggestion is pending, accepted (the row was created) or declined; the admin's inbox branches on it",
+    ),
 }

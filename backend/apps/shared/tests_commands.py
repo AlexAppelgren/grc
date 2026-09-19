@@ -16,10 +16,15 @@ from apps.shared.management.commands import migrate_from_zero, seed_reference
 
 
 class SeedReference(TestCase):
-    def test_phase_zero_reports_no_seeds(self) -> None:
+    def test_the_registered_seeds_run_and_report(self) -> None:
+        from apps.shared import factories
+
+        factories.tenant(slug="seeded")
         out = StringIO()
         call_command("seed_reference", stdout=out)
-        self.assertIn("no reference seeds registered", out.getvalue())
+        self.assertIn("languages: 5 rows", out.getvalue())
+        self.assertIn("platform_roles: 2 rows", out.getvalue())
+        self.assertIn("tenant_system_roles: 7 rows", out.getvalue())
 
     def test_each_seed_runs_in_order_and_prints_what_breaks_without_it(self) -> None:
         order: list[str] = []
@@ -70,6 +75,7 @@ class MigrateFromZero(SimpleTestCase):
         self.assertEqual(env["MIGRATOR_DATABASE_URL"], scratch)
         self.assertIn("migrate", run.call_args.args[0])
 
+    @override_settings(MIGRATOR_DATABASE_URL="postgres://cw_migrator:pw@db:5432/compliance_watch")
     def test_keep_leaves_the_scratch_database_and_a_failed_migrate_raises(self) -> None:
         executed: list[str] = []
         conn = mock.MagicMock()
@@ -109,6 +115,35 @@ class MigrateFromZero(SimpleTestCase):
                 call_command("migrate_from_zero", "--name", 'x"; DROP DATABASE postgres; --', stdout=StringIO())
 
 
+class ScratchNameFollowsTheConfiguredDatabase(SimpleTestCase):
+    """Parallel worktrees each get their own database (scripts/worktree.sh). A fixed scratch
+    name would let one worktree's `migrate_from_zero` drop another's scratch database in the
+    middle of its run, so the default derives from the configured database instead. Added
+    2026-09-19 with the worktree workflow."""
+
+    def test_default_scratch_name_is_the_configured_name_plus_scratch(self) -> None:
+        self.assertEqual(
+            migrate_from_zero.default_scratch_name("postgres://u:p@db:5432/compliance_watch"),
+            "compliance_watch_scratch",
+        )
+        self.assertEqual(
+            migrate_from_zero.default_scratch_name("postgres://u:p@db:5432/compliance_watch_wt3"),
+            "compliance_watch_wt3_scratch",
+        )
+
+    @override_settings(MIGRATOR_DATABASE_URL="postgres://cw_migrator:pw@db:5432/compliance_watch_wt3")
+    def test_a_worktree_slot_migrates_its_own_scratch_database(self) -> None:
+        executed: list[str] = []
+        conn = mock.MagicMock()
+        conn.__enter__.return_value.execute.side_effect = lambda sql: executed.append(sql)
+        with mock.patch.object(migrate_from_zero.psycopg, "connect", return_value=conn), mock.patch.object(
+            migrate_from_zero.subprocess, "run", return_value=mock.Mock(returncode=0)
+        ):
+            call_command("migrate_from_zero", stdout=StringIO())
+        self.assertIn('CREATE DATABASE "compliance_watch_wt3_scratch" TEMPLATE template1', executed)
+        self.assertNotIn('CREATE DATABASE "compliance_watch_scratch" TEMPLATE template1', executed)
+
+
 class ExportOpenApi(SimpleTestCase):
     def test_writes_a_sorted_normalised_document(self) -> None:
         from django.conf import settings
@@ -123,5 +158,8 @@ class ExportOpenApi(SimpleTestCase):
         self.assertNotIn("servers", document)
         self.assertEqual(document["paths"]["/api/v1/me"]["get"]["responses"]["200"]["description"], "OK")
         self.assertEqual(list(document), sorted(document))
-        self.assertIn("2 operations", stdout.getvalue())
+        from apps.shared.routes import iter_operations
+        from config.api import api
+
+        self.assertIn(f"{len(list(iter_operations(api)))} operations", stdout.getvalue())
         out.unlink()
