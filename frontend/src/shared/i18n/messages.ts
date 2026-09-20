@@ -1,8 +1,64 @@
-import en from '@/messages/en.json';
-import sv from '@/messages/sv.json';
+import enAuth from '@/messages/auth/en.json';
+import svAuth from '@/messages/auth/sv.json';
+import enCommon from '@/messages/common/en.json';
+import svCommon from '@/messages/common/sv.json';
+import enConsole from '@/messages/console/en.json';
+import svConsole from '@/messages/console/sv.json';
+import enDev from '@/messages/dev/en.json';
+import svDev from '@/messages/dev/sv.json';
+import enFootprint from '@/messages/footprint/en.json';
+import svFootprint from '@/messages/footprint/sv.json';
+import enInventory from '@/messages/inventory/en.json';
+import svInventory from '@/messages/inventory/sv.json';
+import enLibrary from '@/messages/library/en.json';
+import svLibrary from '@/messages/library/sv.json';
+import enMe from '@/messages/me/en.json';
+import svMe from '@/messages/me/sv.json';
+import enNav from '@/messages/nav/en.json';
+import svNav from '@/messages/nav/sv.json';
+import enTenantAdmin from '@/messages/tenant-admin/en.json';
+import svTenantAdmin from '@/messages/tenant-admin/sv.json';
+import enToday from '@/messages/today/en.json';
+import svToday from '@/messages/today/sv.json';
+import enVocabularies from '@/messages/vocabularies/en.json';
+import svVocabularies from '@/messages/vocabularies/sv.json';
 
-// One catalog per UI language (playbook 6.5). `sv` is typed against `en`, so a
-// key missing in one language fails `tsc` as well as scripts/messages-check.mjs.
+// One catalog per UI language (playbook 6.5), stored as one file pair per
+// feature namespace under src/messages/<namespace>/ so that packages owning
+// different screens edit different files. A namespace is listed here once;
+// scripts/messages-check.mjs refuses a key claimed by two of them, so the
+// merge below never silently drops copy. `sv` is typed against `en`, so a key
+// missing in one language fails `tsc` as well as the check.
+const en = {
+  ...enAuth,
+  ...enCommon,
+  ...enConsole,
+  ...enDev,
+  ...enFootprint,
+  ...enInventory,
+  ...enLibrary,
+  ...enMe,
+  ...enNav,
+  ...enTenantAdmin,
+  ...enToday,
+  ...enVocabularies,
+};
+
+const sv = {
+  ...svAuth,
+  ...svCommon,
+  ...svConsole,
+  ...svDev,
+  ...svFootprint,
+  ...svInventory,
+  ...svLibrary,
+  ...svMe,
+  ...svNav,
+  ...svTenantAdmin,
+  ...svToday,
+  ...svVocabularies,
+};
+
 export const locales = ['en', 'sv'] as const;
 export type Locale = (typeof locales)[number];
 export type MessageKey = keyof typeof en;

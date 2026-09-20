@@ -1,0 +1,20 @@
+{
+  "dev.pills.title": "Pills and labels",
+  "dev.pills.lede": "Every tone, every slot, both themes. Tone never changes with theme.",
+  "dev.pills.light": "Light",
+  "dev.pills.dark": "Dark",
+  "dev.pills.tones": "Six tones",
+  "dev.pills.tenantTag": "Tenant tag",
+  "dev.pills.changeRow": "Change row",
+  "dev.pills.obligationRow": "Obligation row",
+  "dev.pills.obligationHeader": "Obligation header",
+  "dev.pills.instrumentHeader": "Instrument header",
+  "dev.pills.scopeBlock": "Scope block",
+  "dev.pills.gap": "Gap",
+  "dev.pills.roadmapItem": "Roadmap item",
+  "dev.pills.severityScales": "Severity scales",
+  "dev.spike.title": "Green Core spike (D-04)",
+  "dev.spike.lede": "One Green Core React component under next start. The count proves hydration.",
+  "dev.spike.button": "Count clicks",
+  "dev.spike.count": "{count, plural, =0 {Not clicked yet} one {Clicked # time} other {Clicked # times}}"
+}
