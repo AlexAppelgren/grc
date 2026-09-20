@@ -575,6 +575,7 @@ Columns:
 | c9-e2e-seed | 9 | R2 | c9-case-models, c5-seed-watch | cloud | 45 | 26 | - |  |
 | c9-assessment | 9 | R2 | c9-case-contract | local-unit (c) | 50 | 27 | - |  |
 | c9-fe-cases-feature | 9 | R2 | c9-case-contract, c9-case-design, c5-fe-change-detail | local-e2e (c) | 60 | 27 | changescreen casesfe |  |
+| c9-reference-members | 9 | R2 | f03-T55, c9-case-contract | local-unit (c) | 25 | 27 | idapi |  |
 | c9-triage | 9 | R2 | c9-case-contract, c10-collab-models | local-unit (c) | 45 | 28 | - |  |
 | c9-actions | 9 | R2 | c9-case-contract, c8-ten-reassignment | local-unit (c) | 45 | 28 | - |  |
 | c9-evidence | 9 | R2 | c9-case-contract, c9-scanner-adapter | local-unit (c) | 60 | 28 | casestasks | yes |
