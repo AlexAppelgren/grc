@@ -196,7 +196,7 @@ describe('the surface follows the principal', () => {
       </TenantLayout>,
     );
     expect(await screen.findByRole('heading', { name: 'My passkeys' })).toBeInTheDocument();
-    expect(within(railNav()).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/console/vocabularies']);
+    expect(within(railNav()).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/console/vocabularies', '/console/change-facts', '/console/sources']);
     expect(within(rail()).getByText('Platform console')).toBeInTheDocument();
   });
 

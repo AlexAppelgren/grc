@@ -39,6 +39,28 @@ export const severityTone: Record<SeverityKind, PillTone> = {
   low: 'information',
 };
 
+// WAT-01: how a source check ended, as `CheckStatus` names it in the API.
+// The coverage log and the feed's Coverage tab read the check, never the
+// sentence it carries.
+export type CheckStatusKind = 'ok' | 'failed';
+
+export const checkStatusTone: Record<CheckStatusKind, PillTone> = {
+  ok: 'positive',
+  failed: 'negative',
+};
+
+// ID-10: an agent key's state, computed from the key's own dates. Revoked
+// and expired are the same warning: the key has stopped working and the row
+// stays so the security log has something to point at.
+export type ApiKeyStateKind = 'active' | 'never_used' | 'revoked' | 'expired';
+
+export const apiKeyStateTone: Record<ApiKeyStateKind, PillTone> = {
+  active: 'positive',
+  never_used: 'information',
+  revoked: 'warning',
+  expired: 'warning',
+};
+
 // "Applies" is positive on the system card's obligation row; the other two
 // are neutral facts.
 export const applicabilityTone: Record<ApplicabilityKind, PillTone> = {
@@ -71,4 +93,18 @@ export const slotTone = {
   you: 'positive',
   ourDeadline: 'brand',
   lead: 'brand',
+  // Chunk 5, from the watch and console cards. A fact an agent put forward
+  // is a neutral fact until a person settles it, which is why "Suggested by
+  // the agent" and a match confidence read information and a confirmation
+  // reads positive; a change still carrying unconfirmed facts needs a
+  // library editor, so its count reads warning. A paused source is a fact
+  // about the source, not a failure.
+  suggested: 'information',
+  confirmed: 'positive',
+  factsToConfirm: 'warning',
+  duplicate: 'information',
+  agentVersion: 'brand',
+  apiScope: 'information',
+  sourceKind: 'information',
+  paused: 'information',
 } as const satisfies Record<string, PillTone>;

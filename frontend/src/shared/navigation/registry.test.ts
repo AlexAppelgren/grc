@@ -34,13 +34,25 @@ describe('navigation registry (playbook 6.2)', () => {
       'search',
       'admin',
     ]);
-    // Chunk 4 registers a console destination with its page: vocabularies
-    // and tenants now; the queue and problem reports join with theirs.
-    expect(visibleDestinations('console', PLATFORM).map((d) => d.id)).toEqual(['console-vocabularies', 'console-tenants']);
+    // A console destination registers with its page: vocabularies and tenants
+    // from chunk 4, Change facts, Sources and Agent keys from chunk 5. The
+    // queue joins with its own.
+    expect(visibleDestinations('console', PLATFORM).map((d) => d.id)).toEqual([
+      'console-vocabularies',
+      'console-change-facts',
+      'console-sources',
+      'console-tenants',
+      'console-agent-keys',
+    ]);
     // Each console destination answers to the one platform role that holds
     // its permission, so neither platform role sees the other's (ADM-S4).
     expect(visibleDestinations('console', ['library_vocab.manage']).map((d) => d.id)).toEqual(['console-vocabularies']);
     expect(visibleDestinations('console', ['tenants.manage']).map((d) => d.id)).toEqual(['console-tenants']);
+    // A library editor reads the change facts and the sources; the platform
+    // admin holds the agent keys. Neither reaches the other's.
+    expect(visibleDestinations('console', ['proposals.review']).map((d) => d.id)).toEqual(['console-change-facts']);
+    expect(visibleDestinations('console', ['sources.manage']).map((d) => d.id)).toEqual(['console-sources']);
+    expect(visibleDestinations('console', ['agent_definitions.manage']).map((d) => d.id)).toEqual(['console-agent-keys']);
   });
 
   it('registers a console destination only once its page exists, so none renders "coming soon"', () => {
@@ -72,7 +84,7 @@ describe('navigation registry (playbook 6.2)', () => {
   it('orders the phone dock by rank', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(dockDestinations('tenant', all).map((d) => d.id)).toEqual(['today', 'watch', 'inventory', 'search']);
-    expect(dockDestinations('console', all).map((d) => d.id)).toEqual(['console-vocabularies', 'console-tenants']);
+    expect(dockDestinations('console', all).map((d) => d.id)).toEqual(['console-vocabularies', 'console-tenants', 'console-sources']);
   });
 
   // iOS shows at most four tabs plus More (UIKit UITabBarController), and
@@ -89,7 +101,7 @@ describe('navigation registry (playbook 6.2)', () => {
   it('puts every visible destination that is not a tab in More, and never promotes an unranked one', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(moreDestinations('tenant', all).map((d) => d.id)).toEqual(['roadmap', 'admin']);
-    expect(moreDestinations('console', all).map((d) => d.id)).toEqual([]);
+    expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys']);
 
     expect(dockDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
     expect(moreDestinations('tenant', []).map((d) => d.id)).toEqual([]);
