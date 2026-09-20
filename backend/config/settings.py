@@ -435,6 +435,16 @@ CELERY_BEAT_SCHEDULE["outbox-deliver"] = {
 }
 
 # ---------------------------------------------------------------------------------------
+# ===== CAS-01 one case per bank per change (apps/cases/creation.py, c5-cases-creation) ===
+# A registered change opens a case in every active bank, on the cursor above and never in
+# the request that registered it. This is how many bank ids come back per round trip while
+# the fan-out reads the list, so a change reaching hundreds of banks costs a handful of
+# fetches; each bank's case is then one insert of its own, because a session writes one
+# zone and no insert can span two.
+# ---------------------------------------------------------------------------------------
+CASE_CREATION_BATCH = env_int("CASE_CREATION_BATCH", 100)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------

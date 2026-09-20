@@ -1,33 +1,286 @@
-"""Agent runs (AGT-01): open a run, close it, read the log of what ran.
+"""Agent runs (AGT-01, AGT-02, ID-10, AUD-01): open a run, close it, read the log of what
+ran, and answer the one question every other writer of this chunk asks — is this run of
+this key still open?
 
-The contract is declared ahead of the logic (chunk 5 plan rule 1), so each function here
-answers 501 `not_built` behind the route's real gate. `c5-agent-runs` replaces them, and
-with them the rule item 14 fixes: in R1 only a platform key opens a run, so a tenant-bound
-key calling `open_run` is refused with the reason named, and a tenant reads the library's
-runs and nothing else.
+A run is the provenance anchor. `regulatory_change.agent_run_id`, `source_check.agent_run_id`
+and `proposal.agent_run_id` all point here, so every claim an agent files can be traced to
+the model, the pipeline and the night that produced it. Nothing here reaches the shared
+library: a run is a record of work, and what the work found becomes a proposal a person or
+a second, independent agent approves.
+
+Three rules shape the module:
+
+- **Platform-owned in R1** (Alex, 2026-09-19, item 14). bleqq's watch agents are part of
+  the base package, so a run belongs to the platform and to no bank. A tenant-bound key is
+  refused with `tenant_agents_not_available`, and a person's session never arrives at all:
+  the route takes an API key alone. `c5-platform-agent-keys` strips the agent write scopes
+  from a bank's keys at creation; this is the second guard, so neither alone is
+  load-bearing. Chunk 11 adds a bank's own agents and their runs, and the model's tenant
+  column and policies are already shaped for them, so nothing here needs a migration then.
+- **A key acts only on its own run.** A run of another key answers 404 and never 403, so a
+  run id is not something a key can probe for.
+- **A retry replays.** The same `Idempotency-Key` answers the run it already opened. A
+  close repeated with the same values answers the run it already closed, because what makes
+  a close idempotent is the closing values themselves and not a stored key.
+
+Every open and close writes its audit row and its outbox row in the same transaction as the
+run, with the agent behind the key as the actor rather than the key's id (ID-10).
 """
 
 from __future__ import annotations
 
-from typing import NoReturn
+import uuid
+from typing import Any, Literal, cast
 
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.utils import timezone
+
+from apps.agents.models import AgentRun, RunStatus
+from apps.agents.schemas import AgentRunFinish, AgentRunInput, AgentRunOut, AgentRunPage, AgentRunStats
+from apps.identity.models import ApiKey
+from apps.shared.audit import Actor, ActorType, record
+from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
 
+SUBJECT_TYPE = "agent_run"
 
-def _not_built(detail: str) -> NoReturn:
-    raise ProblemError(status=501, code="not_built", detail=detail)
-
-
-def open_run() -> NoReturn:
-    """`POST /agent-runs`. Built by `c5-agent-runs`."""
-    _not_built("Opening an agent run is not built yet.")
+# The three values `RunStatus` fixes, as the schema publishes them.
+RunState = Literal["running", "succeeded", "failed"]
 
 
-def finish_run() -> NoReturn:
-    """`PATCH /agent-runs/{runId}`. Built by `c5-agent-runs`."""
-    _not_built("Closing an agent run is not built yet.")
+# ---------------------------------------------------------------------------------------
+# Reading one run out
+# ---------------------------------------------------------------------------------------
+def row(run: AgentRun) -> AgentRunOut:
+    """One run as every reader sees it. The stored counters are the camelCase shape
+    `AgentRunStats` publishes, so what a run filed is what a reader is handed back."""
+    return AgentRunOut(
+        id=run.id,
+        agent=run.agent.key,
+        started_at=run.started_at,
+        finished_at=run.finished_at,
+        # A kind in code (`RunStatus`): the column holds one of its three values and the
+        # schema publishes the same three, so the cast states what the choices already fix.
+        status=cast(RunState, run.status),
+        model=run.model,
+        pipeline_version=run.pipeline_version,
+        stats=AgentRunStats.model_validate(run.stats),
+        output_ref=run.output_ref or None,
+        error=run.error or None,
+    )
 
 
-def list_runs() -> NoReturn:
-    """`GET /agent-runs`. Built by `c5-agent-runs`."""
-    _not_built("Reading agent runs is not built yet.")
+def _actor(who: Principal) -> Actor:
+    """The agent behind the key, never the key's id (ID-10). A key that reaches a write here
+    is always bound to an agent, which is what `_key_for` refuses without."""
+    return Actor(kind=ActorType.AGENT, id=who.agent_id, label=who.agent_label)
+
+
+def _stats(values: AgentRunStats | None, fallback: dict[str, Any]) -> dict[str, Any]:
+    """The counters as the JSON column stores them: camelCase, the shape the schema
+    publishes. A close that files none leaves the run's own counters standing, which is the
+    honest answer from a run that failed before it could count."""
+    if values is None:
+        return fallback
+    return values.model_dump(mode="json", by_alias=True)
+
+
+# ---------------------------------------------------------------------------------------
+# POST /agent-runs
+# ---------------------------------------------------------------------------------------
+def _key_for(who: Principal, wanted: str) -> tuple[ApiKey, uuid.UUID]:
+    """The calling key and the definition it is bound to.
+
+    A key runs exactly one definition (ID-10), and the principal already carries which one,
+    so the name the caller sent is compared against the key's own agent rather than looked
+    up. Any mismatch is one refusal: a definition this build does not ship and one that
+    belongs to another key are the same answer, so trying names tells a caller nothing about
+    which definitions exist. It is also what keeps this module clear of the library fence —
+    `agent` is a library record, and the module that writes never names one.
+    """
+    if who.agent_id is None or who.agent_label != wanted:
+        raise ProblemError(
+            status=403,
+            code="permission_denied",
+            detail="This key is not entitled to run that agent.",
+        )
+    key = ApiKey.objects.filter(pk=who.subject_id).first()  # ordering: pk lookup, at most one row
+    if key is None:  # pragma: no cover - the principal was resolved from this row a moment ago
+        raise ProblemError(status=401, code="unauthenticated", detail="Sign in to continue.")
+    return key, who.agent_id
+
+
+def open_run(*, who: Principal, body: AgentRunInput, idempotency_key: str | None) -> AgentRunOut:
+    """`POST /agent-runs`: open a run for the key's agent and return it.
+
+    In R1 every run is a platform run (item 14), so a tenant-bound key is refused here as
+    well as at key creation. The refusal comes before any write, so nothing is stored.
+    """
+    if who.tenant_id is not None:
+        raise ProblemError(
+            status=403,
+            code="tenant_agents_not_available",
+            detail=(
+                "Agent runs are opened by the platform. The agents that feed the shared "
+                "library are part of the base package, and agents of your own arrive later."
+            ),
+        )
+    key, agent_id = _key_for(who, body.agent)
+    if idempotency_key:
+        replayed = _replayed_open(key, body, idempotency_key, who)
+        if replayed is not None:
+            return replayed
+    with transaction.atomic():
+        run = AgentRun.objects.create(
+            agent_id=agent_id,
+            api_key=key,
+            model=body.model,
+            pipeline_version=body.pipeline_version,
+            idempotency_key=idempotency_key or "",
+        )
+        record(
+            action="agent_run.opened",
+            actor=_actor(who),
+            subject_type=SUBJECT_TYPE,
+            subject_id=run.id,
+            subject_title=who.agent_label,
+            summary=f"{who.agent_label} opened a run.",
+            tenant_id=None,
+            after={"agent": who.agent_label, "model": run.model, "pipelineVersion": run.pipeline_version},
+        )
+    return row(run)
+
+
+def _replayed_open(
+    key: ApiKey, body: AgentRunInput, idempotency_key: str, who: Principal
+) -> AgentRunOut | None:
+    """The run this key already opened under this retry key, or None when it is new. The
+    same key with a different body is a conflict: keeping either version would lose the
+    other, and silently answering the first would hide a caller's bug."""
+    # One filter keyword per line. Both keywords on one line read to gitleaks'
+    # generic-api-key rule as a key followed by its value, and the secret scan failed on
+    # an ORM query (2026-09-20). Allowlisting it would have taught the scanner to ignore
+    # the shape a real leak takes, so the line is split instead.
+    existing = (
+        AgentRun.objects.select_related("agent")
+        .filter(
+            api_key=key,
+            idempotency_key=idempotency_key,
+        )
+        .first()  # ordering: (api_key, idempotency_key) is unique, at most one row
+    )
+    if existing is None:
+        return None
+    if (existing.model, existing.pipeline_version) != (body.model, body.pipeline_version):
+        raise ValidationError(
+            "This Idempotency-Key was already used to open a different run.",
+            code="idempotency_conflict",
+        )
+    _record_replay(existing, who, "A retried open answered the run it already opened.")
+    return row(existing)
+
+
+def _record_replay(run: AgentRun, who: Principal, summary: str) -> None:
+    with transaction.atomic():
+        record(
+            action="agent_run.replayed",
+            actor=_actor(who),
+            subject_type=SUBJECT_TYPE,
+            subject_id=run.id,
+            subject_title=run.agent.key,
+            summary=summary,
+            tenant_id=None,
+            after={"status": run.status},
+        )
+
+
+# ---------------------------------------------------------------------------------------
+# PATCH /agent-runs/{runId}
+# ---------------------------------------------------------------------------------------
+def _own_run(who: Principal, run_id: uuid.UUID) -> AgentRun:
+    """The run this key opened. Another key's run, and one that never existed, answer the
+    same 404: which run ids exist is not something a key may probe for."""
+    run = AgentRun.objects.select_related("agent").filter(
+        pk=run_id, api_key_id=who.subject_id
+    ).first()  # ordering: pk lookup inside one key, at most one row
+    if run is None:
+        raise ProblemError(status=404, code="not_found", detail="Not found.")
+    return run
+
+
+def finish_run(*, who: Principal, run_id: uuid.UUID, body: AgentRunFinish) -> AgentRunOut:
+    """`PATCH /agent-runs/{runId}`: close the run into a terminal status and file what it
+    counted.
+
+    A run closes once. Repeating the same close answers the run it already closed, so a
+    lost answer costs nothing; closing it into something else is refused, so a closed run
+    is never quietly reopened or rewritten.
+    """
+    run = _own_run(who, run_id)
+    stats = _stats(body.stats, run.stats)
+    output_ref = body.output_ref or ""
+    error = body.error or ""
+    if run.status != RunStatus.RUNNING.value:
+        if (run.status, run.stats, run.output_ref, run.error) != (body.status, stats, output_ref, error):
+            raise ValidationError(
+                "This run is already closed, so it cannot be closed again with different values.",
+                code="invalid_transition",
+            )
+        _record_replay(run, who, "A retried close answered the run it already closed.")
+        return row(run)
+    with transaction.atomic():
+        run.status = body.status
+        run.stats = stats
+        run.output_ref = output_ref
+        run.error = error
+        run.finished_at = timezone.now()
+        run.save(update_fields=["status", "stats", "output_ref", "error", "finished_at"])
+        record(
+            action="agent_run.closed",
+            actor=_actor(who),
+            subject_type=SUBJECT_TYPE,
+            subject_id=run.id,
+            subject_title=run.agent.key,
+            summary=f"{run.agent.key} closed a run: {run.status}.",
+            tenant_id=None,
+            before={"status": RunStatus.RUNNING.value},
+            after={"status": run.status, "stats": run.stats},
+        )
+    return row(run)
+
+
+# ---------------------------------------------------------------------------------------
+# The provenance guard the other writers of this chunk ask
+# ---------------------------------------------------------------------------------------
+def require_open_run(who: Principal, run_id: uuid.UUID) -> AgentRun:
+    """The open run this key named, for a write that files something against it: a source
+    check, a registered change, a proposal.
+
+    A run of another key answers 404, exactly as closing one does. A run of this key that
+    is already closed answers 422 `run_not_open`, because the caller can fix that by
+    opening a run — and because a closed run is a finished account of a night's work that
+    nothing may be added to afterwards.
+    """
+    run = _own_run(who, run_id)
+    if run.status != RunStatus.RUNNING.value:
+        raise ValidationError(
+            "That run is closed. Open a run before filing anything against it.",
+            code="run_not_open",
+        )
+    return run
+
+
+# ---------------------------------------------------------------------------------------
+# GET /agent-runs
+# ---------------------------------------------------------------------------------------
+def list_runs(*, limit: int, offset: int) -> AgentRunPage:
+    """The runs this caller may see, oldest first, one page at a time.
+
+    Row-level security is what decides "may see": a bank's session reads the library's runs
+    and its own, a console session reads the library's, and no session reads another bank's.
+    The order is the model's own and is the order the sweeps happened in.
+    """
+    queryset = AgentRun.objects.select_related("agent").order_by("started_at", "id")
+    total = queryset.count()
+    return AgentRunPage(items=[row(run) for run in queryset[offset : offset + limit]], total=total)

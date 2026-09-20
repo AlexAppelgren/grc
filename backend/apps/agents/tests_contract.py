@@ -7,6 +7,11 @@ in front of that stub is proved here, per route. Written before the routes exist
 (2026-09-20): every case below failed with 404 until `agents/api.py` and the three
 `identity/api.py` routes landed.
 
+The three run routes are no longer stubs — `c5-agent-runs` built them, and what they do
+behind these gates is proved in `tests_runs.py` — so they left the stub list below on
+2026-09-21 while keeping every gate assertion they had. `recordSourceCheck` and the three
+agent-key routes are still declared ahead of their logic.
+
 The agent-key routes live in `identity/api.py` but are proved here, beside the runs they
 create keys for: `identity/tests_api_keys.py` belongs to the task that builds their logic.
 """
@@ -55,6 +60,10 @@ SESSION_ROUTES = [
     ("createAgentKey", "post", KEYS, KEY_BODY, perms.AGENT_DEFINITIONS_MANAGE),
     ("revokeAgentKey", "post", f"{KEYS}/{KEY}/revoke", {}, perms.AGENT_DEFINITIONS_MANAGE),
 ]
+# What is still declared ahead of its logic. The three run routes left this list when
+# `c5-agent-runs` built them; the gates above still cover all of them.
+STUBBED_KEY_ROUTES = [route for route in KEY_ROUTES if route[0] == "recordSourceCheck"]
+STUBBED_SESSION_ROUTES = [route for route in SESSION_ROUTES if route[0] != "listAgentRuns"]
 
 
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
@@ -145,7 +154,7 @@ class AgentRouteStubs(TestCase):
 
     def test_a_key_with_the_scope_reaches_the_stub(self) -> None:
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            for name, method, url, body, _ in KEY_ROUTES:
+            for name, method, url, body, _ in STUBBED_KEY_ROUTES:
                 with self.subTest(operation=name):
                     self.assert_not_built(_call(self.client, method, url, body, AS_KEY))
 
@@ -156,10 +165,13 @@ class AgentRouteStubs(TestCase):
             step_up_at=timezone.now(),
         )
         with stub_session(principal):
-            for name, method, url, body, _ in SESSION_ROUTES:
+            for name, method, url, body, _ in STUBBED_SESSION_ROUTES:
                 with self.subTest(operation=name):
                     self.assert_not_built(_call(self.client, method, url, body, AS_SESSION))
 
     def test_system_health_also_reads_the_run_list(self) -> None:
+        """The run log is served now, so the proof is that `system.health` passes its gate;
+        what it returns is `tests_runs.py`'s."""
         with stub_session(user_principal(permissions={perms.SYSTEM_HEALTH})):
-            self.assert_not_built(_call(self.client, "get", RUNS, None, AS_SESSION))
+            response = _call(self.client, "get", RUNS, None, AS_SESSION)
+        self.assertEqual(response.status_code, 200, response.content)

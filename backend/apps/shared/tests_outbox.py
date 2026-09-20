@@ -20,7 +20,7 @@ thing that delivers one, and these tests are what it has to satisfy:
 - the batch size, poll interval, backoff and attempt ceiling are settings with env
   overrides documented in `.env.example` and the Railway runbook;
 - the beat entry exists and runs the task, the cursor writes no event of its own, and the
-  handler registry ships empty.
+  only handler production code registers is chunk 5's case creation.
 
 Proven to fail 2026-09-20 by letting a batch carry on past a failing row (the failure
 tests named the row that overtook it) and by running a library row's handlers without
@@ -480,6 +480,17 @@ class TheBeatEntryRunsTheCursor(OutboxCursorCase):
             deliver_outbox()
 
 
-class TheRegistryShipsEmpty(TestCase):
-    def test_no_handler_is_registered_by_production_code(self) -> None:
-        self.assertEqual(outbox._HANDLERS, {})
+class TheRegistryHoldsOnlyItsConsumers(TestCase):
+    """The cursor registers nothing of its own: a consumer registers its handler from its
+    app's `ready()`. Case creation is chunk 5's only one (rulings 9 and 32), so a second
+    relay, or a handler registered anywhere but in an app's `ready()`, shows up here."""
+
+    def test_only_case_creation_is_registered_by_production_code(self) -> None:
+        from apps.cases import creation
+
+        # Order-independent: a test above empties the registry to isolate its own handlers
+        # and puts nothing back, so the app's own registration is made again here. It is
+        # idempotent, so this can never be what makes the assertion pass.
+        creation.register()
+        self.assertEqual(sorted(outbox._HANDLERS), [creation.CHANGE_REGISTERED])
+        self.assertEqual(outbox.handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases,))

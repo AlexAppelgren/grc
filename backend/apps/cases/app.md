@@ -29,7 +29,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| CAS-01 | One case per tenant per change, created in "needs triage" with its footprint match | M | R1 | in_progress |
+| CAS-01 | One case per tenant per change, created in "needs triage" with its footprint match | M | R1 | built |
 | CAS-02 | Triage needs urgency and owner; dismissal needs a reason and can be restored | M | R2 | pending |
 | CAS-03 | Impact assessment: applies, why, what must change, internal deadline, effort, and contributor teams, recorded as the case's team participants | M | R2 | pending |
 | CAS-04 | Actions with owner and due date, locked while sign-off is pending, exportable as tickets | M | R2 | pending |

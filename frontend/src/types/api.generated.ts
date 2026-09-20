@@ -66,10 +66,9 @@ export interface paths {
          *     nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
          *     run yet, not that something is wrong.
          *
-         *     Errors: a 422 when `limit` is above 100 or `offset` beyond the accepted depth;
-         *     `permission_denied` with neither `agents.manage` nor `system.health`;
-         *     `unauthenticated` without a session. This route is published ahead of the runner that
-         *     will fill it; until that ships it answers 501.
+         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
+         *     depth; `permission_denied` with neither `agents.manage` nor `system.health`;
+         *     `unauthenticated` without a session.
          */
         get: operations["listAgentRuns"];
         put?: never;
@@ -94,13 +93,17 @@ export interface paths {
          *     findings. Opening a run is recorded in the audit log with the agent behind the key
          *     named, not the key's identifier.
          *
-         *     Answers 201 with the open run, its status `running` and its counters at zero. Errors:
-         *     `permission_denied` when the key lacks `agent-runs:write` or is not entitled to run
-         *     that agent; `unauthenticated` when the key is missing, revoked or expired;
-         *     `not_found` when no shipped definition has that agent key; a 422 for a field the
-         *     caller can fix, and a 409 when the same idempotency key is replayed with a different
-         *     body. These routes are published ahead of the runner that will fill them; until it
-         *     ships they answer 501.
+         *     Answers 201 with the open run, its status `running` and its counters at zero. A replay
+         *     answers 201 with the run that key already opened. Errors: `tenant_agents_not_available`
+         *     when the key belongs to a bank rather than to the platform, because in this release the
+         *     agents that feed the shared library are part of the base package and a bank opens no run
+         *     of its own; `permission_denied` when the key lacks `agent-runs:write`, or when `agent`
+         *     is not the definition this key is bound to — a key runs exactly one definition, so a
+         *     name this build does not ship and a name that belongs to another key are the same
+         *     refusal, and trying names tells a caller nothing about which definitions exist;
+         *     `unauthenticated` when the key is missing, revoked or expired; `idempotency_conflict`
+         *     when the same `Idempotency-Key` is sent with a different body; and `validation_error`
+         *     for a field the caller can fix.
          */
         post: operations["startAgentRun"];
         delete?: never;
@@ -130,22 +133,22 @@ export interface paths {
          *     stays open for ever and reads as stuck, so close it from the failure path too.
          *
          *     Authenticated by the API key that opened the run, carrying the `agent-runs:write`
-         *     scope; no session can close a run. A run closes once and into a terminal status, and
-         *     closing an already-closed run is refused rather than quietly reopening it. What the
-         *     agent filed while the run was open stands whichever status it ends in, and none of it
-         *     has changed the shared library: a proposal waits for a person, or for a second and
-         *     independent agent, to approve it. The close is recorded in the audit log against the
-         *     agent behind the key.
-         *
-         *     Send `Idempotency-Key` so a retried close replays rather than conflicting.
+         *     scope; no session can close a run. A run closes once and into a terminal status. Sending
+         *     the same close again answers the run it already closed, so a lost answer costs nothing;
+         *     closing it into anything else is refused rather than quietly reopening or rewriting it.
+         *     That is what makes the close idempotent, so `Idempotency-Key` is accepted on this call
+         *     but nothing depends on it. What the agent filed while the run was open stands whichever
+         *     status it ends in, and none of it has changed the shared library: a proposal waits for a
+         *     person, or for a second and independent agent, to approve it. The close is recorded in
+         *     the audit log against the agent behind the key.
          *
          *     Answers 200 with the closed run. Errors: `not_found` when no such run exists or it
-         *     belongs to another key; `permission_denied` when the key lacks `agent-runs:write`;
-         *     `unauthenticated` when the key is missing, revoked or expired; a 422 for a field the
-         *     caller can fix, such as an error message over its length; and a 409 when the run is
-         *     already closed or the same idempotency key is replayed with a different body. These
-         *     routes are published ahead of the runner that will fill them; until it ships they
-         *     answer 501.
+         *     belongs to another key, which are deliberately the same answer so that a run id cannot
+         *     be probed for; `invalid_transition` when the run is already closed and the values sent
+         *     differ from the ones it closed with; `permission_denied` when the key lacks
+         *     `agent-runs:write`; `unauthenticated` when the key is missing, revoked or expired; and
+         *     `validation_error` for a field the caller can fix, such as an error message over its
+         *     length.
          */
         patch: operations["finishAgentRun"];
         trace?: never;

@@ -68,8 +68,8 @@ CURSOR_NAME = "outbox"
 
 Handler = Callable[[OutboxEvent], None]
 
-# Kind (the row's `topic`) -> the handlers that act on it. Empty here and empty when the
-# chunk ships: a consumer registers its own where it is defined, never in this module.
+# Kind (the row's `topic`) -> the handlers that act on it. Empty here: a consumer registers
+# its own from its app's `ready()`, never in this module.
 _HANDLERS: dict[str, list[Handler]] = {}
 
 
@@ -80,8 +80,22 @@ class BatchResult:
 
 
 def register_handler(kind: str, fn: Handler) -> None:
-    """Call `fn` with every row of this kind, in order, inside the row's own zone."""
-    _HANDLERS.setdefault(kind, []).append(fn)
+    """Call `fn` with every row of this kind, in order, inside the row's own zone.
+
+    The same function twice is one registration. A consumer registers itself from its app's
+    `ready()`, and a test that empties this registry to isolate its own handlers puts that
+    registration back afterwards; counting it twice would run a row's handler twice, which
+    is exactly what the cursor exists to prevent.
+    """
+    registered = _HANDLERS.setdefault(kind, [])
+    if fn not in registered:
+        registered.append(fn)
+
+
+def handlers_for(kind: str) -> tuple[Handler, ...]:
+    """Who acts on this kind, in registration order. A consumer's own test reads it to prove
+    that it is the only handler for its kind."""
+    return tuple(_HANDLERS.get(kind, ()))
 
 
 def deliver_batch() -> BatchResult:
