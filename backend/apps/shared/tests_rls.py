@@ -91,6 +91,10 @@ MIXED_TABLES = {
     "login_event": "tenant_id",
     "outbox_event": "tenant_id",
     "problem_report": "tenant_id",
+    # The derived search index (SRC-01, H7). Its zone column is always NULL in R1, so
+    # `library_rows_visible` is what every bank reads a chunk through; the FOR ALL policy
+    # keeps a bank session out of the shared zone it would otherwise be able to rewrite.
+    "search_chunk": "owner_tenant_id",
     "source": "owner_tenant_id",
     "user_session": "tenant_id",
 }
@@ -362,9 +366,12 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
     moved into the library, and both rows still read exactly as before.
 
     agent_run is not here: it has carried this rule since the E5 fix and is proven, with the
-    key of its own zone, in apps/agents/tests_models.py. `source` is: it is the one watch
-    table with a zone column (WAT-06), and a bank must not be able to reach the shared source
-    registry the sweeps read.
+    key of its own zone, in apps/agents/tests_models.py. `search_chunk` is not here either:
+    it is written only inside `index_write()` (SRC-01, H7), so a row of it cannot be built
+    here without reaching through that fence, and the same four refusals are proven as
+    cw_app in apps/search/tests_index_model.py. `source` is: it is the one watch table with
+    a zone column (WAT-06), and a bank must not be able to reach the shared source registry
+    the sweeps read.
     """
 
     databases = {DEFAULT_DB_ALIAS, "app"}
@@ -386,7 +393,7 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
         self.own = self._rows(self.tenant_a.id)
 
     def _tables(self) -> list[str]:
-        return [table for table in sorted(MIXED_TABLES) if table != "agent_run"]
+        return [table for table in sorted(MIXED_TABLES) if table not in {"agent_run", "search_chunk"}]
 
     def _rows(self, tenant_id: uuid.UUID | None) -> dict[str, Any]:
         """One committed row per table in the zone `tenant_id` names."""

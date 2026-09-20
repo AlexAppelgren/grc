@@ -30,7 +30,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "CloseReason": ("close_reason", "CAS-02: dismissal vs completion; restorable or not"),
     "EvidenceKind": ("evidence_kind", "CAS-05: file, link or reference; storage branches"),
     "SubjectType": ("subject_type", "What an audit event or comment points at"),
-    "SearchSource": ("search_source", "SRC-02: keyword, vector or fused match kind"),
+    "SearchSource": (
+        "search_source",
+        "SRC-01: which library record a search chunk was built from; the rebuild and the "
+        "retrieval query both branch on it",
+    ),
     "AiPurpose": ("ai_purpose", "AUD-02: what a model call was for"),
     "AiStatus": ("ai_status", "AUD-02: review state of AI output"),
     "ReportStatus": ("report_status", "AUD-03: problem report lifecycle"),

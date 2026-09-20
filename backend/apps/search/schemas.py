@@ -69,6 +69,28 @@ _LANG = (
 )
 
 
+class SearchChunkMetadata(CamelSchema):
+    """The `metadata` column of `search_chunk` (apps/search/models.py): the facts a filter
+    compares before anything is ranked, copied onto the chunk from the library record it
+    was built from, so `POST /search` needs no join to honour a filter.
+
+    It is a database column and not part of the API, so it is stored by field name in
+    snake_case like every other column. `instrument_id` and `obligation_id` are the
+    records the chunk belongs to, `regime` and `term_ids` its taxonomy scope, `binding`
+    whether the instrument binds, and `jurisdiction` and `duty_type` the vocabulary keys
+    `SearchFilters` sends. Every one of them is a key or an id, never a label, so
+    relabelling a vocabulary row rewrites no chunk.
+    """
+
+    instrument_id: UUID | None = None
+    obligation_id: UUID | None = None
+    regime: str | None = None
+    binding: bool | None = None
+    term_ids: list[UUID] = Field(default_factory=list)
+    jurisdiction: str | None = None
+    duty_type: str | None = None
+
+
 class SearchHitType(enum.StrEnum):
     """Tier-one kind (apps/shared/kinds.py): what a hit points at. The reader opens an
     obligation, a provision or a change, and the screen branches on it.

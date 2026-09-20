@@ -47,5 +47,16 @@ the runtime fence.
 
 | Tranche | What | When |
 |---|---|---|
-| 1 | The model, migration, fence, guard and RLS tests | `c7-search-index` (a) |
-| 2 | The `apply.py` hook, `sources.py` and the rebuild command | `c7-search-index` (b) |
+| 1 | The model, migration, fence, guard and RLS tests | `c7-search-index-model`, built 2026-09-20 |
+| 2 | The `apply.py` hook, `sources.py` and the rebuild command | `c7-search-index-apply` |
+
+Built in tranche 1, where the record needs it: "the agents 0001 shape" is now
+what `rls_operations(mixed=True, column="owner_tenant_id")` emits for every
+mixed table, since hardening H15 split the write rule from the read rule
+(`apps/shared/migration_helpers.py`), so `search_chunk` takes the shared helper
+rather than a hand-written variant of it and the RLS guard holds it to the same
+shape as `agent_run` and `source`. `lang` is a foreign key to the seeded
+`language` rows and the generated `tsv` carries one branch per content language
+(`english`, `swedish`, `danish`, `norwegian`, `finnish`), so schema.sql's
+`CHECK (lang IN ('sv', 'en'))` is gone with its LIBRARY label (INPUT_DELTAS §3,
+§5).
