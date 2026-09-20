@@ -98,6 +98,7 @@ def approve_proposal(request: HttpRequest, proposal_id: str, body: ProposalAppro
         reviewer=reviewer,
         actor=actor_for(request, reviewer),
         note=body.note,
+        payload_overrides=body.payload_overrides,
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
     return logic.row(proposal)

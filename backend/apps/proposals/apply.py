@@ -27,11 +27,22 @@ import uuid
 from typing import Any
 
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
-from apps.library.models import Obligation, SubjectType, Verification, VerificationOutcome
+from apps.library.models import (
+    Obligation,
+    ObligationSummary,
+    ObligationTerm,
+    ObligationVersion,
+    SubjectType,
+    Verification,
+    VerificationOutcome,
+)
+from apps.library.reading import active_obligation, terms_of
 from apps.proposals.logic import parsed_payload
 from apps.proposals.models import Proposal, ProposalKind
 from apps.proposals.schemas import (
+    ProposalObligationVersionPayload,
     ProposalTermCreatePayload,
     ProposalTermUpdatePayload,
     ProposalVocabularyCreatePayload,
@@ -43,39 +54,50 @@ from apps.shared.audit import Actor, record
 from apps.shared.tenancy import library_write
 from apps.taxonomy.models import TaxonomyTerm, TaxonomyTermLabel, TermDimension
 from apps.taxonomy.registry import REGISTRY, VocabularyList
+from apps.search.logic import reindex
 from apps.taxonomy.tenant_lists_logic import extra_columns
 
 ORIGINAL_LANGUAGE = "en"
 
 
-def apply(proposal: Proposal, *, actor: Actor) -> None:
-    payload = parsed_payload(proposal.kind, proposal.payload)
+def apply(proposal: Proposal, *, actor: Actor, reviewer: Any, step_up: uuid.UUID) -> None:
+    """Write what the approved `proposal` asks for, as the reviewer corrected it.
+
+    `corrected_payload` is what the reviewer approved and what the library gets; the
+    proposal's own `payload` stays as it arrived, so the queue keeps both. `step_up` is the
+    assertion the reviewer just made: it goes on every audit row this writes, so the log of
+    a library change says which passkey opened the door (ID-06, AC-ID3).
+    """
+    payload = parsed_payload(proposal.kind, proposal.corrected_payload or proposal.payload)
     with library_write(f"proposal:{proposal.id}"):
         if proposal.kind == ProposalKind.VOCABULARY_CREATE.value:
             assert isinstance(payload, ProposalVocabularyCreatePayload)
-            _vocabulary_create(payload, proposal, actor)
+            _vocabulary_create(payload, proposal, actor, step_up)
         elif proposal.kind == ProposalKind.VOCABULARY_RELABEL.value:
             assert isinstance(payload, ProposalVocabularyRelabelPayload)
-            _vocabulary_relabel(payload, proposal, actor)
+            _vocabulary_relabel(payload, proposal, actor, step_up)
         elif proposal.kind == ProposalKind.VOCABULARY_RETIRE.value:
             assert isinstance(payload, ProposalVocabularyRetirePayload)
-            _vocabulary_active(payload, proposal, actor, active=False)
+            _vocabulary_active(payload, proposal, actor, step_up, active=False)
         elif proposal.kind == ProposalKind.VOCABULARY_RESTORE.value:
             assert isinstance(payload, ProposalVocabularyRetirePayload)
-            _vocabulary_active(payload, proposal, actor, active=True)
+            _vocabulary_active(payload, proposal, actor, step_up, active=True)
         elif proposal.kind == ProposalKind.VOCABULARY_MERGE.value:
             assert isinstance(payload, ProposalVocabularyMergePayload)
-            _vocabulary_merge(payload, proposal, actor)
+            _vocabulary_merge(payload, proposal, actor, step_up)
         elif proposal.kind == ProposalKind.TERM_CREATE.value:
             assert isinstance(payload, ProposalTermCreatePayload)
-            _term_create(payload, proposal, actor)
+            _term_create(payload, proposal, actor, step_up)
         elif proposal.kind == ProposalKind.TERM_UPDATE.value:
             assert isinstance(payload, ProposalTermUpdatePayload)
-            _term_update(payload, proposal, actor)
+            _term_update(payload, proposal, actor, step_up)
+        elif proposal.kind == ProposalKind.NEW_OBLIGATION_VERSION.value:
+            assert isinstance(payload, ProposalObligationVersionPayload)
+            _obligation_version(payload, proposal, actor, reviewer, step_up)
         else:
-            # Reached by new_obligation_version, which enters the queue before the apply
-            # that writes it exists: an approval of one is refused where the reviewer can
-            # see it, never applied in part and never silently ignored.
+            # Reached by a kind that enters the queue before the apply that writes it
+            # exists: an approval of one is refused where the reviewer can see it, never
+            # applied in part and never silently ignored.
             raise ValidationError(f"{proposal.kind!r} cannot be applied yet.", code="unknown_key")
 
 
@@ -131,6 +153,99 @@ def apply_reverification(
 
 
 # ---------------------------------------------------------------------------------------
+# Obligation versions (INV-04, INV-05, PRO-02)
+# ---------------------------------------------------------------------------------------
+def _scope(obligation: Obligation) -> list[str]:
+    """The obligation's scope facets as the payload writes them, in the order a reader
+    sees them, so the audit row shows the same spelling the proposal used."""
+    return [
+        f"{link.term.dimension.key}:{link.term.key}"
+        for link in ObligationTerm.objects.filter(obligation=obligation).select_related("term__dimension")
+    ]
+
+
+def _obligation_version(
+    payload: ProposalObligationVersionPayload, proposal: Proposal, actor: Actor, reviewer: Any, step_up: uuid.UUID
+) -> None:
+    """Add the version the proposal asks for, and nothing else (INV-04, PRO-02).
+
+    Nothing is overwritten: the summary in force from a date is a new numbered row with
+    its own translations, and every earlier version stays exactly as it was written, which
+    is what "as of" and the diff read. The obligation is checked again here, at approval
+    time rather than at proposal time, because it may have been retired while the proposal
+    waited.
+
+    The scope is the one thing a version replaces rather than adds to: a term list belongs
+    to the obligation, not to a version, so when the payload carries one the links are
+    rewritten and the audit row holds the scope before and after. A payload without
+    `terms` leaves the scope alone, which is not the same as a payload with an empty list.
+
+    The search index moves inside this transaction (`reindex`), so an index that cannot be
+    written takes the version down with it and leaves the proposal open.
+    """
+    # The target is on the proposal, and creation refused one without it (`logic.
+    # _validate_obligation_target`); it is read again here against the library as it is
+    # now, because the obligation may have been retired while the proposal waited.
+    assert proposal.target_id is not None
+    obligation = active_obligation(proposal.target_id)
+    highest = (
+        ObligationVersion.objects.filter(obligation=obligation)
+        .order_by("-version_number")
+        .values_list("version_number", flat=True)
+        .first()
+    )
+    version = ObligationVersion.objects.create(
+        obligation=obligation,
+        version_number=(highest or 0) + 1,
+        effective_from=payload.effective_from,
+        effective_from_precision=payload.effective_from_precision,
+        caused_by_change=proposal.change_id,
+        applied_by_proposal=proposal,
+        approved_by=reviewer,
+        approved_at=timezone.now(),
+    )
+    for language, text in payload.summaries.items():
+        # The language it was written in is the original; the others are translations, and
+        # they stay labelled machine-made until a person confirms them (INV-05, AUD-02).
+        is_original = language == payload.original_language
+        ObligationSummary.objects.create(
+            version=version,
+            language_id=language,
+            text=text,
+            is_original=is_original,
+            is_machine=payload.is_machine and not is_original,
+        )
+    scope_before = scope_after = None
+    if payload.terms is not None:
+        scope_before = _scope(obligation)
+        ObligationTerm.objects.filter(obligation=obligation).delete()
+        for term in terms_of(payload.terms):
+            ObligationTerm.objects.create(obligation=obligation, term=term)
+        scope_after = _scope(obligation)
+    reindex(obligation.id)
+    record(
+        action="obligation.version_applied",
+        actor=actor,
+        subject_type="obligation",
+        subject_id=obligation.id,
+        subject_title=obligation.stable_key,
+        summary=f"Filed version {version.version_number} of {obligation.stable_key} (proposal {proposal.id}).",
+        tenant_id=None,
+        before={"versionNumber": highest, "terms": scope_before},
+        after={
+            "versionNumber": version.version_number,
+            "versionId": str(version.id),
+            "effectiveFrom": payload.effective_from.isoformat() if payload.effective_from else None,
+            "effectiveFromPrecision": payload.effective_from_precision,
+            "languages": sorted(payload.summaries),
+            "terms": scope_after,
+            "proposal": str(proposal.id),
+        },
+        step_up_assertion_id=step_up,
+    )
+
+
+# ---------------------------------------------------------------------------------------
 # Vocabulary rows
 # ---------------------------------------------------------------------------------------
 def _entry(name: str) -> VocabularyList:
@@ -164,7 +279,7 @@ def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str]) -> No
             )
 
 
-def _vocabulary_create(payload: ProposalVocabularyCreatePayload, proposal: Proposal, actor: Actor) -> None:
+def _vocabulary_create(payload: ProposalVocabularyCreatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID) -> None:
     entry = _entry(payload.list)
     if entry.model._default_manager.filter(key__iexact=payload.key).exists():
         raise ValidationError(f"{payload.key!r} already exists on {payload.list!r}.", code="duplicate_key")
@@ -190,10 +305,11 @@ def _vocabulary_create(payload: ProposalVocabularyCreatePayload, proposal: Propo
         summary=f"Added {payload.key} to {payload.list} (proposal {proposal.id}).",
         tenant_id=None,
         after={"list": payload.list, "key": payload.key, "labels": payload.labels, "proposal": str(proposal.id)},
+        step_up_assertion_id=step_up,
     )
 
 
-def _vocabulary_relabel(payload: ProposalVocabularyRelabelPayload, proposal: Proposal, actor: Actor) -> None:
+def _vocabulary_relabel(payload: ProposalVocabularyRelabelPayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID) -> None:
     entry = _entry(payload.list)
     row = _row(entry, payload.key)
     before = {label.language: label.text for label in entry.label_model._default_manager.filter(vocabulary=row)}
@@ -217,10 +333,11 @@ def _vocabulary_relabel(payload: ProposalVocabularyRelabelPayload, proposal: Pro
         tenant_id=None,
         before={"labels": before},
         after={"labels": {**before, **payload.labels}, "proposal": str(proposal.id)},
+        step_up_assertion_id=step_up,
     )
 
 
-def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Proposal, actor: Actor, *, active: bool) -> None:
+def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID, *, active: bool) -> None:
     entry = _entry(payload.list)
     row = _row(entry, payload.key)
     if not active and row.is_system:
@@ -242,10 +359,11 @@ def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Propo
         tenant_id=None,
         before={"active": not active},
         after={"active": active, "proposal": str(proposal.id)},
+        step_up_assertion_id=step_up,
     )
 
 
-def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposal, actor: Actor) -> None:
+def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID) -> None:
     entry = _entry(payload.list)
     source = _row(entry, payload.key)
     target = _row(entry, payload.into)
@@ -265,6 +383,7 @@ def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposa
         tenant_id=None,
         before={"from": payload.key, "active": True},
         after={"into": payload.into, "repointed": repointed, "active": False, "proposal": str(proposal.id)},
+        step_up_assertion_id=step_up,
     )
 
 
@@ -293,7 +412,7 @@ def _term_labels(term: TaxonomyTerm, labels: dict[str, str]) -> None:
             TaxonomyTermLabel.objects.create(term=term, language=language, text=text, is_original=language == original)
 
 
-def _term_create(payload: ProposalTermCreatePayload, proposal: Proposal, actor: Actor) -> None:
+def _term_create(payload: ProposalTermCreatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID) -> None:
     dimension = _dimension(payload.dimension)
     if TaxonomyTerm.objects.filter(dimension=dimension, key__iexact=payload.key).exists():
         raise ValidationError(f"{payload.key!r} already exists in {payload.dimension!r}.", code="duplicate_key")
@@ -324,10 +443,11 @@ def _term_create(payload: ProposalTermCreatePayload, proposal: Proposal, actor: 
         summary=f"Added the term {payload.key} to {payload.dimension} (proposal {proposal.id}).",
         tenant_id=None,
         after={"dimension": payload.dimension, "key": payload.key, "labels": payload.labels, "proposal": str(proposal.id)},
+        step_up_assertion_id=step_up,
     )
 
 
-def _term_update(payload: ProposalTermUpdatePayload, proposal: Proposal, actor: Actor) -> None:
+def _term_update(payload: ProposalTermUpdatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID) -> None:
     dimension = _dimension(payload.dimension)
     term = TaxonomyTerm.objects.filter(dimension=dimension, key=payload.key).order_by("sort_order", "key").first()
     if term is None:
@@ -351,4 +471,5 @@ def _term_update(payload: ProposalTermUpdatePayload, proposal: Proposal, actor: 
         tenant_id=None,
         before={"labels": before},
         after={"labels": {**before, **payload.labels}, "proposal": str(proposal.id)},
+        step_up_assertion_id=step_up,
     )
