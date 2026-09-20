@@ -32,6 +32,7 @@ from apps.shared import factories, tenancy
 from apps.shared.e2e_seed import SeedRefused
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.tenancy import LibraryWriteRefused, library_write
+from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.models import InstrumentLevel
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 
@@ -242,3 +243,26 @@ class SharedOrMineIsolation(TransactionTestCase):
         with transaction.atomic(using="app"):
             tenancy.activate(self.tenant_a.id, using="app")
             self.assertEqual(ProblemReport.objects.using("app").get().status, ReportStatus.OPEN.value)
+
+
+class JurisdictionReachTests(ScenarioTestCase):
+    """Jurisdiction.parent is "whose rules reach this one" (D-28, ADR 0026), so Norway
+    points at the EU under the EEA Agreement even though it is outside the Union."""
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_jurisdictions()
+        self.tenant = factories.tenant(slug="reach")
+        self.activate(self.tenant)
+        self.headers = sign_in(factories.member(self.tenant).user, tenant=self.tenant)
+
+    def test_the_jurisdictions_read_gives_every_seeded_country_the_eu_as_its_parent(self) -> None:
+        response = self.client.get("/api/v1/reference/jurisdictions", **self.headers)
+        self.assertEqual(response.status_code, 200, response.content)
+        parents = {row["key"]: row["parentKey"] for row in response.json()}
+        self.assertEqual(parents, {"eu": None, "se": "eu", "dk": "eu", "no": "eu", "fi": "eu"})
+
+    def test_a_second_seed_run_leaves_the_reach_alone(self) -> None:
+        seed_jurisdictions()
+        norway = Jurisdiction.objects.select_related("parent").get(key="no")
+        self.assertEqual(norway.parent and norway.parent.key, "eu")
