@@ -225,6 +225,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/console/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Console Tenants */
+        get: operations["listConsoleTenants"];
+        put?: never;
+        /** Create Console Tenant */
+        post: operations["createConsoleTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/console/tenants/{tenant_id}/members/{user_id}/reissue-enrolment": {
         parameters: {
             query?: never;
@@ -1218,6 +1236,61 @@ export interface components {
              * @default
              */
             ticketRef: string;
+        };
+        /**
+         * ConsoleTenantCreateBody
+         * @description Create a bank and invite its first administrator in one action (ADM-02, ID-01).
+         *     The address must be the administrator's own: platform staff are separate accounts.
+         */
+        ConsoleTenantCreateBody: {
+            /** Contentlanguages */
+            contentLanguages: string[];
+            /** Defaultlanguage */
+            defaultLanguage: string;
+            /** Firstadminemail */
+            firstAdminEmail: string;
+            /**
+             * Firstadmintitle
+             * @default
+             */
+            firstAdminTitle: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Timezone */
+            timezone: string;
+        };
+        /** ConsoleTenantPage */
+        ConsoleTenantPage: {
+            /** Items */
+            items: components["schemas"]["ConsoleTenantRow"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ConsoleTenantRow
+         * @description One bank as the platform console lists it (ADM-02). No member count and no
+         *     tenant-side content: a platform session reads the tenant row and nothing under it.
+         */
+        ConsoleTenantRow: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            defaultLanguage: components["schemas"]["RoleRef"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Status */
+            status: string;
         };
         /**
          * Empty
@@ -3032,6 +3105,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StepUpResult"];
+                };
+            };
+        };
+    };
+    listConsoleTenants: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleTenantPage"];
+                };
+            };
+        };
+    };
+    createConsoleTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsoleTenantCreateBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleTenantRow"];
                 };
             };
         };

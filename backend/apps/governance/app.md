@@ -37,7 +37,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 | pending |
 | AUD-03 | Problem reports resolved by a proposal, closing the loop to the agents | S | R1 | pending |
 | AUD-04 | Retention per tenant with a purge that respects append-only tables | S | R3 | pending |
-| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, problem reports, evaluation sets, tenants and plans, support access, system health | M | R1 to R3 | pending |
+| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, problem reports, evaluation sets, tenants and plans, support access, system health | M | R1 to R3 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -138,12 +138,18 @@ Then each has a "shared or mine" policy, enabled and forced
 ### ADM-S4 — The platform console offers each surface to the platform role that owns it `@integration` `@e2e` (ADM-02)
 ```gherkin
 Given a library editor and a platform admin
-When the editor opens the console
-Then the proposal queue, library vocabularies, sources, languages and jurisdictions, problem reports and evaluation sets are reachable
-And tenants and plans, agent definitions, support access and system health are absent
-When the platform admin opens it
-Then the reverse holds, and each direct endpoint answers 403 to the wrong role with requiredPermission named
+When each of them calls every console destination and endpoint that exists
+Then the proposal queue, its detail, approve and reject answer to the library editor and 403 the platform admin with requiredPermission "proposals.review"
+And the tenants list, creating a tenant and re-issuing an administrator's enrolment answer to the platform admin and 403 the library editor with the permission each wanted
+And creating a proposal, whose caller a logic gate decides, 403s the platform admin with requiredPermission named
+And each console destination the other role holds is absent from that role's navigation
 ```
+
+The surfaces this scenario does not yet reach, each with what builds it: sources
+(chunk 5), evaluation sets (chunk 7), agent definitions (chunk 11), system health
+(chunk 14), support access (TEN-S6), plans (NFR-S17 to S19), and language and
+jurisdiction edits (their card; jurisdictions are read-only on the vocabularies
+screen).
 
 ### ADM-S5 — System health names what is wrong `@integration` `@e2e` (ADM-02)
 ```gherkin
@@ -155,11 +161,18 @@ When the worker is back
 Then /health/ answers 200 with every component ok and the worker ping bounded
 ```
 
-### ADM-S6 — Tenants, plans and support access are managed from the console `@integration` `@e2e` (ADM-02)
+### ADM-S6 — A tenant is created from the console with its first administrator invited `@integration` `@e2e` (ADM-02, ID-01, TEN-01)
 ```gherkin
 Given a platform admin with tenants.manage
-When they create a tenant, assign a plan and invite its first admin
-Then the tenant exists with the plan's limits and the invitation is sent
-When they request support access to it
-Then the request is visible to the tenant's admins and grants nothing until a tenant admin approves it
+When they create a tenant with a name, a short name, a timezone, a language order and the first administrator's address
+Then the tenant exists with its system roles, its own vocabularies and its content languages
+And the console's tenant list holds it
+And one pending administrator invitation is sent to that address
+And the creation is audited in the new tenant's own log
+When they create another tenant with the same short name
+Then the answer is 409
 ```
+
+Plans and their limits are NFR-S17 to S19; requesting support access to a tenant is
+TEN-S6. The address must be the administrator's own: platform staff are separate
+accounts, as `bootstrap_platform` requires from the other side.

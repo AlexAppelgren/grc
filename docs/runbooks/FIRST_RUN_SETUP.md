@@ -33,8 +33,8 @@ defaults when the tenant is created, not by the deploy.
 | 3 | Deploy `worker`, `beat`, `web`; attach the test host to `web` and set `WEBAUTHN_RP_ID` to it (`DNS_DOMAINS.md`) | Railway | Project owner | 2 |
 | 4 | `python manage.py bootstrap_platform --admin-email you@…` on the `api` service (the command lands with chunk 1). It creates the first platform admin invitation and prints nothing secret; the link arrives by email | `api` shell | None (a management command; it refuses a person who already holds a passkey, and any address a bank knows: platform staff are separate accounts) | 3, a working mail sender |
 | 5 | Open the emailed link, enter the code, enrol a passkey, add a second passkey when prompted | Browser | The enrolment session only | 4 |
-| 6 | Create the first tenant with its plan, timezone and language order | Platform console, Tenants | `tenants.manage` | 5 |
-| 7 | Invite the tenant's first admin (the Admin system role) | Platform console, Tenants | `tenants.manage` | 6 |
+| 6 | Create the first tenant: its name, short name, timezone, default language and language order, and the first administrator's address. One action writes the tenant with its system roles, its own vocabularies and its content languages, invites that person with the Admin system role and emails them the enrolment link. The address must be their own: platform staff are separate accounts, so an address that already holds a platform role is refused. Plans are R3 (NFR-05), so nothing is assigned here | Platform console, Tenants | `tenants.manage` | 5 |
+| 7 | Confirm the tenant is in the console's tenant list with its status and default language. A second creation with the same short name answers 409, so retry with a different one rather than creating a duplicate | Platform console, Tenants | `tenants.manage` | 6 |
 | 8 | The tenant admin opens the link, enters the code, enrols a passkey | Browser | The enrolment session only | 7 |
 | 9 | Set the tenant profile: name, timezone, default languages; work through the onboarding checklist | Tenant admin, Organisation | Admin system role (`members.manage` for people, `vocab.manage` for lists, `security.manage` for policy) | 8 |
 | 10 | Invite members with roles: at least one compliance officer and one approver, because four eyes needs two people | Tenant admin, Members | `members.manage` | 9 |
@@ -61,7 +61,7 @@ defaults when the tenant is created, not by the deploy.
 |---|---|
 | 1 | Members, invitations, re-enrolment, sessions (steps 7 to 10 become real) |
 | 2 | Vocabularies and footprint (steps 11 and 12) |
-| 4 | Library editors, proposal queue, sources (step 13) |
+| 4 | Tenants with their first administrator (steps 6 and 7), library editors, proposal queue, sources (step 13) |
 | 5 | API keys (step 14) |
 | 11 | Agents (step 15), credential and session policy |
 | 12 | Data: import, export, retention |

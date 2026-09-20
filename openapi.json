@@ -446,6 +446,128 @@
         "title": "ConsoleReissueBody",
         "type": "object"
       },
+      "ConsoleTenantCreateBody": {
+        "description": "Create a bank and invite its first administrator in one action (ADM-02, ID-01).\nThe address must be the administrator's own: platform staff are separate accounts.",
+        "properties": {
+          "contentLanguages": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Contentlanguages",
+            "type": "array"
+          },
+          "defaultLanguage": {
+            "maxLength": 8,
+            "title": "Defaultlanguage",
+            "type": "string"
+          },
+          "firstAdminEmail": {
+            "maxLength": 254,
+            "title": "Firstadminemail",
+            "type": "string"
+          },
+          "firstAdminTitle": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Firstadmintitle",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "maxLength": 80,
+            "title": "Slug",
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 64,
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "slug",
+          "timezone",
+          "defaultLanguage",
+          "contentLanguages",
+          "firstAdminEmail"
+        ],
+        "title": "ConsoleTenantCreateBody",
+        "type": "object"
+      },
+      "ConsoleTenantPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ConsoleTenantRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ConsoleTenantPage",
+        "type": "object"
+      },
+      "ConsoleTenantRow": {
+        "description": "One bank as the platform console lists it (ADM-02). No member count and no\ntenant-side content: a platform session reads the tenant row and nothing under it.",
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "defaultLanguage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoleRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "status",
+          "defaultLanguage",
+          "createdAt"
+        ],
+        "title": "ConsoleTenantRow",
+        "type": "object"
+      },
       "Empty": {
         "description": "`{}`: the neutral answer of the code request and the accepted re-issue.",
         "properties": {},
@@ -4706,6 +4828,92 @@
         "summary": "Step Up Verify",
         "tags": [
           "Identity"
+        ]
+      }
+    },
+    "/api/v1/console/tenants": {
+      "get": {
+        "operationId": "listConsoleTenants",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsoleTenantPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Console Tenants",
+        "tags": [
+          "Tenants"
+        ]
+      },
+      "post": {
+        "operationId": "createConsoleTenant",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsoleTenantCreateBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsoleTenantRow"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Create Console Tenant",
+        "tags": [
+          "Tenants"
         ]
       }
     },

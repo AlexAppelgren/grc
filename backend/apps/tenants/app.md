@@ -130,6 +130,8 @@ Then the grant appears on the tenant's security screen
 And every read under it lands in the support access log with the platform user and the purpose
 When the two hours pass
 Then the platform admin's reads answer 404 again
+When a platform admin requests support access from the console
+Then the request is visible to the tenant's admins and grants nothing until a tenant admin approves it
 ```
 
 ### TEN-S7 — J-8: tenant B cannot see tenant A `@e2e` (TEN-06, COL-04, J-8)
