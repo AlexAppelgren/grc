@@ -17,16 +17,27 @@ from typing import Any
 from django.core.management import call_command
 
 from apps.identity.models import User
-from apps.library.models import Language
+from apps.library.models import Jurisdiction, Language
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories
+from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
-from apps.taxonomy.models import RiskRating
-from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+from apps.taxonomy.models import RiskRating, TaxonomyTerm
+from apps.taxonomy.seeds import (
+    JURISDICTION_DIMENSION,
+    MIRRORED_JURISDICTION_KINDS,
+    seed_library_vocabularies,
+    seed_taxonomy_terms,
+    seed_term_dimensions,
+)
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from config.api import api
 
 V1 = "/api/v1"
+# The kind f03-T30 seeds the International row under (D-38): no bank operates there, so it
+# must stay out of the mirror. Written here rather than imported because that row, and the
+# JurisdictionKind member it carries, land with that task.
+UNOPERATED_JURISDICTION_KIND = "international"
 # schema v0.3's `proposal.rejection_code` CHECK, in its order: the only list the inputs define.
 REJECTION_REASONS = ["wrong_fact", "wrong_scope", "bad_source", "duplicate", "not_relevant", "poor_wording", "other"]
 
@@ -243,3 +254,91 @@ class RejectionReasons(ScenarioTestCase):
         rows = self._rows()
         self.assertEqual(list(rows), REJECTION_REASONS)
         self.assertEqual(rows["wrong_fact"]["labels"], {"en": "Factual error", "sv": "Felaktig uppgift"})
+
+
+class JurisdictionTermMirror(ScenarioTestCase):
+    """The jurisdiction dimension's terms mirror the jurisdiction rows (FP-04, D-28,
+    ADR 0026, the first half of FP-S12): the reference seed owns them, so nobody keeps two
+    lists in step by hand, and a jurisdiction no bank operates in gets no term."""
+
+    def setUp(self) -> None:
+        call_command("seed_reference", stdout=StringIO())
+        self.tenant = factories.tenant(slug="bank")
+        self.activate(self.tenant)
+        ensure_tenant_vocabularies(self.tenant)
+        self.admin = sign_in(factories.member(self.tenant, roles=("admin",)).user, tenant=self.tenant)
+
+    def _terms(self) -> dict[str, TaxonomyTerm]:
+        rows = TaxonomyTerm.objects.filter(dimension__key=JURISDICTION_DIMENSION).select_related("parent")
+        return {term.key: term for term in rows}
+
+    def _mirror(self) -> list[tuple[Any, ...]]:
+        return sorted(
+            (
+                term.id,
+                term.key,
+                term.jurisdiction_id,
+                term.parent and term.parent.key,
+                term.active,
+                term.sort_order,
+                tuple(sorted((label.language, label.text) for label in term.labels.all())),
+            )
+            for term in self._terms().values()
+        )
+
+    def test_the_mirror_is_exact_in_both_directions(self) -> None:
+        terms = self._terms()
+        mirrored = {row.key: row for row in Jurisdiction.objects.filter(kind__in=MIRRORED_JURISDICTION_KINDS).select_related("parent")}
+        self.assertEqual(set(terms), set(mirrored), "every mirrored jurisdiction has a term, and no term invents one")
+        for key, term in terms.items():
+            with self.subTest(key=key):
+                row = mirrored[key]
+                self.assertEqual(term.jurisdiction_id, row.id, "the term names the row it mirrors")
+                self.assertEqual(term.active, row.active)
+                self.assertTrue(term.is_system)
+                self.assertEqual(term.parent and term.parent.key, row.parent and row.parent.key)
+                self.assertEqual(
+                    {label.language: label.text for label in term.labels.all()},
+                    {label.language: label.text for label in row.labels.all()},
+                )
+        self.assertEqual(terms["no"].parent and terms["no"].parent.key, "eu", "EU rules reach Norway (D-28)")
+        linked = set(TaxonomyTerm.objects.exclude(jurisdiction=None).values_list("dimension__key", flat=True))
+        self.assertEqual(linked, {JURISDICTION_DIMENSION}, "no other dimension holds a mirrored term")
+
+    def test_the_regulatory_scope_page_lists_the_five_jurisdictions(self) -> None:
+        listed = self.client.get(f"{V1}/taxonomy/terms?dimension={JURISDICTION_DIMENSION}", **self.admin)
+        self.assertEqual(listed.status_code, 200, listed.content)
+        rows = listed.json()["items"]
+        self.assertEqual([row["key"] for row in rows], ["eu", "se", "dk", "no", "fi"])
+        self.assertEqual([row["label"] for row in rows], ["European Union", "Sweden", "Denmark", "Norway", "Finland"])
+        self.assertEqual([row["parentKey"] for row in rows], [None, "eu", "eu", "eu", "eu"])
+        self.assertTrue(all(row["isSystem"] for row in rows))
+
+    def test_a_jurisdiction_nobody_operates_in_is_not_mirrored(self) -> None:
+        """f03-T30 adds the International row that standards bodies issue under. It must
+        get no term: a tenant naming its markets would otherwise stop seeing standards
+        (D-38, ADR 0032)."""
+        Jurisdiction.objects.create(
+            key="intl",
+            kind=UNOPERATED_JURISDICTION_KIND,
+            default_language=Language.objects.get(key="en"),
+            sort_order=len(self._terms()),
+            is_system=True,
+        )
+        seed_taxonomy_terms()
+        self.assertEqual(set(self._terms()), {"eu", "se", "dk", "no", "fi"})
+
+    def test_a_second_seed_run_changes_nothing(self) -> None:
+        before = self._mirror()
+        call_command("seed_reference", stdout=StringIO())
+        self.assertEqual(self._mirror(), before)
+
+    def test_a_term_written_by_hand_is_adopted_rather_than_duplicated(self) -> None:
+        stray = self._terms()["se"]
+        with library_write("test"):
+            TaxonomyTerm.objects.filter(id=stray.id).update(jurisdiction=None, parent=None, is_system=False)
+        seed_taxonomy_terms()
+        adopted = self._terms()["se"]
+        self.assertEqual(adopted.id, stray.id, "the mirror adopts the row that is there")
+        self.assertEqual((adopted.jurisdiction_id, adopted.parent and adopted.parent.key), (stray.jurisdiction_id, "eu"))
+        self.assertEqual(TaxonomyTerm.objects.filter(dimension__key=JURISDICTION_DIMENSION, key="se").count(), 1)

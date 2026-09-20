@@ -352,11 +352,16 @@ class TaxonomyTerm(LibraryModel):
     """One term of one dimension (schema v0.3 `taxonomy_term`): immutable key unique per
     dimension, labels per language, an optional parent, retired never deleted. A new term
     is a proposal (VOC-07). Not a `Vocabulary` subclass because a term list has no
-    default row and its kind is its dimension."""
+    default row and its kind is its dimension.
+
+    `jurisdiction` is set on the terms that mirror a jurisdiction row (FP-04, D-28,
+    ADR 0026): the reference seed keeps them in step, and the rules that refuse a proposal
+    or a tagging in a mirrored dimension read this column rather than a dimension key."""
 
     dimension = models.ForeignKey(TermDimension, on_delete=models.PROTECT, related_name="terms")
     key = models.SlugField(max_length=80)
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT, related_name="children")
+    jurisdiction = models.OneToOneField("library.Jurisdiction", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     usage_note = models.TextField(blank=True)
     sort_order = models.PositiveIntegerField(default=0)
     active = models.BooleanField(default=True)

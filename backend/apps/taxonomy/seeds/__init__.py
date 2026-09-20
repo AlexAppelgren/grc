@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from apps.library.models import Jurisdiction
+from apps.library.models import Jurisdiction, JurisdictionKind
 from apps.shared.tenancy import library_write
 from apps.taxonomy.models import (
     ChangeLifecycleKind,
@@ -29,6 +29,12 @@ from apps.taxonomy.seeds import fixture
 
 SEED_REASON = "seed_reference"
 ORIGINAL_LANGUAGE = "en"
+JURISDICTION_DIMENSION = "jurisdiction"
+# The jurisdiction kinds the `jurisdiction` dimension mirrors (FP-04, D-28, ADR 0026). Its
+# terms are markets, so only the jurisdictions a bank can operate in get one; the row for
+# international standards bodies is a market nobody operates in and is left unmirrored
+# (D-38, ADR 0032), which is what keeps a standard visible to a tenant that names markets.
+MIRRORED_JURISDICTION_KINDS = (JurisdictionKind.SUPRANATIONAL.value, JurisdictionKind.COUNTRY.value)
 
 
 @dataclass(frozen=True)
@@ -152,9 +158,44 @@ def seed_term_dimensions() -> int:
         return _ensure_rows("term_dimension", default_key, rows)
 
 
+def _mirror_jurisdiction_terms(dimension: TermDimension) -> int:
+    """One term per mirrored jurisdiction row (FP-04, D-28, ADR 0026): the same key, the
+    same labels, the term of the jurisdiction whose rules reach it as its parent, and
+    `active` mirrored. A term someone wrote by hand under the same key is adopted rather
+    than duplicated, and the whole mirror is re-applied on every run, so the two lists
+    cannot drift apart. Nothing is deleted here: a jurisdiction that goes inactive takes
+    its term inactive with it."""
+    # Parents first, so a country's term can point at the term of the jurisdiction whose
+    # rules reach it however the rows are ordered.
+    rows = sorted(
+        Jurisdiction.objects.filter(kind__in=MIRRORED_JURISDICTION_KINDS).select_related("parent").prefetch_related("labels"),
+        key=lambda row: (row.parent_id is not None, row.sort_order, row.key),
+    )
+    terms: dict[str, TaxonomyTerm] = {}
+    for row in rows:
+        term, _ = TaxonomyTerm.objects.update_or_create(
+            dimension=dimension,
+            key=row.key,
+            defaults={
+                "jurisdiction": row,
+                "parent": terms.get(row.parent.key) if row.parent is not None else None,
+                "sort_order": row.sort_order,
+                "is_system": True,
+                "active": row.active,
+            },
+        )
+        for label in row.labels.all():
+            TaxonomyTermLabel.objects.update_or_create(
+                term=term, language=label.language, defaults={"text": label.text, "is_original": label.is_original}
+            )
+        terms[row.key] = term
+    return len(terms)
+
+
 def seed_taxonomy_terms() -> int:
-    """The prototype's taxonomy terms per dimension. Without them no footprint can be set
-    and no obligation can be scoped."""
+    """The prototype's taxonomy terms per dimension, and the jurisdiction dimension's
+    mirror of the jurisdiction rows. Without them no footprint can be set, no obligation
+    can be scoped and no market can be named."""
     dimensions = {row.key: row for row in TermDimension.objects.all()}
     count = 0
     with library_write(SEED_REASON):
@@ -171,4 +212,5 @@ def seed_taxonomy_terms() -> int:
                     if text:
                         TaxonomyTermLabel.objects.create(term=term, language=language, text=text, is_original=language == ORIGINAL_LANGUAGE)
             count += 1
+        count += _mirror_jurisdiction_terms(dimensions[JURISDICTION_DIMENSION])
     return count
