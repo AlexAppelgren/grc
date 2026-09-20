@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any
+from typing import Any, ClassVar
 
 from django.conf import settings
 from django.test import TestCase
@@ -182,11 +182,13 @@ class SearchRequestValidationTests(SearchApiTestCase):
         self.assertEqual(response.status_code, 422)
 
     def test_the_screens_jurisdiction_and_duty_type_filters_are_accepted_as_keys(self) -> None:
-        # SRC-S3 filters by jurisdiction "SE" and duty type "reporting", both keys.
+        # SRC-S3 filters by jurisdiction and duty type, both keys and never labels. The
+        # keys are the seeded rows' own: jurisdictions are seeded lowercased (`se`, not
+        # the fixture's display form "SE"), so the contract's example is the real key.
         with stub_session(user_principal(permissions={perms.SEARCH_USE}, tenant_id=uuid.uuid4())):
             response = self.post(
                 SEARCH,
-                {"q": "custody", "filters": {"jurisdiction": "SE", "dutyType": "reporting"}},
+                {"q": "custody", "filters": {"jurisdiction": "se", "dutyType": "reporting"}},
                 SESSION_HEADERS,
             )
         self.assertEqual(response.status_code, 501)
@@ -206,3 +208,144 @@ class SearchOperationsAreRegisteredTests(TestCase):
         self.assertEqual(registered.get(("POST", "/search/similar")), "findSimilar")
         self.assertEqual(registered.get(("POST", "/ask")), "ask")
         self.assertEqual(registered.get(("POST", "/answers/{answer_id}/feedback")), "rateAnswer")
+
+
+class ContractDocumentationTests(TestCase):
+    """Alex's API rule of 2026-09-20, proved over the four search operations.
+
+    Every property of every shape this app declares says what the fact means to a bank,
+    where it comes from and what a reader must not conclude from it; every value set is
+    spelled out in words; every limit that matters is in words as well as in the schema
+    keywords; and every shape carries a realistic example from the prototype's data.
+
+    Proven to fail 2026-09-20 by deleting the description of `SearchHit.score` (the
+    property assertion named it), by emptying `SearchMatchKind`'s member list (the kind
+    assertion named `concept`), and by removing `SearchRequest`'s example.
+    """
+
+    schema: ClassVar[dict[str, Any]]
+    components: ClassVar[dict[str, Any]]
+    ours: ClassVar[dict[str, Any]]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        from apps.search import schemas as search_schemas
+        from config.api import api
+
+        cls.schema = api.get_openapi_schema()
+        cls.components = cls.schema["components"]["schemas"]
+        # Only the shapes this app declares: a shape another app owns is documented there.
+        cls.ours = {
+            name: body
+            for name, body in cls.components.items()
+            if getattr(getattr(search_schemas, name, None), "__module__", None) == search_schemas.__name__
+        }
+
+    def test_the_app_declares_the_shapes_the_contract_names(self) -> None:
+        # A guard that matched nothing would pass every assertion below.
+        self.assertEqual(
+            set(self.ours),
+            {
+                "SearchHitType",
+                "SearchMatchKind",
+                "SearchFilters",
+                "SearchRequest",
+                "SimilarRequest",
+                "SearchHit",
+                "SearchResponse",
+                "AskRequest",
+                "AnswerCitation",
+                "AnswerStatement",
+                "Answer",
+                "AskStartEvent",
+                "AskStatementEvent",
+                "AskAnswerEvent",
+                "AskProblemEvent",
+                "AnswerFeedbackKind",
+                "AnswerFeedbackBody",
+            },
+        )
+
+    def test_every_property_says_what_it_means_where_it_came_from_and_what_it_is_not(self) -> None:
+        for name, body in sorted(self.ours.items()):
+            for field, spec in sorted(body.get("properties", {}).items()):
+                with self.subTest(schema=name, field=field):
+                    description = spec.get("description", "")
+                    self.assertGreater(len(description), 80, "a property needs more than a restated name")
+                    self.assertIn("Source:", description, "say where the fact comes from")
+                    self.assertIn("Do not ", description, "say what a reader must not conclude or do")
+
+    def test_every_shape_carries_a_realistic_example(self) -> None:
+        for name, body in sorted(self.ours.items()):
+            if "properties" not in body:
+                continue  # a kind is a value set, not a shape; its members are the example
+            with self.subTest(schema=name):
+                self.assertTrue(body.get("examples"), "every request body and every response needs an example")
+
+    def test_every_fixed_kind_lists_every_member_in_words(self) -> None:
+        for name, body in sorted(self.ours.items()):
+            if "enum" not in body:
+                continue
+            with self.subTest(kind=name):
+                description = body.get("description", "")
+                for member in body["enum"]:
+                    self.assertIn(f"`{member}`", description, "a kind names every member and what changes for it")
+
+    def test_every_vocabulary_backed_key_names_its_vocabulary_and_its_seeded_keys(self) -> None:
+        # A key field is not a kind: the values are rows an admin manages, so the contract
+        # says which list they come from and what a bank finds there on day one.
+        expected = {
+            ("SearchFilters", "jurisdiction"): ("`jurisdiction` vocabulary", ["`eu`", "`se`", "`dk`", "`no`", "`fi`"]),
+            ("SearchFilters", "dutyType"): (
+                "`duty_type` vocabulary",
+                ["`conduct`", "`disclosure`", "`record_keeping`", "`reporting`", "`governance`", "`technical`"],
+            ),
+            ("SearchFilters", "termIds"): ("taxonomy", ["`regime`", "`legal_entity`", "`lifecycle_stage`"]),
+            ("SearchHit", "urgency"): (
+                "`urgency` vocabulary",
+                ["`act_now`", "`within_3_months`", "`six_months_plus`", "`monitor`", "`no_action`"],
+            ),
+            ("SearchRequest", "lang"): ("`Language` list", ["`en`", "`sv`", "`da`", "`nb`", "`fi`"]),
+            ("AskRequest", "lang"): ("`Language` list", ["`en`", "`sv`", "`da`", "`nb`", "`fi`"]),
+        }
+        for (schema, field), (vocabulary, keys) in sorted(expected.items()):
+            with self.subTest(schema=schema, field=field):
+                description = self.components[schema]["properties"][field]["description"]
+                self.assertIn(vocabulary, description)
+                for key in keys:
+                    self.assertIn(key, description)
+
+    def test_the_page_size_and_the_query_caps_are_stated_in_words_as_well_as_in_the_keywords(self) -> None:
+        for schema in ("SearchRequest", "SimilarRequest"):
+            with self.subTest(schema=schema):
+                limit = self.components[schema]["properties"]["limit"]
+                self.assertEqual(limit["default"], settings.API_PAGE_SIZE_DEFAULT)
+                self.assertEqual(limit["maximum"], settings.API_PAGE_SIZE_MAX)
+                self.assertIn(str(settings.API_PAGE_SIZE_DEFAULT), limit["description"])
+                self.assertIn(str(settings.API_PAGE_SIZE_MAX), limit["description"])
+        caps = {
+            ("SearchRequest", "q"): settings.SEARCH_QUERY_MAX_CHARS,
+            ("SimilarRequest", "text"): settings.SEARCH_SIMILAR_MAX_CHARS,
+            ("AskRequest", "question"): settings.ASK_QUESTION_MAX_CHARS,
+            ("AnswerFeedbackBody", "note"): settings.SEARCH_FEEDBACK_NOTE_MAX_CHARS,
+        }
+        for (schema, field), cap in sorted(caps.items()):
+            with self.subTest(schema=schema, field=field):
+                spec = self.components[schema]["properties"][field]
+                self.assertEqual(spec["maxLength"], cap)
+                self.assertIn(str(cap), spec["description"])
+
+    def test_every_operation_says_who_may_call_it_what_it_costs_and_how_it_answers(self) -> None:
+        operations = {
+            "/api/v1/search": ("429 `rate_limited`", "not streamed", "no idempotency key"),
+            "/api/v1/search/similar": ("429 `rate_limited`", "Not streamed", "no idempotency key"),
+            "/api/v1/ask": ("429 `rate_limited`", "text/event-stream", "needs no idempotency key"),
+            "/api/v1/answers/{answer_id}/feedback": ("250 ms", "204", "needs no idempotency key"),
+        }
+        for path, phrases in sorted(operations.items()):
+            with self.subTest(path=path):
+                # A docstring wraps where the line ends, so compare on one line.
+                description = " ".join(self.schema["paths"][path]["post"].get("description", "").split())
+                self.assertIn("Who may call it", description)
+                for phrase in phrases:
+                    self.assertIn(phrase, description)

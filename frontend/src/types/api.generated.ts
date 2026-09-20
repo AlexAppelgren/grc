@@ -100,7 +100,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rate Answer */
+        /**
+         * Rate Answer
+         * @description Record a reader's verdict on one answer — helpful or wrong, with an optional note
+         *     — so the people who tune retrieval know where it fails (AUD-02, SRC-05).
+         *
+         *     Who may call it: a person with `search.use`, on their own session, about an answer
+         *     of their own bank. An answer of another bank answers 404.
+         *
+         *     What comes back: 204 and no body.
+         *
+         *     Limits and budgets: the note is at most 2000 characters
+         *     (`SEARCH_FEEDBACK_NOTE_MAX_CHARS`); longer answers 422. The ordinary 250 ms API
+         *     budget applies.
+         *
+         *     Shape of the call: the one write in this contract. It goes through the audit trail
+         *     like any other write, and it needs no idempotency key because it is idempotent by
+         *     nature: the same verdict on the same answer twice leaves one row. Neither the
+         *     question nor the answer nor the note reaches the audit summary.
+         */
         post: operations["rateAnswer"];
         delete?: never;
         options?: never;
@@ -117,7 +135,35 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ask Question */
+        /**
+         * Ask Question
+         * @description Answer a question in the reader's own words, grounded only in the shared library,
+         *     every sentence carrying a citation and a pending change flagged (SRC-03).
+         *
+         *     Who may call it: a person with `search.use`, on their own session. An API key is
+         *     refused: Ask is a reading aid for people, and the question is tenant text.
+         *
+         *     What comes back: an event stream (`text/event-stream`), not one body, because the
+         *     budget is a first token under 2 s (NFR-02) and an answer that waits for its last
+         *     sentence cannot meet it. The events are `start` carrying the answer's id, one
+         *     `statement` per cited sentence, and then either `answer` with the whole answer or
+         *     `problem` with a `code` to branch on. A stream that has begun cannot change its
+         *     status, so a failure found after the first byte arrives as a `problem` event; do not
+         *     read the status line alone as success.
+         *
+         *     Limits and budgets: the question is at most 2000 characters
+         *     (`ASK_QUESTION_MAX_CHARS`), and a longer one answers 422 before any stream opens.
+         *     Ask is rate limited per person per minute (`ASK_RATE_PER_USER_PER_MINUTE`); over the
+         *     limit the answer is 429 `rate_limited`, before the stream opens and before any model
+         *     is called. With the bank's AI switch off the answer is 403 `feature_off`, again with
+         *     no model call.
+         *
+         *     Shape of the call: a read of the library and a model call. It needs no idempotency
+         *     key, because asking twice costs two model calls and changes no record, and it writes
+         *     no audit row, only the AI log row every model call writes (AUD-02). The question is the
+         *     only text of the bank's own that ever reaches a model (D-07), and it reaches no log
+         *     line, no Sentry event and no URL.
+         */
         post: operations["ask"];
         delete?: never;
         options?: never;
@@ -784,7 +830,29 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Search */
+        /**
+         * Search
+         * @description Find obligations, provisions and registered changes in the shared library, by
+         *     identifier or by concept, as they stood on a chosen date (SRC-01, SRC-02).
+         *
+         *     Who may call it: a person with `search.use`, on their own session. An API key is
+         *     refused; agents use `POST /search/similar`.
+         *
+         *     What comes back: one ranked page, best first. `limit` defaults to 20 and may not
+         *     exceed 100; a larger number answers 422 naming the field and is never clamped. The
+         *     bank's regulatory scope and any filter are applied before ranking, so an empty list
+         *     means nothing inside the bank's view matched, not that nothing exists.
+         *
+         *     Limits and budgets: the query is at most 500 characters (`SEARCH_QUERY_MAX_CHARS`),
+         *     and a longer one answers 422 rather than being truncated. The answer arrives inside
+         *     800 ms without the reranker and 1.5 s with it (NFR-02), reported in `Server-Timing`.
+         *     Search is rate limited per person per minute (`SEARCH_RATE_PER_USER_PER_MINUTE`);
+         *     over the limit the answer is 429 `rate_limited` and nothing was searched.
+         *
+         *     Shape of the call: a read. It is not streamed, it needs no idempotency key, and it
+         *     writes no audit row, because nothing changed. It is a POST so the query never travels
+         *     in a URL: what a reader types is the bank's own text.
+         */
         post: operations["search"];
         delete?: never;
         options?: never;
@@ -801,7 +869,27 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Find Similar */
+        /**
+         * Find Similar
+         * @description Find the shared library records nearest a piece of text, so an agent can tell
+         *     whether a change is already tracked and can suggest obligation links (AGT-02).
+         *
+         *     Who may call it: an API key holding the `search:read` scope, and nothing else. No
+         *     permission in the PRD's matrix gives a person a similarity read, so a person's
+         *     session is refused here even with `search.use`.
+         *
+         *     What comes back: the same ranked shape `POST /search` returns, over shared library
+         *     records only. No record of any bank's own zone is read or returned.
+         *
+         *     Limits and budgets: the text is at most 8000 characters
+         *     (`SEARCH_SIMILAR_MAX_CHARS`); longer answers 422. `limit` defaults to 20 and may not
+         *     exceed 100. The same 800 ms budget and the same per-minute rate limit as `POST
+         *     /search` apply, and over the limit the answer is 429 `rate_limited`.
+         *
+         *     Shape of the call: a read. Not streamed, no idempotency key, no audit row. The text
+         *     an agent sends is fetched content and is treated as untrusted: it is not stored, and
+         *     nothing it says directs the server.
+         */
         post: operations["findSimilar"];
         delete?: never;
         options?: never;
@@ -1610,62 +1698,150 @@ export interface components {
          * @description Grounded only in the inventory. `noAnswer` is true when nothing supported an
          *     answer, and then `statements` is empty: the product says so rather than guessing
          *     (SRC-03, AC-SRC2). `aiGenerated` stays true until a person confirms it (D-04).
+         * @example {
+         *       "aiGenerated": true,
+         *       "asOf": "2026-09-20",
+         *       "citations": [
+         *         {
+         *           "index": 1,
+         *           "instrumentShortName": "FFFS 2017:2",
+         *           "obligationId": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+         *           "provisionId": "3c9d6e21-5b47-4a08-9c13-6f2d8b0e7a15",
+         *           "refLabel": "Costs and charges",
+         *           "versionNo": 3
+         *         }
+         *       ],
+         *       "createdAt": "2026-09-20T09:14:02Z",
+         *       "id": "0f5b8c2d-91a4-4e36-8b7f-5c2a0d94e613",
+         *       "model": "claude-sonnet-4-5",
+         *       "noAnswer": false,
+         *       "question": "What must we disclose about costs before providing a service?",
+         *       "statements": [
+         *         {
+         *           "citationIndexes": [
+         *             1
+         *           ],
+         *           "pendingChangeId": null,
+         *           "pendingChangeLabel": null,
+         *           "text": "Costs and charges must be disclosed in aggregate and itemised before the service is provided, and again afterwards."
+         *         }
+         *       ]
+         *     }
          */
         Answer: {
-            /** Aigenerated */
+            /**
+             * Aigenerated
+             * @description True while the answer is machine output nobody has confirmed, which is what the screen's label says. Source: computed by the server. Do not read `false` as verified by a supervisor: it means a person in the bank confirmed it (D-04).
+             */
             aiGenerated: boolean;
             /**
              * Asof
              * Format: date
+             * @description The legal date the answer was written against: every citation is the version in force that day. Source: computed by the server from the request. Do not read it as the time the answer was produced, which is `createdAt`.
              */
             asOf: string;
-            /** Citations */
+            /**
+             * Citations
+             * @description Every library passage the statements rest on, numbered. Source: the shared library. Do not read the list as the complete set of obligations on the subject: it is what this answer used, retrieved from what the bank may see.
+             */
             citations: components["schemas"]["AnswerCitation"][];
             /**
              * Createdat
              * Format: date-time
+             * @description When the answer was produced, in UTC. Source: the server. Do not read it as the date the law was read at, which is `asOf`.
              */
             createdAt: string;
             /**
              * Id
              * Format: uuid
+             * @description This answer's id, which a reader's verdict points at (`rateAnswer`) and which the AI log records. Source: the server, generated before the first event. Do not read it as a record of the bank's position: an answer is a reading aid, and nothing in the inventory changed because it was given.
              */
             id: string;
-            /** Model */
+            /**
+             * Model
+             * @description Which model wrote the statements, so a bank's vendor review can trace an answer to the system that produced it. Source: the server's model call, recorded on the AI log row. Do not read a model name as a quality guarantee.
+             */
             model: string;
-            /** Noanswer */
+            /**
+             * Noanswer
+             * @description True when the library held nothing that supported an answer, and then the product says so rather than guessing. Source: computed by the server. Do not read it as there being no obligation: it means nothing was retrieved that answered the question, inside the bank's regulatory scope, on that date.
+             */
             noAnswer: boolean;
-            /** Question */
+            /**
+             * Question
+             * @description The question as asked, echoed so the answer is readable on its own. Source: the caller, from the bank's own zone. Do not expect to find it anywhere else: it is tenant text and never reaches a log line, an audit summary or a URL.
+             */
             question: string;
-            /** Statements */
+            /**
+             * Statements
+             * @description The answer, sentence by sentence, each one cited. Empty when `noAnswer` is true. Source: a model, grounded only in the shared library. Do not read the order as priority: it reads as prose, not as a ranking of duties.
+             */
             statements: components["schemas"]["AnswerStatement"][];
         };
         /**
          * AnswerCitation
          * @description What a statement points at. `index` is the number shown in the answer.
+         * @example {
+         *       "index": 1,
+         *       "instrumentShortName": "FFFS 2017:2",
+         *       "obligationId": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+         *       "provisionId": "3c9d6e21-5b47-4a08-9c13-6f2d8b0e7a15",
+         *       "refLabel": "Costs and charges",
+         *       "versionNo": 3
+         *     }
          */
         AnswerCitation: {
-            /** Index */
+            /**
+             * Index
+             * @description The number shown beside the statement, so a reader can follow a sentence to its source. Source: computed by the server for this answer. Do not read it as a stable reference: it numbers the citations of this answer only, and the same obligation is a different number in the next answer.
+             */
             index: number;
-            /** Instrumentshortname */
+            /**
+             * Instrumentshortname
+             * @description The everyday name of the instrument cited, such as `FFFS 2017:2` or `MiFID II`, so the citation reads as a lawyer would write it. Source: the shared library. Do not read it as the official citation, which is on the instrument.
+             */
             instrumentShortName: string;
             /**
              * Obligationid
              * Format: uuid
+             * @description The obligation the statement rests on, which the reader opens to check it. Source: the shared library. Do not read a citation as a finding that the obligation applies to this bank: applicability is a separate judgement.
              */
             obligationId: string;
-            /** Provisionid */
+            /**
+             * Provisionid
+             * @description The exact provision behind the obligation, when the answer could pin one, so the reader lands on the paragraph rather than the card. Source: the shared library. Do not read its absence as a weaker citation: many obligations summarise several provisions and pin none.
+             */
             provisionId?: string | null;
-            /** Reflabel */
+            /**
+             * Reflabel
+             * @description Where in the instrument the cited text sits, as the instrument labels it, such as `9 kap.` or `Costs and charges`. Source: the shared library. Do not read it as a stable identifier: it is the drafter's own label, and a recast renumbers.
+             */
             refLabel: string;
-            /** Versionno */
+            /**
+             * Versionno
+             * @description Which version of that obligation was read, so the citation stays checkable after the obligation moves on. Source: the shared library. Do not read it as the current version: it is the version in force on the answer's `asOf` date.
+             */
             versionNo: number;
         };
-        /** AnswerFeedbackBody */
+        /**
+         * AnswerFeedbackBody
+         * @description A reader's verdict on one answer (AUD-02, SRC-05).
+         *
+         *     This is the only write in the search contract: it goes through the audit trail like
+         *     any other. It needs no idempotency key because it is idempotent by nature — the same
+         *     verdict on the same answer twice leaves one row — and it is not streamed. It answers
+         *     inside the ordinary 250 ms API budget.
+         * @example {
+         *       "feedback": "wrong",
+         *       "note": "The itemised disclosure is required before the service, not only afterwards."
+         *     }
+         */
         AnswerFeedbackBody: {
+            /** @description Whether the answer helped, so the people who tune retrieval know where it fails. Source: the reader, in the bank's own zone. Do not read `helpful` as the answer being verified: confirming AI output is a separate act (D-04). */
             feedback: components["schemas"]["AnswerFeedbackKind"];
             /**
              * Note
+             * @description What was wrong or useful about it, in the reader's own words. At most 2000 characters; longer answers 422. Source: the reader, in the bank's own zone. Do not put client data or evidence in it: it is stored beside the answer for the bank's own review, and the audit row that records the verdict carries none of this text.
              * @default
              */
             note: string;
@@ -1673,6 +1849,14 @@ export interface components {
         /**
          * AnswerFeedbackKind
          * @description Tier-one kind: what a reader said about an answer. The evaluation set reads it.
+         *
+         *     Every member, and what the system does differently for it:
+         *
+         *     - `helpful`: the reader found the answer useful. The AI log row is marked helpful and
+         *       the evaluation set counts it as a positive signal on retrieval.
+         *     - `wrong`: the reader found the answer wrong. The AI log row is marked wrong, which is
+         *       what the AI log screen filters on for review, and the evaluation set counts it
+         *       against retrieval quality.
          * @enum {string}
          */
         AnswerFeedbackKind: "helpful" | "wrong";
@@ -1681,15 +1865,35 @@ export interface components {
          * @description One sentence of the answer. Every statement carries at least one citation
          *     (SRC-03, AC-SRC2); a cited obligation with an open change names it, so the screen can
          *     warn that the law is about to move.
+         * @example {
+         *       "citationIndexes": [
+         *         1
+         *       ],
+         *       "pendingChangeId": "a41d0f36-2c88-4e7b-b5a9-13d6c4f80e27",
+         *       "pendingChangeLabel": "FI adopts amended rules on paying for investment research",
+         *       "text": "Costs and charges must be disclosed in aggregate and itemised before the service is provided, and again afterwards."
+         *     }
          */
         AnswerStatement: {
-            /** Citationindexes */
+            /**
+             * Citationindexes
+             * @description Which citations support this sentence, by their `index` in the answer. Never empty: a statement the library did not support is not sent at all. Source: computed by the server. Do not read several citations as agreement between sources: they are the passages the sentence was drawn from.
+             */
             citationIndexes: number[];
-            /** Pendingchangeid */
+            /**
+             * Pendingchangeid
+             * @description A registered change that would move the law this sentence rests on, so a reader is warned before acting on it. Source: the shared library's watch feed. Do not read it as law: a registered change may be a consultation that never takes effect, and the sentence still describes the rule in force.
+             */
             pendingChangeId?: string | null;
-            /** Pendingchangelabel */
+            /**
+             * Pendingchangelabel
+             * @description The title of that change, so the warning reads as something rather than an id. Source: the shared library's watch feed. Do not read it as a summary of the effect on the bank: what it means here is the bank's own assessment.
+             */
             pendingChangeLabel?: string | null;
-            /** Text */
+            /**
+             * Text
+             * @description One sentence of the answer, written by a model from the cited library text alone. Source: a model, grounded only in the shared library. Do not read it as advice or as a compliance conclusion: it is AI output, labelled as such until a person confirms it, and the citation is the thing to check.
+             */
             text: string;
         };
         /** ApiKeyCreate */
@@ -1760,11 +1964,45 @@ export interface components {
          * AskAnswerEvent
          * @description `answer`, the terminal event: the whole answer with its citation list, which is
          *     what a reader keeps and what the `ai_generation` row records (AUD-02).
+         * @example {
+         *       "answer": {
+         *         "aiGenerated": true,
+         *         "asOf": "2026-09-20",
+         *         "citations": [
+         *           {
+         *             "index": 1,
+         *             "instrumentShortName": "FFFS 2017:2",
+         *             "obligationId": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+         *             "provisionId": "3c9d6e21-5b47-4a08-9c13-6f2d8b0e7a15",
+         *             "refLabel": "Costs and charges",
+         *             "versionNo": 3
+         *           }
+         *         ],
+         *         "createdAt": "2026-09-20T09:14:02Z",
+         *         "id": "0f5b8c2d-91a4-4e36-8b7f-5c2a0d94e613",
+         *         "model": "claude-sonnet-4-5",
+         *         "noAnswer": false,
+         *         "question": "What must we disclose about costs before providing a service?",
+         *         "statements": [
+         *           {
+         *             "citationIndexes": [
+         *               1
+         *             ],
+         *             "pendingChangeId": null,
+         *             "pendingChangeLabel": null,
+         *             "text": "Costs and charges must be disclosed in aggregate and itemised before the service is provided, and again afterwards."
+         *           }
+         *         ]
+         *       },
+         *       "event": "answer"
+         *     }
          */
         AskAnswerEvent: {
+            /** @description The whole answer with its citations, which is what the reader keeps and what the AI log records. Source: a model, grounded only in the shared library. Do not read it as confirmed: it stays labelled AI output until a person says otherwise. */
             answer: components["schemas"]["Answer"];
             /**
              * Event
+             * @description Always `answer`: the kind of this event, and the last one on a stream that succeeded. Source: the server. Do not expect anything after it.
              * @default answer
              * @constant
              */
@@ -1775,14 +2013,26 @@ export interface components {
          * @description `problem`, the other way the stream ends. It carries the `code` an RFC 9457 body
          *     would carry (playbook 4.4), because a failure found after the first byte can no longer
          *     be a status; no trace and nothing the caller did not send travel with it.
+         * @example {
+         *       "code": "not_built",
+         *       "detail": "Ask is not switched on yet.",
+         *       "event": "problem"
+         *     }
          */
         AskProblemEvent: {
-            /** Code */
+            /**
+             * Code
+             * @description The machine-readable reason the answer stopped, the same `code` an RFC 9457 problem body would carry, such as `not_built`, `feature_off` or `rate_limited`. Branch on this, never on `detail`. Source: the server. Do not read a code as a permanent verdict: `rate_limited` clears within the minute.
+             */
             code: string;
-            /** Detail */
+            /**
+             * Detail
+             * @description One sentence a person can read, saying what happened. Source: the server. Do not branch on this text, do not expect it to be stable, and do not expect a trace: nothing of the server's internals travels in it.
+             */
             detail: string;
             /**
              * Event
+             * @description Always `problem`: the kind of this event, and the last one on a stream that failed. Source: the server. Do not expect anything after it, and do not treat the 200 on the stream as success: the events say how it ended.
              * @default problem
              * @constant
              */
@@ -1791,13 +2041,35 @@ export interface components {
         /**
          * AskRequest
          * @description The question is the only tenant text that reaches a model (D-07, SRC-S6).
+         *
+         *     Ask is the one streamed operation in this contract: the answer arrives as
+         *     `text/event-stream`, because the budget is a first token under 2 s (NFR-02) and an
+         *     answer that waits for its last sentence cannot meet it. Ask is rate limited per person
+         *     per minute (`ASK_RATE_PER_USER_PER_MINUTE`); over the limit the answer is 429
+         *     `rate_limited`, before the stream opens and before any model is called. The call needs
+         *     no idempotency key: asking twice costs two model calls and two logged generations, and
+         *     never changes a record.
+         * @example {
+         *       "asOf": "2026-09-20",
+         *       "lang": "en",
+         *       "question": "What must we disclose about costs before providing a service?"
+         *     }
          */
         AskRequest: {
-            /** Asof */
+            /**
+             * Asof
+             * @description The date the question is asked about: the server ranks and returns the version of each record that was in force on that day, so a reader can see the law as it stood. Absent means today in the bank's own time zone. Source: the caller. Do not read an `asOf` in the past as a record of what the bank knew then: it re-reads today's library at an older legal date, and a record corrected since is returned corrected.
+             */
             asOf?: string | null;
-            /** Lang */
+            /**
+             * Lang
+             * @description Which language's text to search and return, as a language key. The keys are rows in the library's `Language` list, not an enum, and a sixth language is added by seeding a row rather than by changing code; seeded on day one are `en` (English), `sv` (Svenska), `da` (Dansk), `nb` (Norsk bokmal) and `fi` (Suomi). Absent means the bank's default content language. Source: the caller, choosing from the shared library's language rows. Do not read a language as a jurisdiction: a Swedish obligation has an English summary, and EU material is read in five languages.
+             */
             lang?: string | null;
-            /** Question */
+            /**
+             * Question
+             * @description What the reader wants to know, in their own words. At most 2000 characters; a longer question answers 422 and no stream is opened. Source: the caller, from the bank's own zone. This is the only tenant text that ever reaches a model (D-07), and it reaches no log line, no Sentry event and no URL. Do not put client data, case notes or evidence in it: the answer is grounded only in the shared library, so nothing of the bank's own is needed to answer, and nothing of it should be sent.
+             */
             question: string;
         };
         /**
@@ -1805,10 +2077,15 @@ export interface components {
          * @description `start`, the first event and the one the 2 s budget is measured to. It carries the
          *     answer's id, so a reader's verdict (`rateAnswer`) has something to point at before the
          *     answer is finished.
+         * @example {
+         *       "event": "start",
+         *       "id": "0f5b8c2d-91a4-4e36-8b7f-5c2a0d94e613"
+         *     }
          */
         AskStartEvent: {
             /**
              * Event
+             * @description Always `start`: the kind of this event, which the client switches on. Source: the server. Do not read the four event kinds as a fixed sequence: a stream may end at `problem` after `start` and before any statement.
              * @default start
              * @constant
              */
@@ -1816,20 +2093,34 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description The answer's id, sent first so the screen can offer a verdict while the answer is still arriving. Source: the server. Do not read it as a promise that an answer follows: the stream may still close with a `problem` event.
              */
             id: string;
         };
         /**
          * AskStatementEvent
          * @description `statement`, one cited sentence of the answer, sent as soon as it is grounded.
+         * @example {
+         *       "event": "statement",
+         *       "statement": {
+         *         "citationIndexes": [
+         *           1
+         *         ],
+         *         "pendingChangeId": null,
+         *         "pendingChangeLabel": null,
+         *         "text": "Costs and charges must be disclosed in aggregate and itemised before the service is provided, and again afterwards."
+         *       }
+         *     }
          */
         AskStatementEvent: {
             /**
              * Event
+             * @description Always `statement`: the kind of this event. Source: the server. Do not read a statement event as the end of the answer; the `answer` event closes it.
              * @default statement
              * @constant
              */
             event: "statement";
+            /** @description One cited sentence, sent as soon as it is grounded, so the reader sees the answer form. Source: a model, grounded only in the shared library. Do not read a sentence in isolation: the conditions may be in the sentences around it. */
             statement: components["schemas"]["AnswerStatement"];
         };
         /**
@@ -3044,56 +3335,138 @@ export interface components {
          *     (applicability, compliance status) are not here: the overlay that would answer them
          *     lands with the register in chunk 8, and a filter the query cannot honour would be a
          *     200 that quietly ignored it.
+         * @example {
+         *       "binding": true,
+         *       "dutyType": "disclosure",
+         *       "inFootprint": true,
+         *       "jurisdiction": "se"
+         *     }
          */
         SearchFilters: {
-            /** Binding */
+            /**
+             * Binding
+             * @description True keeps only binding law, false keeps only guidance such as ESMA's. The value follows the instrument's level, so an act and an EU regulation are binding and EU guidance is not. Source: the shared library. Do not read `false` as optional: a supervisor expects guidance to be followed or the departure explained, and the bank still answers for it.
+             */
             binding?: boolean | null;
-            /** Dutytype */
+            /**
+             * Dutytype
+             * @description Narrow the search to one kind of duty, such as what must be reported or disclosed, by key. The keys are rows in the shared library's `duty_type` vocabulary, which an administrator may extend through an approved proposal (VOC-07); seeded on day one are `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical`. Source: the shared library. Do not read a duty type as a department: one obligation carries one duty type, and who in the bank owns it is the bank's own judgement, recorded elsewhere.
+             */
             dutyType?: string | null;
-            /** Infootprint */
+            /**
+             * Infootprint
+             * @description True keeps only records inside the bank's own footprint, the licences, entities and services it declared; false keeps only those outside it. Absent applies the bank's standing regulatory scope, which is what the search screen does until a reader asks to look outside it. Source: the bank's own zone, compared against the shared library. Do not read `inFootprint` as `applies to us`: the footprint is a filter on what is worth reading, while whether an obligation applies is a judgement the bank records per entity (chunk 8).
+             */
             inFootprint?: boolean | null;
-            /** Instrumentid */
+            /**
+             * Instrumentid
+             * @description Narrow the search to one instrument, such as the bank's copy of FFFS 2017:2, by the instrument's id. Source: the shared library. Do not read a filtered result as everything the instrument requires of the bank: it is what matched the query inside that instrument, not the instrument's full obligation list.
+             */
             instrumentId?: string | null;
-            /** Jurisdiction */
+            /**
+             * Jurisdiction
+             * @description Narrow the search to the law of one jurisdiction, by key. The keys are rows in the shared library's `jurisdiction` vocabulary; the platform seeds and maintains them (they are reference data, not proposable), and on day one they are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland). Source: the shared library. Do not read `se` as excluding EU law that binds a Swedish bank: an EU regulation is filed under `eu` and still applies, so filtering to one jurisdiction hides law the bank must follow.
+             */
             jurisdiction?: string | null;
-            /** Termids */
+            /**
+             * Termids
+             * @description Narrow the search to records tagged with all of these taxonomy terms, such as a regime or a legal entity kind, by term id. Terms are rows in the shared library's taxonomy, which an administrator may extend through an approved proposal; the dimensions seeded on day one are `regime`, `account_type`, `legal_entity`, `service_type`, `client_category`, `channel` and `lifecycle_stage`. At most 20 terms in one call; more answers 422. Source: the shared library. Do not read the terms on a record as the bank's own scope: whether the record applies to this bank is a separate fact the bank decides.
+             */
             termIds?: string[];
         };
         /**
          * SearchHit
          * @description One result. `matchKind` is on every hit (SRC-02): the reader sees why it is here.
          *     The version and validity dates are copied onto the chunk, so "as of" needs no join.
+         * @example {
+         *       "binding": true,
+         *       "id": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+         *       "instrumentShortName": "FFFS 2017:2",
+         *       "matchKind": "both",
+         *       "score": 0.87,
+         *       "snippet": "...all costs and charges, aggregated and itemised, before the service is provided...",
+         *       "title": "Disclose all costs and charges before and after the service",
+         *       "type": "obligation",
+         *       "urgency": {
+         *         "key": "within_3_months",
+         *         "kind": "warning",
+         *         "label": "Within 3 months"
+         *       },
+         *       "validFrom": "2026-01-01",
+         *       "validTo": null,
+         *       "versionNo": 3
+         *     }
          */
         SearchHit: {
-            /** Binding */
+            /**
+             * Binding
+             * @description Whether the record is binding law or guidance, following the instrument's level. Source: the shared library. Do not read `false` as optional: guidance is expected to be followed or the departure explained.
+             */
             binding?: boolean | null;
             /**
              * Id
              * Format: uuid
+             * @description The id of the record the hit points at: the obligation, the provision or the registered change. Source: the shared library. Do not read it as the id of the indexed chunk, which is derived data the API never exposes.
              */
             id: string;
-            /** Instrumentshortname */
+            /**
+             * Instrumentshortname
+             * @description The everyday name of the instrument the record belongs to, such as `FFFS 2017:2`, `MiFID II` or `DORA`. Source: the shared library. Do not read it as the official citation: the formal reference is on the instrument itself.
+             */
             instrumentShortName?: string | null;
+            /** @description Why this record is in the list: its words matched, its meaning matched, or both. Source: computed by the server for this query. Do not read `concept` as weaker evidence, nor its absence as proof the words are missing: a record not yet embedded can only ever match by keyword. */
             matchKind: components["schemas"]["SearchMatchKind"];
-            /** Score */
+            /**
+             * Score
+             * @description How this hit ranked against the others in this one answer, after the two legs were fused and reranked. Source: computed by the server for this query. Do not read it as relevance the bank can compare across searches, as a probability, or as a measure of how much the record matters: it is only an order.
+             */
             score: number;
-            /** Snippet */
+            /**
+             * Snippet
+             * @description A short extract of the record's text around what matched, so the reader can judge the hit before opening it. Source: the shared library. Do not read a snippet as the text of the law: it is cut mid-sentence and a condition may sit in the words on either side of it.
+             */
             snippet: string;
-            /** Title */
+            /**
+             * Title
+             * @description The record's own heading, in the language searched, so a reader recognises it without opening it. Source: the shared library. Do not read a title as the obligation: the duty is in the text, and a title is written to be found.
+             */
             title: string;
+            /** @description What this hit points at, and therefore what opens when the reader clicks it. Source: the shared library, copied onto the search index. Do not read the kind as a ranking: an obligation does not outrank a provision by being one. */
             type: components["schemas"]["SearchHitType"];
+            /** @description How soon the shared library says this record deserves attention, as a key, its pill tone and a label in the reader's language. The keys are rows in the shared library's `urgency` vocabulary, which an administrator may extend through an approved proposal; seeded on day one are `act_now`, `within_3_months`, `six_months_plus`, `monitor` and `no_action`. Source: the shared library. Do not read it as this bank's priority: it is the library's general view, and the bank's own deadline lives on its case. */
             urgency?: components["schemas"]["TermRef"] | null;
-            /** Validfrom */
+            /**
+             * Validfrom
+             * @description The first day this version of the record was in force, so a reader knows whether it governed a transaction. Source: the shared library. Do not read it as the day the bank had to comply from: a transitional rule may give longer, and that is in the text.
+             */
             validFrom?: string | null;
-            /** Validto */
+            /**
+             * Validto
+             * @description The last day this version was in force; empty means it still is. Source: the shared library. Do not read an empty value as permanent: a change already registered in the watch feed may be about to close it.
+             */
             validTo?: string | null;
-            /** Versionno */
+            /**
+             * Versionno
+             * @description Which version of the obligation was in force on the `asOf` date, so the reader opens the card at the text that was law then. Empty on a provision or a change. Source: the shared library. Do not read a high version number as instability: a correction of a typo is a version too.
+             */
             versionNo?: number | null;
         };
         /**
          * SearchHitType
          * @description Tier-one kind (apps/shared/kinds.py): what a hit points at. The reader opens an
          *     obligation, a provision or a change, and the screen branches on it.
+         *
+         *     Every member, and what the system does differently for each:
+         *
+         *     - `obligation`: the hit is an obligation version from the shared inventory. The
+         *       screen opens the obligation card at that version, the hit carries `versionNo`, and
+         *       the footprint filter and the regulatory scope apply to it.
+         *     - `provision`: the hit is a provision version, a numbered piece of an instrument's
+         *       text. The screen opens the instrument at that provision; a provision has no
+         *       obligation of its own, so it carries no urgency and cannot be put in a case.
+         *     - `change`: the hit is a registered regulatory change from the watch feed. The screen
+         *       opens the change, and this is the only member whose record may still be a proposal
+         *       about the future rather than law in force, so its validity dates may be empty.
          * @enum {string}
          */
         SearchHitType: "obligation" | "provision" | "change";
@@ -3101,6 +3474,16 @@ export interface components {
          * SearchMatchKind
          * @description Tier-one kind: how the hit was won (SRC-02, AC-SRC1). Every hit says so, and the
          *     pill's tone follows the kind, never a person's choice (NFR-03).
+         *
+         *     Every member, and what the system did differently to find it:
+         *
+         *     - `keyword`: the words the reader typed were found in the text, by the language's own
+         *       PostgreSQL text search. An identifier such as `FFFS 2017:2` matches this way.
+         *     - `concept`: no word matched, but the meaning did: the record was found by the
+         *       nearest-neighbour search over embeddings. A record not yet embedded can never be a
+         *       `concept` hit, so a fresh approval is found by its words first.
+         *     - `both`: the record was found by both legs and its two ranks were fused, which is why
+         *       it usually ranks above a hit of either other kind.
          * @enum {string}
          */
         SearchMatchKind: "keyword" | "concept" | "both";
@@ -3109,35 +3492,112 @@ export interface components {
          * @description `q` is the typed query. `asOf` picks the version in force on that date (SRC-02);
          *     absent means today in the tenant's timezone. `lang` is a language key (I18N-01). The
          *     limit is the page size of playbook 10: above the maximum is a 422, never a clamp.
+         *
+         *     Budget: the server answers inside 800 ms without the reranker and 1.5 s with it
+         *     (NFR-02), reported in `Server-Timing`. Search is rate limited per person per minute
+         *     (`SEARCH_RATE_PER_USER_PER_MINUTE`); over the limit the answer is 429 `rate_limited`
+         *     and nothing was searched. The call is a read: it writes no audit row, needs no
+         *     idempotency key, and is not streamed.
+         * @example {
+         *       "asOf": "2026-09-20",
+         *       "filters": {
+         *         "binding": true,
+         *         "dutyType": "disclosure",
+         *         "inFootprint": true,
+         *         "jurisdiction": "se"
+         *       },
+         *       "lang": "sv",
+         *       "limit": 20,
+         *       "q": "FFFS 2017:2 costs and charges",
+         *       "types": [
+         *         "obligation",
+         *         "provision"
+         *       ]
+         *     }
          */
         SearchRequest: {
-            /** Asof */
+            /**
+             * Asof
+             * @description The date the question is asked about: the server ranks and returns the version of each record that was in force on that day, so a reader can see the law as it stood. Absent means today in the bank's own time zone. Source: the caller. Do not read an `asOf` in the past as a record of what the bank knew then: it re-reads today's library at an older legal date, and a record corrected since is returned corrected.
+             */
             asOf?: string | null;
+            /** @description Narrows the search before anything is ranked, so a filtered search is not a shortened list of the unfiltered one. Absent means the bank's standing regulatory scope alone. Source: the caller. Do not read a filter the contract does not name as ignored: an unknown filter answers 422. */
             filters?: components["schemas"]["SearchFilters"] | null;
-            /** Lang */
+            /**
+             * Lang
+             * @description Which language's text to search and return, as a language key. The keys are rows in the library's `Language` list, not an enum, and a sixth language is added by seeding a row rather than by changing code; seeded on day one are `en` (English), `sv` (Svenska), `da` (Dansk), `nb` (Norsk bokmal) and `fi` (Suomi). Absent means the bank's default content language. Source: the caller, choosing from the shared library's language rows. Do not read a language as a jurisdiction: a Swedish obligation has an English summary, and EU material is read in five languages.
+             */
             lang?: string | null;
             /**
              * Limit
+             * @description How many results to return. Default 20, maximum 100; a larger number answers 422 naming the field and is never quietly clamped. Source: the caller. Do not read the number of results as the number of records that matched: it is one page of a ranking, not a count.
              * @default 20
              */
             limit: number;
-            /** Q */
+            /**
+             * Q
+             * @description What the reader typed: an identifier such as `FFFS 2017:2`, or a concept such as `kostnader och avgifter`. At most 500 characters, and a longer query answers 422 rather than being truncated into a search for something else. Source: the caller; it is the bank's own text and never reaches a log line, a URL or an error message. Do not read the absence of a hit as the absence of an obligation: the index holds the shared library as it stands today, not the bank's own notes, cases or evidence.
+             */
             q: string;
-            /** Types */
+            /**
+             * Types
+             * @description Which kinds of record to search; empty means all three. Source: the caller. Do not read an empty list as a promise of three kinds in the results: a query may simply match nothing of a kind.
+             */
             types?: components["schemas"]["SearchHitType"][];
         };
         /**
          * SearchResponse
          * @description Ranked results, not a page: `asOf` is the date the ranking was taken at, echoed so
          *     the screen can say which day's law it is showing.
+         * @example {
+         *       "asOf": "2026-09-20",
+         *       "items": [
+         *         {
+         *           "binding": true,
+         *           "id": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+         *           "instrumentShortName": "FFFS 2017:2",
+         *           "matchKind": "both",
+         *           "score": 0.87,
+         *           "snippet": "...all costs and charges, aggregated and itemised, before the service...",
+         *           "title": "Disclose all costs and charges before and after the service",
+         *           "type": "obligation",
+         *           "urgency": {
+         *             "key": "within_3_months",
+         *             "kind": "warning",
+         *             "label": "Within 3 months"
+         *           },
+         *           "validFrom": "2026-01-01",
+         *           "validTo": null,
+         *           "versionNo": 3
+         *         },
+         *         {
+         *           "binding": true,
+         *           "id": "3c9d6e21-5b47-4a08-9c13-6f2d8b0e7a15",
+         *           "instrumentShortName": "LVM",
+         *           "matchKind": "keyword",
+         *           "score": 0.61,
+         *           "snippet": "...institutet ska lamna information om kostnader och avgifter...",
+         *           "title": "9 kap. Rorelseregler",
+         *           "type": "provision",
+         *           "urgency": null,
+         *           "validFrom": "2007-11-01",
+         *           "validTo": null,
+         *           "versionNo": null
+         *         }
+         *       ]
+         *     }
          */
         SearchResponse: {
             /**
              * Asof
              * Format: date
+             * @description The legal date this ranking was taken at, echoed so the screen can say which day's law it is showing. Source: computed by the server from the request, or today in the bank's time zone. Do not read it as the time the search ran: it is the date of the law, not of the query.
              */
             asOf: string;
-            /** Items */
+            /**
+             * Items
+             * @description The ranked results, best first, at most `limit` of them. Source: the shared library, ranked by the server. Do not read an empty list as nothing existing: the bank's regulatory scope and any filter were applied before ranking, and a reader can search outside the scope to see what was held back.
+             */
             items: components["schemas"]["SearchHit"][];
         };
         /** SecurityEventOut */
@@ -3210,16 +3670,36 @@ export interface components {
          * SimilarRequest
          * @description What an agent sends to find the library records nearest a piece of text: to spot a
          *     change already tracked, and to suggest obligation links (AGT-02).
+         *
+         *     This is the agents' route, held open by an API key with the `search:read` scope; no
+         *     person's session reaches it. Same budget and same rate limit as `POST /search`, and
+         *     the same 429 `rate_limited` over it. The call is a read: no audit row, no idempotency
+         *     key, not streamed.
+         * @example {
+         *       "limit": 10,
+         *       "text": "Institut som tar emot investeringsanalys ska ha kriterier for en arlig bedomning av analysens kvalitet, anvandbarhet och varde.",
+         *       "types": [
+         *         "obligation",
+         *         "change"
+         *       ]
+         *     }
          */
         SimilarRequest: {
             /**
              * Limit
+             * @description How many results to return. Default 20, maximum 100; a larger number answers 422 naming the field and is never quietly clamped. Source: the caller. Do not read the number of results as the number of records that matched: it is one page of a ranking, not a count.
              * @default 20
              */
             limit: number;
-            /** Text */
+            /**
+             * Text
+             * @description The passage to find library records near: a paragraph an agent fetched from a supervisor's page, or a change summary. At most 8000 characters; longer answers 422. Source: the calling agent. Do not read this text as trusted: it is fetched content, it is never stored by this call, and nothing it says can direct the server.
+             */
             text: string;
-            /** Types */
+            /**
+             * Types
+             * @description Which kinds of record to compare against; empty means all three. Source: the calling agent. Do not read an empty list as a promise of three kinds in the results.
+             */
             types?: components["schemas"]["SearchHitType"][];
         };
         /** StepUpResult */
