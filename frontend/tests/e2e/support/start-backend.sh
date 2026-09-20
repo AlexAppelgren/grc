@@ -9,6 +9,17 @@
 # The server runs under config.settings as cw_app (DATABASE_URL), never as the migrator:
 # row-level security must be real in E2E or J-8 proves nothing. Migration and seeding run
 # as cw_migrator, exactly as docker-entrypoint.sh does on a deploy.
+#
+# Two extra modes, both for the cold-start journey (docs/runbooks/FIRST_RUN_SETUP.md):
+#
+#   E2E_COLD_START=1        boot exactly as a deploy boots — migrate, then seed_reference,
+#                           and nothing else. No seed_e2e, no fixture, no extra row.
+#   start-backend.sh manage run one management command against this same database as
+#     <command> [args...]   cw_app and exit, the way a person runs one on the api shell.
+#
+# Both keep E2E_MODE and the mock adapters, so the emailed code stays deterministic and
+# no mail or model call leaves the machine. The Playwright config gives the cold-start
+# run its own database name and its own ports, so it can never touch the seeded run.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -62,11 +73,29 @@ export WEBAUTHN_RP_ID="${WEBAUTHN_RP_ID:-localhost}"
 export WEBAUTHN_ORIGINS="${WEBAUTHN_ORIGINS:-http://localhost:3000}"
 export MIGRATOR_DATABASE_URL="$MIGRATOR_E2E_URL"
 
+# `manage`: one command against the database this script boots, as cw_app, then exit.
+# Nothing is recreated and nothing is seeded, so it is only ever run while the stack is
+# up. bootstrap_platform is not exempt from the database role guard (config/settings.py),
+# which is the point: a person runs it on the api service, as the app role, under
+# row-level security, and so does the journey.
+if [ "${1:-}" = "manage" ]; then
+  shift
+  export DATABASE_URL="$APP_E2E_URL"
+  exec "$PY" manage.py "$@"
+fi
+
 echo "start-backend: recreating $E2E_DB and migrating from zero (as cw_migrator)"
 DATABASE_URL="$MIGRATOR_URL" "$PY" manage.py migrate_from_zero --name "$E2E_DB" --keep
 
-echo "start-backend: seeding seed_e2e (as cw_migrator)"
-DATABASE_URL="$MIGRATOR_E2E_URL" "$PY" manage.py seed_e2e
+if [ "${E2E_COLD_START:-0}" = "1" ]; then
+  # What a deploy does and no more (backend/docker-entrypoint.sh): the reference seeds as
+  # cw_app, then serve. Everything the cold-start journey needs, a first deploy has too.
+  echo "start-backend: cold start, seeding reference data only (as cw_app)"
+  DATABASE_URL="$APP_E2E_URL" "$PY" manage.py seed_reference
+else
+  echo "start-backend: seeding seed_e2e (as cw_migrator)"
+  DATABASE_URL="$MIGRATOR_E2E_URL" "$PY" manage.py seed_e2e
+fi
 
 export DATABASE_URL="$APP_E2E_URL"
 

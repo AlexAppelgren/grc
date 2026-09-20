@@ -217,6 +217,10 @@ if [ "$quick" = 0 ] && { [ "$be" = 1 ] || [ "$fe" = 1 ]; }; then  # ci.yml `e2e`
   gate "E2E: design tokens" frontend npm run build:tokens
   if [ "$full" = 1 ]; then gate "E2E: full suite" frontend env CI=true E2E_MODE=true npm run test:e2e
   else gate "E2E: @smoke" frontend env CI=true E2E_MODE=true npm run test:e2e -- --grep @smoke; fi
+  # ci.yml `coldstart`: the same tier, because a deploy that cannot be set up is worth
+  # catching on a push and not only nightly. Its stack has its own database and ports, so
+  # it never touches the seeded one above (frontend/playwright.config.ts).
+  gate "E2E: @coldstart" frontend env CI=true E2E_MODE=true npm run test:e2e -- --grep @coldstart
 fi
 
 if [ "$quick" = 0 ] && { [ "$cont" = 1 ] || [ "$lock" = 1 ]; }; then  # ci.yml `container-scan`

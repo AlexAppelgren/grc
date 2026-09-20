@@ -27,6 +27,9 @@
 # E2E (real stack, @smoke on push, all nightly) Broken journeys, undeclared API failures,
 #                                               page exceptions                          e2e
 # Pill gallery screenshot (both themes)         Tones, slots and labels drifting         e2e
+# Cold start (a deploy's own seeds, no fixture) A first deploy that cannot be set up:
+#                                               a missing seed, a screen that assumes
+#                                               data, a command that refuses            coldstart
 # Secret scan (gitleaks, every push)            Committed secrets                        secrets
 # Dependency CVEs (osv-scanner on the committed
 #   lockfiles + npm audit; nightly regardless)  Known-vulnerable dependencies            cve
@@ -489,6 +492,98 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            frontend/test-results
+            frontend/playwright-report
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Cold start: the same real stack, booted the way a deploy boots it — migrate,
+  # seed_reference, and nothing else — and walked from an empty database to a
+  # signed-in bank administrator (docs/runbooks/FIRST_RUN_SETUP.md, ADM-S8).
+  # Its own job, so it runs beside `e2e` on its own runner and its own database
+  # and never shares one with the seeded suite. Same tier as `e2e`: the cheapest
+  # insurance that a deploy is usable is worth a push, not only a nightly run.
+  # ---------------------------------------------------------------------------
+  coldstart:
+    name: Cold start (Playwright)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres-dev-only
+          POSTGRES_DB: compliance_watch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d compliance_watch"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      CI: "true"
+      E2E_MODE: "true"
+    defaults:
+      run:
+        shell: bash
+        working-directory: frontend
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Create database roles and extensions
+        uses: ./.github/actions/init-db
+        with:
+          container-id: ${{ job.services.db.id }}
+
+      - name: Set up backend toolchain
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build design tokens
+        run: npm run build:tokens
+
+      # NEXT_PUBLIC_API_URL is deliberately unset: the config points the build at
+      # the cold stack's own port, which is not the seeded suite's.
+      - name: Walk the first-run setup
+        run: npm run test:e2e -- --grep @coldstart
+
+      - name: Upload screenshots and traces
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-coldstart-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             frontend/test-results
             frontend/playwright-report

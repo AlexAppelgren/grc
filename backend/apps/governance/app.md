@@ -229,6 +229,23 @@ Plans and their limits are NFR-S17 to S19; requesting support access to a tenant
 TEN-S6. The address must be the administrator's own: platform staff are separate
 accounts, as `bootstrap_platform` requires from the other side.
 
+### ADM-S8 — A deploy's own seeds carry an empty database to a working bank `@e2e` (ADM-02, ID-01, ID-02, TEN-01, FP-02)
+```gherkin
+Given a database a deploy has migrated and seeded reference data into, and nothing else
+When the owner runs bootstrap_platform and the first platform admin opens the emailed link, enters the code and enrols a passkey
+Then they reach the console, whose tenant list is empty rather than broken
+When they create the first bank with its administrator's address
+And that administrator enrols from their own emailed link, sets the bank's profile and invites a second member
+And one of the two requests the first footprint and the other approves it with a passkey step-up
+Then the footprint holds the term, and no /api/ call has answered 400 or above undeclared and no page has thrown
+And the inventory and the timeline each render their own empty state on a library that has never held a row
+```
+
+The journey is `frontend/tests/e2e/coldstart.journey.spec.ts`, tagged `@coldstart`; it
+runs on its own stack, booted with `seed_reference` alone (`E2E_COLD_START=1` in
+`tests/e2e/support/start-backend.sh`). The watch feed's empty state is the one step it
+cannot reach: `/watch` is in the navigation registry and has no route until chunk 5.
+
 ### AUD-S9 — An agent's approval is in the audit trail with the agent named `@integration` (AUD-01, AUD-02)
 ```gherkin
 Given a proposal an independent agent approved with its review scope
