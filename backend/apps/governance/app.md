@@ -58,7 +58,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
   transaction, and the table rejects update and delete.
 - **Mixed tables** (`audit_event`, `ai_generation`, `problem_report`,
   `outbox_event`, `api_key`) show library rows to everyone and tenant rows to
-  their tenant.
+  their tenant, and accept a write only in the zone the session is in: a bank
+  session writes its own rows, a session with no tenant the platform's.
 - The tenant audit log (`GET /audit-events`, `audit.read`) shows the tenant's
   rows and, of the rows without a tenant, only a change to a library record
   (authority, instrument, provision, obligation, vocabulary, taxonomy term)
@@ -148,7 +149,8 @@ Given audit events for a library change an approved proposal applied and for ten
 When tenant B reads the audit log
 Then it sees the library event and not tenant A's
 When the row-level security guard enumerates the mixed tables
-Then each has a "shared or mine" policy, enabled and forced
+Then each reads "shared or mine", enabled and forced
+And each accepts a write only in the zone the session is in
 ```
 
 ### ADM-S4 — The platform console offers each surface to the platform role that owns it `@integration` `@e2e` (ADM-02)

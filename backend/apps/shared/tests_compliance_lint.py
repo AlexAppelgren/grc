@@ -1,8 +1,9 @@
 """The compliance lint's maintenance-hatch rule (scripts/compliance_check.py). The setting
 that switches the append-only triggers off may be named only by the migration helpers,
 migrations and tests, so request code cannot reach it. PostgreSQL folds a setting name, so
-`CW.MAINTENANCE` and `Cw . Maintenance` are the same setting and the rule reads the source
-case-insensitively and across the spaces a formatter may leave around the dot. The lint is
+`CW.MAINTENANCE`, `Cw . Maintenance` and the quoted `"CW"."MAINTENANCE"` are the same setting,
+and the rule reads the source case-insensitively, across the spaces a formatter may leave
+around the dot and through the quotes. The lint is
 loaded by path and run over planted files in a temporary tree, never over the source tree."""
 
 from __future__ import annotations
@@ -28,10 +29,12 @@ PLANTED = {
     "config/settings.py": "# cw.maintenance is mentioned in a comment\n",
     "apps/cases/logic.py": "from apps.shared.migration_helpers import MAINTENANCE_SETTING\n",
     "apps/home/logic.py": "SQL = \"SET LOCAL cw.maintenance = 'on'\"  # compliance: maintenance-hatch because\n",
-    # Refused: the same setting in the spellings PostgreSQL accepts (H12).
+    # Refused: the same setting in the spellings PostgreSQL accepts (H12, then the H-B
+    # review for the quoted one, which is what psql prints).
     "apps/watch/logic.py": "SQL = \"SET LOCAL CW.MAINTENANCE = 'on'\"\n",
     "apps/register/logic.py": "SQL = \"SET LOCAL Cw . Maintenance = 'on'\"\n",
     "apps/proposals/logic.py": "from apps.shared.migration_helpers import maintenance_setting as s\n",
+    "apps/collab/logic.py": "SQL = 'SET LOCAL \"CW\".\"MAINTENANCE\" = \\'on\\''\n",
 }
 
 
@@ -59,6 +62,7 @@ class MaintenanceHatchRule(SimpleTestCase):
             flagged,
             [
                 ("apps/cases/logic.py", "maintenance-hatch"),
+                ("apps/collab/logic.py", "maintenance-hatch"),
                 ("apps/home/logic.py", "maintenance-hatch"),
                 ("apps/library/logic.py", "maintenance-hatch"),
                 ("apps/library/testing.py", "maintenance-hatch"),

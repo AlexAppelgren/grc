@@ -72,7 +72,9 @@ def ignored(relative: str, rules: list[tuple[re.Pattern[str], bool]]) -> bool:
 
 
 def platform_key(agent: Agent | None = None) -> tuple[str, ApiKey]:
-    """A platform key (no tenant), as the watch agent's key is: the plain key and the row."""
+    """A platform key (no tenant), as the watch agent's key is: the plain key and the row.
+    Called with no tenant activated, as the console has it: api_key accepts a row of the
+    session's own zone only (H15)."""
     plain, prefix, key_hash = tokens.new_api_key()
     row = ApiKey.objects.create(
         tenant=None, agent=agent, name="Watch sweeper", key_prefix=prefix, key_hash=key_hash, scopes=["proposals:write"]
@@ -352,6 +354,10 @@ class AgentKeyActorTests(ScenarioTestCase):
         self.tenant = factories.tenant(slug="agent-actor")
         self.activate(self.tenant)
         ensure_tenant_vocabularies(self.tenant)
+        # The key and everything the agent does with it belong to the platform's zone, and a
+        # request of its own would carry no tenant: what the factory activated goes off again,
+        # or the platform rows below are outside this session's zone (H15).
+        tenancy.clear_tenant()
         self.plain_key = platform_key(self.agent)[0]
 
     def test_the_principal_carries_the_agent_the_key_is_bound_to(self) -> None:

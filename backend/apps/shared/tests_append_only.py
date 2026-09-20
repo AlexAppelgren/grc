@@ -4,8 +4,15 @@
 in the session's statement log. The application role must not be able to state it: one
 stray `SET LOCAL` in request code, or an injected one, would otherwise switch every
 append-only ledger off for the rest of that transaction, and a source lint is the only
-thing that would have stood in the way. The trigger functions therefore ignore the setting
-when the role running them is the application role, so the hatch is the migrator's alone.
+thing that would have stood in the way. The trigger functions therefore honour the setting
+for one role and no other, so the hatch is the migrator's alone.
+
+The check is an allowlist on `session_user`, the role that authenticated (shared 0005,
+from the H-B review). Naming the role to refuse left it to every other role there will be,
+and `current_user` is not the role that arrived: a SECURITY DEFINER function runs as its
+owner, and so does a cascading foreign key. `session_user` changes for neither, and the two
+guards below close those doors on the way in as well, by proving that no SECURITY DEFINER
+function exists and that no foreign key into an append-only table acts on delete or update.
 
 PostgreSQL setting names are case-insensitive, so `CW.MAINTENANCE` is the same setting and
 is proven beside the lower-case spelling. The library's five version tables are proven the
@@ -154,6 +161,54 @@ class TheHatchIsTheSchemaOwnersAlone(TransactionTestCase):
                 cursor.execute(
                     "UPDATE audit_event SET summary = 'fixed' WHERE id = %s", [str(rows["audit_event"])]
                 )
+
+
+class NothingElseArrivesAsAnotherRole(TestCase):
+    """The hatch reads `session_user`, so the two ways a statement can arrive under another
+    role must stay shut anyway: belt and braces on the ledgers (H-B review)."""
+
+    databases = {DEFAULT_DB_ALIAS}
+
+    def test_no_security_definer_function_exists(self) -> None:
+        """A SECURITY DEFINER function owned by the migrator would run every statement in its
+        body as the migrator. Nothing in this schema needs one; the extensions' own functions
+        are theirs, not ours."""
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute(
+                "SELECT p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace "
+                "WHERE n.nspname = 'public' AND p.prosecdef "
+                "AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = p.oid AND d.deptype = 'e') "
+                "ORDER BY p.proname"
+            )
+            found = [name for (name,) in cursor.fetchall()]
+        self.assertEqual(
+            found,
+            [],
+            "A SECURITY DEFINER function runs as its owner, which is the role the append-only "
+            "hatch allows. Write the function SECURITY INVOKER, or say here why it is safe.",
+        )
+
+    def test_no_foreign_key_into_an_append_only_table_acts_on_delete_or_update(self) -> None:
+        """A cascade, a SET NULL or a SET DEFAULT is a statement the system runs itself, as
+        the referencing table's owner. NO ACTION and RESTRICT run nothing: they refuse, and
+        Django's own deletes go through the models, where AppendOnlyModel refuses first."""
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute(
+                "SELECT referenced.relname, c.conname, c.confdeltype, c.confupdtype "
+                "FROM pg_constraint c "
+                "JOIN pg_class referenced ON referenced.oid = c.confrelid "
+                "WHERE c.contype = 'f' AND referenced.relname = ANY(%s) "
+                "AND (c.confdeltype NOT IN ('a', 'r') OR c.confupdtype NOT IN ('a', 'r')) "
+                "ORDER BY referenced.relname, c.conname",
+                [sorted(APPEND_ONLY_TRIGGERS)],
+            )
+            acting = cursor.fetchall()
+        self.assertEqual(
+            acting,
+            [],
+            "A foreign key into an append-only table acts on delete or update, so the system "
+            "would rewrite a ledger row for the referencing table's owner. Use NO ACTION.",
+        )
 
 
 class EveryAppendOnlyTableRunsAGuard(TestCase):

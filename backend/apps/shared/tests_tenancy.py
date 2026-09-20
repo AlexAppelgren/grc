@@ -129,18 +129,14 @@ class IdentityLookupMode(TestCase):
         finally:
             connection.in_atomic_block = original
 
-    def test_only_the_auth_layer_calls_identity_lookup(self) -> None:
+    def _callers_of(self, name: str) -> list[str]:
+        """Every production module that calls `name`, as `apps/<path>:<line>`. Migrations,
+        tests and the testing helpers are not production code and are left out."""
         import ast
         from pathlib import Path
 
-        allowed = {
-            "shared/tenancy.py",
-            "identity/session_logic.py",
-            "identity/invitation_logic.py",
-            "identity/api_keys_logic.py",
-        }
         apps_dir = Path(__file__).resolve().parent.parent
-        offenders: list[str] = []
+        found: list[str] = []
         for path in sorted(apps_dir.rglob("*.py")):
             rel = path.relative_to(apps_dir).as_posix()
             if "/migrations/" in rel or rel.split("/")[-1].startswith("tests_") or rel.endswith("/testing.py"):
@@ -149,7 +145,37 @@ class IdentityLookupMode(TestCase):
             for node in ast.walk(tree):
                 if isinstance(node, ast.Call):
                     func = node.func
-                    name = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else None
-                    if name == "identity_lookup" and rel not in allowed:
-                        offenders.append(f"apps/{rel}:{node.lineno}")
+                    called = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else None
+                    if called == name:
+                        found.append(f"apps/{rel}:{node.lineno}")
+        return found
+
+    def test_only_the_auth_layer_calls_identity_lookup(self) -> None:
+        allowed = {
+            "apps/shared/tenancy.py",
+            "apps/identity/session_logic.py",
+            "apps/identity/invitation_logic.py",
+            "apps/identity/api_keys_logic.py",
+        }
+        offenders = [caller for caller in self._callers_of("identity_lookup") if caller.rsplit(":", 1)[0] not in allowed]
         self.assertEqual(offenders, [], f"identity_lookup() is for the auth layer only; allowed: {sorted(allowed)}")
+
+    def test_only_record_leaves_the_tenant_zone(self) -> None:
+        """Leaving the tenant zone is how a platform row gets written from a session that has
+        a tenant (H15), so it belongs to the two functions that are the only door into their
+        ledger, `record()` and `log_event()`, and to the tenancy module itself. A request that
+        wants it for anything else is asking to write outside its own zone."""
+        allowed = {"apps/shared/tenancy.py", "apps/shared/audit.py", "apps/identity/security_log.py"}
+        offenders = [
+            caller
+            for name in ("platform_zone", "clear_tenant")
+            for caller in self._callers_of(name)
+            if caller.rsplit(":", 1)[0] not in allowed
+        ]
+        self.assertEqual(
+            offenders,
+            [],
+            "platform_zone() and clear_tenant() write rows that belong to no tenant; "
+            f"allowed: {sorted(allowed)}. An audit row goes through record() and a security-log "
+            "row through log_event(), which both do it there.",
+        )

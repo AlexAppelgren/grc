@@ -221,7 +221,10 @@ class SessionLimits(TestCase):
     def test_a_platform_user_gets_a_platform_session(self) -> None:
         staff = factories.platform_user()
         self.assertIsNone(session_logic.choose_tenant(staff))
-        bundle = session_logic.create_session(user=staff, kind=SessionKind.FULL, tenant_id=None, request=None)
+        # With no tenant activated, as the sign-in has it when choose_tenant finds none:
+        # user_session accepts a row of the session's own zone only (H15).
+        with tenancy.platform_zone():
+            bundle = session_logic.create_session(user=staff, kind=SessionKind.FULL, tenant_id=None, request=None)
         principal = session_logic.resolve_access_token(bundle.access_token, want=PrincipalKind.USER)
         assert principal is not None
         self.assertTrue(principal.is_platform_staff)

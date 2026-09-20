@@ -22,9 +22,9 @@ Rules (each has a suppression id for the inline form `# compliance: <id> <reason
                   (`cw.maintenance`, or MAINTENANCE_SETTING which holds it) is named only in
                   apps/shared/migration_helpers.py, under migrations/ and in tests_*.py, so
                   request code cannot reach it. Read case-insensitively and across white
-                  space, because PostgreSQL folds a setting name and `CW.MAINTENANCE` is the
-                  same hatch. Any line counts, comments included. This rule takes no
-                  suppression.
+                  space and through quotes, because PostgreSQL folds a setting name and
+                  `CW.MAINTENANCE` and `"CW"."MAINTENANCE"` are the same hatch. Any line
+                  counts, comments included. This rule takes no suppression.
 
 Suppression: append `# compliance: <id> <reason>` to the offending line, or the line that
 opens the offending statement; the reason must be non-empty. A suppression with no reason
@@ -61,9 +61,10 @@ LOG_SENSITIVE = re.compile(
 LOG_METHODS = {"debug", "info", "warning", "warn", "error", "exception", "critical", "log"}
 HTTP_METHODS = {"get", "post", "put", "patch", "delete", "api_operation"}
 SUPPRESSION = re.compile(r"#\s*compliance:\s*(?P<id>[a-z-]+)(?P<reason>.*)$")
-# Case-insensitive and across white space: PostgreSQL folds a setting name, so
-# `SET LOCAL CW.MAINTENANCE` and `cw . maintenance` are the same hatch (H12).
-MAINTENANCE_HATCH = re.compile(r"cw\s*\.\s*maintenance|maintenance_setting", re.IGNORECASE)
+# Case-insensitive, across white space and through quotes: PostgreSQL folds a setting name
+# and accepts the quoted spelling, so `SET LOCAL CW.MAINTENANCE`, `cw . maintenance` and
+# `"CW"."MAINTENANCE"` are all the same hatch (H12, then the H-B review).
+MAINTENANCE_HATCH = re.compile(r'"?cw"?\s*\.\s*"?maintenance"?|maintenance_setting', re.IGNORECASE)
 HATCH_HOME = "apps/shared/migration_helpers.py"
 
 

@@ -205,17 +205,24 @@ class GovernanceScenarioTests(ScenarioTestCase):
         read_a = self.client.get(f"{V1}/audit-events?limit=100", **sign_in(officer_a, tenant=tenant_a))
         self.assertTrue({str(library_event.id), str(tenant_event.id)} <= {row["id"] for row in read_a.json()["items"]})
         # When the row-level security guard enumerates the mixed tables, each is enabled and
-        # forced with a tenant policy, and that policy is "shared or mine".
+        # forced, reads "shared or mine" and writes only the session's own zone (H15): the
+        # tenant policy carries the own-zone rule and a read policy adds the platform's rows.
         self._prove(rls_guards.RowLevelSecurityGuard)
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT tablename, qual FROM pg_policies WHERE policyname = 'tenant_isolation' AND tablename = ANY(%s)",
+                "SELECT tablename, policyname, cmd, qual, with_check FROM pg_policies WHERE tablename = ANY(%s)",
                 [list(MIXED_TABLES)],
             )
-            policies = dict(cursor.fetchall())
-        self.assertEqual(set(policies), set(MIXED_TABLES))
-        for table, qual in policies.items():
-            self.assertIn("tenant_id IS NULL", qual, f"{table} is not shared-or-mine")
+            policies = {(table, policy): (cmd, qual, check) for table, policy, cmd, qual, check in cursor.fetchall()}
+        own_zone = rls_guards.own_zone_rule("tenant_id")
+        for table in MIXED_TABLES:
+            write_rule = policies[(table, "tenant_isolation")]
+            self.assertEqual(write_rule[0], "ALL", f"{table}'s tenant policy is not the write rule")
+            self.assertIn(own_zone, write_rule[2], f"{table} accepts a write outside the session's zone")
+            read_rule = policies[(table, rls_guards.LIBRARY_READ_POLICY)]
+            self.assertEqual(
+                (read_rule[0], read_rule[1]), ("SELECT", "(tenant_id IS NULL)"), f"{table} is not shared-or-mine"
+            )
 
     def _call(self, method: str, path: str, payload: dict[str, Any] | None, headers: dict[str, Any]) -> Any:
         if payload is None:

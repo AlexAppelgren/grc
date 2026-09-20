@@ -79,6 +79,9 @@ ignore = [
 # The one place raw DDL is built from strings (playbook 11.2: policies, triggers and grants
 # live in migrations). Every identifier is a module constant; no input reaches it.
 "apps/shared/migration_helpers.py" = ["S608"]
+# The RLS guard probes each mixed table by name to prove its write rule bites. Every table
+# and column comes from MIXED_TABLES in the file itself; no input reaches it.
+"apps/shared/tests_rls.py" = ["S608"]
 
 # ---------------------------------------------------------------------------------------
 # mypy: pragmatic, whole tree, django-stubs plugin (playbook 9). Strict on what is

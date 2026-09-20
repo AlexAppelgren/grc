@@ -1,5 +1,10 @@
 """Tenancy and the two zones (playbook 14).
 
+- `clear_tenant()` and `platform_zone()` leave the tenant zone, for the rest of the
+  transaction or for a block, which is how a request with no tenant runs and how a tenant's
+  own session writes a row that belongs to no tenant (an audit row about a library record,
+  say): since H15 a mixed table accepts only the zone the session is in. The tenancy guard
+  pins who may call them.
 - `activate(tenant_id)` issues `SET LOCAL app.tenant_id` (through `set_config(..., true)`,
   which is the parameterised spelling) inside the open transaction. Policies read
   `current_setting('app.tenant_id', true)`, so an unset value matches no rows. It refuses
@@ -58,8 +63,7 @@ def activate(tenant_id: uuid.UUID, *, using: str = DEFAULT_DB_ALIAS) -> None:
             "tenancy.activate() needs an open transaction: SET LOCAL is a no-op outside one. "
             "Requests run under ATOMIC_REQUESTS; tasks use @tenant_task."
         )
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT set_config(%s, %s, true)", [TENANT_SETTING, str(tenant_id)])
+    _set_tenant_setting(str(tenant_id), using=using)
     _active_tenant.set(tenant_id)
 
 
@@ -75,6 +79,43 @@ def database_tenant_id(*, using: str = DEFAULT_DB_ALIAS) -> uuid.UUID | None:
         row = cursor.fetchone()
     value = row[0] if row else None
     return uuid.UUID(value) if value else None
+
+
+def clear_tenant(*, using: str = DEFAULT_DB_ALIAS) -> None:
+    """Leave the tenant zone for the rest of the transaction: the session is then in the
+    zone of the rows that belong to no tenant, which is where a request with no tenant runs
+    in production. `platform_zone()` below is the block form, and the tenancy guard pins who
+    may call either."""
+    connection = connections[using]
+    if not connection.in_atomic_block:
+        raise NotInTransaction("tenancy.clear_tenant() needs an open transaction: SET LOCAL is a no-op outside one.")
+    _set_tenant_setting("", using=using)
+    _active_tenant.set(None)
+
+
+@contextmanager
+def platform_zone(*, using: str = DEFAULT_DB_ALIAS) -> Iterator[None]:
+    """Write rows that belong to no tenant, inside the open transaction, then put the
+    session's tenant back.
+
+    Since the write rules were split (H15) a mixed table accepts only the rows of the zone
+    the session is in, so a platform row cannot be written while a tenant is activated. Most
+    platform work never activates one; the exceptions are the actions a bank's own session
+    takes whose subject belongs to the library or the console, and `record()` writes their
+    audit row here. A block that raises leaves the tenant as it found it.
+    """
+    previous = database_tenant_id(using=using)
+    clear_tenant(using=using)
+    try:
+        yield
+    finally:
+        _set_tenant_setting(str(previous) if previous else "", using=using)
+        _active_tenant.set(previous)
+
+
+def _set_tenant_setting(value: str, *, using: str) -> None:
+    with connections[using].cursor() as cursor:
+        cursor.execute("SELECT set_config(%s, %s, true)", [TENANT_SETTING, value])
 
 
 @contextmanager

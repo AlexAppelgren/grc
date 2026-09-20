@@ -65,14 +65,18 @@ def enrolment_principal(*, subject_id: uuid.UUID | None = None) -> Principal:
 
 
 def _resolving(principal: Principal, expected: str) -> Any:
-    """What a stubbed resolver does: hand back the principal and, like the real one,
-    activate its tenant so row-level security scopes the request (playbook 14)."""
+    """What a stubbed resolver does: hand back the principal and, like the real one, put the
+    connection in the principal's zone so row-level security scopes the request (playbook
+    14). A platform principal has no tenant, and clearing one a factory activated earlier in
+    the test is what makes the request look like the production one, which never had it."""
 
     def resolve(token: str) -> Principal | None:
         if token != expected:
             return None
         if principal.tenant_id is not None:
             tenancy.activate(principal.tenant_id)
+        else:
+            tenancy.clear_tenant()
         return principal
 
     return resolve
@@ -107,6 +111,8 @@ def sign_in(user: Any, *, tenant: Any = None, step_up: bool = False, kind: str =
     tenant_id = tenant.id if tenant is not None else None
     if tenant_id is not None:
         tenancy.activate(tenant_id)
+    else:
+        tenancy.clear_tenant()  # a platform session, as production has it: no tenant activated
     bundle = session_logic.create_session(
         user=user, kind=SessionKind(kind), tenant_id=tenant_id, request=None
     )

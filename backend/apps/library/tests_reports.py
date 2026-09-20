@@ -74,7 +74,9 @@ class ReportWriter(ScenarioTestCase):
 
     def test_a_platform_reader_files_a_report_with_no_tenant(self) -> None:
         staff = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
-        with transaction.atomic():
+        # No tenant activated, as a platform session has it: problem_report accepts a row of
+        # the session's own zone only (H15), and the setUp above left tenant A on.
+        with transaction.atomic(), tenancy.platform_zone():
             report = create_report(
                 subject_type=SubjectType.INSTRUMENT,
                 subject_id=SUBJECT,
