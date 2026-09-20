@@ -4,7 +4,7 @@ Written 2026-09-19 by the planning workflow (read, plan, parallelism and coverag
 
 ## Scope, rules and defaults
 
-Chunk 4 plan: proposals and the platform console. Baseline is main at 51f9efa, which already holds the chunk 3 data layer and the redesign foundations (18a935b). The plan has 27 tasks in 9 waves; with Q1 unanswered it is 20 tasks in 7 waves. Nothing was edited while planning.
+Chunk 4 plan: proposals and the platform console. Baseline is main at 51f9efa, which already holds the chunk 3 data layer and the redesign foundations (18a935b). The plan has 26 tasks in 10 waves. Nothing was edited while planning, and nothing waits for a decision: the report tail at the end of this file is replanned for Alex's answer to Q1 (2026-09-20).
 
 HARD PRECONDITION: THE REST OF CHUNK 3 IS ON MAIN BEFORE WAVE 1
 - What must be on main:
@@ -18,7 +18,7 @@ HARD PRECONDITION: THE REST OF CHUNK 3 IS ON MAIN BEFORE WAVE 1
   - Every chunk 4 wave from 1 to 8 has a task that owns en.json and sv.json.
   - Chunk 3's backend half touches e2e_seed.py, tests_seed_integrity.py, contract_drift_pending.txt and the library migrations.
   - So no chunk 3 task can share a wave with this plan.
-- Ownership: T16b alone owns listProblemReports. Chunk 3 builds only the create route and the dialog.
+- Ownership: chunk4-T18 alone owns the tenant read and the close of a problem report. Chunk 3 builds only the create route and the dialog.
 
 WHAT IT DELIVERS
 - PRO-01 to PRO-03:
@@ -28,12 +28,12 @@ WHAT IT DELIVERS
   - A tenant sees its own pending library proposals.
   - The console queue shows the source beside the sentence diff, and never shows a tenant member's name.
   - Tenants see library updates since their last visit (POST /me/visit).
-- AUD-03: the report-to-proposal loop, gated by Q1.
+- AUD-03: the bank-internal problem report. A bank's own members list and close their reports on the record; nobody outside the bank reads one (replanned 2026-09-20; see the tail at the end of this file).
 - AUD-01:
   - GET /audit-events and a tenant audit log screen.
   - Rows without a tenant reach tenants only for library records written by agents, the system or platform staff.
 - ADM-02, the R1 part of the console:
-  - Shell and platform landing, vocabularies, queue, problem reports, and tenants with create-and-invite-first-admin.
+  - Shell and platform landing, vocabularies, queue, and tenants with create-and-invite-first-admin. No problem-reports surface: reports stay inside the bank.
   - ADM-S4 is reworded to the surfaces that exist, with each deferred surface named with its chunk.
 - A second library editor login, and bootstrap_platform --role library_editor with an audited role grant.
 
@@ -90,23 +90,22 @@ CUT, WITH REASONS
 - J-5's watch steps wait for chunk 5.
 
 WAVE LOGIC
-- The proposals backend chain: T1, T6, T10, T13b, then T18.
-- The governance scenario-file chain: T3, T7, T16b, then T18.
-- The contract_drift_pending.txt chain: T3, T13a, T16b, T18, T24a, then T24b.
-- Exactly one frontend task per wave owns the catalogs and registry.ts: T5, T9, T12, T14, T17, T19, T21, T23. T20 touches no catalog and runs beside T19.
+- The proposals backend chain: T1, T6, T10, then T13b.
+- The governance scenario-file chain: T3, T7, then T18.
+- The contract_drift_pending.txt chain: T3, T13a, T18, T24a, then T24b.
+- Exactly one frontend task per wave owns the catalogs and registry.ts: T5, T9, T12, T14, T17, T19, T21. T20 touches no catalog and runs beside T19, and T23 is a journey task that writes no copy.
 - Security reviews:
-  - T15 runs in wave 5 and covers every task that does not need Q1.
-  - T22 covers only the Q1 work.
+  - T15 runs in wave 5 and covers T1 to T14.
+  - T22 covers the report tail: T16, T18 and T21, so it runs in wave 8, after T21.
   - The main agent's per-merge security review still applies to the tenancy, fence, audit and four-eyes tasks.
-- If Q1 is unanswered when wave 3 starts, hold T16a, T16b, T18, T21, T22, T23 and T24b. Everything else proceeds, and T24a closes the chunk with AUD-03 in progress.
+- Nothing in this plan waits for a decision any more. Alex answered chunk 4's Q1 on 2026-09-19, and the report tail is replanned for that answer at the end of this file.
 
 CHANGES FROM THE REVIEW
 - Chunk 3 is now a hard precondition.
 - Two proposal kinds are cut.
 - T11 shrinks to the fence proof and moves to wave 1.
-- T13 is split into T13a and T13b. T16 is split into T16a and T16b. T24 is split into T24a and T24b.
+- T13 is split into T13a and T13b. T24 is split into T24a and T24b. (T16's split into T16a and T16b is superseded by the replan of 2026-09-20.)
 - PRO-S9 moves from T6 to T10.
-- T16a's policy is limited to SELECT and UPDATE, with a column trigger.
 - T3's row rule is tightened.
 - PRO-S1 and ADM-S4 are reworded.
 - The step-up id must be on every audit row an approval writes.
@@ -116,42 +115,38 @@ CHANGES FROM THE REVIEW
 - Coverage floors appear in the task gates.
 - The rejection-reason keys follow schema.sql. This was found while checking the critiques.
 
+CHANGES FROM THE REPLAN OF 2026-09-20
+- Alex's answer to Q1 keeps a bank's problem reports inside the bank, so the Q1 tail is replaced by the report tail at the end of this file: T16, T18, T21, T22, T23 and T24b.
+- T16a, T16b and the old T18, T21 and T23 are removed, with their reasons, at the top of that tail.
+- T15 and T24a are reworded: nothing is gated by a decision any more.
+
 ## Waves
 
 Tasks in one wave have disjoint files and can run side by side.
 
 1. `chunk4-T1`, `chunk4-T2`, `chunk4-T3`, `chunk4-T4`, `chunk4-T5`, `chunk4-T11`
 2. `chunk4-T6`, `chunk4-T7`, `chunk4-T8`, `chunk4-T9`, `chunk4-T13a`
-3. `chunk4-T10`, `chunk4-T12`, `chunk4-T16a`
-4. `chunk4-T13b`, `chunk4-T14`, `chunk4-T16b`
-5. `chunk4-T15`, `chunk4-T17`, `chunk4-T18`
-6. `chunk4-T19`, `chunk4-T20`, `chunk4-T22`
+3. `chunk4-T10`, `chunk4-T12`, `chunk4-T16`
+4. `chunk4-T13b`, `chunk4-T14`, `chunk4-T18`
+5. `chunk4-T15`, `chunk4-T17`
+6. `chunk4-T19`, `chunk4-T20`
 7. `chunk4-T21`, `chunk4-T24a`
-8. `chunk4-T23`
-9. `chunk4-T24b`
+8. `chunk4-T22`
+9. `chunk4-T23`
+10. `chunk4-T24b`
 
 ## Open questions
 
-- Q1 (a product invariant is at stake, so stop and ask Alex): how may platform staff read and resolve tenants' problem reports?
+- Q1, answered by Alex on 2026-09-19: how may platform staff read and resolve tenants' problem reports? They may not.
   
-  The problem:
-  - problem_report is a mixed table under forced RLS, so a console session (no tenant) sees only rows without a tenant.
-  - The console list, Reject, Start a proposal, and marking a report fixed when its proposal is approved all read or write tenant rows.
-  - 'Platform staff have no bypass' forbids that without a support access grant.
-  - A platform session also cannot write a tenant's audit_event or outbox_event rows. A resolution's audit and outbox rows would therefore be library rows, carrying no report text and no reporter.
+  Alex's words: "Bank comments should be in the bank only, not shared with other tenant. The watch feature should be able to find these deviations during its runs when it keeps track of upcoming changes."
   
-  Option A (recommended), a narrow exception on problem_report only:
-  - Two permissive policies, FOR SELECT and FOR UPDATE, keyed on a transaction-local flag. INSERT and DELETE never match it.
-  - A BEFORE UPDATE trigger limits flagged writes to status, resolution_note, resolved_by, resolved_at and resolved_by_proposal.
-  - Only apps/governance/problem_reports_logic.py may set the flag, after proposals.review is checked. An AST guard enforces that.
-  - The reporter's identity is never returned to platform staff. The organisation name is shown, as the card draws it.
+  Neither option the question offered is built. A report is a tenant record from end to end: a bank's own members with the right permission list and close it, the reporter is named only inside the bank, and no bleqq editor, other bank, agent or model reads one. There is no console screen, no platform read window and no cross-zone read, so the narrow RLS exception of option A is not built and `problem_report` keeps the plain split policy every mixed table gets from HARDENING's H-C.
   
-  Option B, a report becomes a library row, like a tenant-made proposal:
-  - The tenant link lives in its own RLS table.
-  - The console shows no organisation name and has no organisation filter.
-  - Chunk 3's ProblemReport model changes.
+  The library still gets corrected, the other way round: chunk 5's watch agents re-check library records against their own public sources on every run and file corrections through the proposal door, with four eyes. That task belongs to chunk 5's plan.
   
-  This gates chunk4-T16a, T16b, T18, T21, T22, T23 and T24b. If Q1 is unanswered when wave 3 starts, those are held. Everything else proceeds, and T24a closes the chunk with AUD-03 in progress.
+  The tail this answer replaces is at the end of this file, with what was removed and why.
+
 - Rejected (in part), the T6 source-at-approval critique: its fix has the approve body carry fieldSources for fields an override introduces, and has T17's form ask for them.
   - No scenario adds a field at review, so that mechanism is speculative.
   - The accepted part stands: T6 re-runs the source check over the merged payload, and an override that introduces an unsourced field answers 422 source_missing and applies nothing.
@@ -440,7 +435,7 @@ Registry changes:
 - Remove console-queue; chunk4-T14 re-adds it with its page.
 - Keep console-vocabularies.
 
-NavIcon gets icons for console-tenants and console-problem-reports. The shell copy goes into both catalogs.
+NavIcon gets an icon for console-tenants. The shell copy goes into both catalogs. (Written before the replan of 2026-09-20: if this task shipped a console-problem-reports icon, chunk4-T24b deletes the unused entry, because no console problem-reports destination exists.)
 
 **Owned paths:**
 
@@ -606,7 +601,7 @@ Scenarios in governance/app.md:
 - Un-skip ADM-S6.
 - Un-skip ADM-S4 as a data-driven test:
   - Every operation gated by a platform permission answers 403 naming requiredPermission to the other platform role.
-  - So does each route in an explicit list of logic-gated platform routes: POST /proposals now; chunk4-T16b adds GET /problem-reports.
+  - So does each route in an explicit list of logic-gated platform routes: POST /proposals. No problem-report route joins that list; the tenant read and close of chunk4-T18 are tenant routes gated by a permission.
 
 Update FIRST_RUN_SETUP steps 6 and 7.
 
@@ -813,7 +808,7 @@ Enrich GET /proposals/{id} for the version kind and the vocabulary kinds:
 - Once applied, the version it created, found through ObligationVersion.applied_by_proposal.
 
 Every row of GET /proposals carries: target title and reference, instrument short name, source label, proposer, and isMine.
-- For a proposal with proposed_in_tenant, return no proposer name or id. Return fromOrganisation=true instead, the same rule the console applies to problem reporters.
+- For a proposal with proposed_in_tenant, return no proposer name or id. Return fromOrganisation=true instead. A problem reporter never reaches the console at all.
 - Compute isMine on the server.
 - Add origin (agent|user) and notMine filters.
 - Batch the lookups and re-pin PROPOSAL_QUEUE_QUERIES.
@@ -882,7 +877,7 @@ Un-fixme two journeys:
 - ADM-S4, driven by the registry:
   - For the editor and for the platform admin, each of their own console destinations is visible and opens.
   - The other role's destinations are absent, and their direct URLs show the Restricted screen naming the missing permission.
-  - Later registry entries (queue, problem reports) join the journey without editing it.
+  - Later registry entries (the queue) join the journey without editing it. No console problem-reports entry is ever added.
 
 **Owned paths:**
 
@@ -913,69 +908,6 @@ Un-fixme two journeys:
 - The console fires no tenant query.
 - The server's 403 decides, and the screen renders its requiredPermission.
 - No string literals.
-
-### chunk4-T16a: The problem-report review window in the database (needs Q1)
-
-**Requirements:** AUD-03, INV-06  
-**Scenarios:** supports AUD-S5 and AUD-S7 (mixed-table policy stays pinned)  
-**Depends on:** chunk4-T1
-
-Starts only after Alex answers Q1 with option A. Written test-first.
-
-The policies:
-- Leave the FOR ALL tenant policy on problem_report as it is.
-- Add two permissive policies keyed on a transaction-local flag, one FOR SELECT and one FOR UPDATE. INSERT and DELETE therefore never match the flag.
-
-The trigger:
-- Add a BEFORE UPDATE trigger, like cw_outbox_guard.
-- While the flag is on, it refuses a change to any column other than status, resolution_note, resolved_by, resolved_at and resolved_by_proposal.
-
-The flag:
-- tenancy.problem_review() sets it for the shortest possible block and clears it after.
-- Only apps/governance/problem_reports_logic.py may call it, enforced by an AST guard like identity_lookup's.
-
-The model: add resolution_note, resolved_by and resolved_at in the next library migration after chunk 3's.
-
-Pin the policy and trigger text in tests_rls.py.
-
-This task does not depend on T15. Like every tenancy change it gets the main agent's per-merge security review, and T22 reviews it in full.
-
-**Owned paths:**
-
-- `backend/apps/shared/tenancy.py`
-- `backend/apps/shared/tests_tenancy.py`
-- `backend/apps/shared/tests_rls.py`
-- `backend/apps/shared/factories.py`
-- `backend/apps/library/models.py`
-- `backend/apps/library/migrations/<next after chunk 3>_problem_report_review.py`
-
-**Done when:**
-
-- On the app alias, with the flag set:
-  - INSERT is refused, and so is DELETE.
-  - An update to text, tenant_id, reporter_id, subject_type or subject_id is refused.
-  - An update to the resolution columns succeeds.
-- Without the flag, a console session sees only rows without a tenant, as before.
-- The flag is off after the block, including when the block raises.
-- The RLS guard pins both new policies and the trigger.
-- The AST guard is proven to fail once when another module calls problem_review(), then restored.
-- makemigrations --check and migrate_from_zero are clean.
-- tenancy.py holds its floor of 96.
-
-**Gates:**
-
-- `set -a; . ./.env.worktree; set +a`
-- `cd backend && ./run.sh run python manage.py makemigrations --check --dry-run --settings=config.test_settings && ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings`
-- `./run.sh run coverage run manage.py test apps.shared apps.library --settings=config.test_settings --noinput && ./run.sh run coverage report --include='apps/shared/tenancy.py' (>= 96)`
-- `./run.sh run ruff check . && ./run.sh run mypy`
-- `python backend/scripts/compliance_check.py --all`
-
-**Invariants:**
-
-- Forced RLS stays.
-- The exception covers problem_report only, SELECT and UPDATE only, the resolution columns only, and only inside one module.
-- The app role still cannot bypass RLS.
-- If Alex chooses option B, re-plan this task before starting.
 
 ### chunk4-T13b: Library updates since the last visit
 
@@ -1095,72 +1027,13 @@ Also:
 - No string literals.
 - The server enforces four eyes; the screen only explains it.
 
-### chunk4-T16b: Problem reports reach the console (needs Q1)
-
-**Requirements:** AUD-03, PRO-03, ADM-02  
-**Scenarios:** supports AUD-S5; ADM-S4 (logic-gated list extended)  
-**Depends on:** chunk4-T16a, chunk4-T3, chunk4-T7, chunk4-T13a
-
-Starts only after Q1 is answered with option A and chunk4-T16a is on main.
-
-Serve GET /problem-reports as a logic gate, and register it in UNGATED_BY_DESIGN.
-
-A proposals.review holder:
-- Reads inside tenancy.problem_review().
-- Gets every report, with organisation name, subject title and version, and resolvedByProposal {id}.
-- Never gets the reporter.
-
-A tenant member:
-- Gets only rows whose tenant_id is their own tenant, and no rows without a tenant.
-- mine=true narrows to their own reports.
-
-Any other caller gets 403 naming proposals.review. That includes a platform session without proposals.review and an API key.
-
-Filters: status and organisation.
-
-Also:
-- Add GET /problem-reports to ADM-S4's explicit list of logic-gated platform routes in governance/tests_scenarios.py.
-- Keep or delete its contract_drift_pending line according to the built shape.
-
-**Owned paths:**
-
-- `backend/apps/governance/problem_reports_logic.py`
-- `backend/apps/governance/api.py`
-- `backend/apps/governance/schemas.py`
-- `backend/apps/governance/tests_problem_reports.py`
-- `backend/apps/governance/tests_scenarios.py`
-- `backend/apps/shared/permissions.py`
-- `backend/scripts/contract_drift_pending.txt`
-
-**Done when:**
-
-- A console read lists reports from tenants A and B, with organisation names, resolvedByProposal and no reporter field.
-- Tenant B never sees tenant A's reports, and a tenant never sees reports without a tenant.
-- The platform admin and an API key get 403 naming proposals.review, and ADM-S4 asserts it.
-- The flag is off after the read.
-- The floors hold: permissions.py at 97, and governance holds its measured coverage.
-
-**Gates:**
-
-- `set -a; . ./.env.worktree; set +a`
-- `cd backend && ./run.sh run coverage run manage.py test apps.governance apps.library apps.shared --settings=config.test_settings --noinput && ./run.sh run coverage report --include='apps/governance/*,apps/shared/permissions.py'`
-- `./run.sh run ruff check . && ./run.sh run mypy`
-- `python backend/scripts/compliance_check.py --all && python backend/scripts/requirements_coverage.py`
-- `bash generate-types.sh && (cd backend && ./run.sh run python scripts/contract_drift.py) as a check only; do not commit the regenerated files`
-
-**Invariants:**
-
-- The review window opens only after proposals.review is checked, and only inside problem_reports_logic.py.
-- Platform staff never see the reporter.
-- Tenant content never reaches logs or Sentry.
-
 ### chunk4-T15: Security review 1: the door, four eyes, audit and tenancy
 
 **Requirements:** AC-PRO1, AC-PRO2, AC-AUD1, AC-ID3, AC-NFR1  
 **Scenarios:** PRO-S2, PRO-S3, PRO-S4, PRO-S5, PRO-S7, AUD-S7, ADM-S4, ADM-S6  
 **Depends on:** chunk4-T1, chunk4-T2, chunk4-T3, chunk4-T4, chunk4-T5, chunk4-T6, chunk4-T7, chunk4-T8, chunk4-T9, chunk4-T10, chunk4-T11, chunk4-T12, chunk4-T13a, chunk4-T13b, chunk4-T14
 
-Review main after the tasks that do not need Q1 (T1 to T14) against the CLAUDE.md invariants. The areas:
+Review main after T1 to T14 against the CLAUDE.md invariants. The report tail (T16, T18, T21) has its own review, T22, so nothing here covers problem reports. The areas:
 - Four eyes: the constraint, the 409, and corrections recorded as the reviewer's.
 - The source check at creation and approval.
 - The library fence and the AC-PRO1 proof.
@@ -1247,67 +1120,6 @@ Un-fixme three journeys:
 - No client-side four-eyes rule or source rule replaces the server's.
 - No string literals. Pills through Pill.
 - Journeys never mock an API and never assert exact queue counts.
-
-### chunk4-T18: A proposal resolves a problem report (needs Q1)
-
-**Requirements:** AUD-03, PRO-02, AC-AUD1, AC-ID3  
-**Scenarios:** AUD-S5 (un-skipped)  
-**Depends on:** chunk4-T16b, chunk4-T13b, chunk4-T6, chunk4-T10
-
-POST /proposals takes an optional problemReportId from a console proposer (proposals.review or library_vocab.manage):
-- It links the report's resolved_by_proposal in the same transaction, inside tenancy.problem_review().
-- The report then reads 'In a proposal'.
-
-What happens next:
-- Approving that proposal sets the report to fixed, with resolved_by and resolved_at.
-- Rejecting it returns the report to open, with the rejection note as its resolution note.
-- PATCH /problem-reports/{id} (proposals.review) takes {status: 'rejected', resolutionNote}. The note is required.
-
-Each resolution writes a library audit row and an outbox event, problem_report.resolved. Neither carries report text or the reporter.
-
-Every audit row written during an approval carries the approval's step_up_assertion_id, including problem_report.resolved.
-
-Un-skip AUD-S5. In app.md, note that the agents' next-run clause arrives with chunk 5, which reads that topic.
-
-**Owned paths:**
-
-- `backend/apps/governance/problem_reports_logic.py`
-- `backend/apps/governance/api.py`
-- `backend/apps/governance/schemas.py`
-- `backend/apps/governance/tests_scenarios.py`
-- `backend/apps/governance/app.md`
-- `backend/apps/proposals/logic.py`
-- `backend/apps/proposals/schemas.py`
-- `backend/apps/proposals/api.py`
-- `backend/apps/proposals/tests_apply.py`
-- `backend/scripts/contract_drift_pending.txt`
-
-**Done when:**
-
-- AUD-S5 is un-skipped and green.
-- A report can be linked only once.
-- A tenant member's problemReportId is refused.
-- Approve and reject move the report inside their own transaction, or roll back with it.
-- The approval test asserts every audit row it wrote carries the assertion id, problem_report.resolved included.
-- GET /problem-reports shows resolvedByProposal after linking.
-- The audit-on-write guard is green for the PATCH operation.
-- The proposals floors hold.
-
-**Gates:**
-
-- `set -a; . ./.env.worktree; set +a`
-- `cd backend && ./run.sh run coverage run manage.py test apps.governance apps.proposals apps.shared --settings=config.test_settings --noinput && ./run.sh run coverage report --include='apps/governance/*,apps/proposals/*'`
-- `./run.sh run ruff check . && ./run.sh run mypy`
-- `python backend/scripts/compliance_check.py --all && python backend/scripts/requirements_coverage.py`
-- `bash generate-types.sh && (cd backend && ./run.sh run python scripts/contract_drift.py) as a check only; do not commit the regenerated files`
-
-**Invariants:**
-
-- The report is written only inside problem_reports_logic, under the Q1 mechanism, and only in its resolution columns.
-- Four eyes is unchanged: the editor who starts a proposal cannot approve it.
-- One transaction.
-- No report text or reporter in the audit or outbox rows.
-- Proposals stay the only door.
 
 ### chunk4-T19: Library updates screen
 
@@ -1410,106 +1222,14 @@ Extend VOC-S11 to match its Gherkin, safe under fullyParallel and a retry:
 - The journey approves with step-up as editor2, never as the proposer.
 - No exact counts in journeys.
 
-### chunk4-T22: Security review 2: the problem-report exception (needs Q1)
-
-**Requirements:** AC-NFR1, AC-AUD1, AC-PRO2, AUD-03  
-**Scenarios:** AUD-S5, AUD-S7, ADM-S4  
-**Depends on:** chunk4-T15, chunk4-T16a, chunk4-T16b, chunk4-T18
-
-Review T16a, T16b and T18 on main. The areas:
-- The Q1 mechanism:
-  - the policy text: SELECT and UPDATE only;
-  - the column trigger;
-  - flag scope and lifetime;
-  - the AST guard;
-  - no other table touched;
-  - no reporter identity reaches platform staff;
-  - writes limited to the resolution columns.
-- GET /problem-reports: the 403 for every caller without proposals.review or a tenant, and tenant isolation.
-- The resolution loop:
-  - four eyes when an editor starts a proposal;
-  - transaction boundaries;
-  - the assertion id on the resolution row;
-  - audit and outbox rows free of report text.
-
-Append the findings to the chunk 4 review file. A critical or high finding becomes a fix task before chunk4-T23 merges.
-
-**Owned paths:**
-
-- `docs/security/CHUNK4_REVIEW_2026-09-19.md`
-
-**Done when:**
-
-- The review file gains a section giving each listed area a verdict and evidence.
-- No critical finding is left without a fix task.
-
-**Gates:**
-
-- `set -a; . ./.env.worktree; set +a`
-- `cd backend && ./run.sh run python manage.py test apps.governance apps.proposals apps.library apps.shared --settings=config.test_settings --noinput (read-only verification, plus throwaway probes that are never committed)`
-
-**Invariants:**
-
-Read-only on code. The only output is the review file. Never weaken a guard to show a finding; prove it with a probe and revert.
-
-### chunk4-T21: Problem reports in the console (needs Q1)
-
-**Requirements:** AUD-03, ADM-02  
-**Scenarios:** ADM-S4 stays green with Problem reports in the editor's rail and Restricted for the platform admin; supports AUD-S5  
-**Depends on:** chunk4-T16b, chunk4-T18, chunk4-T19
-
-Build /console/problem-reports and its detail from console-problem-reports.html:
-- Open, In a proposal, Fixed and Rejected tabs. In a proposal is derived from open plus resolvedByProposal.
-- An organisation filter, plus a 'where' filter if chunk 3 stores that field.
-- Each row: status and 'where' pills, organisation, time, the quoted report and the record it concerns.
-- The detail, with Reject with a reason (PATCH) and the fixed state.
-- The four states.
-
-Also:
-- Add the console-problem-reports registry entry (proposals.review). The registry-driven ADM-S4 journey then opens /console/problem-reports as the platform admin and expects Restricted, with no spec edit.
-- Add features/problem-reports: api, hooks, presentation, and tones by report status.
-- Write the copy in both catalogs.
-
-**Owned paths:**
-
-- `frontend/src/app/(console)/console/problem-reports/**`
-- `frontend/src/components/console/ProblemReportsScreen.tsx`
-- `frontend/src/components/console/ProblemReportDetailScreen.tsx`
-- `frontend/src/features/problem-reports/**`
-- `frontend/src/features/shared/tone-by-kind.ts`
-- `frontend/src/features/shared/tone-by-kind.test.ts`
-- `frontend/src/shared/navigation/**`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
-
-**Done when:**
-
-- Unit tests cover the tabs, the derived In a proposal state and reject.
-- ADM-S4 is green, including the platform admin's Restricted screen on /console/problem-reports.
-- No reporter identity is rendered anywhere.
-- features coverage is at least 98%.
-- check:messages is green.
-
-**Gates:**
-
-- `cd frontend && npm run lint && npm run typecheck && npm run test:coverage && npm run check:messages && npm run build`
-- `npm run test:e2e -- --grep "ADM-S4"`
-
-**Invariants:**
-
-- Tones by kind. Pills through Pill.
-- No reporter details.
-- No string literals.
-- The console fires no tenant queries apart from the report read Q1 allows.
-
-### chunk4-T24a: Close chunk 4 without the Q1 tail: contract, floors, status and runbooks
+### chunk4-T24a: Close chunk 4 without the report tail: contract, floors, status and runbooks
 
 **Requirements:** PRO-01, PRO-02, PRO-03, AUD-01, AUD-03, ADM-02  
-**Scenarios:** all non-Q1 chunk 4 scenarios reported; AGT-S10, AUD-S4, AUD-S6, ADM-S5, PRO-S8 stay pending with their chunks named; AUD-S5 pending on Q1  
+**Scenarios:** every chunk 4 scenario outside the report tail reported; AGT-S10, AUD-S4, AUD-S6, ADM-S5, PRO-S8 stay pending with their chunks named; AUD-S5 pending on the report tail (T16 to T24b)  
 **Depends on:** chunk4-T1, chunk4-T2, chunk4-T3, chunk4-T4, chunk4-T5, chunk4-T6, chunk4-T7, chunk4-T8, chunk4-T9, chunk4-T10, chunk4-T11, chunk4-T12, chunk4-T13a, chunk4-T13b, chunk4-T14, chunk4-T15, chunk4-T17, chunk4-T19, chunk4-T20
 
 INPUT_DELTAS:
-- In §7, record each reshaped or new operation this plan built outside Q1:
+- In §7, record each reshaped or new operation this plan built outside the report tail:
   - GET /audit-events;
   - GET /proposals row fields and the GET /proposals/{id} detail;
   - approve with payloadOverrides;
@@ -1520,7 +1240,7 @@ INPUT_DELTAS:
 - In §1, record rejection_reason as a tier-two list replacing schema.sql's rejection_code CHECK.
 - Delete the matching pending lines.
 
-Set coverage floors for the new and changed modules outside Q1, from a full coverage run on main.
+Set coverage floors for the new and changed modules outside the report tail, from a full coverage run on main.
 
 Status and ledgers:
 - app.md status cells: PRO-01 to PRO-03 built, AUD-01 in progress, AUD-03 in progress, ADM-02 in progress, and VOC-07 if VOC-S11 completes it.
@@ -1528,7 +1248,8 @@ Status and ledgers:
 - The IMPLEMENTATION_STATUS chunk 4 row:
   - every cut and default;
   - the PRO-S1, ADM-S4 and ADM-S6 narrowings;
-  - the Q1 tasks (T16a, T16b, T18, T21, T22, T23, T24b) named as outstanding or merged, as git log shows.
+  - the report tail (T16, T18, T21, T22, T23, T24b) named as outstanding or merged, as git log shows;
+  - Alex's answer to Q1 of 2026-09-19 and what it removed: no console problem-reports surface, no platform read window, no proposal link on a report. AUD-03 is in progress, in its bank-internal shape, and the library-side correction loop is chunk 5's watch re-check.
 - The chunk 2 note on the pending list.
 
 Other docs:
@@ -1555,7 +1276,7 @@ Other docs:
 - contract_drift passes with no stale or unexplained line.
 - A full-suite coverage_gate passes with the new floors.
 - requirements_coverage and compliance_check --all are green.
-- The status files name every cut, default and narrowing of this plan, and every Q1 task still outstanding.
+- The status files name every cut, default and narrowing of this plan, and every report-tail task still outstanding.
 - The docs changed are only the owned paths.
 
 **Gates:**
@@ -1570,72 +1291,355 @@ Other docs:
 - Floors sit just below measured coverage and never go lower than before.
 - A pending line moves to INPUT_DELTAS only with its reason.
 - Status reflects git log, not intentions.
-- Operations the Q1 tasks own are recorded by chunk4-T24b, not here.
+- Operations the report tail owns are recorded by chunk4-T24b, not here.
 
-### chunk4-T23: Start a proposal from a report and close the loop for the reporter (needs Q1)
 
-**Requirements:** AUD-03, PRO-02, PRO-03  
-**Scenarios:** AUD-S5 (un-fixme'd), PRO-S7 stays green  
-**Depends on:** chunk4-T21, chunk4-T18, chunk4-T22
+## The problem-report tail, replanned 2026-09-20
 
-On the console report detail, add Start a proposal for an obligation report:
-- A dialog pre-filled with the current version's text in the original language, plus an effective date and a source label and link.
-- It posts a new_obligation_version proposal with problemReportId.
-- The report then shows In a proposal.
+Alex answered Q1 on 2026-09-19: "Bank comments should be in the bank only, not shared
+with other tenant. The watch feature should be able to find these deviations during its
+runs when it keeps track of upcoming changes."
 
-On Library updates, show 'Your problem report was fixed' (or rejected, with the note) for the caller's own reports resolved since the bookmark, read from GET /problem-reports?mine=true.
+Read as built work: a problem report is a tenant record from end to end. A bank's own
+members with the right permission list and close it on the record, the reporter is named
+only inside the bank, and no bleqq editor, other bank, agent or model ever reads one.
+The library still gets corrected, but the other way round: chunk 5's watch agents
+re-check library records against their own public sources on every run and file
+corrections through the proposal door, with four eyes.
 
-Un-fixme AUD-S5:
-- The editor opens the seeded report and starts a proposal.
-- editor2 approves it with step-up.
-- The report shows Fixed.
-- The reader sees the fixed row on Library updates.
+REMOVED FROM THE PLAN, AND WHY
+- **chunk4-T16a, the review window in the database.** Nobody outside the bank reads a
+  report, so the transaction-local flag, the two extra policies, the column trigger and
+  the AST guard have nothing to serve. `apps/shared/tenancy.py` is not touched by chunk 4
+  at all, and `problem_report` keeps the plain split policy HARDENING's H-C gives every
+  mixed table.
+- **chunk4-T16b, reports reach the console.** There is no console read, so there is no
+  `GET /problem-reports` for a `proposals.review` holder, no organisation filter and no
+  entry in the list of logic-gated platform routes.
+- **chunk4-T18, a proposal resolves a report.** A report is never linked to a proposal,
+  so `problemReportId` on `POST /proposals`, `PATCH /problem-reports/{id}` for platform
+  staff and the `problem_report.resolved` library event are not built. T16 below drops
+  the `resolved_by_proposal` column chunk 3 carried for them.
+- **chunk4-T21, problem reports in the console**, and **chunk4-T23, start a proposal from
+  a report.** No console screen, no console-driven loop, and no `console-problem-reports`
+  registry entry. ADM-S4 therefore lists problem reports among neither role's surfaces.
+- **"Your problem report was fixed" on Library updates.** The reporter follows their own
+  report where they filed it, on the record; there is no platform resolution to announce.
+- **The old chunk4-T22** reviewed a cross-zone exception. Its replacement proves instead
+  that nothing crosses the zone.
+
+WHAT MOVED TO CHUNK 5
+- Finding library deviations is the watch agents' work: a run re-checks the library
+  records its sources cover and files a `new_obligation_version` proposal wherever the
+  public source and the library disagree. That task belongs to chunk 5's plan and is
+  written when `CHUNK5_TASKS.md` lands. `PARALLEL_PLAN.md` carries the same note, and no
+  chunk 5 package is edited here.
+
+WHAT MOVED TO CHUNK 8
+- My work is HOM-05, built in chunk 8 (f03-T56 to f03-T62). Its problem-report rows — the
+  caller's own open reports, and the bank's open reports for a holder of the closing
+  permission — are added by f03-T57 and f03-T62 from the same read T18 serves. Chunk 4
+  builds the record surface only, so no chunk 4 task waits for My work.
+
+DEFAULTS TAKEN (say so in the commit bodies)
+- **The permission.** Listing and closing every report of the bank is gated by
+  `proposals.create`, which the compliance officer holds. A member without it sees and
+  closes only their own reports, under `problems.report`, which everyone holds. No
+  permission is added, so PRD section 6's matrix does not move; D-19 took the same route
+  for participants. Whether a bank wants a permission of its own is in
+  `docs/TODO_FOR_alex.md`.
+- **The closing kinds.** `ReportStatus` stays as chunk 3 wrote it. A close sets
+  `answered`, `fixed` or `rejected`, each with a required note; any other value is 422.
+  No close-reason vocabulary is added, because no requirement asks for one.
+- **No step-up and no four eyes.** Playbook 4.2 lists neither for this action, and a
+  report closes nothing in the library.
+- **No notification.** COL-01 and COL-02 are chunk 10; the reporter sees the state on the
+  record. The question of a notification is in `docs/TODO_FOR_alex.md`.
+
+### chunk4-T16: The report's closure columns, and no proposal link
+
+**Requirements:** AUD-03, INV-06  
+**Scenarios:** supports AUD-S5; AUD-S7 stays pinned  
+**Depends on:** chunk 3's problem-report route and model (the hard precondition above)
+
+Written test-first. The model change that makes a report closable inside its own bank:
+
+- Add `resolution_note` (text, blank), `closed_by` (FK to identity.User, null) and
+  `closed_at` (null) to `ProblemReport`.
+- Drop `resolved_by_proposal`. Nothing writes it, and no proposal may ever link a tenant's
+  report.
+- Keep `version_number` and `language`, the record of what the reader had on screen, which
+  chunk 3 writes: T18 returns them and T21 shows them, so a colleague opens the same text.
+- Reword the model and `ReportStatus` docstrings, which say the console resolves a report
+  through a proposal: a report is read and closed inside its own tenant, by its bank.
+- One library migration, the next after chunk 3's.
+
+Pin the zone in `tests_rls.py`: `problem_report` carries the mixed shape and nothing else
+— no policy naming a setting other than `app.tenant_id`, and no trigger of its own.
 
 **Owned paths:**
 
-- `frontend/src/components/console/ProblemReportDetailScreen.tsx`
-- `frontend/src/components/console/StartProposalDialog.tsx`
-- `frontend/src/features/problem-reports/**`
-- `frontend/src/features/proposals/**`
-- `frontend/src/components/inventory/LibraryUpdatesScreen.tsx`
-- `frontend/src/features/library-updates/**`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
-- `frontend/tests/e2e/governance.journey.spec.ts`
+- `backend/apps/library/models.py`
+- `backend/apps/library/migrations/<next after chunk 3>_problem_report_closure.py`
+- `backend/apps/library/tests_library.py`
+- `backend/apps/shared/tests_rls.py`
+- `backend/apps/shared/factories.py`
 
 **Done when:**
 
-- AUD-S5 is un-fixme'd and green, with retries settling on 'in a proposal or fixed'.
-- PRO-S7 is still green.
-- features coverage is at least 98%.
-- check:messages is green.
+- `makemigrations --check` and `migrate_from_zero` are clean.
+- `resolved_by_proposal` is gone from the model and from the database.
+- On the app role: under tenant A, tenant B's report and a report with no tenant are
+  invisible; a session with no tenant reads no row that carries a tenant.
+- The RLS guard fails when a policy or trigger beyond the mixed shape is added to
+  `problem_report`.
+- The library coverage floors hold.
+
+**Gates:**
+
+- `set -a; . ./.env.worktree; set +a`
+- `cd backend && ./run.sh run python manage.py makemigrations --check --dry-run --settings=config.test_settings && ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings`
+- `./run.sh run coverage run manage.py test apps.library apps.shared --settings=config.test_settings --noinput && ./run.sh run coverage report --include='apps/library/*'`
+- `./run.sh run ruff check . && ./run.sh run mypy`
+- `python backend/scripts/compliance_check.py --all`
+
+**Invariants:**
+
+- Forced row-level security stays, with no exception for this table.
+- `apps/shared/tenancy.py` is not touched.
+- Two zones: a report never leaves its tenant, and no library row points at one.
+
+### chunk4-T18: A bank lists and closes its own problem reports
+
+**Requirements:** AUD-03, PRO-03, INV-06  
+**Scenarios:** AUD-S5 (integration half un-skipped); ADM-S4 stays green  
+**Depends on:** chunk4-T16, chunk4-T3, chunk4-T7, chunk4-T13a
+
+Written test-first, in `apps/governance`.
+
+`GET /problem-reports`, tenant session, gated by `problems.report`:
+- A caller with `proposals.create` gets every report of their own tenant.
+- A caller without it gets only the reports they filed.
+- Never a row of another tenant, and never a row with no tenant.
+- Filters: status, and subject (`subjectType` with `subjectId`).
+- Each row: id, subject type and id with the record's title and reference, the text, the
+  versionNumber and language the reporter had on screen, the reporter's name and id,
+  status, created, and closedBy, closedAt and resolutionNote when closed. Paginated,
+  default 20.
+
+`PATCH /problem-reports/{id}`, same gate:
+- Body `{status, resolutionNote}`. The status is `answered`, `fixed` or `rejected`; the
+  note is required. Anything else is 422 (`unknown_status` or the field error).
+- A holder of `proposals.create` closes any report of their tenant; every member closes
+  their own. Another member's report without that permission is 403 naming
+  `proposals.create`.
+- Closing a closed report is 409 `already_closed`. `text`, `reporter`, `tenant`,
+  `subject_type` and `subject_id` are never written.
+- The close writes `closed_by`, `closed_at`, `resolution_note` and the status in one
+  transaction with its audit row and its outbox event `problem_report.closed`, through
+  `record()`, under the caller's tenant.
+
+Also:
+- A platform session and an API key get 403 on both routes, and the ADM-S4 list of
+  logic-gated platform routes gains nothing.
+- Reword AUD-S5 in `governance/app.md` to the bank-internal loop — a reader reports, a
+  colleague with the permission closes it with a note, the reporter sees the close, and
+  another bank sees nothing — unless the session that lands Alex's decision has already
+  reworded it; then match that wording. Un-skip the integration test.
+- Keep or delete the report lines of `contract_drift_pending.txt` according to the built
+  shape.
+
+**Owned paths:**
+
+- `backend/apps/governance/problem_reports_logic.py`
+- `backend/apps/governance/api.py`
+- `backend/apps/governance/schemas.py`
+- `backend/apps/governance/tests_problem_reports.py`
+- `backend/apps/governance/tests_scenarios.py`
+- `backend/apps/governance/app.md`
+- `backend/scripts/contract_drift_pending.txt`
+
+**Done when:**
+
+- AUD-S5's integration test is un-skipped and green.
+- Tenant B never sees tenant A's report, through either route, proved on the app role.
+- A member without `proposals.create` sees only their own reports and is refused another
+  member's, with `requiredPermission` named.
+- The second close answers 409, and no column outside the four is ever written.
+- The audit-on-write guard is green for the PATCH operation, and neither the audit row nor
+  the outbox event carries the report's text.
+- The floors hold: `permissions.py` at 97, and governance holds its measured coverage.
+
+**Gates:**
+
+- `set -a; . ./.env.worktree; set +a`
+- `cd backend && ./run.sh run coverage run manage.py test apps.governance apps.library apps.shared --settings=config.test_settings --noinput && ./run.sh run coverage report --include='apps/governance/*,apps/shared/permissions.py'`
+- `./run.sh run ruff check . && ./run.sh run mypy`
+- `python backend/scripts/compliance_check.py --all && python backend/scripts/requirements_coverage.py`
+- `bash generate-types.sh && (cd backend && ./run.sh run python scripts/contract_drift.py) as a check only; do not commit the regenerated files`
+
+**Invariants:**
+
+- Every read and write happens under the caller's own tenant, with `tenancy.activate()`
+  after auth. There is no cross-zone read and no flag.
+- No logic in `api.py`; the business rules live in `problem_reports_logic.py`.
+- Tenant content — the report's text and the reporter — never reaches logs, Sentry or a
+  model endpoint.
+- Every write goes through `record()`, in the same transaction.
+
+### chunk4-T21: Reported problems on the record
+
+**Requirements:** AUD-03, INV-06, PRO-03  
+**Scenarios:** supports AUD-S5; chunk 3's INV-S7 stays green  
+**Depends on:** chunk4-T18, chunk4-T19, chunk 3's obligation screen
+
+Extend the obligation, instrument and provision screens, under the source-and-verified
+line chunk 3 built, with a "Reported problems" section:
+
+- The reports this bank has filed on this record, newest first: reporter, time, the text,
+  the version and language the reporter had on screen, and a status pill through `Pill`
+  with its tone by status.
+- A member with the closing permission sees every one of the bank's reports on the record
+  and closes any of them: a status choice and a required note, sent as the PATCH.
+- A member without it sees only their own, and can close their own.
+- Empty, loading, error and denied states. A 409 renders in place as "already closed".
+- `features/problem-reports`: api, hooks and a presentation function with its tests.
+- The copy goes in both catalogs.
+
+No registry entry and no console screen: a report has no destination of its own.
+
+**Owned paths:**
+
+- `frontend/src/components/inventory/RecordProblemReports.tsx`
+- `frontend/src/components/inventory/<chunk 3 obligation screen> (the section only)`
+- `frontend/src/components/inventory/<chunk 3 instrument screen> (the section only)`
+- `frontend/src/components/inventory/<chunk 3 provision tree> (the section only)`
+- `frontend/src/features/problem-reports/**`
+- `frontend/src/features/shared/tone-by-kind.ts`
+- `frontend/src/messages/en.json`
+- `frontend/src/messages/sv.json`
+
+**Done when:**
+
+- Unit tests cover the two permission cases, each closing status, the required note and
+  the 409.
+- INV-S7 is still green.
+- `features` coverage is at least 98%, and `check:messages` is green.
+- No console route renders the section, proved by the registry test staying unchanged.
 
 **Gates:**
 
 - `cd frontend && npm run lint && npm run typecheck && npm run test:coverage && npm run check:messages && npm run build`
-- `npm run test:e2e -- --grep "AUD-S5|PRO-S7"`
+- `npm run test:e2e -- --grep "INV-S7"`
 
 **Invariants:**
 
-- The proposer editor never approves: a second editor does, with step-up.
-- A source per changed field is required before sending.
-- No reporter identity in the console.
-- No string literals.
+- Pills only through `Pill`, with tones by kind. No string literals in JSX.
+- The reporter's name is rendered inside the bank's own screens only.
+- Nothing from a report is written to the console logger.
 
-### chunk4-T24b: Close the Q1 tail of chunk 4
+### chunk4-T22: Security review 2: the report stays inside the bank
+
+**Requirements:** AC-NFR1, AC-AUD1, AUD-03  
+**Scenarios:** AUD-S5, AUD-S7, ADM-S4  
+**Depends on:** chunk4-T15, chunk4-T16, chunk4-T18, chunk4-T21
+
+Review T16, T18 and T21 on main. The areas:
+
+- The zone: `problem_report` has the mixed shape and nothing else — no extra policy, no
+  trigger, no transaction-local flag, and `tenancy.py` untouched by chunk 4.
+- Cross-zone reads: a platform session, a platform admin, an API key and an agent key each
+  get 403 or an empty list on both routes; tenant B reads none of tenant A's rows through
+  either route or through a crafted filter.
+- The permission split: `proposals.create` for the bank's reports, the reporter for their
+  own, and the 403's `requiredPermission`.
+- The close: its transaction, the 409, the columns it may write, and the audit and outbox
+  rows — under the tenant, free of report text.
+- The record section: a member sees only the reports they may read, the reporter is named
+  inside the bank alone, and nothing from a report reaches the console logger.
+- What the console can reach: no route, no screen, no registry entry, no seed.
+
+Append the findings to the chunk 4 review file. A critical or high finding becomes a fix
+task before chunk4-T23 merges.
+
+**Owned paths:**
+
+- `docs/security/CHUNK4_REVIEW_2026-09-19.md`
+
+**Done when:**
+
+- The review file gains a section giving each listed area a verdict and evidence.
+- No critical finding is left without a fix task.
+
+**Gates:**
+
+- `set -a; . ./.env.worktree; set +a`
+- `cd backend && ./run.sh run python manage.py test apps.governance apps.library apps.shared --settings=config.test_settings --noinput (read-only verification, plus throwaway probes that are never committed)`
+
+**Invariants:**
+
+Read-only on code. The only output is the review file. Never weaken a guard to show a
+finding; prove it with a probe and revert.
+
+### chunk4-T23: AUD-S5 end to end, inside one bank
+
+**Requirements:** AUD-03, PRO-03  
+**Scenarios:** AUD-S5 (un-fixme'd); ADM-S4 and PRO-S7 stay green  
+**Depends on:** chunk4-T21, chunk4-T8, chunk4-T22
+
+Un-fixme the AUD-S5 journey against the real stack:
+
+- Tenant A's reader opens the seeded obligation and files "This looks wrong".
+- Tenant A's compliance officer opens the same record, sees the report with its reporter,
+  and closes it with a status and a note.
+- The reader reloads and sees their report closed, with the note.
+- Tenant B's compliance officer opens the same obligation and sees no report.
+- ADM-S4 stays green: neither console role has a problem-reports destination.
+
+The journey settles before branching, asserts rows by id rather than counts, and declares
+any deliberate error with `apiGuard.allow`.
+
+**Owned paths:**
+
+- `frontend/tests/e2e/governance.journey.spec.ts`
+
+**Done when:**
+
+- AUD-S5 is un-fixme'd and green, and a re-run passes on a seeded database that already
+  holds a closed report.
+- ADM-S4 and PRO-S7 are still green.
+
+**Gates:**
+
+- `cd frontend && npm run test:e2e -- --grep "AUD-S5|ADM-S4|PRO-S7"`
+
+**Invariants:**
+
+- Sign in through the UI with a passkey. No injected token or cookie, and no mocked API.
+- Extend `seed_e2e` rather than mock, if the journey needs another row.
+- Exact text where copy can collide, and teardown restores the seeded report on failure
+  too.
+
+### chunk4-T24b: Close the report tail of chunk 4
 
 **Requirements:** AUD-03, ADM-02  
 **Scenarios:** AUD-S5 reported built  
-**Depends on:** chunk4-T16a, chunk4-T16b, chunk4-T18, chunk4-T21, chunk4-T22, chunk4-T23, chunk4-T24a
+**Depends on:** chunk4-T16, chunk4-T18, chunk4-T21, chunk4-T22, chunk4-T23, chunk4-T24a
 
 Once chunk4-T23 is on main:
-- Record in INPUT_DELTAS §7:
-  - GET and PATCH /problem-reports as built;
-  - POST /proposals with problemReportId.
-- Delete their pending lines.
-- Set floors for governance/problem_reports_logic.py and re-measure the modules T16a to T23 changed.
-- Set AUD-03 to built in governance/app.md.
-- Update the IMPLEMENTATION_STATUS chunk 4 row, and the UI plan's problem-reports rows.
+
+- Record in INPUT_DELTAS §7: `GET /problem-reports` and `PATCH /problem-reports/{id}` as
+  built, both tenant routes; and in §1, that `problem_report` loses schema v0.3's
+  `resolved_by_proposal`, with Alex's answer of 2026-09-19 as the reason.
+- Delete their pending lines from `contract_drift_pending.txt`.
+- Set floors for `governance/problem_reports_logic.py` and re-measure the modules T16 to
+  T23 changed.
+- Set AUD-03 to built in `governance/app.md`, noting that the library-side correction loop
+  is chunk 5's watch re-check, not a console action.
+- Update the IMPLEMENTATION_STATUS chunk 4 row and the UI plan: the record's reported-
+  problems section is built; no console problem-reports card exists, and its ledger row is
+  deleted with its reason. If chunk4-T5 shipped a `console-problem-reports` nav icon,
+  delete the unused entry.
 
 **Owned paths:**
 
@@ -1645,13 +1649,15 @@ Once chunk4-T23 is on main:
 - `backend/apps/governance/app.md`
 - `docs/plans/IMPLEMENTATION_STATUS.md`
 - `docs/plans/UI_Implementation_Plan.md`
+- `frontend/src/shared/navigation/**` (the unused icon entry only)
 
 **Done when:**
 
-- contract_drift passes with no stale or unexplained line.
-- A full-suite coverage_gate passes with the new floors.
-- requirements_coverage and compliance_check --all are green.
-- The status files show AUD-03 built and no chunk 4 task outstanding.
+- `contract_drift` passes with no stale or unexplained line.
+- A full-suite `coverage_gate` passes with the new floors.
+- `requirements_coverage` and `compliance_check --all` are green.
+- The status files show AUD-03 built, no chunk 4 task outstanding, and no console
+  problem-reports surface anywhere.
 
 **Gates:**
 
@@ -1663,5 +1669,5 @@ Once chunk4-T23 is on main:
 **Invariants:**
 
 - Floors never go lower than before.
-- Status reflects git log.
-- Only the Q1 operations and modules change here.
+- Status reflects git log, not intentions.
+- Only the report tail's operations and modules change here.

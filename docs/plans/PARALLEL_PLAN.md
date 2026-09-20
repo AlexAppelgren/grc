@@ -2,7 +2,7 @@
 
 Written 2026-09-19 by the planning workflow. Revised the same day after a review that sent 35 corrections (section 9 lists the parts not taken). The plan changes only the order of work and where each piece runs. No requirement, invariant or gate is lowered. The review found some pieces missing, and the plan now adds them: a fix package after every security review, an R1 performance check, owners for console surfaces nobody had picked up, and a stronger gate at each merge.
 
-It covers 453 work packages. 8 are done, 7 are built and waiting for review or merge, 2 are running, and 436 are still to start. That is about 356 agent-hours of package work, plus about 240 agent-hours of review. The packages are:
+It covers 454 work packages (the replan of 2026-09-20 removed one chunk 4 package and added two in chunk 11; section 3.3.1). 8 are done, 7 are built and waiting for review or merge, 2 are running, and 436 are still to start. That is about 356 agent-hours of package work, plus about 240 agent-hours of review. The packages are:
 - the package maps for chunks 5 to 14;
 - the rest of chunk 3 and all of chunk 4, from `docs/plans/briefs/CHUNK3_TASKS.md` and `CHUNK4_TASKS.md`, renamed `c3-` and `c4-` (their files, gates and done-conditions stay as written there);
 - the PRD 0.3 tasks, from `docs/plans/briefs/FEATURES_0_3_TASKS.md` on the p03 branch, as `f03-T01` to `f03-T83`. They replace the old `rs-` Regulatory scope tasks;
@@ -97,7 +97,7 @@ Dispatch is by readiness, not by wave number. A package starts once everything i
 7. **Migrations.** One package per app's migration directory at a time, under the key `mig:<app>`. The later package renumbers after the earlier one merges.
 8. **Guards.** A guard changes only in the package named for it, and only after a security review. The named changes:
    - **Library fence allowlist:** E5 (`agents/seeds/`, found in its diff), then `c5-contract-models-watch`, then `c7-search-index`.
-   - **`authentication.py`, `tenancy.py`, `middleware.py` (key `auth`):** E5 (the agent on the principal), `c4-report-window`, `c8-support-access-mechanism`, `c12-tenant-deleted-status`, `c13-ip-allowlist` and `c14-job-runs`.
+   - **`authentication.py`, `tenancy.py`, `middleware.py` (key `auth`):** E5 (the agent on the principal), `c8-support-access-mechanism`, `c12-tenant-deleted-status`, `c13-ip-allowlist` and `c14-job-runs`. Chunk 4 no longer touches them: the answer to q-Q1 removed the problem-report window (section 3.3.1).
    - **The production boot guard (key `bootguard`):** E4 and `c14-eu-data-location`.
    - **`UNGATED_BY_DESIGN`:** `c3-obligations-read` and `f03-T52`.
    - **The requirements-coverage gate:** p03.
@@ -111,7 +111,7 @@ Dispatch is by readiness, not by wave number. A package starts once everything i
     - Any other R2 change to `prop`, `apply` or the fence before `r1-readiness`, today only `adm-lang-jur-kinds`, is additive only (a new kind, route or file), and its security review confirms that.
 12. **Cloud sessions stop on invariant questions.** In the commit that adds this plan, the main agent amends cloud rule 3 in `WORKTREES.md`: a cloud session takes the documented default except on a question that touches an invariant, where it stops, commits nothing further and reports the question.
     - Packages that change a guard or row-level security carry that instruction explicitly: `c8-support-access-mechanism`, `c12-tenant-deleted-status`, `c13-ip-allowlist`, `c13-private-*` and `c14-eu-data-location`.
-    - The two on the R1 path, `c7-search-index` and `c4-report-window`, run locally.
+    - The one on the R1 path, `c7-search-index`, runs locally.
 
 ### 1.2 What never changes
 
@@ -130,7 +130,7 @@ Dispatch is by readiness, not by wave number. A package starts once everything i
   - proves that no R1 route answers 501 and no R1 journey is fixme;
   - checks per scenario: every scenario that references an R1 requirement is un-skipped and green. It does not check that every status cell reads built, because NFR-02, I18N-02, ADM-01 and ADM-02 span releases; for those it lists the R1 part;
   - confirms `r1-perf` is green: endpoints under 250 ms, search under 800 ms, Ask's first token under 2 s and screens under 500 ms, measured against `next start`;
-  - includes AUD-03 through `c4-close-b`. If q-Q1 is late, AUD-03 is named open, and Alex decides whether R1 deploys without it;
+  - includes AUD-03 through `c4-close-b`, in the bank-internal shape q-Q1's answer gives it: a report is listed and closed inside its own bank, and the library-side correction loop is chunk 5's watch re-check;
   - checks `RAILWAY_VARIABLES.md` and `FIRST_RUN_SETUP.md` against the settings, and lists the first-deploy items of `docs/TODO_FOR_alex.md`.
 
   Then Alex deploys. An agent never does.
@@ -188,15 +188,14 @@ The chunk 3 and chunk 4 task files map to package ids as follows.
 | chunk3-rest-T14 | c3-fe-obligation-versions | chunk4-T13b | c4-library-updates |
 | chunk3-rest-T16 | c3-provision-read | chunk4-T14 | c4-fe-queue |
 | chunk3-rest-T17 | c3-fe-instruments | chunk4-T15 | c4-security-review-1 |
-| chunk3-rest-T18 | c3-fe-provision-tree | chunk4-T16a | c4-report-window |
-| chunk3-rest-T19 | c3-security-review | chunk4-T16b | c4-reports-console-api |
+| chunk3-rest-T18 | c3-fe-provision-tree | chunk4-T16 | c4-report-closure |
+| chunk3-rest-T19 | c3-security-review | chunk4-T18 | c4-reports-tenant-api |
 | chunk3-rest-T20 | c3-close | chunk4-T17 | c4-fe-approve |
-| | | chunk4-T18 | c4-report-resolves |
 | | | chunk4-T19 | c4-fe-library-updates |
 | | | chunk4-T20 | c4-fe-tenant-proposals |
-| | | chunk4-T21 | c4-fe-console-reports |
+| | | chunk4-T21 | c4-fe-record-reports |
 | | | chunk4-T22 | c4-security-review-2 |
-| | | chunk4-T23 | c4-fe-report-loop |
+| | | chunk4-T23 | c4-e2e-report-loop |
 | | | chunk4-T24a | c4-close-a |
 | | | chunk4-T24b | c4-close-b |
 
@@ -395,24 +394,23 @@ Columns:
 | c4-seed-proposals | 4 | R1 | c4-proposal-kind, c4-second-editor, c3-seed-provisions | local-unit (c) | 40 | 2 | - |  |
 | c4-approve-apply | 4 | R1 | c4-proposal-kind, c3-append-only, c3-reports-verify-logic | local-unit (c) | 60 | 3 | apply prop | yes |
 | c4-fe-tenants | 4 | R1 | c4-console-tenants-api, c4-fe-audit-log, c4-second-editor | local-e2e (c) | 50 | 3 | - |  |
-| c4-report-window | 4 | R1 | c4-proposal-kind, c3-reports-verify-logic, q-Q1 | local-unit | 50 | 4 | auth mig:library | yes |
+| c4-report-closure | 4 | R1 | c3-reports-verify-logic | local-unit (c) | 30 | 4 | mig:library | yes |
 | c4-queue-reads | 4 | R1 | c4-approve-apply | local-unit (c) | 55 | 5 | prop | yes |
 | c4-library-updates | 4 | R1 | c4-queue-reads, c4-mark-seen | local-unit | 50 | 7 | prop | yes |
 | c4-fe-queue | 4 | R1 | c4-queue-reads, c4-fe-tenants, c4-seed-proposals | local-e2e (c) | 55 | 7 | consoleq |  |
-| c4-reports-console-api | 4 | R1 | c4-report-window, c4-console-tenants-api, c4-mark-seen | local-unit | 50 | 8 | gov | yes |
+| c4-reports-tenant-api | 4 | R1 | c4-report-closure, c4-console-tenants-api, c4-mark-seen | local-unit (c) | 35 | 8 | gov | yes |
 | c4-security-review-1 | 4 | R1 | c4-library-updates, c4-fe-queue, c4-seed-proposals, c4-fe-tenants | local-unit | 45 | 9 | - |  |
 | c4-fe-approve | 4 | R1 | c4-fe-queue, c4-approve-apply, c4-queue-reads | local-e2e (c) | 55 | 9 | consoleq |  |
-| c4-report-resolves | 4 | R1 | c4-reports-console-api, c4-library-updates, c4-approve-apply, c4-queue-reads | local-unit (c) | 50 | 10 | gov prop | yes |
 | c4-fe-library-updates | 4 | R1 | c4-mark-seen, c4-library-updates, c4-fe-approve, c3-fe-instruments | local-e2e | 50 | 10 | libupd |  |
 | c4-review-fixes-1 | 4 | R1 | c4-security-review-1 | local-unit | 45 | 11 | - | yes |
 | c4-fe-tenant-proposals | 4 | R1 | c4-queue-reads, c4-fe-queue, c4-fe-approve, c4-second-editor | local-e2e (c) | 45 | 11 | vocabfe |  |
-| c4-fe-console-reports | 4 | R1 | c4-reports-console-api, c4-report-resolves, c4-fe-library-updates | local-e2e (c) | 55 | 12 | - |  |
+| c4-fe-record-reports | 4 | R1 | c4-reports-tenant-api, c4-fe-library-updates, c3-fe-obligation-versions | local-e2e (c) | 35 | 12 | obpage | yes |
 | f03-T38 | 4 | R1 | f03-T25, f03-T29, c4-proposal-kind, c4-approve-apply | local-unit (c) | 50 | 13 | prop apply | yes |
-| c4-security-review-2 | 4 | R1 | c4-report-window, c4-reports-console-api, c4-report-resolves, c4-review-fixes-1 | local-unit (c) | 40 | 13 | - |  |
+| c4-security-review-2 | 4 | R1 | c4-report-closure, c4-reports-tenant-api, c4-fe-record-reports, c4-review-fixes-1 | local-unit (c) | 30 | 13 | - |  |
 | c4-review-fixes-2 | 4 | R1 | c4-security-review-2 | local-unit | 45 | 14 | - | yes |
 | c4-close-a | 4 | R1 | c4-fe-approve, c4-fe-library-updates, c4-fe-tenant-proposals, c3-close, c4-review-fixes-1 | local-e2e | 45 | 16 | - |  |
-| c4-fe-report-loop | 4 | R1 | c4-fe-console-reports, c4-report-resolves, c4-review-fixes-2 | local-e2e (c) | 50 | 16 | libupd |  |
-| c4-close-b | 4 | R1 | c4-close-a, c4-fe-report-loop, c4-review-fixes-2 | local-unit | 30 | 17 | - |  |
+| c4-e2e-report-loop | 4 | R1 | c4-fe-record-reports, c4-seed-proposals, c4-review-fixes-2 | local-e2e (c) | 30 | 16 | - |  |
+| c4-close-b | 4 | R1 | c4-close-a, c4-e2e-report-loop, c4-review-fixes-2 | local-unit | 30 | 17 | - |  |
 | c5-content-screen | 5 | R1 | - | - | 45 | done | - | yes |
 | c5-cards-console | 5 | R1 | - | - | 45 | done | - |  |
 | c5-contract-models-agents | 5 | R1 | none | cloud | 40 | review | mig:agents mig:identity auth idkeys fence taxhttp | yes |
@@ -629,30 +627,32 @@ Columns:
 | c11-security-policy | 11 | R2 | none | cloud | 50 | 6 | mig:tenants ten | yes |
 | c11-fe-admin-security | 11 | R2 | c11-security-policy, c11-cards-security-batch, x-frontend-split | cloud+e2e | 55 | 9 | - |  |
 | c11-agent-definitions-contract | 11 | R2 | c5-contract-models-agents, c5-contract-api-agent, c5-agent-api-flow | cloud | 45 | 16 | mig:agents agentsapi | yes |
-| c11-tenant-agents-contract | 11 | R2 | c11-agent-definitions-contract, c5-contract-models-watch, p03-consolidation | local-unit (c) | 60 | 18 | mig:agents agentsapi | yes |
+| c11-platform-agent-settings | 11 | R2 | c11-agent-definitions-contract | cloud | 50 | 17 | mig:agents | yes |
+| c11-tenant-agents-contract | 11 | R2 | c11-agent-definitions-contract, c11-platform-agent-settings, c5-contract-models-watch, p03-consolidation | local-unit (c) | 60 | 18 | mig:agents agentsapi | yes |
 | c11-agent-definitions | 11 | R2 | c11-agent-definitions-contract | local-unit (c) | 45 | 18 | - |  |
+| c11-platform-watch-read | 11 | R2 | c11-platform-agent-settings, c11-tenant-agents-contract | cloud | 30 | 19 | agentsapi | yes |
 | c11-tenant-agent-controls | 11 | R2 | c11-tenant-agents-contract, c7-ask-switch | local-unit (c) | 60 | 19 | - | yes |
 | c11-run-history | 11 | R2 | c11-tenant-agents-contract | local-unit (c) | 30 | 20 | - |  |
-| c11-fe-console-agent-definitions | 11 | R2 | c11-agent-definitions-contract, c11-cards-agents, c4-console-shell, c11-agent-definitions, x-frontend-split | local-unit (c) | 50 | 20 | - |  |
-| c11-run-scheduler | 11 | R2 | c11-tenant-agents-contract, c11-agent-definitions, c11-tenant-agent-controls, c11-runner-adapter, c11-run-history, c10-notifications-api | local-unit (c) | 60 | 21 | agentstasks | yes |
-| c11-fe-admin-agents | 11 | R2 | c11-tenant-agents-contract, c11-cards-agents, c11-tenant-agent-controls | local-unit (c) | 60 | 21 | agentsfe |  |
+| c11-fe-console-agent-definitions | 11 | R2 | c11-agent-definitions-contract, c11-platform-agent-settings, c11-cards-agents, c4-console-shell, c11-agent-definitions, x-frontend-split | local-unit (c) | 55 | 20 | - |  |
+| c11-run-scheduler | 11 | R2 | c11-tenant-agents-contract, c11-platform-agent-settings, c11-agent-definitions, c11-tenant-agent-controls, c11-runner-adapter, c11-run-history, c10-notifications-api | local-unit (c) | 60 | 21 | agentstasks | yes |
+| c11-fe-admin-agents | 11 | R2 | c11-tenant-agents-contract, c11-cards-agents, c11-tenant-agent-controls, c11-platform-watch-read | local-unit (c) | 60 | 21 | agentsfe |  |
 | c11-fe-agents-budget-ai | 11 | R2 | c11-fe-admin-agents | local-unit (c) | 45 | 22 | agentsfe |  |
 | c11-batch-proposals-contract | 11 | R2 | c4-library-updates, c5-library-links-provenance, r1-readiness | cloud | 50 | 23 | mig:proposals prop | yes |
 | c11-credential-policy | 11 | R2 | c11-security-policy, q-credential, r1-readiness | cloud | 60 | 23 | idp | yes |
 | c11-ai-off-switch | 11 | R2 | c11-tenant-agent-controls, c11-run-scheduler, c7-ask-backend, c7-ask-screen | local-unit (c) | 30 | 23 | searchscreen | yes |
 | f03-T82 | 11 | R2 | f03-T19, c11-tenant-agent-controls, c11-run-scheduler | cloud | 50 | 24 | mig:agents | yes |
 | c11-batch-proposals | 11 | R2 | c11-batch-proposals-contract, c4-approve-apply | local-unit (c) | 60 | 24 | apply prop | yes |
-| c11-platform-runs | 11 | R2 | c11-run-scheduler, c5-watch-sources-coverage, c5-fe-console-sources | cloud | 45 | 24 | agentsapi | yes |
+| c11-platform-runs | 11 | R2 | c11-run-scheduler, c11-platform-agent-settings, c5-watch-sources-coverage, c5-fe-console-sources | cloud | 45 | 24 | agentsapi | yes |
 | c11-session-policy | 11 | R2 | c11-security-policy, r1-readiness | cloud | 30 | 25 | idp | yes |
 | c11-research-requests | 11 | R2 | c11-tenant-agents-contract, c11-run-scheduler, c11-batch-proposals, c5-watch-sources-coverage | local-unit (c) | 60 | 27 | - | yes |
 | c11-e2e-seed | 11 | R2 | c11-agent-definitions, c11-batch-proposals, c11-tenant-agents-contract, c3-seed-provisions | cloud | 45 | 27 | - |  |
 | c11-fe-console-batch-review | 11 | R2 | c11-batch-proposals-contract, c11-cards-security-batch, c11-batch-proposals, c11-e2e-seed, c4-fe-approve | local-e2e (c) | 60 | 28 | consoleq |  |
-| c11-e2e-agent-controls | 11 | R2 | c11-fe-admin-agents, c11-fe-agents-budget-ai, c11-tenant-agent-controls, c11-run-scheduler, c11-run-history, c11-ai-off-switch, c11-e2e-seed | local-e2e (c) | 50 | 28 | - |  |
+| c11-e2e-agent-controls | 11 | R2 | c11-fe-admin-agents, c11-fe-agents-budget-ai, c11-tenant-agent-controls, c11-platform-watch-read, c11-run-scheduler, c11-run-history, c11-ai-off-switch, c11-e2e-seed | local-e2e (c) | 55 | 28 | - |  |
 | c11-fe-research-requests | 11 | R2 | c11-tenant-agents-contract, c11-cards-agents, c11-research-requests | cloud | 50 | 30 | - |  |
 | c11-e2e-definitions-requests | 11 | R2 | c11-e2e-agent-controls, c11-fe-research-requests, c11-fe-console-agent-definitions, c11-agent-definitions, c11-research-requests, c11-e2e-seed | local-e2e (c) | 50 | 31 | - |  |
-| c11-security-review | 11 | R2 | c11-e2e-definitions-requests, c11-fe-console-batch-review, c11-fe-admin-security, c11-session-policy, c11-credential-policy, c11-platform-runs, c11-run-scheduler, c11-research-requests, f03-T82 | local-unit | 60 | 32 | - |  |
+| c11-security-review | 11 | R2 | c11-e2e-definitions-requests, c11-fe-console-batch-review, c11-fe-admin-security, c11-session-policy, c11-credential-policy, c11-platform-agent-settings, c11-platform-watch-read, c11-platform-runs, c11-run-scheduler, c11-research-requests, f03-T82 | local-unit | 60 | 32 | - |  |
 | c11-review-fixes | 11 | R2 | c11-security-review | local-unit | 45 | 35 | - | yes |
-| c11-chunk-close | 11 | R2 | c11-e2e-definitions-requests, c11-fe-console-batch-review, c11-fe-admin-security, c11-session-policy, c11-credential-policy, c11-platform-runs, c11-review-fixes, f03-T82 | local-e2e | 60 | 37 | - |  |
+| c11-chunk-close | 11 | R2 | c11-e2e-definitions-requests, c11-fe-console-batch-review, c11-fe-admin-security, c11-session-policy, c11-credential-policy, c11-platform-agent-settings, c11-platform-watch-read, c11-platform-runs, c11-review-fixes, f03-T82 | local-e2e | 60 | 37 | - |  |
 | c11-runner-managed-agents | 11 | R2 | c11-runner-adapter, c11-run-scheduler, k-managed-agents | local-unit | 60 | after key | runner | yes |
 | adm-lang-jur-kinds | ADM | R2 | c4-approve-apply, f03-T16 | cloud | 55 | 16 | prop apply libread taxseed | yes |
 | adm-fe-lang-jur | ADM | R2 | adm-lang-jur-kinds, c4-console-shell, c4-fe-approve | cloud+e2e | 50 | 19 | consoleq |  |
@@ -774,6 +774,92 @@ Columns:
 | c14-perf-screens | 14 | R3 | c14-perf-core, c14-perf-library-watch, c14-perf-register-cases, c14-perf-search-home, c14-perf-rest, c13-i18n-wiring, c14-fe-health, c14-fe-usage, c14-fe-console-plans | local-e2e (c) | 60 | 47 | - |  |
 | c14-close | 14 | R3 | c14-owasp-converge, c14-perf-screens, c14-e2e-billing, c14-e2e-health, c14-assurance-locations, c14-assurance-continuity, c14-assurance-exit-controls, c14-runbooks, c14-eu-data-location, c14-shared-scenarios, c14-billing-limits | local-e2e | 45 | 48 | - |  |
 
+### 3.3.1 The packages Alex's decisions of 2026-09-19 reshaped (replanned 2026-09-20)
+
+Two answers landed after this plan was written. Neither changes a gate, an invariant or
+the order of the waves; both change what some packages build.
+
+**Item 3, problem reports: a bank's comments stay in the bank.** "Bank comments should be
+in the bank only, not shared with other tenant. The watch feature should be able to find
+these deviations during its runs when it keeps track of upcoming changes." So a report is
+a tenant record from end to end: a bank's own members with the right permission list and
+close it on the record, the reporter is named only inside the bank, and no bleqq editor,
+other bank, agent or model reads one. The chunk 4 packages, whose tasks are rewritten in
+`CHUNK4_TASKS.md`:
+
+- `c4-report-closure` (chunk4-T16) replaces `c4-report-window`. It adds the closure
+  columns, drops `resolved_by_proposal`, and pins that `problem_report` carries the plain
+  mixed shape and nothing else. No transaction-local flag, no extra policy, no column
+  trigger and no AST guard, so the package no longer holds the `auth` key and no longer
+  carries rule 12's stop-and-report instruction. It is cloud-eligible.
+- `c4-reports-tenant-api` (chunk4-T18) replaces `c4-reports-console-api`. It serves
+  `GET /problem-reports` and `PATCH /problem-reports/{id}` to a tenant session only:
+  `proposals.create` sees and closes every report of its own bank, every member sees and
+  closes their own, and a platform session or an API key is refused.
+- `c4-report-resolves` is deleted. A report is never linked to a proposal, so
+  `problemReportId`, the platform `PATCH` and the `problem_report.resolved` library event
+  are not built.
+- `c4-fe-record-reports` (chunk4-T21) replaces `c4-fe-console-reports`: the reported-
+  problems section on the obligation, instrument and provision screens. It holds `obpage`
+  instead of a console key, and it takes a security review because it renders a reporter.
+- `c4-e2e-report-loop` (chunk4-T23) replaces `c4-fe-report-loop`: the AUD-S5 journey
+  inside one bank, with tenant B seeing nothing. It writes no copy, so it holds no key.
+- `c4-security-review-2` now proves that nothing crosses the zone instead of reviewing a
+  cross-zone exception, and it waits for `c4-fe-record-reports`, so the record section is
+  in its scope rather than reviewed only if it happened to have merged.
+- No `console-problem-reports` destination is ever added, so ADM-S4 lists problem reports
+  among neither platform role's surfaces.
+
+**Chunk 5 (a note, not a package).** Finding library deviations is the watch agents' work:
+a run re-checks the library records its sources cover and files a `new_obligation_version`
+proposal wherever the public source and the library disagree, through the proposal door,
+with four eyes. That task belongs to chunk 5's plan and is added when `CHUNK5_TASKS.md`
+lands. No chunk 5 package is edited here, and nothing in chunk 4 waits for it.
+
+**Item 14, agents: bleqq's general watch is part of the base package.** "The general
+agents that bleqq provides are not changeable by the tenant; they are part of the base
+package. A tenant can add their own agents to monitor specific things they have a
+requirement for. The general finance regulation watch is provided by bleqq." So the
+chunk 11 packages split along ownership:
+
+- `c11-agent-definitions-contract` (AGT-03) builds platform-owned definitions only: the
+  versioned rows, their publish path under `agent_definitions.manage`, and an audit row
+  per publish. No tenant route reaches a definition, in any release.
+- `c11-platform-agent-settings` is new. bleqq's general watch agents carry their cadence,
+  scope and budget as platform rows, edited in the console by a platform admin, audited
+  through `record()`, with no tenant column and no tenant write path. There is no off
+  switch, pause, cadence, scope, budget or definition edit for a tenant anywhere: a
+  control write naming a platform agent answers 403 with `agent_definitions.manage`.
+- `c11-tenant-agents-contract` (AGT-04's rows) covers the tenant's own agents only. A
+  tenant agent row points at a tenant-created definition, and the database refuses one
+  that points at a platform definition. A tenant's own agents write only the tenant's
+  zone — watch items, cases and their own run rows under the bank's `tenant_id` — and
+  never a library row: no agent key scope reaches the library, and a correction to the
+  shared library comes from bleqq's general watch as a proposal, through the door, with
+  four eyes.
+- `c11-tenant-agent-controls` gives AGT-04's controls — on and off, cadence within the
+  plan, scope, run now, pause, interrupt, the monthly cap — to the tenant's own agents,
+  and to nothing else. The cap and the AI off switch cover the tenant's own agents and
+  Ask; bleqq's general watch runs at bleqq's cost and no tenant setting stops it.
+- `c11-platform-watch-read` is new: a read-only tenant view of what bleqq's watch covers —
+  each general agent's name, purpose, the jurisdictions it sweeps and its check cadence.
+  No prompt, tool, budget, run detail or setting, and nothing writable.
+- `c11-run-history` lists the tenant's own agents' runs. bleqq's platform runs reach a
+  bank as watch items and proposals, not as run rows.
+- `c11-run-scheduler` schedules platform runs from the platform settings and tenant runs
+  from the tenant settings, and refuses a tenant's start, pause or interrupt of a platform
+  run. `c11-platform-runs` keeps the console side and depends on the platform settings.
+- `c11-fe-console-agent-definitions` gains the cadence, scope and budget screens for
+  bleqq's agents (platform admin, audited). `c11-fe-admin-agents` covers the bank's own
+  agents plus the read-only "what bleqq watches" panel; `c11-cards-agents` draws both.
+- `c11-research-requests` (AGT-05) runs a request on the tenant's own agents. A request
+  from a bank with no agent of its own is refused, because it cannot command a platform
+  agent. That default, and the budget split above, are in `docs/TODO_FOR_alex.md`.
+- `f03-T82` is unchanged: it sets the default scope of a *tenant* agent from the markets,
+  and a platform run already reads no tenant row.
+- AGT-S4, AGT-S5, AGT-S6 and AGT-S11 are reworded to this split by the packages that own
+  `agents/app.md`; AGT-S5's "switch on nordic-watch" becomes a tenant's own agent.
+
 ### 3.4 Serialization keys
 
 A key stands for files that only one running package may edit. Append ledgers (rule 5) are not keys.
@@ -831,22 +917,22 @@ A wave is a 75-minute window. A package sits in the wave in which it starts. The
 | W1 | 1.2 | local-e2e: c3-seed-provisions, c3-fe-inventory, c4-fe-audit-log<br>local-unit: h-a-guards, c3-obligation-detail-read, c3-reports-verify-logic, c5-contract-api-screens<br>cloud: c8-tenants-contract, f03-T18, c8-register-api-contract, c8-card-organisation, c11-cards-agents, f03-T50, c4-mark-seen |
 | W2 | 2.5 | local-e2e: f03-T04<br>local-unit: c4-console-tenants-api, c10-collab-models, c5-contract-models-cases, f03-T25, c4-seed-proposals<br>cloud+e2e: f03-T05<br>cloud: c12-exports-contract, c8-card-obligation-register, f03-T60, c10-collab-design, c12-card-reports, c8-card-gaps, c11-cards-security-batch, f03-T01 |
 | W3 | 3.8 | local-e2e: c3-fe-obligation-card, c7-ask-switch, c4-fe-tenants<br>local-unit: h9-footprint-antijoin, c4-approve-apply, c6-home-api-contract, f03-T06<br>cloud: c12-config-logic, c13-cards-admin, c12-card-data, c5-fe-copy-nav, c13-cards-tenant-other, c14-cards-console-usage, c14-owasp-scope |
-| W4 | 5.0 | local-e2e: c3-footprint-counts, f03-T07<br>local-unit: c5-integration-scenarios, c5-ai-log-contract, f03-T26, c4-report-window, c8-card-people-access<br>cloud: c14-assurance-locations, c14-assurance-continuity, c14-shared-scenarios, c3-reports-verify-routes, c6-home-models, c10-notifications-api |
+| W4 | 5.0 | local-e2e: c3-footprint-counts, f03-T07<br>local-unit: c5-integration-scenarios, c5-ai-log-contract, f03-T26, c4-report-closure, c8-card-people-access<br>cloud: c14-assurance-locations, c14-assurance-continuity, c14-shared-scenarios, c3-reports-verify-routes, c6-home-models, c10-notifications-api |
 | W5 | 6.2 | local-e2e: f03-T08<br>local-unit: c7-search-index, c5-agent-runs, c5-cases-creation, c4-queue-reads<br>cloud: c8-tenants-api-contract, c14-billing-contract, c3-urgency-rule, f03-T16 |
 | W6 | 7.5 | local-e2e: c3-fe-obligation-versions, f03-T09<br>local-unit: c3-instruments-read, c7-ai-log-backend, c10-comments-api, c7-hybrid-search-backend, c8-ten-org-api<br>cloud: c5-watch-curation, c5-platform-agent-keys, c13-cards-tenant-register, c12-export-audit-log, c11-security-policy |
 | W7 | 8.8 | local-e2e: c5-seed-watch, c4-fe-queue, c3-fe-instruments<br>local-unit: c5-watch-sources-coverage, c4-library-updates, c6-roadmap-backend<br>cloud: f03-T27, c5-watch-registration, c5-cases-footprint-hooks, c8-ten-out-of-office, f03-T45 |
-| W8 | 10.0 | local-e2e: c5-fe-console-agent-keys, f03-T10, c7-e2e-seed<br>local-unit: c3-provision-read, c5-fe-watch-data-layer, c4-reports-console-api, c7-ask-backend, c7-eval-gate, c6-home-backend<br>cloud: f03-T29, f03-T17, f03-T19, c5-fe-console-change-facts, c10-workflow-policy, c8-ten-support-grants |
+| W8 | 10.0 | local-e2e: c5-fe-console-agent-keys, f03-T10, c7-e2e-seed<br>local-unit: c3-provision-read, c5-fe-watch-data-layer, c4-reports-tenant-api, c7-ask-backend, c7-eval-gate, c6-home-backend<br>cloud: f03-T29, f03-T17, f03-T19, c5-fe-console-change-facts, c10-workflow-policy, c8-ten-support-grants |
 | W9 | 11.2 | local-e2e: c6-e2e-seed, c4-fe-approve, c3-fe-provision-tree<br>local-unit: c4-security-review-1, c6-upcoming-calendar-backend, c5-watch-feed-read, c5-ai-log-and-so-what-draft<br>cloud+e2e: c11-fe-admin-security<br>cloud: c10-fe-collab-feature, c5-fe-console-sources, f03-T30 |
-| W10 | 12.5 | local-e2e: c7-search-screen, c6-roadmap-screen, c4-fe-library-updates<br>local-unit: c7-index-changes, c7-eval-sets, c6-briefing-backend, c4-report-resolves<br>cloud: c13-follow-contract, c5-vocab-usage-merge, f03-T28, c10-notification-prefs, f03-T32 |
+| W10 | 12.5 | local-e2e: c7-search-screen, c6-roadmap-screen, c4-fe-library-updates<br>local-unit: c7-index-changes, c7-eval-sets, c6-briefing-backend<br>cloud: c13-follow-contract, c5-vocab-usage-merge, f03-T28, c10-notification-prefs, f03-T32 |
 | W11 | 13.8 | local-e2e: c4-fe-tenant-proposals, c7-ask-screen, c6-calendar-feeds-screen<br>local-unit: f03-T31, c5-fe-change-detail, c5-cases-so-what-and-links, c4-review-fixes-1, c3-security-review<br>cloud: f03-T36 |
-| W12 | 15.0 | local-e2e: c7-fe-console-eval-sets, c4-fe-console-reports, c6-today-screen, f03-T37<br>local-unit: f03-T35, c10-mail-catalog, f03-T20<br>cloud: c8-vocab-scales-reasons, c5-library-links-provenance, c13-saved-search-contract, c5-fe-watch-feed |
+| W12 | 15.0 | local-e2e: c7-fe-console-eval-sets, c4-fe-record-reports, c6-today-screen, f03-T37<br>local-unit: f03-T35, c10-mail-catalog, f03-T20<br>cloud: c8-vocab-scales-reasons, c5-library-links-provenance, c13-saved-search-contract, c5-fe-watch-feed |
 | W13 | 16.2 | local-e2e: c7-ai-log-screen, c5-e2e-vocab-footprint-feed<br>local-unit: f03-T49, c4-security-review-2, c3-review-fixes, f03-T38<br>cloud: f03-T43, c5-fe-so-what-panel |
 | W14 | 17.5 | local-e2e: c6-briefing-screen, c7-j7-journey, f03-T23, f03-T48<br>local-unit: c5-agent-api-flow, c5-fe-obligation-related-changes, f03-T21, c4-review-fixes-2, c8-register-models<br>cloud+e2e: f03-T33<br>cloud: f03-T46, c10-tagging-api |
 | W15 | 18.8 | local-e2e: c3-close, c5-e2e-watch-journeys, c5-e2e-j4-agent<br>local-unit: f03-T42, c6-security-review, c5-security-review, c7-security-review<br>cloud+e2e: f03-T41 |
-| W16 | 20.0 | local-e2e: c4-fe-report-loop, c4-close-a<br>local-unit: f03-T47, c6-review-fixes, c8-e2e-seed-register, c8-reg-status, c5-review-fixes<br>cloud+e2e: f03-T24<br>cloud: c11-agent-definitions-contract, adm-lang-jur-kinds |
-| W17 | 21.2 | local-e2e: c10-fe-suggest, c8-ui-out-of-office, c6-chunk-close, c8-ui-organisation<br>local-unit: c7-review-fixes, f03-security-review, c10-delegation, c4-close-b<br>cloud: c8-reg-applicability, c8-reg-gaps, c8-reg-history-interpretation, c8-ten-reassignment, c8-reg-internal-links, c8-vocab-register-usage |
+| W16 | 20.0 | local-e2e: c4-e2e-report-loop, c4-close-a<br>local-unit: f03-T47, c6-review-fixes, c8-e2e-seed-register, c8-reg-status, c5-review-fixes<br>cloud+e2e: f03-T24<br>cloud: c11-agent-definitions-contract, adm-lang-jur-kinds |
+| W17 | 21.2 | local-e2e: c10-fe-suggest, c8-ui-out-of-office, c6-chunk-close, c8-ui-organisation<br>local-unit: c7-review-fixes, f03-security-review, c10-delegation, c4-close-b<br>cloud: c8-reg-applicability, c8-reg-gaps, c8-reg-history-interpretation, c8-ten-reassignment, c8-reg-internal-links, c8-vocab-register-usage, c11-platform-agent-settings |
 | W18 | 22.5 | local-e2e: c10-fe-bulk-tagging, r1-perf, c5-chunk-close<br>local-unit: c8-ten-teams, c8-reg-entity-status, c11-tenant-agents-contract, f03-review-fixes, c11-agent-definitions<br>cloud: c13-fe-saved-searches, c12-retention-contract |
-| W19 | 23.8 | local-e2e: c7-chunk-close, c8-ui-teams<br>local-unit: c13-fe-follow, c13-i18n-seed-labels, c8-reg-risk-acceptance, f03-T67, c8-reg-inventory-overlay-api, c11-tenant-agent-controls<br>cloud+e2e: adm-fe-lang-jur |
+| W19 | 23.8 | local-e2e: c7-chunk-close, c8-ui-teams<br>local-unit: c13-fe-follow, c13-i18n-seed-labels, c8-reg-risk-acceptance, f03-T67, c8-reg-inventory-overlay-api, c11-tenant-agent-controls<br>cloud+e2e: adm-fe-lang-jur<br>cloud: c11-platform-watch-read |
 | W20 | 25.0 | local-e2e: c8-ui-applicability, c8-ui-member-removal, r1-readiness, f03-T51<br>local-unit: c11-run-history, c11-fe-console-agent-definitions, c12-config-policies |
 | W21 | 26.2 | local-e2e: c8-ui-where-we-stand<br>local-unit: f03-T68, c11-run-scheduler, c11-fe-admin-agents, c8-recurring-duty-library<br>cloud+e2e: c12-fe-data-retention |
 | W22 | 27.5 | local-e2e: c8-ui-history-interpretation, c8-ui-inventory-overlay<br>local-unit: c12-tenant-deleted-status, c14-eu-data-location, f03-T53, f03-T70, c11-fe-agents-budget-ai |
@@ -1022,10 +1108,12 @@ Every row below needs Alex. The main agent copies the rows into `docs/TODO_FOR_a
 
 ### 7.1 Decisions that block packages (a product invariant is involved)
 
+A row marked **Answered** is kept for the record and blocks nothing.
+
 | Key | Question | Blocks | Needed by | If late |
 |---|---|---|---|---|
 | q-urgency | Is urgency's tone fixed by its ordinal? Option A: the rows are fixed, create is refused, and only labels and SLA days can be edited. Option B: an editor may add a level and pick its tone, which lets a person choose a pill tone. This is chunk 3's NFR-S10 question | `c3-urgency-rule`, and through `c5-fe-watch-data-layer` every watch and case screen that shows urgency; NFR-S10's status | hour 1.4 | NFR-S10 stays in progress. The watch screens wait from about hour 8, and R1 moves with them |
-| q-Q1 | How may platform staff read and resolve tenants' problem reports? This is chunk 4's Q1; option A is recommended | `c4-report-window` and the chunk 4 tail; AUD-03 | hour 5 | Chunk 4 closes with `c4-close-a`. AUD-03 is R1, so `r1-readiness` names it open and Alex decides whether R1 deploys without it |
+| q-Q1 | **Answered 2026-09-19.** How may platform staff read and resolve tenants' problem reports? They may not: a bank's reports stay inside the bank, and the watch agents find library deviations themselves | nothing waits: the chunk 4 report packages are replanned for the answer (section 3.3.1) | — | — |
 | q-search-fence | Is `search_chunk` a LibraryModel, with `search/indexing.py` on the library-fence allowlist, or a derived model with its own write guard? H7 applies either way: the index carries the owner and its own row-level security | `c7-search-index`, and through it hybrid search, `POST /search/similar`, Ask, J-7 and R1 | hour 6 | Chunk 7 has about an hour of slack. After that, each hour late moves R1 by about an hour. Ruling 4's fallback unblocks chunk 5, not chunk 7 |
 | q-feed-token | The calendar feed token sits in the feed URL, so the hosting edge's logs hold it. That is the class of problem fixed for invitation tokens (F29, e604de7). Accept it with rotation, or change the design? | `c6-upcoming-calendar-backend`, `c6-calendar-feeds-screen` | hour 11 | Chunk 6 cannot close, and R1 waits |
 | q-support-access | Who grants support access? TEN-S6 says a tenant admin, while PRD section 6 gives `support_access.grant` to the platform admin. Is it read-only in R2? How does the console name the tenant? | `c8-card-people-access`, `c8-ten-support-grants`, `c8-support-access-mechanism`, `c8-ui-support-access`, `c10-j8-extension` | hour 4 | Those packages wait, and chunk 8 closes with TEN-06 named open |

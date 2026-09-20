@@ -169,12 +169,12 @@ adopted. The ISO/IEC 27001:2022 transition MD 26 describes ended on
 
 **Answered 2026-09-19.** q-Q1: problem reports stay inside the bank, and the watch agents find library deviations themselves; retention was changed to "10 years after last use" with two details to confirm. Alex also decided that bleqq's own agents, the general finance regulation watch, are part of the base package and cannot be changed by a tenant; a tenant adds its own agents for its specific needs (item 14). The answers and what they mean are in `docs/plans/briefs/OWNER_RECOMMENDATIONS.md`, section "Alex's answers".
 
-Each involves a product invariant, so it waits for you rather than a default. "Needed by" counts hours from the plan's start on 2026-09-19 evening; answers by hour 6 cost nothing. The main agent's recommendation for the first four is in the chat of 2026-09-19.
+Each involves a product invariant, so it waits for you rather than a default. A row marked **Answered** is kept for the record and blocks nothing. "Needed by" counts hours from the plan's start on 2026-09-19 evening; answers by hour 6 cost nothing. The main agent's recommendation for the first four is in the chat of 2026-09-19.
 
 | Key | Question | Blocks | Needed by | If late |
 |---|---|---|---|---|
 | q-urgency | Is urgency's tone fixed by its ordinal? Option A: the rows are fixed, create is refused, and only labels and SLA days can be edited. Option B: an editor may add a level and pick its tone, which lets a person choose a pill tone. This is chunk 3's NFR-S10 question | `c3-urgency-rule`, and through `c5-fe-watch-data-layer` every watch and case screen that shows urgency; NFR-S10's status | hour 1.4 | NFR-S10 stays in progress. The watch screens wait from about hour 8, and R1 moves with them |
-| q-Q1 | How may platform staff read and resolve tenants' problem reports? This is chunk 4's Q1; option A is recommended | `c4-report-window` and the chunk 4 tail; AUD-03 | hour 5 | Chunk 4 closes with `c4-close-a`. AUD-03 is R1, so `r1-readiness` names it open and Alex decides whether R1 deploys without it |
+| q-Q1 | **Answered 2026-09-19.** How may platform staff read and resolve tenants' problem reports? They may not: a bank's reports stay inside the bank, and the watch agents find library deviations themselves | nothing waits: `c4-report-window` is gone and the chunk 4 report packages are replanned for the answer (PARALLEL_PLAN section 3.3.1). AUD-03 is built in that shape | — | — |
 | q-search-fence | Is `search_chunk` a LibraryModel, with `search/indexing.py` on the library-fence allowlist, or a derived model with its own write guard? H7 applies either way: the index carries the owner and its own row-level security | `c7-search-index`, and through it hybrid search, `POST /search/similar`, Ask, J-7 and R1 | hour 6 | Chunk 7 has about an hour of slack. After that, each hour late moves R1 by about an hour. Ruling 4's fallback unblocks chunk 5, not chunk 7 |
 | q-feed-token | The calendar feed token sits in the feed URL, so the hosting edge's logs hold it. That is the class of problem fixed for invitation tokens (F29, e604de7). Accept it with rotation, or change the design? | `c6-upcoming-calendar-backend`, `c6-calendar-feeds-screen` | hour 11 | Chunk 6 cannot close, and R1 waits |
 | q-support-access | Who grants support access? TEN-S6 says a tenant admin, while PRD section 6 gives `support_access.grant` to the platform admin. Is it read-only in R2? How does the console name the tenant? | `c8-card-people-access`, `c8-ten-support-grants`, `c8-support-access-mechanism`, `c8-ui-support-access`, `c10-j8-extension` | hour 4 | Those packages wait, and chunk 8 closes with TEN-06 named open |
@@ -185,3 +185,47 @@ Each involves a product invariant, so it waits for you rather than a default. "N
 | q-private | Who approves tenant-private instruments and obligations (a PRD section 6 bump)? May private text reach a model or the embedder? May a private source start without review? | `c13-private-*`, their screens and `c13-e2e-private` | hour 33 | WAT-06 and INV-07 are cut and named |
 | q-sso | How does SSO sit beside "a passkey is the only way in"? Does SSO replace the enrolment code? May a member with a passkey sign in by SSO? What does `enforce_sso` mean? | `c13-sso-*`, `c13-scim`, `c13-fe-sso`, `c13-e2e-identity-admin` | hour 34 | ID-12 is cut from R3 and named |
 | q-platform-counters | May the console show per-tenant stream lag, failed jobs and usage through a narrow audited read? Or does each tenant alone see its figures? | `c14-billing-usage`, `c14-health-backend` | hour 38 | Tenant-only figures, and the console shows platform rows only |
+
+## Questions your two decisions of 2026-09-19 raise (problem reports, agents)
+
+Nothing waits for these: the replan of 2026-09-20 took a default for each and says so in
+`docs/plans/briefs/CHUNK4_TASKS.md` and `docs/plans/PARALLEL_PLAN.md` section 3.3.1.
+Change any of them and the answer changes a task, not an invariant.
+
+**Problem reports (your item 3)**
+
+- [ ] **Should a bank's compliance officers see each other's reports?** Default: **yes**,
+      under one permission. A holder of `proposals.create` (the compliance officer today)
+      lists and closes every report of their own bank; every other member sees and closes
+      only their own, under `problems.report`, which everyone holds. That adds no
+      permission and leaves PRD section 6's matrix alone, as D-19 did for participants. A
+      dedicated `problems.manage` would be a PRD section 6 bump; say the word.
+- [ ] **How does a report close?** Default: the reporter or a permitted colleague sets
+      `answered`, `fixed` or `rejected` with a required note, using the kinds chunk 3
+      already wrote. No close-reason vocabulary is added.
+- [ ] **Does the reporter get a notification when their report is closed?** Default: no.
+      They see the state on the record, and on My work once chunk 8 builds it.
+      Notifications are chunk 10, and adding one there is small.
+- [ ] **PRD wording.** ADM-02 still lists "problem reports" among the platform console's
+      surfaces, and AUD-03 reads "Problem reports resolved by a proposal, closing the loop
+      to the agents". Both describe the console loop your answer removes. The session that
+      lands the decision owns `PRD.md`; the same goes for AUD-S5 and ADM-S4 in
+      `backend/apps/governance/app.md`.
+- [ ] **Where does a bank see that a library record it doubted was corrected?** Default:
+      Library updates, like any other library change. The watch agents' re-check (chunk 5)
+      produces an ordinary proposal, which carries no bank's words.
+
+**Agents (your item 14)**
+
+- [ ] **A bank's research request with no agent of its own.** Default: refused, because a
+      bank cannot command bleqq's general agents. The alternative is to let a request run
+      on a bleqq agent within a quota, which is more product than AGT-05 asks for.
+- [ ] **Who pays for bleqq's watch?** Default: bleqq. A bank's monthly cap and its AI off
+      switch cover its own agents and Ask; the general finance regulation watch keeps
+      running whatever a tenant sets, because it feeds the shared library.
+- [ ] **What may a bank see of bleqq's watch?** Default: a read-only panel with each
+      general agent's name, purpose, the jurisdictions it sweeps and its check cadence —
+      no prompts, tools, budgets, run rows or costs.
+- [ ] **AGT-04's wording.** PRD AGT-04 and `backend/apps/agents/app.md` say "a tenant admin
+      controls which agents are on", which now means the bank's own agents only. The
+      wording needs a line saying so; the decision session owns both files.
