@@ -9,9 +9,21 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: HOM.
 """
 
-from unittest import skip
+import datetime
+from unittest import mock, skip
 
 from django.test import TestCase
+
+from apps.cases import testing as cases_build
+from apps.shared import factories
+from apps.shared.testing import sign_in
+from apps.watch import testing as watch_build
+
+# A fixed instant and fixed dates, never "now": a quarter boundary must not decide what a
+# scenario sees (playbook 8.3). At this instant the bank's own day is 1 October 2026.
+INSTANT = datetime.datetime(2026, 9, 30, 22, 30, tzinfo=datetime.UTC)
+THIS_QUARTER = datetime.date(2026, 10, 15)
+NEXT_QUARTER = datetime.date(2027, 1, 20)
 
 
 class HomeScenarioTests(TestCase):
@@ -31,12 +43,46 @@ class HomeScenarioTests(TestCase):
         The weekly briefing is reachable from home and snapshotted when emailed (HOM-02).
         """
 
-    @skip("pending: HOM-S4")
     def test_hom_s4(self) -> None:
         """HOM-S4
 
-        The roadmap shows quarters with regulatory dates and our own deadlines (HOM-03).
+        The roadmap shows the quarters ahead with their regulatory dates (HOM-03, FP-03).
+
+        The expanding card is the journey's half. What is proved here is what the screen
+        draws it from: two quarters in one roster, the items inside each in date order with
+        the bank's own urgency on every one, and a dated change outside the bank's
+        regulatory scope absent from both.
         """
+        watch_build.seed_watch_reference()
+        tenant = factories.tenant(slug="hom-s4", timezone="Europe/Stockholm")
+        reader = factories.member_user(tenant, roles=("reader",))
+        soon = watch_build.change(
+            title="FI adopts amended rules on paying for investment research",
+            key_date=THIS_QUARTER,
+            key_date_label="In force",
+        )
+        later = watch_build.change(
+            title="Amended reporting of securities financing transactions",
+            key_date=NEXT_QUARTER,
+            key_date_label="Applies",
+            urgency="six_months_plus",
+        )
+        elsewhere = watch_build.change(title="Insurance distribution guidance", key_date=THIS_QUARTER)
+        cases_build.case(tenant, soon)
+        cases_build.case(tenant, later, urgency="six_months_plus")
+        cases_build.case(tenant, elsewhere, footprint_match=False)
+
+        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+            response = self.client.get("/api/v1/roadmap", **sign_in(reader, tenant=tenant))
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["quarters"], ["2026-Q4", "2027-Q1"])
+        self.assertEqual([item["title"] for item in body["items"]], [soon.title, later.title])
+        self.assertEqual([item["quarter"] for item in body["items"]], ["2026-Q4", "2027-Q1"])
+        self.assertEqual([item["urgency"]["key"] for item in body["items"]], ["act_now", "six_months_plus"])
+        self.assertEqual([item["label"] for item in body["items"]], ["In force", "Applies"])
+        self.assertNotIn(elsewhere.title, [item["title"] for item in body["items"]])
 
     @skip("pending: HOM-S5")
     def test_hom_s5(self) -> None:

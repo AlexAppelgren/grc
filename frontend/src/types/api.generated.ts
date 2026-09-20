@@ -1817,18 +1817,25 @@ export interface paths {
          *     person looks outside the scope. Each row carries library facts beside this bank's own case
          *     status, so two banks reading the same reform see the same date and different work.
          *
+         *     An item is here while all three are true: the bank's case for the change is open (a
+         *     `closed` or `dismissed` case has left), the change is inside the bank's regulatory scope,
+         *     and its date is today or later in the bank's own time zone. A date that has gone leaves
+         *     the roadmap and stays on the change itself, so a `from` earlier than the bank's today
+         *     widens nothing. The quarter key on every item is computed in that same time zone, which
+         *     is why two banks an hour apart can open the same day in two quarters.
+         *
          *     A window with nothing in it is a 200 with an empty `items` and an empty `quarters`, never
          *     a 404, and `kind=internal` answers the same way in this release because the branches that
          *     produce the bank's own deadlines have not shipped yet.
+         *
+         *     The whole window is answered at once rather than paged, because the screen draws a roster
+         *     of every quarter ahead; narrow it with `from` and `to` rather than by paging.
          *
          *     Errors: `permission_denied` without `roadmap.read`, `unauthenticated` without a session,
          *     and `validation_error` for a filter value the schema refuses — a `kind` outside the three
          *     it names, or a `from` or `to` that is not a calendar date. A query parameter this route
          *     does not read is ignored rather than refused, so check a filter's spelling against
          *     `kind`, `from` and `to` when it seems to have no effect.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         get: operations["getRoadmap"];
         put?: never;

@@ -1,11 +1,12 @@
 """Routes of the home app: auth class, permission or scope, step-up where playbook 4.2
 lists the action, no business logic (playbook 4.1).
 
-Nine operations, all nine declared here at once and each answering 501 `not_built` from the
-named function in the module that will build it (chunk 6 plan rule 3). Declaring the whole
-contract first is deliberate: the four screens and the newsletter agent are built against
-it, and a screen that calls a stub is better than a screen built against a shape nobody
-committed to.
+Nine operations, all nine declared here at once, each calling a named function in the module
+that owns it and answering 501 `not_built` from that function until the task which builds it
+lands (chunk 6 plan rule 3). `GET /roadmap` is built; the rest still answer 501. Declaring
+the whole contract first is deliberate: the four screens and the newsletter agent are built
+against it, and a screen that calls a stub is better than a screen built against a shape
+nobody committed to.
 
 Two gates here serve more than one principal or no principal at all, so they are logic
 gates listed in `UNGATED_BY_DESIGN` and still answer the structured 403 with
@@ -56,7 +57,8 @@ from apps.home.schemas import (
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, PrincipalKind, SessionAuth
 from apps.shared.permissions import requires_permission
-from apps.taxonomy.http import answers_problems, deny, principal, require_any
+from apps.taxonomy.http import answers_problems, caller_tenant, deny, principal, require_any
+from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Home"])
 
@@ -258,20 +260,28 @@ def get_roadmap(request: HttpRequest, query: Query[HomeRoadmapQuery]) -> Any:
     person looks outside the scope. Each row carries library facts beside this bank's own case
     status, so two banks reading the same reform see the same date and different work.
 
+    An item is here while all three are true: the bank's case for the change is open (a
+    `closed` or `dismissed` case has left), the change is inside the bank's regulatory scope,
+    and its date is today or later in the bank's own time zone. A date that has gone leaves
+    the roadmap and stays on the change itself, so a `from` earlier than the bank's today
+    widens nothing. The quarter key on every item is computed in that same time zone, which
+    is why two banks an hour apart can open the same day in two quarters.
+
     A window with nothing in it is a 200 with an empty `items` and an empty `quarters`, never
     a 404, and `kind=internal` answers the same way in this release because the branches that
     produce the bank's own deadlines have not shipped yet.
+
+    The whole window is answered at once rather than paged, because the screen draws a roster
+    of every quarter ahead; narrow it with `from` and `to` rather than by paging.
 
     Errors: `permission_denied` without `roadmap.read`, `unauthenticated` without a session,
     and `validation_error` for a filter value the schema refuses — a `kind` outside the three
     it names, or a `from` or `to` that is not a calendar date. A query parameter this route
     does not read is ignored rather than refused, so check a filter's spelling against
     `kind`, `from` and `to` when it seems to have no effect.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return roadmap.roadmap_items()
+    tenant = caller_tenant(request)
+    return roadmap.roadmap_items(tenant, language_order(request, tenant=tenant), query)
 
 
 # ---------------------------------------------------------------------------------------

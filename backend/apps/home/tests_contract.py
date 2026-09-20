@@ -2,9 +2,10 @@
 the public list of upcoming dates and the revocable calendar feed (HOM-01 to HOM-04;
 chunk 6 `c6-home-api-contract`).
 
-Each route is declared before the logic that serves it and answers 501 `not_built` from the
-named function in the module that will build it. What stands in front of that stub is what
-this file proves, per route: no credential is 401, the wrong permission or scope is 403
+Each route was declared before the logic that serves it and answers 501 `not_built` from the
+named function in the module that will build it, until that module lands (`BUILT_OPERATIONS`
+below names the ones that have). What stands in front of the route is what this file proves,
+whether or not its logic is there: no credential is 401, the wrong permission or scope is 403
 naming what was needed, and a value the schema does not accept is 422 — so a client learns
 what to send long before there is anything to send it to. Written before the routes existed
 (2026-09-21): every case below answered 404 until `home/api.py` landed.
@@ -89,6 +90,11 @@ TENANT_ONLY_ROUTES = [
     ("createCalendarFeed", "post", FEEDS, FEED_BODY),
     ("revokeCalendarFeed", "delete", ONE_FEED, None),
 ]
+# The operations whose logic has landed, so they no longer answer 501. Their gates are
+# proved here like every other route's; what they answer behind the gate is proved by the
+# module that built them. One line per task, deleted from nowhere: the list only grows
+# until it holds all nine and the stub half of this file goes with the last one.
+BUILT_OPERATIONS = frozenset({"getRoadmap"})  # c6-roadmap-backend; behaviour in tests_roadmap.py
 DECLARED_OPERATIONS = {
     ("GET", "/home"): "getHome",
     ("GET", "/briefings/current"): "getCurrentBriefing",
@@ -225,6 +231,8 @@ class HomeRouteStubs(TestCase):
         permissions = {perms.ROADMAP_READ, perms.WATCH_READ}
         with stub_session(user_principal(permissions=permissions, tenant_id=uuid.uuid4())):
             for name, method, url, body, _ in SESSION_ROUTES:
+                if name in BUILT_OPERATIONS:
+                    continue
                 with self.subTest(operation=name):
                     self.assert_not_built(_call(self.client, method, url, body, AS_SESSION))
 
@@ -246,15 +254,22 @@ class HomeRouteStubs(TestCase):
 
     def test_coming_up_is_the_roadmaps_own_function_and_not_a_second_query(self) -> None:
         """Ruling 5: `c6-home-backend` builds Today's "Coming up" by calling the roadmap
-        module, so the panel and the page can never answer different rows. The function is
-        declared here with the contract; this pins that it exists and refuses the same way,
-        so a later task cannot quietly write a roadmap query of its own instead."""
-        from apps.home import roadmap
-        from apps.shared.errors import ProblemError
+        module, so the panel and the page can never answer different rows.
 
-        with self.assertRaises(ProblemError) as caught:
-            roadmap.coming_up()
-        self.assertEqual(caught.exception.code, "not_built")
+        While the roadmap was a stub this pinned that `coming_up()` refused the same way.
+        Now that `c6-roadmap-backend` has built it, the stronger proof lives where the rows
+        are — `tests_roadmap.py` calls both functions on one bank and demands the same first
+        items — and what is left here is the structural half: the function is in the roadmap
+        module and takes the roadmap's own arguments, so a later task cannot answer Today
+        from a query of its own.
+        """
+        import inspect
+
+        from apps.home import roadmap
+
+        self.assertEqual(
+            list(inspect.signature(roadmap.coming_up).parameters), ["tenant", "order", "limit"]
+        )
 
     def test_a_token_longer_than_the_limit_is_422_before_the_stub(self) -> None:
         from apps.home.schemas import FEED_TOKEN_MAX

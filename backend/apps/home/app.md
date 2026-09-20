@@ -36,7 +36,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | HOM-01 | Timeline home: next dates as a short list on every screen size, the lead item, what needs a decision, compliance standing, source health | M | R1 | pending |
 | HOM-02 | Weekly briefing, reachable from home with part of it shown there, snapshotted when emailed | M | R1 | pending |
-| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed | M | R1 | pending |
+| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed | M | R1 | in_progress |
 | HOM-04 | Upcoming changes as public facts for agents and newsletters, and a revocable calendar feed | S | R1 | pending |
 | HOM-05 | My work: what a person or their teams are responsible for or take part in, as overdue, due soon, changes on those items and the rest, with next reviews and a department head's view; permission-filtered rows and counts; the footprint never hides a person's own items | M | R2 | pending |
 
@@ -97,14 +97,16 @@ Then a briefing snapshot is stored with its date and the email links to the snap
 And a later change to the feed does not alter the snapshot
 ```
 
-### HOM-S4 — The roadmap shows quarters with regulatory dates and our own deadlines `@integration` `@e2e` (HOM-03)
+### HOM-S4 — The roadmap shows the quarters ahead with their regulatory dates `@integration` `@e2e` (HOM-03, FP-03)
 ```gherkin
-Given regulatory dates and case deadlines across two quarters
+Given regulatory dates across two quarters, one of them outside our regulatory scope
 When the user opens the roadmap
-Then each quarter lists its items, regulatory dates with an urgency pill and our deadlines with "Our deadline"
+Then each quarter lists its dates in order, each with its urgency pill
+And the date outside our regulatory scope is absent
 When they tap a card
 Then it expands in place with the change summary and the next step, without navigating
 ```
+Our own deadlines with the "Our deadline" pill are the note below.
 
 ### HOM-S5 — Upcoming changes are public facts and the calendar feed is revocable `@integration` `@e2e` (HOM-04)
 ```gherkin
@@ -117,12 +119,24 @@ When they revoke it
 Then the URL answers 404
 ```
 
-### HOM-S6 — A roadmap item's pill is the urgency or "Our deadline" `@e2e` (HOM-03)
+### HOM-S6 — A regulatory date on the roadmap wears its urgency as a pill `@e2e` (HOM-03)
 ```gherkin
-Given a regulatory date with urgency "6+ months" and a case deadline
-When the roadmap renders them
-Then the first shows "6+ months" as a notice pill and the second shows "Our deadline" as brand, each followed by the date and days left as text
+Given a regulatory date with urgency "6+ months"
+When the roadmap renders it
+Then it shows "6+ months" as a notice pill, followed by the date and days left as text
 ```
+The "Our deadline" half is the note below; `roadmap-presentation.test.ts` already pins
+that pill's tone, so the rule is proved before a branch produces a row for it.
+
+> **Note — our own deadlines on the roadmap.** A roadmap item is either a date the outside
+> world set or one this bank set for itself. Only the first has a producer in R1: the three
+> internal branches read an impact assessment, an action, a next review or a gap target, and
+> none of those tables exists yet, so a scenario asking for an "Our deadline" pill now could
+> only be met by inventing a row. Each branch is proved by the task that builds it:
+> `c8-home-register-feeds` for next reviews and gap targets, chunk 9 for assessment
+> deadlines and actions, and `f03-T74` for a certificate's expiry and next audit (D-43,
+> AC-TEN1, proved by HOM-S15). Until then `kind=internal` is a real filter that answers an
+> empty list, and HOM-03 stays `in_progress` for that reason.
 
 ### HOM-S7 — My work lists what I'm responsible for or take part in, most urgent first `@integration` `@e2e` (HOM-05, AC-HOM1)
 ```gherkin
