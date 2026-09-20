@@ -20,6 +20,14 @@ effective dates, which is what makes "as of" reads and "show what changed"
 possible. Text lives in its original language with translations as rows and
 machine translations labelled.
 
+Labelling covers who confirmed a fact, not only who wrote it. Since PRD 0.4
+(D-62, ADR 0054) the proposal that applies a record may have been confirmed by
+an independent agent rather than a person, so the record carries
+machine-confirmed provenance — `verified_origin`, the proposing agent and the
+confirming agent — and never reads as verified by a person until a person
+verifies it. The re-verification stamp of INV-06 stays a person's act and is
+still the single exception to the proposal door.
+
 A standard within the sector scope is an instrument like any other, one per
 edition, and the library holds only its public facts plus exactly one duty to
 conform written in our own words. Its licensed text, clause and control titles
@@ -194,4 +202,15 @@ When a member of tenant A asks for similar records, or opens a private change
 Then find-similar returns shared records only and the private change carries no AI-drafted "So what?"
 When tenant A's exit deletes the tenant
 Then its private instruments and obligations go with their append-only children
+```
+
+### INV-S14 — A record an agent confirmed reads as machine-confirmed `@integration` `@e2e` (INV-05, INV-06, PRO-02)
+```gherkin
+Given a proposal filed by one agent and approved by an independent agent
+When the version is applied
+Then the record's provenance names the proposing agent and the confirming agent
+And verified_origin is "agent" and no person is named as its verifier
+And the screen labels it machine-confirmed, in the same place a person's verification would read
+When a person later re-verifies the record against its source
+Then the stamp names that person and the machine-confirmed label gives way
 ```

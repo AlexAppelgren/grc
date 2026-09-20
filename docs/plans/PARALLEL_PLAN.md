@@ -2,7 +2,7 @@
 
 Written 2026-09-19 by the planning workflow. Revised the same day after a review that sent 35 corrections (section 9 lists the parts not taken). The plan changes only the order of work and where each piece runs. No requirement, invariant or gate is lowered. The review found some pieces missing, and the plan now adds them: a fix package after every security review, an R1 performance check, owners for console surfaces nobody had picked up, and a stronger gate at each merge.
 
-It covers 454 work packages (the replan of 2026-09-20 removed one chunk 4 package and added two in chunk 11; section 3.3.1). 8 are done, 7 are built and waiting for review or merge, 2 are running, and 436 are still to start. That is about 356 agent-hours of package work, plus about 240 agent-hours of review. The packages are:
+It covers 456 work packages (the replans of 2026-09-20 removed one chunk 4 package, added two in chunk 11 and added two more in chunk 4; sections 3.3.1 and 3.3.2). 8 are done, 7 are built and waiting for review or merge, 2 are running, and 438 are still to start. That is about 356 agent-hours of package work, plus about 240 agent-hours of review. The packages are:
 - the package maps for chunks 5 to 14;
 - the rest of chunk 3 and all of chunk 4, from `docs/plans/briefs/CHUNK3_TASKS.md` and `CHUNK4_TASKS.md`, renamed `c3-` and `c4-` (their files, gates and done-conditions stay as written there);
 - the PRD 0.3 tasks, from `docs/plans/briefs/FEATURES_0_3_TASKS.md` on the p03 branch, as `f03-T01` to `f03-T83`. They replace the old `rs-` Regulatory scope tasks;
@@ -198,6 +198,8 @@ The chunk 3 and chunk 4 task files map to package ids as follows.
 | | | chunk4-T23 | c4-e2e-report-loop |
 | | | chunk4-T24a | c4-close-a |
 | | | chunk4-T24b | c4-close-b |
+| | | chunk4-T25 | c4-agent-approver |
+| | | chunk4-T26 | c4-machine-provenance |
 
 The PRD 0.3 tasks keep their ids from `FEATURES_0_3_TASKS.md`:
 - REGULATORY_SCOPE T01 to T10 are f03-T01 to f03-T10, the old rs-t01 to rs-t10.
@@ -399,7 +401,9 @@ Columns:
 | c4-library-updates | 4 | R1 | c4-queue-reads, c4-mark-seen | local-unit | 50 | 7 | prop | yes |
 | c4-fe-queue | 4 | R1 | c4-queue-reads, c4-fe-tenants, c4-seed-proposals | local-e2e (c) | 55 | 7 | consoleq |  |
 | c4-reports-tenant-api | 4 | R1 | c4-report-closure, c4-console-tenants-api, c4-mark-seen | local-unit (c) | 35 | 8 | gov | yes |
-| c4-security-review-1 | 4 | R1 | c4-library-updates, c4-fe-queue, c4-seed-proposals, c4-fe-tenants | local-unit | 45 | 9 | - |  |
+| c4-agent-approver | 4 | R1 | c4-approve-apply, c4-queue-reads | local-unit | 55 | 6 | prop mig:proposals roles fence | yes |
+| c4-machine-provenance | 4 | R1 | c4-agent-approver | local-unit (c) | 40 | 7 | mig:library apply libread | yes |
+| c4-security-review-1 | 4 | R1 | c4-library-updates, c4-fe-queue, c4-seed-proposals, c4-fe-tenants, c4-agent-approver, c4-machine-provenance | local-unit | 45 | 9 | - |  |
 | c4-fe-approve | 4 | R1 | c4-fe-queue, c4-approve-apply, c4-queue-reads | local-e2e (c) | 55 | 9 | consoleq |  |
 | c4-fe-library-updates | 4 | R1 | c4-mark-seen, c4-library-updates, c4-fe-approve, c3-fe-instruments | local-e2e | 50 | 10 | libupd |  |
 | c4-review-fixes-1 | 4 | R1 | c4-security-review-1 | local-unit | 45 | 11 | - | yes |
@@ -861,6 +865,52 @@ chunk 11 packages split along ownership:
 - AGT-S4, AGT-S5, AGT-S6 and AGT-S11 are reworded to this split by the packages that own
   `agents/app.md`; AGT-S5's "switch on nordic-watch" becomes a tenant's own agent.
 
+### 3.3.2 The packages Alex's decision of 2026-09-20 reshaped (item 19, no editors)
+
+Alex decided that bleqq staffs no editorial function: "Agents do the work, and there should be
+several agents reading the library. A tenant/bank is then responsible for their interpretation.
+This doesn't change much, just the edit part in bleqq, but maybe in the future we would add this
+on", and "The agent can work from the queue as well, so who does it doesn't change the function
+of a queue, it's still needed." (`OWNER_RECOMMENDATIONS.md` item 19; D-62, ADR 0054, PRD 0.4.)
+It changes no gate, no invariant and no wave order. A proposal is still the only door, four eyes
+is still a check constraint, and the queue is still built — once, for both kinds of approver.
+
+- `c4-agent-approver` (`chunk4-T25`) is new and carries the decision: the platform-only scope
+  `proposals:review`, the proposal's `reviewed_by_api_key`, `proposed_by_agent` and
+  `reviewed_by_agent` columns, a `proposal_four_eyes` widened to refuse a repeated user, key or
+  agent, and the approve, correct and reject routes accepting a key principal beside a session.
+  It **amends** the fence guard that `c4-door-proof` already merged (68ac917) — the two
+  assertions that a library write needs a person and that no scope is named for `proposals.review`
+  — and strengthens it in the same edit, which is why it holds `fence` and takes a security
+  review. It holds `roles` for the scope constant and its description.
+- `c4-machine-provenance` (`chunk4-T26`) is new: `verified_origin` and `verified_by_agent` on the
+  library records, written by `proposals/apply.py` from the proposal's two sides, so a record
+  confirmed by agents reads as machine-confirmed and names both agents. INV-06's re-verification
+  stamp is untouched and stays a person's act.
+- `c4-second-editor` (`chunk4-T4`) is unchanged in content and reframed: two editor logins are the
+  intervention path and the proof of four eyes between people, not a staffed editorial team.
+  `bootstrap_platform --role library_editor` stays, because that is how a human approver is
+  switched on later with no rework.
+- `c4-fe-queue` (`chunk4-T14`) and `c4-fe-approve` (`chunk4-T17`) are unchanged in scope: the
+  decided-by line renders a person or an agent from the field pair the API already returns for a
+  proposer, and a proposal an agent decided offers no Approve. No console surface for agents, no
+  approver filter and no second screen.
+- `c4-security-review-1` now waits for both new packages, so the widened constraint, the scope and
+  the amended fence guard are in its scope rather than reviewed only if they happened to merge.
+- `c4-close-a` (`chunk4-T24a`) moves to the end of the chunk's waves and records that PRO-S13's
+  journey half stays `test.fixme` until chunk 5 has a confirming agent definition.
+- **Chunk 5 (a note, not a package).** The confirming agent's definition, its prompt rules and its
+  evaluation rows belong with the other agent definitions: `f03-T45` and `f03-T44` for the
+  definition and the prompt, `f03-T46` and `f03-T47` for the evaluation, `c5-platform-agent-keys`
+  for the key that carries the review scope, and `c5-library-recheck`, whose scenario sentence
+  "the obligation is unchanged until a second editor approves" becomes "until an independent
+  principal approves". `CHUNK5_TASKS.md` carries the note; no chunk 5 package is edited here.
+- **Chunk 11 (a note, not a package).** `c11-agent-definitions-contract-a` and `-b` version the
+  confirming agent's definition like any other platform definition,
+  `c11-platform-agent-settings-a` and `-b` carry its cadence and budget, and
+  `c11-fe-console-agent-definitions` shows what it decided. `CHUNK11_TASKS.md` carries the
+  note inside its scope section; no chunk 11 package is edited here.
+
 ### 3.4 Serialization keys
 
 A key stands for files that only one running package may edit. Append ledgers (rule 5) are not keys.
@@ -920,8 +970,8 @@ A wave is a 75-minute window. A package sits in the wave in which it starts. The
 | W3 | 3.8 | local-e2e: c3-fe-obligation-card, c7-ask-switch, c4-fe-tenants<br>local-unit: h9-footprint-antijoin, c4-approve-apply, c6-home-api-contract, f03-T06<br>cloud: c12-config-logic, c13-cards-admin, c12-card-data, c5-fe-copy-nav, c13-cards-tenant-other, c14-cards-console-usage, c14-owasp-scope |
 | W4 | 5.0 | local-e2e: c3-footprint-counts, f03-T07<br>local-unit: c5-integration-scenarios, c5-ai-log-contract, f03-T26, c4-report-closure, c8-card-people-access<br>cloud: c14-assurance-locations, c14-assurance-continuity, c14-shared-scenarios, c3-reports-verify-routes, c6-home-models, c10-notifications-api |
 | W5 | 6.2 | local-e2e: f03-T08<br>local-unit: c7-search-index, c5-agent-runs, c5-cases-creation, c4-queue-reads<br>cloud: c8-tenants-api-contract, c14-billing-contract, c3-urgency-rule, f03-T16 |
-| W6 | 7.5 | local-e2e: c3-fe-obligation-versions, f03-T09<br>local-unit: c3-instruments-read, c7-ai-log-backend, c10-comments-api, c7-hybrid-search-backend, c8-ten-org-api<br>cloud: c5-watch-curation, c5-platform-agent-keys, c13-cards-tenant-register, c12-export-audit-log, c11-security-policy |
-| W7 | 8.8 | local-e2e: c5-seed-watch, c4-fe-queue, c3-fe-instruments<br>local-unit: c5-watch-sources-coverage, c4-library-updates, c6-roadmap-backend<br>cloud: f03-T27, c5-watch-registration, c5-cases-footprint-hooks, c8-ten-out-of-office, f03-T45 |
+| W6 | 7.5 | local-e2e: c3-fe-obligation-versions, f03-T09<br>local-unit: c3-instruments-read, c7-ai-log-backend, c10-comments-api, c7-hybrid-search-backend, c8-ten-org-api, c4-agent-approver<br>cloud: c5-watch-curation, c5-platform-agent-keys, c13-cards-tenant-register, c12-export-audit-log, c11-security-policy |
+| W7 | 8.8 | local-e2e: c5-seed-watch, c4-fe-queue, c3-fe-instruments<br>local-unit: c5-watch-sources-coverage, c4-library-updates, c6-roadmap-backend<br>cloud: f03-T27, c5-watch-registration, c5-cases-footprint-hooks, c8-ten-out-of-office, f03-T45, c4-machine-provenance |
 | W8 | 10.0 | local-e2e: c5-fe-console-agent-keys, f03-T10, c7-e2e-seed<br>local-unit: c3-provision-read, c5-fe-watch-data-layer, c4-reports-tenant-api, c7-ask-backend, c7-eval-gate, c6-home-backend<br>cloud: f03-T29, f03-T17, f03-T19, c5-fe-console-change-facts, c10-workflow-policy, c8-ten-support-grants |
 | W9 | 11.2 | local-e2e: c6-e2e-seed, c4-fe-approve, c3-fe-provision-tree<br>local-unit: c4-security-review-1, c6-upcoming-calendar-backend, c5-watch-feed-read, c5-ai-log-and-so-what-draft<br>cloud+e2e: c11-fe-admin-security<br>cloud: c10-fe-collab-feature, c5-fe-console-sources, f03-T30 |
 | W10 | 12.5 | local-e2e: c7-search-screen, c6-roadmap-screen, c4-fe-library-updates<br>local-unit: c7-index-changes, c7-eval-sets, c6-briefing-backend<br>cloud: c13-follow-contract, c5-vocab-usage-merge, f03-T28, c10-notification-prefs, f03-T32 |

@@ -108,3 +108,10 @@ class AgentsScenarioTests(TestCase):
 
         A bank's own agent writes only in its own zone (AGT-04, AGT-05).
         """
+
+    @skip("pending: AGT-S15 (D-62, chunks 4 and 5)")
+    def test_agt_s15(self) -> None:
+        """AGT-S15
+
+        The confirming agent is independent of the proposing agent (AGT-01, AGT-03, PRO-02).
+        """

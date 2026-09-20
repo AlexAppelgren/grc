@@ -911,3 +911,10 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertNotEqual(late.status, UserStatus.ACTIVE.value)
         self.activate(self.tenant)
         self.assertFalse(Membership.objects.filter(tenant=self.tenant, user=late).exists())
+
+    @skip("pending: ID-S31 (D-62, chunk 4 c4-agent-approver)")
+    def test_id_s31(self) -> None:
+        """ID-S31
+
+        The review scope reaches the queue and never a library row (ID-10, AC-PRO1, AC-ID3).
+        """

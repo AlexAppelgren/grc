@@ -23,6 +23,15 @@ stays inside the bank that filed it: no bleqq editor, other bank, agent or model
 reads it, and a library error reaches the library instead through the watch
 agents' re-check and a proposal (D-50, ADR 0043).
 
+Since PRD 0.4 (Alex, 2026-09-20, D-62 and ADR 0054) a library proposal may be
+confirmed by an independent agent rather than a person, so the audit trail
+carries decisions nobody signed with a passkey. Nothing about `record()`
+changes: the actor is the agent, the row names its definition, its version and
+the key it used, the assertion id is null because a key cannot step up, and the
+same decision is logged in `ai_generation` where a model produced it. The
+console's queue is the surface the platform reads that trail on, and where a
+person takes a proposal over.
+
 The platform console lives here too: library vocabularies, sources, languages
 and jurisdictions, agent definitions, the proposal queue, evaluation sets,
 tenants and plans, support access and system health. It has no problem-report
@@ -219,3 +228,13 @@ Then it is re-queued as a tenant task from its kind, tenant and subject, and the
 Plans and their limits are NFR-S17 to S19; requesting support access to a tenant is
 TEN-S6. The address must be the administrator's own: platform staff are separate
 accounts, as `bootstrap_platform` requires from the other side.
+
+### AUD-S9 — An agent's approval is in the audit trail with the agent named `@integration` (AUD-01, AUD-02)
+```gherkin
+Given a proposal an independent agent approved with its review scope
+Then the audit event names the agent, its definition version and the key it used, not the key's id alone
+And the event carries no step-up assertion, because a key cannot step up
+And a rejection or a correction by that agent is recorded the same way, with its reason
+And the model call behind the decision is in the AI output log with its citations and review state
+And the audit rows stay append-only: the decision cannot be edited afterwards
+```

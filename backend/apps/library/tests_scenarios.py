@@ -230,3 +230,10 @@ class LibraryScenarioTests(TestCase):
 
         A private record's text never reaches a model, the index or another bank (INV-07).
         """
+
+    @skip("pending: INV-S14 (D-62, chunk 4 c4-agent-approver)")
+    def test_inv_s14(self) -> None:
+        """INV-S14
+
+        A record an agent confirmed reads as machine-confirmed (INV-05, INV-06, PRO-02).
+        """

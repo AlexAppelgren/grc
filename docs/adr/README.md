@@ -60,6 +60,7 @@ if behaviour changes. Numbering never reuses a number.
 | [0051](0051-sso-proves-identity-the-passkey-signs-in.md) | SSO proves who a person is; the passkey stays the only way in | D-58 | accepted |
 | [0052](0052-platform-counters-window.md) | The console reads each bank's figures through one window on tables of numbers | D-59 | accepted |
 | [0053](0053-bleqq-agents-are-the-base-package.md) | bleqq's agents are the base package; a bank steers only its own | D-61 | accepted |
+| [0054](0054-agent-approves-from-the-same-queue.md) | The second pair of eyes on a library proposal may be an independent agent | D-62 | accepted |
 
 Still to write, when the playbook's Appendix C says so:
 the switch from one branch to `staging` and `main` (supersedes 0015), the
@@ -79,3 +80,6 @@ already records) and D-60 (no private notes, which ADR 0028 carries and which
 moved that ADR from accepted by default to accepted). 0047 amends 0016 and
 stages 0007's EU runner; 0048 is ADR 0003's third tranche; 0051 is the SSO
 stance this index owed.
+
+PRD 0.4 also added 0054 for D-62, Alex's own decision of 2026-09-20 (item 19)
+that bleqq staffs no editorial function.

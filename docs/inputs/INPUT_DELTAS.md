@@ -147,6 +147,11 @@ writes, never an OpenAPI `enum`.
   step-up options and verify, refresh, sign-out. Under `/me`: passkeys and
   sessions. Under tenant admin: re-issue enrolment. `bearerAuth` in the
   contract means our own session token.
+- **PRD 0.4 (2026-09-20).** `api_key.scopes`' CHECK gains `proposals:review`
+  (D-62, ADR 0054): a platform key bound to an agent definition may read the
+  proposal queue and approve, correct or reject, and still reaches no library
+  row. It is a platform scope only; a tenant key that carries it is refused.
+  Nothing else about a key changes, and a key still cannot step up.
 
 ## 3. Nordic scope (PRD I18N, playbook 17)
 
@@ -203,6 +208,25 @@ writes, never an OpenAPI `enum`.
 - The proposal queue is reviewed in the platform console by `library_editor`.
   The prototype shows the tenant's compliance officer approving agent
   proposals. That is the one place the prototype is wrong.
+- **PRD 0.4 (2026-09-20), the queue's second principal.** bleqq staffs no
+  editorial function (Alex, item 19), so the routine approver is an independent
+  agent and `library_editor` is kept, unstaffed, for the proposals a person
+  takes over. `proposal` therefore gains `reviewed_by_api_key` beside
+  `reviewed_by`, and `proposed_by_agent` and `reviewed_by_agent`, copied from
+  each key by the one write path. Version 0.3's four-eyes CHECK compares users
+  only; it is widened to refuse a row whose user, key **or** agent is the same
+  on both sides, so two keys of one agent definition cannot confirm each other,
+  and to refuse a reviewing key that names no agent, because two unbound keys
+  would otherwise pass the agent comparison on nulls.
+  The console queue, its screens and its audit rows are otherwise unchanged
+  (D-62, ADR 0054).
+- **PRD 0.4, machine-confirmed provenance.** The verification columns version
+  0.3 puts on `instrument`, `obligation` and the version rows (`last_verified_at`,
+  `verified_by`) name a person only. They gain `verified_origin` (the existing
+  `origin_type` kind) and `verified_by_agent`: a record applied from a proposal
+  an agent confirmed names the proposing and the confirming agent and never
+  reads as verified by a person. The re-verification stamp of INV-06 stays a
+  person's act and keeps writing `verified_by`.
 - Footprint changes become a request with preview and second-person approval
   (`footprint_change_request`), replacing the direct `PUT /tenant/footprint`.
 - PRD 0.3: `tenant_agent.scope` has a default rather than being empty. At run

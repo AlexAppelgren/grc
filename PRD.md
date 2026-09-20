@@ -6,7 +6,7 @@
 | 0.2 | 2026-09-19 | Sector scope: regulated financial services only, not a general-purpose GRC product. Standards and certifications within that scope (for example ISO/IEC 27001 followed by some of a tenant's legal entities) are inventoried, watched and worked like regulation; their requirements are being analysed and land in a following version | Alex |
 | 0.3 | 2026-09-19 | Three things Alex asked for in chat, analysed and merged. **My work and participants:** one page of everything a person or their teams are responsible for or take part in, with next reviews and the changes on those items, the same view for a department's head, participants (people or teams) on register entries and cases that grant nothing, departments as org units with a head, and notes as shared comments. **Markets:** each covered country is operating, watching or not followed; operating markets are the regulatory scope's jurisdictions; watching hides nothing and steers tenant agents; EU rules reach every member country and Norway, as data. **Standards within the sector scope:** an edition is an instrument holding public facts and one conformance duty, a tenant opts in through its regulatory scope, a legal entity follows a standard through approved applicability and records its certificate, and the units it lists in its own words per entity form the Statement of Applicability. The sector scope paragraph is sharpened and the regime list becomes the enforced boundary. The wording is Alex's decision; the design defaults under it are `docs/DECISIONS.md` rows D-18 to D-47, each reversible | Alex |
 
-| 0.4 | 2026-09-20 | The fourteen owner decisions Alex answered in chat on 2026-09-19 (`docs/plans/briefs/OWNER_RECOMMENDATIONS.md`). **Support access:** platform staff enter a bank read-only, for a stated purpose and a time limit a tenant admin approves with a passkey, and every read is logged in the bank. **Problem reports:** a report stays inside the bank that filed it; a library error is found instead by the watch agents, which re-check the records of the sources they check on every run and correct them through a proposal. **Retention:** a record is deleted ten years after its last use, through one database-guarded path. **Tenant exit:** two different people request and approve it, the tenant goes read-only while a final export is taken, and deletion removes every tenant row, the audit trail included, leaving a tombstone report. **Private records:** a bank's own instruments, obligations and sources are approved by a second person in the same bank under a new permission and never reach the platform, a model or the search index. **SSO:** the bank's identity provider proves who a person is, and the passkey stays the only way in. **Agents:** bleqq's general financial-regulation watch is part of the base package and no bank changes it; the tenant controls are for the agents a bank adds for itself | Alex |
+| 0.4 | 2026-09-20 | The fourteen owner decisions Alex answered in chat on 2026-09-19 (`docs/plans/briefs/OWNER_RECOMMENDATIONS.md`). **Support access:** platform staff enter a bank read-only, for a stated purpose and a time limit a tenant admin approves with a passkey, and every read is logged in the bank. **Problem reports:** a report stays inside the bank that filed it; a library error is found instead by the watch agents, which re-check the records of the sources they check on every run and correct them through a proposal. **Retention:** a record is deleted ten years after its last use, through one database-guarded path. **Tenant exit:** two different people request and approve it, the tenant goes read-only while a final export is taken, and deletion removes every tenant row, the audit trail included, leaving a tombstone report. **Private records:** a bank's own instruments, obligations and sources are approved by a second person in the same bank under a new permission and never reach the platform, a model or the search index. **SSO:** the bank's identity provider proves who a person is, and the passkey stays the only way in. **Agents:** bleqq's general financial-regulation watch is part of the base package and no bank changes it; the tenant controls are for the agents a bank adds for itself **No editorial function:** bleqq staffs none, so a proposal is still the only door into the shared library and four eyes still refuses the same principal twice, but the second principal may be an independent agent — a different agent definition and API key from the proposer — reading the same queue with a review scope. A person approving still steps up with a passkey; an agent's approval, correction or rejection lands in the same audit trail with the agent named, and the record it applies carries machine-confirmed provenance instead of a person's verification. The console queue is still built: it is where the platform watches what the agents did and intervenes, and where a human approver is switched on later with no rework. A bank answers for its own interpretation of every library fact; the design defaults under that decision are `docs/DECISIONS.md` row D-62 and ADR 0054, reversible by staffing the `library_editor` role | Alex |
 
 Requirement IDs never appear on screen. Priority is MoSCoW (M, S, C).
 
@@ -25,10 +25,13 @@ app's `app.md`.
 
 Compliance Watch keeps one obligations inventory current and carries every
 regulatory change from first sighting to signed-off evidence. Research agents
-find and propose, people decide, and every decision is logged. It is built for
-enterprise banks in the Nordics: Swedish, Danish, Norwegian, Finnish and EU
-sources, five content languages, bank-grade access control, and an assurance
-pack a vendor review can use.
+find and propose, and every decision is logged. In the shared library the
+proposing and the approving principal are both agents, each independent of the
+other; in a bank's own zone people decide, and the bank answers for its own
+interpretation of every library fact. It is built for enterprise banks in the
+Nordics: Swedish, Danish, Norwegian, Finnish and EU sources, five content
+languages, bank-grade access control, and an assurance pack a vendor review
+can use.
 
 **Wedge.** Inventory plus watch, done deeply for Nordic sources, with
 paragraph-level citations and a plain verdict on every item.
@@ -73,7 +76,9 @@ system integrate.
 owner (assesses, plans, evidences), approver (second pair of eyes),
 contributor (legal, product, tech input), reader, auditor (read-only with
 exports), tenant admin (people, configuration, security), and on the platform
-side the library editor and the platform admin.
+side the confirming agents that work the review queue, the platform admin, and
+the `library_editor` role, which bleqq staffs with nobody and keeps for the
+proposals it chooses to decide itself.
 
 ## 2. The journey
 
@@ -151,7 +156,7 @@ side the library editor and the platform admin.
 | INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes. Never for a standard, whose text is licensed | S | R1 |
 | INV-03 | Obligations: plain-language duty, duty type, scope facets, trigger, retention, sanction exposure, provenance, related obligations | M | R1 |
 | INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 |
-| INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 |
+| INV-05 | Text in the original language plus translations, machine translations labelled. A record whose proposal an agent confirmed is labelled machine-confirmed and names the proposing and the confirming agent; it never reads as verified by a person until a person verifies it | M | R1 |
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 |
 | INV-07 | Tenant-private instruments and obligations from the tenant's own sources, proposed and approved inside that bank by a second person. Platform staff never see or approve them, and their text never reaches a model, the search index or another tenant | C | R3 |
 | INV-08 | Standards within the sector scope as instruments, one per edition. Each holds publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link, and exactly one conformance duty in our own words, which carries the standard's term. Only a standard's own records carry a standard term. There is no standard text, clause or control title, or paraphrase in the library, the search index, Ask or agent output | M | R1 |
@@ -160,9 +165,9 @@ side the library editor and the platform admin.
 
 | ID | Requirement | P | R |
 |---|---|---|---|
-| PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field | M | R1 |
-| PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction. The reviewer can correct scope and wording first. Never the proposer | M | R1 |
-| PRO-03 | The queue lives in the platform console. Tenants see library updates and can report a problem, and that report stays inside the bank that filed it. A bank's private records are proposed and approved inside the bank and never reach the console | M | R1 |
+| PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field. One queue serves both kinds of approver: a confirming agent reads the pending proposals through the same route as a person, with its key's review scope | M | R1 |
+| PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction. The reviewer can correct scope and wording first. Never the same principal: the approver is a second person, who steps up with a passkey, or an independent agent whose definition and key differ from the proposer's. The audit row names whoever decided | M | R1 |
+| PRO-03 | The queue lives in the platform console, where the platform watches what the agents decided and can take a proposal over. Tenants see library updates and can report a problem, and that report stays inside the bank that filed it. A bank's private records are proposed and approved inside the bank and never reach the console | M | R1 |
 | PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 |
 
 ### WAT: watch
@@ -262,7 +267,7 @@ side the library editor and the platform admin.
 | ID | Requirement | P | R |
 |---|---|---|---|
 | AUD-01 | Append-only audit log written with every change: actor (user, agent, system), action, subject with its title at the time, summary, before and after | M | R1 |
-| AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 |
+| AUD-02 | AI output log with model, version, purpose, citations, review state and feedback. A confirming agent's approval, correction or rejection is logged there and in the audit trail, naming the agent definition, its version and the key it used | M | R1 |
 | AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it. The loop to the library is closed by the watch agents' re-check, which proposes the correction | S | R1 |
 | AUD-04 | Retention of closed cases, removed evidence and the audit trail: a record is deleted ten years after its last use. The purge never updates an append-only row, deletes one only past that age, and runs through one database-guarded path | S | R3 |
 
@@ -290,7 +295,7 @@ side the library editor and the platform admin.
 
 - **AC-ID1** A user who has a passkey requests a code: the response matches any other request and no email is sent. **AC-ID2** The enrolment session receives 403 on every route except passkey registration and `GET /me`. **AC-ID3** A sensitive action without a fresh assertion answers 403 `step_up_required`, and the audit event of a completed one references the assertion.
 - **AC-NFR1** For every tenant route, a record of tenant A requested by tenant B answers 404. **AC-NFR2** The app refuses to boot on a database role that can bypass row-level security.
-- **AC-PRO1** No API key scope and no tenant role can change a library record except through an approved proposal. **AC-PRO2** Approving your own proposal answers 409 `four_eyes_violation`.
+- **AC-PRO1** No API key scope and no tenant role can change a library record except through an approved proposal. **AC-PRO2** Approving your own proposal answers 409 `four_eyes_violation`, for a person and for an agent alike: the same user, the same key or the same agent definition on both sides is refused, and the check constraint refuses the row on its own.
 - **AC-VOC1** An admin adds a change type, a tag and a sub-status with no deploy: each appears in pickers, filters, agent vocabulary reads and pills, and `openapi.json` is unchanged. **AC-VOC2** Retiring a used value keeps history readable and removes it from pickers. **AC-VOC3** Creating "custody " when "Custody" exists is refused with the near match offered.
 - **AC-FP1** Switching off "Advice" previews the obligations and open cases it hides, waits for a second person, then hides advice-only obligations and changes everywhere.
 - **AC-FP2: markets.** Turning Denmark on in the footprint's jurisdictions previews the change and waits for a second person with step-up, and EU rules keep showing with Denmark. Operating in Norway alone shows EU rules too. Watching Norway is one audited write that changes no default view, and no market key appears in a URL.
@@ -356,6 +361,17 @@ eyes applies to every approve permission: never the requester. 0.3 adds no
 permission constant and changes no grant; only the descriptions above grew. 0.4
 adds one constant, `private_records.approve`, and widens the descriptions of
 `security.manage` and `support_access.grant`.
+
+0.4 also staffs `library_editor` with nobody. The role and its permissions stay
+exactly as they are — they are how a person takes a proposal over, and how a
+human approver is switched on later without rework — but the routine second
+pair of eyes on the library is an agent: a platform API key bound to an agent
+definition holds the new scope `proposals:review`, which reaches the queue read
+and the approve, correct and reject routes and no library row. The step-up is a
+person's gate: a session approving still needs a fresh passkey assertion, and a
+key cannot step up, so the four-eyes check constraint, not a passkey, is what
+holds an agent approval apart from its proposal. No tenant role and no tenant
+key gains either the role or the scope.
 
 **Actions that need membership only:** viewing My work, your own or any
 department's (each item still needs its read permission, so the department

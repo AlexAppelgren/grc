@@ -362,3 +362,9 @@ class GovernanceScenarioTests(ScenarioTestCase):
         The console reads each bank's figures through one audited window (ADM-02).
         """
 
+    @skip("pending: AUD-S9 (D-62, chunk 4 c4-agent-approver)")
+    def test_aud_s9(self) -> None:
+        """AUD-S9
+
+        An agent's approval is in the audit trail with the agent named (AUD-01, AUD-02).
+        """

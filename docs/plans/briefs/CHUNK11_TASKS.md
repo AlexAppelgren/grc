@@ -43,13 +43,37 @@ bleqq's general financial-regulation watch is the product. It is **platform-owne
 platform-run**: no tenant switches one of its agents off, pauses it, changes its cadence,
 scope or budget, or edits its definition, and there is no tenant off switch anywhere near it.
 A bank may add agents of its own for what it must watch; **only those** get AGT-04's controls,
-they run under the bank's own monthly cap, and they write only the bank's zone — never a
+they run under the bank's own monthly cap, and they write only the bank's zone â€” never a
 library row. A tenant's AI off switch stops the bank's own agents and its own AI features and
 nothing else. A tenant agent's key never opens a platform run, and a platform run reads no
 tenant row.
 
 Every task below is written to that rule. A task that finds a route, column or screen
 contradicting it stops and reports (parallel-plan rule 12).
+
+### The confirming agent (item 19, D-62, ADR 0054)
+
+bleqq staffs no editorial function, so the second pair of eyes on a library proposal is usually
+an independent agent: a platform key bound to its own definition, holding the scope
+`proposals:review`, working the same queue a person works. Chunk 4 builds the scope, the columns,
+the widened four-eyes constraint and the approval path (`c4-agent-approver`); its definition,
+prompt and evaluation land in chunk 5. What that leaves this chunk, inside tasks it already has:
+
+- `c11-agent-definitions-contract-a` and `-b` version the confirming agent's definition exactly as
+  they version the sweeper's: platform-owned rows, published under `agent_definitions.manage`, one
+  audit row per publish, no tenant route reaching a definition in any release. It is not a special
+  case and needs no column of its own; what it may decide is its scope and its prompt, not a flag.
+- `c11-platform-agent-settings-a` and `-b` carry its cadence and budget as platform rows, like the
+  other bleqq agents. A tenant cannot switch it off, pause it, or change what it reviews.
+- `c11-fe-console-agent-definitions` shows what it decided: the console's agent view links to the
+  proposals it approved, corrected or rejected, which is the audit trail chunk 4 already writes.
+  This is the surface the platform watches the agents from, beside the queue itself.
+- `c11-platform-watch-read` must answer for the confirming agent too. **Open for Alex**
+  (`docs/TODO_FOR_alex.md`): whether a bank may see which agent confirmed a fact. The default the
+  build takes until he says otherwise is yes: the record's provenance names the proposing and the
+  confirming agent, as it already names an agent proposer.
+- Nothing about a **tenant's own** agents changes. A tenant agent writes only its own zone, never
+  the library, and no tenant key ever holds `proposals:review` (item 14, ADR 0053).
 
 ### Hard preconditions from other chunks
 
@@ -90,10 +114,10 @@ No chunk 11 task starts before the work it names is on `main`:
   scope and budget as **platform rows**, edited in the console by a platform admin and audited
   through `record()`. There is no tenant column on them and no tenant write path: a control
   write naming a platform agent answers 403 with `agent_definitions.manage`.
-- **AGT-04**: a bank's own agents — add, on and off, cadence inside the plan limit, scope,
+- **AGT-04**: a bank's own agents â€” add, on and off, cadence inside the plan limit, scope,
   run now, pause, resume, interrupt, a run history with findings and cost, one monthly budget
   cap for the bank, and the AI off switch. Each control refuses a platform agent.
-- **AGT-04, the read-only half that is new**: "What bleqq watches" — each general agent's
+- **AGT-04, the read-only half that is new**: "What bleqq watches" â€” each general agent's
   name, purpose, the jurisdictions it sweeps, its check cadence, when it next runs and the
   status of its last run, and nothing else. No prompt, tool, model, version internals, budget,
   cost, findings, proposal counts or setting, and nothing writable. ADR 0053 shows bleqq's
@@ -111,13 +135,13 @@ No chunk 11 task starts before the work it names is on `main`:
 - **PRO-04**: batch proposals with a preview, approved whole or row by row, one audit event
   for the batch and one per row, and the `obligation_scope` proposal kind chunk 4 cut
   (ruling 14 of the parallel plan).
-- **ID-07, the enforcing half**: the tenant credential policy of ADR 0048 — `any_passkey` or
+- **ID-07, the enforcing half**: the tenant credential policy of ADR 0048 â€” `any_passkey` or
   `device_bound`, an allow-list from a committed platform list, binding on new registrations
   at once and on sign-in from a notice date, with the backup-eligibility comparison for every
   bank, and the policy form. **Not** the telling half: item 8's member list, `meetsPolicy` on
   My passkeys and the shell notice are deferred (see Cut), so ID-07 closes this chunk at
   `in_progress`.
-- **ID-08**: the tenant session policy — idle and absolute limits inside platform maximums,
+- **ID-08**: the tenant session policy â€” idle and absolute limits inside platform maximums,
   refused above them with `above_platform_maximum`.
 - **ADM-01**: the Agents and Security panels of the tenant admin; **ADM-02**: the console's
   Agent definitions surface.
@@ -162,7 +186,7 @@ No chunk 11 task starts before the work it names is on `main`:
    `backend/config/settings.py` already refuses `AGENT_RUNNER=mock` outside the named test
    environment, which is AGT-S8's last line.
 5. **`agents.manage` is the permission for every tenant agent control and every research
-   request — alone, not in a pair.** Three sources disagree. AGT-S7's Gherkin names a
+   request â€” alone, not in a pair.** Three sources disagree. AGT-S7's Gherkin names a
    compliance officer; the prototype's Agents view says "an administrator or the compliance
    officer"; `PARALLEL_PLAN` line 1132 and item 10 both write "`agents.manage` **or**
    `proposals.create`". PRD section 6 grants `agents.manage` to Admin alone and
@@ -176,7 +200,7 @@ No chunk 11 task starts before the work it names is on `main`:
    `retag` request is `proposals.review`, as AGT-05 says. This is the one-line confirmation
    under Open questions: reversing it adds an `or` on three routes and nothing else.
 6. **"What bleqq watches" is a member's read, not an admin's.** It carries public facts about
-   the platform's coverage — name, purpose, jurisdictions, cadence — so it is gated by
+   the platform's coverage â€” name, purpose, jurisdictions, cadence â€” so it is gated by
    `watch.read`, which every system role holds, rather than by `agents.manage`. A reader who
    cannot manage agents still needs to know what is covered. The admin Agents screen shows the
    same panel; the route is the same.
@@ -373,17 +397,17 @@ No chunk 11 task starts before the work it names is on `main`:
 | AGT-S5 (AGT-04, reworded) | `c11-tenant-agent-controls-b` | `c11-e2e-agent-controls-a` |
 | AGT-S6 (AGT-04, reworded) | `c11-run-scheduler-b` | `c11-e2e-agent-controls-b` |
 | AGT-S7 (AGT-05, reworded) | `c11-research-requests-b` | `c11-e2e-definitions-requests-b` |
-| AGT-S8 (AGT-06) | `c11-runner-adapter` | — |
-| AGT-S11 (AGT-04, reworded) | `f03-T82` | — |
-| AGT-S14 (AGT-03, AGT-04), new | `c11-platform-agent-settings-a` | — |
+| AGT-S8 (AGT-06) | `c11-runner-adapter` | â€” |
+| AGT-S11 (AGT-04, reworded) | `f03-T82` | â€” |
+| AGT-S14 (AGT-03, AGT-04), new | `c11-platform-agent-settings-a` | â€” |
 | PRO-S8 (PRO-04) | `c11-batch-proposals-b` | `c11-e2e-definitions-requests-b` |
-| ID-S16 (ID-07) | `c11-credential-policy-a` | — |
-| ID-S17 (ID-08) | `c11-session-policy` | — |
+| ID-S16 (ID-07) | `c11-credential-policy-a` | â€” |
+| ID-S17 (ID-08) | `c11-session-policy` | â€” |
 | ADM-S1 (ADM-01, ADM-03) | stays green, extended by `c11-fe-admin-security-b` | stays green, extended by `c11-fe-admin-agents-b` |
 | ADM-S4 (ADM-02) | stays green, extended by `c11-fe-console-agent-definitions-b` | stays green, extended by `c11-fe-console-agent-definitions-b` |
-| NFR-S1, NFR-S5 (NFR-01) | stay green, extended to every chunk 11 tenant route and table | — |
-| NFR-S13 (NFR-01) | stays green; every contract task adds its routes | — |
-| NFR-S6 (NFR-02) | stays green; every route task asserts `Server-Timing: app` and its budget | — |
+| NFR-S1, NFR-S5 (NFR-01) | stay green, extended to every chunk 11 tenant route and table | â€” |
+| NFR-S13 (NFR-01) | stays green; every contract task adds its routes | â€” |
+| NFR-S6 (NFR-02) | stays green; every route task asserts `Server-Timing: app` and its budget | â€” |
 | AGT-S1, AGT-S2, AGT-S3, AGT-S9, AGT-S10, AGT-S12, AGT-S13 | stay green, chunk 5's | stay green, chunk 5's |
 
 `AGT-S14` is new: the PRD and ADR 0053 describe the platform fence around bleqq's agents but
@@ -440,7 +464,7 @@ as a dependency of the task that does own the scenario.
 - **`c11-runner-managed-agents` leaves the wave plan** and keeps its held state with ruling 4's
   reason.
 - **`c11-fe-console-batch-review` loses `c11-e2e-seed` from its depends-on.** It owns no
-  journey — PRO-S8's `@e2e` half is `c11-e2e-definitions-requests-b`'s — so it needs the
+  journey â€” PRO-S8's `@e2e` half is `c11-e2e-definitions-requests-b`'s â€” so it needs the
   screen's own data, not the E2E seed, and waiting on the seed would have held the console
   screen three waves for nothing.
 - **Each E2E task gets its own helper file** (`support/agent-controls.ts`,
@@ -478,7 +502,7 @@ as a dependency of the task that does own the scenario.
    `c11-runner-adapter`, `c11-credential-policy-a` and `c11-session-policy`.
 2. PRO-S8's two halves had no owners; they are `c11-batch-proposals-b` and
    `c11-e2e-definitions-requests-b`.
-3. Nothing proved the platform fence itself — that a tenant cannot switch off, pause,
+3. Nothing proved the platform fence itself â€” that a tenant cannot switch off, pause,
    re-scope, re-cadence, re-budget or re-define one of bleqq's agents. AGT-S14 is new and
    `c11-platform-agent-settings-a` owns it.
 4. Nothing owned rewording AGT-S4, AGT-S5, AGT-S6 and AGT-S11 to the split.
@@ -588,7 +612,7 @@ Why the waves fall this way:
 
 ## Open questions
 
-- **q-tenant-definition — a confirmation, not a choice to make** (a product invariant is at
+- **q-tenant-definition â€” a confirmation, not a choice to make** (a product invariant is at
   stake, so it still goes to Alex; the build does not wait, and nothing is held for it). Item
   14 says a bank "can add their own agents to monitor specific things they have a requirement
   for", and `PARALLEL_PLAN` section 3.3.1 reads that as a **tenant-created definition**.
@@ -645,8 +669,8 @@ Why the waves fall this way:
     steered by the bank's agent settings, which is what `agents.manage` is for, and adding
     `proposals.create` would let a compliance officer spend that budget with no control over
     the cap. Item 10's pair is about a **private source** in chunk 13, a different act, and is
-    left alone. Reversing this needs no new permission — only the `or` on the three research
-    routes of `c11-tenant-agents-contract-b` — so it is a confirmation, not a hold. If Alex
+    left alone. Reversing this needs no new permission â€” only the `or` on the three research
+    routes of `c11-tenant-agents-contract-b` â€” so it is a confirmation, not a hold. If Alex
     wants the compliance officer to be able to ask, say so and that one word goes in.
   - That a bank with no agent of its own cannot make a research request, because it cannot
     command a platform agent (`PARALLEL_PLAN` section 3.3.1 already states this default).
@@ -693,7 +717,7 @@ Draw `design/screens/admin-agents.html` on the tenant shell, from `design/protot
 The screen has two halves and the card must make the difference obvious without a sentence of
 policy on screen:
 - **Our agents**: one panel per agent the bank added, with its status pill (`Off`, `On`,
-  `Paused` — tone by kind, never chosen by a person), the version pill, what it covers, what it
+  `Paused` â€” tone by kind, never chosen by a person), the version pill, what it covers, what it
   writes to, next run, the cadence control, Switch on/off, Pause/Resume, Run now, Stop run, and
   "Recent runs" with time, status, cost, trigger, who asked, findings and proposals.
 - **Spend this month**: the figure, the cap, the meter, "Set cap", and a line that names
@@ -988,7 +1012,7 @@ Also: add the seven routes to the route lists in `apps/shared/permissions.py`, a
 - The seven operations appear in `openapi.json` with the ids above and answer 501 `not_built`
   behind their real gate.
 - A session without `agent_definitions.manage` gets 403 with `requiredPermission`, an
-  anonymous request 401, and an API key of any scope 403 — each before the 501, proved per
+  anonymous request 401, and an API key of any scope 403 â€” each before the 501, proved per
   route.
 - A tenant session gets 403 on every one of them, proved per route: no tenant principal
   reaches a definition, in any release (AGT-03).
@@ -1324,7 +1348,7 @@ Grow the versioned definition folders under `backend/agents/` to what a publishe
   the sweeper's.
 - `apps/agents/seeds/__init__.py` creates one `AgentVersion` row per shipped version folder
   beside the `agent` row, inside `library_write()`, with an audit event each, and leaves an
-  existing row alone — a deploy never silently rewrites a version a run points at.
+  existing row alone â€” a deploy never silently rewrites a version a run points at.
 
 **Owned paths:**
 
@@ -1514,7 +1538,7 @@ Carries the stop-and-report instruction. Build `backend/apps/agents/platform.py`
 `listPlatformRuns`:
 
 - A platform agent's cadence, the jurisdictions it sweeps and its budget live on the `agent`
-  row itself (`default_cadence` and two columns this task adds in **no** new migration — they
+  row itself (`default_cadence` and two columns this task adds in **no** new migration â€” they
   come from `c11-agent-definitions-contract-a`'s migration, which already carries
   `platform_scope` and `platform_monthly_budget`). There is **no tenant column** on any of
   them and no tenant write path.
@@ -1527,8 +1551,8 @@ Carries the stop-and-report instruction. Build `backend/apps/agents/platform.py`
   `agent_definitions.manage` for any tenant-principal write naming a platform agent. Every
   tenant control route calls it; a guard test walks the tenant routes of `agents/api.py` and
   fails on one that does not.
-- `AGT-S14` is new — the PRD and ADR 0053 describe the fence but `agents/app.md` has no
-  scenario for it — so this task writes the scenario into `backend/apps/agents/app.md` in the
+- `AGT-S14` is new â€” the PRD and ADR 0053 describe the fence but `agents/app.md` has no
+  scenario for it â€” so this task writes the scenario into `backend/apps/agents/app.md` in the
   house format and writes `test_agt_s14` with it:
 
   ```gherkin
@@ -1611,7 +1635,7 @@ permission and calls a named function that answers 501 `not_built`:
 
 Schemas: `TenantAgent`, `TenantAgentInput`, `TenantAgentUpdate`, `PlatformWatchItem`
 (`{key, name, purpose, jurisdictions[], cadence, nextRunAt, lastRun}`, where `lastRun` is a
-status-only summary, `{finishedAt, status}`, and nothing else — no prompt, tool, model,
+status-only summary, `{finishedAt, status}`, and nothing else â€” no prompt, tool, model,
 version internals, budget, cost, findings, proposal counts or setting. ADR 0053 shows bleqq's
 agents read-only **with their history**, and `c11-e2e-agent-controls-b` asserts the panel
 still shows a next run with the tenant's AI off, so both fields are part of the read),
@@ -1654,8 +1678,8 @@ Every route list in `apps/shared/permissions.py` gains its rows, nothing joins
 - An API key of any scope gets 403 on every one of them: a tenant agent's key never opens or
   steers a run through these routes, proved per route.
 - `listPlatformWatch` answers for a plain reader holding `watch.read` and returns exactly
-  `{key, name, purpose, jurisdictions, cadence, nextRunAt, lastRun{finishedAt, status}}` — no
-  prompt, tool, model, version internals, budget, cost, findings, proposal counts or setting —
+  `{key, name, purpose, jurisdictions, cadence, nextRunAt, lastRun{finishedAt, status}}` â€” no
+  prompt, tool, model, version internals, budget, cost, findings, proposal counts or setting â€”
   proved by asserting the schema's field set, so a later addition fails the test.
 - Tenant B calling any `{tenantAgentId}` or `{runId}` route of tenant A gets 404 (AC-NFR1),
   proved per route once the routes are served; at contract stage the test asserts the 501 is
@@ -1897,7 +1921,7 @@ serves `listTenantAgents`, `createTenantAgent` and `updateTenantAgent`:
 Build `backend/apps/agents/platform_read.py`, which serves `listPlatformWatch`: for each
 active platform agent, its key, name, purpose, the jurisdictions it sweeps, its check cadence,
 when it next runs (`nextRunAt`) and a **status-only** summary of its last run (`finishedAt`
-and `status`). Nothing else — no prompt, tool, budget, cost, findings, proposal counts, model,
+and `status`). Nothing else â€” no prompt, tool, budget, cost, findings, proposal counts, model,
 version internals or setting, and nothing writable. ADR 0053 shows bleqq's agents read-only
 with their history, and a bank that can see a next run can see that the coverage it pays for
 is still running; a cost or a finding would be run detail and is not carried.
@@ -2065,7 +2089,7 @@ Build `backend/apps/proposals/batch.py`'s creation half, serving `createProposal
 - `PROPOSAL_BATCH_MAX_ROWS` is a setting with an env override; a batch above it answers 422
   `batch_too_large`, which keeps the preview read inside the 250 ms budget.
 - The rows carry no tenant content: a batch touches library records, and a re-tag asked by a
-  bank is refused — AGT-05 puts re-tagging in the platform console (ruling 5). A test proves a
+  bank is refused â€” AGT-05 puts re-tagging in the platform console (ruling 5). A test proves a
   tenant session cannot create one.
 - Creation is idempotent through the existing `Idempotency-Key` header and
   `idempotency_record`, as every other proposal write is.
@@ -2242,7 +2266,7 @@ Carries the stop-and-report instruction. Build the decision half of
 
 - `decideProposalBatch` takes a list of row decisions and an optional decision for the rest,
   needs `proposals.review` and a fresh step-up, and refuses the proposer with 409
-  `four_eyes_violation` before deciding anything — the whole call decides nothing, as AC-REG1
+  `four_eyes_violation` before deciding anything â€” the whole call decides nothing, as AC-REG1
   does for applicability.
 - Approved rows are applied through the same `apply.py` path a single proposal uses, in **one
   transaction**: each approved record gets its new version, its audit row and its re-index,
@@ -2373,8 +2397,8 @@ and the chunk's first `CELERY_BEAT_SCHEDULE` entry:
 From `FEATURES_0_3_TASKS.md`, with ruling 10's owned paths. Build
 `backend/apps/agents/scope.py`:
 
-- At run start the scope is built from the tenant's market levels — operating first, then
-  watched, then the EU jurisdictions that reach them — unless the `tenant_agent` row names
+- At run start the scope is built from the tenant's market levels â€” operating first, then
+  watched, then the EU jurisdictions that reach them â€” unless the `tenant_agent` row names
   jurisdictions of its own, which override it. A copy is stored on the run, so a later market
   change does not alter a finished run's scope.
 - A platform run never calls this function: it reads `platform_scope` instead, and a guard
@@ -2384,7 +2408,7 @@ From `FEATURES_0_3_TASKS.md`, with ruling 10's owned paths. Build
   fact is recorded on the run, so a run never carries a key the agent may not submit. The row
   keeps the key, so the admin still sees what they chose.
 - Jurisdiction keys may reach the tenant-scoped runner; tenant text never does (D-32). A test
-  asserts the scope payload carries keys only — no market name, no tenant name, no free text.
+  asserts the scope payload carries keys only â€” no market name, no tenant name, no free text.
 
 **Owned paths:**
 
@@ -2506,7 +2530,7 @@ serving `createResearchRequest`, `listResearchRequests` and `getResearchRequest`
   public URL) and `research_topic`. Each names one of the **bank's own** agents; a request
   naming a platform agent answers 403 through `refuse_platform_agent()`, and a request from a
   bank with **no agent of its own** answers 409 `no_tenant_agent` with the reason in
-  user-facing words — it cannot command a platform agent (the default taken above).
+  user-facing words â€” it cannot command a platform agent (the default taken above).
 - Each request opens a run with `trigger='request'` and the request on it, so the request is a
   job with a status endpoint (`GET /research-requests/{requestId}`, plan-wide rule 14).
 - `check_url` validates the URL at the boundary: scheme `https` only, no private or
@@ -3025,7 +3049,7 @@ reads and writes `aiEnabled` on the organisation profile, which is gated by `sec
 
 - calls that same route behind the step-up dialog the other security writes use, and treats a
   403 `step_up_required` as the prompt to re-assert rather than as an error state;
-- renders **read-only** for a member without `security.manage` — the current value with a
+- renders **read-only** for a member without `security.manage` â€” the current value with a
   permission-limited notice, never a page-level 403 and never a control that would 403 on
   click. An admin holds both `agents.manage` (the rest of this screen) and `security.manage`,
   so on the common path both halves are writable;
@@ -3308,7 +3332,7 @@ screen half.
 Write the AGT-S6 journey in the same spec file, its own block only (rule 6): with the seeded
 spend near the cap, the admin sets a cap the next run would exceed, sees the agent paused and
 the notice, then switches all AI features off, sees Ask answer its `feature_off` state, and
-sees "What bleqq watches" still listing its next run — the line that proves a tenant switch
+sees "What bleqq watches" still listing its next run â€” the line that proves a tenant switch
 never stops bleqq's coverage.
 
 **Owned paths:**
@@ -3348,7 +3372,7 @@ Write the AGT-S4 journey in `frontend/tests/e2e/console.journey.spec.ts`, its ow
 the platform admin signs in, opens `/console/agents`, publishes a new version of
 `watch-sweeper` with a change note behind the step-up, sees the version list grow, and sees an
 earlier run still naming the earlier version. Then the tenant admin signs in and cannot reach
-`/console/agents` at all — the navigation entry is absent and a direct visit answers the
+`/console/agents` at all â€” the navigation entry is absent and a direct visit answers the
 structured 403 the UI renders as is.
 
 **Owned paths:**
@@ -3594,7 +3618,7 @@ Close the chunk:
   into one row per screen** (`admin-agents.html`, `console-agent-definitions.html`) **and its
   row 95 into one row per screen** (`admin-security.html` moved to chunk 11 by ruling 7,
   `admin-integrations.html` left at chunk 13), then set each of those rows and the batch row to
-  "designed" or further as the cards and screens warrant — every chunk 11 edit to that file is
+  "designed" or further as the cards and screens warrant â€” every chunk 11 edit to that file is
   this task's (plan-wide rule 6); update `docs/plans/IMPLEMENTATION_STATUS.md`; and close the
   chunk's `INPUT_DELTAS.md` rows that this chunk answered.
 - **Held work named**: `c11-runner-managed-agents` with ruling 4's reason, and anything the

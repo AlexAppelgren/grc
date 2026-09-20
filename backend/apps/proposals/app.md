@@ -8,16 +8,30 @@
 ## 1. Business / user context
 
 The library is shared by every bank, so no single agent or person edits it.
-Agents and people propose; a library editor in the platform console reviews,
-may correct scope and wording, and approves. Approval applies the payload,
-writes the new version, the audit row and the search re-index in one
+Agents and people propose; a second, independent principal reviews from the
+queue, may correct scope and wording, and approves. Approval applies the
+payload, writes the new version, the audit row and the search re-index in one
 transaction. The proposer never approves their own proposal, and the database
 enforces it.
 
+Since PRD 0.4 (Alex, 2026-09-20, D-62 and ADR 0054) that second principal is
+usually an agent: bleqq staffs no editorial function, so a platform API key
+bound to an agent definition, holding the scope `proposals:review`, reads the
+same queue a person reads and approves, corrects or rejects through the same
+logic. Independence is what four eyes means here — a different agent definition
+and a different key from the proposer — and the check constraint refuses a row
+whose user, key or agent matches on both sides. A person approving still steps
+up with a passkey; a key cannot step up, so for an agent the scope and the
+constraint are the whole gate. A record applied from a proposal an agent
+confirmed carries machine-confirmed provenance (INV-05), never a person's
+verification.
+
 The prototype shows the tenant's compliance officer approving agent
 proposals. That is the one place the prototype is wrong: the queue lives in
-the console with the `library_editor` role. Tenants see library updates and
-can report a problem, and that report stays inside the bank that filed it: no
+the console with the `library_editor` role, which bleqq keeps and staffs with
+nobody — it is how the platform watches what the agents decided, takes a
+proposal over, and switches a human approver back on without rework. Tenants
+see library updates and can report a problem, and that report stays inside the bank that filed it: no
 editor, other bank, agent or model reads it, and the library is corrected
 instead by the watch agents' re-check, which proposes the correction like any
 other (D-50, ADR 0043).
@@ -57,7 +71,10 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 - **AC-PRO1** No API key scope and no tenant role can change a library record
   except through an approved proposal.
-- **AC-PRO2** Approving your own proposal answers 409 `four_eyes_violation`.
+- **AC-PRO2** Approving your own proposal answers 409 `four_eyes_violation`,
+  for a person and for an agent alike: the same user, the same key or the same
+  agent definition on both sides is refused, and the check constraint refuses
+  the row on its own.
 - **Playbook rules:** `Idempotency-Key` on proposal submission because agents
   retry; a proposal carries the source for every changed field; `proposal_kind`
   and `proposal_status` are kinds in code; rejection needs a reason and is
@@ -194,4 +211,30 @@ When a second person in tenant A with private_records.approve approves it with a
 Then the payload is applied, and the audit and outbox rows are written in tenant A's zone
 When a member of tenant A files a proposal against a shared record
 Then its owner stays empty and the console queue lists it as before
+```
+
+### PRO-S13 — An independent agent confirms a proposal from the same queue `@integration` `@e2e` (PRO-01, PRO-02, AUD-02)
+```gherkin
+Given a proposal filed by the agent "watch-sweeper" through its own key
+And a second platform key bound to a different agent definition, holding the scope "proposals:review"
+When that key reads the pending proposals through the queue route a person reads
+Then it sees the same proposal with the same source beside the same diff
+When it approves, corrects or rejects through the same routes
+Then the decision applies exactly as a person's does, in one transaction
+And the audit row names the confirming agent, its definition version and its key, and carries no step-up assertion
+And a key without the review scope answers 403
+And no route under the review scope writes a library row except through apply
+```
+
+### PRO-S14 — The same principal can never both propose and approve `@integration` (PRO-02, AC-PRO2)
+```gherkin
+Given a proposal filed by an agent key
+When the same key approves it
+Then the request answers 409 with code "four_eyes_violation"
+When a second key of the same agent definition approves it
+Then the request answers 409 with code "four_eyes_violation"
+When the row is written directly, bypassing the logic
+Then the check constraint refuses it for a repeated user, key or agent alike
+And it refuses a reviewing key that names no agent, so two unbound keys cannot pass on nulls
+And a key of a different agent definition approves it and the change applies
 ```

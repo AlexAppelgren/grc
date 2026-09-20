@@ -370,3 +370,17 @@ class ProposalsScenarioTests(ScenarioTestCase):
 
         A private proposal is approved inside the bank and never reaches the console (INV-07, PRO-03).
         """
+
+    @skip("pending: PRO-S13 (D-62, chunk 4 c4-agent-approver)")
+    def test_pro_s13(self) -> None:
+        """PRO-S13
+
+        An independent agent confirms a proposal from the same queue (PRO-01, PRO-02, AUD-02).
+        """
+
+    @skip("pending: PRO-S14 (D-62, chunk 4 c4-agent-approver)")
+    def test_pro_s14(self) -> None:
+        """PRO-S14
+
+        The same principal can never both propose and approve (PRO-02, AC-PRO2).
+        """

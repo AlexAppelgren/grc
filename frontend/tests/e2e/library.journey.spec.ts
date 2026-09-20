@@ -43,3 +43,12 @@ test.describe('standards in the library', () => {
     // pending: INV-S11 (INV-01, INV-02, INV-08)
   });
 });
+
+// PRD 0.4: a library record confirmed by agents is labelled machine-confirmed
+// (INV-05, D-62). It stays test.fixme until the task in
+// docs/plans/briefs/CHUNK4_TASKS.md that builds it lands.
+test.describe('machine-confirmed provenance', () => {
+  test.fixme("INV-S14: A record an agent confirmed reads as machine-confirmed", async () => {
+    // pending: INV-S14 (INV-05, INV-06, PRO-02)
+  });
+});

@@ -19,7 +19,12 @@ creation, role and security changes, re-enrolment) ask for a fresh passkey
 assertion, and the audit event keeps a reference to it. Permissions are
 constants in code; roles are rows the tenant composes from them, so nothing in
 the product branches on a role name. Agents and integrations use scoped API
-keys, and no scope reaches the library.
+keys, and no scope reaches the library. PRD 0.4 (D-62, ADR 0054) adds one
+platform-only scope, `proposals:review`: a key bound to an agent definition may
+read the proposal queue and approve, correct or reject, which still writes the
+library only through an approved proposal. A key can never step up, so the
+four-eyes check constraint, not a passkey, is what stands behind an agent's
+approval.
 
 Deliberately simplified for R1: no self-service recovery of any kind (an admin
 re-issues enrolment), no SSO or SCIM (R3, and they never add a password), and
@@ -368,4 +373,18 @@ Then the answer is 422 "platform_account" and no invitation is written
 Given a bank invitation whose address is granted a platform role afterwards
 When the invited person enters the emailed code and registers their first passkey
 Then the answer is 422 "platform_account" with no passkey, no membership and no audit row written
+```
+
+### ID-S31 — The review scope reaches the queue and never a library row `@integration` (ID-10, AC-PRO1, AC-ID3)
+```gherkin
+Given a platform key bound to an agent definition and holding "proposals:review"
+When it reads the proposal queue and approves, corrects or rejects a proposal it did not file
+Then each call succeeds and the change reaches the library only through apply
+When it writes to an instrument, provision, obligation or library vocabulary route
+Then every such route answers 403 or does not exist, as ID-S21 already proves for every scope
+When a key without "proposals:review" calls the same review routes
+Then the request answers 403 naming the missing scope
+When a key tries a step-up
+Then there is no path for it: a key holds no assertion, and the review routes ask for none
+And a tenant key carrying "proposals:review" is refused: the scope is platform-only
 ```
