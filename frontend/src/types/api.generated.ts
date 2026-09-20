@@ -4,6 +4,93 @@
  */
 
 export interface paths {
+    "/api/v1/agent-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Agent Keys */
+        get: operations["listAgentKeys"];
+        put?: never;
+        /** Create Agent Key */
+        post: operations["createAgentKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-keys/{key_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke Agent Key */
+        post: operations["revokeAgentKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Agent Runs */
+        get: operations["listAgentRuns"];
+        put?: never;
+        /** Start Agent Run */
+        post: operations["startAgentRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Finish Agent Run */
+        patch: operations["finishAgentRun"];
+        trace?: never;
+    };
+    "/api/v1/agent-runs/{run_id}/source-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Source Check */
+        post: operations["recordSourceCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/answers/{answer_id}/feedback": {
         parameters: {
             query?: never;
@@ -253,6 +340,108 @@ export interface paths {
         put?: never;
         /** Step Up Verify */
         post: operations["stepUpVerify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Change */
+        post: operations["createChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Change */
+        patch: operations["updateChange"];
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Change Document */
+        post: operations["addChangeDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Change Event */
+        post: operations["addChangeEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/events/{event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Change Event */
+        patch: operations["updateChangeEvent"];
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/obligations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace Change Obligations */
+        put: operations["replaceChangeObligations"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -618,6 +807,58 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sources */
+        get: operations["listSources"];
+        put?: never;
+        /** Create Source */
+        post: operations["createSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Source Coverage */
+        get: operations["getSourceCoverage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Source */
+        patch: operations["updateSource"];
         trace?: never;
     };
     "/api/v1/taxonomy/dimensions": {
@@ -1178,6 +1419,192 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AgentKeyCreate */
+        AgentKeyCreate: {
+            /**
+             * Agentid
+             * Format: uuid
+             */
+            agentId: string;
+            /** Expiresat */
+            expiresAt?: string | null;
+            /** Name */
+            name: string;
+            /** Scopes */
+            scopes: string[];
+        };
+        /**
+         * AgentKeyCreated
+         * @description The secret appears here and nowhere else: no log, no audit value, no outbox payload.
+         */
+        AgentKeyCreated: {
+            /**
+             * Agentid
+             * Format: uuid
+             */
+            agentId: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Expiresat */
+            expiresAt: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Keyprefix */
+            keyPrefix: string;
+            /** Name */
+            name: string;
+            /** Plainkey */
+            plainKey: string;
+            /** Scopes */
+            scopes: string[];
+        };
+        /** AgentKeyOut */
+        AgentKeyOut: {
+            agent: components["schemas"]["RoleRef"] | null;
+            /** Agentid */
+            agentId: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Expiresat */
+            expiresAt: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Keyprefix */
+            keyPrefix: string;
+            /** Lastusedat */
+            lastUsedAt: string | null;
+            /** Name */
+            name: string;
+            /** Revokedat */
+            revokedAt: string | null;
+            /** Scopes */
+            scopes: string[];
+        };
+        /** AgentKeysPage */
+        AgentKeysPage: {
+            /** Items */
+            items: components["schemas"]["AgentKeyOut"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * AgentRunFinish
+         * @description `PATCH /agent-runs/{runId}`: a run closes once, into a terminal status.
+         */
+        AgentRunFinish: {
+            /** Error */
+            error?: string | null;
+            /** Outputref */
+            outputRef?: string | null;
+            stats?: components["schemas"]["AgentRunStats"] | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "succeeded" | "failed";
+        };
+        /**
+         * AgentRunInput
+         * @description `POST /agent-runs`, the first call of every execution (AGT-01). `agent` is the
+         *     definition's stable key, never its label.
+         */
+        AgentRunInput: {
+            /** Agent */
+            agent: string;
+            /** Model */
+            model: string;
+            /** Pipelineversion */
+            pipelineVersion: string;
+        };
+        /**
+         * AgentRunOut
+         * @description One run as every reader sees it. A tenant reads the library's runs and its own; no
+         *     reader sees another tenant's (AGT-01, item 14).
+         */
+        AgentRunOut: {
+            /** Agent */
+            agent: string;
+            /** Error */
+            error: string | null;
+            /** Finishedat */
+            finishedAt: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Model */
+            model: string;
+            /** Outputref */
+            outputRef: string | null;
+            /** Pipelineversion */
+            pipelineVersion: string;
+            /**
+             * Startedat
+             * Format: date-time
+             */
+            startedAt: string;
+            stats: components["schemas"]["AgentRunStats"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "succeeded" | "failed";
+        };
+        /**
+         * AgentRunPage
+         * @description `{items, total}` with `limit` and `offset`, not the designed cursor page (playbook 10).
+         */
+        AgentRunPage: {
+            /** Items */
+            items: components["schemas"]["AgentRunOut"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * AgentRunStats
+         * @description The `stats` column of agent_run: what one run did, counted against the budget
+         *     defaults of its definition (`backend/agents/<agent>/v<n>/definition.yaml`).
+         */
+        AgentRunStats: {
+            /**
+             * Changesregistered
+             * @default 0
+             */
+            changesRegistered: number;
+            /**
+             * Fetches
+             * @default 0
+             */
+            fetches: number;
+            /**
+             * Modelcalls
+             * @default 0
+             */
+            modelCalls: number;
+            /**
+             * Proposalssubmitted
+             * @default 0
+             */
+            proposalsSubmitted: number;
+            /**
+             * Sourceschecked
+             * @default 0
+             */
+            sourcesChecked: number;
+        };
         /**
          * Answer
          * @description Grounded only in the inventory. `noAnswer` is true when nothing supported an
@@ -3283,6 +3710,382 @@ export interface components {
              */
             usageNote: string;
         };
+        /**
+         * WatchChange
+         * @description A library record: sourced facts, shared by every tenant. No tenant judgement, no
+         *     case and no "So what?" confirmation is here; those sit on the tenant's own case.
+         */
+        WatchChange: {
+            /** Agentrunid */
+            agentRunId: string | null;
+            /** Authorityid */
+            authorityId: string | null;
+            /** Authoritylabel */
+            authorityLabel: string;
+            changeType: components["schemas"]["LibraryRef"];
+            /** Documents */
+            documents: components["schemas"]["WatchChangeDocument"][];
+            /** Duplicatecount */
+            duplicateCount: number;
+            /** Events */
+            events: components["schemas"]["WatchChangeEvent"][];
+            /**
+             * Firstseenat
+             * Format: date-time
+             */
+            firstSeenAt: string;
+            /** Flags */
+            flags: components["schemas"]["LibraryRef"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Keydate */
+            keyDate: string | null;
+            /** Keydatelabel */
+            keyDateLabel: string | null;
+            /** Keydateprecision */
+            keyDatePrecision: ("day" | "month" | "quarter" | "year") | null;
+            /** Model */
+            model: string | null;
+            /** Obligations */
+            obligations: components["schemas"]["WatchObligationLink"][];
+            /**
+             * Origin
+             * @enum {string}
+             */
+            origin: "agent" | "user";
+            /** Publishedon */
+            publishedOn: string | null;
+            /** Publishedprecision */
+            publishedPrecision: ("day" | "month" | "quarter" | "year") | null;
+            /** Recurrencerule */
+            recurrenceRule: string | null;
+            /** Sowhatdraft */
+            soWhatDraft: string | null;
+            /** Sourcelabel */
+            sourceLabel: string;
+            /** Sourceurl */
+            sourceUrl: string;
+            /** Stablekey */
+            stableKey: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "superseded" | "withdrawn";
+            suggestedUrgency: components["schemas"]["LibraryRef"] | null;
+            /** Summary */
+            summary: string;
+            /** Terms */
+            terms: components["schemas"]["LibraryRef"][];
+            /** Title */
+            title: string;
+        };
+        /** WatchChangeDocument */
+        WatchChangeDocument: {
+            /** Fetchedat */
+            fetchedAt: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Isduplicate */
+            isDuplicate: boolean;
+            /** Isprimary */
+            isPrimary: boolean;
+            /** Publisher */
+            publisher: string | null;
+            /** Riskflags */
+            riskFlags: string[];
+            /** Title */
+            title: string | null;
+            /** Url */
+            url: string;
+        };
+        /**
+         * WatchChangeDocumentInput
+         * @description A fetched page. `riskFlags` is what `agents/screen.py` found in it; the content
+         *     itself is untrusted and is never executed or rendered as HTML (playbook 11.2).
+         */
+        WatchChangeDocumentInput: {
+            /** Contenthash */
+            contentHash?: string | null;
+            /** Fetchedat */
+            fetchedAt?: string | null;
+            /**
+             * Isduplicate
+             * @default false
+             */
+            isDuplicate: boolean;
+            /**
+             * Isprimary
+             * @default false
+             */
+            isPrimary: boolean;
+            /** Publisher */
+            publisher?: string | null;
+            /** Riskflags */
+            riskFlags?: string[];
+            /** Title */
+            title?: string | null;
+            /**
+             * Url
+             * Format: uri
+             */
+            url: string;
+        };
+        /** WatchChangeEvent */
+        WatchChangeEvent: {
+            /** Dateprecision */
+            datePrecision: ("day" | "month" | "quarter" | "year") | null;
+            /** Eventdate */
+            eventDate: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string;
+            /** Occurred */
+            occurred: boolean;
+            /** Sortorder */
+            sortOrder: number;
+            /** Sourceurl */
+            sourceUrl: string | null;
+        };
+        /** WatchChangeEventInput */
+        WatchChangeEventInput: {
+            /** Dateprecision */
+            datePrecision?: ("day" | "month" | "quarter" | "year") | null;
+            /** Eventdate */
+            eventDate?: string | null;
+            /** Label */
+            label: string;
+            /**
+             * Occurred
+             * @default false
+             */
+            occurred: boolean;
+            /**
+             * Sortorder
+             * @default 0
+             */
+            sortOrder: number;
+            /** Sourceurl */
+            sourceUrl?: string | null;
+        };
+        /**
+         * WatchChangeInput
+         * @description `POST /changes` (AC-WAT1): `stableKey` makes the call idempotent, so posting a known
+         *     key merges the new pages as duplicates and returns the change that exists.
+         */
+        WatchChangeInput: {
+            /** Agentrunid */
+            agentRunId?: string | null;
+            /** Authoritycode */
+            authorityCode?: string | null;
+            /** Authoritylabel */
+            authorityLabel: string;
+            /** Changetype */
+            changeType: string;
+            /** Documents */
+            documents?: components["schemas"]["WatchChangeDocumentInput"][];
+            /** Events */
+            events?: components["schemas"]["WatchChangeEventInput"][];
+            /** Flags */
+            flags?: string[];
+            /** Keydate */
+            keyDate?: string | null;
+            /** Keydatelabel */
+            keyDateLabel?: string | null;
+            /** Keydateprecision */
+            keyDatePrecision?: ("day" | "month" | "quarter" | "year") | null;
+            /** Model */
+            model?: string | null;
+            /** Obligationlinks */
+            obligationLinks?: components["schemas"]["WatchObligationLinkInput"][];
+            /** Publishedon */
+            publishedOn?: string | null;
+            /** Publishedprecision */
+            publishedPrecision?: ("day" | "month" | "quarter" | "year") | null;
+            /** Recurrencerule */
+            recurrenceRule?: string | null;
+            /** Sowhatdraft */
+            soWhatDraft?: string | null;
+            /** Sourcelabel */
+            sourceLabel: string;
+            /**
+             * Sourceurl
+             * Format: uri
+             */
+            sourceUrl: string;
+            /** Stablekey */
+            stableKey: string;
+            /** Suggestedurgency */
+            suggestedUrgency?: string | null;
+            /** Summary */
+            summary: string;
+            /** Termids */
+            termIds?: string[];
+            /** Title */
+            title: string;
+        };
+        /**
+         * WatchChangePatch
+         * @description `PATCH /changes/{changeId}` (WAT-03): the library facts of a change. What a key may
+         *     move, and that a suggestion stays a suggestion until a library editor confirms it, is
+         *     `watch/curation.py:update_change_facts`.
+         */
+        WatchChangePatch: {
+            /** Changetype */
+            changeType?: string | null;
+            /** Flags */
+            flags?: string[] | null;
+            /** Keydate */
+            keyDate?: string | null;
+            /** Keydatelabel */
+            keyDateLabel?: string | null;
+            /** Keydateprecision */
+            keyDatePrecision?: ("day" | "month" | "quarter" | "year") | null;
+            /** Status */
+            status?: ("active" | "superseded" | "withdrawn") | null;
+            /** Summary */
+            summary?: string | null;
+            /** Supersededby */
+            supersededBy?: string | null;
+            /** Termids */
+            termIds?: string[] | null;
+            /** Title */
+            title?: string | null;
+        };
+        /**
+         * WatchObligationLink
+         * @description A link the agent suggested or a person set. `confirmed` is the library editor's
+         *     decision; a tenant's own decision lives on its case, never here (WAT-04, ruling C).
+         */
+        WatchObligationLink: {
+            /** Confidence */
+            confidence: number | null;
+            /** Confirmed */
+            confirmed: boolean;
+            /** Instrumentshortname */
+            instrumentShortName: string;
+            /**
+             * Obligationid
+             * Format: uuid
+             */
+            obligationId: string;
+            /**
+             * Origin
+             * @enum {string}
+             */
+            origin: "agent" | "user";
+            /** Reflabel */
+            refLabel: string;
+            /** Title */
+            title: string;
+        };
+        /** WatchObligationLinkInput */
+        WatchObligationLinkInput: {
+            /** Confidence */
+            confidence?: number | null;
+            /**
+             * Obligationid
+             * Format: uuid
+             */
+            obligationId: string;
+        };
+        /**
+         * WatchSourceCheckInput
+         * @description `POST /agent-runs/{runId}/source-checks` (WAT-01): a failed check carries an error
+         *     and no items, which `watch/sources.py:record_check` enforces.
+         */
+        WatchSourceCheckInput: {
+            /** Checkedat */
+            checkedAt?: string | null;
+            /** Error */
+            error?: string | null;
+            /** Itemsfound */
+            itemsFound?: number | null;
+            /** Sourcename */
+            sourceName: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "failed";
+        };
+        /**
+         * WatchSourceCoverage
+         * @description One row of the coverage log per source: when it was last checked, with what result,
+         *     and whether it is overdue against its cadence and `SOURCE_STALE_AFTER_CHECKS`.
+         */
+        WatchSourceCoverage: {
+            /** Lastcheckedat */
+            lastCheckedAt: string | null;
+            /** Lasterror */
+            lastError: string | null;
+            /**
+             * Laststatus
+             * @enum {string}
+             */
+            lastStatus: "ok" | "failed" | "never";
+            /** Overdue */
+            overdue: boolean;
+            source: components["schemas"]["WatchSourceOut"];
+        };
+        /** WatchSourceInput */
+        WatchSourceInput: {
+            /** Authorityid */
+            authorityId?: string | null;
+            /**
+             * Checkfrequency
+             * @default daily
+             * @enum {string}
+             */
+            checkFrequency: "daily" | "weekly" | "monthly";
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url?: string | null;
+        };
+        /** WatchSourceOut */
+        WatchSourceOut: {
+            /** Active */
+            active: boolean;
+            /** Authorityid */
+            authorityId: string | null;
+            /**
+             * Checkfrequency
+             * @enum {string}
+             */
+            checkFrequency: "daily" | "weekly" | "monthly";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["LibraryRef"];
+            /** Name */
+            name: string;
+            /** Url */
+            url: string | null;
+        };
+        /** WatchSourcePatch */
+        WatchSourcePatch: {
+            /** Active */
+            active?: boolean | null;
+            /** Checkfrequency */
+            checkFrequency?: ("daily" | "weekly" | "monthly") | null;
+            /** Url */
+            url?: string | null;
+        };
         /** WebAuthnAssertionResponse */
         WebAuthnAssertionResponse: {
             /** Authenticatordata */
@@ -3392,6 +4195,178 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listAgentKeys: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentKeysPage"];
+                };
+            };
+        };
+    };
+    createAgentKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentKeyCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentKeyCreated"];
+                };
+            };
+        };
+    };
+    revokeAgentKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentKeyOut"];
+                };
+            };
+        };
+    };
+    listAgentRuns: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunPage"];
+                };
+            };
+        };
+    };
+    startAgentRun: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentRunInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunOut"];
+                };
+            };
+        };
+    };
+    finishAgentRun: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentRunFinish"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunOut"];
+                };
+            };
+        };
+    };
+    recordSourceCheck: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchSourceCheckInput"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     rateAnswer: {
         parameters: {
             query?: never;
@@ -3733,6 +4708,182 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StepUpResult"];
+                };
+            };
+        };
+    };
+    createChange: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchChangeInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchChange"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchChange"];
+                };
+            };
+        };
+    };
+    updateChange: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchChangePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchChange"];
+                };
+            };
+        };
+    };
+    addChangeDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchChangeDocumentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchChangeDocument"];
+                };
+            };
+        };
+    };
+    addChangeEvent: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchChangeEventInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchChangeEvent"];
+                };
+            };
+        };
+    };
+    updateChangeEvent: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                change_id: string;
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchChangeEventInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchChangeEvent"];
+                };
+            };
+        };
+    };
+    replaceChangeObligations: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchObligationLinkInput"][];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchObligationLink"][];
                 };
             };
         };
@@ -4315,6 +5466,96 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SearchResponse"];
+                };
+            };
+        };
+    };
+    listSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchSourceOut"][];
+                };
+            };
+        };
+    };
+    createSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchSourceInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchSourceOut"];
+                };
+            };
+        };
+    };
+    getSourceCoverage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchSourceCoverage"][];
+                };
+            };
+        };
+    };
+    updateSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchSourcePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchSourceOut"];
                 };
             };
         };

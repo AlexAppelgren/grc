@@ -1,6 +1,460 @@
 {
   "components": {
     "schemas": {
+      "AgentKeyCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "agentId": {
+            "format": "uuid",
+            "title": "Agentid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "agentId",
+          "scopes"
+        ],
+        "title": "AgentKeyCreate",
+        "type": "object"
+      },
+      "AgentKeyCreated": {
+        "description": "The secret appears here and nowhere else: no log, no audit value, no outbox payload.",
+        "properties": {
+          "agentId": {
+            "format": "uuid",
+            "title": "Agentid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "keyPrefix": {
+            "title": "Keyprefix",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "plainKey": {
+            "title": "Plainkey",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "keyPrefix",
+          "scopes",
+          "agentId",
+          "createdAt",
+          "expiresAt",
+          "plainKey"
+        ],
+        "title": "AgentKeyCreated",
+        "type": "object"
+      },
+      "AgentKeyOut": {
+        "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoleRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agentId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agentid"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "keyPrefix": {
+            "title": "Keyprefix",
+            "type": "string"
+          },
+          "lastUsedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastusedat"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revokedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revokedat"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "keyPrefix",
+          "scopes",
+          "agentId",
+          "agent",
+          "createdAt",
+          "expiresAt",
+          "revokedAt",
+          "lastUsedAt"
+        ],
+        "title": "AgentKeyOut",
+        "type": "object"
+      },
+      "AgentKeysPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AgentKeyOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "AgentKeysPage",
+        "type": "object"
+      },
+      "AgentRunFinish": {
+        "additionalProperties": false,
+        "description": "`PATCH /agent-runs/{runId}`: a run closes once, into a terminal status.",
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "outputRef": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputref"
+          },
+          "stats": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentRunStats"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "succeeded",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "AgentRunFinish",
+        "type": "object"
+      },
+      "AgentRunInput": {
+        "additionalProperties": false,
+        "description": "`POST /agent-runs`, the first call of every execution (AGT-01). `agent` is the\ndefinition's stable key, never its label.",
+        "properties": {
+          "agent": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Agent",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "pipelineVersion": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Pipelineversion",
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent",
+          "model",
+          "pipelineVersion"
+        ],
+        "title": "AgentRunInput",
+        "type": "object"
+      },
+      "AgentRunOut": {
+        "description": "One run as every reader sees it. A tenant reads the library's runs and its own; no\nreader sees another tenant's (AGT-01, item 14).",
+        "properties": {
+          "agent": {
+            "title": "Agent",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finishedat"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "outputRef": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputref"
+          },
+          "pipelineVersion": {
+            "title": "Pipelineversion",
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "title": "Startedat",
+            "type": "string"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/AgentRunStats"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "succeeded",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "agent",
+          "startedAt",
+          "finishedAt",
+          "status",
+          "model",
+          "pipelineVersion",
+          "stats",
+          "outputRef",
+          "error"
+        ],
+        "title": "AgentRunOut",
+        "type": "object"
+      },
+      "AgentRunPage": {
+        "description": "`{items, total}` with `limit` and `offset`, not the designed cursor page (playbook 10).",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AgentRunOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "AgentRunPage",
+        "type": "object"
+      },
+      "AgentRunStats": {
+        "description": "The `stats` column of agent_run: what one run did, counted against the budget\ndefaults of its definition (`backend/agents/<agent>/v<n>/definition.yaml`).",
+        "properties": {
+          "changesRegistered": {
+            "default": 0,
+            "title": "Changesregistered",
+            "type": "integer"
+          },
+          "fetches": {
+            "default": 0,
+            "title": "Fetches",
+            "type": "integer"
+          },
+          "modelCalls": {
+            "default": 0,
+            "title": "Modelcalls",
+            "type": "integer"
+          },
+          "proposalsSubmitted": {
+            "default": 0,
+            "title": "Proposalssubmitted",
+            "type": "integer"
+          },
+          "sourcesChecked": {
+            "default": 0,
+            "title": "Sourceschecked",
+            "type": "integer"
+          }
+        },
+        "title": "AgentRunStats",
+        "type": "object"
+      },
       "Answer": {
         "description": "Grounded only in the inventory. `noAnswer` is true when nothing supported an\nanswer, and then `statements` is empty: the product says so rather than guessing\n(SRC-03, AC-SRC2). `aiGenerated` stays true until a person confirms it (D-04).",
         "properties": {
@@ -5101,6 +5555,1330 @@
         "title": "VocabularySuggestionRow",
         "type": "object"
       },
+      "WatchChange": {
+        "description": "A library record: sourced facts, shared by every tenant. No tenant judgement, no\ncase and no \"So what?\" confirmation is here; those sit on the tenant's own case.",
+        "properties": {
+          "agentRunId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agentrunid"
+          },
+          "authorityId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorityid"
+          },
+          "authorityLabel": {
+            "title": "Authoritylabel",
+            "type": "string"
+          },
+          "changeType": {
+            "$ref": "#/components/schemas/LibraryRef"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/WatchChangeDocument"
+            },
+            "title": "Documents",
+            "type": "array"
+          },
+          "duplicateCount": {
+            "title": "Duplicatecount",
+            "type": "integer"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/WatchChangeEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "firstSeenAt": {
+            "format": "date-time",
+            "title": "Firstseenat",
+            "type": "string"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryRef"
+            },
+            "title": "Flags",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "keyDate": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keydate"
+          },
+          "keyDateLabel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keydatelabel"
+          },
+          "keyDatePrecision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "day",
+                  "month",
+                  "quarter",
+                  "year"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keydateprecision"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "obligations": {
+            "items": {
+              "$ref": "#/components/schemas/WatchObligationLink"
+            },
+            "title": "Obligations",
+            "type": "array"
+          },
+          "origin": {
+            "enum": [
+              "agent",
+              "user"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "publishedOn": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publishedon"
+          },
+          "publishedPrecision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "day",
+                  "month",
+                  "quarter",
+                  "year"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publishedprecision"
+          },
+          "recurrenceRule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurrencerule"
+          },
+          "soWhatDraft": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sowhatdraft"
+          },
+          "sourceLabel": {
+            "title": "Sourcelabel",
+            "type": "string"
+          },
+          "sourceUrl": {
+            "title": "Sourceurl",
+            "type": "string"
+          },
+          "stableKey": {
+            "title": "Stablekey",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "superseded",
+              "withdrawn"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "suggestedUrgency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LibraryRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "terms": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryRef"
+            },
+            "title": "Terms",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "stableKey",
+          "title",
+          "changeType",
+          "authorityLabel",
+          "authorityId",
+          "publishedOn",
+          "publishedPrecision",
+          "summary",
+          "soWhatDraft",
+          "suggestedUrgency",
+          "keyDate",
+          "keyDatePrecision",
+          "keyDateLabel",
+          "recurrenceRule",
+          "flags",
+          "sourceLabel",
+          "sourceUrl",
+          "status",
+          "terms",
+          "events",
+          "documents",
+          "duplicateCount",
+          "obligations",
+          "origin",
+          "model",
+          "agentRunId",
+          "firstSeenAt"
+        ],
+        "title": "WatchChange",
+        "type": "object"
+      },
+      "WatchChangeDocument": {
+        "properties": {
+          "fetchedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetchedat"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "isDuplicate": {
+            "title": "Isduplicate",
+            "type": "boolean"
+          },
+          "isPrimary": {
+            "title": "Isprimary",
+            "type": "boolean"
+          },
+          "publisher": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publisher"
+          },
+          "riskFlags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Riskflags",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "title",
+          "publisher",
+          "fetchedAt",
+          "isPrimary",
+          "isDuplicate",
+          "riskFlags"
+        ],
+        "title": "WatchChangeDocument",
+        "type": "object"
+      },
+      "WatchChangeDocumentInput": {
+        "additionalProperties": false,
+        "description": "A fetched page. `riskFlags` is what `agents/screen.py` found in it; the content\nitself is untrusted and is never executed or rendered as HTML (playbook 11.2).",
+        "properties": {
+          "contentHash": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contenthash"
+          },
+          "fetchedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetchedat"
+          },
+          "isDuplicate": {
+            "default": false,
+            "title": "Isduplicate",
+            "type": "boolean"
+          },
+          "isPrimary": {
+            "default": false,
+            "title": "Isprimary",
+            "type": "boolean"
+          },
+          "publisher": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publisher"
+          },
+          "riskFlags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Riskflags",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "url": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "WatchChangeDocumentInput",
+        "type": "object"
+      },
+      "WatchChangeEvent": {
+        "properties": {
+          "datePrecision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "day",
+                  "month",
+                  "quarter",
+                  "year"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dateprecision"
+          },
+          "eventDate": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eventdate"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "occurred": {
+            "title": "Occurred",
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "title": "Sortorder",
+            "type": "integer"
+          },
+          "sourceUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourceurl"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "eventDate",
+          "datePrecision",
+          "occurred",
+          "sortOrder",
+          "sourceUrl"
+        ],
+        "title": "WatchChangeEvent",
+        "type": "object"
+      },
+      "WatchChangeEventInput": {
+        "additionalProperties": false,
+        "properties": {
+          "datePrecision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "day",
+                  "month",
+                  "quarter",
+                  "year"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dateprecision"
+          },
+          "eventDate": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eventdate"
+          },
+          "label": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "occurred": {
+            "default": false,
+            "title": "Occurred",
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "default": 0,
+            "title": "Sortorder",
+            "type": "integer"
+          },
+          "sourceUrl": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourceurl"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "WatchChangeEventInput",
+        "type": "object"
+      },
+      "WatchChangeInput": {
+        "additionalProperties": false,
+        "description": "`POST /changes` (AC-WAT1): `stableKey` makes the call idempotent, so posting a known\nkey merges the new pages as duplicates and returns the change that exists.",
+        "properties": {
+          "agentRunId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agentrunid"
+          },
+          "authorityCode": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authoritycode"
+          },
+          "authorityLabel": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Authoritylabel",
+            "type": "string"
+          },
+          "changeType": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Changetype",
+            "type": "string"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/WatchChangeDocumentInput"
+            },
+            "maxItems": 50,
+            "title": "Documents",
+            "type": "array"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/WatchChangeEventInput"
+            },
+            "maxItems": 50,
+            "title": "Events",
+            "type": "array"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Flags",
+            "type": "array"
+          },
+          "keyDate": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keydate"
+          },
+          "keyDateLabel": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keydatelabel"
+          },
+          "keyDatePrecision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "day",
+                  "month",
+                  "quarter",
+                  "year"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keydateprecision"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "obligationLinks": {
+            "items": {
+              "$ref": "#/components/schemas/WatchObligationLinkInput"
+            },
+            "maxItems": 200,
+            "title": "Obligationlinks",
+            "type": "array"
+          },
+          "publishedOn": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publishedon"
+          },
+          "publishedPrecision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "day",
+                  "month",
+                  "quarter",
+                  "year"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publishedprecision"
+          },
+          "recurrenceRule": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurrencerule"
+          },
+          "soWhatDraft": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sowhatdraft"
+          },
+          "sourceLabel": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Sourcelabel",
+            "type": "string"
+          },
+          "sourceUrl": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "title": "Sourceurl",
+            "type": "string"
+          },
+          "stableKey": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Stablekey",
+            "type": "string"
+          },
+          "suggestedUrgency": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggestedurgency"
+          },
+          "summary": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          },
+          "termIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Termids",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stableKey",
+          "title",
+          "changeType",
+          "authorityLabel",
+          "summary",
+          "sourceLabel",
+          "sourceUrl"
+        ],
+        "title": "WatchChangeInput",
+        "type": "object"
+      },
+      "WatchChangePatch": {
+        "additionalProperties": false,
+        "description": "`PATCH /changes/{changeId}` (WAT-03): the library facts of a change. What a key may\nmove, and that a suggestion stays a suggestion until a library editor confirms it, is\n`watch/curation.py:update_change_facts`.",
+        "properties": {
+          "changeType": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changetype"
+          },
+          "flags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flags"
+          },
+          "keyDate": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keydate"
+          },
+          "keyDateLabel": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keydatelabel"
+          },
+          "keyDatePrecision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "day",
+                  "month",
+                  "quarter",
+                  "year"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keydateprecision"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "superseded",
+                  "withdrawn"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "supersededBy": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersededby"
+          },
+          "termIds": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 100,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Termids"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "WatchChangePatch",
+        "type": "object"
+      },
+      "WatchObligationLink": {
+        "description": "A link the agent suggested or a person set. `confirmed` is the library editor's\ndecision; a tenant's own decision lives on its case, never here (WAT-04, ruling C).",
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "confirmed": {
+            "title": "Confirmed",
+            "type": "boolean"
+          },
+          "instrumentShortName": {
+            "title": "Instrumentshortname",
+            "type": "string"
+          },
+          "obligationId": {
+            "format": "uuid",
+            "title": "Obligationid",
+            "type": "string"
+          },
+          "origin": {
+            "enum": [
+              "agent",
+              "user"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "refLabel": {
+            "title": "Reflabel",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "obligationId",
+          "title",
+          "instrumentShortName",
+          "refLabel",
+          "origin",
+          "confidence",
+          "confirmed"
+        ],
+        "title": "WatchObligationLink",
+        "type": "object"
+      },
+      "WatchObligationLinkInput": {
+        "additionalProperties": false,
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "obligationId": {
+            "format": "uuid",
+            "title": "Obligationid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "obligationId"
+        ],
+        "title": "WatchObligationLinkInput",
+        "type": "object"
+      },
+      "WatchSourceCheckInput": {
+        "additionalProperties": false,
+        "description": "`POST /agent-runs/{runId}/source-checks` (WAT-01): a failed check carries an error\nand no items, which `watch/sources.py:record_check` enforces.",
+        "properties": {
+          "checkedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkedat"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "itemsFound": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Itemsfound"
+          },
+          "sourceName": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Sourcename",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourceName",
+          "status"
+        ],
+        "title": "WatchSourceCheckInput",
+        "type": "object"
+      },
+      "WatchSourceCoverage": {
+        "description": "One row of the coverage log per source: when it was last checked, with what result,\nand whether it is overdue against its cadence and `SOURCE_STALE_AFTER_CHECKS`.",
+        "properties": {
+          "lastCheckedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastcheckedat"
+          },
+          "lastError": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lasterror"
+          },
+          "lastStatus": {
+            "enum": [
+              "ok",
+              "failed",
+              "never"
+            ],
+            "title": "Laststatus",
+            "type": "string"
+          },
+          "overdue": {
+            "title": "Overdue",
+            "type": "boolean"
+          },
+          "source": {
+            "$ref": "#/components/schemas/WatchSourceOut"
+          }
+        },
+        "required": [
+          "source",
+          "lastCheckedAt",
+          "lastStatus",
+          "lastError",
+          "overdue"
+        ],
+        "title": "WatchSourceCoverage",
+        "type": "object"
+      },
+      "WatchSourceInput": {
+        "additionalProperties": false,
+        "properties": {
+          "authorityId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorityid"
+          },
+          "checkFrequency": {
+            "default": "daily",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly"
+            ],
+            "title": "Checkfrequency",
+            "type": "string"
+          },
+          "kind": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "name",
+          "kind"
+        ],
+        "title": "WatchSourceInput",
+        "type": "object"
+      },
+      "WatchSourceOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "authorityId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorityid"
+          },
+          "checkFrequency": {
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly"
+            ],
+            "title": "Checkfrequency",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LibraryRef"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "url",
+          "kind",
+          "authorityId",
+          "checkFrequency",
+          "active"
+        ],
+        "title": "WatchSourceOut",
+        "type": "object"
+      },
+      "WatchSourcePatch": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "checkFrequency": {
+            "anyOf": [
+              {
+                "enum": [
+                  "daily",
+                  "weekly",
+                  "monthly"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkfrequency"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "maxLength": 2083,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "title": "WatchSourcePatch",
+        "type": "object"
+      },
       "WebAuthnAssertionResponse": {
         "properties": {
           "authenticatorData": {
@@ -5489,6 +7267,356 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/agent-keys": {
+      "get": {
+        "operationId": "listAgentKeys",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentKeysPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Agent Keys",
+        "tags": [
+          "Identity"
+        ]
+      },
+      "post": {
+        "operationId": "createAgentKey",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentKeyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentKeyCreated"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Create Agent Key",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/agent-keys/{key_id}/revoke": {
+      "post": {
+        "operationId": "revokeAgentKey",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Key Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentKeyOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Revoke Agent Key",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
+    "/api/v1/agent-runs": {
+      "get": {
+        "operationId": "listAgentRuns",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "List Agent Runs",
+        "tags": [
+          "Agents"
+        ]
+      },
+      "post": {
+        "operationId": "startAgentRun",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRunInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunOut"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Start Agent Run",
+        "tags": [
+          "Agents"
+        ]
+      }
+    },
+    "/api/v1/agent-runs/{run_id}": {
+      "patch": {
+        "operationId": "finishAgentRun",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRunFinish"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Finish Agent Run",
+        "tags": [
+          "Agents"
+        ]
+      }
+    },
+    "/api/v1/agent-runs/{run_id}/source-checks": {
+      "post": {
+        "operationId": "recordSourceCheck",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchSourceCheckInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Record Source Check",
+        "tags": [
+          "Watch"
+        ]
+      }
+    },
     "/api/v1/answers/{answer_id}/feedback": {
       "post": {
         "operationId": "rateAnswer",
@@ -6073,6 +8201,424 @@
         "summary": "Step Up Verify",
         "tags": [
           "Identity"
+        ]
+      }
+    },
+    "/api/v1/changes": {
+      "post": {
+        "operationId": "createChange",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchChangeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchChange"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchChange"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Create Change",
+        "tags": [
+          "Watch"
+        ]
+      }
+    },
+    "/api/v1/changes/{change_id}": {
+      "patch": {
+        "operationId": "updateChange",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "change_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Change Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchChangePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchChange"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Update Change",
+        "tags": [
+          "Watch"
+        ]
+      }
+    },
+    "/api/v1/changes/{change_id}/documents": {
+      "post": {
+        "operationId": "addChangeDocument",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "change_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Change Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchChangeDocumentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchChangeDocument"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Add Change Document",
+        "tags": [
+          "Watch"
+        ]
+      }
+    },
+    "/api/v1/changes/{change_id}/events": {
+      "post": {
+        "operationId": "addChangeEvent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "change_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Change Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchChangeEventInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchChangeEvent"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Add Change Event",
+        "tags": [
+          "Watch"
+        ]
+      }
+    },
+    "/api/v1/changes/{change_id}/events/{event_id}": {
+      "patch": {
+        "operationId": "updateChangeEvent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "change_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Change Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Event Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchChangeEventInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchChangeEvent"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Update Change Event",
+        "tags": [
+          "Watch"
+        ]
+      }
+    },
+    "/api/v1/changes/{change_id}/obligations": {
+      "put": {
+        "operationId": "replaceChangeObligations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "change_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Change Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/WatchObligationLinkInput"
+                },
+                "maxItems": 200,
+                "title": "Body",
+                "type": "array"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WatchObligationLink"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Replace Change Obligations",
+        "tags": [
+          "Watch"
         ]
       }
     },
@@ -7217,6 +9763,157 @@
         "summary": "Find Similar",
         "tags": [
           "Search"
+        ]
+      }
+    },
+    "/api/v1/sources": {
+      "get": {
+        "operationId": "listSources",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WatchSourceOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "List Sources",
+        "tags": [
+          "Watch"
+        ]
+      },
+      "post": {
+        "operationId": "createSource",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchSourceInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchSourceOut"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Create Source",
+        "tags": [
+          "Watch"
+        ]
+      }
+    },
+    "/api/v1/sources/coverage": {
+      "get": {
+        "operationId": "getSourceCoverage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WatchSourceCoverage"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Get Source Coverage",
+        "tags": [
+          "Watch"
+        ]
+      }
+    },
+    "/api/v1/sources/{source_id}": {
+      "patch": {
+        "operationId": "updateSource",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Source Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchSourcePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchSourceOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Update Source",
+        "tags": [
+          "Watch"
         ]
       }
     },
