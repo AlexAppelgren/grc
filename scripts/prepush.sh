@@ -97,7 +97,7 @@ rm -f "$index.prepush"
 be=0 spec=0 fe=0 lock=0 cont=0 py=0 js=0 full=$all
 while IFS= read -r f; do
   case "$f" in .github/*) full=1 ;; esac
-  case "$f" in backend/apps/*/app.md|PRD.md|docs/inputs/openapi.yaml) spec=1 ;; esac
+  case "$f" in backend/apps/*/app.md|PRD.md|docs/inputs/openapi.yaml|frontend/tests/e2e/*.spec.ts) spec=1 ;; esac
   case "$f" in docs/inputs/INPUT_DELTAS.md|generate-types.sh|openapi.json|infra/db/*|docker-compose.yml) be=1 ;;
                backend/*.md) ;; backend/*) be=1 ;; esac
   case "$f" in openapi.json|generate-types.sh) fe=1 ;; frontend/*.md) ;; frontend/*) fe=1 ;; esac

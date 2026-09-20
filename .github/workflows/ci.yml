@@ -163,6 +163,10 @@ jobs:
               - 'backend/apps/*/app.md'
               - 'PRD.md'
               - 'docs/inputs/openapi.yaml'
+              # A journey spec is frontend code and runs the frontend tier too, but
+              # requirements_coverage.py also reads its titles: an @e2e scenario whose
+              # journey was renamed would otherwise land unchecked (2026-09-20).
+              - 'frontend/tests/e2e/*.spec.ts'
             frontend:
               - 'frontend/**/!(*.md)'
               - 'openapi.json'
