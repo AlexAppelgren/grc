@@ -61,6 +61,9 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     "getProposal": ("GET", f"/proposals/{_ANY_ID}", None),
     "approveProposal": ("POST", f"/proposals/{_ANY_ID}/approve", {}),
     "rejectProposal": ("POST", f"/proposals/{_ANY_ID}/reject", {"rejectionCode": "other"}),
+    # The console's own view of registered changes, gated by `proposals.review` like the
+    # queue beside it: a library editor curates what an agent registered (WAT-01).
+    "listConsoleChanges": ("GET", "/console/changes", None),
     "listConsoleTenants": ("GET", "/console/tenants", None),
     "createConsoleTenant": (
         "POST",
