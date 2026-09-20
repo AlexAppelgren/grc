@@ -96,6 +96,21 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "suggestion_status",
         "VOC-03: a member's suggestion is pending, accepted (the row was created) or declined; the admin's inbox branches on it",
     ),
+    # Chunk 7 (search and ask). The API's own kinds: what a hit points at, how it was
+    # matched, and what a reader said about an answer. Each has its own delta name;
+    # `search_source` above stays the chunk table's own column, which the index owns.
+    "SearchHitType": (
+        "search_hit_type",
+        "SRC-01: a hit is an obligation, a provision or a change; the screen and the ranking branch on it",
+    ),
+    "SearchMatchKind": (
+        "search_match_kind",
+        "SRC-02: keyword, concept or both; every hit says how it was won and the pill's tone follows it",
+    ),
+    "AnswerFeedbackKind": (
+        "answer_feedback",
+        "SRC-03, SRC-05: helpful or wrong; the evaluation set reads the verdict back",
+    ),
     # Chunk 3 (library and inventory).
     "VerificationOutcome": (
         "verification_outcome",

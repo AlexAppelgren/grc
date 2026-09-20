@@ -50,6 +50,13 @@ Every vocabulary row: immutable `key`, optional `kind`, labels per language,
 - `notification_kind` gains `participant_added`, `involved_item_changed` and
   `review_due` (COL-02, COL-04, D-34).
 
+**Chunk 7 (2026-09-20).** Kinds the search and ask contract adds to tier 1:
+`search_hit_type` (a hit is an obligation, a provision or a change),
+`search_match_kind` (keyword, concept or both, said on every hit) and
+`answer_feedback` (helpful or wrong, the verdict the evaluation set reads back).
+`search_source` above is not one of them: it stays the chunk table's own column,
+which the search index builds.
+
 **PRD 0.3 structures.** Tables and columns the designed schema does not have,
 or has differently:
 
@@ -365,3 +372,68 @@ Chunk 3 (library and inventory), 2026-09-19:
   `complianceStatus`, `ownerId`, `hasOpenChanges` and `reviewDueBefore` filters. The tag
   filter is deferred. A person with `library.read` in their tenant, or an API key with
   `library:read`.
+
+Chunk 7 (the search and ask contract), 2026-09-19:
+
+- `POST /search` (`search`), `POST /search/similar` (`findSimilar`), `POST /ask`
+  (`ask`) and `POST /answers/{answerId}/feedback` (`rateAnswer`) are declared in
+  their designed shape but answer 501 `not_built` behind their real gates until
+  the search index and the hybrid query land; `POST /ask` answers its 501 as a
+  stream carrying one `not_built` problem event, because a stream is what it will
+  always answer. A stub is not a served route: no screen calls one, and the chunk
+  close proves none is left.
+- `POST /ask` answers `text/event-stream`, not the designed single `Answer`
+  body. Ask's budget is a first token under 2 s (playbook 10, SRC-S9), which an
+  answer that waits for its last cited sentence cannot meet, and the LLM adapter
+  already streams. One JSON object per `data:` frame, each naming its kind in
+  `event`: `start` (the answer's id, and what the 2 s is measured to), then a
+  `statement` per cited sentence, and then either `answer` (the whole answer with
+  its citation list, which is what the `ai_generation` row records) or `problem`
+  (the `code` an RFC 9457 body would carry, because a failure found after the
+  first byte can no longer be a status). Everything that can refuse the call
+  before the first byte still answers a status and a problem body: the session,
+  `search.use`, and the question's cap.
+- `POST /search` drops the designed `apiKeyAuth`: it is a person's route, gated
+  on `search.use` (PRD §6, everyone). No agent needs a ranked reader's search;
+  the agents read `POST /search/similar`, and a route no caller needs is a door
+  left open.
+- `POST /search/similar` is gated on the `search:read` key scope alone, so a
+  person's session is 401 and only an agent's key reaches it. The designed
+  `x-roles: library_editor` names no permission in the matrix that gives a
+  library editor a similarity read (their four are `proposals.review`,
+  `library_vocab.manage`, `sources.manage`, `eval.manage`), and the R1 consumer
+  is the agent flow (AGT-02). A console surface that wants it comes with its own
+  permission and its own security review; widening this route is a guard change.
+- `lang` on `SearchRequest` and `AskRequest` is a language key from the language
+  rows, not the designed two-value `Lang` enum (section 3).
+- `SearchHit.urgency` is taxonomy's `TermRef` (`{key, kind, label}`), not the
+  designed phrase enum: urgency is a library vocabulary row with a fixed ordinal
+  and tone and an editable label (section 1), so the client stores and compares
+  the key. It is the shared reference shape, not a search-specific copy of it,
+  so a screen reads one type wherever a vocabulary value appears.
+- `SearchRequest.limit` and `SimilarRequest.limit` are the shared page size
+  (`API_PAGE_SIZE_DEFAULT`, max `API_PAGE_SIZE_MAX`): above the maximum is a 422,
+  never a clamp (playbook 10). `q`, `text`, `question` and a feedback `note` are
+  capped by `SEARCH_QUERY_MAX_CHARS`, `SEARCH_SIMILAR_MAX_CHARS`,
+  `ASK_QUESTION_MAX_CHARS` and `SEARCH_FEEDBACK_NOTE_MAX_CHARS`; each is a cap at
+  a trust boundary, because the text reaches a text-search query, the embedder
+  and, for Ask, a model prompt. `filters.termIds` is capped by
+  `LIBRARY_TERM_FILTER_MAX`, the cap the library's own term filter already uses.
+- `SearchResponse` stays `{items, asOf}` rather than a page `{items, total}`:
+  ranked results are a top-N cut, and a total over a fused ranking would be a
+  number nobody can act on. `asOf` is echoed so the screen can say which day's
+  law it showed.
+- `SearchFilters` holds the R1 filters only: `instrumentId`, `jurisdiction`,
+  `dutyType`, `termIds`, `binding` and `inFootprint`, each an id or a key and
+  never a label, which is what the search screen and SRC-S3 filter by. The
+  designed `applicability` and `complianceStatus` are not declared: the register
+  overlay that answers them lands in chunk 8 (REG-01, REG-02), and a filter the
+  query cannot honour would be a 200 that silently ignored it rather than the
+  422 an unknown field earns. Chunk 8's register contract adds them with the
+  overlay that reads them.
+- `Citation` and `AnswerFeedback` are `AnswerCitation` and `AnswerFeedbackBody`
+  in the build: Ninja flattens component names across apps, so an app-specific
+  shape carries its prefix (playbook 4.1). The wire fields are unchanged.
+- Saved searches (`GET`, `POST /saved-searches`,
+  `DELETE /saved-searches/{savedSearchId}`) are SRC-04, R3: they stay in
+  `backend/scripts/contract_drift_pending.txt` and nothing here declares them.

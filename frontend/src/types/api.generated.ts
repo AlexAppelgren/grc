@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/v1/answers/{answer_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rate Answer */
+        post: operations["rateAnswer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask Question */
+        post: operations["ask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/audit-events": {
         parameters: {
             query?: never;
@@ -512,6 +546,40 @@ export interface paths {
         get: operations["getProduct"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Search */
+        post: operations["search"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/search/similar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Find Similar */
+        post: operations["findSimilar"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1076,6 +1144,93 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * Answer
+         * @description Grounded only in the inventory. `noAnswer` is true when nothing supported an
+         *     answer, and then `statements` is empty: the product says so rather than guessing
+         *     (SRC-03, AC-SRC2). `aiGenerated` stays true until a person confirms it (D-04).
+         */
+        Answer: {
+            /** Aigenerated */
+            aiGenerated: boolean;
+            /**
+             * Asof
+             * Format: date
+             */
+            asOf: string;
+            /** Citations */
+            citations: components["schemas"]["AnswerCitation"][];
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Model */
+            model: string;
+            /** Noanswer */
+            noAnswer: boolean;
+            /** Question */
+            question: string;
+            /** Statements */
+            statements: components["schemas"]["AnswerStatement"][];
+        };
+        /**
+         * AnswerCitation
+         * @description What a statement points at. `index` is the number shown in the answer.
+         */
+        AnswerCitation: {
+            /** Index */
+            index: number;
+            /** Instrumentshortname */
+            instrumentShortName: string;
+            /**
+             * Obligationid
+             * Format: uuid
+             */
+            obligationId: string;
+            /** Provisionid */
+            provisionId?: string | null;
+            /** Reflabel */
+            refLabel: string;
+            /** Versionno */
+            versionNo: number;
+        };
+        /** AnswerFeedbackBody */
+        AnswerFeedbackBody: {
+            feedback: components["schemas"]["AnswerFeedbackKind"];
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /**
+         * AnswerFeedbackKind
+         * @description Tier-one kind: what a reader said about an answer. The evaluation set reads it.
+         * @enum {string}
+         */
+        AnswerFeedbackKind: "helpful" | "wrong";
+        /**
+         * AnswerStatement
+         * @description One sentence of the answer. Every statement carries at least one citation
+         *     (SRC-03, AC-SRC2); a cited obligation with an open change names it, so the screen can
+         *     warn that the law is about to move.
+         */
+        AnswerStatement: {
+            /** Citationindexes */
+            citationIndexes: number[];
+            /** Pendingchangeid */
+            pendingChangeId?: string | null;
+            /** Pendingchangelabel */
+            pendingChangeLabel?: string | null;
+            /** Text */
+            text: string;
+        };
         /** ApiKeyCreate */
         ApiKeyCreate: {
             /** Expiresat */
@@ -1139,6 +1294,82 @@ export interface components {
             items: components["schemas"]["ApiKeyOut"][];
             /** Total */
             total: number;
+        };
+        /**
+         * AskAnswerEvent
+         * @description `answer`, the terminal event: the whole answer with its citation list, which is
+         *     what a reader keeps and what the `ai_generation` row records (AUD-02).
+         */
+        AskAnswerEvent: {
+            answer: components["schemas"]["Answer"];
+            /**
+             * Event
+             * @default answer
+             * @constant
+             */
+            event: "answer";
+        };
+        /**
+         * AskProblemEvent
+         * @description `problem`, the other way the stream ends. It carries the `code` an RFC 9457 body
+         *     would carry (playbook 4.4), because a failure found after the first byte can no longer
+         *     be a status; no trace and nothing the caller did not send travel with it.
+         */
+        AskProblemEvent: {
+            /** Code */
+            code: string;
+            /** Detail */
+            detail: string;
+            /**
+             * Event
+             * @default problem
+             * @constant
+             */
+            event: "problem";
+        };
+        /**
+         * AskRequest
+         * @description The question is the only tenant text that reaches a model (D-07, SRC-S6).
+         */
+        AskRequest: {
+            /** Asof */
+            asOf?: string | null;
+            /** Lang */
+            lang?: string | null;
+            /** Question */
+            question: string;
+        };
+        /**
+         * AskStartEvent
+         * @description `start`, the first event and the one the 2 s budget is measured to. It carries the
+         *     answer's id, so a reader's verdict (`rateAnswer`) has something to point at before the
+         *     answer is finished.
+         */
+        AskStartEvent: {
+            /**
+             * Event
+             * @default start
+             * @constant
+             */
+            event: "start";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /**
+         * AskStatementEvent
+         * @description `statement`, one cited sentence of the answer, sent as soon as it is grounded.
+         */
+        AskStatementEvent: {
+            /**
+             * Event
+             * @default statement
+             * @constant
+             */
+            event: "statement";
+            statement: components["schemas"]["AnswerStatement"];
         };
         /**
          * AuditActorRef
@@ -2172,6 +2403,110 @@ export interface components {
             /** Terms */
             terms: components["schemas"]["LibraryRef"][];
         };
+        /**
+         * SearchFilters
+         * @description The filters of SRC-02 and SRC-S3, taken from the vocabularies and the tenant's own
+         *     view. Every one of them is a key, never a label, so renaming a jurisdiction or a duty
+         *     type changes nothing a client sent (playbook 15). The register's own filters
+         *     (applicability, compliance status) are not here: the overlay that would answer them
+         *     lands with the register in chunk 8, and a filter the query cannot honour would be a
+         *     200 that quietly ignored it.
+         */
+        SearchFilters: {
+            /** Binding */
+            binding?: boolean | null;
+            /** Dutytype */
+            dutyType?: string | null;
+            /** Infootprint */
+            inFootprint?: boolean | null;
+            /** Instrumentid */
+            instrumentId?: string | null;
+            /** Jurisdiction */
+            jurisdiction?: string | null;
+            /** Termids */
+            termIds?: string[];
+        };
+        /**
+         * SearchHit
+         * @description One result. `matchKind` is on every hit (SRC-02): the reader sees why it is here.
+         *     The version and validity dates are copied onto the chunk, so "as of" needs no join.
+         */
+        SearchHit: {
+            /** Binding */
+            binding?: boolean | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Instrumentshortname */
+            instrumentShortName?: string | null;
+            matchKind: components["schemas"]["SearchMatchKind"];
+            /** Score */
+            score: number;
+            /** Snippet */
+            snippet: string;
+            /** Title */
+            title: string;
+            type: components["schemas"]["SearchHitType"];
+            urgency?: components["schemas"]["TermRef"] | null;
+            /** Validfrom */
+            validFrom?: string | null;
+            /** Validto */
+            validTo?: string | null;
+            /** Versionno */
+            versionNo?: number | null;
+        };
+        /**
+         * SearchHitType
+         * @description Tier-one kind (apps/shared/kinds.py): what a hit points at. The reader opens an
+         *     obligation, a provision or a change, and the screen branches on it.
+         * @enum {string}
+         */
+        SearchHitType: "obligation" | "provision" | "change";
+        /**
+         * SearchMatchKind
+         * @description Tier-one kind: how the hit was won (SRC-02, AC-SRC1). Every hit says so, and the
+         *     pill's tone follows the kind, never a person's choice (NFR-03).
+         * @enum {string}
+         */
+        SearchMatchKind: "keyword" | "concept" | "both";
+        /**
+         * SearchRequest
+         * @description `q` is the typed query. `asOf` picks the version in force on that date (SRC-02);
+         *     absent means today in the tenant's timezone. `lang` is a language key (I18N-01). The
+         *     limit is the page size of playbook 10: above the maximum is a 422, never a clamp.
+         */
+        SearchRequest: {
+            /** Asof */
+            asOf?: string | null;
+            filters?: components["schemas"]["SearchFilters"] | null;
+            /** Lang */
+            lang?: string | null;
+            /**
+             * Limit
+             * @default 20
+             */
+            limit: number;
+            /** Q */
+            q: string;
+            /** Types */
+            types?: components["schemas"]["SearchHitType"][];
+        };
+        /**
+         * SearchResponse
+         * @description Ranked results, not a page: `asOf` is the date the ranking was taken at, echoed so
+         *     the screen can say which day's law it is showing.
+         */
+        SearchResponse: {
+            /**
+             * Asof
+             * Format: date
+             */
+            asOf: string;
+            /** Items */
+            items: components["schemas"]["SearchHit"][];
+        };
         /** SecurityEventOut */
         SecurityEventOut: {
             /** Email */
@@ -2237,6 +2572,22 @@ export interface components {
             expiresIn: number;
             /** Sessionkind */
             sessionKind: string;
+        };
+        /**
+         * SimilarRequest
+         * @description What an agent sends to find the library records nearest a piece of text: to spot a
+         *     change already tracked, and to suggest obligation links (AGT-02).
+         */
+        SimilarRequest: {
+            /**
+             * Limit
+             * @default 20
+             */
+            limit: number;
+            /** Text */
+            text: string;
+            /** Types */
+            types?: components["schemas"]["SearchHitType"][];
         };
         /** StepUpResult */
         StepUpResult: {
@@ -2815,6 +3166,57 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    rateAnswer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                answer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerFeedbackBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": {
+                        /** Response */
+                        data?: components["schemas"]["AskStartEvent"] | components["schemas"]["AskStatementEvent"] | components["schemas"]["AskAnswerEvent"] | components["schemas"]["AskProblemEvent"];
+                    };
+                };
+            };
+        };
+    };
     listAuditEvents: {
         parameters: {
             query?: {
@@ -3589,6 +3991,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductInfo"];
+                };
+            };
+        };
+    };
+    search: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResponse"];
+                };
+            };
+        };
+    };
+    findSimilar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimilarRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResponse"];
                 };
             };
         };

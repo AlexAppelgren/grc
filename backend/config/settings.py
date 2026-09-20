@@ -333,6 +333,18 @@ API_PAGE_SIZE_DEFAULT = env_int("API_PAGE_SIZE_DEFAULT", 20)
 API_PAGE_SIZE_MAX = env_int("API_PAGE_SIZE_MAX", 100)
 
 # ---------------------------------------------------------------------------------------
+# ===== SRC-01..03 search and ask input caps (apps/search/schemas.py) =====================
+# What a caller may send to search, to the similarity read and to Ask. Each is a cap at a
+# trust boundary: the text reaches a text-search query, the embedder and, for Ask, a model
+# prompt, and the budgets above are measured on queries of this size. Over the cap is a
+# 422 naming the field, never a silent truncation that searches for something else.
+# ---------------------------------------------------------------------------------------
+SEARCH_QUERY_MAX_CHARS = env_int("SEARCH_QUERY_MAX_CHARS", 500)
+SEARCH_SIMILAR_MAX_CHARS = env_int("SEARCH_SIMILAR_MAX_CHARS", 8000)
+ASK_QUESTION_MAX_CHARS = env_int("ASK_QUESTION_MAX_CHARS", 2000)
+SEARCH_FEEDBACK_NOTE_MAX_CHARS = env_int("SEARCH_FEEDBACK_NOTE_MAX_CHARS", 2000)
+
+# ---------------------------------------------------------------------------------------
 # ===== INV-04 "show what changed" (apps/library/logic.py sentence_diff) ==================
 # Aligning two versions costs up to the cube of their sentence count when sentences repeat,
 # and the texts come from fetched sources. Above this many sentences on either side the

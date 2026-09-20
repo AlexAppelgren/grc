@@ -1,6 +1,189 @@
 {
   "components": {
     "schemas": {
+      "Answer": {
+        "description": "Grounded only in the inventory. `noAnswer` is true when nothing supported an\nanswer, and then `statements` is empty: the product says so rather than guessing\n(SRC-03, AC-SRC2). `aiGenerated` stays true until a person confirms it (D-04).",
+        "properties": {
+          "aiGenerated": {
+            "title": "Aigenerated",
+            "type": "boolean"
+          },
+          "asOf": {
+            "format": "date",
+            "title": "Asof",
+            "type": "string"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/AnswerCitation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "noAnswer": {
+            "title": "Noanswer",
+            "type": "boolean"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "statements": {
+            "items": {
+              "$ref": "#/components/schemas/AnswerStatement"
+            },
+            "title": "Statements",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "question",
+          "asOf",
+          "statements",
+          "citations",
+          "noAnswer",
+          "model",
+          "aiGenerated",
+          "createdAt"
+        ],
+        "title": "Answer",
+        "type": "object"
+      },
+      "AnswerCitation": {
+        "description": "What a statement points at. `index` is the number shown in the answer.",
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "instrumentShortName": {
+            "title": "Instrumentshortname",
+            "type": "string"
+          },
+          "obligationId": {
+            "format": "uuid",
+            "title": "Obligationid",
+            "type": "string"
+          },
+          "provisionId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provisionid"
+          },
+          "refLabel": {
+            "title": "Reflabel",
+            "type": "string"
+          },
+          "versionNo": {
+            "title": "Versionno",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index",
+          "obligationId",
+          "versionNo",
+          "instrumentShortName",
+          "refLabel"
+        ],
+        "title": "AnswerCitation",
+        "type": "object"
+      },
+      "AnswerFeedbackBody": {
+        "additionalProperties": false,
+        "properties": {
+          "feedback": {
+            "$ref": "#/components/schemas/AnswerFeedbackKind"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feedback"
+        ],
+        "title": "AnswerFeedbackBody",
+        "type": "object"
+      },
+      "AnswerFeedbackKind": {
+        "description": "Tier-one kind: what a reader said about an answer. The evaluation set reads it.",
+        "enum": [
+          "helpful",
+          "wrong"
+        ],
+        "title": "AnswerFeedbackKind",
+        "type": "string"
+      },
+      "AnswerStatement": {
+        "description": "One sentence of the answer. Every statement carries at least one citation\n(SRC-03, AC-SRC2); a cited obligation with an open change names it, so the screen can\nwarn that the law is about to move.",
+        "properties": {
+          "citationIndexes": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Citationindexes",
+            "type": "array"
+          },
+          "pendingChangeId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pendingchangeid"
+          },
+          "pendingChangeLabel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pendingchangelabel"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "citationIndexes"
+        ],
+        "title": "AnswerStatement",
+        "type": "object"
+      },
       "ApiKeyCreate": {
         "properties": {
           "expiresAt": {
@@ -188,6 +371,130 @@
           "total"
         ],
         "title": "ApiKeysPage",
+        "type": "object"
+      },
+      "AskAnswerEvent": {
+        "description": "`answer`, the terminal event: the whole answer with its citation list, which is\nwhat a reader keeps and what the `ai_generation` row records (AUD-02).",
+        "properties": {
+          "answer": {
+            "$ref": "#/components/schemas/Answer"
+          },
+          "event": {
+            "const": "answer",
+            "default": "answer",
+            "title": "Event",
+            "type": "string"
+          }
+        },
+        "required": [
+          "answer"
+        ],
+        "title": "AskAnswerEvent",
+        "type": "object"
+      },
+      "AskProblemEvent": {
+        "description": "`problem`, the other way the stream ends. It carries the `code` an RFC 9457 body\nwould carry (playbook 4.4), because a failure found after the first byte can no longer\nbe a status; no trace and nothing the caller did not send travel with it.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "event": {
+            "const": "problem",
+            "default": "problem",
+            "title": "Event",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "detail"
+        ],
+        "title": "AskProblemEvent",
+        "type": "object"
+      },
+      "AskRequest": {
+        "additionalProperties": false,
+        "description": "The question is the only tenant text that reaches a model (D-07, SRC-S6).",
+        "properties": {
+          "asOf": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asof"
+          },
+          "lang": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lang"
+          },
+          "question": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest",
+        "type": "object"
+      },
+      "AskStartEvent": {
+        "description": "`start`, the first event and the one the 2 s budget is measured to. It carries the\nanswer's id, so a reader's verdict (`rateAnswer`) has something to point at before the\nanswer is finished.",
+        "properties": {
+          "event": {
+            "const": "start",
+            "default": "start",
+            "title": "Event",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "AskStartEvent",
+        "type": "object"
+      },
+      "AskStatementEvent": {
+        "description": "`statement`, one cited sentence of the answer, sent as soon as it is grounded.",
+        "properties": {
+          "event": {
+            "const": "statement",
+            "default": "statement",
+            "title": "Event",
+            "type": "string"
+          },
+          "statement": {
+            "$ref": "#/components/schemas/AnswerStatement"
+          }
+        },
+        "required": [
+          "statement"
+        ],
+        "title": "AskStatementEvent",
         "type": "object"
       },
       "AuditActorRef": {
@@ -2759,6 +3066,291 @@
         "title": "ScopeDimension",
         "type": "object"
       },
+      "SearchFilters": {
+        "additionalProperties": false,
+        "description": "The filters of SRC-02 and SRC-S3, taken from the vocabularies and the tenant's own\nview. Every one of them is a key, never a label, so renaming a jurisdiction or a duty\ntype changes nothing a client sent (playbook 15). The register's own filters\n(applicability, compliance status) are not here: the overlay that would answer them\nlands with the register in chunk 8, and a filter the query cannot honour would be a\n200 that quietly ignored it.",
+        "properties": {
+          "binding": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Binding"
+          },
+          "dutyType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dutytype"
+          },
+          "inFootprint": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Infootprint"
+          },
+          "instrumentId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instrumentid"
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jurisdiction"
+          },
+          "termIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Termids",
+            "type": "array"
+          }
+        },
+        "title": "SearchFilters",
+        "type": "object"
+      },
+      "SearchHit": {
+        "description": "One result. `matchKind` is on every hit (SRC-02): the reader sees why it is here.\nThe version and validity dates are copied onto the chunk, so \"as of\" needs no join.",
+        "properties": {
+          "binding": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Binding"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "instrumentShortName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instrumentshortname"
+          },
+          "matchKind": {
+            "$ref": "#/components/schemas/SearchMatchKind"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "snippet": {
+            "title": "Snippet",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SearchHitType"
+          },
+          "urgency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TermRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validFrom": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validfrom"
+          },
+          "validTo": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validto"
+          },
+          "versionNo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Versionno"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "title",
+          "snippet",
+          "matchKind",
+          "score"
+        ],
+        "title": "SearchHit",
+        "type": "object"
+      },
+      "SearchHitType": {
+        "description": "Tier-one kind (apps/shared/kinds.py): what a hit points at. The reader opens an\nobligation, a provision or a change, and the screen branches on it.",
+        "enum": [
+          "obligation",
+          "provision",
+          "change"
+        ],
+        "title": "SearchHitType",
+        "type": "string"
+      },
+      "SearchMatchKind": {
+        "description": "Tier-one kind: how the hit was won (SRC-02, AC-SRC1). Every hit says so, and the\npill's tone follows the kind, never a person's choice (NFR-03).",
+        "enum": [
+          "keyword",
+          "concept",
+          "both"
+        ],
+        "title": "SearchMatchKind",
+        "type": "string"
+      },
+      "SearchRequest": {
+        "additionalProperties": false,
+        "description": "`q` is the typed query. `asOf` picks the version in force on that date (SRC-02);\nabsent means today in the tenant's timezone. `lang` is a language key (I18N-01). The\nlimit is the page size of playbook 10: above the maximum is a 422, never a clamp.",
+        "properties": {
+          "asOf": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asof"
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchFilters"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lang": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lang"
+          },
+          "limit": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "q": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Q",
+            "type": "string"
+          },
+          "types": {
+            "items": {
+              "$ref": "#/components/schemas/SearchHitType"
+            },
+            "title": "Types",
+            "type": "array"
+          }
+        },
+        "required": [
+          "q"
+        ],
+        "title": "SearchRequest",
+        "type": "object"
+      },
+      "SearchResponse": {
+        "description": "Ranked results, not a page: `asOf` is the date the ranking was taken at, echoed so\nthe screen can say which day's law it is showing.",
+        "properties": {
+          "asOf": {
+            "format": "date",
+            "title": "Asof",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SearchHit"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "asOf"
+        ],
+        "title": "SearchResponse",
+        "type": "object"
+      },
       "SecurityEventOut": {
         "properties": {
           "email": {
@@ -2923,6 +3515,37 @@
           "expiresIn"
         ],
         "title": "SessionTokens",
+        "type": "object"
+      },
+      "SimilarRequest": {
+        "additionalProperties": false,
+        "description": "What an agent sends to find the library records nearest a piece of text: to spot a\nchange already tracked, and to suggest obligation links (AGT-02).",
+        "properties": {
+          "limit": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "text": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "types": {
+            "items": {
+              "$ref": "#/components/schemas/SearchHitType"
+            },
+            "title": "Types",
+            "type": "array"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "SimilarRequest",
         "type": "object"
       },
       "StepUpResult": {
@@ -4342,6 +4965,103 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/answers/{answer_id}/feedback": {
+      "post": {
+        "operationId": "rateAnswer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "answer_id",
+            "required": true,
+            "schema": {
+              "title": "Answer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerFeedbackBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Rate Answer",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/api/v1/ask": {
+      "post": {
+        "operationId": "ask",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "description": "SSE event with JSON data payload",
+                  "properties": {
+                    "data": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/AskStartEvent"
+                        },
+                        {
+                          "$ref": "#/components/schemas/AskStatementEvent"
+                        },
+                        {
+                          "$ref": "#/components/schemas/AskAnswerEvent"
+                        },
+                        {
+                          "$ref": "#/components/schemas/AskProblemEvent"
+                        }
+                      ],
+                      "title": "Response"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Ask Question",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
     "/api/v1/audit-events": {
       "get": {
         "operationId": "listAuditEvents",
@@ -5746,6 +6466,80 @@
         "summary": "Get Product",
         "tags": [
           "Shared"
+        ]
+      }
+    },
+    "/api/v1/search": {
+      "post": {
+        "operationId": "search",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Search",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/api/v1/search/similar": {
+      "post": {
+        "operationId": "findSimilar",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimilarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Find Similar",
+        "tags": [
+          "Search"
         ]
       }
     },

@@ -70,10 +70,8 @@ PATCH /sources/{} chunk 5
 PATCH /webhooks/{} chunk 13
 POST /agent-runs chunk 5
 POST /agent-runs/{}/source-checks chunk 5
-POST /answers/{}/feedback chunk 7
 POST /applicability-requests/{}/approve chunk 8
 POST /applicability-requests/{}/reject chunk 8
-POST /ask chunk 7
 POST /calendar-feeds chunk 6
 POST /changes chunk 5
 POST /changes/{}/actions chunk 5
@@ -106,8 +104,6 @@ POST /obligations/{}/problem-reports chunk 3
 POST /obligations/{}/verifications chunk 3
 POST /obligations/{}/waivers chunk 8
 POST /saved-searches chunk 13
-POST /search chunk 7
-POST /search/similar chunk 7
 POST /sources chunk 5
 POST /webhooks chunk 13
 PUT /changes/{}/assessment chunk 5

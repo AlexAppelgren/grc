@@ -25,6 +25,7 @@ from apps.governance.api import router as governance_router
 from apps.identity.api import router as identity_router
 from apps.library.api import router as library_router
 from apps.proposals.api import router as proposals_router
+from apps.search.api import router as search_router
 from apps.shared.api import router as shared_router
 from apps.shared.errors import STATUS_BY_CODE, ProblemError, problem_response
 from apps.shared.middleware import loggable_route
@@ -55,6 +56,7 @@ api.add_router("", library_router)
 api.add_router("", taxonomy_router)
 api.add_router("", proposals_router)
 api.add_router("", governance_router)
+api.add_router("", search_router)
 
 
 @api.exception_handler(ProblemError)

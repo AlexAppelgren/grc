@@ -740,7 +740,10 @@ class IdentityScenarioTests(ScenarioTestCase):
                 continue
             self.assertFalse(operation.path.startswith(library_paths), f"a library write route exists: {operation.path}")
             ungated = perms.UNGATED_BY_DESIGN.get((operation.method, operation.path))
-            if perms.gate_of(operation.view_func) is None and (ungated is None or ungated.reason not in session_bound):
+            gate = perms.gate_of(operation.view_func)
+            if gate is not None and gate.kind == "scope":
+                continue  # built for a key: @requires_scope, and the scopes asserted above hold no library write
+            if gate is None and (ungated is None or ungated.reason not in session_bound):
                 continue  # a public bootstrap step (code request, sign-in) is no grant to anything
             with self.subTest(route=f"{operation.method} {operation.path}"):
                 url = "/api/v1" + re.sub(r"\{[^}]+\}", "00000000-0000-4000-8000-000000000001", operation.path)

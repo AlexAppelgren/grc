@@ -22,6 +22,9 @@ class SearchScenarioTests(TestCase):
         """SRC-S1
 
         An identifier is won by keyword and a concept by vector in one query (SRC-01, AC-SRC1).
+
+        Operations: `search`, and `findSimilar`, which ranks the same chunks for an
+        agent's key. Both answer 501 not_built until the hybrid query lands.
         """
 
     @skip("pending: SRC-S2")
@@ -43,6 +46,8 @@ class SearchScenarioTests(TestCase):
         """SRC-S4
 
         An answer cites every statement and flags pending changes (SRC-03, AC-SRC2).
+
+        Operations: `ask`. Answers 501 not_built until the Ask backend lands.
         """
 
     @skip("pending: SRC-S5")
@@ -71,6 +76,9 @@ class SearchScenarioTests(TestCase):
         """SRC-S8
 
         The evaluation set gates releases (SRC-05).
+
+        Operations: `rateAnswer`, the reader's verdict the evaluation set reads back.
+        It answers 501 not_built until the Ask backend lands.
         """
 
     @skip("pending: SRC-S9")
