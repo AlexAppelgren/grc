@@ -4,6 +4,12 @@ import enCommon from '@/messages/common/en.json';
 import svCommon from '@/messages/common/sv.json';
 import enConsole from '@/messages/console/en.json';
 import svConsole from '@/messages/console/sv.json';
+import enConsoleAgentKeys from '@/messages/console-agent-keys/en.json';
+import svConsoleAgentKeys from '@/messages/console-agent-keys/sv.json';
+import enConsoleChangeFacts from '@/messages/console-change-facts/en.json';
+import svConsoleChangeFacts from '@/messages/console-change-facts/sv.json';
+import enConsoleSources from '@/messages/console-sources/en.json';
+import svConsoleSources from '@/messages/console-sources/sv.json';
 import enDev from '@/messages/dev/en.json';
 import svDev from '@/messages/dev/sv.json';
 import enFootprint from '@/messages/footprint/en.json';
@@ -22,6 +28,8 @@ import enToday from '@/messages/today/en.json';
 import svToday from '@/messages/today/sv.json';
 import enVocabularies from '@/messages/vocabularies/en.json';
 import svVocabularies from '@/messages/vocabularies/sv.json';
+import enWatch from '@/messages/watch/en.json';
+import svWatch from '@/messages/watch/sv.json';
 
 // One catalog per UI language (playbook 6.5), stored as one file pair per
 // feature namespace under src/messages/<namespace>/ so that packages owning
@@ -33,6 +41,9 @@ const en = {
   ...enAuth,
   ...enCommon,
   ...enConsole,
+  ...enConsoleAgentKeys,
+  ...enConsoleChangeFacts,
+  ...enConsoleSources,
   ...enDev,
   ...enFootprint,
   ...enInventory,
@@ -42,12 +53,16 @@ const en = {
   ...enTenantAdmin,
   ...enToday,
   ...enVocabularies,
+  ...enWatch,
 };
 
 const sv = {
   ...svAuth,
   ...svCommon,
   ...svConsole,
+  ...svConsoleAgentKeys,
+  ...svConsoleChangeFacts,
+  ...svConsoleSources,
   ...svDev,
   ...svFootprint,
   ...svInventory,
@@ -57,6 +72,7 @@ const sv = {
   ...svTenantAdmin,
   ...svToday,
   ...svVocabularies,
+  ...svWatch,
 };
 
 export const locales = ['en', 'sv'] as const;

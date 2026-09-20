@@ -76,7 +76,14 @@ export const destinations: readonly Destination[] = [
   // renders "coming soon". The queue takes rank 1 with its page (chunk 4),
   // sources with theirs (chunk 5).
   { id: 'console-vocabularies', href: '/console/vocabularies', labelKey: 'nav.console.vocabularies', surface: 'console', anyOfPermissions: ['library_vocab.manage'], dockRank: 2, group: 'primary' },
+  // Chunk 5. A library editor settles a change's facts and reads the source
+  // registry; the platform admin holds the agent keys. Change facts and
+  // Agent keys take no dock rank, so the phone's tab bar keeps the shape the
+  // console card draws and they sit in More.
+  { id: 'console-change-facts', href: '/console/change-facts', labelKey: 'nav.console.changeFacts', surface: 'console', anyOfPermissions: ['proposals.review'], group: 'primary' },
+  { id: 'console-sources', href: '/console/sources', labelKey: 'nav.console.sources', surface: 'console', anyOfPermissions: ['sources.manage'], dockRank: 4, group: 'primary' },
   { id: 'console-tenants', href: '/console/tenants', labelKey: 'nav.console.tenants', surface: 'console', anyOfPermissions: ['tenants.manage'], dockRank: 3, group: 'primary' },
+  { id: 'console-agent-keys', href: '/console/agent-keys', labelKey: 'nav.console.agentKeys', surface: 'console', anyOfPermissions: ['agent_definitions.manage'], group: 'primary' },
 ];
 
 /** The console's landing: it sends each person on to the first console destination they may open. */

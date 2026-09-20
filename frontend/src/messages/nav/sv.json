@@ -11,6 +11,8 @@
   "nav.console.queue": "Kö",
   "nav.console.vocabularies": "Vokabulärer",
   "nav.console.sources": "Källor",
+  "nav.console.changeFacts": "Fakta om ändringar",
+  "nav.console.agentKeys": "Agentnycklar",
   "nav.console.tenants": "Organisationer",
   "nav.admin.organisation": "Organisation",
   "nav.admin.members": "Medlemmar",

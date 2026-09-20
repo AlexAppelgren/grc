@@ -11,6 +11,8 @@
   "nav.console.queue": "Queue",
   "nav.console.vocabularies": "Vocabularies",
   "nav.console.sources": "Sources",
+  "nav.console.changeFacts": "Change facts",
+  "nav.console.agentKeys": "Agent keys",
   "nav.console.tenants": "Tenants",
   "nav.admin.organisation": "Organisation",
   "nav.admin.members": "Members",
