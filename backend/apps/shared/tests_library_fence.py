@@ -28,14 +28,37 @@ the view of every operation Ninja registered (the objects that produce openapi.j
 functions that open `library_write()` themselves. It demands that:
 
 - `proposals.apply.apply` is named by one function only, `proposals.logic.approve`;
-- only approveProposal (through `apply.apply`) and chunk 3's re-verification stamp,
-  reverifyObligation (through `apply.apply_reverification`), reach a library write, so
-  every write under /instruments, /provisions, /obligations and /vocab either writes no
-  library row (a problem report, a proposal, a tenant list's own row) or is the stamp;
+- every route reaches the one writer its map allows and no other: approveProposal reaches
+  `apply.apply` and chunk 3's re-verification stamp, reverifyObligation, reaches
+  `apply.apply_reverification` (`LIBRARY_WRITING_ROUTES`), while the watch routes reach
+  `watch.write.watch_write` (`WATCH_WRITING_ROUTES`). A route in neither map that reaches
+  any writer at all fails, and so does a watch route that reaches `apply`,
+  `apply_reverification` or anything else that opens `library_write()`. So every write
+  under /instruments, /provisions, /obligations and /vocab either writes no library row (a
+  problem report, a proposal, a tenant list's own row) or is the stamp;
 - every route that reaches a library write is gated by `proposals.review`, needs a step-up
-  and takes a person's session only;
+  and takes a person's session only — except the watch routes, which are gated instead as
+  the next paragraph says;
 - no tenant role holds `proposals.review`, the role editor refuses it, and no API key's
   principal passes a permission gate.
+
+**The obligations inventory and the watch tables are not the same thing (D-64).** The
+invariant is that a proposal approved by a second, independent principal is the only door
+into the *inventory* — instruments, obligations, provisions and their versions — with the
+re-verification stamp the single exception. A change is a sighting, not an inventory
+record: an agent's key registers one and curates the facts it carries (WAT-02, WAT-03),
+which is what the PRD has agents do and what `watch_write()` was built for. Both sit in
+the library zone, which is why a guard reading "library zone" could not tell them apart.
+It can now. A route in `WATCH_WRITING_ROUTES` is exempt from the
+`proposals.review`-and-step-up assertion, and in its place must reach `watch_write` and
+nothing else and demand `changes:write` of an agent's key — through `require_change_writer`
+in the route body, which a library editor's `proposals.review` session passes instead
+(PRO-01), or through `@requires_scope` on the key-only document route. That scope claim is
+proven rather than asserted in a comment: the permission and scope constants
+`require_change_writer` itself names are read out of the index below and checked against
+every library table that sits behind the proposal door. Nothing is widened — the four-eyes
+rule on the inventory, the AST allowlists above and the door's own runtime refusal are
+untouched, and a watch route reaching an inventory writer still fails.
 
 The walk over-approximates (a name counts whether or not it is called, and a class reaches
 all its methods), so it fails closed; a method called on an object it cannot resolve is
@@ -49,6 +72,15 @@ step-up it passed); an API key accepted on approveProposal; `proposals.review` g
 the compliance officer, added to TENANT_PERMISSIONS and added as a `proposals:review`
 scope; the role editor validating against every permission; and a key's principal passing
 a permission gate.
+
+The second door proven to fail 2026-09-21 (H18), each breach then reverted. Against the
+rule as it stood before — one map, and no gate rule for a watch route — the two tests at
+the end of this file are both red; so is the first of them against the naive shape of H18,
+where a watch route is exempted from the writer rule instead of held to one writer. Over
+the real routes, with `watch_write()` planted in the four steps of watch/curation.py (the
+state `c5-watch-curation` brings): green, then red on `apply()` planted beside that
+watch write in `curation.update_change_facts` (three assertions at once), and red again on
+`require_change_writer` removed from the updateChange route.
 """
 
 from __future__ import annotations
@@ -230,15 +262,52 @@ Node = tuple[str, str]  # (dotted module, "f", "Cls", "Cls.method" or a module-l
 
 LIBRARY_WRITE: Node = ("apps.shared.tenancy", "library_write")
 APPLY: Node = ("apps.proposals.apply", "apply")
+APPLY_REVERIFICATION: Node = ("apps.proposals.apply", "apply_reverification")
 APPROVE: Node = ("apps.proposals.logic", "approve")
+WATCH_WRITE: Node = ("apps.watch.write", "watch_write")
+CHANGE_WRITER: Node = ("apps.watch.api", "require_change_writer")
 # Each route that may reach a library write, and the one function opening library_write()
 # it may reach. The stamp is chunk 3's POST /obligations/{id}/verifications (INV-S8).
 LIBRARY_WRITING_ROUTES: dict[str, Node] = {
     "approveProposal": APPLY,
-    "reverifyObligation": ("apps.proposals.apply", "apply_reverification"),
+    "reverifyObligation": APPLY_REVERIFICATION,
+}
+# The watch door's routes (D-64, ruling H): an agent's key registers a change it sighted
+# and curates the facts that change carries (WAT-02, WAT-03, AGT-07). Each may reach
+# `watch_write` and no other writer, and none of them reaches an inventory table — which is
+# what the second half of the rule, the gate each one carries, keeps true. A source or a
+# "So what?" draft route that opens the same door later belongs here too, and fails this
+# guard until somebody puts it here on purpose with its own gate looked at.
+WATCH_WRITING_ROUTES: dict[str, Node] = {
+    "createChange": WATCH_WRITE,
+    "addChangeDocument": WATCH_WRITE,
+    "updateChange": WATCH_WRITE,
+    "addChangeEvent": WATCH_WRITE,
+    "updateChangeEvent": WATCH_WRITE,
+    "replaceChangeObligations": WATCH_WRITE,
 }
 LIBRARY_ROUTE_PREFIXES = ("/instruments", "/provisions", "/obligations", "/vocab")
 FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef)
+
+
+def unexpected_writer(operation_id: str, writes: set[Node]) -> str | None:
+    """Why this route's writers are wrong, or None. A route may reach the one writer its
+    map allows it and nothing else; a route in neither map may reach none at all. A map
+    says 'may', not 'must', so a route that reaches nothing yet is no complaint."""
+    allowed = LIBRARY_WRITING_ROUTES.get(operation_id) or WATCH_WRITING_ROUTES.get(operation_id)
+    if not writes or writes == {allowed}:
+        return None
+    return f"reaches {sorted(writes)}, but may reach {allowed}"
+
+
+def missing_change_writer_gate(gate: perms.Gate | None, gated_by_change_writer: bool) -> str | None:
+    """Why this watch route may not open the watch door, or None. It has to demand
+    `changes:write` of an agent's key: through `require_change_writer` in the route body,
+    which a library editor's `proposals.review` session passes instead, or through
+    `@requires_scope` on the document route, which only a key reaches."""
+    if gated_by_change_writer or gate == perms.Gate("scope", perms.SCOPE_CHANGES_WRITE):
+        return None
+    return f"is gated by {gate}, not by require_change_writer and not by the changes:write scope"
 
 
 def _dotted(path: Path) -> str:
@@ -368,7 +437,7 @@ class ProposalDoorGuard(SimpleTestCase):
             "four eyes and records the decision in the same transaction (PRO-02, AC-PRO1).",
         )
 
-    def test_only_the_approval_and_the_stamp_reach_a_library_write(self) -> None:
+    def test_only_the_approval_the_stamp_and_the_watch_door_reach_a_library_write(self) -> None:
         index = code_index()
         reached: list[tuple[RegisteredOperation, set[Node]]] = []
         library_route_writes: list[str] = []
@@ -390,22 +459,30 @@ class ProposalDoorGuard(SimpleTestCase):
             "the walk no longer sees approval reach apply(); it is broken",
         )
         wrong = [
-            f"{_label(operation)} reaches {sorted(writes)}"
+            f"{_label(operation)} {complaint}"
             for operation, writes in reached
-            if writes != {LIBRARY_WRITING_ROUTES.get(operation.operation_id)}
+            if (complaint := unexpected_writer(operation.operation_id, writes))
         ]
         self.assertEqual(
             wrong,
             [],
             "Routes that reach library_write() other than through their one expected writer:\n  "
             + "\n  ".join(wrong)
-            + f"\nExpected: {LIBRARY_WRITING_ROUTES}. A library change is a proposal and approval applies it; "
-            "the re-verification stamp is the single exception and stays only a stamp (AC-PRO1, INV-06).",
+            + f"\nExpected: {LIBRARY_WRITING_ROUTES} and {WATCH_WRITING_ROUTES}. An inventory change is a "
+            "proposal and approval applies it; the re-verification stamp is the single exception and stays "
+            "only a stamp; a watch route registers a sighting through the watch door and reaches nothing "
+            "else (AC-PRO1, INV-06, D-64).",
         )
 
     def test_a_route_reaching_a_library_write_needs_proposals_review_a_step_up_and_a_person(self) -> None:
         index = code_index()
-        writing = [op for op in iter_operations(api) if index.library_writes_reached(view_node(op))]
+        # The watch routes are the exception the guard now knows (D-64): they write a sighting,
+        # not the inventory, and are gated instead by the two tests below.
+        writing = [
+            op
+            for op in iter_operations(api)
+            if index.library_writes_reached(view_node(op)) and op.operation_id not in WATCH_WRITING_ROUTES
+        ]
         self.assertTrue(writing, "no route reaches a library write; the walk is broken")
         for operation in writing:
             with self.subTest(route=_label(operation)):
@@ -414,6 +491,98 @@ class ProposalDoorGuard(SimpleTestCase):
                 self.assertTrue(operation.auth, "a library write needs a signed-in person")
                 for auth in operation.auth:
                     self.assertIsInstance(auth, SessionAuth, "no API key reaches a library write")
+
+    def test_a_watch_route_is_gated_by_the_change_writer_and_reaches_nothing_but_the_watch_door(self) -> None:
+        index = code_index()
+        operations = {operation.operation_id: operation for operation in iter_operations(api)}
+        self.assertEqual(
+            sorted(set(WATCH_WRITING_ROUTES) - set(operations)),
+            [],
+            "WATCH_WRITING_ROUTES names a route nobody registered; correct the map or the route.",
+        )
+        self.assertEqual(
+            sorted(set(WATCH_WRITING_ROUTES) & set(LIBRARY_WRITING_ROUTES)),
+            [],
+            "a route belongs to one door or the other, never both.",
+        )
+        for operation_id, writer in WATCH_WRITING_ROUTES.items():
+            operation = operations[operation_id]
+            with self.subTest(route=_label(operation)):
+                node = view_node(operation)
+                self.assertIn(node, index.edges, f"the index lost the view of {_label(operation)}")
+                self.assertEqual(
+                    node[0],
+                    "apps.watch.api",
+                    "only a route of the watch app belongs in WATCH_WRITING_ROUTES; moving an inventory "
+                    "route here would exempt it from four eyes, which is the one thing this map may not do.",
+                )
+                complaint = missing_change_writer_gate(
+                    perms.gate_of(operation.view_func), CHANGE_WRITER in index.edges[node]
+                )
+                self.assertIsNone(
+                    complaint,
+                    f"{_label(operation)} {complaint}. A watch route takes no step-up, so the scope and the "
+                    "library editor's permission are the whole gate (WAT-02, WAT-03, D-64).",
+                )
+                self.assertEqual(
+                    index.library_writes_reached(node) - {writer},
+                    set(),
+                    "a watch route reaches the watch door and no other writer: not apply, not "
+                    "apply_reverification, not a reference seed. Those stay behind four eyes (AC-PRO1).",
+                )
+
+    def test_the_scope_a_watch_route_demands_names_no_inventory_table(self) -> None:
+        """The claim the exemption rests on, proven against the definitions themselves: the
+        constants `require_change_writer` names, the scope each watch route's own decorator
+        names, and the table of every library model that sits behind the proposal door."""
+        from apps.watch.write import WATCH_TABLES
+
+        named = {
+            name
+            for module, name in code_index().edges[CHANGE_WRITER]
+            if module == "apps.shared.permissions" and name.isupper()
+        }
+        self.assertEqual(
+            named,
+            {"SCOPE_CHANGES_WRITE", "PROPOSALS_REVIEW"},
+            "require_change_writer must name one scope for a key and the library editor's own permission "
+            "for a person, and nothing else (no tenant role holds proposals.review).",
+        )
+        scopes = {getattr(perms, name) for name in named} & perms.ALL_SCOPES
+        for operation in iter_operations(api):
+            gate = perms.gate_of(operation.view_func)
+            if operation.operation_id in WATCH_WRITING_ROUTES and gate and gate.kind == "scope":
+                scopes.add(gate.value)
+        self.assertEqual(scopes, {perms.SCOPE_CHANGES_WRITE}, "the watch routes demand one scope of a key")
+        behind_the_proposal_door = {model._meta.db_table for model in concrete_library_models()} - WATCH_TABLES
+        self.assertIn("obligation", behind_the_proposal_door, "the inventory was not enumerated; the check is empty")
+        for scope in scopes:
+            resource = scope.split(":")[0].replace("-", "_")
+            self.assertEqual(
+                {resource, resource.removesuffix("s")} & behind_the_proposal_door,
+                set(),
+                f"the scope {scope!r} names a table behind the proposal door; no key scope may (AC-PRO1).",
+            )
+
+    def test_a_watch_route_reaching_the_applier_is_refused(self) -> None:
+        # The rule itself, fed fabricated routes. A watch route that reached the proposal
+        # applier would be a way into the inventory without four eyes, and a route in neither
+        # map that reached any writer would be a third door nobody looked at.
+        self.assertIsNone(unexpected_writer("updateChange", {WATCH_WRITE}))
+        self.assertIsNotNone(unexpected_writer("updateChange", {APPLY}))
+        self.assertIsNotNone(unexpected_writer("updateChange", {WATCH_WRITE, APPLY_REVERIFICATION}))
+        self.assertIsNotNone(unexpected_writer("listChanges", {WATCH_WRITE}))
+        self.assertIsNone(unexpected_writer("approveProposal", {APPLY}))
+        self.assertIsNotNone(unexpected_writer("approveProposal", {WATCH_WRITE}))
+
+    def test_a_watch_route_without_the_change_writer_gate_is_refused(self) -> None:
+        # The same, for the gate: a watch route curating a change behind watch.read, or behind
+        # no gate at all, would let a bank's own member write a fact every bank reads.
+        self.assertIsNone(missing_change_writer_gate(None, True))
+        self.assertIsNone(missing_change_writer_gate(perms.Gate("scope", perms.SCOPE_CHANGES_WRITE), False))
+        self.assertIsNotNone(missing_change_writer_gate(None, False))
+        self.assertIsNotNone(missing_change_writer_gate(perms.Gate("permission", perms.WATCH_READ), False))
+        self.assertIsNotNone(missing_change_writer_gate(perms.Gate("scope", perms.SCOPE_LIBRARY_READ), False))
 
     def test_no_tenant_role_and_no_key_holds_proposals_review(self) -> None:
         self.assertNotIn(perms.PROPOSALS_REVIEW, perms.TENANT_PERMISSIONS)
