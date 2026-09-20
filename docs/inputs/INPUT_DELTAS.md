@@ -56,6 +56,21 @@ Every vocabulary row: immutable `key`, optional `kind`, labels per language,
 - `notification_kind` gains `participant_added`, `involved_item_changed` and
   `review_due` (COL-02, COL-04, D-34).
 
+**Chunk 6 (2026-09-21).** Kinds the home contract adds to tier 1, and one it corrects:
+
+- `roadmap_item_kind` (`regulatory`, `internal`): what a dated thing on the roadmap is
+  about. The screen picks its pill from it - an urgency for a date the outside world set,
+  "Our deadline" for one this bank set - so it is a thing the code branches on and never a
+  list an admin curates (HOM-03).
+- `roadmap_item_type` (`change_date`, `internal_deadline`, `action_due`, `review_due`):
+  what produced the date. The calendar builder and the card branch on it. Declared in full
+  although R1 produces `change_date` alone, so a client written against the contract now
+  does not change when the register (chunk 8) and the case workflow (chunk 9) fill the rest.
+- `feed_filter` (`all`, `regulatory`, `internal`) is **corrected**. It was recorded as
+  "FP-03: inside or outside the footprint", which it is not: `schema.sql` line 61 has it as
+  a calendar subscription's scope, nothing branches on it for the footprint, and the same
+  three values are the roadmap's `kind` filter. One kind, two places that read it.
+
 **Chunk 7 (2026-09-20).** Kinds the search and ask contract adds to tier 1:
 `search_hit_type` (a hit is an obligation, a provision or a change),
 `search_match_kind` (keyword, concept or both, said on every hit) and
@@ -263,7 +278,9 @@ here names it with its backticked `METHOD /path`.
   `EnrolmentAuth`, AC-ID2). Chunk 1 gives it the shape the chunk 1 brief specifies:
   `{user, tenant|null, roles[{key,kind,label}], permissions[], platformRoles[],
   enrolmentPending, passkeyCount, stepUpValidUntil}`. The designed `counts` and
-  `lastVisitAt` wait for the home chunk (6), when there is a queue to count.
+  `lastVisitAt` wait for the home chunk (6), when there is a queue to count. Chunk 6 is
+  where they land: `f03-T48` adds them, and the home contract deliberately keeps
+  `decideNow` off `Home`, so Today reads one source for the number (D-23, ruling 1).
 - `PATCH /me` takes `{name?, locale?}` (chunk 1 brief); the designed
   `notificationPrefs` move to the membership row and land with collaboration (chunk 10).
 - `GET /tenant` and `PATCH /tenant` (TEN-01, chunk 1 brief): explicit columns instead of
@@ -684,6 +701,33 @@ Chunk 5 (watch and the agent API), 2026-09-20:
   suggestion until a person confirms it. The list is capped at 200 links per call, the cap
   the same list carries inside `POST /changes`.
 
+Chunk 6 (home, the briefing, the roadmap and the calendar feed), 2026-09-21:
+
+- `GET /home` (`getHome`) answers `{date, comingUp, roadmapCount, lead, sources}`. Two
+  designed fields are **not** there. `decideNow` is cut for good: `docs/inputs/openapi.yaml`
+  puts the queue counts on `Home` and D-23 puts them on `GET /me`, D-23 is the later input,
+  and one number with two sources is how two screens come to disagree. `f03-T48` builds
+  `counts` and `lastVisitAt` on `GET /me`; nothing reads them from `Home`. `standing` waits
+  for the obligation register, which R1 does not have: `c8-home-register-feeds` adds the
+  field and the panel with it. Zeros were rejected - "0 gaps" before a register exists is a
+  false statement about a bank's compliance, and the first test deploy would have shown it.
+  `sources` is nullable rather than the designed object, because a reader without
+  `watch.read` gets that panel hidden and never a page-level 403.
+- `RoadmapItem` carries `{id, kind, itemType, date, quarter, label, title, status, urgency,
+  sourceLabel, changeId, obligations}`. The designed `what`, `soWhat`, `owner` and
+  `obligationId` are absent because no R1 branch fills them: `v_roadmap_item` has four
+  branches and three of them read tables R1 does not have. Chunk 6 builds the regulatory
+  branch alone (`kind` `regulatory`, `itemType` `change_date`); `c8-home-register-feeds`
+  adds next reviews and gap targets, chunk 9 adds assessment deadlines and actions, and
+  `f03-T74` adds a certificate's expiry and next audit (D-43). Each of those branches brings
+  the fields it can fill. `kind=internal` therefore answers an empty list in R1, with 200
+  and never 422.
+- The other eight home operations are published in their designed shape ahead of the logic
+  that fills them and answer 501 `not_built` behind their real gate, so the screens and the
+  newsletter agent are built against a committed contract (`c6-home-api-contract`). There is
+  no drift to record for them; what each one will do is in its own description in
+  `openapi.json`.
+
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
 **`change_case` (`c5-contract-models-cases`).** Built with R1 columns only:
@@ -761,3 +805,29 @@ Chunk 5 (watch and the agent API), 2026-09-20:
 - `GET /sources` and `GET /sources/coverage` also accept a console session holding
   `sources.manage`, so the read-only console Sources page calls a real route. A console
   session has no tenant and therefore no `watch.read` (ruling 3).
+
+## 9. Chunk 6's tenant tables (2026-09-21)
+
+**`briefing`, `briefing_item` and `calendar_feed` (`c6-home-models`).** Built as
+`schema.sql` §9 designs them, with three departures and one addition:
+
+- `briefing_item` is keyed on a uuid `id` with `UNIQUE (briefing_id, case_id)` beside it,
+  rather than the designed composite primary key `(briefing_id, case_id)`. Django addresses
+  a row by one column, and the unique constraint says exactly what the composite key said.
+- `calendar_feed.filter` is a `text` column with choices rather than the designed
+  `feed_filter` Postgres enum. Kinds are CharFields with choices throughout this schema and
+  the kinds-only guard fails on a Postgres enum type (§1, playbook 15). The three values are
+  unchanged.
+- `calendar_feed.token_hash` is `varchar(64)` rather than `text`: a SHA-256 in hex is
+  exactly 64 characters, and a column that cannot hold more cannot hold anything else.
+- **Added:** `briefing_item` carries the append-only trigger, which `schema.sql` does not
+  give it. "A later change to the feed does not alter a sent briefing" is HOM-S3's last
+  line, and a ledger nobody can rewrite is the only way to mean it. The `briefing` row
+  itself stays ordinary, because `email_sent_at` is stamped when the mail goes out and is
+  not known when the snapshot is taken.
+
+All three tables carry `tenant_id` under enabled and forced row-level security with the one
+`tenant_isolation` policy, and none is `mixed`: a week that holds nothing for one bank holds
+three reforms for another, because the footprint and the cases behind it are that bank's
+own. `apps/shared/tests_rls.py` names them in its tenant-only list.
+

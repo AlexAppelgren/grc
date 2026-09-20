@@ -6,7 +6,6 @@
 # docs/inputs/INPUT_DELTAS.md when the build departs from the design on purpose.
 
 DELETE /actions/{} chunk 9
-DELETE /calendar-feeds/{} chunk 6
 DELETE /comments/{} chunk 10
 DELETE /evidence/{} chunk 9
 DELETE /internal-links/{} chunk 8
@@ -15,10 +14,6 @@ DELETE /webhooks/{} chunk 13
 GET /ai-generations chunk 7
 GET /applicability-requests chunk 8
 GET /audit-events chunk 1
-GET /briefings/current chunk 6
-GET /briefings/{} chunk 6
-GET /calendar-feeds chunk 6
-GET /calendar/{} chunk 6
 GET /changes/{}/actions chunk 5
 GET /changes/{}/case-file chunk 5
 GET /changes/{}/evidence chunk 5
@@ -26,7 +21,6 @@ GET /comments chunk 10
 GET /eval/questions chunk 7
 GET /eval/runs chunk 7
 GET /exports/{} chunk 12
-GET /home chunk 6
 GET /imports/{} chunk 12
 GET /instruments chunk 3
 GET /instruments/{} chunk 3
@@ -44,9 +38,7 @@ GET /provisions/{}/versions chunk 3
 GET /reports/gaps chunk 12
 GET /reports/overdue-actions chunk 12
 GET /reports/summary chunk 12
-GET /roadmap chunk 6
 GET /saved-searches chunk 13
-GET /upcoming chunk 6
 GET /webhooks chunk 13
 GET /webhooks/{}/deliveries chunk 13
 PATCH /actions/{} chunk 9
@@ -56,7 +48,6 @@ PATCH /problem-reports/{} chunk 4
 PATCH /webhooks/{} chunk 13
 POST /applicability-requests/{}/approve chunk 8
 POST /applicability-requests/{}/reject chunk 8
-POST /calendar-feeds chunk 6
 POST /changes/{}/actions chunk 5
 POST /changes/{}/actions/export-tickets chunk 5
 POST /changes/{}/assessment/start chunk 5

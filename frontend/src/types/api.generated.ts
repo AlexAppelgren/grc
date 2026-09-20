@@ -504,6 +504,210 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/briefings/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read this week in brief
+         * @description This week's regulation as it reaches this bank: the week's changes inside the bank's
+         *     regulatory scope, the one that leads, and the dates just ahead. Call it for the briefing
+         *     page and for the "This week in brief" panel on Today.
+         *
+         *     A read: it changes nothing, writes no audit row and stores no snapshot. The running week
+         *     is computed live every time it is asked for, so it moves as the week does; the snapshot
+         *     that a person can reopen is written once, by the weekly job, in the transaction that sends
+         *     the mail. `emailSentAt` is therefore null here until that job has run.
+         *
+         *     A person's session holding `watch.read` in their own bank. Everything outside the library
+         *     facts is this bank's own and is invisible to bleqq, to every other bank and to every model
+         *     endpoint. A "So what?" that no person has confirmed is still an AI draft, is labelled as
+         *     one on screen and never travels in the mail (WAT-05).
+         *
+         *     A quiet week is a 200 with an empty `items` and a null `lead`, never a 404. Errors:
+         *     `permission_denied` without `watch.read`, `unauthenticated` without a session.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["getCurrentBriefing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/briefings/{week_start}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reopen a briefing exactly as it was sent
+         * @description One past week, read back from the snapshot the weekly job stored when it sent the
+         *     mail. Call it from the link in that mail and from the previous-week control on the
+         *     briefing page.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `watch.read` in their own bank; a week belonging to another bank is not addressable here
+         *     at all. The snapshot is append-only, so a later change to the feed never alters it: what a
+         *     person was told last Monday is what this call answers, which is the whole point of storing
+         *     it rather than recomputing it.
+         *
+         *     Errors: `not_found` when no briefing was stored for that week, or when the date is not a
+         *     Monday, or when the caller may not see it — answered the same way on purpose, so no week
+         *     can be probed; `permission_denied` without `watch.read`; `unauthenticated` without a
+         *     session; `validation_error` when the path segment is not a calendar date.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["getBriefing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar-feeds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See your own calendar subscriptions
+         * @description The calendar subscriptions the caller created, newest first, with what each one
+         *     carries and whether it still works. Call it for the account page where a person manages
+         *     their own subscriptions.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `roadmap.read`. The caller's own rows only — never another member's and never another
+         *     bank's — and the address is **not** in this answer: it is shown once when the subscription
+         *     is created and stored afterwards only as a hash, so a reader must not expect to recover a
+         *     lost address here. Revoking and creating a new one is the way back.
+         *
+         *     A person with no subscriptions gets a 200 with an empty array, never a 404. Errors:
+         *     `permission_denied` without `roadmap.read`, `unauthenticated` without a session.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["listCalendarFeeds"];
+        put?: never;
+        /**
+         * Subscribe your calendar to the roadmap
+         * @description Mint a calendar address the caller can paste into their own calendar client, so the
+         *     roadmap's dates appear beside their meetings. Call it from the account page when a person
+         *     chooses to subscribe.
+         *
+         *     It creates one row in the caller's own bank and writes one audit event through the same
+         *     transaction, recording who subscribed and what the subscription carries — never the
+         *     address itself. A person's session holding `roadmap.read`; no passkey step-up, because
+         *     subscribing approves nothing, and no API key reaches it.
+         *
+         *     The address is returned **once**, in `url`, and never again: the server keeps only a
+         *     SHA-256 hash of the token inside it, exactly as it does for an API key. Treat the whole
+         *     address as a secret. Losing it means revoking the subscription and creating another.
+         *
+         *     Errors: `permission_denied` without `roadmap.read`, `unauthenticated` without a session,
+         *     and `validation_error` for a `filter` outside the three values it names or a field the
+         *     body does not know.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        post: operations["createCalendarFeed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar-feeds/{feed_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Stop a calendar subscription working
+         * @description Switch off one of the caller's own calendar subscriptions. The address stops working
+         *     at once and can never be made to work again; a calendar client that still holds it simply
+         *     stops receiving dates. Call it from the account page's revoke control.
+         *
+         *     It stamps the row as revoked rather than deleting it, so the bank can still see that the
+         *     subscription existed and when it stopped, and it writes one audit event in the same
+         *     transaction. A person's session holding `roadmap.read`, acting on their own subscription;
+         *     no passkey step-up, because revoking is the safe direction.
+         *
+         *     Answers 204 with no body. Revoking a subscription that is already revoked answers 204 as
+         *     well, so a retry is safe.
+         *
+         *     Errors: `not_found` when no subscription of the caller's has that id — including one
+         *     belonging to another person or another bank, answered the same way so no id can be probed;
+         *     `permission_denied` without `roadmap.read`; `unauthenticated` without a session.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        delete: operations["revokeCalendarFeed"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar/{feed_token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fetch a subscribed calendar as iCalendar
+         * @description The subscribed roadmap as an iCalendar document, served as `text/calendar` for a
+         *     calendar client to poll. Nobody calls this by hand: the address comes from
+         *     `POST /calendar-feeds` and is pasted into a calendar application.
+         *
+         *     A read: it changes nothing and writes no audit row, and the response is marked `no-store`.
+         *     No session and no API key: the revocable token in the address is the credential, which is
+         *     why the address is shown once, kept only as a hash and revocable with immediate effect.
+         *
+         *     Each event carries the date, what the date is and the record's title, and nothing else. No
+         *     "So what?", no case note, no owner, no bank name: a calendar entry travels to devices and
+         *     mail clients outside the bank's control, so no judgement of the bank's ever goes into one.
+         *
+         *     Errors: `not_found` for a token that is unknown, revoked or belongs to a bank the address
+         *     no longer serves — all three answered identically, so the address never says whether it
+         *     ever existed; `validation_error` when the path segment is longer than the limit above.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships. It reads no token while it does, so nothing about a token can be learned from it.
+         */
+        get: operations["getCalendarIcs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/changes": {
         parameters: {
             query?: never;
@@ -946,6 +1150,47 @@ export interface paths {
         };
         /** E2E Mail Outbox */
         get: operations["e2eMailOutbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what matters today
+         * @description Everything the timeline home shows, in one call: the bank's own date, the next dates
+         *     with the whole roadmap's count beside them, the change that leads the week and how the
+         *     watching of the sources is going. Call it once when a person opens the app; the screen
+         *     fans out its other calls beside this one and chains nothing behind it.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `roadmap.read`, which every system role holds. Each panel is filtered by the reader's own
+         *     permissions rather than the page being refused: a reader without `watch.read` gets a 200
+         *     with `lead` and `sources` null and sees the rest. What is dated and what leads are
+         *     filtered by the bank's regulatory scope (FP-03); the library half of every row is the same
+         *     for every bank and the case half never leaves this one.
+         *
+         *     Two panels of the design are answered elsewhere on purpose. What needs a decision is the
+         *     `counts` object on `GET /me` (D-23), so one number has one source. The compliance standing
+         *     arrives with the obligation register in a later chunk, because "0 gaps" before a register
+         *     exists is a false statement about the bank.
+         *
+         *     Errors: `permission_denied` when the session lacks `roadmap.read`, and `unauthenticated`
+         *     when there is no session.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["getHome"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1553,6 +1798,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roadmap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See every date ahead, quarter by quarter
+         * @description The bank's calendar of regulation: every dated change it has open work on, earliest
+         *     first, with the quarter keys the screen draws its roster from. Call it for the roadmap
+         *     page, and with `from` and `to` to look at one window.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `roadmap.read`, which every system role holds. What is listed respects the bank's
+         *     regulatory scope (FP-03) and there is no switch to lift it: the inventory is where a
+         *     person looks outside the scope. Each row carries library facts beside this bank's own case
+         *     status, so two banks reading the same reform see the same date and different work.
+         *
+         *     A window with nothing in it is a 200 with an empty `items` and an empty `quarters`, never
+         *     a 404, and `kind=internal` answers the same way in this release because the branches that
+         *     produce the bank's own deadlines have not shipped yet.
+         *
+         *     Errors: `permission_denied` without `roadmap.read`, `unauthenticated` without a session,
+         *     and `validation_error` for a filter value the schema refuses — a `kind` outside the three
+         *     it names, or a `from` or `to` that is not a calendar date. A query parameter this route
+         *     does not read is ignored rather than refused, so check a filter's spelling against
+         *     `kind`, `from` and `to` when it seems to have no effect.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["getRoadmap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/search": {
         parameters: {
             query?: never;
@@ -2085,6 +2371,48 @@ export interface paths {
         };
         /** List Security Log */
         get: operations["listSecurityLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upcoming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the regulatory dates that are coming up
+         * @description Every change in the shared library with a date still ahead of it, earliest first: what
+         *     is coming, when, who issued it and how soon bleqq thinks it needs work. Call it to fill a
+         *     public calendar, to write a newsletter, and from an agent run that has to know which dates
+         *     are already known.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `roadmap.read`, or an agent's key carrying the `upcoming:read` scope — the only route in
+         *     this app a key reaches, because it is the only one with no bank in it. Library facts
+         *     exactly: no case, no footprint verdict, no owner and no "So what?", so two banks calling
+         *     it receive identical answers and nothing here may be read as any bank's judgement or
+         *     compliance position.
+         *
+         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most; there is no total, so
+         *     a page shorter than `limit` is the end of the list. Nothing dated ahead is a 200 with an
+         *     empty array.
+         *
+         *     Errors: `permission_denied` when a session lacks `roadmap.read` or a key lacks
+         *     `upcoming:read`, `unauthenticated` when there is neither, and `validation_error` for a
+         *     `limit` above the maximum or below 1. A query parameter other than `limit` and `offset`
+         *     is ignored rather than refused.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["listUpcoming"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3591,6 +3919,840 @@ export interface components {
             /** Dimensions */
             dimensions: components["schemas"]["FootprintDimension"][];
             pendingRequest?: components["schemas"]["FootprintRequestRow"] | null;
+        };
+        /**
+         * Home
+         * @description `GET /home`: everything the timeline home shows, in one call, so the screen never
+         *     chains a second request behind the first.
+         *
+         *     Panels a reader may not see are null rather than refused: a person without `watch.read`
+         *     gets a 200 with `lead` and `sources` empty and the screen hides those panels, instead of
+         *     a 403 that would take the whole page away (chunk 6 defaults). Two panels of the design
+         *     are deliberately absent: what needs a decision is the `counts` object on `GET /me` (D-23),
+         *     and the compliance standing arrives with the register in chunk 8, because "0 gaps" before
+         *     a register exists is a false statement about the bank.
+         * @example {
+         *       "comingUp": [
+         *         {
+         *           "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *           "date": "2026-10-01",
+         *           "id": "change_date:9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *           "itemType": "change_date",
+         *           "kind": "regulatory",
+         *           "label": "In force",
+         *           "obligations": [
+         *             {
+         *               "confidence": 0.82,
+         *               "confirmed": true,
+         *               "instrumentShortName": "FFFS 2017:2",
+         *               "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+         *               "origin": "agent",
+         *               "refLabel": "11 kap. 4 §",
+         *               "title": "Assess the quality of investment research paid for"
+         *             }
+         *           ],
+         *           "quarter": "2026-Q4",
+         *           "sourceLabel": "Finansinspektionen",
+         *           "status": "new",
+         *           "title": "FI adopts amended rules on paying for investment research",
+         *           "urgency": {
+         *             "key": "act_now",
+         *             "kind": null,
+         *             "label": "Act now"
+         *           }
+         *         }
+         *       ],
+         *       "date": "2026-09-21",
+         *       "lead": {
+         *         "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *         "authorityLabel": "Finansinspektionen",
+         *         "case": {
+         *           "allowedTransitions": [],
+         *           "category": "new",
+         *           "footprintMatch": true,
+         *           "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *           "obligationDecisions": [],
+         *           "ownerId": null,
+         *           "soWhatConfirmed": false,
+         *           "soWhatConfirmedAt": null,
+         *           "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *           "urgency": {
+         *             "key": "act_now",
+         *             "kind": null,
+         *             "label": "Act now"
+         *           },
+         *           "urgencyConfirmed": false
+         *         },
+         *         "changeType": {
+         *           "confidence": 0.91,
+         *           "ref": {
+         *             "key": "adopted",
+         *             "kind": "adopted",
+         *             "label": "Adopted"
+         *           },
+         *           "suggested": true
+         *         },
+         *         "firstSeenAt": "2026-09-16T06:02:00Z",
+         *         "flags": [
+         *           {
+         *             "confidence": 0.74,
+         *             "ref": {
+         *               "key": "advice_perimeter",
+         *               "kind": null,
+         *               "label": "Advice perimeter"
+         *             },
+         *             "suggested": true
+         *           }
+         *         ],
+         *         "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *         "inFootprint": true,
+         *         "keyDate": "2026-10-01",
+         *         "keyDateLabel": "In force",
+         *         "keyDatePrecision": "day",
+         *         "publishedOn": "2026-09-15",
+         *         "publishedPrecision": "day",
+         *         "stableKey": "chg-fi-2026-research-payments",
+         *         "status": "active",
+         *         "suggestedUrgency": {
+         *           "key": "act_now",
+         *           "kind": null,
+         *           "label": "Act now"
+         *         },
+         *         "terms": [
+         *           {
+         *             "confidence": null,
+         *             "ref": {
+         *               "key": "securities",
+         *               "kind": null,
+         *               "label": "Securities"
+         *             },
+         *             "suggested": false
+         *           }
+         *         ],
+         *         "title": "FI adopts amended rules on paying for investment research"
+         *       },
+         *       "roadmapCount": 7,
+         *       "sources": {
+         *         "checked": 11,
+         *         "failed": [
+         *           {
+         *             "lastCheckedAt": "2026-09-16T06:02:00Z",
+         *             "lastError": "502 from the publisher after three retries",
+         *             "lastStatus": "failed",
+         *             "overdue": true,
+         *             "source": {
+         *               "active": true,
+         *               "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *               "checkFrequency": "weekly",
+         *               "id": "0f6d2f20-6d7a-4a7c-9a5e-4a2f8a0f1c31",
+         *               "kind": {
+         *                 "key": "authority_site",
+         *                 "kind": null,
+         *                 "label": "Authority website"
+         *               },
+         *               "name": "fi.se",
+         *               "url": "https://www.fi.se/"
+         *             }
+         *           }
+         *         ],
+         *         "total": 12
+         *       }
+         *     }
+         */
+        Home: {
+            /**
+             * Comingup
+             * @description The next dates, earliest first: the same rows, in the same order, that `GET /roadmap` answers, cut to the length the `HOME_COMING_UP_ITEMS` setting names. The short list is the same on a phone and on a desktop. An empty list means nothing is dated ahead inside the bank's regulatory scope.
+             */
+            comingUp: components["schemas"]["HomeRoadmapItem"][];
+            /**
+             * Date
+             * Format: date
+             * @description Today as the bank reads it: the calendar date in the bank's own time zone, computed by the server. The screen counts 'days left' from this and never from the reader's device, so two people in different countries see one bank's day.
+             * @example 2026-09-21
+             */
+            date: string;
+            /** @description The one change of this week that most deserves attention, as the watch feed answers a row — the most urgent open, in-scope case of the week, with this bank's own case beside the library's facts. The screen marks it with the `brand` pill 'Lead'. Null when the week has no such change, and null for a reader without `watch.read`; a reader must not read null as 'nothing happened this week'. */
+            lead: components["schemas"]["WatchChangeRow"] | null;
+            /**
+             * Roadmapcount
+             * @description How many items the whole roadmap holds, 0 or more, so the screen can offer 'see all' with a number. Counted by the server over the same rows as `GET /roadmap` with no filters, which is why it is usually larger than `comingUp`.
+             * @example 7
+             */
+            roadmapCount: number;
+            /** @description How the source watching is going, for the panel that answers 'are we still covered?'. Null for a reader without `watch.read`, and the screen then hides the panel rather than showing zeros, because a zero here would read as a claim that nothing was checked. */
+            sources: components["schemas"]["HomeSourceHealth"] | null;
+        };
+        /**
+         * HomeBriefing
+         * @description One week of regulation as it reached this bank: the week's changes inside the bank's
+         *     regulatory scope, the one that leads, and the dates just ahead.
+         *
+         *     The running week is computed live and stored nowhere; a past week is read back from the
+         *     snapshot the weekly job wrote when it sent the mail. A snapshot is append-only, so a
+         *     later change to the feed never alters what a person was sent — reopening last week's
+         *     briefing shows last week's briefing. The bank's own zone throughout: another bank's
+         *     briefing for the same week holds different changes, because the scope and the cases are
+         *     its own.
+         * @example {
+         *       "comingUp": [
+         *         {
+         *           "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *           "date": "2026-10-01",
+         *           "id": "change_date:9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *           "itemType": "change_date",
+         *           "kind": "regulatory",
+         *           "label": "In force",
+         *           "obligations": [
+         *             {
+         *               "confidence": 0.82,
+         *               "confirmed": true,
+         *               "instrumentShortName": "FFFS 2017:2",
+         *               "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+         *               "origin": "agent",
+         *               "refLabel": "11 kap. 4 §",
+         *               "title": "Assess the quality of investment research paid for"
+         *             }
+         *           ],
+         *           "quarter": "2026-Q4",
+         *           "sourceLabel": "Finansinspektionen",
+         *           "status": "new",
+         *           "title": "FI adopts amended rules on paying for investment research",
+         *           "urgency": {
+         *             "key": "act_now",
+         *             "kind": null,
+         *             "label": "Act now"
+         *           }
+         *         }
+         *       ],
+         *       "emailSentAt": "2026-09-21T05:00:00Z",
+         *       "items": [
+         *         {
+         *           "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *           "authorityLabel": "Finansinspektionen",
+         *           "case": {
+         *             "allowedTransitions": [],
+         *             "category": "new",
+         *             "footprintMatch": true,
+         *             "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *             "obligationDecisions": [],
+         *             "ownerId": null,
+         *             "soWhatConfirmed": false,
+         *             "soWhatConfirmedAt": null,
+         *             "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *             "urgency": {
+         *               "key": "act_now",
+         *               "kind": null,
+         *               "label": "Act now"
+         *             },
+         *             "urgencyConfirmed": false
+         *           },
+         *           "changeType": {
+         *             "confidence": 0.91,
+         *             "ref": {
+         *               "key": "adopted",
+         *               "kind": "adopted",
+         *               "label": "Adopted"
+         *             },
+         *             "suggested": true
+         *           },
+         *           "firstSeenAt": "2026-09-16T06:02:00Z",
+         *           "flags": [
+         *             {
+         *               "confidence": 0.74,
+         *               "ref": {
+         *                 "key": "advice_perimeter",
+         *                 "kind": null,
+         *                 "label": "Advice perimeter"
+         *               },
+         *               "suggested": true
+         *             }
+         *           ],
+         *           "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *           "inFootprint": true,
+         *           "keyDate": "2026-10-01",
+         *           "keyDateLabel": "In force",
+         *           "keyDatePrecision": "day",
+         *           "publishedOn": "2026-09-15",
+         *           "publishedPrecision": "day",
+         *           "stableKey": "chg-fi-2026-research-payments",
+         *           "status": "active",
+         *           "suggestedUrgency": {
+         *             "key": "act_now",
+         *             "kind": null,
+         *             "label": "Act now"
+         *           },
+         *           "terms": [
+         *             {
+         *               "confidence": null,
+         *               "ref": {
+         *                 "key": "securities",
+         *                 "kind": null,
+         *                 "label": "Securities"
+         *               },
+         *               "suggested": false
+         *             }
+         *           ],
+         *           "title": "FI adopts amended rules on paying for investment research"
+         *         }
+         *       ],
+         *       "lead": {
+         *         "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *         "authorityLabel": "Finansinspektionen",
+         *         "case": {
+         *           "allowedTransitions": [],
+         *           "category": "new",
+         *           "footprintMatch": true,
+         *           "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *           "obligationDecisions": [],
+         *           "ownerId": null,
+         *           "soWhatConfirmed": false,
+         *           "soWhatConfirmedAt": null,
+         *           "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *           "urgency": {
+         *             "key": "act_now",
+         *             "kind": null,
+         *             "label": "Act now"
+         *           },
+         *           "urgencyConfirmed": false
+         *         },
+         *         "changeType": {
+         *           "confidence": 0.91,
+         *           "ref": {
+         *             "key": "adopted",
+         *             "kind": "adopted",
+         *             "label": "Adopted"
+         *           },
+         *           "suggested": true
+         *         },
+         *         "firstSeenAt": "2026-09-16T06:02:00Z",
+         *         "flags": [
+         *           {
+         *             "confidence": 0.74,
+         *             "ref": {
+         *               "key": "advice_perimeter",
+         *               "kind": null,
+         *               "label": "Advice perimeter"
+         *             },
+         *             "suggested": true
+         *           }
+         *         ],
+         *         "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *         "inFootprint": true,
+         *         "keyDate": "2026-10-01",
+         *         "keyDateLabel": "In force",
+         *         "keyDatePrecision": "day",
+         *         "publishedOn": "2026-09-15",
+         *         "publishedPrecision": "day",
+         *         "stableKey": "chg-fi-2026-research-payments",
+         *         "status": "active",
+         *         "suggestedUrgency": {
+         *           "key": "act_now",
+         *           "kind": null,
+         *           "label": "Act now"
+         *         },
+         *         "terms": [
+         *           {
+         *             "confidence": null,
+         *             "ref": {
+         *               "key": "securities",
+         *               "kind": null,
+         *               "label": "Securities"
+         *             },
+         *             "suggested": false
+         *           }
+         *         ],
+         *         "title": "FI adopts amended rules on paying for investment research"
+         *       },
+         *       "weekEnd": "2026-09-20",
+         *       "weekStart": "2026-09-14"
+         *     }
+         */
+        HomeBriefing: {
+            /**
+             * Comingup
+             * @description The next dates after the week, the same rows `GET /roadmap` answers, so a reader leaves the briefing knowing what is about to fall due. An empty list means nothing is dated ahead inside the bank's scope.
+             */
+            comingUp: components["schemas"]["HomeRoadmapItem"][];
+            /**
+             * Emailsentat
+             * @description When the weekly mail for this week went out, as an RFC 3339 timestamp in UTC (`2026-09-21T05:00:00Z`). Null on the running week, which is computed live and has not been sent, and null on a week whose mail failed. It is not the moment the briefing was read.
+             * @example 2026-09-21T05:00:00Z
+             */
+            emailSentAt: string | null;
+            /**
+             * Items
+             * @description The week's changes inside the bank's regulatory scope, most urgent first and then by key date, capped at the `BRIEFING_MAX_ITEMS` setting. Each is a watch feed row: library facts beside this bank's own case. A 'So what?' that no person has confirmed is still an AI draft and is labelled as one on screen; it is never carried into the mail (WAT-05).
+             */
+            items: components["schemas"]["WatchChangeRow"][];
+            /** @description The change the week is about, chosen by the same rule as the lead card on Today, so the two never disagree. Null in a week with nothing in scope, which is a real and quiet week rather than a failure. */
+            lead: components["schemas"]["WatchChangeRow"] | null;
+            /**
+             * Weekend
+             * Format: date
+             * @description The Sunday of the same week, as a plain calendar date (`2026-09-20`), computed by the server so a screen never has to add six days itself. Inclusive: a change seen on that Sunday is in this briefing.
+             * @example 2026-09-20
+             */
+            weekEnd: string;
+            /**
+             * Weekstart
+             * Format: date
+             * @description The Monday of the week, as a plain calendar date (`2026-09-14`), resolved in the bank's own time zone. The week is the ISO week, Monday to Sunday. This is the key `GET /briefings/{weekStart}` takes and the one a mailed link points at.
+             * @example 2026-09-14
+             */
+            weekStart: string;
+        };
+        /**
+         * HomeCalendarFeed
+         * @description One calendar subscription belonging to one person in one bank. The bank's own zone:
+         *     a person sees their own subscriptions and nobody else's, and the address itself is never
+         *     in this shape — it is shown once, when the subscription is created, and stored only as a
+         *     hash afterwards.
+         * @example {
+         *       "createdAt": "2026-09-21T08:15:00Z",
+         *       "filter": "regulatory",
+         *       "id": "5f1a7c92-0b34-4e86-9d27-3c6a8e1b4f05",
+         *       "revokedAt": null
+         *     }
+         */
+        HomeCalendarFeed: {
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the person created the subscription, as an RFC 3339 timestamp in UTC (`2026-09-21T08:15:00Z`). Set by the server; a caller never sends it.
+             * @example 2026-09-21T08:15:00Z
+             */
+            createdAt: string;
+            /**
+             * Filter
+             * @description What this subscription carries, a fixed kind with three members: `all` (both kinds), `regulatory` (only dates the outside world set) and `internal` (only deadlines this bank set for itself). A subscription set to `internal` is empty in R1, because the branches that produce our own deadlines have not shipped yet.
+             * @example regulatory
+             * @enum {string}
+             */
+            filter: "all" | "regulatory" | "internal";
+            /**
+             * Id
+             * Format: uuid
+             * @description The subscription's identifier, as a uuid, which `DELETE /calendar-feeds/{feedId}` takes. It is not the secret in the address and reveals nothing: knowing it does not let anyone read the calendar.
+             * @example 5f1a7c92-0b34-4e86-9d27-3c6a8e1b4f05
+             */
+            id: string;
+            /**
+             * Revokedat
+             * @description When the subscription was revoked, as an RFC 3339 timestamp in UTC (`2026-09-22T09:00:00Z`), or null while it still works. Revoking is immediate and final: the address answers 404 from that moment, and a new subscription is the only way back. The row is kept rather than deleted, so the bank can see that the subscription existed and when it stopped.
+             * @example null
+             */
+            revokedAt: string | null;
+        };
+        /**
+         * HomeCalendarFeedCreated
+         * @description `POST /calendar-feeds` answers this once and never again: the subscription and the
+         *     address that carries its secret. The address is shown once, copied into a calendar client
+         *     and stored here only as a SHA-256 hash, exactly as an API key is (ID-10). Losing it means
+         *     revoking the subscription and creating another.
+         * @example {
+         *       "feed": {
+         *         "createdAt": "2026-09-21T08:15:00Z",
+         *         "filter": "regulatory",
+         *         "id": "5f1a7c92-0b34-4e86-9d27-3c6a8e1b4f05",
+         *         "revokedAt": null
+         *       },
+         *       "url": "https://app.bleqq.com/api/v1/calendar/<the-43-character-token-shown-once>"
+         *     }
+         */
+        HomeCalendarFeedCreated: {
+            /** @description The subscription that was just created, exactly as `GET /calendar-feeds` lists it afterwards. */
+            feed: components["schemas"]["HomeCalendarFeed"];
+            /**
+             * Url
+             * @description The full address to paste into a calendar client, as a URL of at most 2000 characters. The token inside it is the only credential the feed has, because a calendar client sends no header and cannot be asked for a passkey; treat the whole address as a secret, never post it anywhere and never log it. It appears in this one response and in no other: the server keeps only a hash of it.
+             * @example https://app.bleqq.com/api/v1/calendar/<the-43-character-token-shown-once>
+             */
+            url: string;
+        };
+        /**
+         * HomeCalendarFeedInput
+         * @description `POST /calendar-feeds` (HOM-04): a person subscribes their own calendar client to the
+         *     bank's roadmap. A field this shape does not name answers 422, so nothing rides along
+         *     unseen. No `If-Match` and no passkey step-up: the subscription carries no version and
+         *     creating one is not an approval.
+         * @example {
+         *       "filter": "regulatory"
+         *     }
+         */
+        HomeCalendarFeedInput: {
+            /**
+             * Filter
+             * @description What the subscription should carry, a fixed kind with three members and `all` by default: `all` (both kinds), `regulatory` (only dates the outside world set) and `internal` (only deadlines this bank set for itself). `internal` is accepted and produces an empty calendar in R1. A value outside the three answers 422 `validation_error`.
+             * @default all
+             * @example regulatory
+             * @enum {string}
+             */
+            filter: "all" | "regulatory" | "internal";
+        };
+        /**
+         * HomeRoadmap
+         * @description `GET /roadmap`: the whole calendar the filters asked for, grouped by the screen from
+         *     the quarter key on every item.
+         * @example {
+         *       "items": [
+         *         {
+         *           "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *           "date": "2026-10-01",
+         *           "id": "change_date:9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *           "itemType": "change_date",
+         *           "kind": "regulatory",
+         *           "label": "In force",
+         *           "obligations": [
+         *             {
+         *               "confidence": 0.82,
+         *               "confirmed": true,
+         *               "instrumentShortName": "FFFS 2017:2",
+         *               "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+         *               "origin": "agent",
+         *               "refLabel": "11 kap. 4 §",
+         *               "title": "Assess the quality of investment research paid for"
+         *             }
+         *           ],
+         *           "quarter": "2026-Q4",
+         *           "sourceLabel": "Finansinspektionen",
+         *           "status": "new",
+         *           "title": "FI adopts amended rules on paying for investment research",
+         *           "urgency": {
+         *             "key": "act_now",
+         *             "kind": null,
+         *             "label": "Act now"
+         *           }
+         *         }
+         *       ],
+         *       "quarters": [
+         *         "2026-Q4",
+         *         "2027-Q1"
+         *       ]
+         *     }
+         */
+        HomeRoadmap: {
+            /**
+             * Items
+             * @description Every item the filters matched, earliest date first, with the item's own id as a stable tiebreak so two dates on one day never swap between two reads. The screen shows them in this order and sorts nothing itself. An empty list is a 200 and a real answer: it means nothing is dated ahead, not that something failed.
+             */
+            items: components["schemas"]["HomeRoadmapItem"][];
+            /**
+             * Quarters
+             * @description The quarter keys present in `items`, in date order, so the screen can draw the quarter roster without reading every item first. Computed by the server in the bank's own time zone. A quarter with no item is absent, so the roster never shows an empty heading.
+             * @example [
+             *       "2026-Q4",
+             *       "2027-Q1"
+             *     ]
+             */
+            quarters: string[];
+        };
+        /**
+         * HomeRoadmapItem
+         * @description One dated thing on the bank's calendar of regulation: what happens, when, and what
+         *     this bank has open against it.
+         *
+         *     Two zones in one row. The date, the label, the title and the source are library facts
+         *     shared by every bank; the case status and the confirmed urgency are this bank's own
+         *     judgement and never leave it. A row appearing here means the bank has a case open on a
+         *     dated change — it does not say the obligation applies to the bank, and it says nothing
+         *     about whether the bank complies, which are separate facts in the register (REG-01,
+         *     REG-02).
+         * @example {
+         *       "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *       "date": "2026-10-01",
+         *       "id": "change_date:9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *       "itemType": "change_date",
+         *       "kind": "regulatory",
+         *       "label": "In force",
+         *       "obligations": [
+         *         {
+         *           "confidence": 0.82,
+         *           "confirmed": true,
+         *           "instrumentShortName": "FFFS 2017:2",
+         *           "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+         *           "origin": "agent",
+         *           "refLabel": "11 kap. 4 §",
+         *           "title": "Assess the quality of investment research paid for"
+         *         }
+         *       ],
+         *       "quarter": "2026-Q4",
+         *       "sourceLabel": "Finansinspektionen",
+         *       "status": "new",
+         *       "title": "FI adopts amended rules on paying for investment research",
+         *       "urgency": {
+         *         "key": "act_now",
+         *         "kind": null,
+         *         "label": "Act now"
+         *       }
+         *     }
+         */
+        HomeRoadmapItem: {
+            /**
+             * Changeid
+             * @description The library change behind the item, as a uuid, so the card can link to the change page. The same identifier for every bank. Null on an internal item, whose record is the bank's own; null is not 'the change was deleted'.
+             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
+             */
+            changeId: string | null;
+            /**
+             * Date
+             * Format: date
+             * @description The day the item falls on, as a plain calendar date (`2026-10-01`) and never a timestamp, because a legal date is a date and not a moment. The roadmap shows today and the future; a date that has passed leaves the roadmap and stays on the change itself.
+             * @example 2026-10-01
+             */
+            date: string;
+            /**
+             * Id
+             * @description The item's own identifier, built by the server from the item's type and the record behind it and at most 300 characters. Stable for as long as that record is on the roadmap, so a screen may key a list on it; it is not a database id, it is not the change's id (`changeId` is), and nothing may be looked up by it.
+             * @example change_date:9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46
+             */
+            id: string;
+            /**
+             * Itemtype
+             * @description What produced the date, a fixed kind the calendar builder branches on: `change_date` (a regulatory change's key date), `internal_deadline` (a deadline the bank set on its own work), `action_due` (an action's due date) and `review_due` (a next review falling due). R1 produces `change_date` only; `review_due` arrives with the register (chunk 8) and `internal_deadline` and `action_due` with the case workflow (chunk 9).
+             * @example change_date
+             * @enum {string}
+             */
+            itemType: "change_date" | "internal_deadline" | "action_due" | "review_due";
+            /**
+             * Kind
+             * @description What the item is about, a fixed kind the screen branches on: `regulatory` (a date the outside world set, such as a reform coming into force) or `internal` (a date this bank set for itself, which the screen marks 'Our deadline'). R1 answers `regulatory` only; the `internal` branches arrive with the register (chunk 8) and the case workflow (chunk 9). An empty `internal` list means those branches have not shipped, never that the bank has no deadlines.
+             * @example regulatory
+             * @enum {string}
+             */
+            kind: "regulatory" | "internal";
+            /**
+             * Label
+             * @description What the date is, in the source's own words and at most 300 characters: 'In force', 'Applies', 'Transition ends'. A library fact copied from the change, so two banks read the same phrase. It is free text a publisher chose, never a value the system branches on — `itemType` is what code reads.
+             * @example In force
+             */
+            label: string;
+            /**
+             * Obligations
+             * @description The library obligations this item touches, as the watch feed answers them, most confident first. Only links a library editor has confirmed appear here, so a reader may treat each as checked. An empty list means no obligation has been linked yet, never that the change affects none.
+             */
+            obligations: components["schemas"]["WatchObligationLink"][];
+            /**
+             * Quarter
+             * @description The quarter the date falls in, as the key `YYYY-Qn` (`2026-Q4`), computed by the server in the bank's own time zone — so a date that is 31 December in Stockholm and 1 January in another zone lands in the quarter the bank reads it in. At most 7 characters. It is a key for grouping and ordering: the screen renders the phrase from its own catalog, never from this string.
+             * @example 2026-Q4
+             */
+            quarter: string;
+            /**
+             * Sourcelabel
+             * @description Where the date comes from, in words a reader recognises and at most 300 characters: the publisher for a regulatory item, and the bank's own record for an internal one. A library fact for a regulatory item, so it names no bank.
+             * @example Finansinspektionen
+             */
+            sourceLabel: string;
+            /**
+             * Status
+             * @description Where this bank's own work on the item stands, one of the seven fixed categories the case state machine reads (D-13): `new` (registered, nobody has looked — the screen reads 'Needs triage'), `assigned` (triaged with an urgency and an owner), `assessing` (the owner is working out what it means), `implementing` (actions are open), `signoff` (waiting for a second person), `closed` and `dismissed` (not for us, with a reason, and restorable). The bank's own zone: another bank's roadmap shows its own status for the same date. A closed or dismissed item is not on the roadmap at all, so those two values never appear here in R1.
+             * @example new
+             * @enum {string}
+             */
+            status: "new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed";
+            /**
+             * Title
+             * @description What the item is called, at most 300 characters. For a regulatory item it is the reform's title from the shared library, in the source's words; an internal item will carry the name of the bank's own record. It holds no bank's judgement and is safe to show in a calendar client.
+             * @example FI adopts amended rules on paying for investment research
+             */
+            title: string;
+            /** @description How soon this needs work, as `{key, kind, label}` from the `urgency` library vocabulary: `act_now` (something must change within weeks), `within_3_months` (work must start this quarter), `six_months_plus` (plan it, no rush), `monitor` (nothing to do yet) and `no_action` (noted, nothing changes) are seeded on day one, in severity order. The pill's tone follows the row's ordinal and is never sent here (NFR-03). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. It starts as the agent's suggestion for every bank and becomes this bank's own at triage; until then a reader must not report it as the bank's decision. Null when no urgency has been set at all. */
+            urgency: components["schemas"]["LibraryRef"] | null;
+        };
+        /**
+         * HomeRoadmapQuery
+         * @description The filters of `GET /roadmap`. Every value is a key or a fixed kind, never a label,
+         *     so a filter a person bookmarks keeps working when someone relabels a vocabulary row.
+         *
+         *     The three parameters below are all this route reads; a query string carrying any other
+         *     name is ignored rather than refused, so check the spelling against this list when a
+         *     filter seems not to bite. There is deliberately no "show outside our scope" switch here:
+         *     the roadmap and the briefing always respect the bank's regulatory scope, and the
+         *     inventory is where a person looks outside it (FP-03, chunk 6 rulings).
+         * @example {
+         *       "from": "2026-10-01",
+         *       "kind": "all",
+         *       "to": "2027-03-31"
+         *     }
+         */
+        HomeRoadmapQuery: {
+            /**
+             * From
+             * @description Show nothing dated before this calendar date (`2026-10-01`), inclusive. A plain date and never a timestamp. Omit it to start from the bank's own today, which is what the roadmap screen does; a date in the past widens nothing, because the roadmap holds no item whose date has gone.
+             * @example 2026-10-01
+             */
+            from?: string | null;
+            /**
+             * Kind
+             * @description Which kinds of item to include, a fixed kind with three members and `all` by default: `all` (both), `regulatory` (dates the outside world set) and `internal` (deadlines this bank set for itself). `internal` is accepted and answers an empty list in R1, because the branches that produce our own deadlines arrive with the register (chunk 8) and the case workflow (chunk 9); an empty answer is a 200 and never a 422.
+             * @default all
+             * @example all
+             * @enum {string}
+             */
+            kind: "all" | "regulatory" | "internal";
+            /**
+             * To
+             * @description Show nothing dated after this calendar date (`2027-03-31`), inclusive. A plain date and never a timestamp. Omit it for everything ahead. A `to` earlier than `from` matches nothing and answers a 200 with an empty list, which is the honest answer to a window that holds nothing.
+             * @example 2027-03-31
+             */
+            to?: string | null;
+        };
+        /**
+         * HomeSourceHealth
+         * @description How well bleqq's own watching is going: how many registered sources were checked on
+         *     time and which ones were not. Library facts, the same numbers for every bank, and the
+         *     evidence behind "we did not miss anything".
+         * @example {
+         *       "checked": 11,
+         *       "failed": [
+         *         {
+         *           "lastCheckedAt": "2026-09-16T06:02:00Z",
+         *           "lastError": "502 from the publisher after three retries",
+         *           "lastStatus": "failed",
+         *           "overdue": true,
+         *           "source": {
+         *             "active": true,
+         *             "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *             "checkFrequency": "weekly",
+         *             "id": "0f6d2f20-6d7a-4a7c-9a5e-4a2f8a0f1c31",
+         *             "kind": {
+         *               "key": "authority_site",
+         *               "kind": null,
+         *               "label": "Authority website"
+         *             },
+         *             "name": "fi.se",
+         *             "url": "https://www.fi.se/"
+         *           }
+         *         }
+         *       ],
+         *       "total": 12
+         *     }
+         */
+        HomeSourceHealth: {
+            /**
+             * Checked
+             * @description How many registered sources have a successful check inside their own cadence, 0 or more, counted by the server. It counts sources and not pages, and a successful check that found nothing new still counts: finding nothing is a result.
+             * @example 11
+             */
+            checked: number;
+            /**
+             * Failed
+             * @description The coverage rows of the sources that are not healthy — the last check failed, or the source has gone longer than its cadence without a successful one — exactly as `GET /sources/coverage` answers them. An empty list means every source is inside its cadence. A source here does not mean a change was missed; it means we cannot yet say one was not.
+             */
+            failed: components["schemas"]["WatchSourceCoverage"][];
+            /**
+             * Total
+             * @description How many sources are registered and checked automatically, 0 or more. A source deliberately left alone (a standards publisher whose terms forbid an automated fetch) is not counted here, so `checked` below `total` always means a real gap.
+             * @example 12
+             */
+            total: number;
+        };
+        /**
+         * HomeUpcomingItem
+         * @description One dated change as the outside world may read it. Library facts only: this shape
+         *     holds no case, no footprint verdict, no owner and no "So what?", which is why an agent's
+         *     key and a newsletter may read the list it comes in. Two banks calling `GET /upcoming` get
+         *     byte-identical answers.
+         * @example {
+         *       "authorityLabel": "Finansinspektionen",
+         *       "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *       "changeType": {
+         *         "key": "adopted",
+         *         "kind": "adopted",
+         *         "label": "Adopted"
+         *       },
+         *       "keyDate": "2026-10-01",
+         *       "keyDateLabel": "In force",
+         *       "keyDatePrecision": "day",
+         *       "sourceUrl": "https://www.fi.se/",
+         *       "suggestedUrgency": {
+         *         "key": "act_now",
+         *         "kind": null,
+         *         "label": "Act now"
+         *       },
+         *       "title": "FI adopts amended rules on paying for investment research"
+         *     }
+         */
+        HomeUpcomingItem: {
+            /**
+             * Authoritylabel
+             * @description Who issued the change, as the source writes it, at most 300 characters. Always present, even where the library does not recognise the authority, so a reader always sees who is behind a date.
+             * @example Finansinspektionen
+             */
+            authorityLabel: string;
+            /**
+             * Changeid
+             * Format: uuid
+             * @description The change's identifier in the shared library, as a uuid. The same identifier for every bank and for every agent, so a newsletter and a bank's screen can point at one reform.
+             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
+             */
+            changeId: string;
+            /** @description What kind of change this is, as `{key, kind, label}` from the `change_type` library vocabulary: `proposal` (a draft rule; its dates are proposed, not decided), `adopted` (decided, application still ahead), `supervision` (a survey or review, no new rule), `enforcement` (a decision against a named firm) and `recurring_date` (a date that returns) are seeded on day one. The `kind` member is the lifecycle kind the rules branch on. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
+            changeType: components["schemas"]["LibraryRef"];
+            /**
+             * Keydate
+             * Format: date
+             * @description The one date that puts the change on a calendar — in force, applies, transition ends — as a plain calendar date (`2026-10-01`) and never a timestamp. Always present here: a change with no date is not upcoming and is not in this list.
+             * @example 2026-10-01
+             */
+            keyDate: string;
+            /**
+             * Keydatelabel
+             * @description What the date is, in the source's words and at most 300 characters: 'In force', 'Applies', 'Transition ends'. Null when the source named the date without saying what it is.
+             * @example In force
+             */
+            keyDateLabel: string | null;
+            /**
+             * Keydateprecision
+             * @description How exact that date is, a fixed kind: `day` renders as 1 October 2026, `month` as October 2026, `quarter` as Q4 2026 and `year` as 2026. Null when the source stated no precision. A reader must render by this and never print a day the source did not state.
+             * @example day
+             */
+            keyDatePrecision: ("day" | "month" | "quarter" | "year") | null;
+            /**
+             * Sourceurl
+             * @description The public page the change was found on, as a URL of at most 2000 characters, so a reader can open the publisher's own words. Always a public address: no source in the library sits behind a login.
+             * @example https://www.fi.se/
+             */
+            sourceUrl: string;
+            /** @description How soon this needs work, as `{key, kind, label}` from the `urgency` library vocabulary: `act_now` (something must change within weeks), `within_3_months` (work must start this quarter), `six_months_plus` (plan it, no rush), `monitor` (nothing to do yet) and `no_action` (noted, nothing changes) are seeded on day one, in severity order. The pill's tone follows the row's ordinal and is never sent here (NFR-03). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. It is the agent's suggestion for the whole library and not any bank's decision; a reader outside a bank must not present it as one. Null when no suggestion was made. */
+            suggestedUrgency: components["schemas"]["LibraryRef"] | null;
+            /**
+             * Title
+             * @description What the reform is called, in the source's own words and at most 300 characters. A library fact: it names no bank and carries no judgement.
+             * @example FI adopts amended rules on paying for investment research
+             */
+            title: string;
+        };
+        /**
+         * HomeUpcomingQuery
+         * @description The paging of `GET /upcoming`, carrying the shared `limit` and `offset`: 20 by default,
+         *     100 at most, and a larger `limit` answers 422 rather than being clamped. The list is
+         *     ordered by date and carries no total, so a page shorter than `limit` is the end of it.
+         *
+         *     `limit` and `offset` are all this route reads; any other name in the query string is
+         *     ignored rather than refused. There is no filter here on purpose: this is the public
+         *     list, the same for everyone, and narrowing it per bank would make it a tenant read.
+         * @example {
+         *       "limit": 20,
+         *       "offset": 0
+         *     }
+         */
+        HomeUpcomingQuery: {
+            /**
+             * Limit
+             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+             * @default 20
+             * @example 20
+             */
+            limit: number;
+            /**
+             * Offset
+             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+             * @default 0
+             * @example 0
+             */
+            offset: number;
         };
         /**
          * InvitationCodeVerifyBody
@@ -9638,6 +10800,158 @@ export interface operations {
             };
         };
     };
+    getCurrentBriefing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeBriefing"];
+                };
+            };
+        };
+    };
+    getBriefing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The Monday of the week to read, as a plain calendar date (`2026-09-14`) in the bank's own time zone. The week is the ISO week, Monday to Sunday, so any other weekday answers 404 rather than silently rounding to a week the caller did not ask for. A week the bank was never sent a briefing for answers 404 too. */
+                week_start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeBriefing"];
+                };
+            };
+        };
+    };
+    listCalendarFeeds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "createdAt": "2026-09-21T08:15:00Z",
+                     *         "filter": "regulatory",
+                     *         "id": "5f1a7c92-0b34-4e86-9d27-3c6a8e1b4f05",
+                     *         "revokedAt": null
+                     *       }
+                     *     ]
+                     */
+                    "application/json": components["schemas"]["HomeCalendarFeed"][];
+                };
+            };
+        };
+    };
+    createCalendarFeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HomeCalendarFeedInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeCalendarFeedCreated"];
+                };
+            };
+        };
+    };
+    revokeCalendarFeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The calendar subscription to revoke, as a uuid from `GET /calendar-feeds`. A subscription belonging to another person or another bank answers 404, never 403, so no id can be probed for what somebody else holds. */
+                feed_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getCalendarIcs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The secret in the calendar address, at most 128 characters. It is the whole credential: a calendar client sends no header and cannot be asked for a passkey. An unknown token, a revoked one and another bank's all answer the same 404 with the same body, so the address never says whether it ever existed. */
+                feed_token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example BEGIN:VCALENDAR
+                     *     VERSION:2.0
+                     *     PRODID:-//bleqq//Compliance Watch//EN
+                     *     BEGIN:VEVENT
+                     *     UID:change_date-9d0b5a3c@bleqq.com
+                     *     DTSTART;VALUE=DATE:20261001
+                     *     SUMMARY:In force: FI adopts amended rules on paying for investment research
+                     *     END:VEVENT
+                     *     END:VCALENDAR
+                     */
+                    "text/calendar": string;
+                };
+            };
+        };
+    };
     listChanges: {
         parameters: {
             query?: {
@@ -10174,6 +11488,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MailOutboxMessage"][];
+                };
+            };
+        };
+    };
+    getHome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Home"];
                 };
             };
         };
@@ -10853,6 +12187,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductInfo"];
+                };
+            };
+        };
+    };
+    getRoadmap: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Which kinds of item to include, a fixed kind with three members and `all` by default: `all` (both), `regulatory` (dates the outside world set) and `internal` (deadlines this bank set for itself). `internal` is accepted and answers an empty list in R1, because the branches that produce our own deadlines arrive with the register (chunk 8) and the case workflow (chunk 9); an empty answer is a 200 and never a 422.
+                 * @example all
+                 */
+                kind?: "all" | "regulatory" | "internal";
+                /**
+                 * @description Show nothing dated before this calendar date (`2026-10-01`), inclusive. A plain date and never a timestamp. Omit it to start from the bank's own today, which is what the roadmap screen does; a date in the past widens nothing, because the roadmap holds no item whose date has gone.
+                 * @example 2026-10-01
+                 */
+                from?: string | null;
+                /**
+                 * @description Show nothing dated after this calendar date (`2027-03-31`), inclusive. A plain date and never a timestamp. Omit it for everything ahead. A `to` earlier than `from` matches nothing and answers a 200 with an empty list, which is the honest answer to a window that holds nothing.
+                 * @example 2027-03-31
+                 */
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeRoadmap"];
                 };
             };
         };
@@ -11713,6 +13083,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SecurityLogPage"];
+                };
+            };
+        };
+    };
+    listUpcoming: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "authorityLabel": "Finansinspektionen",
+                     *         "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+                     *         "changeType": {
+                     *           "key": "adopted",
+                     *           "kind": "adopted",
+                     *           "label": "Adopted"
+                     *         },
+                     *         "keyDate": "2026-10-01",
+                     *         "keyDateLabel": "In force",
+                     *         "keyDatePrecision": "day",
+                     *         "sourceUrl": "https://www.fi.se/",
+                     *         "suggestedUrgency": {
+                     *           "key": "act_now",
+                     *           "kind": null,
+                     *           "label": "Act now"
+                     *         },
+                     *         "title": "FI adopts amended rules on paying for investment research"
+                     *       }
+                     *     ]
+                     */
+                    "application/json": components["schemas"]["HomeUpcomingItem"][];
                 };
             };
         };

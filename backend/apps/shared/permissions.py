@@ -312,6 +312,8 @@ _LOGIC_RUN_LOG = "agents.manage in a tenant reads the library's runs and its own
 _LOGIC_WATCH_READER = "watch.read in the caller's tenant, an agent's key with library:read, because a run must know which sources to check, or sources.manage in the console, which has no tenant and so no watch.read, for the read-only Sources page (WAT-01, AGT-02, ruling 3). The gate is apps/watch/api.py:require_watch_reader, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_CHANGE_FACTS = "An agent's key with changes:write, or a library editor with proposals.review; a change's facts are library facts and no tenant role holds that (WAT-02, WAT-03, PRO-01). The gate is apps/watch/api.py:require_change_writer, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_LIBRARY_RECORDS = "library.read in the caller's tenant, or an agent's key holding library:read; one read serves the inventory and the agents (INV-03, AGT-02)."
+_LOGIC_UPCOMING_READER = "roadmap.read in the caller's tenant, or an agent's key with upcoming:read, because the newsletter run has to know which dates are already public (HOM-04, AGT-02). The list holds library facts only — no case, no footprint verdict, no owner, no 'So what?' — which is what makes a key safe on it, and it is the one route of the home app a key reaches. The gate is apps/home/api.py:require_upcoming_reader, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
+_PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the whole grant: a calendar client sends no header, follows no sign-in and cannot be asked for a passkey, so the URL is the only credential it can carry (HOM-04). Mitigated as the invitation link is: 32 bytes of entropy, stored only as a SHA-256 hash, shown once and never again, revocable with immediate effect, and answering the same 404 for an unknown token as for a revoked one. Declared with the route; the behaviour behind it waits for the open question q-feed-token, and the route answers 501 without reading a token until then."  # noqa: S105 a reviewer's note, not a credential
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
 UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
@@ -424,6 +426,21 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # without any write scope; the correction it finds is a proposal (AGT-01, PRO-01).
     ("GET", "/authorities"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/obligations/{obligation_id}/sources"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
+
+    # Chunk 6 (home, the briefing, the roadmap and the calendar feed). Seven of the nine
+    # operations carry a single permission and are not here; `GET /home` carries
+    # `roadmap.read`, which every system role holds, rather than being left ungated. These
+    # two cannot: one decorator expresses a permission or a scope and never "either", and a
+    # calendar client presents no principal at all.
+    #
+    # `c6-home-api-contract`'s brief said no chunk 6 route would join this list, on the
+    # reading that `getHome` would be the one tempted to. That reading does not survive the
+    # two routes below, exactly as the chunk 5 brief's identical sentence was amended for
+    # its eight dual-principal routes. `UngatedReason.PUBLIC_TOKEN` was written in chunk 1
+    # naming this calendar feed, so the shape was expected; what changed is only where it is
+    # written down. A reviewer disagreeing with either note should say so before the merge.
+    ("GET", "/upcoming"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_UPCOMING_READER),
+    ("GET", "/calendar/{feed_token}"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
 }
 
 

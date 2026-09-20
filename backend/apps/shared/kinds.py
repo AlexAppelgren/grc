@@ -43,7 +43,13 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "DatePrecision": ("date_precision", "Legal dates carry day, month, quarter or year"),
     "RecordStatus": ("record_status", "Library record lifecycle"),
     "ChangeStatus": ("change_status", "WAT-02: a reform's lifecycle stage"),
-    "FeedFilter": ("feed_filter", "FP-03: inside or outside the footprint"),
+    "FeedFilter": (
+        "feed_filter",
+        "HOM-03, HOM-04: which kinds of dated item a surface includes - all, regulatory or "
+        "internal. A calendar subscription's scope and the roadmap's kind filter are the same "
+        "choice and the ICS builder branches on it. Corrected 2026-09-21: it was recorded as "
+        "FP-03's inside-or-outside-the-footprint, which it never was (schema.sql line 61)",
+    ),
     "TicketProvider": ("ticket_provider", "INT-02: the integration branches per provider"),
     "AgentKind": ("agent_kind", "AGT-03: what an agent definition does"),
     "CaseLinkDecision": (
@@ -134,5 +140,19 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "CheckFrequency": (
         "check_frequency",
         "WAT-01: how often a source is checked; the scheduler and the stale rule branch on it, and no admin adds a cadence",
+    ),
+    # Chunk 6 (home, the briefing, the roadmap and the calendar feed). Both live as literals
+    # in apps/home/schemas.py, because the roadmap is computed and has no table of its own;
+    # they are declared here because they are kinds the code branches on, and an engineer
+    # looking for the list of kinds must find them where every other one is written down.
+    "RoadmapItemKind": (
+        "roadmap_item_kind",
+        "HOM-03: a roadmap item is about a date the outside world set or one this bank set; "
+        "the card picks an urgency pill for the first and 'Our deadline' for the second",
+    ),
+    "RoadmapItemType": (
+        "roadmap_item_type",
+        "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
+        "an action due or a review due; the card and the calendar builder branch on it",
     ),
 }

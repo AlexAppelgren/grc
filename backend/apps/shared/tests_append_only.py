@@ -55,6 +55,9 @@ REFUSED = {
 # role? Both functions do; nothing else may be attached.
 APPEND_ONLY_TRIGGERS = {
     "audit_event": "cw_append_only_guard",
+    # What a week's briefing told a bank, which nothing may rewrite afterwards: a later
+    # change to the feed leaves a sent briefing exactly as it was sent (HOM-02, HOM-S3).
+    "briefing_item": "cw_append_only_guard",
     "footprint_history": "cw_append_only_guard",
     "login_event": "cw_append_only_guard",
     "obligation_summary": "cw_append_only_guard",

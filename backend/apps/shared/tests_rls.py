@@ -120,6 +120,11 @@ LIBRARY_OWNED_TABLES = frozenset({"instrument", "obligation"})
 # case for a library change and its own decision about a suggested obligation link. They
 # are deliberately not mixed — a change is shared and a case is not, which is why the case
 # is a tenant table and not part of the watch zone (CAS-01, WAT-04, ruling C).
+# `briefing`, `briefing_item` and `calendar_feed` are chunk 6's: what one bank was told
+# about a week, which cases that telling named, and the calendar addresses its people
+# subscribed with. None of the three ever holds a library row - a week that holds nothing
+# for one bank holds three reforms for another, because the footprint behind it is its own
+# (HOM-02, HOM-04).
 TENANT_ONLY_TABLES = [
     "membership",
     "tenant_role",
@@ -127,6 +132,9 @@ TENANT_ONLY_TABLES = [
     "proposal_tenant",
     "change_case",
     "case_obligation_link",
+    "briefing",
+    "briefing_item",
+    "calendar_feed",
 ]
 
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also

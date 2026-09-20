@@ -43,6 +43,8 @@ class HomeScenarioTests(TestCase):
         """HOM-S5
 
         Upcoming changes are public facts and the calendar feed is revocable (HOM-04).
+        Operations: `listUpcoming`, `listCalendarFeeds`, `createCalendarFeed`,
+        `revokeCalendarFeed`, `getCalendarIcs`.
         """
 
     @skip("pending: HOM-S7 (HOM-05, chunk 8)")
