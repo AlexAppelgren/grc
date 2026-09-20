@@ -1066,7 +1066,7 @@
   {
    "code": "NO",
    "name": "Norway",
-   "parent_code": null,
+   "parent_code": "EU",
    "kind": "country"
   },
   {

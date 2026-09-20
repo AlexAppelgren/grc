@@ -26,14 +26,14 @@ from apps.library.models import (
     ReportStatus,
     SubjectType,
 )
-from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.library.seeds import JURISDICTIONS, seed_jurisdictions, seed_languages
 from apps.library.seeds.library import RESEARCH_OBLIGATION, load_library, seed_authorities
 from apps.shared import factories, tenancy
 from apps.shared.e2e_seed import SeedRefused
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.tenancy import LibraryWriteRefused, library_write
 from apps.taxonomy.models import InstrumentLevel
-from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+from apps.taxonomy.seeds import fixture, seed_library_vocabularies, seed_taxonomy_terms
 
 
 @dataclass(frozen=True)
@@ -243,3 +243,27 @@ class SharedOrMineIsolation(TransactionTestCase):
         with transaction.atomic(using="app"):
             tenancy.activate(self.tenant_a.id, using="app")
             self.assertEqual(ProblemReport.objects.using("app").get().status, ReportStatus.OPEN.value)
+
+
+class JurisdictionReach(TestCase):
+    """`Jurisdiction.parent` is the jurisdiction whose rules reach this one (D-28, ADR 0026),
+    not membership of a union: Norway is outside the Union and still reached by EU financial
+    rules through the EEA Agreement, so a bank operating only there must see EU law."""
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_jurisdictions()
+
+    def test_every_seeded_country_is_reached_by_the_union(self) -> None:
+        reach = {row.key: row.parent.key if row.parent else None for row in Jurisdiction.objects.select_related("parent")}
+        self.assertEqual(reach, {"eu": None, "se": "eu", "dk": "eu", "no": "eu", "fi": "eu"})
+
+    def test_the_fixture_and_the_seed_name_the_same_reach(self) -> None:
+        """The two places T15 had to change. They are read by different code paths — the seed
+        writes the rows, the fixture loader writes the prototype's records against them — so a
+        later edit to one alone would leave the two lists disagreeing with nothing to say so."""
+        fixture_reach = {
+            row["code"].lower(): (row["parent_code"] or "").lower() or None for row in fixture.load()["jurisdictions"]
+        }
+        seeded_reach = {key: parent for key, (_, parent, _, _) in JURISDICTIONS.items()}
+        self.assertEqual(fixture_reach, seeded_reach)

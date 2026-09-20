@@ -162,6 +162,17 @@ writes, never an OpenAPI `enum`.
 - `instrument.jurisdiction` and `authority.jurisdiction` reference a
   jurisdiction table. Seed EU, SE, DK, NO, FI with their authorities.
 - `app_user.locale` references the language table.
+- `jurisdiction.parent` is "the jurisdiction whose rules reach this one", not membership
+  of a union (D-28, ADR 0026). Norway's parent is the EU: it is outside the Union but
+  inside the internal market under the EEA Agreement, so EU financial rules reach it and a
+  bank operating only in Norway must still see Union law.
+- The `jurisdiction` dimension's terms mirror those rows one for one, written by the
+  reference seed (FP-04). `docs/plans/briefs/MY_WORK_AND_MARKETS.md` T-12 says a term
+  written by hand under a mirrored key is "adopted"; the build **refuses** it with
+  `system_key_taken` instead, the way every other reference seed refuses a key a row of its
+  own already holds. Adopting it would keep its author's labels, parent and place in the
+  list while flipping `is_system` behind their back, and nobody could then tell the mirror
+  from a term a person wrote. Refusing names the one key to rename and stops there.
 
 ## 4. Errors, concurrency, files
 

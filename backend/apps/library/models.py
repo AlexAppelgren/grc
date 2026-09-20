@@ -55,8 +55,12 @@ class JurisdictionKind(enum.StrEnum):
 
 class Jurisdiction(Vocabulary):
     """A jurisdiction (I18N-01, schema v0.3 `jurisdiction`): `eu`, `se`, `dk`, `no`,
-    `fi`, seeded with a parent (a country inside the Union) and the language its legal
-    texts are written in. Instruments and authorities reference it from chunk 3."""
+    `fi`, seeded with a parent and the language its legal texts are written in. Instruments
+    and authorities reference it from chunk 3.
+
+    `parent` is the jurisdiction whose rules reach this one (D-28, ADR 0026), not
+    membership: Norway is outside the Union and still reached by EU financial rules
+    through the EEA Agreement."""
 
     KIND_CHOICES = [(kind.value, kind.value) for kind in JurisdictionKind]
 
