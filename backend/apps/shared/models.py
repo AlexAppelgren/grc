@@ -1,4 +1,5 @@
-"""The shared tables: `tenant`, `audit_event`, `outbox_event` (playbook 14, AUD-01).
+"""The shared tables: `tenant`, `audit_event`, `outbox_event`, `outbox_cursor`
+(playbook 14, AUD-01).
 
 Every model declares `Meta.ordering` on a meaningful column because `.first()` on an
 unordered queryset with uuid keys is a coin flip on Postgres (playbook 4.5). JSON columns
@@ -6,6 +7,7 @@ name their Pydantic schema inline; the compliance lint checks the comment is the
 
 `audit_event` and `outbox_event` are mixed tables: a library row has `tenant_id` NULL and
 is visible to everyone, a tenant row only to its tenant. The migration writes that policy.
+`outbox_cursor` belongs to neither zone: it is the worker's own bookkeeping.
 """
 
 from __future__ import annotations
@@ -136,3 +138,25 @@ class OutboxEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.topic} ({'sent' if self.published_at else 'pending'})"
+
+
+class OutboxCursor(models.Model):
+    """The one ordered cursor over `outbox_event` (chunk 5 ruling 9). One row: the position
+    of the last delivered event, the moment the row at the front of the queue may be tried
+    again, and the lock two workers take turns on (`apps/shared/outbox.py`). No tenant
+    column and no row-level security: it holds a position and a clock, never tenant
+    content, and the events it points at carry their own zone."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50, unique=True)
+    last_created = models.DateTimeField(null=True, blank=True)
+    last_id = models.UUIDField(null=True, blank=True)
+    retry_not_before = models.DateTimeField(null=True, blank=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "outbox_cursor"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return f"{self.name} at {self.last_created or 'the beginning'}"

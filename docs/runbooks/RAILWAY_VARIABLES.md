@@ -64,6 +64,10 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `E2E_MODE` | api (E2E only) | set by Playwright's `webServer` | set by the E2E job | never | Makes the enrolment code deterministic and enables `seed_e2e`. Refused on two independent legs when deployed |
 | `SENTRY_DSN` | all | unset | unset | optional, EU region DSN | `send_default_pii=False`, bodies never sent, scrubbers on events and transactions |
 | `API_BUDGET_MS` | api | `250` | `250` | `250` | A WARNING with the request ID above it |
+| `OUTBOX_BATCH_SIZE` | worker | `100` | `100` | `100` | Rows one pass of the outbox cursor delivers; the pass holds the cursor's row lock for its duration |
+| `OUTBOX_POLL_INTERVAL_S` | worker | `10` | `10` | `10` | How often beat runs the cursor, and so the longest a registered change waits for its cases at an idle moment |
+| `OUTBOX_MAX_ATTEMPTS` | worker | `5` | `5` | `5` | After this many failed attempts the row is left failed (unpublished, with its attempt count and the exception's type name) and the cursor moves on, so one broken consumer cannot hold up every other row |
+| `OUTBOX_RETRY_BACKOFF_S` | worker | `60` | `60` | `60` | The wait before a failed row is tried again, doubled per attempt (60 s, 120 s, 240 s, 480 s). Nothing behind that row is delivered while it waits, so order holds |
 | `LIBRARY_DIFF_MAX_SENTENCES` | api | `50` | `50` | `50` | "Show what changed" compares sentence by sentence up to this many sentences per version, and above it shows the whole old text deleted and the new one inserted. Aligning repeated sentences costs up to the cube of their count: the worst case measured 12 ms at 50, 60 ms at 100 and 211 ms at 200. Raise only after measuring. Outside 1 to 200 the app refuses to boot |
 | `LIBRARY_TEXT_MAX_CHARS` | api | `20000` | `20000` | `20000` | A version text longer than this is never split into sentences: "show what changed" shows the whole old text deleted and the whole new one inserted. Splitting is linear in the length of a text a source published, about 57 ms per 200 KB, and a text under the sentence cap above is a few thousand characters |
 
