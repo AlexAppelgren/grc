@@ -29,4 +29,12 @@ test.describe('agents journeys', () => {
   test.fixme("AGT-S10 J-4 @smoke: an agent registers a change and a proposal, an editor approves, the tenant sees what changed", async () => {
     // pending: AGT-S10 (AGT-01, WAT-02, PRO-02, INV-04, J-4)
   });
+
+  test.fixme("ACC-S1: An entry is registered, narrowed to a department, and revoking it stops its credentials", async () => {
+    // pending: ACC-S1 (ACC-01, J-11)
+  });
+
+  test.fixme("ACC-S6: A narrowed entry never narrows silently", async () => {
+    // pending: ACC-S6 (ACC-07, AC-ACC1)
+  });
 });

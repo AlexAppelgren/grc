@@ -31,7 +31,7 @@ and `docs/plans/UI_Implementation_Plan.md`. `docs/PLAYBOOK.md` is the reference.
 | Release | Outcome | Build plan chunks |
 |---|---|---|
 | R1 | Passkey sign-in, footprint, inventory with versions and diffs, watch feed fed by agents, search and ask, timeline home, briefing, roadmap, vocabularies without a deploy, audit from day one | 0 to 7 |
-| R2 | System of record: applicability, compliance status per entity, gaps, the full case workflow, collaboration, tenant-controlled agents | 8 to 11 |
+| R2 | System of record: applicability, compliance status per entity, gaps, the full case workflow, collaboration, tenant-controlled agents, agent access for the agents a bank runs itself | 8 to 11 |
 | R3 | Reports and exports, import, integrations, SSO, retention, tenant exit, the assurance pack, billing | 12 to 14 |
 
 Chunks are in `docs/plans/Build_Plan.md`; their state is in
@@ -93,7 +93,13 @@ Weakening any of these is a stop: ask the owner (Alex) first.
   `brand`), chosen by slot or kind, never by a person. Pills only through
   `Pill`. No string literals in JSX text.
 - Tenant content never reaches logs, Sentry, analytics or an unapproved model
-  endpoint. PostgreSQL with pgvector everywhere; there is no SQLite.
+  endpoint. A bank's own agents read through agent access: their scope is the
+  bank's footprint narrowed by the departments and products they serve, never
+  widened; a record outside it answers 404; they write nothing in R2; and they
+  never narrow silently, so every answer states the scope it was answered in and
+  names what it could not see. The bank's register leaves the zone only after two
+  people holding `security.manage` switched tenant reach on, and a personal access
+  token acts as its person, can never step up and dies with them. PostgreSQL with pgvector everywhere; there is no SQLite.
 - Never lower a gate, skip or quarantine a test, or mock an API in E2E.
 
 ### Simplicity first, never at the cost of security or quality

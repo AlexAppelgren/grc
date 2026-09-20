@@ -40,6 +40,20 @@ stricter credential policy (D-55, ADR 0048) binds new registrations at once and
 existing passkeys from a notice date the admin sets, so a bank can tighten
 without locking itself out.
 
+PRD 0.5 (D-64, ADR 0056) adds a second kind of credential on the same table. A
+`service` key is bound to an agent access entry (`api_key.agent_access`) and acts
+as it. A `personal` access token is minted by a member holding the new permission
+`tokens.create`, from an authenticated session behind a passkey step-up, and
+**acts as that person**, never exceeding their permissions. One table means one
+hashing path, one revocation path and one security log. A personal token does not
+break "a passkey is the only way in", because the passkey is how the person got
+in to mint it, but that only holds while it is fenced: it cannot open a UI
+session, it cannot step up and so refuses every step-up action, it must carry an
+expiry, and it is revoked on the next request when the person is deactivated,
+loses their membership or loses the permission its scope depends on. The scope
+`tenant:read`, declared since chunk 1 and gated on no route, becomes the scope
+that reaches a tenant's register decisions and nothing else.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -59,6 +73,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID-11 | Security log of sign-ins, failures, enrolments, recoveries and key use | M | R1 | built |
 | ID-12 | SSO (OIDC, SAML), verified domains and SCIM as a tenant option. SSO proves identity and never opens a session on its own; with enforcement on it is asked after the passkey at every sign-in (D-58) | C | R3 | pending |
 | ID-13 | Optional IP allow-list per tenant | C | R3 | pending |
+| ACC-03 | Two credential kinds on one table: a service key bound to an agent access entry, and a personal access token minted under `tokens.create` behind a step-up that acts as the person. Both shown once, hashed, expiring, revocable, with a last use and a security log row. A token cannot open a session or step up, and dies with the person | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -387,4 +402,29 @@ Then the request answers 403 naming the missing scope
 When a key tries a step-up
 Then there is no path for it: a key holds no assertion, and the review routes ask for none
 And a tenant key carrying "proposals:review" is refused: the scope is platform-only
+```
+
+### ACC-S3 — A service key acts as the entry and a personal token acts as the person `@integration` `@e2e` (ACC-03)
+```gherkin
+Given an agent access entry and a member holding tokens.create
+When an admin issues a service key for the entry with a step-up
+Then the audit rows of its reads name the entry, not the key id
+When the member mints a personal access token with a fresh passkey assertion
+Then the token is shown once, carries an expiry, and the audit rows of its reads name the member
+And the token's effective permissions are the member's permissions intersected with its scopes
+When a member without tokens.create tries to mint one
+Then the request answers 403
+When either credential is used
+Then the security log records it with its own method, beside sign-ins and key use
+```
+
+### ACC-S9 — A personal token can never step up and dies with the person `@integration` (ACC-03, AC-ACC3)
+```gherkin
+Given a personal access token held by a compliance officer
+When it calls any route carrying @requires_step_up
+Then the request answers 403 "step_up_required" and there is no route by which the token could obtain an assertion
+When the officer is deactivated, loses their membership, or loses the permission the token's scope depends on
+Then the next request on that token is refused, without waiting for a sweep
+When a token is minted with no expiry
+Then the request is refused
 ```

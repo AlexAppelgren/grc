@@ -14,7 +14,7 @@ revokeApiKey.
 The ceremonies run for real against py_webauthn through the software authenticator in
 tests_webauthn_support.py; the emailed link and code are read from the mock mailer.
 
-Prefixes hosted: ID.
+Prefixes hosted: ACC, ID.
 """
 
 from __future__ import annotations
@@ -917,4 +917,23 @@ class IdentityScenarioTests(ScenarioTestCase):
         """ID-S31
 
         The review scope reaches the queue and never a library row (ID-10, AC-PRO1, AC-ID3).
+        """
+
+
+class IdentityAgentAccessScenarioTests(ScenarioTestCase):
+    """Agent access scenarios for apps.identity (PRD 0.5 module ACC), one method per
+    @integration heading in app.md. Skipped until chunk 11 builds them."""
+
+    @skip("pending: ACC-S3")
+    def test_acc_s3(self) -> None:
+        """ACC-S3
+
+        A service key acts as the entry and a personal token acts as the person (ACC-03).
+        """
+
+    @skip("pending: ACC-S9")
+    def test_acc_s9(self) -> None:
+        """ACC-S9
+
+        A personal token can never step up and dies with the person (ACC-03, AC-ACC3).
         """

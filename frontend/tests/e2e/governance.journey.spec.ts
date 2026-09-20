@@ -209,4 +209,8 @@ test.describe('governance journeys', () => {
     await expect(again.getByText('Another tenant already uses that short name.')).toBeVisible();
     await expect(page.locator(`[data-tenant-id="${tenantId}"]`)).toHaveCount(1);
   });
+
+  test.fixme("ACC-S11: Tenant reach needs two people, and off means off", async () => {
+    // pending: ACC-S11 (ACC-08, AC-ACC2)
+  });
 });

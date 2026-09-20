@@ -27,6 +27,17 @@ bulk tagging and configuration export come in R2 and R3. In R1 the three tiers,
 the vocabulary screen, retire and merge, library changes through proposals,
 and the footprint land.
 
+PRD 0.5 adds one more reader of the same rule. An agent access entry (ACC-01,
+`apps/agents`) carries departments and products, and its effective scope is their
+taxonomy terms **intersected with the tenant footprint**, computed per request
+from the footprint table and never from anything the caller sends. That is what
+makes "an entry can only narrow" a property of the code rather than a promise.
+The matcher is unchanged: `in_footprint` runs a second time with the entry's term
+map, and the SQL list queries take a second term array beside the one they
+already pass to `taxonomy_in_footprint`. FP-01's rules hold inside it, so an
+empty dimension does not restrict and naming no department and no product narrows
+nothing.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -47,6 +58,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it | M | R1 | in_progress |
 | FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | pending |
 | I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
+| ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | pending |
 ## 3. Acceptance criteria (from PRD, condensed)
 
 - **AC-VOC1** An admin adds a change type, a tag and a sub-status with no deploy:
@@ -443,4 +455,18 @@ When a machine translation to en is stored
 Then a translation row exists per language with the original marked
 And the en row carries machine_translated true and a review state
 And the API returns the requested language, falling back along the user's language order
+```
+
+### ACC-S2 — An entry's scope narrows the footprint and can never widen it `@integration` (ACC-02, AC-ACC1)
+```gherkin
+Given a tenant footprint covering trading, cards and payments
+And an entry naming the Trading department, whose products carry the derivatives and securities product types
+When the effective scope is computed
+Then it holds the trading terms and no card term
+And an obligation carrying no product type at all is in scope, because an empty dimension does not restrict
+And an obligation carrying only the card product type is not
+When the entry names a product whose term is outside the tenant footprint
+Then that term is not in the effective scope: the intersection is taken from the footprint table
+When the entry names no department and no product
+Then its effective scope is the tenant footprint exactly, through the same code path
 ```

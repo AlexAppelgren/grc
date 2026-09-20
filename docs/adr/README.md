@@ -61,6 +61,9 @@ if behaviour changes. Numbering never reuses a number.
 | [0052](0052-platform-counters-window.md) | The console reads each bank's figures through one window on tables of numbers | D-59 | accepted |
 | [0053](0053-bleqq-agents-are-the-base-package.md) | bleqq's agents are the base package; a bank steers only its own | D-61 | accepted |
 | [0054](0054-agent-approves-from-the-same-queue.md) | The second pair of eyes on a library proposal may be an independent agent | D-62 | accepted |
+| [0055](0055-agent-access-reads-and-only-narrows.md) | An agent a bank runs reads through a registered entry that can only narrow | D-63, D-65, D-68 | accepted |
+| [0056](0056-two-credential-kinds-one-table.md) | A service key and a personal access token, on one table, and a token can never step up | D-64 | accepted |
+| [0057](0057-a-bank-pulls-its-own-register.md) | A bank may pull its own register into its own agent; we still send nothing | D-63, D-67 (amends D-07) | accepted |
 
 Still to write, when the playbook's Appendix C says so:
 the switch from one branch to `staging` and `main` (supersedes 0015), the
@@ -83,3 +86,11 @@ stance this index owed.
 
 PRD 0.4 also added 0054 for D-62, Alex's own decision of 2026-09-20 (item 19)
 that bleqq staffs no editorial function.
+
+PRD 0.5 (2026-09-20) added 0055 to 0057 for the agent access decisions D-63 to
+D-68, answered by Alex in chat and consolidated in
+`docs/plans/briefs/AGENT_ACCESS.md`. D-66 has no ADR of its own: the labelling
+and logging of a drafted summary is the existing AI-output invariant, not a new
+design. 0057 amends 0007's D-07 and is the first ADR to state what that decision
+always meant, that **we** send no tenant-zone text to a model; it leaves D-10 and
+ADR 0050's private records untouched.
