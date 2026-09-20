@@ -76,6 +76,7 @@ export const destinations: readonly Destination[] = [
   // renders "coming soon". The queue takes rank 1 with its page (chunk 4),
   // sources with theirs (chunk 5).
   { id: 'console-vocabularies', href: '/console/vocabularies', labelKey: 'nav.console.vocabularies', surface: 'console', anyOfPermissions: ['library_vocab.manage'], dockRank: 2, group: 'primary' },
+  { id: 'console-tenants', href: '/console/tenants', labelKey: 'nav.console.tenants', surface: 'console', anyOfPermissions: ['tenants.manage'], dockRank: 3, group: 'primary' },
 ];
 
 /** The console's landing: it sends each person on to the first console destination they may open. */

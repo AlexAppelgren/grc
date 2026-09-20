@@ -1,10 +1,67 @@
+import type { Page } from '@playwright/test';
+
+import { destinations, type Destination } from '@/shared/navigation/registry';
+
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, LOGINS, signInAs, signOut } from './support/passkeys';
+import { allowFreshContext, inviteLinkFrom, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
 // governance: the @e2e scenarios from backend/apps/governance/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
 // the title is what scripts/requirements_coverage.py looks for. Never delete a
 // stub: un-fixme it when the journey is real.
+//
+// ADM-S4 reads the console from the registry (src/shared/navigation/registry.ts),
+// never from a list written here, so a console destination a later chunk adds
+// joins the role matrix with no edit to this file.
+
+const CONSOLE_DESTINATIONS: readonly Destination[] = destinations.filter((d) => d.surface === 'console');
+
+/** The grant the Restricted screen names, in plain words (humanisePermission, require-permission.tsx). */
+function missingGrant(destination: Destination): string {
+  return (destination.anyOfPermissions[0] ?? '').replace(/[._]/g, ' ');
+}
+
+/**
+ * Signs the login in, then walks every console destination the registry holds:
+ * the ones in their rail must open, the rest must refuse by address. Returns
+ * the ids of the ones they hold, so the journey can prove the two platform
+ * roles divide the console between them.
+ */
+async function consoleDestinationsOf(page: Page, login: string): Promise<string[]> {
+  await signInAs(page, login);
+  await page.goto('/console');
+  const nav = page.getByRole('navigation', { name: 'Main' });
+  // The landing sends each person on to their first destination: settle there
+  // before reading the rail.
+  await expect(page).not.toHaveURL(/\/console$/);
+  // By address, not by label: the registry is the only list, and a spec that
+  // read the catalog could not run under Playwright's JSON-free loader.
+  const link = (destination: Destination) => nav.locator(`a[href="${destination.href}"]`);
+
+  const mine: Destination[] = [];
+  const theirs: Destination[] = [];
+  for (const destination of CONSOLE_DESTINATIONS) {
+    ((await link(destination).count()) > 0 ? mine : theirs).push(destination);
+  }
+  expect(mine.length, `${login} holds no console destination`).toBeGreaterThan(0);
+
+  for (const destination of mine) {
+    await link(destination).click();
+    await expect(page).toHaveURL(new RegExp(`${destination.href}$`));
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+    await expect(restrictedScreen(page)).toHaveCount(0);
+  }
+
+  for (const destination of theirs) {
+    await page.goto(destination.href);
+    // The client gate refuses before any request is made, so the API guard
+    // sees no 403 here; the server's own refusal is ADM-S4's integration half.
+    await expect(restrictedScreen(page)).toBeVisible();
+    await expect(restrictedScreen(page)).toContainText(missingGrant(destination));
+    await expect(link(destination)).toHaveCount(0);
+  }
+  return mine.map((destination) => destination.id);
+}
 
 test.describe('governance journeys', () => {
   test("AUD-S3: The audit log screen shows who did what, with before and after", async ({ page, apiGuard }) => {
@@ -85,15 +142,71 @@ test.describe('governance journeys', () => {
     // pending: AUD-S5 (AUD-03)
   });
 
-  test.fixme("ADM-S4: The platform console offers each surface to the platform role that owns it", async () => {
-    // pending: ADM-S4 (ADM-02)
+  test("ADM-S4: The platform console offers each surface to the platform role that owns it", async ({ page, apiGuard }) => {
+    // The two platform roles, each walking the whole console. No destination is
+    // named here: the registry is the list, and the closing assertion is that it
+    // divides cleanly between the two roles with nothing left over.
+    allowFreshContext(apiGuard);
+    const editor = await consoleDestinationsOf(page, LOGINS.editor);
+    await signOut(page);
+    const platform = await consoleDestinationsOf(page, LOGINS.platform);
+
+    expect(editor.filter((id) => platform.includes(id))).toEqual([]);
+    expect([...editor, ...platform].sort()).toEqual(CONSOLE_DESTINATIONS.map((d) => d.id).sort());
   });
 
   test.fixme("ADM-S5: System health names what is wrong", async () => {
     // pending: ADM-S5 (ADM-02)
   });
 
-  test.fixme("ADM-S6: Tenants, plans and support access are managed from the console", async () => {
-    // pending: ADM-S6 (ADM-02)
+  test("ADM-S6: A tenant is created from the console with its first administrator invited", async ({ page, request, apiGuard }, testInfo) => {
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/console\/tenants$/, 409, 'duplicate_key: the second attempt reuses the short name (ADM-S6)');
+    // A short name is unique for all time, so it carries the attempt: a retry
+    // and a parallel run never collide, and nothing seeded is touched.
+    const slug = `adm-s6-${Date.now().toString(36)}-${testInfo.retry}`;
+    const email = `administrator@${slug}.test`;
+
+    await signInAs(page, LOGINS.platform);
+    await page.goto('/console/tenants');
+    await expect(page.getByRole('heading', { level: 1, name: 'Tenants' })).toBeVisible();
+    await expect(page.locator('[data-tenants-list]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+
+    const openForm = async () => {
+      await page.getByRole('button', { name: 'Create a tenant', exact: true }).click();
+      const form = page.getByRole('dialog', { name: 'Create a tenant' });
+      await expect(form).toBeVisible();
+      return form;
+    };
+
+    const form = await openForm();
+    await form.getByLabel('Name', { exact: true }).fill('ADM-S6 Bank AB');
+    await form.getByLabel('Short name', { exact: true }).fill(slug);
+    await form.getByLabel("First administrator's email").fill(email);
+    await form.getByLabel('Their title').fill('Head of compliance');
+    const created = page.waitForResponse((r) => r.url().endsWith('/api/v1/console/tenants') && r.request().method() === 'POST' && r.ok());
+    await form.getByRole('button', { name: 'Create tenant', exact: true }).click();
+    const { id: tenantId } = (await (await created).json()) as { id: string };
+    await expect(form).toBeHidden();
+
+    // The bank this attempt created, pinned by id, never by a count.
+    const row = page.locator(`[data-tenant-id="${tenantId}"]`);
+    await expect(row).toBeVisible();
+    await expect(row).toContainText(slug);
+    await expect(row.getByText('Active', { exact: true })).toBeVisible();
+
+    // One pending invitation went to that address, with the link that opens it.
+    await expect.poll(async () => mailsTo(await mailOutbox(request), email).length).toBe(1);
+    const [invitation] = mailsTo(await mailOutbox(request), email);
+    expect(invitation === undefined ? null : inviteLinkFrom(invitation)).not.toBeNull();
+
+    // The same short name a second time: 409, named in the form, nothing created.
+    const again = await openForm();
+    await again.getByLabel('Name', { exact: true }).fill('ADM-S6 Bank Two AB');
+    await again.getByLabel('Short name', { exact: true }).fill(slug);
+    await again.getByLabel("First administrator's email").fill(`second-${email}`);
+    await again.getByRole('button', { name: 'Create tenant', exact: true }).click();
+    await expect(again.getByText('Another tenant already uses that short name.')).toBeVisible();
+    await expect(page.locator(`[data-tenant-id="${tenantId}"]`)).toHaveCount(1);
   });
 });

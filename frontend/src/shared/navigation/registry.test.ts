@@ -35,8 +35,12 @@ describe('navigation registry (playbook 6.2)', () => {
       'admin',
     ]);
     // Chunk 4 registers a console destination with its page: vocabularies
-    // now; the queue, problem reports and tenants join with theirs.
-    expect(visibleDestinations('console', PLATFORM).map((d) => d.id)).toEqual(['console-vocabularies']);
+    // and tenants now; the queue and problem reports join with theirs.
+    expect(visibleDestinations('console', PLATFORM).map((d) => d.id)).toEqual(['console-vocabularies', 'console-tenants']);
+    // Each console destination answers to the one platform role that holds
+    // its permission, so neither platform role sees the other's (ADM-S4).
+    expect(visibleDestinations('console', ['library_vocab.manage']).map((d) => d.id)).toEqual(['console-vocabularies']);
+    expect(visibleDestinations('console', ['tenants.manage']).map((d) => d.id)).toEqual(['console-tenants']);
   });
 
   it('registers a console destination only once its page exists, so none renders "coming soon"', () => {
@@ -68,7 +72,7 @@ describe('navigation registry (playbook 6.2)', () => {
   it('orders the phone dock by rank', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(dockDestinations('tenant', all).map((d) => d.id)).toEqual(['today', 'watch', 'inventory', 'search']);
-    expect(dockDestinations('console', all).map((d) => d.id)).toEqual(['console-vocabularies']);
+    expect(dockDestinations('console', all).map((d) => d.id)).toEqual(['console-vocabularies', 'console-tenants']);
   });
 
   // iOS shows at most four tabs plus More (UIKit UITabBarController), and
