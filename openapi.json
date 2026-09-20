@@ -9090,6 +9090,9 @@
                     "summary": "Accepted; the code goes out by email and is never returned here",
                     "value": {}
                   }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/Empty"
                 }
               }
             },

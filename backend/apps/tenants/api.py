@@ -113,8 +113,11 @@ def update_tenant(request: HttpRequest, body: TenantPatch) -> TenantOut:
     by_alias=True,
     summary="Send a bank's stranded administrator a fresh enrolment code",
     openapi_extra={
+        # The key is the int 202, the same key `response={202: Empty}` registers under:
+        # a string "202" here adds a second entry beside it, and the contract then has
+        # two keys of two types in one dict, which a sorted dump refuses (VOC-S2).
         "responses": {
-            "202": {
+            202: {
                 "content": {
                     "application/json": {
                         "examples": {
