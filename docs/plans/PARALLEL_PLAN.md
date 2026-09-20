@@ -69,7 +69,7 @@ Dispatch is by readiness, not by wave number. A package starts once everything i
    - A contract package writes `api.py` and `schemas.py` once. It sends each operation to a named function in the module of the logic package that will build it, for example `cases/assessment.py`, and that function answers `not_built`.
    - A logic package owns only its module and its tests, never the app's `api.py`.
    - A logic package that finds the contract wrong stops and reports. A small contract package holding the app's API key fixes the contract.
-3. **Stubs.** A route whose logic has not landed answers 501 `not_built` behind its real permission gate. Its mutating operation ids are named in the skipped scenario.
+3. **Stubs.** A route whose logic has not landed answers 501 `not_built` behind its real permission gate. Its mutating operation ids are named in the skipped scenario. On a streamed route the stream has already opened by then, so that 501 arrives as one `problem` event on the stream rather than as a JSON body, and the package that lands the logic replaces that event with the real ones.
    - **No screen calls a stub.** A screen package depends on every backend package whose routes it calls.
    - Each chunk close proves no 501 is left, and so does `r1-readiness` for R1.
 4. **Scenario stubs.** One package per chunk writes the scenario stubs, which stay `@skip("pending: <ID>")` or `test.fixme()`. The package that builds a scenario deletes only its own skip line. A pending skip is not a quarantine.
@@ -268,7 +268,7 @@ The maps, task files and briefs were written separately. Where they plan the sam
 
 | # | Where the sources disagree | Ruling |
 |---|---|---|
-| 1 | Chunk 4 cut `AiGeneration` and `GET /ai-generations` to chunk 7, but chunk 5 already logs model outputs | `c5-ai-log-contract` builds the model to schema v0.3 with chunk 7's columns (asker, input, prompt hash, tokens and feedback), `log_generation()` and the read. It also builds the one wrapper that calls the model and logs it, with its guard test. `c7-ai-log-backend` keeps only feedback and filters |
+| 1 | Chunk 4 cut `AiGeneration` and `GET /ai-generations` to chunk 7, but chunk 5 already logs model outputs | `c5-ai-log-contract` builds the model to schema v0.3 with chunk 7's columns (asker, input, prompt hash, tokens and feedback), `log_generation()` and the read. It also builds the one wrapper that calls the model and logs it, with its guard test. `c7-ai-log-backend` keeps only the filters and `mark_reviewed`: the search contract of 2026-09-20 serves `POST /answers/{answerId}/feedback` from `apps/search/ask.py::rate_answer`, which writes the feedback itself through `record()`, so no `set_feedback` is built in `apps/governance/ai_log.py` and the Ask packages do not wait on `c7-ai-log-backend` |
 | 2 | Chunk 4 moved console health to chunk 14, and `c5-console-health-feeds` extends it | Folded into `c14-health-backend`. ADM-S5 stays pending until chunk 14. Failed jobs with retry come from `c14-job-runs` (ruling 34) |
 | 3 | Chunk 4 cut the read-only console Sources page | `c5-fe-console-sources` builds the page on chunk 4's shell, after `c5-watch-sources-coverage` |
 | 4 | `POST /search/similar` is planned twice: trigram in chunk 5, hybrid in chunk 7 | `c7-search-api-contract` declares it once and `c7-hybrid-search-backend` serves it; its keyword leg works without embeddings. `c5-agent-api-flow` waits for it and for `c7-index-changes`. If the search-fence decision is not in by hour 6, build `c5-search-similar` as its map describes and let chunk 7 replace its body |
@@ -480,7 +480,7 @@ Columns:
 | c7-search-index | 7 | R1 | c4-approve-apply, c5-contract-models-watch, q-search-fence | local-unit | 60 | 5 | mig:search fence | yes |
 | c7-hybrid-search-backend | 7 | R1 | c7-search-index, c7-search-api-contract, c7-embedder-mock-reranker | local-unit | 60 | 6 | searchapi | yes |
 | c7-ai-log-backend | 7 | R1 | c5-ai-log-contract, c7-search-api-contract | local-unit (c) | 35 | 6 | gov |  |
-| c7-ask-backend | 7 | R1 | c7-hybrid-search-backend, c7-ai-log-backend, c7-ask-switch, c5-contract-models-watch, c5-llm-anthropic-provider | local-unit | 60 | 8 | - | yes |
+| c7-ask-backend | 7 | R1 | c7-hybrid-search-backend, c7-ask-switch, c5-contract-models-watch, c5-llm-anthropic-provider | local-unit | 60 | 8 | - | yes |
 | c7-e2e-seed | 7 | R1 | c7-search-index, c7-ask-switch, c5-seed-watch | local-e2e | 35 | 8 | - |  |
 | c7-eval-gate | 7 | R1 | c7-hybrid-search-backend | local-unit | 40 | 8 | eval ci |  |
 | c7-index-changes | 7 | R1 | c7-search-index, c5-watch-registration, c5-watch-curation, c5-outbox-cursor | local-unit (c) | 35 | 10 | - | yes |

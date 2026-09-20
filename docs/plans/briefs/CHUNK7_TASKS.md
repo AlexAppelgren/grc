@@ -30,7 +30,7 @@ the revision then found two MEDIUMs and four LOWs, which the last six rows close
 | `c7-index-changes` indexes shared (platform) changes only. A change event carrying a tenant owner is skipped, with a test proving no chunk and no embedding request, and the handler runs with no tenant active. The H7 wording in the index tasks, the retrieval tasks and `c7-security-review` becomes "shared rows only in R1" | MEDIUM 5 |
 | `c7-ask-switch` governs tenant-zone AI only (item 14): bleqq's platform agents ignore it, the logging wrapper reads it only when a tenant is active, a test proves a platform model call is unaffected, and the toggle copy names the tenant's own features. The `aiEnabled` write also takes `@requires_step_up`, with the step-up id on the audit row | MEDIUM 6, MEDIUM 9 |
 | `SearchFilters` carries `jurisdiction` and `dutyType` (vocabulary keys) and drops `applicability` and `complianceStatus`, which are the register overlay's and belong to chunk 8. The keys travel in `search_chunk.metadata` and are filtered before ranking | MEDIUM 7 |
-| AUD-S4's integration half leaves `c7-ai-log-backend`, which keeps only the filters, the feedback write and the mark-reviewed function chunk 5 calls. A new task, `c7-aud-s4-integration`, owns the scenario and waits for the three producers and the chunk 5 confirm route. The file collision is gone by itself: the contract puts `rateAnswer`'s stub in `apps/search/ask.py`, so no chunk 7 task creates `apps/governance/ai_log.py` | MEDIUM 8 |
+| AUD-S4's integration half leaves `c7-ai-log-backend`, which keeps only the filters and the mark-reviewed function chunk 5 calls (the feedback write moved out with the landed contract; last row). A new task, `c7-aud-s4-integration`, owns the scenario and waits for the three producers and the chunk 5 confirm route. The file collision is gone by itself: the contract puts `rateAnswer`'s stub in `apps/search/ask.py`, so no chunk 7 task creates `apps/governance/ai_log.py` | MEDIUM 8 |
 | `c7-embedder-selection-baseline` scores only EU-hostable candidates (Bedrock in an EU region, or none) per item 7, and its done-condition is that the test environment boots with the real provider while production stays keyword-only until `c14-eu-data-location` admits it | MEDIUM 10 |
 | `c7-eval-gate` no longer edits `.github/workflows/ci.yml` or `scripts/prepush.sh`, and drops the `ci` key: both already run `search_eval.py` (ci.yml line 256, prepush.sh line 185 under `--all`) | LOW 11 |
 | The five packages the review named are split at their green points, and each screen is split from its journeys: `c7-hybrid-search-backend` into `c7-hybrid-search-core` and `c7-search-similar-limits`; `c7-ask-backend` into `c7-ask-grounding-stream` and `c7-ask-limits-switch-feedback`; `c7-search-screen` and `c7-ask-screen` each into a screen task and a journey task. `c7-security-review` and `c7-embedder-selection-baseline` stay whole: one is a single read of one diff and the other is a single recorded run, and neither has an interior green point | LOW 13 |
@@ -40,7 +40,8 @@ the revision then found two MEDIUMs and four LOWs, which the last six rows close
 | `c7-search-index-model`, `c7-search-index-apply`, `c7-index-changes` and `c7-e2e-seed` change chunking or embeddings, so each one's gates gain `python backend/scripts/search_eval.py` (CLAUDE.md §7 item 9) | second review LOW 3 |
 | Rule 7 names the guard edits chunk 7 is allowed to make, instead of banning every guard change while two tasks own `tests_rls.py` | second review LOW 4 |
 | `docs/plans/UI_Implementation_Plan.md` joins rule 4's append-ledger list, because two screen tasks in different waves each edit their own rows in it | second review LOW 5 |
-| `c7-ask-limits-switch-feedback` depends on `c7-ai-log-backend` directly, not only transitively, because `rate_answer` calls its `set_feedback` | second review LOW 6 |
+| `c7-ask-limits-switch-feedback` depends on `c7-ai-log-backend` directly, not only transitively, because `rate_answer` calls its `set_feedback`. **Superseded by the last row:** the landed contract keeps the feedback write inside `ask.py`, so the dependency is gone | second review LOW 6 |
+| The landed search contract is written out in full, so every task below names what it will actually edit: `POST /search` and `POST /search/similar` are served by `apps/search/hybrid.py` (`run_search`, `find_similar`), `POST /ask` and `POST /answers/{answerId}/feedback` by `apps/search/ask.py` (`answer_events`, `rate_answer`), and `api.py` holds routes only. Ask is django-ninja's native `SSE[AskEvent]` (a `StreamingHttpResponse` of `text/event-stream`) with `AskStartEvent`, `AskStatementEvent`, `AskAnswerEvent` and `AskProblemEvent` in `schemas.py`, so the Ask stub's 501 arrives as one `problem` event rather than a JSON body, and `c7-ask-grounding-stream` turns it into a 200 by editing `ask.py` alone. The feedback write is `rate_answer`'s own, through `record()`, not `governance/ai_log.py::set_feedback`'s, which leaves `c7-ai-log-backend` the filters and `mark_reviewed` and drops `c7-ask-limits-switch-feedback`'s dependency on it. Term filters carry taxonomy's `TermRef`, so there is no `SearchTermRef`; the kinds are `search_hit_type` and `search_match_kind`; the contract deletes its own four lines from `contract_drift_pending.txt`, so no later task deletes one; and nothing under `frontend/src/features/search/` exists yet | the contract as it landed on 2026-09-20 |
 
 Deviations from PARALLEL_PLAN 3.3 and 3.4 that the main agent carries back into that file:
 the eight new package ids above; the new keys `hybrid` (`apps/search/hybrid.py`), `askmod`
@@ -128,9 +129,12 @@ PLAN-WIDE RULES (they hold for every task below)
    write its test first stops and reports.
 2. **Contracts land first, and no screen calls a stub.** `c7-search-api-contract` writes
    `apps/search/api.py` and `apps/search/schemas.py` once and sends each operation to a named
-   function in the module of the task that will build it: `apps/search/hybrid.py` for `search`
-   and `findSimilar`, `apps/search/ask.py` for `ask` and `rateAnswer`. Those functions answer
-   501 `not_built` behind their real permission gate until their task lands. A logic task owns
+   function in the module of the task that will build it: `apps/search/hybrid.py::run_search` for
+   `search` and `::find_similar` for `findSimilar`, `apps/search/ask.py::answer_events` for `ask`
+   and `::rate_answer` for `rateAnswer`. Those functions answer
+   501 `not_built` behind their real permission gate until their task lands; on `ask`, which is
+   streamed, that 501 arrives as one `problem` event on the stream rather than as a JSON body,
+   and the task that lands the logic turns it into a 200 without touching `api.py`. A logic task owns
    only its own module and tests and never edits `api.py`; a logic task that finds the contract
    wrong stops and reports, and the contract task fixes it.
 3. **Read-only POSTs go through a plain client in scenarios.** `search`, `findSimilar` and `ask`
@@ -206,12 +210,14 @@ DEFAULTS TAKEN (each is written in the commit body of the task named)
   (`c7-ask-grounding-stream`).
 - An Ask answer writes an `ai_generation` row and no audit row (rule 3 above). The answer's log
   is AUD-02's row, readable under `ai_log.read` (`c7-ask-grounding-stream`).
-- `POST /ask` answers `text/event-stream`. The event kinds are Pydantic models in
-  `apps/search/schemas.py`, so the shapes are generated and not hand-written on either side: a
-  `start` event carrying the answer id, one `statement` event per statement, then a terminal
-  `answer` event whose body is the designed `Answer`. The budget is "first token under 2 s,
-  streamed", so a single JSON response would miss it. `c7-search-api-contract` writes the
-  INPUT_DELTAS row.
+- `POST /ask` answers `text/event-stream` through django-ninja's own `SSE[AskEvent]`, which
+  returns a `StreamingHttpResponse`; no hand-rolled streaming response is written. The event
+  kinds are Pydantic models in `apps/search/schemas.py`, so the shapes are generated and not
+  hand-written on either side: `AskStartEvent` carrying the answer id, one `AskStatementEvent`
+  per statement, then the terminal `AskAnswerEvent` whose body is the designed `Answer`, with
+  `AskProblemEvent` carrying any error, the stub's 501 included. The budget is "first token
+  under 2 s, streamed", so a single JSON response would miss it. `c7-search-api-contract` writes
+  the INPUT_DELTAS row.
 - `POST /search/similar` is the agents' route, gated on the `search:read` key scope alone. No
   permission in the PRD §6 matrix gives a person a similarity read, so the earlier plan's "or a
   platform session holding `proposals.review`" is dropped; a console surface that wants one
@@ -337,12 +343,12 @@ CHANGES FROM THE CRITIQUES (2026-09-19) AND FROM THE REVIEW (2026-09-20)
 - Coverage: SRC-S13 is not chunk 7's. It needs the units, gaps, assessments and interpretations
   of chunk 8 and is owned by `f03-T73`. `c7-chunk-close` records it as the one SRC scenario still
   skipped besides SRC-S7.
-- Coverage: the four `POST` operations each have an owner for their pending line, so no line is
-  left behind: `/search` with `c7-hybrid-search-core`, `/search/similar` with
-  `c7-search-similar-limits`, `/ask` with `c7-ask-grounding-stream`, `/answers/{}/feedback` with
-  `c7-ask-limits-switch-feedback`, the eval lines with `c7-eval-routes`. `GET /ai-generations`
-  is checked by `c7-ai-log-backend` and deleted there if `c5-ai-log-contract` has not already
-  deleted it.
+- Coverage: no pending line is left behind. `c7-search-api-contract` deletes all four of its
+  own, `/search`, `/search/similar`, `/ask` and `/answers/{}/feedback`, when it lands the
+  operations in their designed shape, so no later task deletes one and every task below instead
+  proves `contract_drift.py` stays green. The eval lines belong to `c7-eval-routes`, and
+  `GET /ai-generations` is checked by `c7-ai-log-backend` and deleted there if
+  `c5-ai-log-contract` has not already deleted it.
 - Coverage: `c7-eval-gate` teaches the scorer, and `validate_retrieval`, that a row with no
   expected keys is a question the retriever must answer with nothing. `validate_retrieval`
   refuses an empty `expected` today (`search_eval.py` line 138), so both the validator and the
@@ -433,19 +439,24 @@ Write `apps/search/api.py` and `apps/search/schemas.py` once, mount the router i
 - `search` → `apps.search.hybrid.run_search` (`SessionAuth` with `search.use`).
 - `findSimilar` → `apps.search.hybrid.find_similar` (an API key with the `search:read` scope,
   and nothing else: no permission in the PRD §6 matrix gives a person a similarity read).
-- `ask` → `apps.search.ask.answer_question` (`SessionAuth` with `search.use`, a person's session
-  only, no API key).
-- `rateAnswer` → `apps.search.ask.rate_answer` (`SessionAuth` with `search.use`). It calls into
-  `apps/governance/ai_log.py`, which `c5-ai-log-contract` creates; this task creates no file in
-  the governance app, so nothing here collides with chunk 5.
+- `ask` → `apps.search.ask.answer_events` (`SessionAuth` with `search.use`, a person's session
+  only, no API key). It is the stream's event generator, so its stub yields one `problem` event
+  carrying the 501 instead of returning a JSON body.
+- `rateAnswer` → `apps.search.ask.rate_answer` (`SessionAuth` with `search.use`). The feedback
+  write lives here, in the search app, and goes through `record()` like any other write; it
+  calls nothing in `apps/governance/ai_log.py`. This task creates no file in the governance app,
+  so nothing here collides with chunk 5.
 
 Schemas, camelCase through `CamelSchema`, in the designed shapes: `SearchRequest`,
 `SearchResponse`, `SearchHit` (with `matchKind` keyword | concept | both), `SimilarRequest`,
 `SearchFilters`, `AskRequest`, `Answer`, `AnswerStatement`, `AnswerCitation`,
-`AnswerFeedbackBody`, and the Ask stream's event models.
+`AnswerFeedbackBody`, and the Ask stream's event models `AskStartEvent`, `AskStatementEvent`,
+`AskAnswerEvent` and `AskProblemEvent`. A term reference is taxonomy's existing `TermRef`; the
+search app defines no `SearchTermRef` of its own, because a second shape for the same term would
+have to be kept in step with it.
 
-`SearchFilters` carries the R1 fields only: `instrumentId`, `termIds`, `binding`, `inFootprint`,
-`jurisdiction` and `dutyType`.
+`SearchFilters` carries the R1 fields only: `instrumentId`, `jurisdiction`, `dutyType`,
+`termIds`, `binding` and `inFootprint`.
 
 - `jurisdiction` and `dutyType` are **keys**, not ids: `Jurisdiction` is a `Vocabulary` in
   `library/models.py` and `DutyType` a `Vocabulary` in `taxonomy/models.py`, so neither fits
@@ -459,10 +470,15 @@ Schemas, camelCase through `CamelSchema`, in the designed shapes: `SearchRequest
   overlay's filters and land with the register in chunk 8, with their own scenarios; naming them
   now would promise a filter no R1 task can serve.
 
-Ask streams. Declare `ask` as `text/event-stream`: a `start` event carrying the answer id, one
-`statement` event per statement, then a terminal `answer` event whose body is the designed
-`Answer`. Each event kind is a Pydantic model in `schemas.py`, so both sides generate their
-shapes rather than hand-writing them. Write the INPUT_DELTAS row (§4, errors and concurrency)
+Ask streams. Declare `ask` with django-ninja's native `SSE[AskEvent]`, which gives a
+`StreamingHttpResponse` of `text/event-stream`; nothing here hand-rolls a streaming response or
+a `data:` line. `AskEvent` is the union of four Pydantic models in `schemas.py`, so both sides
+generate their shapes rather than hand-writing them: `AskStartEvent` carrying the answer id, one
+`AskStatementEvent` per statement, the terminal `AskAnswerEvent` whose body is the designed
+`Answer`, and `AskProblemEvent` for an error. The stub therefore answers 200 on the stream and
+yields a single `AskProblemEvent` holding the 501 `not_built` problem, because a stream that has
+begun cannot go back and change its status; `c7-ask-grounding-stream` replaces that one yield
+with the real events, in `ask.py` and nowhere else. Write the INPUT_DELTAS row (§4, errors and concurrency)
 naming `POST /ask`, saying the response is a stream of the designed shape and why (the
 first-token budget), and the row for the two added `SearchFilters` fields and the two removed
 ones.
@@ -471,9 +487,12 @@ Also:
 - Add the four operation ids to the docstrings of the skipped SRC scenarios in
   `apps/search/tests_scenarios.py`, so rule 1 of the audit-on-write guard is satisfied while the
   routes are stubs.
-- Leave the four lines in `contract_drift_pending.txt`; the tasks that serve each route delete
-  their own.
-- No screen calls a stub, and this task ships **no frontend files**. `frontend/src/features/search/**`
+- Delete all four of this task's lines from `contract_drift_pending.txt`: `POST /search`,
+  `POST /search/similar`, `POST /ask` and `POST /answers/{}/feedback`. The operations land here
+  in their designed shape, which is what the pending file tracks, so no later task carries a
+  line of its own; each of them instead proves `contract_drift.py` stays green.
+- No screen calls a stub, and this task ships **no frontend files**. Nothing under
+  `frontend/src/features/search/` exists yet: that directory
   belongs to `c7-search-screen` and `c7-ask-screen`; a data layer written against a 501 stub
   would be reviewed twice and would take the `searchscreen` key out of their hands.
 
@@ -481,11 +500,12 @@ Also:
 
 - `backend/apps/search/api.py`
 - `backend/apps/search/schemas.py`
-- `backend/apps/search/hybrid.py` (the two `not_built` functions only)
-- `backend/apps/search/ask.py` (the two `not_built` functions only)
+- `backend/apps/search/hybrid.py` (`run_search` and `find_similar`, the two `not_built` functions only)
+- `backend/apps/search/ask.py` (`answer_events` and `rate_answer`, the two `not_built` functions only)
 - `backend/apps/search/tests_contract.py` (new)
 - `backend/apps/search/tests_scenarios.py` (the operation ids in the skipped docstrings)
-- `backend/apps/shared/kinds.py` (the hit-type, match-kind and feedback kinds)
+- `backend/apps/shared/kinds.py` (`search_hit_type` and `search_match_kind`)
+- `backend/scripts/contract_drift_pending.txt` (its four lines)
 - `backend/config/api.py` (the router mount)
 - `backend/config/settings.py` (one labelled block), `backend/.env.example`
 - `docs/inputs/INPUT_DELTAS.md` (its rows)
@@ -496,10 +516,14 @@ Also:
   and refuses the wrong principal before it gets there: a key without `search:read` is 403, an
   API key on `ask` is 401 or 403, a session without `search.use` is 403 with `requiredPermission`
   named.
+- `ask` answers `text/event-stream` and its 501 arrives as one `AskProblemEvent` on the stream,
+  asserted by reading the stream rather than the status line; the permission refusals above
+  still happen before the stream opens, as ordinary problem responses.
 - `SearchFilters` carries `jurisdiction` and `dutyType` as keys and carries no `applicability`
-  and no `complianceStatus`.
+  and no `complianceStatus`, and a term filter uses taxonomy's `TermRef`.
 - `bash generate-types.sh` produces the four operations with the designed request and response
-  shapes, the Ask stream's event models included, and the run is reverted, not committed.
+  shapes, the four Ask event models included, and the run is reverted, not committed.
+- The four pending lines are gone and `contract_drift.py` is green.
 - The route-permission guard and the audit-on-write guard are green.
 - The diff stays inside the owned paths, and no file under `frontend/` is touched.
 
@@ -515,9 +539,10 @@ Also:
 **Invariants:**
 
 No logic in `api.py`. No `Dict[str, Any]` and no `*args`/`**kwargs`. Every route carries its auth
-class and its permission or scope decorator. A stub answers 501 behind the gate, never before it.
-The problem shape is RFC 9457 with a `code`; no trace is exposed. Filters carry keys, never
-labels. No string literal reaches the frontend from here.
+class and its permission or scope decorator. A stub answers 501 behind the gate, never before it;
+on the streamed route that 501 is one `problem` event, not a JSON body. The problem shape is
+RFC 9457 with a `code`; no trace is exposed. Filters carry keys, never labels. No string literal
+reaches the frontend from here.
 
 ### c7-ask-switch: the tenant's AI switch over its own AI features
 
@@ -751,29 +776,30 @@ Library rows are read in `sources.py` and written nowhere. Only `indexing.py` wr
 only through `index_write()`. No embedding call happens inside a write transaction. The worker
 embeds with no tenant active. Shared records only, in R1. Tenant content is never indexed.
 
-### c7-ai-log-backend: AI log filters, answer feedback and mark-reviewed
+### c7-ai-log-backend: AI log filters and mark-reviewed
 
 **Requirements:** AUD-02
 **Scenarios:** none of its own; AUD-S4's integration half is `c7-aud-s4-integration`'s, because it needs producers chunk 5 builds later (review finding MEDIUM 8)
 **Depends on:** `c5-ai-log-contract`, `c7-search-api-contract`
 
 Extend the governance app, which already has the `AiGeneration` model, `log_generation()` and the
-plain read from `c5-ai-log-contract`. This task owns the three functions and nothing else:
+plain read from `c5-ai-log-contract`. This task owns the read and one function, and nothing else:
 
 - `GET /ai-generations` gains the designed filters (`purpose`, `status`, `subjectId`) with the
   shared pagination, under `ai_log.read`, showing the tenant's own rows only.
 - The response gains `feedback` and `feedbackNote`, because AUD-02 names feedback as part of the
-  log. Write the INPUT_DELTAS row for the added fields.
-- `apps/governance/ai_log.py::set_feedback(generation_id, feedback, note)` is what
-  `apps/search/ask.py::rate_answer` calls: `helpful` or `wrong` with an optional note, on a row of
-  the caller's own tenant, idempotent for the same value, through `record()` in the same
-  transaction, with no answer text in the audit summary.
+  log. It reads the two columns `c5-ai-log-contract` already built; the write that fills them is
+  not this task's. Write the INPUT_DELTAS row for the added fields.
+- **The feedback write is not here.** `POST /answers/{answerId}/feedback` is served by
+  `apps/search/ask.py::rate_answer`, which writes the row itself through `record()`, so this
+  task builds no `set_feedback` and `apps/governance/ai_log.py` gains no feedback function.
+  `c7-ask-limits-switch-feedback` therefore does not depend on this task.
 - `apps/governance/ai_log.py::mark_reviewed(generation_id, user)` sets `reviewed_by` and
   `reviewed_at`; a model output stays labelled until then. Chunk 5's So-what confirm route calls
   it, so it exists before that route needs it.
 - Delete the `GET /ai-generations` line from `contract_drift_pending.txt` if `c5-ai-log-contract`
-  has not already deleted it. The `POST /answers/{}/feedback` line belongs to
-  `c7-ask-limits-switch-feedback`, which serves the route.
+  has not already deleted it. The `POST /answers/{}/feedback` line is already gone:
+  `c7-search-api-contract` deleted it with its own three.
 
 **Owned paths:**
 
@@ -787,11 +813,11 @@ plain read from `c5-ai-log-contract`. This task owns the three functions and not
 
 - The filters work, pagination defaults to 20 and caps at 100, and a holder of `ai_log.read`
   lists the rows for their tenant only.
-- `set_feedback` stores helpful or wrong with its note, is idempotent for the same value, and
-  leaves an audit row in the same transaction that carries no answer text and no question text.
-- Feedback on another tenant's row answers 404, and a member without `ai_log.read` is refused
-  with `requiredPermission` named.
+- The listed row shows `feedback` and `feedbackNote` as stored, and a member without
+  `ai_log.read` is refused with `requiredPermission` named.
 - `mark_reviewed` sets the reviewer and the time, and a row stays labelled until it runs.
+- The diff adds no feedback write: `apps/governance/ai_log.py` has no `set_feedback`, and
+  `apps/search/` is untouched.
 
 **Gates:**
 
@@ -804,8 +830,8 @@ plain read from `c5-ai-log-contract`. This task owns the three functions and not
 **Invariants:**
 
 `ai_generation` is a mixed table: library rows to everyone, tenant rows to their tenant, under
-forced row-level security. AI output stays labelled until a person confirms it. The feedback
-write goes through `record()`. No tenant content reaches the audit summary, the outbox payload or
+forced row-level security. AI output stays labelled until a person confirms it. `mark_reviewed`
+goes through `record()`. No tenant content reaches the audit summary, the outbox payload or
 a log line. Statuses are the designed kinds, never phrases.
 
 ### c7-hybrid-search-core: one fused query, filters, "as of" and the match kind
@@ -830,14 +856,14 @@ Build `apps/search/hybrid.py::run_search`:
 - Only shared chunks exist in R1, and the query says so: the read is confined to
   `owner_tenant_id IS NULL` in code as well as by the policy, so a later owned row cannot leak
   through a query written before it existed.
-- Delete the `POST /search` line from `contract_drift_pending.txt`.
+- The `POST /search` pending line is already gone, deleted by `c7-search-api-contract` with its
+  own three; this task only keeps `contract_drift.py` green.
 
 **Owned paths:**
 
 - `backend/apps/search/hybrid.py` (`run_search` and its helpers; `find_similar` stays a stub)
 - `backend/apps/search/tests_hybrid.py`
 - `backend/apps/search/tests_scenarios.py` (SRC-S1, SRC-S2 and SRC-S3 only)
-- `backend/scripts/contract_drift_pending.txt` (one line)
 - `backend/config/settings.py` (one labelled block), `backend/.env.example`, `docs/runbooks/RAILWAY_VARIABLES.md`
 
 **Done when:**
@@ -851,7 +877,7 @@ Build `apps/search/hybrid.py::run_search`:
   shows its match kind, and a renamed label changes nothing because filters are keys.
 - One statement per query, proved by counting queries around the call.
 - Search stays inside 800 ms on the seeded corpus, with `Server-Timing` measured.
-- The pending line is gone and `contract_drift.py` is green.
+- `POST /search` answers 200 in the contract's shape, and `contract_drift.py` is green.
 
 **Gates:**
 
@@ -888,7 +914,8 @@ Finish the retrieval half:
   Ask bucket and edit nothing here.
 - Measure and pin the budgets for search: under 800 ms without the reranker, under 1.5 s with it,
   reported in `Server-Timing`, warm, on the seeded corpus.
-- Delete the `POST /search/similar` line from `contract_drift_pending.txt`.
+- The `POST /search/similar` pending line is already gone, deleted by `c7-search-api-contract`;
+  this task only keeps `contract_drift.py` green.
 
 **Owned paths:**
 
@@ -896,7 +923,6 @@ Finish the retrieval half:
 - `backend/apps/search/limits.py`
 - `backend/apps/search/tests_similar.py`
 - `backend/apps/search/tests_scenarios.py` (its own lines only, if any)
-- `backend/scripts/contract_drift_pending.txt` (one line)
 - `backend/config/settings.py` (one labelled block), `backend/.env.example`, `docs/runbooks/RAILWAY_VARIABLES.md`
 
 **Done when:**
@@ -906,7 +932,7 @@ Finish the retrieval half:
 - A session, with any permission, is refused on `findSimilar`: it is the agents' route.
 - Exceeding the search rate limit answers 429 `rate_limited`, and the limit is a setting.
 - The budgets are measured and reported in `Server-Timing`.
-- The pending line is gone and `contract_drift.py` is green.
+- `POST /search/similar` answers 200 in the contract's shape, and `contract_drift.py` is green.
 
 **Gates:**
 
@@ -1123,7 +1149,8 @@ Build `/search` from `design/screens/tenant-search.html` and the shared states:
 - Empty ("No match in the inventory", offering the search outside our scope), loading, error and
   denied states, in both themes, at 390, 820 and 1280 px.
 - `features/search` with `api.ts`, `hooks.ts`, `types.ts` and `search-presentation.ts`, tested.
-  The contract task ships no frontend files, so this task creates the directory; the filter
+  Nothing under `frontend/src/features/search/` exists yet, so this task creates the directory
+  from scratch; its request and response types come from `api.generated.ts`, and the filter
   values are keys and never labels.
 - The registry entry already exists (`nav.search`); add only what the screen needs.
 - No journey is edited here. `c7-search-journeys`, the next wave, un-fixmes SRC-S1 and SRC-S3.
@@ -1200,15 +1227,19 @@ means the tests fail.
 **Scenarios:** SRC-S4 (integration half), SRC-S5 (integration half)
 **Depends on:** `c7-search-similar-limits`, `c7-ai-log-backend`, `c5-contract-models-watch`, `c5-llm-anthropic-provider` (merged)
 
-Build `apps/search/ask.py::answer_question`, the grounding and streaming half:
+Build `apps/search/ask.py::answer_events`, the grounding and streaming half. The route, its
+`SSE[AskEvent]` declaration and the four event models are already in `api.py` and `schemas.py`;
+this task turns the stub's single 501 `problem` event into the real 200 stream by editing
+`ask.py` alone, and touches neither of the other two files (rule 2):
 
 - Retrieve the top `ASK_RETRIEVAL_DEPTH` chunks through `hybrid`, with the same scope rule, the
   same "as of" and the caller's language.
 - Nothing above the score floor means `noAnswer` true, no model call and no invented statement.
-- Otherwise call the model through the one logging wrapper, streaming `text/event-stream`: a
-  `start` event with the pre-generated answer id, one `statement` event per statement with its
-  citation indexes, then the terminal `answer` event. The event bodies are the contract's
-  Pydantic models; this task writes none of its own shapes.
+- Otherwise call the model through the one logging wrapper and yield the contract's events in
+  order: `AskStartEvent` with the pre-generated answer id, one `AskStatementEvent` per statement
+  with its citation indexes, then the terminal `AskAnswerEvent`. An error inside the stream is
+  an `AskProblemEvent`, the shape the stub already used. The event bodies are the contract's
+  Pydantic models; this task writes none of its own shapes and no streaming response of its own.
 - The prompt holds the question and the retrieved library chunks only: never a register row, a
   note, a comment or any other tenant row. A test asserts the exact prompt content (D-07, SRC-S6's
   first half).
@@ -1219,14 +1250,14 @@ Build `apps/search/ask.py::answer_question`, the grounding and streaming half:
 - Write the `ai_generation` row when the model call completes: purpose `answer`, the user, the
   tenant, model and version, `prompt_hash`, `input` (question, `asOf`, the chunk ids given to the
   model), output, citations, status draft.
-- Delete the `POST /ask` line from `contract_drift_pending.txt`.
+- The `POST /ask` pending line is already gone, deleted by `c7-search-api-contract`; this task
+  only keeps `contract_drift.py` green.
 
 **Owned paths:**
 
-- `backend/apps/search/ask.py` (`answer_question` and its helpers; `rate_answer` stays a stub)
+- `backend/apps/search/ask.py` (`answer_events` and its helpers; `rate_answer` stays a stub)
 - `backend/apps/search/tests_ask.py`
 - `backend/apps/search/tests_scenarios.py` (SRC-S4 and SRC-S5 only)
-- `backend/scripts/contract_drift_pending.txt` (one line)
 - `backend/config/settings.py` (one labelled block), `backend/.env.example`, `docs/runbooks/RAILWAY_VARIABLES.md`
 
 **Done when:**
@@ -1236,8 +1267,10 @@ Build `apps/search/ask.py::answer_question`, the grounding and streaming half:
 - An answer that cannot be grounded says so; no test accepts an uncited statement.
 - The recorded prompt holds the question and library chunks only, proved by an exact assertion.
 - The first streamed event arrives under 2 s on the seeded corpus.
+- `POST /ask` no longer yields the 501 `problem` event: the stream carries the real events, and
+  `api.py` and `schemas.py` are untouched in the diff.
 - The read-only POST writes no audit row, and its scenario proves the count is unchanged.
-- The pending line is gone and `contract_drift.py` is green.
+- `contract_drift.py` is green.
 
 **Gates:**
 
@@ -1259,26 +1292,29 @@ text reaches a log line or Sentry. AI output is labelled until a person confirms
 
 **Requirements:** SRC-03, AUD-02, NFR-02
 **Scenarios:** SRC-S6, SRC-S9
-**Depends on:** `c7-ask-grounding-stream`, `c7-ask-switch`, `c7-ai-log-backend` (it owns the
-`set_feedback` that `rate_answer` calls)
+**Depends on:** `c7-ask-grounding-stream`, `c7-ask-switch`. It does **not** depend on
+`c7-ai-log-backend`: the landed contract keeps the feedback write inside `ask.py`, and the
+`feedback` and `feedbackNote` columns it writes come from `c5-ai-log-contract`
 
-Finish `apps/search/ask.py`:
+Finish `apps/search/ask.py`, and it alone; `api.py` and `schemas.py` already carry both routes:
 
 - With the tenant's switch off, `POST /ask` answers 403 `feature_off` and **no model call is
   made**. The check is inside the logging wrapper, which reads the switch only when a tenant is
   active, so this refuses the tenant's own Ask and nothing else (owner item 14).
 - Rate limits: call the Ask bucket in `limits.py`; over the limit is 429 `rate_limited`.
-- `rate_answer(answer_id, body, user_id)` serves `POST /answers/{answerId}/feedback` by calling
-  `apps.governance.ai_log.set_feedback`. It is a real write, through `record()`, in the same
-  transaction, with no answer text and no question text in the audit summary.
-- Delete the `POST /answers/{}/feedback` line from `contract_drift_pending.txt`.
+- `rate_answer(answer_id, body, user_id)` serves `POST /answers/{answerId}/feedback` and writes
+  the feedback itself, here in the search app: `helpful` or `wrong` with an optional note, on an
+  `ai_generation` row of the caller's own tenant, idempotent for the same value, a real write
+  through `record()` in the same transaction, with no answer text and no question text in the
+  audit summary. It calls nothing in `apps/governance/`, and no file there is touched.
+- The `POST /answers/{}/feedback` pending line is already gone, deleted by
+  `c7-search-api-contract`; this task only keeps `contract_drift.py` green.
 
 **Owned paths:**
 
 - `backend/apps/search/ask.py` (the switch check, the Ask bucket call and `rate_answer` only)
 - `backend/apps/search/tests_ask_limits.py`
 - `backend/apps/search/tests_scenarios.py` (SRC-S6 and SRC-S9 only)
-- `backend/scripts/contract_drift_pending.txt` (one line)
 - `backend/config/settings.py` (one labelled block), `backend/.env.example`, `docs/runbooks/RAILWAY_VARIABLES.md`
 
 **Done when:**
@@ -1288,9 +1324,11 @@ Finish `apps/search/ask.py`:
 - SRC-S9 is green: search reports under 800 ms in `Server-Timing` on the seeded corpus and under
   1.5 s with the reranker, Ask's first streamed event arrives under 2 s, and exceeding either
   rate limit answers 429.
-- Feedback on an answer writes its audit row in the same transaction, and feedback on another
-  tenant's answer answers 404.
-- The pending line is gone and `contract_drift.py` is green.
+- Feedback on an answer stores helpful or wrong with its note, is idempotent for the same value,
+  writes its audit row in the same transaction with no answer or question text in the summary,
+  and feedback on another tenant's answer answers 404. A member without `search.use` is refused
+  with `requiredPermission` named.
+- The diff touches no file under `backend/apps/governance/`, and `contract_drift.py` is green.
 
 **Gates:**
 
@@ -1459,10 +1497,11 @@ and `ProposalDoorGuard` stay untouched.
 Build Ask as the second mode of the search screen (`/search?mode=ask`), from
 `design/screens/tenant-ask.html`:
 
-- The question field, the streamed answer rendered statement by statement from the
-  `text/event-stream` the contract declares, numbered citations that open the cited obligation at
-  its version, the AI label until a person confirms, and the "As of" date carried into the
-  question.
+- The question field, the streamed answer rendered statement by statement as the
+  `text/event-stream` the contract declares arrives (`start`, then one `statement` per
+  statement, then `answer`, with a `problem` event shown as the error state), numbered citations
+  that open the cited obligation at its version, the AI label until a person confirms, and the
+  "As of" date carried into the question.
 - A cited obligation with an open change shows "Change pending: in force 1 Oct" as a warning pill
   through `Pill`.
 - "No answer" says the inventory has nothing on it and offers a plain search.
@@ -1965,7 +2004,8 @@ After every task has merged:
   `q-search-fence`'s answer (item 4, Option B, built), the scope-applies-to-search default, the
   cost and approval half of `k-anthropic`, and the unrecorded track.
 - Prove no chunk 7 route answers 501, no chunk 7 journey is fixme, and no "chunk 7" line remains
-  in `contract_drift_pending.txt` except the one moved to chunk 14.
+  in `contract_drift_pending.txt` except the one moved to chunk 14. On `POST /ask` that proof
+  reads the stream: no `problem` event carrying `not_built` is left.
 - Prove the library fence is unchanged across the whole chunk: `git diff` on
   `backend/apps/shared/tests_library_fence.py` over the chunk's commits is empty.
 - Run the full E2E suite and the whole pre-push checklist.
