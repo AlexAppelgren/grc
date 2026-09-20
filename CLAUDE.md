@@ -64,6 +64,15 @@ Weakening any of these is a stop: ask the owner (Alex) first.
 - Nothing overwritten: versions with effective dates, soft-deleted evidence,
   append-only ledgers with a trigger. Audit and outbox rows in the same
   transaction as every write, through `record()`, the only way to write them.
+  Two exceptions, each a whole-row deletion and never an update, each named
+  here because nothing else may bend this rule (D-53, D-56; ADRs 0046 and 0049).
+  Retention: ten years after a record was last used, a closed case, a removed
+  piece of evidence or a tenant ledger row is deleted whole by the daily purge,
+  through one database function owned by the schema owner whose cutoff can never
+  be younger than a year. Tenant exit: when a bank leaves, the platform operator
+  deletes every one of its rows, the audit trail included, as the schema owner,
+  after two people approved the exit with a passkey and the final export was
+  taken.
 - Four eyes, enforced by a check constraint, with a passkey step-up on
   approvals, sign-off, footprint changes, exports, key creation, role and
   security changes, re-enrolment.

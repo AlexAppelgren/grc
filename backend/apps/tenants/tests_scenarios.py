@@ -121,7 +121,7 @@ class TenantsScenarioTests(ScenarioTestCase):
     def test_ten_s6(self) -> None:
         """TEN-S6
 
-        A support access grant is visible, time-boxed and logged (TEN-06).
+        Support access is requested by the platform, approved by the bank and time-boxed (TEN-06).
         """
 
     def test_adm_s1(self) -> None:
@@ -197,4 +197,18 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S10
 
         A legal entity records a certificate it holds (TEN-02, AC-TEN1).
+        """
+
+    @skip("pending: TEN-S11 (TEN-06, chunk 8)")
+    def test_ten_s11(self) -> None:
+        """TEN-S11
+
+        A support session reads and never writes, and never approves itself (TEN-06).
+        """
+
+    @skip("pending: TEN-S12 (REP-04, chunk 12)")
+    def test_ten_s12(self) -> None:
+        """TEN-S12
+
+        A closing tenant refuses writes and still lets people sign in and export (REP-04).
         """

@@ -437,3 +437,84 @@ Chunk 7 (the search and ask contract), 2026-09-19:
 - Saved searches (`GET`, `POST /saved-searches`,
   `DELETE /saved-searches/{savedSearchId}`) are SRC-04, R3: they stay in
   `backend/scripts/contract_drift_pending.txt` and nothing here declares them.
+
+PRD 0.4 (the fourteen owner decisions), 2026-09-20. Each row names its decision
+in `docs/DECISIONS.md`; the researched detail is in
+`docs/plans/briefs/OWNER_RECOMMENDATIONS.md`:
+
+- `urgency` rows are fixed (D-48): `GET /vocab` entries gain `fixedRows`, so the
+  vocabulary screen hides Create and reorder. Creating an urgency level, and a
+  relabel whose extra carries an ordinal, answer 422 at `/vocab/urgency`, at
+  `POST /proposals` for a person or an API key, and inside `proposals/apply.py`.
+- `support_access` (D-49) is the designed table with a CHECK that `approved_by`
+  is not the platform person, a guard trigger refusing DELETE and refusing any
+  change to the tenant, person, purpose, ticket, level or duration after insert,
+  and a request TTL. `user_session` gains the grant id, so a support session
+  carries the grant it was opened under and expires with it. The designed
+  console list of a person's own grants runs through a SELECT-only policy keyed
+  on `app.platform_user_id`, never through `identity_lookup`.
+- `problem_report` (D-50) stays tenant-only: no console route reads it, no
+  platform policy is added, and the designed console problem-report surface in
+  ADM-02 is dropped. Its resolution is not a status a bleqq editor sets; a
+  library error reaches the library through the watch agents' re-check and a
+  proposal. `agent_run` therefore also records the library records re-checked in
+  a run beside its source checks (WAT-01).
+- `search_chunk` (D-51) is labelled LIBRARY in `schema.sql`. It is not a
+  `LibraryModel`: it is derived data with `owner_tenant_id` (NULL in R1), forced
+  row-level security in the agents 0001 shape, and its own write fence
+  `index_write()`, allowed by an AST guard only in `search/indexing.py`.
+- `calendar_feed` (D-52) is new: a token prefix plus SHA-256, the owner, the
+  created, last used and revoked times. It becomes the fifth table of the
+  identity-lookup clause, and `GET /api/v1/calendar/feed.ics?token=<prefix>.<secret>`
+  is the one route that reads a token from the query string (the CONVENTIONS 3.6
+  exception). `login_event.kind` gains `feed_used`.
+- Retention (D-53) replaces the per-tenant periods §7 plans as columns of the
+  workflow policy: one fixed age, ten years after a record's last use, so the
+  tenant carries a pause switch rather than three periods, and there is no
+  per-record legal hold. New: a lifecycle registry mapping every tenant table to
+  cases, evidence, audit, live or platform window, a `retention_run` row per
+  run, and one `SECURITY DEFINER` purge function owned by `cw_migrator` whose
+  cutoff can never be younger than one year.
+- Tenant exit (D-56): `tenant_exit_request` is new, with a CHECK that
+  `approved_by` is not `requested_by`, and joins FOUR_EYES_TABLES. `tenant.status`
+  gains `closing` and `deleted`, mutating routes answer 409 `tenant_closing`
+  while closing, and a `TenantExitReport` tombstone holds the counts, the export
+  hash, the people and the assertion ids. Deletion is a SQL function owned by
+  `cw_migrator` and never granted to `cw_app`, run by
+  `manage.py execute_tenant_exit`.
+- Private records (D-57): `proposal` gains `owner_tenant_id`, set by the server
+  from the target and never from the body, plus forced row-level security
+  (read shared or own, insert shared or own, update and delete own only). The
+  library and watch child tables of `instrument`, `obligation`, `source` and
+  `regulatory_change` each gain a FOR SELECT policy where the parent is visible
+  and a FOR ALL policy where the parent's owner is the session tenant. A new
+  permission constant, `private_records.approve`, and two routes,
+  `POST /private-proposals/{id}/approve` and `/reject`. `source` gains the
+  private-source checks (https, no credentials, a public host, not a standards
+  publisher, `PRIVATE_SOURCES_MAX` per bank).
+- SSO (D-58) fills in what §2 defers to R3: `identity_provider` and
+  `tenant_domain` arrive with a DNS TXT verification, one tenant per domain, and
+  no `auto_join`, `default_roles`, group-to-role sync or `scim_token_hash`
+  column; a SCIM key is an ordinary API key whose single scope is `scim`, which
+  `POST /tenant/api-keys` refuses (422). `login_event.method` gains `oidc` and
+  `saml` as planned, and the security log gains `idp_verified` and `idp_failed`.
+  The link is the directory id SCIM provisioned (for Entra, issuer plus `oid`),
+  never the email claim, and the enforcement challenge is bound to the browser
+  by a short-lived single-use cookie.
+- Credential policy (D-55): the `security_policy` row §2 already plans carries
+  three fields, `credential_policy`, `allowed_authenticators` and
+  `device_bound_from`, and the allowed list is a committed platform list of
+  authenticator models, never downloaded at runtime.
+- Platform counters (D-59): `usage_record` and `job_run` may hold numbers, kinds
+  and times only — `job_run` carries an `error_code` kind rather than the
+  designed error text, typed integer stats, and a typed subject kind and uuid so
+  a retry can rebuild the job — and each gains one SELECT-only policy keyed on
+  `app.platform_counters`. A structural test refuses a free-text or untyped JSON
+  column on either.
+- Agents (D-61): `tenant_agent` rows exist only for the agents a bank adds for
+  itself. bleqq's agents have no `tenant_agent` row, so cadence, scope, pause and
+  budget do not apply to them, and their runs stay platform runs opened by a
+  platform key. A tenant agent's run writes only in that tenant's zone and may
+  register nothing in the shared library. `research_request` follows the same
+  split: a bank's request names its own agent, and a `retag` request is a console
+  request.

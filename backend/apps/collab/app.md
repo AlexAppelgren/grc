@@ -21,8 +21,11 @@ per event, whatever the number of reasons.
 
 Deliberately simplified: the whole app is R2 (participants with the register in
 chunk 8 and with cases in chunk 9, comments and notifications in chunk 10);
-following a record is R3; participant roles and private notes are not built
-(D-18, D-22).
+following a record is R3; participant roles are not built (D-18). Private notes
+are not built and will not be: Alex confirmed on 2026-09-19 that notes on My
+work are the shared comments in the "Comments and mentions" panel, whose
+composer says that everyone in the organisation can read them (D-22, D-60,
+ADR 0028).
 
 ## 2. Requirements
 
@@ -30,7 +33,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| COL-01 | Comments and mentions on any record, and a person's own comments and mentions on My work, limited to records they can read | S | R2 | pending |
+| COL-01 | Comments and mentions on any record, and a person's own comments and mentions on My work, limited to records they can read. These shared comments are the notes on My work; there are no private notes (D-60) | S | R2 | pending |
 | COL-02 | Notifications, reminders before due dates including next reviews, notice when a change is linked to an involved obligation or a new version applies, escalation to the head of the owner's department, a weekly digest in the user's language, once per person per event | M | R2 | pending |
 | COL-03 | Follow a record | C | R3 | pending |
 | COL-04 | Participants: people or teams added to a register entry or a case by someone who can edit it; participation lists and notifies, grants no access, and a participant can leave | M | R2 | pending |

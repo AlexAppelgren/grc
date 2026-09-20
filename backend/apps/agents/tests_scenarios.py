@@ -93,3 +93,17 @@ class AgentsScenarioTests(TestCase):
 
         Out-of-scope documents are counted and never registered, and the eval set gates it (AGT-08, SRC-05).
         """
+
+    @skip("pending: AGT-S13 (AGT-03, AGT-04, chunk 11)")
+    def test_agt_s13(self) -> None:
+        """AGT-S13
+
+        A bank cannot switch off, pause or re-scope one of bleqq's agents (AGT-03, AGT-04).
+        """
+
+    @skip("pending: AGT-S14 (AGT-04, AGT-05, chunk 11)")
+    def test_agt_s14(self) -> None:
+        """AGT-S14
+
+        A bank's own agent writes only in its own zone (AGT-04, AGT-05).
+        """

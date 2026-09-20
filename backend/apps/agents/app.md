@@ -16,10 +16,18 @@ is the scheduler of record: `apps/agents` holds per-tenant settings,
 schedules, research requests, runs and budgets, and the worker starts runs
 through the `agent_runner` adapter.
 
-A tenant admin controls which agents are on, cadence within plan limits,
-scope, run now, pause, interrupt, history with findings and cost, a monthly
-budget cap and an off switch for all AI features. They never control
-instructions, tools or direct library writes. Fetched web content is
+There are two kinds of agent. bleqq's agents, the general financial-regulation
+watch that feeds the shared library and re-checks it, are part of the base
+package: platform-owned and platform-run, they appear to a bank read-only with
+their history, and no bank switches one off, pauses it, or changes its cadence,
+scope or budget (D-61, ADR 0053). A bank adds agents of its own for the things
+it must watch, and it is those a tenant admin controls: on and off, cadence
+within plan limits, scope, run now, pause, interrupt, history with findings and
+cost, a monthly budget cap and an off switch for its AI features. Even there
+they never control instructions, tools or direct library writes, and a tenant's
+own agent writes only in that bank's zone: it may register nothing in the
+shared library, and what it finds becomes the bank's private records or
+nothing (D-57). Fetched web content is
 untrusted: it is screened for embedded instructions, never executed and never
 rendered as HTML.
 
@@ -49,9 +57,9 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | in_progress |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | pending |
-| AGT-03 | Versioned agent definitions owned by the platform | M | R2 | pending |
-| AGT-04 | Tenant controls: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch | M | R2 | pending |
-| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records | S | R2 | pending |
+| AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | pending |
+| AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61) | M | R2 | pending |
+| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61) | S | R2 | pending |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | pending |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 | in_progress |
 | AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | pending |
@@ -111,12 +119,13 @@ Given a definition "nordic-watch" at version 3 in the console
 When a platform admin publishes version 4 with a changed prompt
 Then runs started after that reference version 4 and earlier runs still reference 3
 And a tenant admin's request to edit the prompt answers 403
+And "nordic-watch" is one of bleqq's agents, so a bank sees it read-only with its history
 ```
 
 ### AGT-S5 — A tenant controls its agents without touching their instructions `@integration` `@e2e` (AGT-04)
 ```gherkin
-Given a tenant admin with agents.manage
-When they switch on "nordic-watch", set a weekly cadence within the plan limit, restrict scope to SE and FI, and choose "Run now"
+Given a tenant admin with agents.manage and an agent the bank added for itself
+When they switch it on, set a weekly cadence within the plan limit, restrict scope to SE and FI, and choose "Run now"
 Then a run is queued with those settings and "Recent runs" lists it with findings and cost
 When they choose "Stop run"
 Then the run is interrupted and its status says so
@@ -189,4 +198,25 @@ Then in-scope accuracy and standard-term accuracy are reported and the gate fail
 Given a run that checked two out-of-scope documents
 When it closes with the stat out_of_scope 2
 Then the run history shows two source checks, no change and no proposal from them, and the count 2
+```
+
+### AGT-S13 — A bank cannot switch off, pause or re-scope one of bleqq's agents `@integration` `@e2e` (AGT-03, AGT-04)
+```gherkin
+Given a tenant admin with agents.manage and one of bleqq's base-package agents
+When they switch it off, pause it, change its cadence, scope or budget cap, or ask for a run now
+Then each request answers 403 and nothing about that agent changes
+And the agents screen shows it under bleqq's agents, read-only, with its recent runs
+When the bank's own AI off switch is set
+Then its own agents stop and bleqq's agents keep running, because they read public sources only
+```
+
+### AGT-S14 — A bank's own agent writes only in its own zone `@integration` (AGT-04, AGT-05)
+```gherkin
+Given an agent tenant A added for itself, running under tenant A's key
+When it registers a change or submits a proposal against a shared library record
+Then the write is refused, because a tenant run never writes the shared library
+When it registers what it found against tenant A's private source
+Then the record carries owner_tenant_id A and tenant B never sees it
+When tenant A asks for a re-tag of library records
+Then the request is refused, because re-tagging the library is asked in the console
 ```

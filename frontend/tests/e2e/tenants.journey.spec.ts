@@ -63,7 +63,7 @@ test.describe('tenants journeys', () => {
     // pending: TEN-S5 (TEN-05)
   });
 
-  test.fixme("TEN-S6: A support access grant is visible, time-boxed and logged", async () => {
+  test.fixme("TEN-S6: Support access is requested by the platform, approved by the bank and time-boxed", async () => {
     // pending: TEN-S6 (TEN-06)
   });
 

@@ -18,12 +18,25 @@ escape hatch for a conscious fix that only the schema owner, in a migration, can
 use: the trigger ignores the setting when the application role is running.
 
 Every model output is logged in `ai_generation` with purpose, model, version,
-input reference, output, citations, review state and feedback. Problem reports
-from tenants are resolved by a proposal, which closes the loop to the agents.
+input reference, output, citations, review state and feedback. A problem report
+stays inside the bank that filed it: no bleqq editor, other bank, agent or model
+reads it, and a library error reaches the library instead through the watch
+agents' re-check and a proposal (D-50, ADR 0043).
 
 The platform console lives here too: library vocabularies, sources, languages
-and jurisdictions, agent definitions, the proposal queue, problem reports,
-evaluation sets, tenants and plans, support access and system health.
+and jurisdictions, agent definitions, the proposal queue, evaluation sets,
+tenants and plans, support access and system health. It has no problem-report
+surface. Each bank's usage figures, failed jobs and stream lag are read through
+one SELECT-only window on two tables that hold numbers, kinds and times only,
+and every such read writes a platform audit row naming the screen and the
+filters, never the figures (D-59, ADR 0052).
+
+Nothing is overwritten, with the two deletions CLAUDE.md §5 names. Ten years
+after a record was last used, the daily purge deletes it whole — a closed case
+with its children, a removed piece of evidence, or the tenant's audit, published
+outbox and login rows — through one database function owned by the schema owner
+whose cutoff can never be younger than a year (D-53, ADR 0046). The second is
+tenant exit (D-56).
 
 Deliberately simplified for R1: retention with a purge is R3.
 
@@ -35,9 +48,9 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | AUD-01 | Append-only audit log written with every change: actor (user, agent, system), action, subject with its title at the time, summary, before and after | M | R1 | built |
 | AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 | pending |
-| AUD-03 | Problem reports resolved by a proposal, closing the loop to the agents | S | R1 | pending |
-| AUD-04 | Retention per tenant with a purge that respects append-only tables | S | R3 | pending |
-| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, problem reports, evaluation sets, tenants and plans, support access, system health | M | R1 to R3 | in_progress |
+| AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it; the loop to the library is closed by the watch agents' re-check, which proposes the correction (D-50) | S | R1 | pending |
+| AUD-04 | Retention: a record is deleted ten years after its last use. The purge never updates an append-only row, deletes one only past that age, and runs through one database-guarded path (D-53) | S | R3 | pending |
+| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only). No problem-report surface (D-50, D-59) | M | R1 to R3 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -108,22 +121,25 @@ Then feedback is stored on the row
 And a holder of ai_log.read can list the rows for their tenant
 ```
 
-### AUD-S5 — A problem report is resolved by a proposal `@integration` `@e2e` (AUD-03)
+### AUD-S5 — A problem report stays inside the bank that filed it `@integration` `@e2e` (AUD-03)
 ```gherkin
-Given a reader reported "This looks wrong" on an obligation
-When a library editor opens the report in the console
-Then they can open a proposal from it with the report linked
-When the proposal is approved
-Then the report is resolved, the reporter is notified, and the agents' next run sees the correction
+Given a reader in tenant A reported "This looks wrong" on an obligation
+Then the report is readable by tenant A only, and the dialog says so: bleqq is not told, and the watch corrects the library
+When a library editor, another tenant, an API key or an agent asks for it
+Then each answers 403 or 404, and the console has no problem-report surface
+And the report's text reaches no log, no Sentry event, no outbox payload a webhook or SIEM stream carries, and no model
+When the watch agents' re-check proposes the correction and an editor approves it
+Then tenant A sees the corrected record under "Library updates"
 ```
 
-### AUD-S6 — Retention per tenant purges what it may and keeps append-only rows `@integration` (AUD-04)
+### AUD-S6 — The purge deletes ten years after a record's last use and never updates a ledger row `@integration` (AUD-04)
 ```gherkin
-Given a tenant retention of 24 months for notifications and 10 years for audit events
-When the purge job runs
-Then notifications older than 24 months are deleted
-And audit events are kept and the job report says which tables were exempt
-And the purge refuses to run without the environment guard
+Given a case closed eleven years ago, evidence removed eleven years ago, audit rows of both ages, and footprint history
+When the daily purge runs
+Then the case with its children, the evidence file and row, and the tenant's audit, published outbox and login rows past ten years are deleted whole
+And rows inside the period stay, footprint history is kept for the tenant's life, and no library table is touched
+And no ledger row is ever updated, only deleted
+And the run writes one retention run row and one audit row with counts only, and running it twice changes nothing more
 ```
 
 ### AUD-S7 — Mixed tables show library rows to everyone and tenant rows to their tenant `@integration` (AUD-01)
@@ -171,6 +187,31 @@ And one pending administrator invitation is sent to that address
 And the creation is audited in the new tenant's own log
 When they create another tenant with the same short name
 Then the answer is 409
+```
+
+### AUD-S8 — The ledger purge refuses a cutoff inside the floor and a paused tenant `@integration` (AUD-04)
+```gherkin
+Given the purge function owned by the schema owner
+When it is called with a cutoff younger than one year
+Then it refuses and deletes nothing
+When the app role calls UPDATE or DELETE on a ledger table itself, or tries to open the maintenance hatch
+Then the database refuses it
+When tenant B's purge runs
+Then tenant A's rows are untouched, because the function filters on the active tenant
+When the tenant is paused
+Then the run deletes nothing and says so
+```
+
+### ADM-S7 — The console reads each bank's figures through one audited window `@integration` (ADM-02)
+```gherkin
+Given usage rows and a failed job for two banks
+When a platform admin with system.health opens the console
+Then the figures and the failed jobs of each bank are listed, from tables that hold numbers, kinds and times only
+And one platform audit row records the screen and the filters, never the figures
+When a platform principal without tenants.manage or system.health reads them, or a tenant is active
+Then the window refuses to open
+When the admin retries a failed job
+Then it is re-queued as a tenant task from its kind, tenant and subject, and the retry writes an audit row in that bank with a system actor
 ```
 
 Plans and their limits are NFR-S17 to S19; requesting support access to a tenant is

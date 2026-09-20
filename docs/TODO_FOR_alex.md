@@ -51,14 +51,16 @@ ADR (0026 to 0041), each reversible. These are the ones that need you.
       COL-02, AGT-04, REG-01, HOM-03, REP-02 and ADM-01, the six new acceptance
       criteria, and the journeys J-9 and J-10. Say the word and any row goes
       back; nothing is built on them yet.
-- [ ] **Private notes (D-22).** You asked for "notes on my work". The default is
+- [x] **Private notes (D-22).** Answered YES on 2026-09-19: no private notes, the
+      recommendation as written (D-60). ADR 0028 moves to accepted; the original
+      question is kept below for the record. The default is
       shared comments in a panel called "Comments and mentions", because every
       role holds `audit.read`, every write stores before and after values, and
       the outbox feeds webhooks and the audit stream, so nothing written the
       ordinary way is private. Real private notes would change a product
       invariant: a per-user row-level policy, audit and outbox rows without the
       text, exclusion from exports, and compliance work hidden from the tenant's
-      own auditors. This one needs your decision, not a default.
+      own auditors.
 - [ ] **Aspiring markets outside EU, SE, DK, NO and FI (D-33).** Which ones do
       you have in mind, and in which release? Each is a change to the platform's
       scope, not a tenant setting: it needs a jurisdiction row, its authorities,
@@ -165,11 +167,41 @@ adopted. The ISO/IEC 27001:2022 transition MD 26 describes ended on
 - [ ] Overlay motion (tab bar open question 6): `Modal` and the More sheet open and close without animation, so the two stay consistent. Say if you want motion, and it is added to both together.
 - [ ] Dark-theme screenshots of the tab bar and the More sheet, once the app has a real theme switch. Until then the dark tokens exist only under `.dark`, nothing sets that class, and `contrast.test.ts` pins the dark values instead.
 
-## Decisions the parallel build waits on (docs/plans/PARALLEL_PLAN.md section 7)
+## PRD 0.4, from your answers of 2026-09-19
 
-**Answered 2026-09-19.** q-Q1: problem reports stay inside the bank, and the watch agents find library deviations themselves; retention was changed to "10 years after last use" with two details to confirm. Alex also decided that bleqq's own agents, the general finance regulation watch, are part of the base package and cannot be changed by a tenant; a tenant adds its own agents for its specific needs (item 14). The answers and what they mean are in `docs/plans/briefs/OWNER_RECOMMENDATIONS.md`, section "Alex's answers".
+- [ ] Read PRD 0.4 itself: the version row, ID-02 and ID-12 (SSO), INV-07,
+      PRO-03 and AUD-03 (private records and problem reports), WAT-01 and
+      WAT-06, AGT-03, AGT-04 and AGT-05 (whose agents a bank changes), AUD-04
+      (retention), REP-04 (tenant exit), ADM-02 (the console loses its
+      problem-report surface) and the one new permission,
+      `private_records.approve`. Say the word and any row goes back; nothing is
+      built on them yet.
 
-Each involves a product invariant, so it waits for you rather than a default. A row marked **Answered** is kept for the record and blocks nothing. "Needed by" counts hours from the plan's start on 2026-09-19 evening; answers by hour 6 cost nothing. The main agent's recommendation for the first four is in the chat of 2026-09-19.
+## Decisions the parallel build waits on — all answered (2026-09-20)
+
+You answered all twelve on 2026-09-19, and added a thirteenth of your own about
+whose agents a bank may change. Nothing in the parallel plan waits on a decision
+any more. What each answer means is a row in `docs/DECISIONS.md` (D-48 to D-61)
+with an ADR (0042 to 0053), the researched detail is in
+`docs/plans/briefs/OWNER_RECOMMENDATIONS.md`, and everything the answers changed
+is listed in `docs/plans/briefs/PRD_0_4_CONSOLIDATION.md`. PRD 0.4 carries the
+five that change the product: support access, private records, SSO, retention
+and tenant exit, plus problem reports and the agents.
+
+- [x] q-urgency (D-48), q-support-access (D-49), q-search-fence (D-51),
+      q-feed-token (D-52), q-eu-guards (D-54), q-credential (D-55), q-exit
+      (D-56), q-private (D-57), q-sso (D-58), q-platform-counters (D-59) and
+      q-private-notes (D-60): the recommendation as written.
+- [x] q-Q1 (D-50): your answer replaced it. A problem report stays in the bank,
+      and the watch agents re-check the library on every run and propose the
+      correction.
+- [x] q-retention (D-53): your answer replaced it. Ten years after a record's
+      last use, one period for every bank.
+- [x] The agents question you raised yourself (D-61): bleqq's agents are the
+      base package and no bank changes them; the tenant controls are for the
+      agents a bank adds for itself.
+
+The table below is the record of what each question blocked while it was open. Every row is answered now and none of them blocks anything. "Needed by" counted hours from the plan's start on 2026-09-19 evening. The main agent's recommendation for the first four is in the chat of 2026-09-19.
 
 | Key | Question | Blocks | Needed by | If late |
 |---|---|---|---|---|
@@ -185,6 +217,21 @@ Each involves a product invariant, so it waits for you rather than a default. A 
 | q-private | Who approves tenant-private instruments and obligations (a PRD section 6 bump)? May private text reach a model or the embedder? May a private source start without review? | `c13-private-*`, their screens and `c13-e2e-private` | hour 33 | WAT-06 and INV-07 are cut and named |
 | q-sso | How does SSO sit beside "a passkey is the only way in"? Does SSO replace the enrolment code? May a member with a passkey sign in by SSO? What does `enforce_sso` mean? | `c13-sso-*`, `c13-scim`, `c13-fe-sso`, `c13-e2e-identity-admin` | hour 34 | ID-12 is cut from R3 and named |
 | q-platform-counters | May the console show per-tenant stream lag, failed jobs and usage through a narrow audited read? Or does each tenant alone see its figures? | `c14-billing-usage`, `c14-health-backend` | hour 38 | Tenant-only figures, and the console shows platform rows only |
+
+## Open details from those answers
+
+Nothing is blocked: each has a default the build uses, stated below. Say the
+word and any of them changes.
+
+- [ ] **What counts as "use" for retention, and whether the ten years can move
+      (D-53).** The default: the latest of closure, removal, a change, or a
+      reference from a live record, and a read never counts; and one fixed
+      period that a bank cannot change. Needed before `c12-retention-contract`
+      starts, because every tenant table must say what its "last use" is.
+- [ ] **Whether bleqq's own editors may read problem reports (D-50).** We read
+      "in the bank only" as covering bleqq too, so no editor, agent or model
+      reads a report and the console has no problem-report surface. If you meant
+      that bleqq may read them, say so before chunk 4's tail is rebuilt.
 
 ## Questions your two decisions of 2026-09-19 raise (problem reports, agents)
 
@@ -206,11 +253,9 @@ Change any of them and the answer changes a task, not an invariant.
 - [ ] **Does the reporter get a notification when their report is closed?** Default: no.
       They see the state on the record, and on My work once chunk 8 builds it.
       Notifications are chunk 10, and adding one there is small.
-- [ ] **PRD wording.** ADM-02 still lists "problem reports" among the platform console's
-      surfaces, and AUD-03 reads "Problem reports resolved by a proposal, closing the loop
-      to the agents". Both describe the console loop your answer removes. The session that
-      lands the decision owns `PRD.md`; the same goes for AUD-S5 and ADM-S4 in
-      `backend/apps/governance/app.md`.
+- [x] **PRD wording.** Done in PRD 0.4: AUD-03 now reads "A problem report stays inside
+      the bank that filed it", ADM-02 lists no problem-report surface, and AUD-S5 and
+      ADM-S4 in `backend/apps/governance/app.md` follow.
 - [ ] **Where does a bank see that a library record it doubted was corrected?** Default:
       Library updates, like any other library change. The watch agents' re-check (chunk 5)
       produces an ordinary proposal, which carries no bank's words.
@@ -226,6 +271,6 @@ Change any of them and the answer changes a task, not an invariant.
 - [ ] **What may a bank see of bleqq's watch?** Default: a read-only panel with each
       general agent's name, purpose, the jurisdictions it sweeps and its check cadence —
       no prompts, tools, budgets, run rows or costs.
-- [ ] **AGT-04's wording.** PRD AGT-04 and `backend/apps/agents/app.md` say "a tenant admin
-      controls which agents are on", which now means the bank's own agents only. The
-      wording needs a line saying so; the decision session owns both files.
+- [x] **AGT-04's wording.** Done in PRD 0.4: AGT-04 in `PRD.md` and in
+      `backend/apps/agents/app.md` now reads "the agents a bank adds for itself", and says
+      such an agent writes only in its own tenant's zone.

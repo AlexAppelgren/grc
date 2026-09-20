@@ -28,6 +28,13 @@ reviewer's correction and at apply refuses them, and a database trigger refuses
 a provision under a standard whatever the write path. Every instrument carries
 a regime, which is the sector boundary.
 
+A bank's own instruments, obligations and sources are tenant content, not
+library content: a compliance officer proposes one and a second person in the
+same bank approves it with a passkey under `private_records.approve`, through
+the same proposal table, apply code and four-eyes constraint. Platform staff
+never see or approve them, and no owned row or child of one is indexed,
+embedded, reranked or sent to a model (D-57, ADR 0050).
+
 Deliberately simplified for R1: the provision tree is Should, and tenant-private
 instruments from a bank's own sources wait for R3. The R1 library is seeded from
 the prototype's sample data.
@@ -44,7 +51,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | in_progress |
 | INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | in_progress |
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | in_progress |
-| INV-07 | Tenant-private instruments and obligations from the tenant's own sources | C | R3 | pending |
+| INV-07 | Tenant-private instruments and obligations from the tenant's own sources, proposed and approved inside that bank by a second person; never seen by platform staff, a model, the search index or another tenant (D-57) | C | R3 | pending |
 | INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere | M | R1 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -146,6 +153,9 @@ Given tenant A registered a private source and an obligation derived from it
 Then the obligation carries owner_tenant_id A
 And tenant A sees it beside the shared library
 And tenant B's reads never return it and a direct fetch answers 404
+And a platform session, in the console or under a support grant, never returns it either
+When tenant B writes a child row under a shared parent, or under tenant A's parent
+Then the database refuses it
 ```
 
 ### INV-S10 — Legal dates are plain dates with a precision `@integration` (INV-01, INV-02)
@@ -173,4 +183,15 @@ Then the database refuses it
 And every seeded instrument's regime is a term of the regime dimension
 When an instrument proposal names a term of the dimension "Service" as its regime and a library editor approves it
 Then the apply answers 422 with code "not_a_regime" and nothing is written
+```
+
+### INV-S13 — A private record's text never reaches a model, the index or another bank `@integration` (INV-07)
+```gherkin
+Given tenant A's private instrument, its obligation and their version rows
+When the indexer runs and the worker dispatches its outbox events
+Then no chunk, embedding or rerank call carries their text
+When a member of tenant A asks for similar records, or opens a private change
+Then find-similar returns shared records only and the private change carries no AI-drafted "So what?"
+When tenant A's exit deletes the tenant
+Then its private instruments and obligations go with their append-only children
 ```

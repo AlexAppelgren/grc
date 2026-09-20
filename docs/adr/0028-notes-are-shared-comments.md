@@ -1,6 +1,6 @@
 # ADR 0028 — Notes are shared comments, and one recipient check serves every notification
 
-**Date:** 2026-09-19 · **Status:** accepted by default (D-22, D-34, PRD 0.3 COL-01, COL-02; the owner confirms)
+**Date:** 2026-09-19 · **Status:** accepted (D-22 confirmed by Alex 2026-09-19 as D-60: no private notes; D-34, PRD 0.3 COL-01, COL-02)
 
 ## Context
 

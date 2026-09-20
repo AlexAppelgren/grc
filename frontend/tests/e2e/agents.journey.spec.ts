@@ -14,6 +14,10 @@ test.describe('agents journeys', () => {
     // pending: AGT-S5 (AGT-04)
   });
 
+  test.fixme("AGT-S13: A bank cannot switch off, pause or re-scope one of bleqq's agents", async () => {
+    // pending: AGT-S13 (AGT-03, AGT-04)
+  });
+
   test.fixme("AGT-S6: The budget cap pauses runs and the AI off switch stops every model call", async () => {
     // pending: AGT-S6 (AGT-04)
   });

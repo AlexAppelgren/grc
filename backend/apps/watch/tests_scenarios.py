@@ -86,3 +86,10 @@ class WatchScenarioTests(TestCase):
 
         Every change carries a regime, a standard term needs a standards body, and a publisher's page keeps no snapshot (WAT-01, WAT-03, WAT-07).
         """
+
+    @skip("pending: WAT-S12 (WAT-01, AUD-03, chunk 5)")
+    def test_wat_s12(self) -> None:
+        """WAT-S12
+
+        A run re-checks the library records of the sources it checked and proposes the correction (WAT-01, AUD-03).
+        """

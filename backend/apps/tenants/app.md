@@ -17,8 +17,16 @@ security policy, data and the audit log view. Admin duties are separate
 permissions so a bank can keep user administration apart from business
 configuration.
 
-Platform staff have no bypass. They see a tenant's data only through a
-support access grant the tenant can see, time-boxed and logged.
+Platform staff have no bypass. A platform admin asks for read-only access to
+one bank, with a purpose and a time limit; a tenant admin approves it with a
+passkey, or declines, and may revoke it at any time. Until approval every read
+answers 404, the support principal can read and never write, and every request
+under the grant lands in the bank's own audit log (D-49, ADR 0042).
+
+A bank that leaves is deleted rather than archived: two different people holding
+`security.manage` request and approve the exit, the tenant then goes read-only
+while the final export is taken, and the platform operator deletes every row
+(D-56, ADR 0049).
 
 Deliberately simplified for R1: only the profile, members, invitations,
 re-enrolment and sessions land in chunk 1. Entities, products, teams,
@@ -38,7 +46,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | pending |
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | pending |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | pending |
-| TEN-06 | Support access grants: visible to the tenant, time-boxed, logged | M | R2 | pending |
+| TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | pending |
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
 | ADM-03 | Admin duties are separate permissions | M | R1 | built |
 
@@ -120,18 +128,20 @@ When the admin confirms
 Then every item is reassigned and the member removed in one transaction with one audit event per item
 ```
 
-### TEN-S6 — A support access grant is visible, time-boxed and logged `@integration` `@e2e` (TEN-06)
+### TEN-S6 — Support access is requested by the platform, approved by the bank and time-boxed `@integration` `@e2e` (TEN-06)
 ```gherkin
 Given a platform admin without any grant
 When they read a tenant's cases
 Then the request answers 404
-When a tenant admin grants support access for two hours with a purpose
-Then the grant appears on the tenant's security screen
-And every read under it lands in the support access log with the platform user and the purpose
-When the two hours pass
-Then the platform admin's reads answer 404 again
-When a platform admin requests support access from the console
-Then the request is visible to the tenant's admins and grants nothing until a tenant admin approves it
+When they request support access for two hours with a purpose
+Then nothing is granted, the reads still answer 404, and the holders of security.manage are notified
+When a tenant admin approves the request with a fresh step-up assertion
+Then the grant appears on the tenant's Support access panel with the purpose, the person and the end of the window
+And every read under it lands in the bank's audit log as "support_access.read" with the route and the platform user
+When the tenant admin revokes the grant
+Then the next request answers 401 "support_access_ended" and the ones after that answer 404
+When the two hours pass without a revocation
+Then the grant ends the same way and the reads answer 404 again
 ```
 
 ### TEN-S7 — J-8: tenant B cannot see tenant A `@e2e` (TEN-06, COL-04, J-8)
@@ -209,4 +219,26 @@ And the write is audited with before and after values
 And no obligation, scope row or applicability changes
 When they set a withdrawal date
 Then the row reads as withdrawn and stays in the history
+```
+
+### TEN-S11 — A support session reads and never writes, and never approves itself `@integration` (TEN-06)
+```gherkin
+Given an approved support grant and a support session opened under it
+When the session calls any write route, or downloads evidence or an export
+Then the response is 403 with code "support_read_only" and nothing is written
+When the session calls search or Ask
+Then the response is 403, because both would spend the bank's AI budget
+When the platform person who requested the grant tries to approve it
+Then the database refuses the row, because the approver is never the requester
+```
+
+### TEN-S12 — A closing tenant refuses writes and still lets people sign in and export `@integration` (REP-04)
+```gherkin
+Given a tenant whose exit request two different admins have requested and approved
+When any member calls a mutating route
+Then the response is 409 with code "tenant_closing"
+When a member signs in, refreshes, steps up, revokes a session or downloads the final export
+Then each still succeeds
+When a holder of security.manage cancels the exit with a step-up before the delay passes
+Then the tenant is active again and writes succeed
 ```

@@ -1,7 +1,7 @@
 """Scenario tests for the identity app (playbook 4.1, Appendix B): one method per
 `@integration` scenario in app.md, each carrying its ID. Chunk 1 un-skips ID-S1 to S15,
-S18 to S22 and S26 (Alex, 2026-09-19: tests first). ID-S16, S17, S23 and S24 stay skipped
-(R2/R3). Never delete a scenario without updating app.md.
+S18 to S22 and S26 (Alex, 2026-09-19: tests first). ID-S16, S17, S23, S24 and S27 to S29
+stay skipped (R2/R3). Never delete a scenario without updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): openInvitation,
 verifyInvitationCode, requestCode, verifyCode, passkeyRegisterOptions, passkeyRegisterVerify,
@@ -821,3 +821,24 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(body["requiredPermission"], perms.MEMBERS_MANAGE)
         self.assertTrue(body["detail"])
         self.assertTrue(body["title"])
+
+    @skip("pending: ID-S27 (ID-12, R3)")
+    def test_id_s27(self) -> None:
+        """ID-S27
+
+        SSO proves who a person is and never opens a session on its own (ID-12).
+        """
+
+    @skip("pending: ID-S28 (ID-12, R3)")
+    def test_id_s28(self) -> None:
+        """ID-S28
+
+        A SCIM key carries one scope and its default role holds no admin permission (ID-12).
+        """
+
+    @skip("pending: ID-S29 (ID-07, R2)")
+    def test_id_s29(self) -> None:
+        """ID-S29
+
+        A stricter passkey policy binds new passkeys now and old ones from its notice date (ID-07).
+        """

@@ -100,3 +100,10 @@ class LibraryScenarioTests(TestCase):
 
         Every instrument carries a regime from the regime dimension (INV-01, INV-08).
         """
+
+    @skip("pending: INV-S13 (INV-07, chunk 13)")
+    def test_inv_s13(self) -> None:
+        """INV-S13
+
+        A private record's text never reaches a model, the index or another bank (INV-07).
+        """

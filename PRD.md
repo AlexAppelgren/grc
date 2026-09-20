@@ -6,6 +6,8 @@
 | 0.2 | 2026-09-19 | Sector scope: regulated financial services only, not a general-purpose GRC product. Standards and certifications within that scope (for example ISO/IEC 27001 followed by some of a tenant's legal entities) are inventoried, watched and worked like regulation; their requirements are being analysed and land in a following version | Alex |
 | 0.3 | 2026-09-19 | Three things Alex asked for in chat, analysed and merged. **My work and participants:** one page of everything a person or their teams are responsible for or take part in, with next reviews and the changes on those items, the same view for a department's head, participants (people or teams) on register entries and cases that grant nothing, departments as org units with a head, and notes as shared comments. **Markets:** each covered country is operating, watching or not followed; operating markets are the regulatory scope's jurisdictions; watching hides nothing and steers tenant agents; EU rules reach every member country and Norway, as data. **Standards within the sector scope:** an edition is an instrument holding public facts and one conformance duty, a tenant opts in through its regulatory scope, a legal entity follows a standard through approved applicability and records its certificate, and the units it lists in its own words per entity form the Statement of Applicability. The sector scope paragraph is sharpened and the regime list becomes the enforced boundary. The wording is Alex's decision; the design defaults under it are `docs/DECISIONS.md` rows D-18 to D-47, each reversible | Alex |
 
+| 0.4 | 2026-09-20 | The fourteen owner decisions Alex answered in chat on 2026-09-19 (`docs/plans/briefs/OWNER_RECOMMENDATIONS.md`). **Support access:** platform staff enter a bank read-only, for a stated purpose and a time limit a tenant admin approves with a passkey, and every read is logged in the bank. **Problem reports:** a report stays inside the bank that filed it; a library error is found instead by the watch agents, which re-check the records of the sources they check on every run and correct them through a proposal. **Retention:** a record is deleted ten years after its last use, through one database-guarded path. **Tenant exit:** two different people request and approve it, the tenant goes read-only while a final export is taken, and deletion removes every tenant row, the audit trail included, leaving a tombstone report. **Private records:** a bank's own instruments, obligations and sources are approved by a second person in the same bank under a new permission and never reach the platform, a model or the search index. **SSO:** the bank's identity provider proves who a person is, and the passkey stays the only way in. **Agents:** bleqq's general financial-regulation watch is part of the base package and no bank changes it; the tenant controls are for the agents a bank adds for itself | Alex |
+
 Requirement IDs never appear on screen. Priority is MoSCoW (M, S, C).
 
 **Glossary.** *Footprint* and *regulatory scope* are the same thing. On screen
@@ -94,7 +96,7 @@ side the library editor and the platform admin.
 | ID | Requirement | P | R |
 |---|---|---|---|
 | ID-01 | Users join by invitation only, with roles set at invite | M | R1 |
-| ID-02 | First sign-in uses a one-time emailed code and leads straight into passkey enrolment. The enrolment session can do nothing else | M | R1 |
+| ID-02 | First sign-in uses a one-time emailed code and leads straight into passkey enrolment. The enrolment session can do nothing else. For an address on a verified domain of a tenant that has switched SSO on, the bank's identity provider proves the person instead of the code | M | R1 |
 | ID-03 | After the first passkey, sign-in is by passkey only and the emailed code stops working for that account. No password exists anywhere | M | R1 |
 | ID-04 | Users manage their passkeys (add, rename, remove, never the last one) and see and revoke their sessions | M | R1 |
 | ID-05 | Recovery: a tenant admin re-issues enrolment behind step-up, audited, with notices. The last admin recovers through platform support with an out-of-band check | M | R1 |
@@ -104,7 +106,7 @@ side the library editor and the platform admin.
 | ID-09 | Permissions are code, roles are rows: seeded system roles plus tenant-defined roles. A tenant always keeps one admin | M | R1 |
 | ID-10 | Scoped API keys for agents and integrations, shown once, stored hashed, revocable, with last use | M | R1 |
 | ID-11 | Security log of sign-ins, failures, enrolments, recoveries and key use | M | R1 |
-| ID-12 | SSO (OIDC, SAML), verified domains and SCIM as a tenant option | C | R3 |
+| ID-12 | SSO (OIDC, SAML), verified domains and SCIM as a tenant option. SSO proves who a person is and never opens a session on its own: there is no sign-in button that starts at the identity provider, and with enforcement on the provider is asked after the passkey, at every sign-in. SSO never recovers a lost passkey and never replaces step-up | C | R3 |
 | ID-13 | Optional IP allow-list per tenant | C | R3 |
 
 ### TEN: tenant and organisation
@@ -151,7 +153,7 @@ side the library editor and the platform admin.
 | INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 |
 | INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 |
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 |
-| INV-07 | Tenant-private instruments and obligations from the tenant's own sources | C | R3 |
+| INV-07 | Tenant-private instruments and obligations from the tenant's own sources, proposed and approved inside that bank by a second person. Platform staff never see or approve them, and their text never reaches a model, the search index or another tenant | C | R3 |
 | INV-08 | Standards within the sector scope as instruments, one per edition. Each holds publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link, and exactly one conformance duty in our own words, which carries the standard's term. Only a standard's own records carry a standard term. There is no standard text, clause or control title, or paraphrase in the library, the search index, Ask or agent output | M | R1 |
 
 ### PRO: proposals
@@ -160,19 +162,19 @@ side the library editor and the platform admin.
 |---|---|---|---|
 | PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field | M | R1 |
 | PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction. The reviewer can correct scope and wording first. Never the proposer | M | R1 |
-| PRO-03 | The queue lives in the platform console. Tenants see library updates and can report problems | M | R1 |
+| PRO-03 | The queue lives in the platform console. Tenants see library updates and can report a problem, and that report stays inside the bank that filed it. A bank's private records are proposed and approved inside the bank and never reach the console | M | R1 |
 | PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 |
 
 ### WAT: watch
 
 | ID | Requirement | P | R |
 |---|---|---|---|
-| WAT-01 | Source registry and coverage log: what was checked, when, with what result | M | R1 |
+| WAT-01 | Source registry and coverage log: what was checked, when, with what result. Every run also re-checks the library records that came from the sources it checked, and proposes a correction where a record no longer matches its source | M | R1 |
 | WAT-02 | One record per reform with a timeline from consultation to in force, partial dates, and duplicates merged | M | R1 |
 | WAT-03 | Change types, flags and scope from vocabularies, with at least one regime on every change and a standard term only on a change from a standards body. Agent classifications shown as suggestions until confirmed | M | R1 |
 | WAT-04 | Links to affected obligations with confidence, confirmed by a person | M | R1 |
 | WAT-05 | A drafted "So what?" per change, labelled AI-drafted until a person confirms or rewrites it per tenant | M | R1 |
-| WAT-06 | Tenants can request a source. Private sources are visible to that tenant only | S | R3 |
+| WAT-06 | Tenants can request a source. Private sources are visible to that tenant only, are public pages checked when requested and again at each run, and run only on an approved EU model endpoint | S | R3 |
 | WAT-07 | Standards are watched from public metadata: one change per edition or amendment, with a timeline from draft to publication and a key date for the end of the transition. A publisher's page keeps no snapshot, and automated checks run only on publishers whose terms allow them | S | R1 |
 
 ### REG: register
@@ -236,9 +238,9 @@ side the library editor and the platform admin.
 |---|---|---|---|
 | AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 |
-| AGT-03 | Versioned agent definitions owned by the platform | M | R2 |
-| AGT-04 | Tenant controls: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch | M | R2 |
-| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records | S | R2 |
+| AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents, the general financial-regulation watch that feeds the shared library, are part of the base package: no tenant switches them off, pauses them, changes their cadence, scope or budget, or edits their definitions | M | R2 |
+| AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. A tenant's own agent writes only in that tenant's zone, never the shared library | M | R2 |
+| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console | S | R2 |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 |
 | AGT-08 | Agents stay inside the sector scope. An out-of-scope document is logged as a source check and counted, and nothing is registered or proposed. A standard's text is never fetched, quoted, summarised, translated or restated from memory. A blocked page is a failed check and is never worked around. A law that cites a standard never carries the standard's term | M | R1 |
@@ -250,7 +252,7 @@ side the library editor and the platform admin.
 | REP-01 | Dashboard: open changes by urgency, overdue actions, gaps, unconfirmed AI drafts, time to triage, regime by account heatmap, load per owner | S | R3 |
 | REP-02 | Committee pack and exports of inventory (including a dated Statement of Applicability per standard and entity), changes, cases and the audit log | S | R3 |
 | REP-03 | Spreadsheet register import: dry run, near-match mapping asked once per value, then commit | S | R3 |
-| REP-04 | Full tenant export in open formats and verified deletion | M | R3 |
+| REP-04 | Full tenant export in open formats and verified deletion. Exit is requested and approved by two different people holding `security.manage`, each with a passkey; the tenant is then read-only while the final export is taken, and the platform operator deletes every tenant row, the audit trail included, leaving only a tombstone report | M | R3 |
 | INT-01 | Signed webhooks with a delivery log, from a transactional outbox | S | R3 |
 | INT-02 | Ticket export for actions | C | R3 |
 | INT-03 | Audit log stream to the customer's SIEM | S | R3 |
@@ -261,15 +263,15 @@ side the library editor and the platform admin.
 |---|---|---|---|
 | AUD-01 | Append-only audit log written with every change: actor (user, agent, system), action, subject with its title at the time, summary, before and after | M | R1 |
 | AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 |
-| AUD-03 | Problem reports resolved by a proposal, closing the loop to the agents | S | R1 |
-| AUD-04 | Retention per tenant with a purge that respects append-only tables | S | R3 |
+| AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it. The loop to the library is closed by the watch agents' re-check, which proposes the correction | S | R1 |
+| AUD-04 | Retention of closed cases, removed evidence and the audit trail: a record is deleted ten years after its last use. The purge never updates an append-only row, deletes one only past that age, and runs through one database-guarded path | S | R3 |
 
 ### ADM: admin surfaces
 
 | ID | Requirement | P | R |
 |---|---|---|---|
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3, following the features |
-| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, problem reports, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry) | M | R1 to R3 |
+| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only) | M | R1 to R3 |
 | ADM-03 | Admin duties are separate permissions, so user administration and business configuration can sit with different people | M | R1 |
 
 ### I18N and NFR
@@ -339,17 +341,21 @@ copy and adapt. `x` means granted.
 | `register.edit`, `gaps.edit` (`register.edit` includes adding or removing participants on a register entry, and adding, pasting, editing or removing a standard's units) | | x | x | | | | |
 | `applicability.request` | | x | x | | | | |
 | `applicability.approve`, `risk.accept.approve` | | x | | x | | | |
+| `private_records.approve` (approve a proposal for the bank's own instruments, obligations and sources; never a platform grant and never an API key scope) | | x | | x | | | |
 | `proposals.create` | | x | | | | | |
 | `exports.create`, `ai_log.read` | x | x | | x | | | x |
-| `members.manage`, `roles.manage`, `security.manage` (`members.manage` includes team membership) | x | | | | | | |
+| `members.manage`, `roles.manage`, `security.manage` (`members.manage` includes team membership; `security.manage` includes approving, declining and revoking support access, and requesting or approving tenant exit, never both by the same person) | x | | | | | | |
 | `vocab.manage`, `workflow.manage` (`vocab.manage` includes departments, their heads, teams, and the certificates on a legal entity) | x | x | | | | | |
 | `agents.manage`, `integrations.manage` | x | | | | | | |
 
 Platform roles: `library_editor` (`proposals.review`, `library_vocab.manage`,
 `sources.manage`, `eval.manage`) and `platform_admin` (`tenants.manage`,
-`agent_definitions.manage`, `support_access.grant`, `system.health`). Four
+`agent_definitions.manage`, `support_access.grant` (request support access to a
+bank and enter it read-only once a tenant admin approves), `system.health`). Four
 eyes applies to every approve permission: never the requester. 0.3 adds no
-permission constant and changes no grant; only the descriptions above grew.
+permission constant and changes no grant; only the descriptions above grew. 0.4
+adds one constant, `private_records.approve`, and widens the descriptions of
+`security.manage` and `support_access.grant`.
 
 **Actions that need membership only:** viewing My work, your own or any
 department's (each item still needs its read permission, so the department

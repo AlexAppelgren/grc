@@ -17,7 +17,15 @@ enforces it.
 The prototype shows the tenant's compliance officer approving agent
 proposals. That is the one place the prototype is wrong: the queue lives in
 the console with the `library_editor` role. Tenants see library updates and
-can report problems.
+can report a problem, and that report stays inside the bank that filed it: no
+editor, other bank, agent or model reads it, and the library is corrected
+instead by the watch agents' re-check, which proposes the correction like any
+other (D-50, ADR 0043).
+
+A bank's own private records travel the same table but never the console: the
+server sets the proposal's owner from the target, and a second person in the
+same bank approves under `private_records.approve` with a passkey, through the
+same apply code and the same four-eyes constraint (D-57, ADR 0050).
 
 One check function guards the standards rules (INV-08) on every door into the
 library: at `POST /proposals`, at the agent's proposal creation, over a
@@ -36,7 +44,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field | M | R1 | in_progress |
 | PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction; the reviewer can correct scope and wording first; never the proposer | M | R1 | in_progress |
-| PRO-03 | The queue lives in the platform console; tenants see library updates and can report problems | M | R1 | pending |
+| PRO-03 | The queue lives in the platform console; tenants see library updates and can report a problem, which stays inside their bank. A bank's private records are proposed and approved inside the bank and never reach the console (D-50, D-57) | M | R1 | pending |
 | PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -119,6 +127,7 @@ When the editor opens the console
 Then the queue lists waiting proposals with the source beside the diff
 When a proposal is applied
 Then the tenant's "Library updates" lists it and "This looks wrong" opens a problem report
+And that report is readable inside the bank only: the console has no problem-report surface and no platform session returns it
 ```
 
 ### PRO-S8 — A batch proposal previews and is approved whole or row by row `@integration` `@e2e` (PRO-04)
@@ -164,4 +173,17 @@ Then it is refused at creation with 422 "standard_term_only_on_standards"
 When a reviewer's correction adds that term to a pending proposal and approves it
 Then the approval answers 422 "standard_term_only_on_standards" and nothing is written
 And a tenant whose regulatory scope names no standard still sees the obligation
+```
+
+### PRO-S12 — A private proposal is approved inside the bank and never reaches the console `@integration` (INV-07, PRO-03)
+```gherkin
+Given a compliance officer in tenant A who proposed a private instrument
+Then the proposal carries owner_tenant_id A, set by the server and not by the request body
+And the console queue never lists it, and a library editor's fetch answers 404
+When the same officer approves it
+Then the response is 409 "four_eyes_violation"
+When a second person in tenant A with private_records.approve approves it with a fresh step-up
+Then the payload is applied, and the audit and outbox rows are written in tenant A's zone
+When a member of tenant A files a proposal against a shared record
+Then its owner stays empty and the console queue lists it as before
 ```

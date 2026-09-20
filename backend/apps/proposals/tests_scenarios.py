@@ -267,3 +267,10 @@ class ProposalsScenarioTests(ScenarioTestCase):
 
         A standard term never sits on a law's obligation (FP-01, INV-08).
         """
+
+    @skip("pending: PRO-S12 (INV-07, PRO-03, chunk 13)")
+    def test_pro_s12(self) -> None:
+        """PRO-S12
+
+        A private proposal is approved inside the bank and never reaches the console (INV-07, PRO-03).
+        """

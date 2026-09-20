@@ -138,7 +138,7 @@ test.describe('governance journeys', () => {
     // pending: AUD-S4 (AUD-02)
   });
 
-  test.fixme("AUD-S5: A problem report is resolved by a proposal", async () => {
+  test.fixme("AUD-S5: A problem report stays inside the bank that filed it", async () => {
     // pending: AUD-S5 (AUD-03)
   });
 

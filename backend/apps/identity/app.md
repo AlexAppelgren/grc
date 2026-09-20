@@ -26,6 +26,15 @@ re-issues enrolment), no SSO or SCIM (R3, and they never add a password), and
 credential and session policies are fixed defaults until R2 makes them tenant
 settings.
 
+When SSO arrives in R3 it proves who a person is and nothing more (D-58, ADR
+0051): for an address on a bank's verified domain the identity provider replaces
+the emailed code at enrolment and re-enrolment, and with enforcement on it is
+asked again at every sign-in, after the passkey. There is no sign-in that starts
+at the provider, and SSO never recovers a passkey or replaces step-up. A
+stricter credential policy (D-55, ADR 0048) binds new registrations at once and
+existing passkeys from a notice date the admin sets, so a bank can tighten
+without locking itself out.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -38,12 +47,12 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID-04 | Users manage passkeys (add, rename, remove, never the last) and see and revoke sessions | M | R1 | built |
 | ID-05 | Recovery: tenant admin re-issues enrolment behind step-up, audited, with notices; the last admin goes through platform support with an out-of-band check | M | R1 | built |
 | ID-06 | Step-up by fresh passkey assertion on the sensitive actions of playbook 4.2, recorded on the audit event | M | R1 | built |
-| ID-07 | Tenant credential policy: synced passkeys allowed, or attested device-bound authenticators required | S | R2 | pending |
+| ID-07 | Tenant credential policy: synced passkeys allowed, or attested device-bound authenticators required. It binds new registrations at once and existing passkeys from the admin's notice date; loosening applies at once (D-55) | S | R2 | pending |
 | ID-08 | Tenant session policy: idle and absolute limits within platform maximums | S | R2 | pending |
 | ID-09 | Permissions are code, roles are rows: seeded system roles plus tenant-defined roles; a tenant always keeps one admin | M | R1 | built |
 | ID-10 | Scoped API keys for agents and integrations, shown once, stored hashed, revocable, with last use | M | R1 | built |
 | ID-11 | Security log of sign-ins, failures, enrolments, recoveries and key use | M | R1 | built |
-| ID-12 | SSO (OIDC, SAML), verified domains and SCIM as a tenant option | C | R3 | pending |
+| ID-12 | SSO (OIDC, SAML), verified domains and SCIM as a tenant option. SSO proves identity and never opens a session on its own; with enforcement on it is asked after the passkey at every sign-in (D-58) | C | R3 | pending |
 | ID-13 | Optional IP allow-list per tenant | C | R3 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -286,9 +295,10 @@ And the log table refuses update and delete
 ### ID-S23 — SSO and SCIM never introduce a password `@integration` (ID-12)
 ```gherkin
 Given a tenant that switched on an OIDC provider with a verified domain
-When a member signs in through it
-Then the app stores no password and still requires a passkey for step-up
+When a member enrols through it
+Then the identity provider replaces the emailed code and no password is stored anywhere
 And SCIM provisioning creates members in "invited" state without a credential
+And step-up still asks for a fresh passkey assertion
 ```
 
 ### ID-S24 — A tenant IP allow-list blocks other addresses `@integration` (ID-13)
@@ -313,4 +323,40 @@ Given a reader without cases.triage
 When they call the triage endpoint
 Then the response is 403 with detail, code "permission_denied" and requiredPermission "cases.triage"
 And the Restricted screen shows the server's detail and the missing grant in plain words
+```
+
+### ID-S27 — SSO proves who a person is and never opens a session on its own `@integration` (ID-12)
+```gherkin
+Given a tenant with enforcement on and a member whose account is linked
+When the member signs in
+Then the passkey is verified first and the response says the identity provider is next
+And the challenge is single-use and bound to the user, the tenant, the assertion and this browser
+When a response arrives that no challenge asked for, or in a URL rather than a POST
+Then it is refused and the security log records "idp_failed"
+And there is no route that starts a sign-in at the identity provider
+And on a verified domain the provider replaces the emailed code at enrolment and re-enrolment
+```
+
+### ID-S28 — A SCIM key carries one scope and its default role holds no admin permission `@integration` (ID-12)
+```gherkin
+Given an admin with security.manage, members.manage and a fresh step-up assertion
+When they create a SCIM key on the SSO route
+Then the key carries the single scope "scim" and is shown once
+When the same scope is asked for on the general API key route
+Then the request answers 422
+When the SCIM default role is set to, or later edited to hold, members.manage, roles.manage, security.manage or integrations.manage
+Then the request is refused, and a SCIM create with such a role is refused too
+```
+
+### ID-S29 — A stricter passkey policy binds new passkeys now and old ones from its notice date `@integration` (ID-07)
+```gherkin
+Given a tenant whose policy becomes device-bound with a notice date 14 days ahead
+When a member registers a synced passkey today
+Then the registration answers 422 with code "credential_policy"
+When a member signs in with an existing synced passkey before the notice date
+Then the sign-in succeeds
+When the same member signs in after the notice date
+Then the response is 403 with code "credential_policy" and the security log records it
+When an admin sets a date or an allow-list that would refuse their own passkeys
+Then the request answers 409
 ```

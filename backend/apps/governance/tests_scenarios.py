@@ -146,14 +146,14 @@ class GovernanceScenarioTests(ScenarioTestCase):
     def test_aud_s5(self) -> None:
         """AUD-S5
 
-        A problem report is resolved by a proposal (AUD-03).
+        A problem report stays inside the bank that filed it (AUD-03).
         """
 
     @skip("pending: AUD-S6")
     def test_aud_s6(self) -> None:
         """AUD-S6
 
-        Retention per tenant purges what it may and keeps append-only rows (AUD-04).
+        The purge deletes ten years after a record's last use and never updates a ledger row (AUD-04).
         """
 
     def test_aud_s7(self) -> None:
@@ -313,3 +313,18 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertEqual([mail.to for mail in MockMailer.sent], ["admin@example-bank.test"])
         # The creation is audited in the new tenant's own log.
         self.assertEqual(self._one("tenant.created", tenant.id).tenant_id, tenant.id)
+
+    @skip("pending: AUD-S8 (AUD-04, chunk 12)")
+    def test_aud_s8(self) -> None:
+        """AUD-S8
+
+        The ledger purge refuses a cutoff inside the floor and a paused tenant (AUD-04).
+        """
+
+    @skip("pending: ADM-S7 (ADM-02, chunk 14)")
+    def test_adm_s7(self) -> None:
+        """ADM-S7
+
+        The console reads each bank's figures through one audited window (ADM-02).
+        """
+

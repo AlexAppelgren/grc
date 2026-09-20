@@ -18,6 +18,15 @@ Duplicates are merged: posting a known `stableKey` adds new pages to the
 existing change instead of creating a second one, because agents and senders
 retry.
 
+A run also looks back at the library. For every source it checks, it re-checks
+the library records that came from that source, and where a record no longer
+matches its source it proposes the correction through the normal proposal door,
+with four eyes and never a direct edit. That re-check is how a library error is
+found, because a bank's problem report stays inside the bank (D-50, ADR 0043).
+The watch agents that do this are bleqq's own, part of the base package: no
+bank switches one off, pauses it or changes its cadence, scope or budget
+(D-61, ADR 0053).
+
 A standard's revision is watched the same way, from public metadata only: one
 change per edition or amendment, the draft, final draft, publication and
 accreditation rule as timeline entries, and the end of the transition as the
@@ -35,12 +44,12 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| WAT-01 | Source registry and coverage log: what was checked, when, with what result | M | R1 | pending |
+| WAT-01 | Source registry and coverage log: what was checked, when, with what result. Every run also re-checks the library records of the sources it checked and proposes a correction where a record has drifted (D-50) | M | R1 | pending |
 | WAT-02 | One record per reform with a timeline from consultation to in force, partial dates, duplicates merged | M | R1 | pending |
 | WAT-03 | Change types, flags and scope from vocabularies, with at least one regime on every change and a standard term only on a change from a standards body; agent classifications shown as suggestions until confirmed | M | R1 | pending |
 | WAT-04 | Links to affected obligations with confidence, confirmed by a person | M | R1 | pending |
 | WAT-05 | A drafted "So what?" per change, labelled AI-drafted until a person confirms or rewrites it per tenant | M | R1 | pending |
-| WAT-06 | Tenants can request a source; private sources are visible to that tenant only | S | R3 | pending |
+| WAT-06 | Tenants can request a source; private sources are visible to that tenant only, are public pages checked at the request and again at each run, and run only on an approved EU model endpoint (D-57) | S | R3 | pending |
 | WAT-07 | Standards watched from public metadata: one change per edition or amendment, a timeline from draft to publication, a key date for the end of the transition, no snapshot of a publisher's page, and automated checks only where the terms allow | S | R1 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -125,11 +134,13 @@ And another tenant's copy is still the draft
 
 ### WAT-S8 — A tenant requests a source and private sources stay private `@integration` `@e2e` (WAT-06)
 ```gherkin
-Given tenant A uses "Request a source" for an internal circular
-Then a research request is created for the agents and the source carries owner_tenant_id A
+Given tenant A uses "Request a source" for a public page of a market it watches
+Then the address is checked for https, no credentials, a public host, not a standards publisher's host and not an existing shared source
+And the source carries owner_tenant_id A, the request writes one tenant audit row, and the cap per bank is enforced
 When an agent registers a change from it
 Then tenant A sees the change in its feed
 And tenant B's feed never lists it and a direct fetch answers 404
+And the host is checked again at the start of every run
 ```
 
 ### WAT-S9 — The change row renders its pills in the fixed slot order `@e2e` (WAT-03, NFR-03)
@@ -162,4 +173,16 @@ Then the stored source document holds the URL, the date and a content hash and n
 When a change carrying an opt-in term links a document that has a snapshot
 Then the API answers 422 with code "licensed_text"
 And a source of kind "Standards body" registered inactive gets no automated check
+```
+
+### WAT-S12 — A run re-checks the library records of the sources it checked and proposes the correction `@integration` (WAT-01, AUD-03)
+```gherkin
+Given a library obligation whose source page now states a different date
+When a watch run checks that source
+Then the run's coverage log names the records it re-checked beside the documents it fetched
+And the drift becomes a proposal carrying the source per changed field, never a direct edit
+When a second library editor approves it
+Then the library holds the corrected version, and the re-verification stamp stays the only write outside a proposal
+When nothing has drifted
+Then the re-check writes no proposal
 ```
