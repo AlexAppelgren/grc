@@ -23,9 +23,39 @@ class Empty(CamelSchema):
 
 
 class RoleRef(CamelSchema):
-    key: str
-    kind: str | None = None
-    label: str
+    """A pointer to a row in one of the platform's managed lists — a role, a language, an
+    agent — as key, kind and label together, so a screen can show a name while an
+    integration stores something that never moves under it."""
+
+    key: str = Field(
+        description=(
+            "The stable key of the row being pointed at: a role such as `admin`, a language "
+            "such as `sv`, an agent definition such as `watch-sweeper`. Store and compare this "
+            "and never the label — a key is issued once and never changes, while a label is "
+            "reworded and translated freely. Some of the lists behind a reference are "
+            "vocabularies whose rows a bank's admin may extend or retire, so an unfamiliar key "
+            "is new data and not an error; others, such as the content languages, are library "
+            "reference rows that only an approved proposal adds to. Read the endpoint that "
+            "owns the list for the live set."
+        )
+    )
+    kind: str | None = Field(
+        default=None,
+        description=(
+            "Which list the key belongs to, where one shape carries rows from more than one "
+            "list — the name of the vocabulary, for instance. It is null wherever the field "
+            "holding the reference already settles the question, as it does for a language or "
+            "a role, and a reader should then take the kind from that field rather than "
+            "guessing from the key."
+        ),
+    )
+    label: str = Field(
+        description=(
+            "The row's name in the reader's language, for showing on screen and for nothing "
+            "else. It is reworded whenever the bank prefers different wording and it is "
+            "translated, so storing it or matching on it will break; keep the key instead."
+        )
+    )
 
 
 # ---------------------------------------------------------------------------------------

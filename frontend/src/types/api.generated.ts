@@ -46,10 +46,62 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Agent Runs */
+        /**
+         * Read what the agents have been doing
+         * @description Returns the agent runs the caller may see, oldest first, one page at a time: when
+         *     each ran, which agent and which model, how it ended, and what it counted. Call it to
+         *     show a bank that its watch is alive — that its sources were swept last night, and what
+         *     came of it — and to investigate a run whose findings are being questioned.
+         *
+         *     A person's session only; an API key cannot read this, so an agent cannot read its own
+         *     history. Inside a bank it needs `agents.manage`, in the platform console
+         *     `system.health`; a member with neither is refused. A bank sees the platform's own
+         *     library runs, because those are what feed the shared inventory it relies on, and its
+         *     own runs. It never sees another bank's runs, and no run of any bank is visible to
+         *     another.
+         *
+         *     bleqq's own agents are part of the base package: a bank reads their history here but
+         *     cannot switch one off, pause it, or change its cadence, scope or budget. A bank's own
+         *     agents, which it does control, appear in the same list. It changes nothing and writes
+         *     nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
+         *     run yet, not that something is wrong.
+         *
+         *     Errors: a 422 when `limit` is above 100 or `offset` beyond the accepted depth;
+         *     `permission_denied` with neither `agents.manage` nor `system.health`;
+         *     `unauthenticated` without a session. This route is published ahead of the runner that
+         *     will fill it; until that ships it answers 501.
+         */
         get: operations["listAgentRuns"];
         put?: never;
-        /** Start Agent Run */
+        /**
+         * Open a run so everything the agent files can be traced to it
+         * @description The first call of every execution. It opens a run and returns its identifier, which
+         *     every later call in the same execution carries, so each change, proposal and source
+         *     check the agent files can be traced back to the model, the pipeline and the night that
+         *     produced it. Call it once, before any other work; close it with `PATCH /agent-runs/{runId}`
+         *     even when the run failed.
+         *
+         *     Authenticated by an API key alone — no session, tenant or platform, can open a run —
+         *     and the key must carry the `agent-runs:write` scope. The run belongs to whatever the
+         *     key belongs to and never to anything else: the platform's own key opens the library
+         *     runs that feed the shared inventory, a bank's key opens runs in that bank's zone, and
+         *     any other pairing is refused. No key scope of any kind reaches the shared library:
+         *     what an agent finds becomes a proposal or a private record, never a library edit, so
+         *     opening a run grants nothing beyond the right to file work for review.
+         *
+         *     Send `Idempotency-Key`. A retry with the same key returns the run that key already
+         *     opened; without one a lost answer becomes a duplicate run and a duplicated night's
+         *     findings. Opening a run is recorded in the audit log with the agent behind the key
+         *     named, not the key's identifier.
+         *
+         *     Answers 201 with the open run, its status `running` and its counters at zero. Errors:
+         *     `permission_denied` when the key lacks `agent-runs:write` or is not entitled to run
+         *     that agent; `unauthenticated` when the key is missing, revoked or expired;
+         *     `not_found` when no shipped definition has that agent key; a 422 for a field the
+         *     caller can fix, and a 409 when the same idempotency key is replayed with a different
+         *     body. These routes are published ahead of the runner that will fill them; until it
+         *     ships they answer 501.
+         */
         post: operations["startAgentRun"];
         delete?: never;
         options?: never;
@@ -70,7 +122,31 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Finish Agent Run */
+        /**
+         * Close a run and file what it did
+         * @description The last call of every execution, made whether the run worked or not. It closes the
+         *     run into `succeeded` or `failed`, files the counters for the budgets in the agent's
+         *     definition, and records where the working output was kept. A run that is never closed
+         *     stays open for ever and reads as stuck, so close it from the failure path too.
+         *
+         *     Authenticated by the API key that opened the run, carrying the `agent-runs:write`
+         *     scope; no session can close a run. A run closes once and into a terminal status, and
+         *     closing an already-closed run is refused rather than quietly reopening it. What the
+         *     agent filed while the run was open stands whichever status it ends in, and none of it
+         *     has changed the shared library: a proposal waits for a person, or for a second and
+         *     independent agent, to approve it. The close is recorded in the audit log against the
+         *     agent behind the key.
+         *
+         *     Send `Idempotency-Key` so a retried close replays rather than conflicting.
+         *
+         *     Answers 200 with the closed run. Errors: `not_found` when no such run exists or it
+         *     belongs to another key; `permission_denied` when the key lacks `agent-runs:write`;
+         *     `unauthenticated` when the key is missing, revoked or expired; a 422 for a field the
+         *     caller can fix, such as an error message over its length; and a 409 when the run is
+         *     already closed or the same idempotency key is replayed with a different body. These
+         *     routes are published ahead of the runner that will fill them; until it ships they
+         *     answer 501.
+         */
         patch: operations["finishAgentRun"];
         trace?: never;
     };
@@ -455,10 +531,50 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Console Tenants */
+        /**
+         * List the banks on the platform
+         * @description Returns every organisation on the platform, one page at a time, ordered by short
+         *     name. Call it from the platform console to find a bank before opening it, creating one
+         *     or running a support action against it.
+         *
+         *     Needs the platform permission `tenants.manage`, which only a platform administrator
+         *     holds; no session inside a bank can reach it. What comes back is the tenant row and
+         *     nothing underneath it — no members, no obligations, no cases, no counts — because a
+         *     platform session reads a bank's identity and never its work. It changes nothing and
+         *     writes nothing to the audit log. An empty list is a 200 with `total` 0, never an error.
+         *
+         *     Errors: a 422 when `limit` is above 100 or `offset` beyond the accepted depth;
+         *     `permission_denied` without `tenants.manage`; `unauthenticated` without a session.
+         */
         get: operations["listConsoleTenants"];
         put?: never;
-        /** Create Console Tenant */
+        /**
+         * Open a new bank and invite its first administrator
+         * @description Creates an organisation and, in the same transaction, invites the person who will
+         *     run it. Call it once per bank, when a new customer is being onboarded; there is no
+         *     second step that turns the bank on.
+         *
+         *     Needs the platform permission `tenants.manage`. One call writes the organisation with
+         *     its name, short name, timezone and languages; gives it the system roles and the
+         *     starting set of its own lists, which its administrator may extend afterwards; and
+         *     sends the first administrator an enrolment invitation carrying the system role that
+         *     can invite everyone else. That person receives a one-time code by email, which stops
+         *     working the moment their first passkey exists; no password is ever created. The
+         *     creation is recorded in the audit log as `tenant.created` with the whole profile, and
+         *     the invitation is recorded against the new bank. If anything in the call is refused,
+         *     nothing at all is written.
+         *
+         *     The address must belong to the bank. Platform staff are separate accounts, and an
+         *     address that already carries a platform role is refused, because a console account
+         *     invited into a bank would carry the console's permissions into a bank session.
+         *
+         *     Answers 201 with the new bank's console row. Errors: `duplicate_key` when the short
+         *     name is already taken; `unknown_key` for a timezone the IANA database does not hold or
+         *     a language key that is not an active language row; a 422 for a blank name, an empty
+         *     language list, a short name that is not lower-case letters, digits and hyphens, or an
+         *     address that belongs to platform staff, each with its own `code` and a message to
+         *     show; `permission_denied` without `tenants.manage`.
+         */
         post: operations["createConsoleTenant"];
         delete?: never;
         options?: never;
@@ -475,7 +591,32 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Console Reissue Enrolment */
+        /**
+         * Send a bank's stranded administrator a fresh enrolment code
+         * @description The recovery of last resort. When a bank's only administrator has lost every passkey
+         *     and nobody inside the bank can re-invite her, platform support uses this to send that
+         *     person a fresh enrolment code by email. There is no self-service path to it and there
+         *     is no password anywhere in the product, so this call is the whole of the fallback.
+         *
+         *     Needs the platform permission `support_access.grant` and a fresh passkey step-up on
+         *     the support engineer's own credential; without the assertion the call is refused. The
+         *     body must say why the recovery is happening and how the person was proved to be who
+         *     they claim away from this system. Both are required and a blank one is refused.
+         *
+         *     What it writes, in one transaction: a support-access record in the bank's own zone,
+         *     which the bank can read afterwards, naming the engineer, the reason, the ticket and the
+         *     out-of-band check; an audit event `support_access.recorded` carrying the step-up
+         *     assertion; and the re-issue itself, which revokes every session that person has open,
+         *     retires every passkey they hold and puts them back to awaiting enrolment. Platform
+         *     staff have no bypass: the support record is written first and the bank is opened only
+         *     for this one action. The answer is 202 with an empty body — the code travels by email
+         *     and is never returned here.
+         *
+         *     Errors: a 422 when the reason or the out-of-band check is blank; `not_found` when the
+         *     bank does not exist or the person is not an active member of it; `step_up_required`
+         *     when no fresh passkey assertion accompanies the call; `permission_denied` without
+         *     `support_access.grant`.
+         */
         post: operations["consoleReissueEnrolment"];
         delete?: never;
         options?: never;
@@ -920,14 +1061,47 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Tenant */
+        /**
+         * Read your own bank's profile and setup progress
+         * @description Returns the organisation the caller is signed in to: its name, short name, timezone,
+         *     status, the language it reads and writes in first, the languages it keeps content in,
+         *     and how far it has got through first-run setup. Call it when a screen opens and needs
+         *     the bank's own settings, or to show an administrator what is left to configure.
+         *
+         *     Any member of the bank may call it; beyond a session no permission is needed, and the
+         *     answer is always that member's own organisation — there is no way to ask about another
+         *     one, and nothing here is ever shared with another bank. It changes nothing and writes
+         *     nothing to the audit log.
+         *
+         *     Errors: `unauthenticated` when there is no session; `not_found` when the session
+         *     belongs to no organisation, which is what a platform console session gets here.
+         */
         get: operations["getTenant"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Tenant */
+        /**
+         * Change your bank's name, timezone or languages
+         * @description Updates the organisation's own profile and returns it as it now stands. Send only
+         *     the fields you are changing: an omitted field is left alone, and `contentLanguages`
+         *     replaces the whole list rather than adding to it. Call it from the bank's settings
+         *     screen once an administrator has edited the profile.
+         *
+         *     Needs the `security.manage` permission, which the bank's administrator role carries; a
+         *     member without it is refused. No passkey step-up is asked for, because this is the
+         *     bank's own profile and not a security, footprint or export action. The change is
+         *     recorded in the audit log as `tenant.updated` with the name, timezone, default
+         *     language and content languages both before and after, so the edit is answerable years
+         *     later. Nothing here leaves the bank.
+         *
+         *     Errors: a 422 for a field the caller can fix — a blank name, an empty content-language
+         *     list — each carrying its own `code` and a message to show; `unknown_key` for a
+         *     timezone the IANA database does not hold or a language key that is not an active
+         *     language row; `permission_denied` without `security.manage`; `unauthenticated`
+         *     without a session.
+         */
         patch: operations["updateTenant"];
         trace?: never;
     };
@@ -1502,15 +1676,35 @@ export interface components {
         /**
          * AgentRunFinish
          * @description `PATCH /agent-runs/{runId}`: a run closes once, into a terminal status.
+         * @example {
+         *       "error": null,
+         *       "outputRef": "runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl",
+         *       "stats": {
+         *         "changesRegistered": 2,
+         *         "fetches": 118,
+         *         "modelCalls": 42,
+         *         "proposalsSubmitted": 5,
+         *         "sourcesChecked": 31
+         *       },
+         *       "status": "succeeded"
+         *     }
          */
         AgentRunFinish: {
-            /** Error */
+            /**
+             * Error
+             * @description What went wrong, in at most 2000 characters, on a run that failed. It is read by the people who operate the agents, so keep it to the technical cause: never a stack trace, never fetched page content, and never anything belonging to a bank, because this text travels to the operators' logs. Null on a run that succeeded.
+             */
             error?: string | null;
-            /** Outputref */
+            /**
+             * Outputref
+             * @description Where the run's full working output was stored — an object-store path such as `runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl` — at most 500 characters. It is a pointer for the engineers who operate the agents and never something a bank's screen shows, so it must not carry tenant content in its path. Null when the run kept no output.
+             */
             outputRef?: string | null;
+            /** @description The counters for this run, filed as the agent closes it. Optional: omit it or send null and the counters already on the run stand unchanged, which is the honest answer from a run that failed before it could count. */
             stats?: components["schemas"]["AgentRunStats"] | null;
             /**
              * Status
+             * @description How the run ended. `succeeded` means the agent finished its sweep and filed everything it found; `failed` means it stopped early — a blocked page, an exhausted budget, a crash — and whatever it had already filed still stands and is still attributed to this run. A run closes once and only into one of these two, so `running` cannot be sent here; opening the run is what sets that. Neither value says the findings are right: an agent's output stays labelled as machine output until a person at the bank confirms it.
              * @enum {string}
              */
             status: "succeeded" | "failed";
@@ -1519,46 +1713,100 @@ export interface components {
          * AgentRunInput
          * @description `POST /agent-runs`, the first call of every execution (AGT-01). `agent` is the
          *     definition's stable key, never its label.
+         * @example {
+         *       "agent": "watch-sweeper",
+         *       "model": "regwatch-2026-08",
+         *       "pipelineVersion": "watch-1.4.2"
+         *     }
          */
         AgentRunInput: {
-            /** Agent */
+            /**
+             * Agent
+             * @description The stable key of the agent definition this run executes, such as `watch-sweeper` — the definition's key and never its label, between 1 and 80 characters. The key must name a definition this build ships and one the calling key is entitled to run, or the call is refused. A key is issued once and never changes: a new version of an agent keeps the key and raises its version, so a run log stays readable across versions.
+             */
             agent: string;
-            /** Model */
+            /**
+             * Model
+             * @description The identifier of the language model this run will use, as the runner names it, between 1 and 120 characters — `regwatch-2026-08`. It is recorded with the run so that any fact an agent produced can be traced to the model that produced it. Naming a model here does not make an endpoint approved: which endpoints tenant content may reach is a deployment decision and not a caller's.
+             */
             model: string;
-            /** Pipelineversion */
+            /**
+             * Pipelineversion
+             * @description The version of the agent pipeline that is running, between 1 and 40 characters — `watch-1.4.2`. It is the code-side companion to the definition's own version and is recorded with the run, so a later evaluation can tell a change of behaviour caused by new code from one caused by a new prompt or a new model.
+             */
             pipelineVersion: string;
         };
         /**
          * AgentRunOut
          * @description One run as every reader sees it. A tenant reads the library's runs and its own; no
          *     reader sees another tenant's (AGT-01, item 14).
+         * @example {
+         *       "agent": "watch-sweeper",
+         *       "error": null,
+         *       "finishedAt": "2026-09-20T02:18:41Z",
+         *       "id": "5f1c2a80-3b6e-4a1e-9d21-0a2b8c7d4e10",
+         *       "model": "regwatch-2026-08",
+         *       "outputRef": "runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl",
+         *       "pipelineVersion": "watch-1.4.2",
+         *       "startedAt": "2026-09-20T02:00:03Z",
+         *       "stats": {
+         *         "changesRegistered": 2,
+         *         "fetches": 118,
+         *         "modelCalls": 42,
+         *         "proposalsSubmitted": 5,
+         *         "sourcesChecked": 31
+         *       },
+         *       "status": "succeeded"
+         *     }
          */
         AgentRunOut: {
-            /** Agent */
+            /**
+             * Agent
+             * @description The stable key of the agent definition that executed, such as `watch-sweeper`. The key and never the label. It does not tell you which version ran: read `pipelineVersion` for that.
+             */
             agent: string;
-            /** Error */
+            /**
+             * Error
+             * @description Why the run failed, as the agent reported it, in terms meant for the people who operate the agents. Null on a run that is still open or that succeeded. A run can fail with nothing here, so null is not proof that nothing went wrong — read `status` for that.
+             */
             error: string | null;
-            /** Finishedat */
+            /**
+             * Finishedat
+             * @description When the run was closed, as a UTC timestamp in ISO 8601, set by the server. Null while the run is still open. A run that has been null for far longer than its cadence is a stuck run and not a successful one, so do not read null as 'still going well'.
+             */
             finishedAt: string | null;
             /**
              * Id
              * Format: uuid
+             * @description The run's permanent identifier, a UUID the server issues when the run opens. Every change, proposal and source check the agent files carries it, so it is the thread a reviewer pulls to see everything one execution did and where each claim came from.
              */
             id: string;
-            /** Model */
+            /**
+             * Model
+             * @description The language model this run used, as the runner named it — `regwatch-2026-08`. Recorded so any fact an agent produced can be traced to the model behind it, and so a change in quality can be read against a change of model.
+             */
             model: string;
-            /** Outputref */
+            /**
+             * Outputref
+             * @description Where the run's full working output was stored, a pointer for the engineers who operate the agents rather than anything a bank's screen shows. Null when the run kept no output or has not closed yet.
+             */
             outputRef: string | null;
-            /** Pipelineversion */
+            /**
+             * Pipelineversion
+             * @description The version of the agent pipeline that executed — `watch-1.4.2`. With `model` it is what an evaluation compares runs across. It is the running code's version and not the agent definition's own version number.
+             */
             pipelineVersion: string;
             /**
              * Startedat
              * Format: date-time
+             * @description When the run was opened, as a UTC timestamp in ISO 8601. The server sets it, not the agent, so it cannot be backdated. Runs are listed oldest first by this value, which is the order a sweep actually happened in.
              */
             startedAt: string;
+            /** @description What this run did, counted against the budgets in the agent's definition. All zeroes while the run is open, because an agent files its counters when it closes; zeroes on a closed run mean the run genuinely did nothing. */
             stats: components["schemas"]["AgentRunStats"];
             /**
              * Status
+             * @description Where the run stands. `running`: the agent is working and the server has heard nothing more. `succeeded`: the agent closed the run having filed what it found. `failed`: it closed early, and what it filed before that still counts. This is a statement about the execution and never about the findings — everything an agent filed stays labelled as machine output until a person at the bank confirms it.
              * @enum {string}
              */
             status: "running" | "succeeded" | "failed";
@@ -1566,41 +1814,82 @@ export interface components {
         /**
          * AgentRunPage
          * @description `{items, total}` with `limit` and `offset`, not the designed cursor page (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "agent": "watch-sweeper",
+         *           "error": null,
+         *           "finishedAt": "2026-09-20T02:18:41Z",
+         *           "id": "5f1c2a80-3b6e-4a1e-9d21-0a2b8c7d4e10",
+         *           "model": "regwatch-2026-08",
+         *           "outputRef": "runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl",
+         *           "pipelineVersion": "watch-1.4.2",
+         *           "startedAt": "2026-09-20T02:00:03Z",
+         *           "stats": {
+         *             "changesRegistered": 2,
+         *             "fetches": 118,
+         *             "modelCalls": 42,
+         *             "proposalsSubmitted": 5,
+         *             "sourcesChecked": 31
+         *           },
+         *           "status": "succeeded"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
          */
         AgentRunPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The runs on this page, oldest first, so a reader follows a sweep in the order it happened. A person signed in to a bank sees the platform's own library runs and that bank's own runs, never another bank's. An empty list is a 200 and means nothing has run yet; it is never an error.
+             */
             items: components["schemas"]["AgentRunOut"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many runs this caller may see in total, not how many are on this page — use it to size a pager. It counts only what this caller is allowed to read, so two banks asking the same question will get different totals for the same platform.
+             */
             total: number;
         };
         /**
          * AgentRunStats
          * @description The `stats` column of agent_run: what one run did, counted against the budget
          *     defaults of its definition (`backend/agents/<agent>/v<n>/definition.yaml`).
+         * @example {
+         *       "changesRegistered": 2,
+         *       "fetches": 118,
+         *       "modelCalls": 42,
+         *       "proposalsSubmitted": 5,
+         *       "sourcesChecked": 31
+         *     }
          */
         AgentRunStats: {
             /**
              * Changesregistered
+             * @description How many regulatory changes the run put on the watch feed, counted against the change budget in the agent's definition. A change is a sighting the bank has yet to judge: it is not an obligation, it is not applicability and it is not a decision, and nothing in the inventory moves until a person acts on it. Defaults to 0.
              * @default 0
              */
             changesRegistered: number;
             /**
              * Fetches
+             * @description How many documents the run fetched from the outside world, counted against the fetch budget in the agent's definition. Fetched content is untrusted: it is screened for embedded instructions before it is read and never executed, so a high count measures work done and never facts established. Defaults to 0.
              * @default 0
              */
             fetches: number;
             /**
              * Modelcalls
+             * @description How many times the run called a language model, counted against the model-call budget in the agent's versioned definition. The agent reports it as it closes the run; it defaults to 0, so 0 on a finished run means the agent did no model work rather than that the number is missing.
              * @default 0
              */
             modelCalls: number;
             /**
              * Proposalssubmitted
+             * @description How many proposals the run put in the queue for the shared library, counted against the proposal budget in the agent's definition. A proposal is the only door an agent has into the library and it changes nothing until it is approved, so read this as a count of requests and never of library edits. Defaults to 0.
              * @default 0
              */
             proposalsSubmitted: number;
             /**
              * Sourceschecked
+             * @description How many registered sources the run visited, one per source per run, counting the sources where nothing had changed. A quiet source is still a check, and that is what lets a bank show that a source was watched on a given night rather than only that something was found. Defaults to 0.
              * @default 0
              */
             sourcesChecked: number;
@@ -1917,14 +2206,31 @@ export interface components {
             /** Email */
             email: string;
         };
-        /** ConsoleReissueBody */
+        /**
+         * ConsoleReissueBody
+         * @description Why platform support is entering a bank to re-issue an administrator's enrolment,
+         *     and how that person was proved to be who they claim. Both answers are written where
+         *     the bank itself can read them.
+         * @example {
+         *       "outOfBandCheck": "Called back on the switchboard number held on file and confirmed her identity with the head of compliance, who knows her by sight.",
+         *       "reason": "The bank's only administrator lost the phone holding her passkey and no second administrator exists to re-invite her.",
+         *       "ticketRef": "SUP-2418"
+         *     }
+         */
         ConsoleReissueBody: {
-            /** Outofbandcheck */
+            /**
+             * Outofbandcheck
+             * @description How the person asking was proved to be who they claim, away from this system — the number that was called back, the document that was checked, the colleague who vouched for them — at most 1000 characters. This is the whole control behind a last-administrator recovery, which is why it is required and a blank one is refused with a 422. It is recorded in the audit event and in the support-access record the bank can read.
+             */
             outOfBandCheck: string;
-            /** Reason */
+            /**
+             * Reason
+             * @description Why this recovery is happening, in the support engineer's own words and at most 1000 characters. It is written into a support-access record in the bank's own zone, which the bank can read afterwards, so write it for the customer and not for an internal ticket queue. Blank is refused with a 422.
+             */
             reason: string;
             /**
              * Ticketref
+             * @description The support ticket this work is being done under, at most 100 characters — `SUP-2418`. Optional: it defaults to the empty string where there is no ticket, and leaving it empty is never a reason to leave `reason` or `outOfBandCheck` thin. It is stored on the support-access record the bank can read.
              * @default
              */
             ticketRef: string;
@@ -1933,55 +2239,148 @@ export interface components {
          * ConsoleTenantCreateBody
          * @description Create a bank and invite its first administrator in one action (ADM-02, ID-01).
          *     The address must be the administrator's own: platform staff are separate accounts.
+         * @example {
+         *       "contentLanguages": [
+         *         "da",
+         *         "en"
+         *       ],
+         *       "defaultLanguage": "da",
+         *       "firstAdminEmail": "compliance.officer@second-bank.test",
+         *       "firstAdminTitle": "Head of Compliance",
+         *       "name": "Second Bank A/S",
+         *       "slug": "second-bank",
+         *       "timezone": "Europe/Copenhagen"
+         *     }
          */
         ConsoleTenantCreateBody: {
-            /** Contentlanguages */
+            /**
+             * Contentlanguages
+             * @description Every language the bank will keep content in, as language keys in the order it wants them shown — `["da", "en"]` for a Danish bank. At least one is required and an empty list is refused. Each key must be an active language row or the whole call is refused with `unknown_key` naming the key. The bank's own administrators change the list afterwards.
+             */
             contentLanguages: string[];
-            /** Defaultlanguage */
+            /**
+             * Defaultlanguage
+             * @description The key of the language the bank will read and write in first, at most 8 characters — `sv`, `da`, `nb`, `fi` or `en`. A language key, never a label. It must be an active language row or the call is refused with `unknown_key`. The languages on offer are library reference rows, not a vocabulary a bank's admin may extend.
+             */
             defaultLanguage: string;
-            /** Firstadminemail */
+            /**
+             * Firstadminemail
+             * @description The work address of the person who will be the bank's first administrator, at most 254 characters. Creating the organisation sends that person an enrolment invitation carrying the system role that can invite everyone else; no password is created at any point, here or later. It has to be the bank's own person: an address that already belongs to platform staff is refused with a 422, because a console account carrying platform permissions into a bank session would collapse the separation the product rests on.
+             */
             firstAdminEmail: string;
             /**
              * Firstadmintitle
+             * @description That person's job title at the bank, at most 200 characters — 'Head of Compliance'. Optional; it defaults to the empty string. It is shown beside their name in member lists and grants nothing at all: what someone may do comes from their roles and never from a title.
              * @default
              */
             firstAdminTitle: string;
-            /** Name */
+            /**
+             * Name
+             * @description The organisation's name as the bank itself will see it, at most 200 characters — 'Example Bank AB'. It is the bank's own from the moment it exists and its administrators reword it themselves afterwards. Blank is refused with a 422.
+             */
             name: string;
-            /** Slug */
+            /**
+             * Slug
+             * @description The short name the organisation will be known by in URLs and in support, at most 80 characters of lower-case letters, digits and hyphens — `second-bank`. Anything else is refused with a 422. It must be free across the whole platform: a name already taken is refused with `duplicate_key`. It is fixed for the life of the organisation, so choose it as deliberately as a customer number.
+             */
             slug: string;
-            /** Timezone */
+            /**
+             * Timezone
+             * @description The IANA timezone the bank works in, at most 64 characters — `Europe/Stockholm` for a Swedish bank, `Europe/Copenhagen` for a Danish one. It sets the local day every deadline and every screen is counted in. A name the server's IANA database does not hold is refused with `unknown_key`.
+             */
             timezone: string;
         };
-        /** ConsoleTenantPage */
+        /**
+         * ConsoleTenantPage
+         * @description One page of the platform console's list of banks.
+         * @example {
+         *       "items": [
+         *         {
+         *           "createdAt": "2026-01-09T09:12:44Z",
+         *           "defaultLanguage": {
+         *             "key": "sv",
+         *             "kind": null,
+         *             "label": "Svenska"
+         *           },
+         *           "id": "00000000-0000-4000-8000-00000000000a",
+         *           "name": "Example Bank AB",
+         *           "slug": "example-bank",
+         *           "status": "active"
+         *         },
+         *         {
+         *           "createdAt": "2026-09-20T07:41:12Z",
+         *           "defaultLanguage": {
+         *             "key": "da",
+         *             "kind": null,
+         *             "label": "Dansk"
+         *           },
+         *           "id": "00000000-0000-4000-8000-00000000000b",
+         *           "name": "Second Bank A/S",
+         *           "slug": "second-bank",
+         *           "status": "active"
+         *         }
+         *       ],
+         *       "total": 2
+         *     }
+         */
         ConsoleTenantPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The banks on this page, ordered by their short name so two calls for the same page return the same rows. A platform session sees every organisation here and nothing inside any of them. An empty list is a 200 and means nothing matched; it is never an error.
+             */
             items: components["schemas"]["ConsoleTenantRow"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many organisations exist in total, not how many are on this page — use it to size a pager. It is counted at the moment of the call, so an organisation created between two pages can shift what the second page holds.
+             */
             total: number;
         };
         /**
          * ConsoleTenantRow
          * @description One bank as the platform console lists it (ADM-02). No member count and no
          *     tenant-side content: a platform session reads the tenant row and nothing under it.
+         * @example {
+         *       "createdAt": "2026-09-20T07:41:12Z",
+         *       "defaultLanguage": {
+         *         "key": "da",
+         *         "kind": null,
+         *         "label": "Dansk"
+         *       },
+         *       "id": "00000000-0000-4000-8000-00000000000b",
+         *       "name": "Second Bank A/S",
+         *       "slug": "second-bank",
+         *       "status": "active"
+         *     }
          */
         ConsoleTenantRow: {
             /**
              * Createdat
              * Format: date-time
+             * @description When the organisation was created on the platform, as a UTC timestamp in ISO 8601. It is the platform's own record of onboarding and never changes; it is not a contract date, a go-live date or a billing start.
              */
             createdAt: string;
+            /** @description The language the bank reads and writes in first, as a reference to a language row by key — `sv`, `en`, `da`, `nb` or `fi` — with a label to show. Languages are library reference rows and not a vocabulary a bank's admin may extend. Null only for an organisation that has yet to choose one; every organisation created through this console has one from its first moment. */
             defaultLanguage: components["schemas"]["RoleRef"] | null;
             /**
              * Id
              * Format: uuid
+             * @description The bank's permanent identifier, a UUID issued once at creation and never reissued. It is the value the console's other calls carry in their path.
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description The organisation's own name for itself, as the bank set it. Platform staff read it here; they never change it, because the name belongs to the bank and is edited in the bank's own profile.
+             */
             name: string;
-            /** Slug */
+            /**
+             * Slug
+             * @description The bank's short name — lower-case letters, digits and hyphens, `example-bank` — unique across the platform and fixed at creation. It is how support and URLs name the organisation, and it is the one field here that can never be changed.
+             */
             slug: string;
-            /** Status */
+            /**
+             * Status
+             * @description Whether the organisation is open for business: `active` means its members can sign in, `deactivated` means no session will open for it. It says nothing about the data inside, which stays whole until a tenant exit has been approved by two people and executed.
+             */
             status: string;
         };
         /**
@@ -2595,18 +2994,65 @@ export interface components {
             /** Versionnumber */
             versionNumber: number;
         };
-        /** Onboarding */
+        /**
+         * Onboarding
+         * @description How far the bank has got through first-run setup, recomputed on every read.
+         * @example {
+         *       "steps": [
+         *         {
+         *           "done": true,
+         *           "key": "profile"
+         *         },
+         *         {
+         *           "done": true,
+         *           "key": "members"
+         *         },
+         *         {
+         *           "done": true,
+         *           "key": "footprint"
+         *         },
+         *         {
+         *           "done": false,
+         *           "key": "vocabularies"
+         *         },
+         *         {
+         *           "done": false,
+         *           "key": "passkey"
+         *         }
+         *       ],
+         *       "stepsDone": 3
+         *     }
+         */
         Onboarding: {
-            /** Steps */
+            /**
+             * Steps
+             * @description The five first-run steps in the order the setup screen walks through them, each with its key and whether it is done. Computed by the server from the bank's own records on every read, never stored and never sent in. Read it as a to-do list for the bank's administrator and never as a gate: nothing in the product is withheld because a step is unfinished.
+             */
             steps: components["schemas"]["OnboardingStep"][];
-            /** Stepsdone */
+            /**
+             * Stepsdone
+             * @description How many of the five first-run steps are finished, so a screen can show progress without counting the list itself. It is a number of steps and not a percentage, and it never exceeds the length of `steps`. Computed by the server.
+             */
             stepsDone: number;
         };
-        /** OnboardingStep */
+        /**
+         * OnboardingStep
+         * @description One line of the bank's first-run checklist: which step, and whether it is done.
+         * @example {
+         *       "done": true,
+         *       "key": "footprint"
+         *     }
+         */
         OnboardingStep: {
-            /** Done */
+            /**
+             * Done
+             * @description Whether that step is finished. The server works it out from the records themselves each time the profile is read, so there is no call that marks a step done and no way to fake one. A finished step can still be revisited: true means the bank has done the work once, not that the setting is now locked.
+             */
             done: boolean;
-            /** Key */
+            /**
+             * Key
+             * @description Which first-run step this line is about. Five, fixed in code and safe to match on: `profile` (the bank has a name, a timezone and content languages), `members` (somebody else has been invited, or there is more than one member), `footprint` (the markets, entities and services the bank operates in have been chosen), `vocabularies` (the bank's own lists have been reviewed, which reads false for everyone until the screen that reviews them ships) and `passkey` (an administrator has enrolled a passkey of their own).
+             */
             key: string;
         };
         /**
@@ -2628,11 +3074,13 @@ export interface components {
         PageQuery: {
             /**
              * Limit
+             * @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
              * @default 20
              */
             limit: number;
             /**
              * Offset
+             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
              * @default 0
              */
             offset: number;
@@ -3015,13 +3463,27 @@ export interface components {
             /** Usagenote */
             usageNote?: string | null;
         };
-        /** RoleRef */
+        /**
+         * RoleRef
+         * @description A pointer to a row in one of the platform's managed lists — a role, a language, an
+         *     agent — as key, kind and label together, so a screen can show a name while an
+         *     integration stores something that never moves under it.
+         */
         RoleRef: {
-            /** Key */
+            /**
+             * Key
+             * @description The stable key of the row being pointed at: a role such as `admin`, a language such as `sv`, an agent definition such as `watch-sweeper`. Store and compare this and never the label — a key is issued once and never changes, while a label is reworded and translated freely. Some of the lists behind a reference are vocabularies whose rows a bank's admin may extend or retire, so an unfamiliar key is new data and not an error; others, such as the content languages, are library reference rows that only an approved proposal adds to. Read the endpoint that owns the list for the live set.
+             */
             key: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description Which list the key belongs to, where one shape carries rows from more than one list — the name of the vocabulary, for instance. It is null wherever the field holding the reference already settles the question, as it does for a language or a role, and a reader should then take the kind from that field rather than guessing from the key.
+             */
             kind?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description The row's name in the reader's language, for showing on screen and for nothing else. It is reworded whenever the bank prefers different wording and it is translated, so storing it or matching on it will break; keep the key instead.
+             */
             label: string;
         };
         /**
@@ -3332,35 +3794,129 @@ export interface components {
              */
             version: number;
         };
-        /** TenantOut */
+        /**
+         * TenantOut
+         * @description The bank's own profile, as a member of that bank reads it.
+         * @example {
+         *       "contentLanguages": [
+         *         {
+         *           "key": "sv",
+         *           "kind": null,
+         *           "label": "Svenska"
+         *         },
+         *         {
+         *           "key": "en",
+         *           "kind": null,
+         *           "label": "English"
+         *         }
+         *       ],
+         *       "defaultLanguage": {
+         *         "key": "sv",
+         *         "kind": null,
+         *         "label": "Svenska"
+         *       },
+         *       "id": "00000000-0000-4000-8000-00000000000a",
+         *       "name": "Example Bank AB",
+         *       "onboarding": {
+         *         "steps": [
+         *           {
+         *             "done": true,
+         *             "key": "profile"
+         *           },
+         *           {
+         *             "done": true,
+         *             "key": "members"
+         *           },
+         *           {
+         *             "done": true,
+         *             "key": "footprint"
+         *           },
+         *           {
+         *             "done": false,
+         *             "key": "vocabularies"
+         *           },
+         *           {
+         *             "done": false,
+         *             "key": "passkey"
+         *           }
+         *         ],
+         *         "stepsDone": 3
+         *       },
+         *       "slug": "example-bank",
+         *       "status": "active",
+         *       "timezone": "Europe/Stockholm"
+         *     }
+         */
         TenantOut: {
-            /** Contentlanguages */
+            /**
+             * Contentlanguages
+             * @description Every language this bank keeps content in, in the order its administrators put them, the default usually first. It decides which translations a reader is offered and which languages an import or an export covers; it does not limit what the shared library holds, which stays whole whatever a bank picks here. Each entry points at a language row by key, and those rows are library reference data rather than a vocabulary an admin may extend.
+             */
             contentLanguages: components["schemas"]["RoleRef"][];
+            /** @description The language the bank reads and writes in first: it decides which version of a library record a reader is shown when they have expressed no preference, and which language a briefing is written in. A reference to a language row by its key — `sv`, `en`, `da`, `nb` or `fi` — with a label to show. Languages are library reference rows, not a vocabulary a bank's admin may extend; read `GET /reference/languages` for the set on offer. Null only while a brand-new organisation has not chosen one. */
             defaultLanguage: components["schemas"]["RoleRef"] | null;
             /**
              * Id
              * Format: uuid
+             * @description The bank's permanent identifier, a UUID issued once when the organisation was created and never reissued. Key your own records on it: the short name in `slug` reads better in a URL, but this is the value that cannot change.
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description The bank's own name for itself, as it appears on its screens and its exports — 'Example Bank AB'. It is the bank's judgement in the bank's own zone, an administrator may reword it at any time, and it is not a legal-register entry and not an identifier.
+             */
             name: string;
+            /** @description How far the bank has got through first-run setup, computed by the server on every read. It is progress through a checklist and nothing more: a complete onboarding says the bank has configured the product, never that it applies any obligation to itself and never that it complies with one. */
             onboarding: components["schemas"]["Onboarding"];
-            /** Slug */
+            /**
+             * Slug
+             * @description The bank's short name — lower-case letters, digits and hyphens, such as `example-bank` — unique across the platform and fixed when the organisation was created. It appears in URLs and in support conversations. This call cannot change it; only the platform console sets it, and only at creation.
+             */
             slug: string;
-            /** Status */
+            /**
+             * Status
+             * @description Whether the organisation is open for business: `active` means its members can sign in and work, `deactivated` means the platform has closed it and no session will open. Platform staff set it; the bank cannot. It says nothing about the data inside — a deactivated organisation still holds everything it ever had until a tenant exit has been approved by two people and executed.
+             */
             status: string;
-            /** Timezone */
+            /**
+             * Timezone
+             * @description The IANA timezone the bank works in, such as `Europe/Stockholm`. It is what turns a stored UTC instant into the local day a deadline is counted in and a screen is grouped by. It belongs to the organisation and not to a person: a member reading from another country still sees the bank's day.
+             */
             timezone: string;
         };
-        /** TenantPatch */
+        /**
+         * TenantPatch
+         * @description What an administrator may change about their own bank's profile. Send only the
+         *     fields you are changing; an omitted field is left exactly as it was.
+         * @example {
+         *       "contentLanguages": [
+         *         "sv",
+         *         "en"
+         *       ],
+         *       "name": "Example Bank AB",
+         *       "timezone": "Europe/Stockholm"
+         *     }
+         */
         TenantPatch: {
-            /** Contentlanguages */
+            /**
+             * Contentlanguages
+             * @description The complete new list of language keys the bank keeps content in, in the order it wants them shown. It replaces the current list rather than adding to it, so send every language you mean to keep, including the default. Omit the field to leave the list alone; an empty list is refused with a 422, and a key that is not an active language row is refused with `unknown_key` naming the key. Keys such as `sv` and `en`, never labels.
+             */
             contentLanguages?: string[] | null;
-            /** Defaultlanguage */
+            /**
+             * Defaultlanguage
+             * @description The key of the language the bank should read and write in first — `sv`, `en`, `da`, `nb` or `fi` — at most 8 characters. A key, never a label. Omit the field to leave it alone; a key that is not an active language row is refused with `unknown_key`. The languages on offer are library reference rows and not a vocabulary a bank's admin may extend.
+             */
             defaultLanguage?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description A new name for the organisation, at most 200 characters. Omit the field to leave the name alone; sending it blank does not clear it, it is refused with a 422, because an organisation without a name cannot be told apart in an audit trail.
+             */
             name?: string | null;
-            /** Timezone */
+            /**
+             * Timezone
+             * @description A new IANA timezone for the organisation, such as `Europe/Copenhagen`, at most 64 characters. Omit the field to leave it alone. The name is checked against the IANA database the server runs on and an unknown one is refused with `unknown_key`. Changing it moves the local day every deadline is counted in, so dates already on screen are re-read in the new zone; the stored instants themselves do not move.
+             */
             timezone?: string | null;
         };
         /** TermRef */
@@ -4198,7 +4754,9 @@ export interface operations {
     listAgentKeys: {
         parameters: {
             query?: {
+                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
                 limit?: number;
+                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
                 offset?: number;
             };
             header?: never;
@@ -4267,7 +4825,9 @@ export interface operations {
     listAgentRuns: {
         parameters: {
             query?: {
+                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
                 limit?: number;
+                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
                 offset?: number;
             };
             header?: never;
@@ -4291,6 +4851,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                /** @description The retry key for this write, chosen by the caller and unique to the API key making it; a UUID is the usual choice. Send the same key again when you cannot tell whether a call landed and the server replays what that key already did instead of doing the work twice — a retried open returns the run it already opened rather than a second one. Send a new key for genuinely new work. Reusing a key with a different body is a conflict and is refused with a 409 rather than silently accepted. It is optional in the schema so that a caller cannot be locked out by a lost key, but an agent always sends one: without it a retry cannot be recognised. */
                 "Idempotency-Key"?: string | null;
             };
             path?: never;
@@ -4317,9 +4878,11 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
+                /** @description The retry key for this write, chosen by the caller and unique to the API key making it; a UUID is the usual choice. Send the same key again when you cannot tell whether a call landed and the server replays what that key already did instead of doing the work twice — a retried open returns the run it already opened rather than a second one. Send a new key for genuinely new work. Reusing a key with a different body is a conflict and is refused with a 409 rather than silently accepted. It is optional in the schema so that a caller cannot be locked out by a lost key, but an agent always sends one: without it a retry cannot be recognised. */
                 "Idempotency-Key"?: string | null;
             };
             path: {
+                /** @description The identifier of the run to close: the UUID that opening the run returned. It must be a run this same API key opened — another key's run answers `not_found` rather than saying it exists. */
                 run_id: string;
             };
             cookie?: never;
@@ -4426,7 +4989,9 @@ export interface operations {
                 actorId?: string | null;
                 from?: string | null;
                 to?: string | null;
+                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
                 limit?: number;
+                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
                 offset?: number;
             };
             header?: never;
@@ -4891,7 +5456,9 @@ export interface operations {
     listConsoleTenants: {
         parameters: {
             query?: {
+                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
                 limit?: number;
+                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
                 offset?: number;
             };
             header?: never;
@@ -4940,7 +5507,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The identifier of the bank being helped, the UUID the console's tenant list returns as `id`. A bank that does not exist answers `not_found`, and a bank that does grants the caller nothing beyond this single action. */
                 tenant_id: string;
+                /** @description The identifier of the member whose enrolment is being re-issued, a UUID. It must be an active member of the bank named earlier in the path; somebody who belongs to another bank, or who has been deactivated, answers `not_found` without saying which of the two it was. */
                 user_id: string;
             };
             cookie?: never;
@@ -4957,7 +5526,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Empty"];
+                    "application/json": unknown;
                 };
             };
         };
@@ -5141,7 +5710,9 @@ export interface operations {
                 q?: string | null;
                 asOf?: string | null;
                 outsideFootprint?: boolean;
+                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
                 limit?: number;
+                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
                 offset?: number;
             };
             header?: never;
@@ -5700,7 +6271,9 @@ export interface operations {
     listApiKeys: {
         parameters: {
             query?: {
+                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
                 limit?: number;
+                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
                 offset?: number;
             };
             header?: never;
@@ -5916,7 +6489,9 @@ export interface operations {
     listInvitations: {
         parameters: {
             query?: {
+                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
                 limit?: number;
+                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
                 offset?: number;
             };
             header?: never;
@@ -5981,7 +6556,9 @@ export interface operations {
     listMembers: {
         parameters: {
             query?: {
+                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
                 limit?: number;
+                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
                 offset?: number;
             };
             header?: never;
@@ -6230,7 +6807,9 @@ export interface operations {
     listSecurityLog: {
         parameters: {
             query?: {
+                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
                 limit?: number;
+                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
                 offset?: number;
             };
             header?: never;

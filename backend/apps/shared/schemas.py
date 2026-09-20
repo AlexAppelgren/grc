@@ -51,8 +51,30 @@ class PageQuery(Schema):
     `offset` is bounded too: PostgreSQL walks every skipped row and raises above a signed
     64-bit integer, so an unbounded offset answers 500 on every list (hardening H1)."""
 
-    limit: int = Field(default=settings.API_PAGE_SIZE_DEFAULT, ge=1, le=settings.API_PAGE_SIZE_MAX)
-    offset: int = Field(default=0, ge=0, le=settings.API_PAGE_OFFSET_MAX)
+    limit: int = Field(
+        default=settings.API_PAGE_SIZE_DEFAULT,
+        ge=1,
+        le=settings.API_PAGE_SIZE_MAX,
+        description=(
+            "How many records to return in one page. Leave it out and you get 20; the largest "
+            "page is 100 and the smallest is 1. A larger number is refused with a 422 rather "
+            "than quietly trimmed, so a short page always means the data ran out and never "
+            "that the server capped you without saying so."
+        ),
+    )
+    offset: int = Field(
+        default=0,
+        ge=0,
+        le=settings.API_PAGE_OFFSET_MAX,
+        description=(
+            "How many records to skip before this page begins, counting from 0: with the "
+            "default page size, `offset=20` is the second page. The deepest offset accepted is "
+            "100000, because the database walks every skipped row and a deeper page would time "
+            "out; narrow the list with filters rather than paging past it. Totals are counted "
+            "at the moment of the call, so a record written between two pages can shift what "
+            "the later page holds."
+        ),
+    )
 
 
 class MailOutboxMessage(CamelSchema):

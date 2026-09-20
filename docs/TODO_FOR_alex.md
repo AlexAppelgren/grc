@@ -325,3 +325,22 @@ change what four eyes means and are marked as such.
       supervisor expects a person behind every library fact, staffing `library_editor` again is a
       staffing change and no rework — which is why the queue is built once, for both kinds of
       approver.
+
+## The documentation gate's list of error codes (2026-09-20, first OAS sweep)
+
+- [ ] **`api_docs_gate.py` refuses a code that routes really do raise.** The gate checks every
+      backticked RFC 9457 code in an operation's description against `RAISABLE_CODES`, a
+      hand-typed list built from `apps/shared/errors.py`'s `STATUS_BY_CODE` plus what
+      `config/api.py` raises. But `config/api.py` passes a logic `ValidationError`'s own code
+      straight through, so a 422 really answers `check_required`, `name_required`,
+      `languages_required`, `invalid_slug` or `platform_account` from the tenants app alone, and
+      `taxonomy/http.py` adds `in_use`, `system_row`, `request_pending` and
+      `idempotency_conflict`. None of those are on the list, so documenting one truthfully fails
+      the gate. The tenants and agents sweeps worked around it by naming only listed codes in
+      backticks and describing the rest as "a 422 for a field the caller can fix, each carrying
+      its own `code`" — honest, but it leaves the integrator without the value to branch on.
+      Default if you say nothing: the next sweep keeps doing the same. The fix is one of two
+      things and both are yours, because one of them touches a gate: derive `RAISABLE_CODES`
+      from the source (every `code=` argument under `apps/`), or add the proven ones to the
+      list by hand as each sweep meets them. Eight sweeps remain, and every one of them will
+      hit this.
