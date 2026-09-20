@@ -8,6 +8,14 @@ all.
 Chunk 2 applies the vocabulary and term kinds. Chunk 4 adds instruments, provisions and
 obligations, each with a version row rather than an overwrite (playbook 4.3).
 
+`apply_reverification()` is the single exception to "a proposal is the only door"
+(INV-06): checking a record against its source changes no fact, so it needs no second
+pair of eyes to propose it, only a reviewer's fresh passkey. It stays a stamp. It writes
+a Verification row, which is append-only in the database (library 0004), and on
+`no_change` it moves `last_verified_at` and `verified_by` on the obligation and nothing
+else. The library fence names this function as the one writer the re-verification route
+may reach (apps/shared/tests_library_fence.py).
+
 A payload is re-checked here against the library as it is now, not as it was when the
 proposal was made: a key someone else created in the meantime is 409 `duplicate_key`, a
 retired row cannot be relabelled into life, and a system row is never retired.
@@ -15,10 +23,12 @@ retired row cannot be relabelled into life, and a system row is never retired.
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from django.core.exceptions import ValidationError
 
+from apps.library.models import Obligation, SubjectType, Verification, VerificationOutcome
 from apps.proposals.logic import parsed_payload
 from apps.proposals.models import Proposal, ProposalKind
 from apps.proposals.schemas import (
@@ -64,6 +74,57 @@ def apply(proposal: Proposal, *, actor: Actor) -> None:
             _term_update(payload, proposal, actor)
         else:  # pragma: no cover - parsed_payload already refused an unknown kind
             raise ValidationError(f"{proposal.kind!r} cannot be applied yet.", code="unknown_key")
+
+
+def apply_reverification(
+    obligation: Obligation,
+    *,
+    actor: Actor,
+    verified_by: Any,
+    outcome: str,
+    note: str,
+    step_up_assertion_id: uuid.UUID,
+) -> Verification:
+    """Record that a person checked `obligation` against its source (INV-06, INV-S8).
+
+    Every outcome files a Verification row, so the history holds the checks that found a
+    change and the ones that could not reach the source, not only the reassuring ones.
+    `no_change` also stamps the obligation: the reader's "Verified <date>" means someone
+    saw the source say this on that date. Any other outcome leaves the old stamp standing
+    and the change itself arrives as a proposal.
+    """
+    if outcome not in {member.value for member in VerificationOutcome}:
+        raise ValidationError(f"{outcome!r} is not a verification outcome.", code="unknown_key")
+    stamped = obligation.last_verified_at
+    with library_write(f"reverification:obligation:{obligation.id}"):
+        verification = Verification.objects.create(
+            subject_type=SubjectType.OBLIGATION.value,
+            subject_id=obligation.id,
+            verified_by=verified_by,
+            outcome=outcome,
+            note=note.strip(),
+        )
+        if outcome == VerificationOutcome.NO_CHANGE.value:
+            obligation.last_verified_at = verification.verified_at
+            obligation.verified_by = verified_by
+            obligation.save(update_fields=["last_verified_at", "verified_by"])
+        record(
+            action="library.reverified",
+            actor=actor,
+            subject_type=SubjectType.OBLIGATION.value,
+            subject_id=obligation.id,
+            subject_title=obligation.stable_key,
+            summary=f"Re-verified {obligation.stable_key} against its source ({outcome}).",
+            tenant_id=None,
+            before={"lastVerifiedAt": stamped.isoformat() if stamped else None},
+            after={
+                "outcome": outcome,
+                "verificationId": str(verification.id),
+                "lastVerifiedAt": obligation.last_verified_at.isoformat() if obligation.last_verified_at else None,
+            },
+            step_up_assertion_id=step_up_assertion_id,
+        )
+    return verification
 
 
 # ---------------------------------------------------------------------------------------

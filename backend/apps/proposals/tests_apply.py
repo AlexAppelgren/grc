@@ -10,20 +10,37 @@ with the proposal left open and nothing written.
 
 from __future__ import annotations
 
+import uuid
+from datetime import UTC, datetime
 from typing import Any
 
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.test import Client
 
+from apps.library.models import (
+    Instrument,
+    Jurisdiction,
+    Obligation,
+    SubjectType,
+    Verification,
+    VerificationOutcome,
+)
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals.models import Proposal, ProposalStatus
 from apps.shared import factories
+from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
+from apps.shared.tenancy import LibraryWriteRefused, library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
-from apps.taxonomy.models import Flag, ProvisionKind, TaxonomyTerm, Urgency
+from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, ProvisionKind, TaxonomyTerm, Urgency
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 
 V1 = "/api/v1"
+# The obligation was last verified here, months before any test runs: a stamp is proven by
+# the date moving off this anchor, never by comparing with today (plan rule 8).
+WAS_VERIFIED_AT = datetime(2026, 6, 1, 9, 0, tzinfo=UTC)
 
 
 class ProposalApply(ScenarioTestCase):
@@ -258,3 +275,119 @@ class ProposalApply(ScenarioTestCase):
         self.assertEqual(refused.status_code, 409)
         self.assertEqual(refused.json()["code"], "four_eyes_violation")
         self.assertEqual(self.client.get(f"{V1}/proposals/00000000-0000-4000-8000-000000000000", **sign_in(self.editor)).status_code, 404)
+
+
+class ReverificationStamp(ScenarioTestCase):
+    """INV-06, INV-S8: re-verifying a record against its source is the one library write
+    that is not a proposal, and it stays a stamp. Every outcome files a Verification row —
+    the history is append-only (library 0004), so a second stamp is a second row and never
+    an edit of the first. Only `no_change` moves `last_verified_at` and `verified_by`: the
+    editor saw the source and it still says what the library says. A change found or a
+    source that would not load leaves the old date standing, so the record still reads as
+    last verified when it truly was.
+
+    The route over this writer is chunk3-rest-T11b.
+    """
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        self.actor = Actor(kind=ActorType.USER, id=self.editor.id, label=self.editor.name)
+        self.assertion_id = uuid.uuid4()
+        with library_write("test fixture"):
+            instrument = Instrument.objects.create(
+                stable_key="fffs-2017-2",
+                short_name="FFFS 2017:2",
+                official_ref="FFFS 2017:2",
+                source_url="https://www.fi.se/",
+                level=InstrumentLevel.objects.get(key="act"),
+                binding=True,
+                jurisdiction=Jurisdiction.objects.get(key="se"),
+                created_origin="user",
+            )
+            self.obligation = Obligation.objects.create(
+                stable_key="fffs-2017-2/9/6",
+                instrument=instrument,
+                ref_label="9 kap. 6 §",
+                duty_type=DutyType.objects.get(key="conduct"),
+                created_origin="user",
+                source_url="https://www.fi.se/",
+                source_label="FFFS 2017:2, 9 kap. 6 §",
+                last_verified_at=WAS_VERIFIED_AT,
+            )
+
+    def _reverify(self, outcome: str, note: str = "") -> Any:
+        from apps.proposals import apply
+
+        with transaction.atomic():
+            return apply.apply_reverification(
+                self.obligation,
+                actor=self.actor,
+                verified_by=self.editor,
+                outcome=outcome,
+                note=note,
+                step_up_assertion_id=self.assertion_id,
+            )
+
+    def test_no_change_stamps_the_date_and_the_verifier_and_nothing_else(self) -> None:
+        before: dict[str, Any] = dict(Obligation.objects.values().get(id=self.obligation.id))
+        verification = self._reverify(VerificationOutcome.NO_CHANGE.value, note="Checked against fi.se.")
+        after: dict[str, Any] = dict(Obligation.objects.values().get(id=self.obligation.id))
+        changed = {name for name, value in after.items() if before[name] != value}
+        self.assertEqual(changed, {"last_verified_at", "verified_by_id"})
+        self.assertEqual(after["last_verified_at"], verification.verified_at)
+        self.assertEqual(after["verified_by_id"], self.editor.id)
+        self.assertEqual(verification.note, "Checked against fi.se.")
+
+    def test_a_change_found_or_an_unreachable_source_files_the_row_and_leaves_the_stamp(self) -> None:
+        for outcome in (VerificationOutcome.CHANGE_FOUND.value, VerificationOutcome.SOURCE_UNAVAILABLE.value):
+            with self.subTest(outcome=outcome):
+                verification = self._reverify(outcome)
+                self.obligation.refresh_from_db()
+                self.assertEqual(verification.outcome, outcome)
+                self.assertEqual(self.obligation.last_verified_at, WAS_VERIFIED_AT)
+                self.assertIsNone(self.obligation.verified_by_id)
+
+    def test_every_stamp_is_a_new_verification_row_pointing_at_the_obligation(self) -> None:
+        first = self._reverify(VerificationOutcome.CHANGE_FOUND.value)
+        second = self._reverify(VerificationOutcome.NO_CHANGE.value)
+        rows = Verification.objects.filter(subject_id=self.obligation.id)
+        self.assertEqual(rows.count(), 2)
+        self.assertNotEqual(first.id, second.id)
+        for row in rows:
+            self.assertEqual(row.subject_type, SubjectType.OBLIGATION.value)
+            self.assertEqual(row.verified_by_id, self.editor.id)
+
+    def test_one_audit_row_carries_the_step_up_assertion_and_no_tenant(self) -> None:
+        verification = self._reverify(VerificationOutcome.NO_CHANGE.value, note="Checked against fi.se.")
+        event = AuditEvent.objects.get(action="library.reverified")
+        self.assertEqual(event.step_up_assertion_id, self.assertion_id)
+        self.assertIsNone(event.tenant_id)
+        self.assertEqual(event.subject_id, self.obligation.id)
+        self.assertEqual(event.subject_title, self.obligation.stable_key)
+        self.assertEqual(event.after["verificationId"], str(verification.id))
+        self.assertEqual(event.after["outcome"], VerificationOutcome.NO_CHANGE.value)
+        self.assertEqual(event.before["lastVerifiedAt"], WAS_VERIFIED_AT.isoformat())
+        self.assertEqual(event.after["lastVerifiedAt"], verification.verified_at.isoformat())
+        for haystack in (event.summary, str(event.after)):
+            self.assertNotIn("Checked against fi.se.", haystack)
+
+    def test_the_stamp_happens_inside_the_fence_and_refuses_an_outcome_that_is_not_one(self) -> None:
+        from apps.proposals import apply
+
+        with self.assertRaises(ValidationError) as caught, transaction.atomic():
+            apply.apply_reverification(
+                self.obligation,
+                actor=self.actor,
+                verified_by=self.editor,
+                outcome="looks_fine",
+                note="",
+                step_up_assertion_id=self.assertion_id,
+            )
+        self.assertEqual(caught.exception.code, "unknown_key")
+        self.assertFalse(Verification.objects.exists())
+        # Outside library_write() the same write is refused by the fence itself (PRO-01).
+        with self.assertRaises(LibraryWriteRefused):
+            self.obligation.save(update_fields=["last_verified_at"])

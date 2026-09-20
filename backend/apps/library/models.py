@@ -481,7 +481,12 @@ class Verification(LibraryModel):
 class ProblemReport(models.Model):
     """"This looks wrong" (INV-06, AUD-03). A mixed table under forced RLS: a member's
     report carries their tenant, a platform reader's none. Any member writes one, so it is
-    not a LibraryModel; the console resolves it through a proposal (chunk 4)."""
+    not a LibraryModel; the console resolves it through a proposal (chunk 4).
+
+    `version_number` and `language` record what the reader had on screen, so an editor
+    reads the same words the reader read. There is no problem-area column: nothing
+    branches on one, and an area would be a library vocabulary rather than a code enum
+    (the open question in docs/plans/briefs/CHUNK3_TASKS.md)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -489,6 +494,8 @@ class ProblemReport(models.Model):
     subject_type = models.CharField(max_length=32, choices=_choices(SubjectType))
     subject_id = models.UUIDField()
     text = models.TextField()
+    version_number = models.PositiveIntegerField(null=True, blank=True)
+    language = models.ForeignKey(Language, to_field="key", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     status = models.CharField(max_length=16, choices=_choices(ReportStatus), default=ReportStatus.OPEN.value)
     resolved_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
