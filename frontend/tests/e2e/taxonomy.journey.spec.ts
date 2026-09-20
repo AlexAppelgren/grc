@@ -22,6 +22,23 @@ const TAGS = 'tenant_tag';
 const FLAGS = 'flag';
 const SERVICES = 'service_type';
 
+// The seeded obligation whose only service is Advice (backend/apps/shared/e2e_seed.py,
+// EXPECTED_LIBRARY.advice_only_obligation): switching Advice off is what hides it.
+const ADVICE_ONLY_OBLIGATION = 'obl-suitability-statement';
+// The seed's anchor date. Every inventory read here pins it, so nothing depends
+// on today and no version that takes effect later changes what is listed.
+const INVENTORY_AS_OF = '2026-09-16';
+
+async function openInventory(page: Page): Promise<void> {
+  await page.goto(`/inventory?asOf=${INVENTORY_AS_OF}`);
+  await expect(page.locator('[data-obligation-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+}
+
+/** Found by data attribute: library titles are rows, not catalog copy. */
+function adviceOnlyRow(page: Page) {
+  return page.locator(`[data-obligation="${ADVICE_ONLY_OBLIGATION}"]`);
+}
+
 // The server refuses a new value two ways (apps/taxonomy/tenant_lists_logic.py,
 // its VOC-S7 test): 409 duplicate_key for the same label, 422 near_duplicate
 // for a close one. Each is declared where it is provoked.
@@ -400,11 +417,11 @@ test.describe('taxonomy journeys', () => {
     });
 
     test("FP-S5 J-6 @smoke: footprint change with preview and second-person approval", async ({ page, browser, apiGuard }, testInfo) => {
-      // pending: FP-S5 (FP-01, FP-02, FP-03, AC-FP1, J-6) -> built in chunk 2.
-      // "The inventory no longer lists the advice-only obligation" waits for
-      // the inventory (chunk 3); the per-term audit events for the audit log
-      // screen. Here: the officer's request with its preview, the approver's
-      // passkey step-up, and the footprint changed on screen.
+      // pending: FP-S5 (FP-01, FP-02, FP-03, AC-FP1, J-6) -> built in chunk 2,
+      // the inventory half in chunk 3. The per-term audit events wait for the
+      // audit log screen. Here: the officer's request with its preview, the
+      // approver's passkey step-up, the footprint changed on screen, and the
+      // advice-only obligation gone from the inventory.
       allowFreshContext(apiGuard);
       apiGuard.allow(/\/api\/v1\/tenant\/footprint\/requests\/[^/]+\/approve$/, 403, 'the first attempt answers step_up_required and opens the prompt');
       await signInAs(page, LOGINS.complianceOfficer);
@@ -417,6 +434,17 @@ test.describe('taxonomy journeys', () => {
         await expect(approver.locator('[data-history-entry="approved"]').first()).toBeVisible();
         await page.reload();
         await expect(adviceChip(page)).toHaveAttribute('aria-pressed', 'false');
+
+        // J-6 on the inventory: the obligation the change hides is gone, the
+        // rest of the library still reads, and "Show outside our scope" brings
+        // it back dashed with the term that put it there.
+        await openInventory(page);
+        await expect(adviceOnlyRow(page)).toHaveCount(0);
+        await expect(page.locator('[data-obligation]').first()).toBeVisible();
+
+        await page.getByRole('button', { name: 'Show outside our scope' }).click();
+        await expect(adviceOnlyRow(page)).toHaveAttribute('data-outside-footprint', '');
+        await expect(adviceOnlyRow(page).getByText('Outside your footprint: Advice')).toBeVisible();
       } finally {
         // Put Advice back through the same door, so the footprint reads as seeded.
         await page.goto('/admin/footprint');
