@@ -126,7 +126,7 @@ passes on an empty app.
 │   ├── src/components/      # UI by domain + ui/ (Pill, Row, Chip and the other design primitives)
 │   ├── src/features/        # api.ts, hooks.ts, *-presentation.ts per domain
 │   ├── src/shared/          # api-client, format, logger, navigation registry, i18n
-│   ├── src/messages/        # one catalog per UI language
+│   ├── src/messages/        # <namespace>/{en,sv}.json, one file pair per feature namespace
 │   ├── src/styles/          # tokens.generated.css (from Green, never edited), brand.css (our override)
 │   ├── src/types/api.generated.ts   # generated, never hand-edited
 │   ├── tests/e2e/           # Playwright journeys + support/ (api-guard, passkeys, start-backend)
