@@ -37,10 +37,12 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, PrincipalKind, SessionAuth
 from apps.shared.permissions import requires_permission, requires_scope
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import answers_problems, deny, principal, require_any
+from apps.taxonomy.http import actor_for, answers_problems, deny, principal, require_any
+from apps.taxonomy.reading import language_order
 from apps.watch import curation, reading, registration, sources
 from apps.watch.schemas import (
     LINKS_MAX,
+    OBLIGATION_LINK_EXAMPLE,
     WatchChange,
     WatchChangeDetail,
     WatchChangeDocument,
@@ -68,7 +70,17 @@ router = Router(tags=["Watch"])
 KEY = ApiKeyAuth()
 SESSION = SessionAuth()
 SESSION_OR_KEY = [SessionAuth(), ApiKeyAuth()]
-IdempotencyKey = Header(None, alias="Idempotency-Key")
+IdempotencyKey = Header(
+    None,
+    alias="Idempotency-Key",
+    description=(
+        "A value of your own that names this attempt, so a call that timed out can be "
+        "repeated safely: a retry answers what the first attempt wrote instead of writing it "
+        "a second time. Send one on every agent write, because a run retries. Each operation "
+        "says below what its own retry answers, and repeating a value against a different "
+        "body is a conflict rather than a silent overwrite."
+    ),
+)
 
 # What each path parameter means to a caller, hoisted out of the signatures so a route
 # body stays one line of gate, schema and call (playbook 4.1).
@@ -82,6 +94,27 @@ _OBLIGATION_ID = (
     "cannot see answers 404, never 403, so no id can be probed for what another bank holds "
     "privately."
 )
+_CHANGE_ID_WRITE = (
+    "The library change being corrected, as a UUID, the `id` the registration answered. It "
+    "is the same change for every bank: what is written here every bank reads. A change no "
+    "longer in the library answers 404, never 403, so no id can be probed for."
+)
+_EVENT_ID = (
+    "The timeline entry being corrected, as a UUID, the `id` the entry was added under. An "
+    "entry belonging to another change answers 404 exactly as one that never existed does."
+)
+# The obligation links travel as a bare array in both directions, and an array carries no
+# schema of its own to hang an example on (apps/home/api.py does the same for its feeds).
+_LINKS_EXAMPLE = {
+    "requestBody": {
+        "content": {
+            "application/json": {
+                "example": [{"obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17", "confidence": 0.82}]
+            }
+        }
+    },
+    "responses": {200: {"content": {"application/json": {"example": [OBLIGATION_LINK_EXAMPLE]}}}},
+}
 
 
 def require_watch_reader(request: HttpRequest) -> None:
@@ -347,15 +380,67 @@ def add_change_document(
 # A change's facts, timeline and obligation links (WAT-03, WAT-04)
 # ---------------------------------------------------------------------------------------
 @router.patch(
-    "/changes/{change_id}", response=WatchChange, auth=SESSION_OR_KEY, operation_id="updateChange", by_alias=True
+    "/changes/{change_id}",
+    response=WatchChange,
+    auth=SESSION_OR_KEY,
+    operation_id="updateChange",
+    by_alias=True,
+    summary="Correct what a registered change is and what it is about",
 )
 @answers_problems
 def update_change(
-    request: HttpRequest, change_id: uuid.UUID, body: WatchChangePatch, idempotency_key: str | None = IdempotencyKey
+    request: HttpRequest,
+    body: WatchChangePatch,
+    change_id: uuid.UUID = Path(..., description=_CHANGE_ID_WRITE),
+    idempotency_key: str | None = IdempotencyKey,
 ) -> Any:
+    """Move the library facts of a reform already registered: its title, its type, its
+    summary, the date that drives "coming up", the flags that say what it is about and the
+    taxonomy terms that say who it reaches. Call it when a run reads the source again and
+    has something better than it filed the first time, and when a library editor corrects
+    what a run got wrong. The answer is the change as it now stands.
+
+    `flags` and `termIds` each replace the whole set they name, so send the full set and
+    never a delta; every other field is left exactly as it was when it is left out or sent
+    as null. Nothing here is versioned, so no `If-Match` is taken and no ETag is checked;
+    the record that carries a version is the bank's own case, which this call never touches.
+
+    An agent's key needs the scope `changes:write` and a library editor's session the
+    permission `proposals.review`, which no bank's role holds: a change's classification is
+    a library fact and a bank neither writes nor confirms one. Two things only the editor
+    may set: `status` and `supersededBy`, because deciding that a reform has been replaced
+    or withdrawn is a reading of the law and not a sighting of it.
+
+    Everything written here is a suggestion. A flag or a term arrives with `suggested` true
+    and nobody named as having confirmed it, whoever sent it, and a reader must not treat it
+    as checked. Confirming one is a library editor's act on a library row and is not built
+    yet, so a call that would drop or overwrite something already confirmed answers
+    `not_built` to that editor and is refused outright to a key. The whole call is one
+    transaction that writes an audit row naming who changed which facts, and the keys are
+    resolved before anything is stored, so a refusal stores nothing.
+
+    Sending it again with the same body simply writes the same facts, so `Idempotency-Key`
+    costs nothing here and no retry can duplicate anything.
+
+    Errors to branch on: `unknown_key` (422) when `changeType`, a flag key, a term id or
+    `supersededBy` names a row the library does not hold or has retired, with the valid keys
+    listed for a vocabulary; `editor_only_field` (422) when a key sends `status` or
+    `supersededBy`; `confirmed_fact` (422) when a key's new set would drop a flag or a term
+    a library editor confirmed; `not_built` (501) when an editor's call would do the same,
+    which is the confirmation half of this feature; `validation_error` (422) for a field the
+    schema refuses, and for a change asked to supersede itself; `not_found` (404) when no
+    change has that id; `permission_denied` (403) without the scope or the permission;
+    `unauthenticated` (401) without a credential.
+    """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
     require_change_writer(request)
-    return curation.update_change_facts()
+    return curation.update_change_facts(
+        who=principal(request),
+        actor=actor_for(request),
+        order=language_order(request),
+        change_id=change_id,
+        body=body,
+    )
 
 
 @router.post(
@@ -364,14 +449,43 @@ def update_change(
     auth=SESSION_OR_KEY,
     operation_id="addChangeEvent",
     by_alias=True,
+    summary="Add a milestone to a reform's timeline",
 )
 @answers_problems
 def add_change_event(
-    request: HttpRequest, change_id: uuid.UUID, body: WatchChangeEventInput, idempotency_key: str | None = IdempotencyKey
+    request: HttpRequest,
+    body: WatchChangeEventInput,
+    change_id: uuid.UUID = Path(..., description=_CHANGE_ID_WRITE),
+    idempotency_key: str | None = IdempotencyKey,
 ) -> Any:
+    """Put one step of a reform's path on its timeline — the consultation opening, the
+    consultation closing, the board adopting it, the rules coming into force, a transition
+    ending. Call it as a run learns each step from the source; the change screen renders
+    them in `sortOrder`, and the answer is the entry as it was stored.
+
+    A milestone's date is a plain calendar date with a precision beside it and never a
+    timestamp, so a screen prints "June 2026" where the source said only the month and never
+    invents a day. `occurred` is what the source says has happened, not what the clock says.
+
+    An agent's key needs the scope `changes:write` and a library editor's session the
+    permission `proposals.review`. The timeline is a library fact shared by every bank; no
+    bank's date is ever here. The entry and its audit row are written in one transaction.
+
+    A retry is safe: the entry's label is its name on that change, so posting "Consultation
+    closed" twice with the same dates answers the entry that is already there instead of
+    doubling the timeline. The same label carrying different dates is `duplicate_key`,
+    because storing either version would lose the other; correct the entry you already have
+    instead.
+
+    Errors to branch on: `duplicate_key` (409) when this change already has a milestone with
+    that label and other dates; `validation_error` (422) for a body the schema refuses,
+    including a timestamp where a plain date belongs and a precision outside `day`, `month`,
+    `quarter` and `year`; `not_found` (404) when no change has that id; `permission_denied`
+    (403) without the scope or the permission; `unauthenticated` (401) without a credential.
+    """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
     require_change_writer(request)
-    return curation.add_event()
+    return curation.add_event(actor=actor_for(request), change_id=change_id, body=body)
 
 
 @router.patch(
@@ -380,18 +494,40 @@ def add_change_event(
     auth=SESSION_OR_KEY,
     operation_id="updateChangeEvent",
     by_alias=True,
+    summary="Correct a milestone on a reform's timeline",
 )
 @answers_problems
 def update_change_event(
     request: HttpRequest,
-    change_id: uuid.UUID,
-    event_id: uuid.UUID,
     body: WatchChangeEventInput,
+    change_id: uuid.UUID = Path(..., description=_CHANGE_ID_WRITE),
+    event_id: uuid.UUID = Path(..., description=_EVENT_ID),
     idempotency_key: str | None = IdempotencyKey,
 ) -> Any:
+    """Restate one entry of a reform's timeline: reword it, give it the date the source has
+    now stated, sharpen its precision, move it in the order or mark that it has happened.
+    Call it when a later run reads a firmer date than the one filed, and when a library
+    editor corrects a run. The answer is the entry as it now stands.
+
+    The body is the entry as it should now read and not a delta: it is the same shape that
+    adds one, so a field you leave out takes that shape's default — `occurred` false,
+    `sortOrder` 0, no date and no source page. Send the whole entry.
+
+    An agent's key needs the scope `changes:write` and a library editor's session the
+    permission `proposals.review`. A timeline is a library fact shared by every bank, and
+    nothing here is versioned, so no `If-Match` is taken. The entry and its audit row, which
+    holds the entry as it was and as it now is, are written in one transaction.
+
+    Errors to branch on: `validation_error` (422) for a body the schema refuses, including a
+    timestamp where a plain date belongs and a precision outside `day`, `month`, `quarter`
+    and `year`; `not_found` (404) when no change has that id, or the entry belongs to
+    another change — the two are answered alike so no id can be probed;
+    `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
+    without a credential.
+    """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
     require_change_writer(request)
-    return curation.update_event()
+    return curation.update_event(actor=actor_for(request), change_id=change_id, event_id=event_id, body=body)
 
 
 @router.put(
@@ -400,16 +536,59 @@ def update_change_event(
     auth=SESSION_OR_KEY,
     operation_id="replaceChangeObligations",
     by_alias=True,
+    summary="Say which obligations a change affects",
+    openapi_extra=_LINKS_EXAMPLE,
 )
 @answers_problems
 def replace_change_obligations(
     request: HttpRequest,
-    change_id: uuid.UUID,
     # Capped like the same list inside `WatchChangeInput`: a key sends this one, and an
     # uncapped array is an unbounded body to parse and hold (playbook 11.2).
     body: list[WatchObligationLinkInput] = Body(..., max_length=LINKS_MAX),
+    change_id: uuid.UUID = Path(..., description=_CHANGE_ID_WRITE),
     idempotency_key: str | None = IdempotencyKey,
 ) -> Any:
+    """Set the obligations in the shared inventory that this reform touches. Call it when a
+    run has matched a change against the library, and when a library editor adds one the run
+    missed. The answer is the whole set as it now stands, most confident first.
+
+    The body is the whole set and not a delta: an obligation left out is unlinked, and at
+    most 200 links may travel in one call. A link never creates an obligation and no key
+    scope reaches the inventory, so an id the library does not hold, or one it has retired,
+    is refused rather than invented. Naming the same obligation twice in one body is refused
+    too, because the two entries carry two confidences and keeping either would lose the
+    other.
+
+    An agent's key needs the scope `changes:write` and a library editor's session the
+    permission `proposals.review`. `origin` records which of the two drew the link and never
+    changes afterwards; `confidence` is the model's own number, is null when a person set
+    the link, and orders the list and nothing else.
+
+    Two decisions that look alike and are not. `confirmed` here is a library editor's, and a
+    confirmed link reads the same for every bank; confirming one is not built yet, so a call
+    that would drop a link somebody has confirmed answers `not_built` to an editor and is
+    refused outright to a key. A bank accepting or removing a suggested link is a different
+    act entirely, lives on that bank's own case, is invisible to everyone else and changes
+    no row here — so `false` never means "not related", only "nobody has confirmed it".
+
+    The set and its audit row are written in one transaction, and sending the same set again
+    leaves it exactly as it was, so a retry costs nothing.
+
+    Errors to branch on: `unknown_key` (422) when an `obligationId` names no active
+    obligation of the library; `validation_error` (422) when the same obligation is named
+    twice, or for a body the schema refuses, including more than 200 links;
+    `confirmed_fact` (422) when a key's new set would drop a link a library editor
+    confirmed; `not_built` (501) when an editor's call would do the same, which is the
+    confirmation half of this feature; `not_found` (404) when no change has that id;
+    `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
+    without a credential.
+    """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
     require_change_writer(request)
-    return curation.set_obligation_links()
+    return curation.set_obligation_links(
+        who=principal(request),
+        actor=actor_for(request),
+        order=language_order(request),
+        change_id=change_id,
+        body=body,
+    )

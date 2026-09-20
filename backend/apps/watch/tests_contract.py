@@ -16,9 +16,14 @@ no case at all, because a console session has no tenant (`c5-contract-api-screen
 tenant member reaching the console list, or an editor reaching the feed, is a leak between
 the zones, so each is proved refused.
 
+The four curation routes are no longer stubs — `c5-watch-curation` built them, and what
+they do behind these gates is proved in `tests_curation.py` — so they left the stub lists
+below on 2026-09-21 while keeping every gate assertion they had. Everything else here is
+still declared ahead of its logic.
+
 The library fence is not weakened here: none of these routes writes an inventory row, and
-the modules they name (`watch/sources.py`, `registration.py`, `curation.py`, `reading.py`)
-hold nothing but their stubs until their own tasks land.
+the modules they name (`watch/sources.py`, `registration.py`, `reading.py`) hold nothing
+but their stubs until their own tasks land.
 """
 
 from __future__ import annotations
@@ -86,6 +91,11 @@ SESSION_ROUTES = [
     ("createSource", "post", "/api/v1/sources", SOURCE_BODY, perms.SOURCES_MANAGE),
     ("updateSource", "patch", f"/api/v1/sources/{SOURCE}", SOURCE_PATCH, perms.SOURCES_MANAGE),
 ]
+# What is still declared ahead of its logic. The four curation routes left this list when
+# `c5-watch-curation` built them; the gates above still cover all of them, and the ids
+# below are the ones that reach a real change, which none of these constants names.
+BUILT = frozenset({"updateChange", "addChangeEvent", "updateChangeEvent", "replaceChangeObligations"})
+STUBBED_BOTH_ROUTES = [route for route in BOTH_ROUTES if route[0] not in BUILT]
 
 
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
@@ -185,7 +195,7 @@ class WatchRouteGates(TestCase):
             at_the_cap = _call(self.client, "put", url, [link] * LINKS_MAX, AS_KEY)
         self.assertEqual(refused.status_code, 422)
         self.assertEqual(refused.json()["code"], "validation_error")
-        self.assertEqual(at_the_cap.status_code, 501, "the cap itself is accepted and reaches the stub")
+        self.assertEqual(at_the_cap.status_code, 404, "the cap itself is accepted and reaches the logic")
 
     def test_a_source_write_refuses_an_unknown_field(self) -> None:
         with stub_session(user_principal(permissions={perms.SOURCES_MANAGE})):
@@ -205,7 +215,7 @@ class WatchRouteStubs(TestCase):
     def test_a_key_with_its_scope_reaches_the_stub(self) -> None:
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
             cases = (
-                [(n, m, u, b) for n, m, u, b, _, _ in BOTH_ROUTES]
+                [(n, m, u, b) for n, m, u, b, _, _ in STUBBED_BOTH_ROUTES]
                 + [(n, m, u, b) for n, m, u, b, _ in KEY_ROUTES]
                 + [(n, "get", u, None) for n, u, _, _ in READ_ROUTES]
             )
@@ -217,13 +227,26 @@ class WatchRouteStubs(TestCase):
         permissions = {perms.PROPOSALS_REVIEW, perms.SOURCES_MANAGE, perms.WATCH_READ}
         with stub_session(user_principal(permissions=permissions, tenant_id=uuid.uuid4())):
             cases = (
-                [(n, m, u, b) for n, m, u, b, _, _ in BOTH_ROUTES]
+                [(n, m, u, b) for n, m, u, b, _, _ in STUBBED_BOTH_ROUTES]
                 + [(n, "get", u, None) for n, u, _, _ in READ_ROUTES]
                 + [(n, m, u, b) for n, m, u, b, _ in SESSION_ROUTES]
             )
             for name, method, url, body in cases:
                 with self.subTest(operation=name):
                     self.assert_not_built(_call(self.client, method, url, body, AS_SESSION))
+
+    def test_the_built_curation_routes_answer_from_their_logic(self) -> None:
+        """The four routes `c5-watch-curation` built no longer answer `not_built`. The
+        change these constants name does not exist, so the honest answer is 404 — which is
+        also the proof that the gate ran first and the lookup second."""
+        with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
+            for name, method, url, body, _, _ in BOTH_ROUTES:
+                if name not in BUILT:
+                    continue
+                with self.subTest(operation=name):
+                    response = _call(self.client, method, url, body, AS_KEY)
+                    self.assertEqual(response.status_code, 404, response.content)
+                    self.assertEqual(response.json()["code"], "not_found")
 
 
 # ---------------------------------------------------------------------------------------

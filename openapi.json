@@ -13458,6 +13458,7 @@
             }
           },
           {
+            "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
             "in": "header",
             "name": "Idempotency-Key",
             "required": false,
@@ -13470,6 +13471,7 @@
                   "type": "null"
                 }
               ],
+              "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
               "title": "Idempotency-Key"
             }
           }
@@ -14728,6 +14730,7 @@
         "operationId": "createChange",
         "parameters": [
           {
+            "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
             "in": "header",
             "name": "Idempotency-Key",
             "required": false,
@@ -14740,6 +14743,7 @@
                   "type": "null"
                 }
               ],
+              "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
               "title": "Idempotency-Key"
             }
           }
@@ -14831,19 +14835,23 @@
         ]
       },
       "patch": {
+        "description": "Move the library facts of a reform already registered: its title, its type, its\nsummary, the date that drives \"coming up\", the flags that say what it is about and the\ntaxonomy terms that say who it reaches. Call it when a run reads the source again and\nhas something better than it filed the first time, and when a library editor corrects\nwhat a run got wrong. The answer is the change as it now stands.\n\n`flags` and `termIds` each replace the whole set they name, so send the full set and\nnever a delta; every other field is left exactly as it was when it is left out or sent\nas null. Nothing here is versioned, so no `If-Match` is taken and no ETag is checked;\nthe record that carries a version is the bank's own case, which this call never touches.\n\nAn agent's key needs the scope `changes:write` and a library editor's session the\npermission `proposals.review`, which no bank's role holds: a change's classification is\na library fact and a bank neither writes nor confirms one. Two things only the editor\nmay set: `status` and `supersededBy`, because deciding that a reform has been replaced\nor withdrawn is a reading of the law and not a sighting of it.\n\nEverything written here is a suggestion. A flag or a term arrives with `suggested` true\nand nobody named as having confirmed it, whoever sent it, and a reader must not treat it\nas checked. Confirming one is a library editor's act on a library row and is not built\nyet, so a call that would drop or overwrite something already confirmed answers\n`not_built` to that editor and is refused outright to a key. The whole call is one\ntransaction that writes an audit row naming who changed which facts, and the keys are\nresolved before anything is stored, so a refusal stores nothing.\n\nSending it again with the same body simply writes the same facts, so `Idempotency-Key`\ncosts nothing here and no retry can duplicate anything.\n\nErrors to branch on: `unknown_key` (422) when `changeType`, a flag key, a term id or\n`supersededBy` names a row the library does not hold or has retired, with the valid keys\nlisted for a vocabulary; `editor_only_field` (422) when a key sends `status` or\n`supersededBy`; `confirmed_fact` (422) when a key's new set would drop a flag or a term\na library editor confirmed; `not_built` (501) when an editor's call would do the same,\nwhich is the confirmation half of this feature; `validation_error` (422) for a field the\nschema refuses, and for a change asked to supersede itself; `not_found` (404) when no\nchange has that id; `permission_denied` (403) without the scope or the permission;\n`unauthenticated` (401) without a credential.",
         "operationId": "updateChange",
         "parameters": [
           {
+            "description": "The library change being corrected, as a UUID, the `id` the registration answered. It is the same change for every bank: what is written here every bank reads. A change no longer in the library answers 404, never 403, so no id can be probed for.",
             "in": "path",
             "name": "change_id",
             "required": true,
             "schema": {
+              "description": "The library change being corrected, as a UUID, the `id` the registration answered. It is the same change for every bank: what is written here every bank reads. A change no longer in the library answers 404, never 403, so no id can be probed for.",
               "format": "uuid",
               "title": "Change Id",
               "type": "string"
             }
           },
           {
+            "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
             "in": "header",
             "name": "Idempotency-Key",
             "required": false,
@@ -14856,6 +14864,7 @@
                   "type": "null"
                 }
               ],
+              "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
               "title": "Idempotency-Key"
             }
           }
@@ -14890,7 +14899,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Update Change",
+        "summary": "Correct what a registered change is and what it is about",
         "tags": [
           "Watch"
         ]
@@ -15015,6 +15024,7 @@
             }
           },
           {
+            "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
             "in": "header",
             "name": "Idempotency-Key",
             "required": false,
@@ -15027,6 +15037,7 @@
                   "type": "null"
                 }
               ],
+              "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
               "title": "Idempotency-Key"
             }
           }
@@ -15066,19 +15077,23 @@
     },
     "/api/v1/changes/{change_id}/events": {
       "post": {
+        "description": "Put one step of a reform's path on its timeline \u2014 the consultation opening, the\nconsultation closing, the board adopting it, the rules coming into force, a transition\nending. Call it as a run learns each step from the source; the change screen renders\nthem in `sortOrder`, and the answer is the entry as it was stored.\n\nA milestone's date is a plain calendar date with a precision beside it and never a\ntimestamp, so a screen prints \"June 2026\" where the source said only the month and never\ninvents a day. `occurred` is what the source says has happened, not what the clock says.\n\nAn agent's key needs the scope `changes:write` and a library editor's session the\npermission `proposals.review`. The timeline is a library fact shared by every bank; no\nbank's date is ever here. The entry and its audit row are written in one transaction.\n\nA retry is safe: the entry's label is its name on that change, so posting \"Consultation\nclosed\" twice with the same dates answers the entry that is already there instead of\ndoubling the timeline. The same label carrying different dates is `duplicate_key`,\nbecause storing either version would lose the other; correct the entry you already have\ninstead.\n\nErrors to branch on: `duplicate_key` (409) when this change already has a milestone with\nthat label and other dates; `validation_error` (422) for a body the schema refuses,\nincluding a timestamp where a plain date belongs and a precision outside `day`, `month`,\n`quarter` and `year`; `not_found` (404) when no change has that id; `permission_denied`\n(403) without the scope or the permission; `unauthenticated` (401) without a credential.",
         "operationId": "addChangeEvent",
         "parameters": [
           {
+            "description": "The library change being corrected, as a UUID, the `id` the registration answered. It is the same change for every bank: what is written here every bank reads. A change no longer in the library answers 404, never 403, so no id can be probed for.",
             "in": "path",
             "name": "change_id",
             "required": true,
             "schema": {
+              "description": "The library change being corrected, as a UUID, the `id` the registration answered. It is the same change for every bank: what is written here every bank reads. A change no longer in the library answers 404, never 403, so no id can be probed for.",
               "format": "uuid",
               "title": "Change Id",
               "type": "string"
             }
           },
           {
+            "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
             "in": "header",
             "name": "Idempotency-Key",
             "required": false,
@@ -15091,6 +15106,7 @@
                   "type": "null"
                 }
               ],
+              "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
               "title": "Idempotency-Key"
             }
           }
@@ -15125,7 +15141,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Add Change Event",
+        "summary": "Add a milestone to a reform's timeline",
         "tags": [
           "Watch"
         ]
@@ -15133,29 +15149,35 @@
     },
     "/api/v1/changes/{change_id}/events/{event_id}": {
       "patch": {
+        "description": "Restate one entry of a reform's timeline: reword it, give it the date the source has\nnow stated, sharpen its precision, move it in the order or mark that it has happened.\nCall it when a later run reads a firmer date than the one filed, and when a library\neditor corrects a run. The answer is the entry as it now stands.\n\nThe body is the entry as it should now read and not a delta: it is the same shape that\nadds one, so a field you leave out takes that shape's default \u2014 `occurred` false,\n`sortOrder` 0, no date and no source page. Send the whole entry.\n\nAn agent's key needs the scope `changes:write` and a library editor's session the\npermission `proposals.review`. A timeline is a library fact shared by every bank, and\nnothing here is versioned, so no `If-Match` is taken. The entry and its audit row, which\nholds the entry as it was and as it now is, are written in one transaction.\n\nErrors to branch on: `validation_error` (422) for a body the schema refuses, including a\ntimestamp where a plain date belongs and a precision outside `day`, `month`, `quarter`\nand `year`; `not_found` (404) when no change has that id, or the entry belongs to\nanother change \u2014 the two are answered alike so no id can be probed;\n`permission_denied` (403) without the scope or the permission; `unauthenticated` (401)\nwithout a credential.",
         "operationId": "updateChangeEvent",
         "parameters": [
           {
+            "description": "The library change being corrected, as a UUID, the `id` the registration answered. It is the same change for every bank: what is written here every bank reads. A change no longer in the library answers 404, never 403, so no id can be probed for.",
             "in": "path",
             "name": "change_id",
             "required": true,
             "schema": {
+              "description": "The library change being corrected, as a UUID, the `id` the registration answered. It is the same change for every bank: what is written here every bank reads. A change no longer in the library answers 404, never 403, so no id can be probed for.",
               "format": "uuid",
               "title": "Change Id",
               "type": "string"
             }
           },
           {
+            "description": "The timeline entry being corrected, as a UUID, the `id` the entry was added under. An entry belonging to another change answers 404 exactly as one that never existed does.",
             "in": "path",
             "name": "event_id",
             "required": true,
             "schema": {
+              "description": "The timeline entry being corrected, as a UUID, the `id` the entry was added under. An entry belonging to another change answers 404 exactly as one that never existed does.",
               "format": "uuid",
               "title": "Event Id",
               "type": "string"
             }
           },
           {
+            "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
             "in": "header",
             "name": "Idempotency-Key",
             "required": false,
@@ -15168,6 +15190,7 @@
                   "type": "null"
                 }
               ],
+              "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
               "title": "Idempotency-Key"
             }
           }
@@ -15202,7 +15225,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Update Change Event",
+        "summary": "Correct a milestone on a reform's timeline",
         "tags": [
           "Watch"
         ]
@@ -15210,19 +15233,23 @@
     },
     "/api/v1/changes/{change_id}/obligations": {
       "put": {
+        "description": "Set the obligations in the shared inventory that this reform touches. Call it when a\nrun has matched a change against the library, and when a library editor adds one the run\nmissed. The answer is the whole set as it now stands, most confident first.\n\nThe body is the whole set and not a delta: an obligation left out is unlinked, and at\nmost 200 links may travel in one call. A link never creates an obligation and no key\nscope reaches the inventory, so an id the library does not hold, or one it has retired,\nis refused rather than invented. Naming the same obligation twice in one body is refused\ntoo, because the two entries carry two confidences and keeping either would lose the\nother.\n\nAn agent's key needs the scope `changes:write` and a library editor's session the\npermission `proposals.review`. `origin` records which of the two drew the link and never\nchanges afterwards; `confidence` is the model's own number, is null when a person set\nthe link, and orders the list and nothing else.\n\nTwo decisions that look alike and are not. `confirmed` here is a library editor's, and a\nconfirmed link reads the same for every bank; confirming one is not built yet, so a call\nthat would drop a link somebody has confirmed answers `not_built` to an editor and is\nrefused outright to a key. A bank accepting or removing a suggested link is a different\nact entirely, lives on that bank's own case, is invisible to everyone else and changes\nno row here \u2014 so `false` never means \"not related\", only \"nobody has confirmed it\".\n\nThe set and its audit row are written in one transaction, and sending the same set again\nleaves it exactly as it was, so a retry costs nothing.\n\nErrors to branch on: `unknown_key` (422) when an `obligationId` names no active\nobligation of the library; `validation_error` (422) when the same obligation is named\ntwice, or for a body the schema refuses, including more than 200 links;\n`confirmed_fact` (422) when a key's new set would drop a link a library editor\nconfirmed; `not_built` (501) when an editor's call would do the same, which is the\nconfirmation half of this feature; `not_found` (404) when no change has that id;\n`permission_denied` (403) without the scope or the permission; `unauthenticated` (401)\nwithout a credential.",
         "operationId": "replaceChangeObligations",
         "parameters": [
           {
+            "description": "The library change being corrected, as a UUID, the `id` the registration answered. It is the same change for every bank: what is written here every bank reads. A change no longer in the library answers 404, never 403, so no id can be probed for.",
             "in": "path",
             "name": "change_id",
             "required": true,
             "schema": {
+              "description": "The library change being corrected, as a UUID, the `id` the registration answered. It is the same change for every bank: what is written here every bank reads. A change no longer in the library answers 404, never 403, so no id can be probed for.",
               "format": "uuid",
               "title": "Change Id",
               "type": "string"
             }
           },
           {
+            "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
             "in": "header",
             "name": "Idempotency-Key",
             "required": false,
@@ -15235,6 +15262,7 @@
                   "type": "null"
                 }
               ],
+              "description": "A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite.",
               "title": "Idempotency-Key"
             }
           }
@@ -15242,6 +15270,12 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "example": [
+                {
+                  "confidence": 0.82,
+                  "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
+                }
+              ],
               "schema": {
                 "items": {
                   "$ref": "#/components/schemas/WatchObligationLinkInput"
@@ -15258,6 +15292,17 @@
           "200": {
             "content": {
               "application/json": {
+                "example": [
+                  {
+                    "confidence": 0.82,
+                    "confirmed": false,
+                    "instrumentShortName": "FFFS 2017:2",
+                    "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+                    "origin": "agent",
+                    "refLabel": "11 kap. 4 \u00a7",
+                    "title": "Assess the quality of investment research paid for"
+                  }
+                ],
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/WatchObligationLink"
@@ -15278,7 +15323,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Replace Change Obligations",
+        "summary": "Say which obligations a change affects",
         "tags": [
           "Watch"
         ]

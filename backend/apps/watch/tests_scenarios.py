@@ -13,6 +13,11 @@ from unittest import skip
 
 from django.test import TestCase
 
+from apps.shared import permissions as perms
+from apps.shared.testing import API_KEY_FOR_TESTS, agent_principal, stub_api_key
+from apps.taxonomy.models import ChangeType
+from apps.watch import testing as watch_build
+
 
 class WatchScenarioTests(TestCase):
     """Scenario tests for apps.watch, one method per @integration scenario."""
@@ -48,13 +53,36 @@ class WatchScenarioTests(TestCase):
         Types, flags and scope come from vocabularies and stay suggestions until confirmed (WAT-03).
         """
 
-    @skip("pending: WAT-S5")
     def test_wat_s5(self) -> None:
         """WAT-S5
 
         An unknown key answers unknown_key with the valid keys (WAT-03, AC-WAT2).
         Operations: `updateChange`.
         """
+        watch_build.seed_watch_reference()
+        change = watch_build.change_with_timeline()
+        valid = sorted(ChangeType.objects.filter(active=True).values_list("key", flat=True))
+        self.assertIn("adopted", valid, "the change type vocabulary is seeded before an agent reads it")
+        typo = "ammendment"
+        self.assertNotIn(typo, valid)
+
+        with stub_api_key(agent_principal(scopes={perms.SCOPE_CHANGES_WRITE})):
+            response = self.client.patch(
+                f"/api/v1/changes/{change.id}",
+                data={"changeType": typo, "summary": "A summary that must not be stored either."},
+                content_type="application/json",
+                HTTP_X_API_KEY=API_KEY_FOR_TESTS,
+            )
+
+        self.assertEqual(response.status_code, 422)
+        problem = response.json()
+        self.assertEqual(problem["code"], "unknown_key")
+        self.assertIn(typo, problem["detail"])
+        self.assertEqual(sorted(problem["validKeys"]), valid, "the refusal lists the keys the agent may send")
+
+        change.refresh_from_db()
+        self.assertEqual(change.change_type.key, "adopted", "nothing is stored on a refusal")
+        self.assertNotIn("must not be stored", change.summary)
 
     @skip("pending: WAT-S6")
     def test_wat_s6(self) -> None:
