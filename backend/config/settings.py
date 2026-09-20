@@ -359,6 +359,26 @@ ASK_QUESTION_MAX_CHARS = env_int("ASK_QUESTION_MAX_CHARS", 2000)
 SEARCH_FEEDBACK_NOTE_MAX_CHARS = env_int("SEARCH_FEEDBACK_NOTE_MAX_CHARS", 2000)
 
 # ---------------------------------------------------------------------------------------
+# ===== SRC-01 search index embedding (apps/search/indexing.py, apps/search/tasks.py) =====
+# How many chunks one embedding call carries, and how often the sweep that drains the rest
+# runs. An outbox delivery embeds one batch and stops, because it runs inside the cursor's
+# transaction and holds the lock on the cursor row: a full-corpus rebuild that embedded
+# everything there would make every other consumer's rows wait behind N model calls. The
+# sweep takes the remainder on beat's clock, holding nothing anyone waits on, and it is
+# also what picks up a rebuild whose outbox row spent its attempts and a corpus that was
+# never embedded because no model was contracted yet.
+# Raising the batch costs memory and the provider's own per-request limit; lowering it
+# costs round trips. Nothing waits on either: a chunk with no embedding yet is still found
+# by the keyword leg.
+# ---------------------------------------------------------------------------------------
+SEARCH_EMBED_BATCH_SIZE = env_int("SEARCH_EMBED_BATCH_SIZE", 64)
+SEARCH_EMBED_SWEEP_INTERVAL_S = env_int("SEARCH_EMBED_SWEEP_INTERVAL_S", 60)
+CELERY_BEAT_SCHEDULE["search-embed-backlog"] = {
+    "task": "apps.search.tasks.embed_search_backlog",
+    "schedule": SEARCH_EMBED_SWEEP_INTERVAL_S,
+}
+
+# ---------------------------------------------------------------------------------------
 # ===== INV-04 "show what changed" (apps/library/logic.py sentence_diff) ==================
 # Aligning two versions costs up to the cube of their sentence count when sentences repeat,
 # and the texts come from fetched sources. Above this many sentences on either side the

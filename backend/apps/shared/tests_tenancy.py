@@ -162,10 +162,24 @@ class IdentityLookupMode(TestCase):
 
     def test_only_record_leaves_the_tenant_zone(self) -> None:
         """Leaving the tenant zone is how a platform row gets written from a session that has
-        a tenant (H15), so it belongs to the two functions that are the only door into their
-        ledger, `record()` and `log_event()`, and to the tenancy module itself. A request that
-        wants it for anything else is asking to write outside its own zone."""
-        allowed = {"apps/shared/tenancy.py", "apps/shared/audit.py", "apps/identity/security_log.py"}
+        a tenant (H15), so it belongs to the functions that are the only door into their
+        ledger — `record()`, `log_event()` and, since chunk 7, `index_write()` — and to the
+        tenancy module itself. A request that wants it for anything else is asking to write
+        outside its own zone.
+
+        `apps/search/indexing.py` is the third door and was reviewed as one (D-65, owner
+        item 4): a search chunk is derived data, every chunk in R1 belongs to no tenant,
+        and the words in one are copied from a shared library record that
+        `apps/search/sources.py` refuses to read if a bank owns it. Nothing a bank wrote
+        can ride out of its zone this way, and no other module may write a chunk at all
+        (`apps/search/tests_index_fence.py`).
+        """
+        allowed = {
+            "apps/shared/tenancy.py",
+            "apps/shared/audit.py",
+            "apps/identity/security_log.py",
+            "apps/search/indexing.py",
+        }
         offenders = [
             caller
             for name in ("platform_zone", "clear_tenant")

@@ -31,6 +31,7 @@ tests raised out of `deliver_batch()` before reaching an assertion).
 
 from __future__ import annotations
 
+import ast
 import inspect
 import uuid
 from datetime import timedelta
@@ -482,15 +483,96 @@ class TheBeatEntryRunsTheCursor(OutboxCursorCase):
 
 class TheRegistryHoldsOnlyItsConsumers(TestCase):
     """The cursor registers nothing of its own: a consumer registers its handler from its
-    app's `ready()`. Case creation is chunk 5's only one (rulings 9 and 32), so a second
-    relay, or a handler registered anywhere but in an app's `ready()`, shows up here."""
+    app's `ready()`. Two consumers exist — chunk 5's case creation (rulings 9 and 32) and
+    chunk 7's search index, which fills the embeddings a library change left owing — so a
+    second relay, or a handler registered anywhere but in an app's `ready()`, shows up
+    here."""
 
-    def test_only_case_creation_is_registered_by_production_code(self) -> None:
+    def test_only_its_two_consumers_are_registered_by_production_code(self) -> None:
         from apps.cases import creation
+        from apps.search import tasks as search
 
         # Order-independent: a test above empties the registry to isolate its own handlers
-        # and puts nothing back, so the app's own registration is made again here. It is
-        # idempotent, so this can never be what makes the assertion pass.
+        # and puts nothing back, so the apps' own registrations are made again here. They
+        # are idempotent, so this can never be what makes the assertion pass.
         creation.register()
-        self.assertEqual(sorted(outbox._HANDLERS), [creation.CHANGE_REGISTERED])
+        search.register()
+        self.assertEqual(
+            sorted(outbox._HANDLERS),
+            sorted([creation.CHANGE_REGISTERED, *search.INDEX_TOPICS]),
+        )
         self.assertEqual(outbox.handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases,))
+        for topic in search.INDEX_TOPICS:
+            with self.subTest(topic=topic):
+                self.assertEqual(outbox.handlers_for(topic), (search.embed_rebuilt_chunks,))
+
+
+class RegistrationHappensWhenTheAppIsReady(TestCase):
+    """Where a consumer registers, not only what it registers.
+
+    `apps/search/tasks.py` registered its handlers at the module's top level until
+    2026-09-21. Nothing imports a `tasks` module in a running API process — only Celery's
+    autodiscovery does, in the worker — so the handler was missing in exactly the process
+    that writes the event, and the branch's own proof passed only because the test module
+    had imported it. Both halves are silent failures, so both are pinned: no module may
+    register at import time, and each app config's `ready()` must be what does it.
+    """
+
+    def test_no_module_registers_a_handler_at_import_time(self) -> None:
+        offenders = []
+        for path in sorted((ROOT / "backend" / "apps").rglob("*.py")):
+            if path.name.startswith("tests"):
+                continue
+            calls = _ImportTimeCalls()
+            calls.visit(ast.parse(path.read_text(encoding="utf-8")))
+            if "register_handler" in calls.names:
+                offenders.append(path.relative_to(ROOT).as_posix())
+        self.assertEqual(
+            offenders,
+            [],
+            "Handlers registered at import time, where an API process never sees them; "
+            "move the calls into a register() an app config's ready() calls:\n  " + "\n  ".join(offenders),
+        )
+
+    def test_each_consumers_handler_comes_back_from_its_app_configs_ready(self) -> None:
+        """The other half: `ready()` is what registers, proved on an empty registry, which
+        is the state a process starts in. The cleanups put both consumers back for the
+        tests that follow."""
+        from django.apps import apps as installed
+
+        from apps.cases import creation
+        from apps.search import tasks as search
+
+        self.addCleanup(search.register)
+        self.addCleanup(creation.register)
+        outbox._HANDLERS.clear()
+        for label, topics, handler in (
+            ("cases", (creation.CHANGE_REGISTERED,), creation.create_cases),
+            ("search", search.INDEX_TOPICS, search.embed_rebuilt_chunks),
+        ):
+            installed.get_app_config(label).ready()
+            for topic in topics:
+                with self.subTest(app=label, topic=topic):
+                    self.assertEqual(outbox.handlers_for(topic), (handler,))
+
+
+class _ImportTimeCalls(ast.NodeVisitor):
+    """The names a module calls while it is being imported.
+
+    A module-level `for`, `if` or class body runs on import and counts; the body of a
+    `def` does not, because nothing has called it yet.
+    """
+
+    def __init__(self) -> None:
+        self.names: list[str] = []
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        return
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        return
+
+    def visit_Call(self, node: ast.Call) -> None:
+        target = node.func
+        self.names.append(target.attr if isinstance(target, ast.Attribute) else getattr(target, "id", ""))
+        self.generic_visit(node)

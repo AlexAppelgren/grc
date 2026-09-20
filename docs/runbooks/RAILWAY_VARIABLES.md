@@ -52,7 +52,9 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `LLM_DEADLINE_S` | api, worker | `180.0` | `180.0` | `180.0` | The whole call, retries and their waits included; a call ends within this plus one `LLM_TIMEOUT_S` |
 | `LLM_MAX_RESPONSE_BYTES` | api, worker | `4194304` | `4194304` | `4194304` | A streamed answer larger than this is refused; raise it with `LLM_MAX_TOKENS` |
 | `LLM_MAX_ERROR_BODY_BYTES` | api, worker | `65536` | `65536` | `65536` | An error body is read only this far, for its error type |
-| `EMBEDDER_PROVIDER` | api, worker | `mock` | `mock` | per D-09 | Plus the provider's key variable once D-09 is decided; until then the test deploy searches by keyword only |
+| `EMBEDDER_PROVIDER` | api, worker | `mock` | `mock` | per D-09 | Plus the provider's key variable once D-09 is decided; until then the test deploy searches by keyword only. Switching it on embeds the corpus by itself, but not at once: the sweep below picks the backlog up on its next tick, a batch at a time, and until it has caught up those chunks answer by keyword only. It does **not** rebuild the chunks — text or chunking that changed while no model was contracted still needs `manage.py reindex_library` |
+| `SEARCH_EMBED_BATCH_SIZE` | worker | `64` | `64` | `64` | How many chunks one embedding call carries, and the most one outbox delivery embeds before leaving the rest to the sweep (SRC-01) |
+| `SEARCH_EMBED_SWEEP_INTERVAL_S` | worker | `60` | `60` | `60` | How often the sweep drains the embeddings the index still owes: the rest of a full rebuild, a rebuild whose outbox row spent its attempts, and the corpus of a deployment that ran with no model contracted |
 | `RERANKER_PROVIDER` | api, worker | `mock` | `mock` | `none` until D-09 names one | `mock` is refused when deployed except in `test`; `none` leaves the fused order as the answer |
 | `RERANKER_TOP_K` | api, worker | `50` | `50` | `50` | How many fused hits the reranker is given (SRC-01) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
