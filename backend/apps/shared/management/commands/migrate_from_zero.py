@@ -47,6 +47,13 @@ def _with_database(url: str, name: str) -> str:
 class Command(BaseCommand):
     help = "Drop and recreate a scratch database and apply the whole migration graph."
 
+    # Django's system checks open the default connection before `handle` runs, so on a
+    # machine whose configured database does not exist yet the command that exists to
+    # create it fails with "database does not exist" and a new worktree cannot bootstrap
+    # (2026-09-20). This command talks to the migrator connection itself and needs no
+    # check that reads the app's own database.
+    requires_system_checks: list[str] = []
+
     def add_arguments(self, parser: Any) -> None:
         parser.add_argument("--keep", action="store_true", help="Keep the database afterwards.")
         parser.add_argument(
