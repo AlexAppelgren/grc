@@ -465,6 +465,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/authorities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the authorities that issue the rules we watch
+         * @description Every issuing authority the shared library knows, with its jurisdiction: the Swedish,
+         *     Danish, Norwegian and Finnish supervisors, the EU bodies and the international standards
+         *     publishers. Call it to fill an authority filter on the watch feed or the console's change
+         *     queue, to label a change's issuer, and from an agent run that has to recognise the
+         *     authority behind a page it fetched.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `library.read`, or an agent's key carrying the `library:read` scope. A short fixed
+         *     reference list, answered as a plain array rather than a page, like the other reference
+         *     reads. Library facts, the same for every bank, changed only through an approved proposal;
+         *     an authority's `key` never changes, so store the key and never the name.
+         *
+         *     Errors: `permission_denied` without `library.read` or `library:read`; `unauthenticated`
+         *     without a credential.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["listAuthorities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/changes": {
         parameters: {
             query?: never;
@@ -472,7 +508,30 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * See the regulatory changes that reach your bank
+         * @description The watch feed: every reform bleqq has registered that touches this bank, newest key
+         *     date first, with the bank's own case beside each one. Call it for the feed screen, for a
+         *     weekly briefing (`week`), and to find the changes nobody has triaged yet (`tab=new`) or
+         *     whose "So what?" is still an AI draft (`unconfirmedSoWhat=true`).
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `watch.read` in their own bank; no API key reaches it, because every row joins that
+         *     bank's own case. What the reader sees is filtered by the bank's footprint by default,
+         *     which `footprint=all` lifts and `footprint=watched` widens to the markets the bank
+         *     watches; the library half of every row is the same for every bank and the `case` half
+         *     never leaves this one.
+         *
+         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. An empty feed is a
+         *     200 with an empty `items` and a `total` of 0, never a 404. Errors: `permission_denied`
+         *     when the session lacks `watch.read`, `unauthenticated` when there is no session, and
+         *     `validation_error` for a filter value the schema refuses — including the designed
+         *     `inFootprint`, which this build replaced with the single `footprint` value.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["listChanges"];
         put?: never;
         /** Create Change */
         post: operations["createChange"];
@@ -489,7 +548,29 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Read one regulatory change and what it means for your bank
+         * @description The whole change page: the reform's sourced facts — its type, its flags, its scope,
+         *     its timeline from consultation to in force, the pages it was found on and the obligations
+         *     it affects — and beside them the reader's own bank's case, with its urgency, its
+         *     footprint verdict and its "So what?". Call it when a person opens a change from the feed,
+         *     a briefing or an obligation.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `watch.read` in their own bank. Everything outside `case` is a library fact shared by
+         *     every bank and changed only by a library editor or through a proposal; everything inside
+         *     `case` is this bank's own and is invisible to bleqq, to every other bank and to every
+         *     model endpoint. A classification an agent proposed carries `suggested: true` until a
+         *     library editor confirms it, and must not be read as checked.
+         *
+         *     Errors: `not_found` when no change has that id, or when the caller may not see it — the
+         *     two are answered the same way on purpose, so no id can be probed; `permission_denied`
+         *     without `watch.read`; `unauthenticated` without a session.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["getChange"];
         put?: never;
         post?: never;
         delete?: never;
@@ -497,6 +578,81 @@ export interface paths {
         head?: never;
         /** Update Change */
         patch: operations["updateChange"];
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/case/obligation-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm that a suggested obligation really is affected for your bank
+         * @description Records, on this bank's own case, that one of the obligations an agent or a library
+         *     editor linked to the change really is affected here, so the case works it. Call it from
+         *     the "Obligations affected" panel; call the matching `DELETE` when the link is not
+         *     relevant to this bank.
+         *
+         *     A person's session holding `cases.work` in their own bank. It writes one row in that
+         *     bank's zone and changes no library row: the shared link, its origin and its confidence
+         *     stay exactly as they were, a library editor's confirmation is a separate decision, and
+         *     another bank still sees the link undecided. One decision per obligation per case, so
+         *     accepting one already accepted is not a second row. The decision is recorded in the audit
+         *     log with the person named.
+         *
+         *     Answers 201 with the stored decision. No `If-Match` and no step-up. Errors: `not_found`
+         *     when no change has that id, this bank has no case for it, or the obligation is not one
+         *     the caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a
+         *     session; `validation_error` for a body the schema refuses.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        post: operations["acceptCaseObligationLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/case/obligation-links/{obligation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Say that a suggested obligation is not related to your bank
+         * @description Records, on this bank's own case, that a suggested obligation link is not related
+         *     here, so the change page stops showing it. Call it from the "Obligations affected" panel
+         *     when a link an agent proposed does not apply to this bank's business.
+         *
+         *     A person's session holding `cases.work` in their own bank. Despite the method, nothing is
+         *     deleted: the decision is stored as `removed`, so the case file can say the bank looked at
+         *     the link and said no, and the same call can be reversed by accepting it again. No library
+         *     row moves — the shared link stays, still there for every other bank — and an obligation
+         *     removed here is not an obligation that does not apply, which is a separate fact in the
+         *     register (REG-01). The decision is recorded in the audit log with the person named.
+         *
+         *     Answers 200 with the stored decision. No `If-Match` and no step-up. Errors: `not_found`
+         *     when no change has that id, this bank has no case for it, or the obligation is not one
+         *     the caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a
+         *     session.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        delete: operations["removeCaseObligationLink"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/changes/{change_id}/documents": {
@@ -560,6 +716,117 @@ export interface paths {
         get?: never;
         /** Replace Change Obligations */
         put: operations["replaceChangeObligations"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/so-what": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Say in your own words what a change means for your bank
+         * @description Replaces the AI draft on this bank's case with the bank's own wording, at most 4000
+         *     characters. Call it when the drafted "So what?" is wrong, incomplete or written for
+         *     somebody else's business; call `POST /changes/{changeId}/so-what/confirm` instead when
+         *     the draft is right as it stands.
+         *
+         *     A person's session holding `cases.work` in their own bank. It writes one column of that
+         *     bank's case and nothing else: no library row moves, and another bank reading the same
+         *     change still sees its own copy, still an AI draft. Saving marks the wording confirmed and
+         *     names the person and the time, because somebody who rewrote it has already decided. The
+         *     text is tenant content: it stays in the bank's zone and never reaches a log, Sentry or a
+         *     model endpoint. The save is recorded in the audit log with the person named.
+         *
+         *     No `If-Match` and no step-up: the case carries no version in R1, so the last save wins
+         *     until the case workflow lands. Errors: `not_found` when no change has that id or this
+         *     bank has no case for it; `permission_denied` without `cases.work`; `unauthenticated`
+         *     without a session; `validation_error` for empty text or text over the cap.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        put: operations["saveSoWhat"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/so-what/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm the drafted wording as your bank's own
+         * @description Accepts the AI draft on this bank's case as it stands, so the screen stops labelling
+         *     it "AI draft" and the case file can quote it as the bank's position. Call it when the
+         *     drafted "So what?" is right; use `PUT /changes/{changeId}/so-what` when it needs
+         *     rewriting.
+         *
+         *     A person's session holding `cases.work` in their own bank. It changes the confirmation
+         *     on that bank's case and not the text: the words stay the model's, now stood behind by a
+         *     named person at a named time, which is what keeps AI output labelled until somebody
+         *     confirms it (WAT-05). No library row moves, and another bank's copy is untouched. The
+         *     confirmation is recorded in the audit log with the person named.
+         *
+         *     No request body, no `If-Match` and no step-up. Errors: `not_found` when no change has
+         *     that id, this bank has no case for it, or the case holds no draft to confirm;
+         *     `permission_denied` without `cases.work`; `unauthenticated` without a session.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        post: operations["confirmSoWhat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/console/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Work the queue of change facts nobody has confirmed
+         * @description The platform console's queue: the changes carrying a type, a flag, a scope term or an
+         *     obligation link that an agent proposed and no library editor has confirmed. Call it to
+         *     find what needs a library editor's eye, narrow it by authority, or switch to
+         *     `confirmed=all` to look a change up.
+         *
+         *     A read: it changes nothing and writes no audit row. A library editor's session holding
+         *     `proposals.review`, which no tenant role holds, so a bank's member is refused here and
+         *     reads `GET /changes` instead. It joins no case and answers no bank's judgement: a console
+         *     session belongs to no tenant, and a change's classification is a library fact that only
+         *     `proposals.review` may correct (PRO-01).
+         *
+         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most, newest first by when
+         *     the reform was first seen. An empty queue is a 200 with an empty `items` and a `total` of
+         *     0. Errors: `permission_denied` without `proposals.review`, `unauthenticated` without a
+         *     session, `validation_error` for a filter value the schema refuses.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["listConsoleChanges"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -872,6 +1139,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/obligations/{obligation_id}/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the changes that affect one obligation, and how many are still open for you
+         * @description The related-changes panel of an obligation, and the `openCount` the inventory shows
+         *     beside it: how many of those changes still have work open for this bank — a case that is
+         *     neither closed nor dismissed. Call it from the obligation page, and for the "n open
+         *     changes" count on an inventory row.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `watch.read` in their own bank. The links themselves are library facts with the agent's
+         *     confidence on them, the same for every bank; `openCount` is computed from the reader's
+         *     own cases, so two banks reading one obligation see different numbers. It counts cases and
+         *     says nothing about whether the bank complies, which is a separate fact in the register
+         *     (REG-02).
+         *
+         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. An obligation no
+         *     change touches is a 200 with an empty `items`, a `total` of 0 and an `openCount` of 0.
+         *     Errors: `not_found` when no obligation has that id or the caller may not see it;
+         *     `permission_denied` without `watch.read`; `unauthenticated` without a session.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["listObligationChanges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/obligations/{obligation_id}/diff": {
         parameters: {
             query?: never;
@@ -913,6 +1218,46 @@ export interface paths {
          *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the obligation is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language.
          */
         post: operations["reportObligationProblem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See which public pages an obligation was taken from
+         * @description The citations behind the version of an obligation in force today: which field each one
+         *     backs, the public page it came from, the hash of that page as we last read it and when.
+         *     Call it to show a reader where a fact came from, and from a watch run that re-checks a
+         *     library record against its source.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `library.read`, or an agent's key carrying the `library:read` scope alone — which is the
+         *     point of the route, because a run must be able to compare a record with its source
+         *     without holding any write scope. Nothing an agent finds here may be written back: a
+         *     record that has drifted becomes a proposal, approved by a second and independent
+         *     principal, and never a direct edit (PRO-01). A page whose hash has changed means the page
+         *     moved, never that the record is wrong.
+         *
+         *     A record with no field-level citation yet is a 200 with an empty `items`, not a 404; the
+         *     record's own `provenance` on `GET /obligations/{obligationId}` still names where it came
+         *     from. Errors: `not_found` when no obligation has that id or the caller may not see it;
+         *     `permission_denied` without `library.read` or `library:read`; `unauthenticated` without a
+         *     credential.
+         *
+         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+         *     ships.
+         */
+        get: operations["getRecordSources"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2629,6 +2974,164 @@ export interface components {
         AuditSnapshot: {
             [key: string]: unknown;
         };
+        /**
+         * CasesObligationLink
+         * @description One obligation-link decision of this bank. The bank's own zone: the shared library's
+         *     own link, its origin and its confidence are unchanged by anything here, and another
+         *     bank's decision about the same link is invisible (WAT-04, ruling C).
+         * @example {
+         *       "decidedAt": "2026-09-17T09:12:00Z",
+         *       "decidedByName": "Sara Lind",
+         *       "decision": "accepted",
+         *       "instrumentShortName": "FFFS 2017:2",
+         *       "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+         *       "refLabel": "11 kap. 4 §",
+         *       "title": "Assess the quality of investment research paid for"
+         *     }
+         */
+        CasesObligationLink: {
+            /**
+             * Decidedat
+             * Format: date-time
+             * @description When this bank decided, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Set by the server when the decision was stored; a caller never sends it.
+             * @example 2026-09-17T09:12:00Z
+             */
+            decidedAt: string;
+            /**
+             * Decidedbyname
+             * @description The name of the person in this bank who decided, for the case file. Null only for a decision the system made.
+             * @example Sara Lind
+             */
+            decidedByName: string | null;
+            /**
+             * Decision
+             * @description What this bank said, a fixed kind with two members: `accepted` (the link is real for us, and the case works it) and `removed` (not related to us, so the case hides it). `removed` is stored, not deleted, so the case file says the bank looked and said no. Neither value touches the library's own link.
+             * @example accepted
+             * @enum {string}
+             */
+            decision: "accepted" | "removed";
+            /**
+             * Instrumentshortname
+             * @description The short name of the instrument the obligation sits in, from the shared library.
+             * @example FFFS 2017:2
+             */
+            instrumentShortName: string;
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The library obligation the decision is about, as a UUID. The decision is this bank's alone and changes no library row.
+             * @example 7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17
+             */
+            obligationId: string;
+            /**
+             * Reflabel
+             * @description Where in that instrument the obligation sits, as the instrument numbers it.
+             * @example 11 kap. 4 §
+             */
+            refLabel: string;
+            /**
+             * Title
+             * @description The obligation's title in the reader's language, from the shared library.
+             * @example Assess the quality of investment research paid for
+             */
+            title: string;
+        };
+        /**
+         * CasesObligationLinkBody
+         * @description `POST /changes/{changeId}/case/obligation-links` (WAT-04): this bank accepts a
+         *     suggested library link as real for itself. Written by a person with `cases.work`. It
+         *     writes one row in this bank's zone and changes no library row.
+         * @example {
+         *       "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
+         *     }
+         */
+        CasesObligationLinkBody: {
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The obligation this bank accepts as affected by the change, as a UUID. It must be an obligation the library already links to the change, or already in this bank's inventory; an unknown obligation answers 404, and this call never creates a library row (AC-PRO1).
+             * @example 7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17
+             */
+            obligationId: string;
+        };
+        /**
+         * CasesSoWhat
+         * @description The "So what?" as this bank holds it, answered by both the save and the confirm.
+         *     A bank's own zone: another bank reading the same change sees its own copy, still an AI
+         *     draft until its own person acts (WAT-05).
+         * @example {
+         *       "caseId": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *       "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *       "confirmed": true,
+         *       "confirmedAt": "2026-09-17T09:12:00Z",
+         *       "confirmedByName": "Sara Lind",
+         *       "isAiDraft": false,
+         *       "text": "Confirm with the desk that the annual research quality criteria are documented before 1 October."
+         *     }
+         */
+        CasesSoWhat: {
+            /**
+             * Caseid
+             * Format: uuid
+             * @description This bank's case for the change, as a UUID. One per bank per change (CAS-01), and never another bank's.
+             * @example 9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46
+             */
+            caseId: string;
+            /**
+             * Changeid
+             * Format: uuid
+             * @description The library change the case is about, as a UUID. The change is shared by every bank; the case is not.
+             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
+             */
+            changeId: string;
+            /**
+             * Confirmed
+             * @description Whether a person in this bank has confirmed or rewritten the wording. False means the text above is still an AI draft, which is how the screen labels it. A reader must not quote an unconfirmed 'So what?' as this bank's position.
+             * @example true
+             */
+            confirmed: boolean;
+            /**
+             * Confirmedat
+             * @description When a person in this bank confirmed the wording, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null while it is still an AI draft.
+             * @example 2026-09-17T09:12:00Z
+             */
+            confirmedAt: string | null;
+            /**
+             * Confirmedbyname
+             * @description The name of the person in this bank who confirmed it, for the screen and the case file. Null while it is a draft. A name and an id are the only personal data this API carries about a confirmation (playbook 4.7).
+             * @example Sara Lind
+             */
+            confirmedByName: string | null;
+            /**
+             * Isaidraft
+             * @description Computed by the server: true when the text is still the model's words, which is exactly `confirmed` being false with text present. Sent as its own field because the label 'AI draft' is what the screen shows and AI output stays labelled until a person confirms it (WAT-05, AUD-02).
+             * @example false
+             */
+            isAiDraft: boolean;
+            /**
+             * Text
+             * @description The wording this bank holds. It starts as the library's AI draft, copied in when the case was created, and becomes the bank's own the moment someone saves over it. Null when no draft has been written for the change yet.
+             * @example Confirm with the desk that the annual research quality criteria are documented before 1 October.
+             */
+            text: string | null;
+        };
+        /**
+         * CasesSoWhatBody
+         * @description `PUT /changes/{changeId}/so-what` (WAT-05): this bank's own wording. Written by a
+         *     person with `cases.work` in their own bank; saving it marks the text confirmed, because
+         *     a person who rewrote it has already decided.
+         * @example {
+         *       "text": "Self-directed trading and Guided investing both pay for external research. Confirm with the desk that the annual quality criteria are documented before 1 October."
+         *     }
+         */
+        CasesSoWhatBody: {
+            /**
+             * Text
+             * @description What this change means for this bank, 1 to 4000 characters, in the bank's own words. It replaces the AI draft copied from the library. It is tenant content: it stays in this bank's zone, never reaches another bank, a log or a model endpoint, and it changes nothing in the shared library.
+             * @example Confirm with the desk that the annual research quality criteria are documented before 1 October.
+             */
+            text: string;
+        };
         /** CodeRequestBody */
         CodeRequestBody: {
             /** Email */
@@ -3056,16 +3559,184 @@ export interface components {
             parentKey?: string | null;
         };
         /**
+         * LibraryAuthority
+         * @description One issuing authority, as `GET /authorities` lists them. A shared library fact:
+         *     every bank and every agent reads the same list, and it holds no bank's judgement.
+         * @example {
+         *       "id": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *       "jurisdiction": {
+         *         "key": "se",
+         *         "kind": "country",
+         *         "label": "Sweden"
+         *       },
+         *       "key": "fi",
+         *       "name": "Finansinspektionen",
+         *       "shortName": "FI",
+         *       "url": "https://www.fi.se/"
+         *     }
+         */
+        LibraryAuthority: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The authority's identifier in the shared library, used by the change and console filters.
+             * @example 3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11
+             */
+            id: string;
+            /** @description Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` says whether it is a country, a union or an international body; a change takes its own jurisdiction from its authority, and a standard's term is accepted only when that kind is international (FP-04, AC-AGT1). A reader must not conclude from this alone that a change applies to a bank: applicability is a separate fact (REG-01). */
+            jurisdiction: components["schemas"]["LibraryRef"];
+            /**
+             * Key
+             * @description The authority's immutable key, the value a filter, a report or an export stores. It never changes; the name may be relabelled around it (playbook 4.3).
+             * @example fi
+             */
+            key: string;
+            /**
+             * Name
+             * @description The authority's full name, as it names itself.
+             * @example Finansinspektionen
+             */
+            name: string;
+            /**
+             * Shortname
+             * @description How the authority is abbreviated in a pill or a column, in its own language.
+             * @example FI
+             */
+            shortName: string;
+            /**
+             * Url
+             * @description The authority's own site, so a reader can open it.
+             * @example https://www.fi.se/
+             */
+            url: string;
+        };
+        /**
+         * LibraryRecordSource
+         * @description One citation behind a live library record: which field it backs, where it came from
+         *     and what we have of that page. Shared library provenance (INV-06); it names no bank.
+         * @example {
+         *       "contentHash": "9f2c4d0a6b1e8f37c5a90d2e4b6f8013a7c5e9d1b3f5079a2c4e6081d3f5a7c9",
+         *       "documentId": null,
+         *       "fetchedAt": "2026-09-16T06:02:00Z",
+         *       "field": "summary",
+         *       "label": "FFFS 2017:2",
+         *       "url": "https://www.fi.se/en/published/regulations/2017/fffs-20172/"
+         *     }
+         */
+        LibraryRecordSource: {
+            /**
+             * Contenthash
+             * @description A hash of the page as we last read it, so a re-check can tell whether it moved without keeping a copy of it. Null when the citation predates the hash or the publisher's terms allow no snapshot at all (WAT-07, D-45). A changed hash means the page moved, never that the record is wrong.
+             * @example 9f2c4d0a6b1e8f37c5a90d2e4b6f8013a7c5e9d1b3f5079a2c4e6081d3f5a7c9
+             */
+            contentHash: string | null;
+            /**
+             * Documentid
+             * @description The stored source document, as a UUID, when there is one. Null for a citation a library editor recorded by hand.
+             * @example e2b9a071-4c35-4d68-9b1f-8a0c3e5d7b24
+             */
+            documentId: string | null;
+            /**
+             * Fetchedat
+             * @description When we last read that page, as an RFC 3339 timestamp in UTC (`2026-09-16T06:02:00Z`). Null when no agent has ever fetched it.
+             * @example 2026-09-16T06:02:00Z
+             */
+            fetchedAt: string | null;
+            /**
+             * Field
+             * @description Which field of the record this citation backs — `summary`, `key_date`, `duty_type` and so on, the record's own column names. Free text rather than a vocabulary because the set is the schema's, not an admin's.
+             * @example summary
+             */
+            field: string;
+            /**
+             * Label
+             * @description What that page is called, in words a reader recognises.
+             * @example FFFS 2017:2
+             */
+            label: string;
+            /**
+             * Url
+             * @description The public page the fact came from, so a re-check can fetch it again and a reviewer can open it.
+             * @example https://www.fi.se/en/published/regulations/2017/fffs-20172/
+             */
+            url: string;
+        };
+        /**
+         * LibraryRecordSources
+         * @description `GET /obligations/{obligationId}/sources`: everything a re-check needs to compare a
+         *     live library record against the pages it came from, and nothing that needs a write
+         *     scope. It is how an agent key holding `library:read` alone re-checks a record (AGT-01,
+         *     item 3); the correction it proposes goes through the proposal door, never a direct
+         *     edit (PRO-01).
+         * @example {
+         *       "items": [
+         *         {
+         *           "contentHash": "9f2c4d0a6b1e8f37c5a90d2e4b6f8013a7c5e9d1b3f5079a2c4e6081d3f5a7c9",
+         *           "documentId": null,
+         *           "fetchedAt": "2026-09-16T06:02:00Z",
+         *           "field": "summary",
+         *           "label": "FFFS 2017:2",
+         *           "url": "https://www.fi.se/en/published/regulations/2017/fffs-20172/"
+         *         }
+         *       ],
+         *       "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+         *       "versionNumber": 2
+         *     }
+         */
+        LibraryRecordSources: {
+            /**
+             * Items
+             * @description The citations, one per sourced field. An empty list means the record carries no field-level citation yet, not that it is unsourced: the record's own `provenance` still names where it came from.
+             */
+            items: components["schemas"]["LibraryRecordSource"][];
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The library obligation these citations belong to, as a UUID: the same id the caller asked for.
+             * @example 7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17
+             */
+            obligationId: string;
+            /**
+             * Versionnumber
+             * @description The version of the obligation the citations describe: the one in force today, because that is what a re-check compares. An older version's citations are not rewritten when a new version lands (INV-04).
+             * @example 2
+             */
+            versionNumber: number;
+        };
+        /**
          * LibraryRef
          * @description A vocabulary row or a term as every surface reads it: key and kind, and the label in
          *     the reader's language (playbook 15). A term's kind is null: its dimension is its kind.
+         *
+         *     A shared library fact wherever it appears: the row behind it is a library vocabulary
+         *     or a taxonomy term, which a platform admin may add to, rename or retire without a
+         *     deploy. The key is what a filter, a report, a webhook or an export stores; the label
+         *     is for a person to read and may change under it. A tone is never here: a pill's tone
+         *     follows its slot or the row's own kind and is nobody's to send (NFR-03).
+         * @example {
+         *       "key": "act_now",
+         *       "kind": null,
+         *       "label": "Act now"
+         *     }
          */
         LibraryRef: {
-            /** Key */
+            /**
+             * Key
+             * @description The row's immutable key. Store and compare this, never the label, and never construct one: a key the list does not hold answers 422 `unknown_key` with the valid keys.
+             * @example act_now
+             */
             key: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description The row's fixed sub-kind where its list has one — a change type's lifecycle kind, a case sub-status's category — and null where it has none. A taxonomy term is always null here: its dimension is its kind. It is a kind in code, so the rules may branch on it; an admin never adds one.
+             * @example null
+             */
             kind: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description The row's label in the reader's language, for display only. It is a phrase a person wrote and may be reworded at any time, so nothing may match on it.
+             * @example Act now
+             */
             label: string;
         };
         /**
@@ -3509,14 +4180,16 @@ export interface components {
         PageQuery: {
             /**
              * Limit
-             * @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
              * @default 20
+             * @example 20
              */
             limit: number;
             /**
              * Offset
-             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
              * @default 0
+             * @example 0
              */
             offset: number;
         };
@@ -5144,310 +5817,2031 @@ export interface components {
             usageNote: string;
         };
         /**
+         * WatchCaseObligationDecision
+         * @description What this bank decided about one suggested obligation link. The bank's own zone: it
+         *     is invisible to bleqq, to every other bank and to every model endpoint, and it changes
+         *     no library row (WAT-04, ruling C).
+         * @example {
+         *       "decidedAt": "2026-09-17T09:12:00Z",
+         *       "decision": "accepted",
+         *       "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
+         *     }
+         */
+        WatchCaseObligationDecision: {
+            /**
+             * Decidedat
+             * Format: date-time
+             * @description When this bank decided, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Set by the server when the decision was stored; a caller never sends it.
+             * @example 2026-09-17T09:12:00Z
+             */
+            decidedAt: string;
+            /**
+             * Decision
+             * @description What this bank said, a fixed kind: `accepted` (the link is real for us and the case works it) or `removed` (not related to us). `removed` hides the link on this bank's case and leaves the shared library exactly as it was.
+             * @example accepted
+             * @enum {string}
+             */
+            decision: "accepted" | "removed";
+            /**
+             * Obligationid
+             * Format: uuid
+             * @description The library obligation the decision is about, as a UUID. The decision is this bank's alone and changes no library row.
+             * @example 7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17
+             */
+            obligationId: string;
+        };
+        /**
          * WatchChange
          * @description A library record: sourced facts, shared by every tenant. No tenant judgement, no
          *     case and no "So what?" confirmation is here; those sit on the tenant's own case.
+         * @example {
+         *       "agentRunId": "5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21",
+         *       "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *       "authorityLabel": "Finansinspektionen",
+         *       "changeType": {
+         *         "key": "adopted",
+         *         "kind": "adopted",
+         *         "label": "Adopted"
+         *       },
+         *       "documents": [
+         *         {
+         *           "fetchedAt": "2026-09-16T06:02:00Z",
+         *           "id": "e2b9a071-4c35-4d68-9b1f-8a0c3e5d7b24",
+         *           "isDuplicate": false,
+         *           "isPrimary": true,
+         *           "publisher": "Finansinspektionen",
+         *           "riskFlags": [],
+         *           "title": "FI adopts amended rules on paying for investment research",
+         *           "url": "https://www.fi.se/en/published/news/2026/reporting/"
+         *         }
+         *       ],
+         *       "duplicateCount": 1,
+         *       "events": [
+         *         {
+         *           "datePrecision": "day",
+         *           "eventDate": "2026-06-01",
+         *           "id": "1c8d5e02-7a94-4b61-83f2-6e0a4d9b3c15",
+         *           "label": "Consultation closed",
+         *           "occurred": true,
+         *           "sortOrder": 1,
+         *           "sourceUrl": "https://www.fi.se/en/published/consultations/2026/"
+         *         }
+         *       ],
+         *       "firstSeenAt": "2026-09-16T06:02:00Z",
+         *       "flags": [
+         *         {
+         *           "key": "advice_perimeter",
+         *           "kind": null,
+         *           "label": "Advice perimeter"
+         *         }
+         *       ],
+         *       "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *       "keyDate": "2026-10-01",
+         *       "keyDateLabel": "In force",
+         *       "keyDatePrecision": "day",
+         *       "model": "agent pipeline 0.4",
+         *       "obligations": [
+         *         {
+         *           "confidence": 0.82,
+         *           "confirmed": false,
+         *           "instrumentShortName": "FFFS 2017:2",
+         *           "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+         *           "origin": "agent",
+         *           "refLabel": "11 kap. 4 §",
+         *           "title": "Assess the quality of investment research paid for"
+         *         }
+         *       ],
+         *       "origin": "agent",
+         *       "publishedOn": "2026-09-15",
+         *       "publishedPrecision": "day",
+         *       "recurrenceRule": null,
+         *       "soWhatDraft": "Teams that pay for external research should confirm that documented criteria exist.",
+         *       "sourceLabel": "Finansinspektionen",
+         *       "sourceUrl": "https://www.fi.se/",
+         *       "stableKey": "chg-fi-2026-research-payments",
+         *       "status": "active",
+         *       "suggestedUrgency": {
+         *         "key": "act_now",
+         *         "kind": null,
+         *         "label": "Act now"
+         *       },
+         *       "summary": "FI's board decided on 15 September 2026 to amend three regulations in the securities area.",
+         *       "terms": [
+         *         {
+         *           "key": "securities",
+         *           "kind": null,
+         *           "label": "Securities"
+         *         }
+         *       ],
+         *       "title": "FI adopts amended rules on paying for investment research"
+         *     }
          */
         WatchChange: {
-            /** Agentrunid */
+            /**
+             * Agentrunid
+             * @description The run that registered it, as a UUID: the provenance anchor of every fact above. Null when a library editor registered the change by hand.
+             * @example 5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21
+             */
             agentRunId: string | null;
-            /** Authorityid */
+            /**
+             * Authorityid
+             * @description The library authority, as a UUID, when the change names one the library knows. Null means the authority is unknown, and such a change is not restricted by jurisdiction (FP-S15, D-29) — a reader must not read null as 'not relevant to us'.
+             * @example 3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11
+             */
             authorityId: string | null;
-            /** Authoritylabel */
+            /**
+             * Authoritylabel
+             * @description Who issued it, as the source writes it.
+             * @example Finansinspektionen
+             */
             authorityLabel: string;
+            /** @description The kind of change, as `{key, kind, label}` from the `change_type` library vocabulary; the label is in the reader's language. The `kind` member is the `change_lifecycle_kind` the rules branch on. Never a phrase to match and never a tone. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
             changeType: components["schemas"]["LibraryRef"];
-            /** Documents */
+            /**
+             * Documents
+             * @description The pages the change was found on, the primary page first.
+             */
             documents: components["schemas"]["WatchChangeDocument"][];
-            /** Duplicatecount */
+            /**
+             * Duplicatecount
+             * @description How many of those pages arrived as second sightings of the same reform (AC-WAT1). Computed by the server.
+             * @example 1
+             */
             duplicateCount: number;
-            /** Events */
+            /**
+             * Events
+             * @description The reform's timeline, in `sortOrder`.
+             */
             events: components["schemas"]["WatchChangeEvent"][];
             /**
              * Firstseenat
              * Format: date-time
+             * @description When bleqq first saw this reform, as an RFC 3339 timestamp in UTC (`2026-09-16T06:02:00Z`). Not the date it was published, which is `publishedOn`.
+             * @example 2026-09-16T06:02:00Z
              */
             firstSeenAt: string;
-            /** Flags */
+            /**
+             * Flags
+             * @description What the change is about across subject areas, as `{key, kind, label}` rows of the `flag` library vocabulary, `ai` and `advice_perimeter` on day one. An empty list means no flag applies, not that nobody looked. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             */
             flags: components["schemas"]["LibraryRef"][];
             /**
              * Id
              * Format: uuid
+             * @description The change's identifier in the shared library.
+             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
              */
             id: string;
-            /** Keydate */
+            /**
+             * Keydate
+             * @description The date that drives 'coming up', or null when none is known.
+             * @example 2026-10-01
+             */
             keyDate: string | null;
-            /** Keydatelabel */
+            /**
+             * Keydatelabel
+             * @description What that date is, in the source's words.
+             * @example In force
+             */
             keyDateLabel: string | null;
-            /** Keydateprecision */
+            /**
+             * Keydateprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
             keyDatePrecision: ("day" | "month" | "quarter" | "year") | null;
-            /** Model */
+            /**
+             * Model
+             * @description The model and pipeline version behind the agent's reading, or null when a person registered it.
+             * @example agent pipeline 0.4
+             */
             model: string | null;
-            /** Obligations */
+            /**
+             * Obligations
+             * @description The library obligations the change affects, most confident first. A bank's own decision about each is on its case.
+             */
             obligations: components["schemas"]["WatchObligationLink"][];
             /**
              * Origin
+             * @description Who created the record, a fixed kind: `agent` (a run registered it) or `user` (a library editor did). It never changes.
+             * @example agent
              * @enum {string}
              */
             origin: "agent" | "user";
-            /** Publishedon */
+            /**
+             * Publishedon
+             * @description When the source published it, as a plain calendar date (`2026-09-15`) and never a timestamp, with `publishedPrecision` beside it. Null when the source states none.
+             * @example 2026-09-15
+             */
             publishedOn: string | null;
-            /** Publishedprecision */
+            /**
+             * Publishedprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
             publishedPrecision: ("day" | "month" | "quarter" | "year") | null;
-            /** Recurrencerule */
+            /**
+             * Recurrencerule
+             * @description How a returning date returns, in words. Null for a one-off reform.
+             * @example null
+             */
             recurrenceRule: string | null;
-            /** Sowhatdraft */
+            /**
+             * Sowhatdraft
+             * @description The library's drafted 'So what?', written once per change from library facts only. It is AI-drafted until a person confirms it, and each bank confirms its own copy on its case — never this one (WAT-05, D-32).
+             * @example Teams that pay for external research should confirm that documented criteria exist.
+             */
             soWhatDraft: string | null;
-            /** Sourcelabel */
+            /**
+             * Sourcelabel
+             * @description Where the change was found, in words.
+             * @example Finansinspektionen
+             */
             sourceLabel: string;
-            /** Sourceurl */
+            /**
+             * Sourceurl
+             * @description The public page it was found on.
+             * @example https://www.fi.se/
+             */
             sourceUrl: string;
-            /** Stablekey */
+            /**
+             * Stablekey
+             * @description The reform's permanent key. It never changes, so it is safe to store in a filter or a report.
+             * @example chg-fi-2026-research-payments
+             */
             stableKey: string;
             /**
              * Status
+             * @description The reform's lifecycle stage, a fixed kind: `active`, `superseded` or `withdrawn` (see the patch shape). This is the library's status, never a bank's case status.
+             * @example active
              * @enum {string}
              */
             status: "active" | "superseded" | "withdrawn";
+            /** @description The agent's suggested urgency as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one. A suggestion for every bank; the bank's own decision is on its case. The tone follows the row's ordinal and is never in this response (NFR-03). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
             suggestedUrgency: components["schemas"]["LibraryRef"] | null;
-            /** Summary */
+            /**
+             * Summary
+             * @description What the change says, from the public source. Library text: it holds no bank's judgement.
+             * @example FI's board decided on 15 September 2026 to amend three regulations.
+             */
             summary: string;
-            /** Terms */
+            /**
+             * Terms
+             * @description The taxonomy terms that scope the change — regime, market, product, service — as `{key, kind, label}` rows of the taxonomy vocabulary, `securities`, `banking`, `payments`, `insurance`, `aml`, `tax`, `data_protection` and `ai_ict` among the regimes seeded on day one. A term's `kind` is null: its dimension is its kind. This is what the footprint is matched against; it is not a bank's footprint. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             */
             terms: components["schemas"]["LibraryRef"][];
-            /** Title */
+            /**
+             * Title
+             * @description What the reform is called, in the source's words.
+             * @example FI adopts amended rules on paying for investment research
+             */
             title: string;
         };
-        /** WatchChangeDocument */
+        /**
+         * WatchChangeCase
+         * @description This bank's own case for the change: its judgement and its work. Everything here is
+         *     in the bank's zone under row-level security. No other bank and no bleqq person sees it,
+         *     and none of it reaches a model endpoint (NFR-01, NFR-04, D-07).
+         * @example {
+         *       "allowedTransitions": [],
+         *       "category": "new",
+         *       "footprintMatch": true,
+         *       "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *       "obligationDecisions": [],
+         *       "ownerId": null,
+         *       "soWhatConfirmed": false,
+         *       "soWhatConfirmedAt": null,
+         *       "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *       "urgency": {
+         *         "key": "act_now",
+         *         "kind": null,
+         *         "label": "Act now"
+         *       },
+         *       "urgencyConfirmed": false
+         *     }
+         */
+        WatchChangeCase: {
+            /**
+             * Allowedtransitions
+             * @description The categories this case may move to next, computed by the server from the state machine's guards. A fixed kind in code, not a vocabulary an admin extends, and the seven members are: `new`, registered and nobody has looked; `assigned`, triaged with an urgency and an owner; `assessing`, the owner is working out what it means for the bank; `implementing`, actions are open; `signoff`, waiting for a second person to sign it off with a passkey; `closed`, signed off or closed with a reason; and `dismissed`, not for this bank, with a reason, and restorable. Always empty in R1, because the workflow that would move a case is chunk 9; empty means 'no move is offered here yet', never 'the case is stuck'.
+             * @example []
+             */
+            allowedTransitions: ("new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed")[];
+            /**
+             * Category
+             * @description Where the case stands, one of the seven fixed categories the state machine reads (D-13): `new` (registered, nobody has looked — the screen reads 'Needs triage'), `assigned` (triaged with an urgency and an owner), `assessing` (the owner is working out what it means), `implementing` (actions are open), `signoff` (waiting for a second person), `closed` and `dismissed` (not for us, with a reason, and restorable). A bank may name sub-statuses inside a category; the guards read the category alone. In R1 every case is `new`: triage onwards is chunk 9.
+             * @example new
+             * @enum {string}
+             */
+            category: "new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed";
+            /**
+             * Footprintmatch
+             * @description Whether the change's scope terms match this bank's footprint, computed by the server when the case was created and recomputed when either side moves. It says the change is in scope to look at; it does not say the obligation applies or that the bank complies — those are separate facts (REG-01, REG-02).
+             * @example true
+             */
+            footprintMatch: boolean;
+            /**
+             * Id
+             * Format: uuid
+             * @description This bank's case for the change, as a UUID. One per bank per change (CAS-01), and never another bank's.
+             * @example 9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46
+             */
+            id: string;
+            /**
+             * Obligationdecisions
+             * @description What this bank decided about the suggested obligation links. An empty list means it has decided nothing yet.
+             */
+            obligationDecisions: components["schemas"]["WatchCaseObligationDecision"][];
+            /**
+             * Ownerid
+             * @description The person in this bank who owns the case, as a UUID, once triage names one. Null before triage, which is where every case sits in R1. Never a person of another bank.
+             * @example null
+             */
+            ownerId: string | null;
+            /**
+             * Sowhatconfirmed
+             * @description Whether a person in this bank confirmed or rewrote the wording. False means it is still an AI draft and the screen labels it so (WAT-05). Another bank's copy is unaffected either way.
+             * @example false
+             */
+            soWhatConfirmed: boolean;
+            /**
+             * Sowhatconfirmedat
+             * @description When a person in this bank confirmed the wording, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null while it is still an AI draft.
+             * @example null
+             */
+            soWhatConfirmedAt: string | null;
+            /**
+             * Sowhattext
+             * @description This bank's copy of the 'So what?', at most 4000 characters. It starts as the library's draft and is this bank's to rewrite. Null when no draft exists yet.
+             * @example Teams that pay for external research should confirm that documented criteria exist.
+             */
+            soWhatText: string | null;
+            /** @description How soon this bank must act, as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one. It starts as the change's suggested urgency and stays a suggestion until `urgencyConfirmed` is true. Null only where no suggestion was made. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
+            urgency: components["schemas"]["LibraryRef"] | null;
+            /**
+             * Urgencyconfirmed
+             * @description Whether a person in this bank confirmed the urgency at triage. False means the value above is still the agent's suggestion; the screen says so. A reader must not report an unconfirmed urgency as this bank's decision.
+             * @example false
+             */
+            urgencyConfirmed: boolean;
+        };
+        /**
+         * WatchChangeDetail
+         * @description `GET /changes/{changeId}`: the whole change page. The library record exactly as
+         *     `WatchChange` answers it, plus the two facts that are the reader's own — whether it is
+         *     in their footprint and their bank's case.
+         * @example {
+         *       "agentRunId": "5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21",
+         *       "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *       "authorityLabel": "Finansinspektionen",
+         *       "changeType": {
+         *         "key": "adopted",
+         *         "kind": "adopted",
+         *         "label": "Adopted"
+         *       },
+         *       "documents": [
+         *         {
+         *           "fetchedAt": "2026-09-16T06:02:00Z",
+         *           "id": "e2b9a071-4c35-4d68-9b1f-8a0c3e5d7b24",
+         *           "isDuplicate": false,
+         *           "isPrimary": true,
+         *           "publisher": "Finansinspektionen",
+         *           "riskFlags": [],
+         *           "title": "FI adopts amended rules on paying for investment research",
+         *           "url": "https://www.fi.se/en/published/news/2026/reporting/"
+         *         }
+         *       ],
+         *       "duplicateCount": 1,
+         *       "events": [
+         *         {
+         *           "datePrecision": "day",
+         *           "eventDate": "2026-06-01",
+         *           "id": "1c8d5e02-7a94-4b61-83f2-6e0a4d9b3c15",
+         *           "label": "Consultation closed",
+         *           "occurred": true,
+         *           "sortOrder": 1,
+         *           "sourceUrl": "https://www.fi.se/en/published/consultations/2026/"
+         *         }
+         *       ],
+         *       "firstSeenAt": "2026-09-16T06:02:00Z",
+         *       "flags": [
+         *         {
+         *           "key": "advice_perimeter",
+         *           "kind": null,
+         *           "label": "Advice perimeter"
+         *         }
+         *       ],
+         *       "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *       "keyDate": "2026-10-01",
+         *       "keyDateLabel": "In force",
+         *       "keyDatePrecision": "day",
+         *       "model": "agent pipeline 0.4",
+         *       "obligations": [
+         *         {
+         *           "confidence": 0.82,
+         *           "confirmed": false,
+         *           "instrumentShortName": "FFFS 2017:2",
+         *           "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+         *           "origin": "agent",
+         *           "refLabel": "11 kap. 4 §",
+         *           "title": "Assess the quality of investment research paid for"
+         *         }
+         *       ],
+         *       "origin": "agent",
+         *       "publishedOn": "2026-09-15",
+         *       "publishedPrecision": "day",
+         *       "recurrenceRule": null,
+         *       "soWhatDraft": "Teams that pay for external research should confirm that documented criteria exist.",
+         *       "sourceLabel": "Finansinspektionen",
+         *       "sourceUrl": "https://www.fi.se/",
+         *       "stableKey": "chg-fi-2026-research-payments",
+         *       "status": "active",
+         *       "suggestedUrgency": {
+         *         "key": "act_now",
+         *         "kind": null,
+         *         "label": "Act now"
+         *       },
+         *       "summary": "FI's board decided on 15 September 2026 to amend three regulations in the securities area.",
+         *       "terms": [
+         *         {
+         *           "key": "securities",
+         *           "kind": null,
+         *           "label": "Securities"
+         *         }
+         *       ],
+         *       "title": "FI adopts amended rules on paying for investment research"
+         *     }
+         */
+        WatchChangeDetail: {
+            /**
+             * Agentrunid
+             * @description The run that registered it, as a UUID: the provenance anchor of every fact above. Null when a library editor registered the change by hand.
+             * @example 5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21
+             */
+            agentRunId: string | null;
+            /**
+             * Authorityid
+             * @description The library authority, as a UUID, when the change names one the library knows. Null means the authority is unknown, and such a change is not restricted by jurisdiction (FP-S15, D-29) — a reader must not read null as 'not relevant to us'.
+             * @example 3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11
+             */
+            authorityId: string | null;
+            /**
+             * Authoritylabel
+             * @description Who issued it, as the source writes it.
+             * @example Finansinspektionen
+             */
+            authorityLabel: string;
+            /** @description The reader's own bank's case, or null when there is none. Never another bank's, and never present for a console session. */
+            case: components["schemas"]["WatchChangeCase"] | null;
+            /** @description The kind of change, as `{key, kind, label}` from the `change_type` library vocabulary; the label is in the reader's language. The `kind` member is the `change_lifecycle_kind` the rules branch on. Never a phrase to match and never a tone. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
+            changeType: components["schemas"]["LibraryRef"];
+            /**
+             * Documents
+             * @description The pages the change was found on, the primary page first.
+             */
+            documents: components["schemas"]["WatchChangeDocument"][];
+            /**
+             * Duplicatecount
+             * @description How many of those pages arrived as second sightings of the same reform (AC-WAT1). Computed by the server.
+             * @example 1
+             */
+            duplicateCount: number;
+            /**
+             * Events
+             * @description The reform's timeline, in `sortOrder`.
+             */
+            events: components["schemas"]["WatchChangeEvent"][];
+            /**
+             * Firstseenat
+             * Format: date-time
+             * @description When bleqq first saw this reform, as an RFC 3339 timestamp in UTC (`2026-09-16T06:02:00Z`). Not the date it was published, which is `publishedOn`.
+             * @example 2026-09-16T06:02:00Z
+             */
+            firstSeenAt: string;
+            /**
+             * Flags
+             * @description What the change is about across subject areas, as `{key, kind, label}` rows of the `flag` library vocabulary, `ai` and `advice_perimeter` on day one. An empty list means no flag applies, not that nobody looked. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             */
+            flags: components["schemas"]["LibraryRef"][];
+            /**
+             * Id
+             * Format: uuid
+             * @description The change's identifier in the shared library.
+             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
+             */
+            id: string;
+            /**
+             * Infootprint
+             * @description Whether the change's scope matches the reader's footprint, computed by the server (FP-03).
+             * @example true
+             */
+            inFootprint: boolean;
+            /**
+             * Keydate
+             * @description The date that drives 'coming up', or null when none is known.
+             * @example 2026-10-01
+             */
+            keyDate: string | null;
+            /**
+             * Keydatelabel
+             * @description What that date is, in the source's words.
+             * @example In force
+             */
+            keyDateLabel: string | null;
+            /**
+             * Keydateprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
+            keyDatePrecision: ("day" | "month" | "quarter" | "year") | null;
+            /**
+             * Model
+             * @description The model and pipeline version behind the agent's reading, or null when a person registered it.
+             * @example agent pipeline 0.4
+             */
+            model: string | null;
+            /**
+             * Obligations
+             * @description The library obligations the change affects, most confident first. A bank's own decision about each is on its case.
+             */
+            obligations: components["schemas"]["WatchObligationLink"][];
+            /**
+             * Origin
+             * @description Who created the record, a fixed kind: `agent` (a run registered it) or `user` (a library editor did). It never changes.
+             * @example agent
+             * @enum {string}
+             */
+            origin: "agent" | "user";
+            /**
+             * Publishedon
+             * @description When the source published it, as a plain calendar date (`2026-09-15`) and never a timestamp, with `publishedPrecision` beside it. Null when the source states none.
+             * @example 2026-09-15
+             */
+            publishedOn: string | null;
+            /**
+             * Publishedprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
+            publishedPrecision: ("day" | "month" | "quarter" | "year") | null;
+            /**
+             * Recurrencerule
+             * @description How a returning date returns, in words. Null for a one-off reform.
+             * @example null
+             */
+            recurrenceRule: string | null;
+            /**
+             * Sowhatdraft
+             * @description The library's drafted 'So what?', written once per change from library facts only. It is AI-drafted until a person confirms it, and each bank confirms its own copy on its case — never this one (WAT-05, D-32).
+             * @example Teams that pay for external research should confirm that documented criteria exist.
+             */
+            soWhatDraft: string | null;
+            /**
+             * Sourcelabel
+             * @description Where the change was found, in words.
+             * @example Finansinspektionen
+             */
+            sourceLabel: string;
+            /**
+             * Sourceurl
+             * @description The public page it was found on.
+             * @example https://www.fi.se/
+             */
+            sourceUrl: string;
+            /**
+             * Stablekey
+             * @description The reform's permanent key. It never changes, so it is safe to store in a filter or a report.
+             * @example chg-fi-2026-research-payments
+             */
+            stableKey: string;
+            /**
+             * Status
+             * @description The reform's lifecycle stage, a fixed kind: `active`, `superseded` or `withdrawn` (see the patch shape). This is the library's status, never a bank's case status.
+             * @example active
+             * @enum {string}
+             */
+            status: "active" | "superseded" | "withdrawn";
+            /** @description The agent's suggested urgency as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one. A suggestion for every bank; the bank's own decision is on its case. The tone follows the row's ordinal and is never in this response (NFR-03). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
+            suggestedUrgency: components["schemas"]["LibraryRef"] | null;
+            /**
+             * Summary
+             * @description What the change says, from the public source. Library text: it holds no bank's judgement.
+             * @example FI's board decided on 15 September 2026 to amend three regulations.
+             */
+            summary: string;
+            /**
+             * Terms
+             * @description The taxonomy terms that scope the change — regime, market, product, service — as `{key, kind, label}` rows of the taxonomy vocabulary, `securities`, `banking`, `payments`, `insurance`, `aml`, `tax`, `data_protection` and `ai_ict` among the regimes seeded on day one. A term's `kind` is null: its dimension is its kind. This is what the footprint is matched against; it is not a bank's footprint. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             */
+            terms: components["schemas"]["LibraryRef"][];
+            /**
+             * Title
+             * @description What the reform is called, in the source's words.
+             * @example FI adopts amended rules on paying for investment research
+             */
+            title: string;
+        };
+        /**
+         * WatchChangeDocument
+         * @description A source page of a change as every bank reads it. Library fact. The fetched text
+         *     itself is never in this response: a reader gets the address and the hash and opens the
+         *     publisher's own page.
+         * @example {
+         *       "fetchedAt": "2026-09-16T06:02:00Z",
+         *       "id": "e2b9a071-4c35-4d68-9b1f-8a0c3e5d7b24",
+         *       "isDuplicate": false,
+         *       "isPrimary": true,
+         *       "publisher": "Finansinspektionen",
+         *       "riskFlags": [],
+         *       "title": "FI adopts amended rules on paying for investment research",
+         *       "url": "https://www.fi.se/en/published/news/2026/reporting/"
+         *     }
+         */
         WatchChangeDocument: {
-            /** Fetchedat */
+            /**
+             * Fetchedat
+             * @description When it was fetched, in UTC.
+             * @example 2026-09-16T06:02:00Z
+             */
             fetchedAt: string | null;
             /**
              * Id
              * Format: uuid
+             * @description The document row's identifier.
              */
             id: string;
-            /** Isduplicate */
-            isDuplicate: boolean;
-            /** Isprimary */
-            isPrimary: boolean;
-            /** Publisher */
-            publisher: string | null;
-            /** Riskflags */
-            riskFlags: string[];
-            /** Title */
-            title: string | null;
-            /** Url */
-            url: string;
-        };
-        /**
-         * WatchChangeDocumentInput
-         * @description A fetched page. `riskFlags` is what `agents/screen.py` found in it; the content
-         *     itself is untrusted and is never executed or rendered as HTML (playbook 11.2).
-         */
-        WatchChangeDocumentInput: {
-            /** Contenthash */
-            contentHash?: string | null;
-            /** Fetchedat */
-            fetchedAt?: string | null;
             /**
              * Isduplicate
-             * @default false
+             * @description Whether it arrived as a second sighting of a reform already registered (AC-WAT1).
+             * @example false
              */
             isDuplicate: boolean;
             /**
              * Isprimary
-             * @default false
+             * @description Whether this is the page the change is chiefly about.
+             * @example true
              */
             isPrimary: boolean;
-            /** Publisher */
+            /**
+             * Publisher
+             * @description Who published it, as the page says.
+             * @example Finansinspektionen
+             */
+            publisher: string | null;
+            /**
+             * Riskflags
+             * @description What the injection screen found in the fetched text. A non-empty list is a warning about the page, not about the reform, and the screen never renders the fetched text as HTML whatever this says.
+             * @example []
+             */
+            riskFlags: string[];
+            /**
+             * Title
+             * @description The page's own headline, or null.
+             * @example FI adopts amended rules on paying for investment research
+             */
+            title: string | null;
+            /**
+             * Url
+             * @description The page's public address.
+             * @example https://www.fi.se/en/published/news/2026/reporting/
+             */
+            url: string;
+        };
+        /**
+         * WatchChangeDocumentInput
+         * @description A fetched page, attached by the agent that fetched it (`changes:write`, never a
+         *     person: a page arrives from the run that screened it, AGT-07). `riskFlags` is what
+         *     `agents/screen.py` found in it; the content itself is untrusted and is never executed
+         *     or rendered as HTML (playbook 11.2). Idempotency-Key applies.
+         * @example {
+         *       "contentHash": "9f2c4d0a6b1e8f37c5a90d2e4b6f8013a7c5e9d1b3f5079a2c4e6081d3f5a7c9",
+         *       "fetchedAt": "2026-09-16T06:02:00Z",
+         *       "isDuplicate": false,
+         *       "isPrimary": true,
+         *       "publisher": "Finansinspektionen",
+         *       "riskFlags": [],
+         *       "title": "FI adopts amended rules on paying for investment research",
+         *       "url": "https://www.fi.se/en/published/news/2026/reporting/"
+         *     }
+         */
+        WatchChangeDocumentInput: {
+            /**
+             * Contenthash
+             * @description A hash of the fetched text, at most 128 characters, so a later run can tell whether the page moved. For a standards publisher it is all we keep: the URL, the date and the hash, never a snapshot of the text (WAT-07, D-45).
+             * @example 9f2c4d0a6b1e8f37c5a90d2e4b6f8013a7c5e9d1b3f5079a2c4e6081d3f5a7c9
+             */
+            contentHash?: string | null;
+            /**
+             * Fetchedat
+             * @description When the agent fetched it, in UTC.
+             * @example 2026-09-16T06:02:00Z
+             */
+            fetchedAt?: string | null;
+            /**
+             * Isduplicate
+             * @description Whether this page is a second sighting of a reform already registered. True is how AC-WAT1's merge is recorded; it does not mean the page is worthless.
+             * @default false
+             * @example false
+             */
+            isDuplicate: boolean;
+            /**
+             * Isprimary
+             * @description Whether this is the page the change is chiefly about. At most one page of a change is primary.
+             * @default false
+             * @example true
+             */
+            isPrimary: boolean;
+            /**
+             * Publisher
+             * @description Who published the page, as the page says. A label for a reader, never matched against the authority list.
+             * @example Finansinspektionen
+             */
             publisher?: string | null;
-            /** Riskflags */
+            /**
+             * Riskflags
+             * @description What the injection screen found in the fetched text (`agents/screen.py`), at most 50 entries. Computed by the agent, not by a person and not by an admin: these are the screen's own findings, which is why they are strings and not a vocabulary. A flag here says the text is suspicious, never that the reform is.
+             * @example [
+             *       "instruction_like_text"
+             *     ]
+             */
             riskFlags?: string[];
-            /** Title */
+            /**
+             * Title
+             * @description The page's own headline, at most 300 characters. Null when the page states none.
+             * @example FI adopts amended rules on paying for investment research
+             */
             title?: string | null;
             /**
              * Url
              * Format: uri
+             * @description The page's public address, unique per change: posting the same url again is the merge of AC-WAT1, not a second row. Must be http or https.
+             * @example https://www.fi.se/en/published/news/2026/reporting/
              */
             url: string;
         };
-        /** WatchChangeEvent */
+        /**
+         * WatchChangeEvent
+         * @description One entry of the timeline as every bank reads it. Library fact: the same timeline
+         *     for everyone, with no bank's own dates in it.
+         * @example {
+         *       "datePrecision": "day",
+         *       "eventDate": "2026-06-01",
+         *       "id": "1c8d5e02-7a94-4b61-83f2-6e0a4d9b3c15",
+         *       "label": "Consultation closed",
+         *       "occurred": true,
+         *       "sortOrder": 1,
+         *       "sourceUrl": "https://www.fi.se/en/published/consultations/2026/"
+         *     }
+         */
         WatchChangeEvent: {
-            /** Dateprecision */
+            /**
+             * Dateprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
             datePrecision: ("day" | "month" | "quarter" | "year") | null;
-            /** Eventdate */
+            /**
+             * Eventdate
+             * @description The legal date of the milestone, or null when the source has not stated one.
+             * @example 2026-06-01
+             */
             eventDate: string | null;
             /**
              * Id
              * Format: uuid
+             * @description The timeline entry's identifier, used to correct it later.
              */
             id: string;
-            /** Label */
-            label: string;
-            /** Occurred */
-            occurred: boolean;
-            /** Sortorder */
-            sortOrder: number;
-            /** Sourceurl */
-            sourceUrl: string | null;
-        };
-        /** WatchChangeEventInput */
-        WatchChangeEventInput: {
-            /** Dateprecision */
-            datePrecision?: ("day" | "month" | "quarter" | "year") | null;
-            /** Eventdate */
-            eventDate?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description What happened, in the source's words (see the write shape above).
+             * @example Consultation closed
+             */
             label: string;
             /**
              * Occurred
-             * @default false
+             * @description Whether the source says it has happened. Not derived from today's date.
+             * @example true
              */
             occurred: boolean;
             /**
              * Sortorder
-             * @default 0
+             * @description Position in the timeline, ascending.
+             * @example 1
              */
             sortOrder: number;
-            /** Sourceurl */
+            /**
+             * Sourceurl
+             * @description The page that states this milestone, or null when it is the change's own source.
+             * @example https://www.fi.se/en/published/consultations/2026/
+             */
+            sourceUrl: string | null;
+        };
+        /**
+         * WatchChangeEventInput
+         * @description One entry of a change's timeline, written by an agent's key with `changes:write` or
+         *     by a library editor with `proposals.review`. Idempotency-Key applies.
+         * @example {
+         *       "datePrecision": "day",
+         *       "eventDate": "2026-06-01",
+         *       "label": "Consultation closed",
+         *       "occurred": true,
+         *       "sortOrder": 1,
+         *       "sourceUrl": "https://www.fi.se/en/published/consultations/2026/"
+         *     }
+         */
+        WatchChangeEventInput: {
+            /**
+             * Dateprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
+            datePrecision?: ("day" | "month" | "quarter" | "year") | null;
+            /**
+             * Eventdate
+             * @description The legal date of this milestone, a plain date and never a timestamp. Null when the source has not stated one yet, which is normal early in a reform.
+             * @example 2026-06-01
+             */
+            eventDate?: string | null;
+            /**
+             * Label
+             * @description What happened, in the words of the source, 1 to 300 characters — 'Consultation closed', 'Adopted by the board', 'Transition ends'. Free text on purpose: the milestones of a reform are not a list anyone can close. It is never a status the system branches on.
+             * @example Consultation closed
+             */
+            label: string;
+            /**
+             * Occurred
+             * @description Whether this milestone has already happened, as the source says — not as the clock says. An entry may carry a past date and still be `false` if the source has not confirmed it.
+             * @default false
+             * @example true
+             */
+            occurred: boolean;
+            /**
+             * Sortorder
+             * @description Where the entry sits in the timeline, ascending. Entries share the order the agent gave them; ties fall back to the row id so a page never repeats a row.
+             * @default 0
+             * @example 1
+             */
+            sortOrder: number;
+            /**
+             * Sourceurl
+             * @description The public page that states this milestone, so a reviewer can open it. Null when it is the change's own source.
+             * @example https://www.fi.se/en/published/consultations/2026/
+             */
             sourceUrl?: string | null;
         };
         /**
          * WatchChangeInput
          * @description `POST /changes` (AC-WAT1): `stableKey` makes the call idempotent, so posting a known
-         *     key merges the new pages as duplicates and returns the change that exists.
+         *     key merges the new pages as duplicates and returns the change that exists. Written by
+         *     an agent's key with `changes:write` or a library editor with `proposals.review`; send
+         *     an `Idempotency-Key` as well, because a retry must not create a second row.
+         * @example {
+         *       "agentRunId": "5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21",
+         *       "authorityCode": "fi",
+         *       "authorityLabel": "Finansinspektionen",
+         *       "changeType": "adopted",
+         *       "documents": [
+         *         {
+         *           "isPrimary": true,
+         *           "url": "https://www.fi.se/en/published/news/2026/reporting/"
+         *         }
+         *       ],
+         *       "events": [
+         *         {
+         *           "datePrecision": "day",
+         *           "eventDate": "2026-06-01",
+         *           "label": "Consultation closed",
+         *           "occurred": true,
+         *           "sortOrder": 1
+         *         }
+         *       ],
+         *       "flags": [
+         *         "advice_perimeter"
+         *       ],
+         *       "keyDate": "2026-10-01",
+         *       "keyDateLabel": "In force",
+         *       "keyDatePrecision": "day",
+         *       "model": "agent pipeline 0.4",
+         *       "obligationLinks": [
+         *         {
+         *           "confidence": 0.82,
+         *           "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
+         *         }
+         *       ],
+         *       "publishedOn": "2026-09-15",
+         *       "publishedPrecision": "day",
+         *       "sourceLabel": "Finansinspektionen",
+         *       "sourceUrl": "https://www.fi.se/",
+         *       "stableKey": "chg-fi-2026-research-payments",
+         *       "suggestedUrgency": "act_now",
+         *       "summary": "FI's board decided on 15 September 2026 to amend three regulations in the securities area following changed EU rules.",
+         *       "title": "FI adopts amended rules on paying for investment research"
+         *     }
          */
         WatchChangeInput: {
-            /** Agentrunid */
+            /**
+             * Agentrunid
+             * @description The run that found this, as a UUID, so every library row an agent wrote points at the run that wrote it (AGT-01). Required in practice for an agent's own write; null when a library editor registers a change by hand.
+             * @example 5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21
+             */
             agentRunId?: string | null;
-            /** Authoritycode */
+            /**
+             * Authoritycode
+             * @description The key of the library authority, when the agent recognised it. Null means the authority is unknown to the library, and a change with no authority is not restricted by jurisdiction — it reaches every bank's feed (FP-S15, D-29).
+             * @example fi
+             */
             authorityCode?: string | null;
-            /** Authoritylabel */
+            /**
+             * Authoritylabel
+             * @description Who issued the change, as the source writes it. Always present, even when the authority is not in the library's authority list yet, so a reader always sees who is behind a change.
+             * @example Finansinspektionen
+             */
             authorityLabel: string;
-            /** Changetype */
+            /**
+             * Changetype
+             * @description The key of a row of the `change_type` library vocabulary, at most 80 characters and never a label. Seeded on day one: `proposal` (a draft rule or final report proposed for adoption; its dates are proposed, not decided), `adopted` (decided, application still ahead), `supervision` (surveys, thematic reviews, statements — no new rule), `enforcement` (a decision against a named firm) and `recurring_date` (a date that returns, such as a rate fixing). A platform admin may add rows without a deploy; each row carries a `change_lifecycle_kind` the rules branch on. An unknown key answers 422 `unknown_key` with the valid keys (AC-WAT2). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             * @example adopted
+             */
             changeType: string;
-            /** Documents */
+            /**
+             * Documents
+             * @description The pages the change was found on, at most 50 in one call.
+             */
             documents?: components["schemas"]["WatchChangeDocumentInput"][];
-            /** Events */
+            /**
+             * Events
+             * @description The reform's timeline, at most 50 entries in one call.
+             */
             events?: components["schemas"]["WatchChangeEventInput"][];
-            /** Flags */
+            /**
+             * Flags
+             * @description Keys of rows of the `flag` library vocabulary, at most 50, marking what a change is about across subject areas. Seeded on day one: `ai` (artificial intelligence in financial services, including the AI Act) and `advice_perimeter` (the change moves the line between advice and non-advised services). An admin may add rows without a deploy, which is why this is a list of keys and never a `text[]` of phrases (INPUT_DELTAS §1). An unknown key answers 422 `unknown_key` with the valid keys. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             * @example [
+             *       "advice_perimeter"
+             *     ]
+             */
             flags?: string[];
-            /** Keydate */
+            /**
+             * Keydate
+             * @description The one date that drives 'coming up': in force, applies, transition ends. Null when no date is known yet. The roadmap and the feed order read this date.
+             * @example 2026-10-01
+             */
             keyDate?: string | null;
-            /** Keydatelabel */
+            /**
+             * Keydatelabel
+             * @description What that date is, in the source's words: 'In force', 'Applies', 'Transition ends'.
+             * @example In force
+             */
             keyDateLabel?: string | null;
-            /** Keydateprecision */
+            /**
+             * Keydateprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
             keyDatePrecision?: ("day" | "month" | "quarter" | "year") | null;
-            /** Model */
+            /**
+             * Model
+             * @description The model and pipeline version behind the agent's reading of the source, recorded so AI output stays labelled (WAT-03, AUD-02).
+             * @example agent pipeline 0.4
+             */
             model?: string | null;
-            /** Obligationlinks */
+            /**
+             * Obligationlinks
+             * @description The obligations the change affects, at most 200 in one call, each a suggestion until a library editor confirms it.
+             */
             obligationLinks?: components["schemas"]["WatchObligationLinkInput"][];
-            /** Publishedon */
+            /**
+             * Publishedon
+             * @description The date the source published this, as a plain calendar date (`2026-09-15`) and never a timestamp, with `publishedPrecision` saying how exact it is. Null when the source states none.
+             * @example 2026-09-15
+             */
             publishedOn?: string | null;
-            /** Publishedprecision */
+            /**
+             * Publishedprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
             publishedPrecision?: ("day" | "month" | "quarter" | "year") | null;
-            /** Recurrencerule */
+            /**
+             * Recurrencerule
+             * @description For a date that returns (a quarterly rate fixing), how it returns, in words. Null for a one-off reform.
+             * @example Every 30 November
+             */
             recurrenceRule?: string | null;
-            /** Sowhatdraft */
+            /**
+             * Sowhatdraft
+             * @description The drafted 'So what?' for the library, at most 4000 characters. Drafted once per change from library facts only and copied into each bank's case, where that bank confirms or rewrites it (WAT-05, D-07, D-32). No bank's term, name, footprint or text ever reaches the model that wrote it, and this text is labelled AI-drafted until a person confirms it.
+             * @example Teams that pay for external research should confirm that documented criteria exist before the rules take effect.
+             */
             soWhatDraft?: string | null;
-            /** Sourcelabel */
+            /**
+             * Sourcelabel
+             * @description Where the change was found, in words a reader recognises.
+             * @example Finansinspektionen
+             */
             sourceLabel: string;
             /**
              * Sourceurl
              * Format: uri
+             * @description The public page the change was found on, so a reviewer can open it. Required: a change always says where it came from.
+             * @example https://www.fi.se/
              */
             sourceUrl: string;
-            /** Stablekey */
+            /**
+             * Stablekey
+             * @description The reform's permanent key, at most 200 characters, chosen by the agent and never changed afterwards (playbook 4.3). It is the merge key: posting a key the library already holds adds the new pages to that change and answers 200 with it, instead of creating a second row (AC-WAT1). Two reforms never share a key.
+             * @example chg-fi-2026-research-payments
+             */
             stableKey: string;
-            /** Suggestedurgency */
+            /**
+             * Suggestedurgency
+             * @description The key of a row of the `urgency` library vocabulary, at most 80 characters, the agent's suggestion for how soon this needs work. Seeded on day one, in severity order: `act_now` (something must change within weeks), `within_3_months` (work must start this quarter), `six_months_plus` (plan it, no rush), `monitor` (nothing to do yet) and `no_action` (noted, nothing changes). An admin may add rows. A suggestion, not a decision: each bank triages its own case and may disagree. The row's tone is the row's, never sent here and never chosen by a caller (NFR-03). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             * @example act_now
+             */
             suggestedUrgency?: string | null;
-            /** Summary */
+            /**
+             * Summary
+             * @description What the change says, 1 to 4000 characters, drawn from the public source. Facts only: it is a library row every bank reads, so it must contain no bank's name, footprint or judgement.
+             * @example FI's board decided on 15 September 2026 to amend three regulations in the securities area.
+             */
             summary: string;
-            /** Termids */
+            /**
+             * Termids
+             * @description Taxonomy terms that scope the change — its regime, market, product or service — at most 100. Terms are library rows an admin may extend; the ids come from `GET /taxonomy/terms`, which an agent reads at run start. Every change needs at least one regime term or the call answers 422 `regime_required`, and a standard's term is accepted only when the authority's jurisdiction is international, else 422 `standard_term_only_on_standards` (AC-AGT1).
+             * @example [
+             *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
+             *     ]
+             */
             termIds?: string[];
-            /** Title */
+            /**
+             * Title
+             * @description What the reform is called, 1 to 300 characters, in the source's own words.
+             * @example FI adopts amended rules on paying for investment research
+             */
             title: string;
+        };
+        /**
+         * WatchChangePage
+         * @description `GET /changes`: one page of the watch feed.
+         * @example {
+         *       "items": [
+         *         {
+         *           "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *           "authorityLabel": "Finansinspektionen",
+         *           "case": {
+         *             "allowedTransitions": [],
+         *             "category": "new",
+         *             "footprintMatch": true,
+         *             "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *             "obligationDecisions": [],
+         *             "ownerId": null,
+         *             "soWhatConfirmed": false,
+         *             "soWhatConfirmedAt": null,
+         *             "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *             "urgency": {
+         *               "key": "act_now",
+         *               "kind": null,
+         *               "label": "Act now"
+         *             },
+         *             "urgencyConfirmed": false
+         *           },
+         *           "changeType": {
+         *             "confidence": 0.91,
+         *             "ref": {
+         *               "key": "adopted",
+         *               "kind": "adopted",
+         *               "label": "Adopted"
+         *             },
+         *             "suggested": true
+         *           },
+         *           "firstSeenAt": "2026-09-16T06:02:00Z",
+         *           "flags": [
+         *             {
+         *               "confidence": 0.74,
+         *               "ref": {
+         *                 "key": "advice_perimeter",
+         *                 "kind": null,
+         *                 "label": "Advice perimeter"
+         *               },
+         *               "suggested": true
+         *             }
+         *           ],
+         *           "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *           "inFootprint": true,
+         *           "keyDate": "2026-10-01",
+         *           "keyDateLabel": "In force",
+         *           "keyDatePrecision": "day",
+         *           "publishedOn": "2026-09-15",
+         *           "publishedPrecision": "day",
+         *           "stableKey": "chg-fi-2026-research-payments",
+         *           "status": "active",
+         *           "suggestedUrgency": {
+         *             "key": "act_now",
+         *             "kind": null,
+         *             "label": "Act now"
+         *           },
+         *           "terms": [
+         *             {
+         *               "confidence": null,
+         *               "ref": {
+         *                 "key": "securities",
+         *                 "kind": null,
+         *                 "label": "Securities"
+         *               },
+         *               "suggested": false
+         *             }
+         *           ],
+         *           "title": "FI adopts amended rules on paying for investment research"
+         *         }
+         *       ],
+         *       "total": 42
+         *     }
+         */
+        WatchChangePage: {
+            /**
+             * Items
+             * @description The rows of this page, ordered by key date then by when the reform was first seen, both newest first, with the row id as a stable tiebreak so a page boundary never drops or repeats a row. A change with no key date sorts last, not first.
+             */
+            items: components["schemas"]["WatchChangeRow"][];
+            /**
+             * Total
+             * @description How many rows match the filters, across every page. An empty page with a total of zero is a 200 and a real answer, not an error.
+             * @example 42
+             */
+            total: number;
         };
         /**
          * WatchChangePatch
          * @description `PATCH /changes/{changeId}` (WAT-03): the library facts of a change. What a key may
          *     move, and that a suggestion stays a suggestion until a library editor confirms it, is
-         *     `watch/curation.py:update_change_facts`.
+         *     `watch/curation.py:update_change_facts`. Every field is optional; a field left out is
+         *     left alone, and no field here is ever nulled by omission.
+         * @example {
+         *       "flags": [
+         *         "advice_perimeter"
+         *       ],
+         *       "keyDate": "2026-10-01",
+         *       "keyDateLabel": "In force"
+         *     }
          */
         WatchChangePatch: {
-            /** Changetype */
+            /**
+             * Changetype
+             * @description A key of the `change_type` library vocabulary, at most 80 characters (see `POST /changes` for the keys seeded on day one). An unknown key answers 422 `unknown_key`. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             * @example adopted
+             */
             changeType?: string | null;
-            /** Flags */
+            /**
+             * Flags
+             * @description The whole set of `flag` keys for this change, replacing what is stored. Send the full set, not a delta.
+             * @example [
+             *       "advice_perimeter"
+             *     ]
+             */
             flags?: string[] | null;
-            /** Keydate */
+            /**
+             * Keydate
+             * @description The date that drives 'coming up', once the source states it.
+             * @example 2026-10-01
+             */
             keyDate?: string | null;
-            /** Keydatelabel */
+            /**
+             * Keydatelabel
+             * @description What that date is, in the source's words.
+             * @example In force
+             */
             keyDateLabel?: string | null;
-            /** Keydateprecision */
+            /**
+             * Keydateprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
             keyDatePrecision?: ("day" | "month" | "quarter" | "year") | null;
-            /** Status */
+            /**
+             * Status
+             * @description The reform's lifecycle stage in the library, a fixed kind: `active` (the feed shows it), `superseded` (another change replaced it, named by `supersededBy`) or `withdrawn` (the issuer took it back). A superseded or withdrawn change is never deleted and its cases stay.
+             * @example superseded
+             */
             status?: ("active" | "superseded" | "withdrawn") | null;
-            /** Summary */
+            /**
+             * Summary
+             * @description A corrected summary, at most 4000 characters, from the public source and holding no bank's judgement.
+             * @example FI's board decided on 15 September 2026 to amend three regulations in the securities area.
+             */
             summary?: string | null;
-            /** Supersededby */
+            /**
+             * Supersededby
+             * @description The change that replaced this one. A change may not supersede itself; the database refuses it.
+             * @example b41d7e08-3a5c-4e92-9f16-0d8c2b7a5e43
+             */
             supersededBy?: string | null;
-            /** Termids */
+            /**
+             * Termids
+             * @description The whole set of taxonomy term ids for this change, replacing what is stored. The regime rule of AC-AGT1 applies to the new set.
+             * @example [
+             *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
+             *     ]
+             */
             termIds?: string[] | null;
-            /** Title */
+            /**
+             * Title
+             * @description A corrected title, in the source's words.
+             * @example FI adopts amended rules on paying for investment research
+             */
             title?: string | null;
+        };
+        /**
+         * WatchChangeQuery
+         * @description The filters of `GET /changes`, carrying its own `limit` and `offset` from
+         *     `PageQuery`: 20 by default, 100 at most, and a larger `limit` is a 422 rather than a
+         *     clamp. Every value is a key or a fixed kind, never a label, so a filter a bank saves
+         *     keeps working when someone relabels a vocabulary row.
+         *
+         *     A parameter this schema does not name is a 422, not a silently dropped one. That is
+         *     what makes the departure of INPUT_DELTAS §7 visible: a client written against the
+         *     designed `inFootprint` pair is told, instead of quietly receiving the default feed.
+         * @example {
+         *       "footprint": "in",
+         *       "limit": 20,
+         *       "offset": 0,
+         *       "tab": "all",
+         *       "urgency": "act_now"
+         *     }
+         */
+        WatchChangeQuery: {
+            /**
+             * Changetype
+             * @description A key of the `change_type` library vocabulary, at most 80 characters: `proposal`, `adopted`, `supervision`, `enforcement` or `recurring_date` on day one. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             * @example adopted
+             */
+            changeType?: string | null;
+            /**
+             * Footprint
+             * @description Which changes to show against the bank's footprint, a fixed kind and a single value (INPUT_DELTAS §7 replaces the designed `inFootprint` pair): `in` (the default — only what matches the footprint), `all` (everything the library holds) or `watched` (everything from a market this bank watches, whether or not the rest of the scope matches, FP-04). Sending the designed `inFootprint` answers 422.
+             * @default in
+             * @example in
+             * @enum {string}
+             */
+            footprint: "in" | "all" | "watched";
+            /**
+             * Infootprint
+             * @deprecated
+             * @description Not accepted: send `footprint` instead. The designed contract had a boolean pair here and the build has one value (INPUT_DELTAS §7). Any value answers 422, because ignoring it would hand a client that asked for `inFootprint=false` the opposite feed without a word. Declared only so that refusal happens, and named in the published contract so a client sees what to send.
+             * @example null
+             */
+            inFootprint?: null;
+            /**
+             * Limit
+             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+             * @default 20
+             * @example 20
+             */
+            limit: number;
+            /**
+             * Offset
+             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+             * @default 0
+             * @example 0
+             */
+            offset: number;
+            /**
+             * Ownerid
+             * @description Show only the cases this person in your bank owns, named by a UUID. A person of another bank matches nothing rather than answering a 403, because no id may be probed across banks.
+             * @example null
+             */
+            ownerId?: string | null;
+            /**
+             * Q
+             * @description A phrase to look for in the title and the summary, at most 200 characters. It is what someone in the bank typed, so it is tenant content: it never appears in a log, in Sentry or in a model prompt (playbook 4.7).
+             * @example research payments
+             */
+            q?: string | null;
+            /**
+             * Status
+             * @description The library's lifecycle stage: `active`, `superseded` or `withdrawn`. Omit for every stage.
+             * @example active
+             */
+            status?: ("active" | "superseded" | "withdrawn") | null;
+            /**
+             * Tab
+             * @description Which case category to show, a fixed kind: `all`, or one of the seven categories `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed`, `dismissed`. It filters on this bank's own cases, so a tab other than `all` answers nothing for a caller with no case. In R1 every case is `new`.
+             * @default all
+             * @example all
+             * @enum {string}
+             */
+            tab: "all" | "new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed";
+            /**
+             * Termid
+             * @description Taxonomy term ids to filter by, each a UUID from `GET /taxonomy/terms`, at most 50 per call; a change matches when it carries any one of them. Repeat the parameter for each term.
+             * @example [
+             *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
+             *     ]
+             */
+            termId?: string[];
+            /**
+             * Unconfirmedsowhat
+             * @description True shows only the cases whose 'So what?' is still an AI draft in this bank. Omit for both.
+             * @example true
+             */
+            unconfirmedSoWhat?: boolean | null;
+            /**
+             * Urgency
+             * @description A key of the `urgency` library vocabulary, at most 80 characters — `act_now`, `within_3_months`, `six_months_plus`, `monitor`, `no_action` on day one. It matches this bank's case urgency where there is one and the change's suggestion otherwise. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             * @example act_now
+             */
+            urgency?: string | null;
+            /**
+             * Week
+             * @description Any date inside the week to show, resolved to that week in the bank's own time zone. Used by the briefing; omit for every week.
+             * @example 2026-09-14
+             */
+            week?: string | null;
+        };
+        /**
+         * WatchChangeRow
+         * @description One line of the watch feed: the library's facts about a reform beside this bank's
+         *     own case for it. The library half is the same for every bank; the `case` half is this
+         *     bank's alone and never leaves it.
+         * @example {
+         *       "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *       "authorityLabel": "Finansinspektionen",
+         *       "case": {
+         *         "allowedTransitions": [],
+         *         "category": "new",
+         *         "footprintMatch": true,
+         *         "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *         "obligationDecisions": [],
+         *         "ownerId": null,
+         *         "soWhatConfirmed": false,
+         *         "soWhatConfirmedAt": null,
+         *         "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *         "urgency": {
+         *           "key": "act_now",
+         *           "kind": null,
+         *           "label": "Act now"
+         *         },
+         *         "urgencyConfirmed": false
+         *       },
+         *       "changeType": {
+         *         "confidence": 0.91,
+         *         "ref": {
+         *           "key": "adopted",
+         *           "kind": "adopted",
+         *           "label": "Adopted"
+         *         },
+         *         "suggested": true
+         *       },
+         *       "firstSeenAt": "2026-09-16T06:02:00Z",
+         *       "flags": [
+         *         {
+         *           "confidence": 0.74,
+         *           "ref": {
+         *             "key": "advice_perimeter",
+         *             "kind": null,
+         *             "label": "Advice perimeter"
+         *           },
+         *           "suggested": true
+         *         }
+         *       ],
+         *       "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *       "inFootprint": true,
+         *       "keyDate": "2026-10-01",
+         *       "keyDateLabel": "In force",
+         *       "keyDatePrecision": "day",
+         *       "publishedOn": "2026-09-15",
+         *       "publishedPrecision": "day",
+         *       "stableKey": "chg-fi-2026-research-payments",
+         *       "status": "active",
+         *       "suggestedUrgency": {
+         *         "key": "act_now",
+         *         "kind": null,
+         *         "label": "Act now"
+         *       },
+         *       "terms": [
+         *         {
+         *           "confidence": null,
+         *           "ref": {
+         *             "key": "securities",
+         *             "kind": null,
+         *             "label": "Securities"
+         *           },
+         *           "suggested": false
+         *         }
+         *       ],
+         *       "title": "FI adopts amended rules on paying for investment research"
+         *     }
+         */
+        WatchChangeRow: {
+            /**
+             * Authorityid
+             * @description The library authority that issued it, as a UUID, or null when the library does not know the authority. A change with no authority is not restricted by jurisdiction (FP-S15, D-29), so null must not be read as 'not relevant to us'.
+             * @example 3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11
+             */
+            authorityId: string | null;
+            /**
+             * Authoritylabel
+             * @description Who issued it, as the source writes it.
+             * @example Finansinspektionen
+             */
+            authorityLabel: string;
+            /** @description This bank's own case for the change, or null when it has none yet. Never another bank's case: a platform console session has no tenant and always reads null here, which is why the console has a list of its own. */
+            case: components["schemas"]["WatchChangeCase"] | null;
+            /** @description The kind of change, with the agent's confidence and whether it is still a suggestion. */
+            changeType: components["schemas"]["WatchFact"];
+            /**
+             * Firstseenat
+             * Format: date-time
+             * @description When bleqq first saw the reform, as an RFC 3339 timestamp in UTC (`2026-09-16T06:02:00Z`). Not the date it was published, which is `publishedOn`.
+             * @example 2026-09-16T06:02:00Z
+             */
+            firstSeenAt: string;
+            /**
+             * Flags
+             * @description The change's flags, each with its confidence and suggestion marker.
+             */
+            flags: components["schemas"]["WatchFact"][];
+            /**
+             * Id
+             * Format: uuid
+             * @description The change's identifier in the shared library.
+             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
+             */
+            id: string;
+            /**
+             * Infootprint
+             * @description Whether the change's scope matches this bank's footprint, computed by the server. A row outside the footprint is still answered when the caller asked for it (`footprint=all`), because an address always resolves (FP-03).
+             * @example true
+             */
+            inFootprint: boolean;
+            /**
+             * Keydate
+             * @description The date that drives 'coming up', as a plain calendar date (`2026-10-01`) with `keyDatePrecision` beside it. Null when no date is known yet.
+             * @example 2026-10-01
+             */
+            keyDate: string | null;
+            /**
+             * Keydatelabel
+             * @description What that date is, in the source's words.
+             * @example In force
+             */
+            keyDateLabel: string | null;
+            /**
+             * Keydateprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
+            keyDatePrecision: ("day" | "month" | "quarter" | "year") | null;
+            /**
+             * Publishedon
+             * @description When the source published it, as a plain calendar date (`2026-09-15`) and never a timestamp, with `publishedPrecision` beside it. Null when the source states none.
+             * @example 2026-09-15
+             */
+            publishedOn: string | null;
+            /**
+             * Publishedprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
+            publishedPrecision: ("day" | "month" | "quarter" | "year") | null;
+            /**
+             * Stablekey
+             * @description The reform's permanent key.
+             * @example chg-fi-2026-research-payments
+             */
+            stableKey: string;
+            /**
+             * Status
+             * @description The library's lifecycle stage: `active`, `superseded` or `withdrawn`.
+             * @example active
+             * @enum {string}
+             */
+            status: "active" | "superseded" | "withdrawn";
+            /** @description The agent's suggested urgency as `{key, kind, label}` from the `urgency` library vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or `no_action` on day one. A library fact, the same for every bank; this bank's own decision is inside `case`. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
+            suggestedUrgency: components["schemas"]["LibraryRef"] | null;
+            /**
+             * Terms
+             * @description The change's scope terms, each with its confidence and suggestion marker.
+             */
+            terms: components["schemas"]["WatchFact"][];
+            /**
+             * Title
+             * @description What the reform is called, in the source's words.
+             * @example FI adopts amended rules on paying for investment research
+             */
+            title: string;
+        };
+        /**
+         * WatchConsoleChangePage
+         * @description `GET /console/changes`: one page of the console's Change facts queue.
+         * @example {
+         *       "items": [
+         *         {
+         *           "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *           "authorityLabel": "Finansinspektionen",
+         *           "changeType": {
+         *             "confidence": 0.91,
+         *             "ref": {
+         *               "key": "adopted",
+         *               "kind": "adopted",
+         *               "label": "Adopted"
+         *             },
+         *             "suggested": true
+         *           },
+         *           "firstSeenAt": "2026-09-16T06:02:00Z",
+         *           "flags": [
+         *             {
+         *               "confidence": 0.74,
+         *               "ref": {
+         *                 "key": "advice_perimeter",
+         *                 "kind": null,
+         *                 "label": "Advice perimeter"
+         *               },
+         *               "suggested": true
+         *             }
+         *           ],
+         *           "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *           "obligations": [
+         *             {
+         *               "confidence": 0.82,
+         *               "confirmed": false,
+         *               "instrumentShortName": "FFFS 2017:2",
+         *               "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+         *               "origin": "agent",
+         *               "refLabel": "11 kap. 4 §",
+         *               "title": "Assess the quality of investment research paid for"
+         *             }
+         *           ],
+         *           "publishedOn": "2026-09-15",
+         *           "publishedPrecision": "day",
+         *           "stableKey": "chg-fi-2026-research-payments",
+         *           "status": "active",
+         *           "terms": [],
+         *           "title": "FI adopts amended rules on paying for investment research",
+         *           "unconfirmedCount": 2
+         *         }
+         *       ],
+         *       "total": 7
+         *     }
+         */
+        WatchConsoleChangePage: {
+            /**
+             * Items
+             * @description The rows of this page, newest first by when the reform was first seen.
+             */
+            items: components["schemas"]["WatchConsoleChangeRow"][];
+            /**
+             * Total
+             * @description How many changes match the filters, across every page. Zero is a 200.
+             * @example 7
+             */
+            total: number;
+        };
+        /**
+         * WatchConsoleChangeQuery
+         * @description The filters of `GET /console/changes`, the queue a library editor works, carrying
+         *     its own `limit` and `offset` from `PageQuery`: 20 by default, 100 at most, and a larger
+         *     `limit` is a 422. A parameter this schema does not name is a 422 as well.
+         * @example {
+         *       "confirmed": "false",
+         *       "limit": 20,
+         *       "offset": 0
+         *     }
+         */
+        WatchConsoleChangeQuery: {
+            /**
+             * Authorityid
+             * @description Show only the changes of one authority, named by a UUID from `GET /authorities`. Omit it for every authority.
+             * @example 3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11
+             */
+            authorityId?: string | null;
+            /**
+             * Confirmed
+             * @description Which changes to list, a fixed kind with two members: `false` (the default — only changes carrying at least one fact nobody has confirmed, which is the queue) or `all` (every change, for looking something up). There is no `true`: a change with nothing left to confirm is simply not in the queue.
+             * @default false
+             * @example false
+             * @enum {string}
+             */
+            confirmed: "false" | "all";
+            /**
+             * Limit
+             * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+             * @default 20
+             * @example 20
+             */
+            limit: number;
+            /**
+             * Offset
+             * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+             * @default 0
+             * @example 0
+             */
+            offset: number;
+            /**
+             * Q
+             * @description A phrase to look for in the title and the summary, at most 200 characters. A library editor's search over library rows; it names no bank.
+             * @example research
+             */
+            q?: string | null;
+        };
+        /**
+         * WatchConsoleChangeRow
+         * @description One line of the console's Change facts queue: a library change and the facts an
+         *     agent proposed for it. Library only — a platform console session has no tenant, so no
+         *     bank's case, footprint, owner or 'So what?' is joined or answered here (NFR-01).
+         * @example {
+         *       "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *       "authorityLabel": "Finansinspektionen",
+         *       "changeType": {
+         *         "confidence": 0.91,
+         *         "ref": {
+         *           "key": "adopted",
+         *           "kind": "adopted",
+         *           "label": "Adopted"
+         *         },
+         *         "suggested": true
+         *       },
+         *       "firstSeenAt": "2026-09-16T06:02:00Z",
+         *       "flags": [
+         *         {
+         *           "confidence": 0.74,
+         *           "ref": {
+         *             "key": "advice_perimeter",
+         *             "kind": null,
+         *             "label": "Advice perimeter"
+         *           },
+         *           "suggested": true
+         *         }
+         *       ],
+         *       "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *       "obligations": [
+         *         {
+         *           "confidence": 0.82,
+         *           "confirmed": false,
+         *           "instrumentShortName": "FFFS 2017:2",
+         *           "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+         *           "origin": "agent",
+         *           "refLabel": "11 kap. 4 §",
+         *           "title": "Assess the quality of investment research paid for"
+         *         }
+         *       ],
+         *       "publishedOn": "2026-09-15",
+         *       "publishedPrecision": "day",
+         *       "stableKey": "chg-fi-2026-research-payments",
+         *       "status": "active",
+         *       "terms": [],
+         *       "title": "FI adopts amended rules on paying for investment research",
+         *       "unconfirmedCount": 2
+         *     }
+         */
+        WatchConsoleChangeRow: {
+            /**
+             * Authorityid
+             * @description The library authority that issued it, as a UUID, or null when the library does not know the authority.
+             * @example 3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11
+             */
+            authorityId: string | null;
+            /**
+             * Authoritylabel
+             * @description Who issued it, as the source writes it.
+             * @example Finansinspektionen
+             */
+            authorityLabel: string;
+            /** @description The kind of change, with the agent's confidence and whether it is still a suggestion. */
+            changeType: components["schemas"]["WatchFact"];
+            /**
+             * Firstseenat
+             * Format: date-time
+             * @description When bleqq first saw the reform, as an RFC 3339 timestamp in UTC (`2026-09-16T06:02:00Z`); the queue is ordered by it, newest first.
+             * @example 2026-09-16T06:02:00Z
+             */
+            firstSeenAt: string;
+            /**
+             * Flags
+             * @description The flags an agent proposed, each with its confidence and suggestion marker.
+             */
+            flags: components["schemas"]["WatchFact"][];
+            /**
+             * Id
+             * Format: uuid
+             * @description The change's identifier in the shared library.
+             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
+             */
+            id: string;
+            /**
+             * Obligations
+             * @description The obligation links an agent proposed, most confident first.
+             */
+            obligations: components["schemas"]["WatchObligationLink"][];
+            /**
+             * Publishedon
+             * @description When the source published it, as a plain calendar date (`2026-09-15`) and never a timestamp, with `publishedPrecision` beside it. Null when the source states none.
+             * @example 2026-09-15
+             */
+            publishedOn: string | null;
+            /**
+             * Publishedprecision
+             * @description How exact the date beside it is, a fixed kind: `day` renders as 15 June 2026, `month` as June 2026, `quarter` as Q2 2026 and `year` as 2026. The screen formats by this and never prints a day the source did not state. Library fact.
+             * @example day
+             */
+            publishedPrecision: ("day" | "month" | "quarter" | "year") | null;
+            /**
+             * Stablekey
+             * @description The reform's permanent key.
+             * @example chg-fi-2026-research-payments
+             */
+            stableKey: string;
+            /**
+             * Status
+             * @description The library's lifecycle stage: `active`, `superseded` or `withdrawn`.
+             * @example active
+             * @enum {string}
+             */
+            status: "active" | "superseded" | "withdrawn";
+            /**
+             * Terms
+             * @description The scope terms an agent proposed, each with its confidence and suggestion marker.
+             */
+            terms: components["schemas"]["WatchFact"][];
+            /**
+             * Title
+             * @description What the reform is called.
+             * @example FI adopts amended rules on paying for investment research
+             */
+            title: string;
+            /**
+             * Unconfirmedcount
+             * @description How many facts on this change — its type, its flags, its scope terms and its obligation links — no library editor has confirmed yet. Computed by the server; it is the queue's own count and says nothing about whether the facts are wrong.
+             * @example 2
+             */
+            unconfirmedCount: number;
+        };
+        /**
+         * WatchFact
+         * @description A classification fact on a change — its type, a flag or a scope term — with how it
+         *     got there.
+         *
+         *     Two things that are not the same thing, kept apart: `ref` is the library vocabulary row
+         *     itself, exactly `{key, kind, label}` like every other vocabulary reference in this API,
+         *     and the two fields beside it say how the row came to be on this change. Flattening the
+         *     provenance into the reference would make this the one reference shape a client has to
+         *     read differently, which is what the presentation guard refuses (NFR-S10).
+         * @example {
+         *       "confidence": 0.74,
+         *       "ref": {
+         *         "key": "advice_perimeter",
+         *         "kind": null,
+         *         "label": "Advice perimeter"
+         *       },
+         *       "suggested": true
+         *     }
+         */
+        WatchFact: {
+            /**
+             * Confidence
+             * @description How sure the agent was, 0 to 1, or null when a person set this rather than an agent. It is the model's own number and says nothing about whether the fact is right; it orders the list and nothing else.
+             * @example 0.74
+             */
+            confidence: number | null;
+            /** @description The vocabulary row or taxonomy term itself, as `{key, kind, label}`: a row of the `change_type` library vocabulary (`proposal`, `adopted`, `supervision`, `enforcement`, `recurring_date` on day one), of the `flag` vocabulary (`ai`, `advice_perimeter`) or of the taxonomy (`securities` and the other regimes). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
+            ref: components["schemas"]["LibraryRef"];
+            /**
+             * Suggested
+             * @description True while this is an agent's suggestion that no library editor has confirmed. The screen marks it 'Suggested by the agent'. A reader must not treat a suggested fact as checked, and a bank never confirms it: it is a library fact and confirming one needs `proposals.review` (WAT-03, PRO-01).
+             * @example true
+             */
+            suggested: boolean;
+        };
+        /**
+         * WatchObligationChangePage
+         * @description `GET /obligations/{obligationId}/changes`: the related-changes panel of an
+         *     obligation, and the open-change count the inventory shows beside it.
+         * @example {
+         *       "items": [
+         *         {
+         *           "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *           "authorityLabel": "Finansinspektionen",
+         *           "case": {
+         *             "allowedTransitions": [],
+         *             "category": "new",
+         *             "footprintMatch": true,
+         *             "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *             "obligationDecisions": [],
+         *             "ownerId": null,
+         *             "soWhatConfirmed": false,
+         *             "soWhatConfirmedAt": null,
+         *             "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *             "urgency": {
+         *               "key": "act_now",
+         *               "kind": null,
+         *               "label": "Act now"
+         *             },
+         *             "urgencyConfirmed": false
+         *           },
+         *           "changeType": {
+         *             "confidence": 0.91,
+         *             "ref": {
+         *               "key": "adopted",
+         *               "kind": "adopted",
+         *               "label": "Adopted"
+         *             },
+         *             "suggested": true
+         *           },
+         *           "firstSeenAt": "2026-09-16T06:02:00Z",
+         *           "flags": [
+         *             {
+         *               "confidence": 0.74,
+         *               "ref": {
+         *                 "key": "advice_perimeter",
+         *                 "kind": null,
+         *                 "label": "Advice perimeter"
+         *               },
+         *               "suggested": true
+         *             }
+         *           ],
+         *           "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *           "inFootprint": true,
+         *           "keyDate": "2026-10-01",
+         *           "keyDateLabel": "In force",
+         *           "keyDatePrecision": "day",
+         *           "publishedOn": "2026-09-15",
+         *           "publishedPrecision": "day",
+         *           "stableKey": "chg-fi-2026-research-payments",
+         *           "status": "active",
+         *           "suggestedUrgency": {
+         *             "key": "act_now",
+         *             "kind": null,
+         *             "label": "Act now"
+         *           },
+         *           "terms": [
+         *             {
+         *               "confidence": null,
+         *               "ref": {
+         *                 "key": "securities",
+         *                 "kind": null,
+         *                 "label": "Securities"
+         *               },
+         *               "suggested": false
+         *             }
+         *           ],
+         *           "title": "FI adopts amended rules on paying for investment research"
+         *         }
+         *       ],
+         *       "openCount": 1,
+         *       "total": 3
+         *     }
+         */
+        WatchObligationChangePage: {
+            /**
+             * Items
+             * @description The changes linked to this obligation, newest key date first, with the reader's own case on each.
+             */
+            items: components["schemas"]["WatchChangeRow"][];
+            /**
+             * Opencount
+             * @description How many of those changes still have work open for this bank — a case that is neither closed nor dismissed. Computed by the server from the reader's own cases, so another bank reading the same obligation sees its own number. It counts cases, not gaps: it says nothing about whether the bank complies (REG-02).
+             * @example 1
+             */
+            openCount: number;
+            /**
+             * Total
+             * @description How many changes are linked to the obligation, across every page. Zero is a 200.
+             * @example 3
+             */
+            total: number;
         };
         /**
          * WatchObligationLink
          * @description A link the agent suggested or a person set. `confirmed` is the library editor's
-         *     decision; a tenant's own decision lives on its case, never here (WAT-04, ruling C).
+         *     decision; a bank's own decision lives on its case, never here (WAT-04, ruling C).
+         * @example {
+         *       "confidence": 0.82,
+         *       "confirmed": false,
+         *       "instrumentShortName": "FFFS 2017:2",
+         *       "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+         *       "origin": "agent",
+         *       "refLabel": "11 kap. 4 §",
+         *       "title": "Assess the quality of investment research paid for"
+         *     }
          */
         WatchObligationLink: {
-            /** Confidence */
+            /**
+             * Confidence
+             * @description How sure the agent was, 0 to 1, or null when a person set this rather than an agent. It is the model's own number and says nothing about whether the fact is right; it orders the list and nothing else.
+             * @example 0.82
+             */
             confidence: number | null;
-            /** Confirmed */
+            /**
+             * Confirmed
+             * @description Whether a library editor has confirmed the link for the shared library. False is a suggestion. A reader must not read `false` as 'not related' — only a bank's own `removed` decision on its case says that, and it changes no library row.
+             * @example false
+             */
             confirmed: boolean;
-            /** Instrumentshortname */
+            /**
+             * Instrumentshortname
+             * @description The short name of the instrument the obligation sits in, from the library.
+             * @example FFFS 2017:2
+             */
             instrumentShortName: string;
             /**
              * Obligationid
              * Format: uuid
+             * @description The library obligation this change affects.
+             * @example 7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17
              */
             obligationId: string;
             /**
              * Origin
+             * @description Who first drew this link, a fixed kind: `agent` (a run suggested it) or `user` (a library editor added it by hand). It never changes afterwards, so `agent` on a confirmed link means an agent found it and a person agreed.
+             * @example agent
              * @enum {string}
              */
             origin: "agent" | "user";
-            /** Reflabel */
+            /**
+             * Reflabel
+             * @description Where in that instrument the obligation sits, as the instrument numbers it.
+             * @example 11 kap. 4 §
+             */
             refLabel: string;
-            /** Title */
+            /**
+             * Title
+             * @description The obligation's title in the reader's language, from the library.
+             * @example Assess the quality of investment research paid for
+             */
             title: string;
         };
-        /** WatchObligationLinkInput */
+        /**
+         * WatchObligationLinkInput
+         * @description One obligation a change affects, as an agent suggests it or a library editor sets
+         *     it. Sent inside `POST /changes` or as the whole body of
+         *     `PUT /changes/{changeId}/obligations`, which is capped at 200 links per call.
+         * @example {
+         *       "confidence": 0.82,
+         *       "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
+         *     }
+         */
         WatchObligationLinkInput: {
-            /** Confidence */
+            /**
+             * Confidence
+             * @description How sure the agent was, 0 to 1, or null when a person set this rather than an agent. It is the model's own number and says nothing about whether the fact is right; it orders the list and nothing else. Send it from an agent; leave it out when a person is setting the link.
+             * @example 0.82
+             */
             confidence?: number | null;
             /**
              * Obligationid
              * Format: uuid
+             * @description The library obligation this change touches. It must already exist: a link never creates an obligation, and no key scope reaches the inventory (AC-PRO1). An unknown id answers 422.
+             * @example 7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17
              */
             obligationId: string;
         };
         /**
          * WatchSourceCheckInput
-         * @description `POST /agent-runs/{runId}/source-checks` (WAT-01): a failed check carries an error
-         *     and no items, which `watch/sources.py:record_check` enforces.
+         * @description `POST /agent-runs/{runId}/source-checks` (WAT-01): one line of the coverage log,
+         *     written by an agent's key holding `sources:write`. A failed check carries an error and
+         *     no items, which `watch/sources.py:record_check` enforces. Send an `Idempotency-Key`:
+         *     an agent retries, and the same key returns the check already logged.
+         * @example {
+         *       "checkedAt": "2026-09-16T06:02:00Z",
+         *       "itemsFound": 3,
+         *       "sourceName": "fi.se",
+         *       "status": "ok"
+         *     }
+         * @example {
+         *       "error": "502 from the publisher after three retries",
+         *       "sourceName": "eur-lex.europa.eu",
+         *       "status": "failed"
+         *     }
          */
         WatchSourceCheckInput: {
-            /** Checkedat */
+            /**
+             * Checkedat
+             * @description When the check happened, in UTC. Defaults to the moment the server records it, which is what an agent reporting as it goes should use.
+             * @example 2026-09-16T06:02:00Z
+             */
             checkedAt?: string | null;
-            /** Error */
+            /**
+             * Error
+             * @description Why a failed check failed, at most 4000 characters. The agent's own message: never fetched page content, never a stack trace, never a credential. Must be absent on a successful check.
+             * @example 502 from the publisher after three retries
+             */
             error?: string | null;
-            /** Itemsfound */
+            /**
+             * Itemsfound
+             * @description How many items the agent read on this check, its own count, zero or more. Zero is a real and common answer. It is not a count of changes registered: several items may describe one reform and one item may describe none. Leave it out on a failed check.
+             * @example 3
+             */
             itemsFound?: number | null;
-            /** Sourcename */
+            /**
+             * Sourcename
+             * @description The registered source's `name`, which an agent reads from `GET /sources` at run start. A name the registry does not hold answers 422: an agent never registers a source, it only reports on one.
+             * @example fi.se
+             */
             sourceName: string;
             /**
              * Status
+             * @description How the check ended, a fixed kind the coverage report and the stale rule branch on: `ok` (the source answered and was read, whether or not anything was new) or `failed` (it did not). There is no third value; a check that was never attempted is simply not logged.
+             * @example ok
              * @enum {string}
              */
             status: "ok" | "failed";
@@ -5455,68 +7849,193 @@ export interface components {
         /**
          * WatchSourceCoverage
          * @description One row of the coverage log per source: when it was last checked, with what result,
-         *     and whether it is overdue against its cadence and `SOURCE_STALE_AFTER_CHECKS`.
+         *     and whether it is overdue against its cadence and `SOURCE_STALE_AFTER_CHECKS`. Library:
+         *     the same answer for every bank, and the evidence behind "we missed nothing".
+         * @example {
+         *       "lastCheckedAt": "2026-09-16T06:02:00Z",
+         *       "lastError": null,
+         *       "lastStatus": "ok",
+         *       "overdue": false,
+         *       "source": {
+         *         "active": true,
+         *         "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *         "checkFrequency": "weekly",
+         *         "id": "0f6d2f20-6d7a-4a7c-9a5e-4a2f8a0f1c31",
+         *         "kind": {
+         *           "key": "authority_site",
+         *           "kind": null,
+         *           "label": "Authority website"
+         *         },
+         *         "name": "fi.se",
+         *         "url": "https://www.fi.se/"
+         *       }
+         *     }
          */
         WatchSourceCoverage: {
-            /** Lastcheckedat */
+            /**
+             * Lastcheckedat
+             * @description When the most recent check of this source finished, in UTC. Null means no check has ever been logged, which is not the same as a check that failed.
+             * @example 2026-09-16T06:02:00Z
+             */
             lastCheckedAt: string | null;
-            /** Lasterror */
+            /**
+             * Lasterror
+             * @description What went wrong on the last check, when it failed: the agent's own short message of at most 4000 characters, never a stack trace and never fetched page content. Null when the last check succeeded.
+             * @example 502 from the publisher after three retries
+             */
             lastError: string | null;
             /**
              * Laststatus
+             * @description How the most recent check ended, computed by the server from the coverage log. A fixed kind with three members: `ok` (the source answered and the run read it), `failed` (the fetch or the parse failed; `lastError` says how) and `never` (no check has been logged at all). `ok` with no new items is still `ok` — finding nothing is a result.
+             * @example ok
              * @enum {string}
              */
             lastStatus: "ok" | "failed" | "never";
-            /** Overdue */
+            /**
+             * Overdue
+             * @description Computed by the server: true when the source has gone longer than its cadence without a successful check, or has failed more times in a row than `SOURCE_STALE_AFTER_CHECKS` allows (a setting, default 1). The console shows it as stale. True does not mean a change was missed; it means we cannot yet say one was not.
+             * @example false
+             */
             overdue: boolean;
+            /** @description The source this row is about, as `GET /sources` answers it. */
             source: components["schemas"]["WatchSourceOut"];
         };
-        /** WatchSourceInput */
+        /**
+         * WatchSourceInput
+         * @description `POST /sources` (WAT-01): a library editor registers a place to watch. Library
+         *     write, so `sources.manage` and a person's session only — no API key scope registers a
+         *     source. No step-up and no `If-Match`: the registry carries no version in R1.
+         * @example {
+         *       "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *       "checkFrequency": "daily",
+         *       "kind": "authority_site",
+         *       "name": "Finansinspektionen news",
+         *       "url": "https://www.fi.se/en/published/news/"
+         *     }
+         */
         WatchSourceInput: {
-            /** Authorityid */
+            /**
+             * Authorityid
+             * @description The authority that publishes here, when there is exactly one. Null is the normal answer for a legal database or a sweep and is not a gap to fill.
+             * @example 3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11
+             */
             authorityId?: string | null;
             /**
              * Checkfrequency
+             * @description How often to check it: `daily`, `weekly` or `monthly`, a fixed kind. Defaults to `daily`. The value the stale rule measures the coverage log against.
              * @default daily
+             * @example daily
              * @enum {string}
              */
             checkFrequency: "daily" | "weekly" | "monthly";
-            /** Kind */
+            /**
+             * Kind
+             * @description The key of a row of the `source_kind` library vocabulary, never a label: `authority_site`, `legal_database`, `open_web_sweep` or `tenant_private` are seeded, and an admin may add more without a deploy. A key the list does not hold answers 422 `unknown_key` with the valid keys listed (AC-WAT2).
+             * @example authority_site
+             */
             kind: string;
-            /** Name */
+            /**
+             * Name
+             * @description What to call the source, 1 to 300 characters and unique across the library. A name already taken answers 409; the registry is shared, so the name one editor picks is the name every bank reads.
+             * @example Finansinspektionen news
+             */
             name: string;
-            /** Url */
+            /**
+             * Url
+             * @description The public page to fetch, http or https, validated as a URL before anything is stored. Omit it for a source that is not one address, such as an open-web sweep.
+             * @example https://www.fi.se/en/published/news/
+             */
             url?: string | null;
         };
-        /** WatchSourceOut */
+        /**
+         * WatchSourceOut
+         * @description A place bleqq's agents check for new regulation. Library: every bank sees the same
+         *     registry, and it answers how we know a reform was not missed.
+         * @example {
+         *       "active": true,
+         *       "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+         *       "checkFrequency": "weekly",
+         *       "id": "0f6d2f20-6d7a-4a7c-9a5e-4a2f8a0f1c31",
+         *       "kind": {
+         *         "key": "authority_site",
+         *         "kind": null,
+         *         "label": "Authority website"
+         *       },
+         *       "name": "fi.se",
+         *       "url": "https://www.fi.se/"
+         *     }
+         */
         WatchSourceOut: {
-            /** Active */
+            /**
+             * Active
+             * @description Whether the source is checked automatically. False is a source that is registered and deliberately left alone — how a standards publisher is seeded until its terms allow an automated check (WAT-07, D-45). False does not mean the source is broken; a failed check shows in the coverage log instead.
+             * @example true
+             */
             active: boolean;
-            /** Authorityid */
+            /**
+             * Authorityid
+             * @description The authority that publishes here, when the source is one authority's. Null for a legal database or an open-web sweep, which carry no single publisher. A reader must not infer a change's jurisdiction from this: a change takes its jurisdiction from its own authority (FP-04).
+             * @example 3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11
+             */
             authorityId: string | null;
             /**
              * Checkfrequency
+             * @description How often the source is meant to be checked, a fixed kind the scheduler and the stale rule branch on: `daily`, `weekly` or `monthly`. It is the cadence we promise, not a record of what happened — `GET /sources/coverage` says that.
+             * @example weekly
              * @enum {string}
              */
             checkFrequency: "daily" | "weekly" | "monthly";
             /**
              * Id
              * Format: uuid
+             * @description The source's identifier in the shared library. Stable for as long as the source exists; it is not the publisher's own identifier and means nothing outside bleqq.
+             * @example 0f6d2f20-6d7a-4a7c-9a5e-4a2f8a0f1c31
              */
             id: string;
+            /** @description What kind of place this is, as `{key, kind, label}` from the `source_kind` library vocabulary. The values are rows a platform admin may extend without a deploy; seeded on day one are `authority_site` (the publisher's own site), `legal_database` (consolidated texts such as riksdagen.se and EUR-Lex), `open_web_sweep` (a search across the open web for anything the registered sources missed) and `tenant_private` (a source one bank follows, whose findings never enter the shared library; R3). The `kind` member is null for every row of this list: it carries no sub-kind. */
             kind: components["schemas"]["LibraryRef"];
-            /** Name */
+            /**
+             * Name
+             * @description What the source is called in the registry, unique across the library so a run can name the source it checked without an id. A person's label, not the publisher's legal name.
+             * @example fi.se
+             * @example eur-lex.europa.eu
+             */
             name: string;
-            /** Url */
+            /**
+             * Url
+             * @description The page the agents fetch. Null for a source that is not one address — the open web sweep has none. Never a page behind a login: every source is public.
+             * @example https://www.fi.se/
+             */
             url: string | null;
         };
-        /** WatchSourcePatch */
+        /**
+         * WatchSourcePatch
+         * @description `PATCH /sources/{sourceId}` (WAT-01): what a library editor may move on a registered
+         *     source. The name and the kind are not here: a source's identity does not change, and a
+         *     different place to watch is a different source.
+         * @example {
+         *       "active": false,
+         *       "checkFrequency": "weekly"
+         *     }
+         */
         WatchSourcePatch: {
-            /** Active */
+            /**
+             * Active
+             * @description Switch automated checks off or on. Switching off keeps every check already logged: the coverage log is never rewritten, so a reader must not read an inactive source as one that was never checked.
+             * @example false
+             */
             active?: boolean | null;
-            /** Checkfrequency */
+            /**
+             * Checkfrequency
+             * @description A new cadence: `daily`, `weekly` or `monthly`. Omit to leave it alone.
+             * @example weekly
+             */
             checkFrequency?: ("daily" | "weekly" | "monthly") | null;
-            /** Url */
+            /**
+             * Url
+             * @description A new address for the same source, when the publisher moves the page. Omit to leave it alone.
+             * @example https://www.fi.se/en/published/news/
+             */
             url?: string | null;
         };
         /** WebAuthnAssertionResponse */
@@ -5631,9 +8150,15 @@ export interface operations {
     listAgentKeys: {
         parameters: {
             query?: {
-                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
                 limit?: number;
-                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
                 offset?: number;
             };
             header?: never;
@@ -5702,9 +8227,15 @@ export interface operations {
     listAgentRuns: {
         parameters: {
             query?: {
-                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
                 limit?: number;
-                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
                 offset?: number;
             };
             header?: never;
@@ -5866,9 +8397,15 @@ export interface operations {
                 actorId?: string | null;
                 from?: string | null;
                 to?: string | null;
-                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
                 limit?: number;
-                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
                 offset?: number;
             };
             header?: never;
@@ -6154,6 +8691,143 @@ export interface operations {
             };
         };
     };
+    listAuthorities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "id": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+                     *         "jurisdiction": {
+                     *           "key": "se",
+                     *           "kind": "country",
+                     *           "label": "Sweden"
+                     *         },
+                     *         "key": "fi",
+                     *         "name": "Finansinspektionen",
+                     *         "shortName": "FI",
+                     *         "url": "https://www.fi.se/"
+                     *       },
+                     *       {
+                     *         "id": "8e40b6d1-25af-4c73-9d08-b1f4e7a3c592",
+                     *         "jurisdiction": {
+                     *           "key": "eu",
+                     *           "kind": "union",
+                     *           "label": "European Union"
+                     *         },
+                     *         "key": "esma",
+                     *         "name": "European Securities and Markets Authority",
+                     *         "shortName": "ESMA",
+                     *         "url": "https://www.esma.europa.eu/"
+                     *       }
+                     *     ]
+                     */
+                    "application/json": components["schemas"]["LibraryAuthority"][];
+                };
+            };
+        };
+    };
+    listChanges: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+                /**
+                 * @description Which case category to show, a fixed kind: `all`, or one of the seven categories `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed`, `dismissed`. It filters on this bank's own cases, so a tab other than `all` answers nothing for a caller with no case. In R1 every case is `new`.
+                 * @example all
+                 */
+                tab?: "all" | "new" | "assigned" | "assessing" | "implementing" | "signoff" | "closed" | "dismissed";
+                /**
+                 * @description The library's lifecycle stage: `active`, `superseded` or `withdrawn`. Omit for every stage.
+                 * @example active
+                 */
+                status?: ("active" | "superseded" | "withdrawn") | null;
+                /**
+                 * @description A key of the `urgency` library vocabulary, at most 80 characters — `act_now`, `within_3_months`, `six_months_plus`, `monitor`, `no_action` on day one. It matches this bank's case urgency where there is one and the change's suggestion otherwise. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+                 * @example act_now
+                 */
+                urgency?: string | null;
+                /**
+                 * @description Taxonomy term ids to filter by, each a UUID from `GET /taxonomy/terms`, at most 50 per call; a change matches when it carries any one of them. Repeat the parameter for each term.
+                 * @example [
+                 *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
+                 *     ]
+                 */
+                termId?: string[];
+                /**
+                 * @description A key of the `change_type` library vocabulary, at most 80 characters: `proposal`, `adopted`, `supervision`, `enforcement` or `recurring_date` on day one. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+                 * @example adopted
+                 */
+                changeType?: string | null;
+                /**
+                 * @description Show only the cases this person in your bank owns, named by a UUID. A person of another bank matches nothing rather than answering a 403, because no id may be probed across banks.
+                 * @example null
+                 */
+                ownerId?: string | null;
+                /**
+                 * @deprecated
+                 * @description Not accepted: send `footprint` instead. The designed contract had a boolean pair here and the build has one value (INPUT_DELTAS §7). Any value answers 422, because ignoring it would hand a client that asked for `inFootprint=false` the opposite feed without a word. Declared only so that refusal happens, and named in the published contract so a client sees what to send.
+                 * @example null
+                 */
+                inFootprint?: null;
+                /**
+                 * @description Which changes to show against the bank's footprint, a fixed kind and a single value (INPUT_DELTAS §7 replaces the designed `inFootprint` pair): `in` (the default — only what matches the footprint), `all` (everything the library holds) or `watched` (everything from a market this bank watches, whether or not the rest of the scope matches, FP-04). Sending the designed `inFootprint` answers 422.
+                 * @example in
+                 */
+                footprint?: "in" | "all" | "watched";
+                /**
+                 * @description Any date inside the week to show, resolved to that week in the bank's own time zone. Used by the briefing; omit for every week.
+                 * @example 2026-09-14
+                 */
+                week?: string | null;
+                /**
+                 * @description True shows only the cases whose 'So what?' is still an AI draft in this bank. Omit for both.
+                 * @example true
+                 */
+                unconfirmedSoWhat?: boolean | null;
+                /**
+                 * @description A phrase to look for in the title and the summary, at most 200 characters. It is what someone in the bank typed, so it is tenant content: it never appears in a log, in Sentry or in a model prompt (playbook 4.7).
+                 * @example research payments
+                 */
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchChangePage"];
+                };
+            };
+        };
+    };
     createChange: {
         parameters: {
             query?: never;
@@ -6189,6 +8863,29 @@ export interface operations {
             };
         };
     };
+    getChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change to read, as a UUID. The same id for every bank; the bank's own case is resolved from the caller's session, never from the path. A change the caller cannot see answers 404, never 403, so no id can be probed for. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchChangeDetail"];
+                };
+            };
+        };
+    };
     updateChange: {
         parameters: {
             query?: never;
@@ -6213,6 +8910,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WatchChange"];
+                };
+            };
+        };
+    };
+    acceptCaseObligationLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CasesObligationLinkBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesObligationLink"];
+                };
+            };
+        };
+    };
+    removeCaseObligationLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+                /** @description The obligation whose link decision to remove from this bank's case, as a UUID. It removes the bank's own decision row and never the library's link. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesObligationLink"];
                 };
             };
         };
@@ -6330,12 +9079,114 @@ export interface operations {
             };
         };
     };
+    saveSoWhat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CasesSoWhatBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesSoWhat"];
+                };
+            };
+        };
+    };
+    confirmSoWhat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library change whose case this is, as a UUID. A bank has exactly one case per change (CAS-01), so the change is the address and the case is resolved from the caller's own tenant. Another bank's case is never reachable from here. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasesSoWhat"];
+                };
+            };
+        };
+    };
+    listConsoleChanges: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+                /**
+                 * @description Which changes to list, a fixed kind with two members: `false` (the default — only changes carrying at least one fact nobody has confirmed, which is the queue) or `all` (every change, for looking something up). There is no `true`: a change with nothing left to confirm is simply not in the queue.
+                 * @example false
+                 */
+                confirmed?: "false" | "all";
+                /**
+                 * @description Show only the changes of one authority, named by a UUID from `GET /authorities`. Omit it for every authority.
+                 * @example 3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11
+                 */
+                authorityId?: string | null;
+                /**
+                 * @description A phrase to look for in the title and the summary, at most 200 characters. A library editor's search over library rows; it names no bank.
+                 * @example research
+                 */
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchConsoleChangePage"];
+                };
+            };
+        };
+    };
     listConsoleTenants: {
         parameters: {
             query?: {
-                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
                 limit?: number;
-                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
                 offset?: number;
             };
             header?: never;
@@ -6632,9 +9483,15 @@ export interface operations {
                 q?: string | null;
                 asOf?: string | null;
                 outsideFootprint?: boolean;
-                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
                 limit?: number;
-                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
                 offset?: number;
             };
             header?: never;
@@ -6674,6 +9531,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ObligationDetail"];
+                };
+            };
+        };
+    };
+    listObligationChanges: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The library obligation whose related changes to list, as a UUID. A record the caller cannot see answers 404, never 403, so no id can be probed for what another bank holds privately. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchObligationChangePage"];
                 };
             };
         };
@@ -6727,6 +9618,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProblemReportCreated"];
+                };
+            };
+        };
+    };
+    getRecordSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The library obligation whose citations to read, as a UUID. A record the caller cannot see answers 404, never 403, so no id can be probed for. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryRecordSources"];
                 };
             };
         };
@@ -7248,9 +10162,15 @@ export interface operations {
     listApiKeys: {
         parameters: {
             query?: {
-                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
                 limit?: number;
-                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
                 offset?: number;
             };
             header?: never;
@@ -7466,9 +10386,15 @@ export interface operations {
     listInvitations: {
         parameters: {
             query?: {
-                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
                 limit?: number;
-                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
                 offset?: number;
             };
             header?: never;
@@ -7533,9 +10459,15 @@ export interface operations {
     listMembers: {
         parameters: {
             query?: {
-                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
                 limit?: number;
-                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
                 offset?: number;
             };
             header?: never;
@@ -7784,9 +10716,15 @@ export interface operations {
     listSecurityLog: {
         parameters: {
             query?: {
-                /** @description How many records to return in one page. Leave it out and you get 20; the largest page is 100 and the smallest is 1. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so. */
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
                 limit?: number;
-                /** @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because the database walks every skipped row and a deeper page would time out; narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds. */
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
                 offset?: number;
             };
             header?: never;

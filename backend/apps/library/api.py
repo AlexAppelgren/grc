@@ -13,7 +13,13 @@ one bank and stays there (Alex, 2026-09-19). Re-verifying a record needs
 `proposals.review` and a fresh passkey: it is the single exception to "a proposal is the
 only door into the library", and the one function it may reach lives behind the fence in
 apps/proposals/apply.py. Every route resolves its subject through `reading`, so a record
-the caller may not read is a 404 and never a 403 that would confirm it exists."""
+the caller may not read is a 404 and never a 403 that would confirm it exists.
+
+Chunk 5 adds the two library reads it needs, under that same read gate: the authority
+list, which chunk 3 cut and which the change header and the console's authority filter
+both need (ruling E), and a live record's citations, which is how an agent key re-checks
+the record against its source without holding any write scope (AGT-01, item 3). Neither
+writes; a correction the re-check finds is a proposal (PRO-01)."""
 
 import uuid
 from typing import Annotated, Any
@@ -25,6 +31,8 @@ from apps.identity.schemas import RoleRef
 from apps.library import reading, reports
 from apps.library.models import Language, SubjectType
 from apps.library.schemas import (
+    LibraryAuthority,
+    LibraryRecordSources,
     ObligationAsOfQuery,
     ObligationDetail,
     ObligationDiffQuery,
@@ -121,6 +129,45 @@ REVERIFY_DESCRIPTION = (
     "one of the three."
 )
 
+# ---------------------------------------------------------------------------------------
+# What the published contract says about the two chunk 5 reads
+# ---------------------------------------------------------------------------------------
+_OBLIGATION_ID = (
+    "The library obligation whose citations to read, as a UUID. A record the caller cannot "
+    "see answers 404, never 403, so no id can be probed for."
+)
+
+# The authority list is a short fixed reference read, so its example lives on the route
+# rather than on a page schema; the gate reads it from the 200 response.
+_AUTHORITIES_EXAMPLE = {
+    "responses": {
+        200: {
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "id": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+                            "key": "fi",
+                            "shortName": "FI",
+                            "name": "Finansinspektionen",
+                            "jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"},
+                            "url": "https://www.fi.se/",
+                        },
+                        {
+                            "id": "8e40b6d1-25af-4c73-9d08-b1f4e7a3c592",
+                            "key": "esma",
+                            "shortName": "ESMA",
+                            "name": "European Securities and Markets Authority",
+                            "jurisdiction": {"key": "eu", "kind": "union", "label": "European Union"},
+                            "url": "https://www.esma.europa.eu/",
+                        },
+                    ]
+                }
+            }
+        }
+    }
+}
+
 
 @router.get("/reference/languages", response=list[RoleRef], auth=SessionAuth(), operation_id="listLanguages", by_alias=True)
 def list_languages(request: HttpRequest) -> list[RoleRef]:
@@ -160,6 +207,80 @@ def get_obligation_diff(request: HttpRequest, obligation_id: uuid.UUID, query: Q
     require_library_read(request)
     tenant = caller_tenant(request)
     return reading.obligation_diff(language_order(request, tenant=tenant), obligation_id, query)
+
+
+@router.get(
+    "/authorities",
+    response=list[LibraryAuthority],
+    auth=SESSION_OR_KEY,
+    operation_id="listAuthorities",
+    by_alias=True,
+    summary="List the authorities that issue the rules we watch",
+    openapi_extra=_AUTHORITIES_EXAMPLE,
+)
+@answers_problems
+def list_authorities(request: HttpRequest) -> Any:
+    """Every issuing authority the shared library knows, with its jurisdiction: the Swedish,
+    Danish, Norwegian and Finnish supervisors, the EU bodies and the international standards
+    publishers. Call it to fill an authority filter on the watch feed or the console's change
+    queue, to label a change's issuer, and from an agent run that has to recognise the
+    authority behind a page it fetched.
+
+    A read: it changes nothing and writes no audit row. A person's session holding
+    `library.read`, or an agent's key carrying the `library:read` scope. A short fixed
+    reference list, answered as a plain array rather than a page, like the other reference
+    reads. Library facts, the same for every bank, changed only through an approved proposal;
+    an authority's `key` never changes, so store the key and never the name.
+
+    Errors: `permission_denied` without `library.read` or `library:read`; `unauthenticated`
+    without a credential.
+
+    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+    ships.
+    """
+    # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; FP-04, AGT-02).
+    # A short fixed reference list, answered as a plain array like the other reference reads.
+    require_library_read(request)
+    return reading.list_authorities()
+
+
+@router.get(
+    "/obligations/{obligation_id}/sources",
+    response=LibraryRecordSources,
+    auth=SESSION_OR_KEY,
+    operation_id="getRecordSources",
+    by_alias=True,
+    summary="See which public pages an obligation was taken from",
+)
+@answers_problems
+def get_record_sources(
+    request: HttpRequest, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)
+) -> Any:
+    """The citations behind the version of an obligation in force today: which field each one
+    backs, the public page it came from, the hash of that page as we last read it and when.
+    Call it to show a reader where a fact came from, and from a watch run that re-checks a
+    library record against its source.
+
+    A read: it changes nothing and writes no audit row. A person's session holding
+    `library.read`, or an agent's key carrying the `library:read` scope alone — which is the
+    point of the route, because a run must be able to compare a record with its source
+    without holding any write scope. Nothing an agent finds here may be written back: a
+    record that has drifted becomes a proposal, approved by a second and independent
+    principal, and never a direct edit (PRO-01). A page whose hash has changed means the page
+    moved, never that the record is wrong.
+
+    A record with no field-level citation yet is a 200 with an empty `items`, not a 404; the
+    record's own `provenance` on `GET /obligations/{obligationId}` still names where it came
+    from. Errors: `not_found` when no obligation has that id or the caller may not see it;
+    `permission_denied` without `library.read` or `library:read`; `unauthenticated` without a
+    credential.
+
+    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
+    ships.
+    """
+    # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-06, AGT-01).
+    require_library_read(request)
+    return reading.get_record_sources()
 
 
 @router.post(

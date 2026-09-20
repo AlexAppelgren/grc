@@ -56,11 +56,12 @@ class PageQuery(Schema):
         ge=1,
         le=settings.API_PAGE_SIZE_MAX,
         description=(
-            "How many records to return in one page. Leave it out and you get 20; the largest "
-            "page is 100 and the smallest is 1. A larger number is refused with a 422 rather "
-            "than quietly trimmed, so a short page always means the data ran out and never "
-            "that the server capped you without saying so."
+            f"How many records to return in one page: {settings.API_PAGE_SIZE_DEFAULT} by "
+            f"default, {settings.API_PAGE_SIZE_MAX} at most and 1 at least. A larger number "
+            "is refused with a 422 rather than quietly trimmed, so a short page always means "
+            "the data ran out and never that the server capped you without saying so."
         ),
+        examples=[settings.API_PAGE_SIZE_DEFAULT],
     )
     offset: int = Field(
         default=0,
@@ -68,12 +69,14 @@ class PageQuery(Schema):
         le=settings.API_PAGE_OFFSET_MAX,
         description=(
             "How many records to skip before this page begins, counting from 0: with the "
-            "default page size, `offset=20` is the second page. The deepest offset accepted is "
-            "100000, because the database walks every skipped row and a deeper page would time "
-            "out; narrow the list with filters rather than paging past it. Totals are counted "
-            "at the moment of the call, so a record written between two pages can shift what "
-            "the later page holds."
+            f"default page size, `offset={settings.API_PAGE_SIZE_DEFAULT}` is the second "
+            f"page. The deepest offset accepted is {settings.API_PAGE_OFFSET_MAX}, because "
+            "PostgreSQL walks every skipped row and an unbounded offset answered 500 on every "
+            "list (hardening H1); narrow the list with filters rather than paging past it. "
+            "Totals are counted at the moment of the call, so a record written between two "
+            "pages can shift what the later page holds."
         ),
+        examples=[0],
     )
 
 

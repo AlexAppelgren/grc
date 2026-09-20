@@ -60,8 +60,10 @@ class WatchScenarioTests(TestCase):
     def test_wat_s6(self) -> None:
         """WAT-S6
 
-        Links to affected obligations carry a confidence and are confirmed by a person (WAT-04).
-        Operations: `replaceChangeObligations`.
+        Links to affected obligations carry a confidence, and the library and the bank
+        decide separately (WAT-04).
+        Operations: `replaceChangeObligations`, `acceptCaseObligationLink`,
+        `removeCaseObligationLink`.
         """
 
     @skip("pending: WAT-S7")
@@ -69,6 +71,7 @@ class WatchScenarioTests(TestCase):
         """WAT-S7
 
         The "So what?" is AI-drafted until a person confirms or rewrites it per tenant (WAT-05).
+        Operations: `saveSoWhat`, `confirmSoWhat`.
         """
 
     @skip("pending: WAT-S8")

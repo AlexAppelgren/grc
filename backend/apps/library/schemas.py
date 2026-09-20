@@ -40,11 +40,40 @@ class LibraryResponse(CamelSchema):
 
 class LibraryRef(LibraryResponse):
     """A vocabulary row or a term as every surface reads it: key and kind, and the label in
-    the reader's language (playbook 15). A term's kind is null: its dimension is its kind."""
+    the reader's language (playbook 15). A term's kind is null: its dimension is its kind.
 
-    key: str
-    kind: str | None
-    label: str
+    A shared library fact wherever it appears: the row behind it is a library vocabulary
+    or a taxonomy term, which a platform admin may add to, rename or retire without a
+    deploy. The key is what a filter, a report, a webhook or an export stores; the label
+    is for a person to read and may change under it. A tone is never here: a pill's tone
+    follows its slot or the row's own kind and is nobody's to send (NFR-03)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"key": "act_now", "kind": None, "label": "Act now"}]})
+
+    key: str = Field(
+        description=(
+            "The row's immutable key. Store and compare this, never the label, and never "
+            "construct one: a key the list does not hold answers 422 `unknown_key` with the "
+            "valid keys."
+        ),
+        examples=["act_now"],
+    )
+    kind: str | None = Field(
+        description=(
+            "The row's fixed sub-kind where its list has one — a change type's lifecycle "
+            "kind, a case sub-status's category — and null where it has none. A taxonomy "
+            "term is always null here: its dimension is its kind. It is a kind in code, so "
+            "the rules may branch on it; an admin never adds one."
+        ),
+        examples=[None],
+    )
+    label: str = Field(
+        description=(
+            "The row's label in the reader's language, for display only. It is a phrase a "
+            "person wrote and may be reworded at any time, so nothing may match on it."
+        ),
+        examples=["Act now"],
+    )
 
 
 class LocalizedText(LibraryResponse):
@@ -455,5 +484,168 @@ class VerificationCreated(LibraryResponse):
             "never a member of a bank, because re-verifying a shared fact is bleqq's own check. Null "
             "on a record nobody has ever confirmed, and left as it was when the outcome was not "
             "`no_change`."
+        )
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# Chunk 5's two library reads: the authority list and a record's citations
+# ---------------------------------------------------------------------------------------
+class LibraryAuthority(LibraryResponse):
+    """One issuing authority, as `GET /authorities` lists them. A shared library fact:
+    every bank and every agent reads the same list, and it holds no bank's judgement."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+                    "key": "fi",
+                    "shortName": "FI",
+                    "name": "Finansinspektionen",
+                    "jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"},
+                    "url": "https://www.fi.se/",
+                }
+            ]
+        }
+    )
+
+    id: UUID = Field(
+        description="The authority's identifier in the shared library, used by the change and console filters.",
+        examples=["3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11"],
+    )
+    key: str = Field(
+        description=(
+            "The authority's immutable key, the value a filter, a report or an export stores. "
+            "It never changes; the name may be relabelled around it (playbook 4.3)."
+        ),
+        examples=["fi"],
+    )
+    short_name: str = Field(
+        description="How the authority is abbreviated in a pill or a column, in its own language.", examples=["FI"]
+    )
+    name: str = Field(description="The authority's full name, as it names itself.", examples=["Finansinspektionen"])
+    jurisdiction: LibraryRef = Field(
+        description=(
+            "Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary "
+            "(`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are "
+            "rows an admin manages, not a closed set: a platform admin may extend, relabel or "
+            "retire one without a deploy, so read `GET /reference/jurisdictions` for the live "
+            "set and match on the key, never on the label. The "
+            "`kind` says whether it is a country, a union or an international body; a change "
+            "takes its own jurisdiction from its authority, and a standard's term is accepted "
+            "only when that kind is international (FP-04, AC-AGT1). A reader must not conclude "
+            "from this alone that a change applies to a bank: applicability is a separate fact "
+            "(REG-01)."
+        )
+    )
+    url: str = Field(description="The authority's own site, so a reader can open it.", examples=["https://www.fi.se/"])
+
+
+class LibraryRecordSource(LibraryResponse):
+    """One citation behind a live library record: which field it backs, where it came from
+    and what we have of that page. Shared library provenance (INV-06); it names no bank."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "field": "summary",
+                    "url": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
+                    "label": "FFFS 2017:2",
+                    "contentHash": "9f2c4d0a6b1e8f37c5a90d2e4b6f8013a7c5e9d1b3f5079a2c4e6081d3f5a7c9",
+                    "fetchedAt": "2026-09-16T06:02:00Z",
+                    "documentId": None,
+                }
+            ]
+        }
+    )
+
+    field: str = Field(
+        description=(
+            "Which field of the record this citation backs — `summary`, `key_date`, "
+            "`duty_type` and so on, the record's own column names. Free text rather than a "
+            "vocabulary because the set is the schema's, not an admin's."
+        ),
+        examples=["summary"],
+    )
+    url: str = Field(
+        description="The public page the fact came from, so a re-check can fetch it again and a reviewer can open it.",
+        examples=["https://www.fi.se/en/published/regulations/2017/fffs-20172/"],
+    )
+    label: str = Field(description="What that page is called, in words a reader recognises.", examples=["FFFS 2017:2"])
+    content_hash: str | None = Field(
+        description=(
+            "A hash of the page as we last read it, so a re-check can tell whether it moved "
+            "without keeping a copy of it. Null when the citation predates the hash or the "
+            "publisher's terms allow no snapshot at all (WAT-07, D-45). A changed hash means "
+            "the page moved, never that the record is wrong."
+        ),
+        examples=["9f2c4d0a6b1e8f37c5a90d2e4b6f8013a7c5e9d1b3f5079a2c4e6081d3f5a7c9"],
+    )
+    fetched_at: datetime.datetime | None = Field(
+        description=(
+            "When we last read that page, as an RFC 3339 timestamp in UTC "
+            "(`2026-09-16T06:02:00Z`). Null when no agent has ever fetched it."
+        ),
+        examples=["2026-09-16T06:02:00Z"],
+    )
+    document_id: UUID | None = Field(
+        description=(
+            "The stored source document, as a UUID, when there is one. Null for a citation a "
+            "library editor recorded by hand."
+        ),
+        examples=["e2b9a071-4c35-4d68-9b1f-8a0c3e5d7b24"],
+    )
+
+
+class LibraryRecordSources(LibraryResponse):
+    """`GET /obligations/{obligationId}/sources`: everything a re-check needs to compare a
+    live library record against the pages it came from, and nothing that needs a write
+    scope. It is how an agent key holding `library:read` alone re-checks a record (AGT-01,
+    item 3); the correction it proposes goes through the proposal door, never a direct
+    edit (PRO-01)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+                    "versionNumber": 2,
+                    "items": [
+                        {
+                            "field": "summary",
+                            "url": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
+                            "label": "FFFS 2017:2",
+                            "contentHash": "9f2c4d0a6b1e8f37c5a90d2e4b6f8013a7c5e9d1b3f5079a2c4e6081d3f5a7c9",
+                            "fetchedAt": "2026-09-16T06:02:00Z",
+                            "documentId": None,
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
+    obligation_id: UUID = Field(
+        description=(
+            "The library obligation these citations belong to, as a UUID: the same id the caller "
+            "asked for."
+        ),
+        examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"],
+    )
+    version_number: int = Field(
+        description=(
+            "The version of the obligation the citations describe: the one in force today, "
+            "because that is what a re-check compares. An older version's citations are not "
+            "rewritten when a new version lands (INV-04)."
+        ),
+        examples=[2],
+    )
+    items: list[LibraryRecordSource] = Field(
+        description=(
+            "The citations, one per sourced field. An empty list means the record carries no "
+            "field-level citation yet, not that it is unsourced: the record's own `provenance` "
+            "still names where it came from."
         )
     )

@@ -48,7 +48,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | WAT-02 | One record per reform with a timeline from consultation to in force, partial dates, duplicates merged | M | R1 | in_progress |
 | WAT-03 | Change types, flags and scope from vocabularies, with at least one regime on every change and a standard term only on a change from a standards body; agent classifications shown as suggestions until confirmed | M | R1 | in_progress |
 | WAT-04 | Links to affected obligations with confidence, confirmed by a person | M | R1 | in_progress |
-| WAT-05 | A drafted "So what?" per change, labelled AI-drafted until a person confirms or rewrites it per tenant | M | R1 | pending |
+| WAT-05 | A drafted "So what?" per change, labelled AI-drafted until a person confirms or rewrites it per tenant | M | R1 | in_progress |
 | WAT-06 | Tenants can request a source; private sources are visible to that tenant only, are public pages checked at the request and again at each run, and run only on an approved EU model endpoint (D-57) | S | R3 | pending |
 | WAT-07 | Standards watched from public metadata: one change per edition or amendment, a timeline from draft to publication, a key date for the end of the transition, no snapshot of a publisher's page, and automated checks only where the terms allow | S | R1 | in_progress |
 
@@ -103,8 +103,9 @@ And no second change row exists
 Given an agent classifies a change as type "amendment" with the flag "client_money" and the scope "custody"
 Then each is stored as a key with confidence and suggested true
 And the change row shows the type as a notice pill, the flag as a brand pill, each marked as a suggestion
-When a compliance officer confirms them
+When a library editor confirms them
 Then suggested becomes false and the audit event records who confirmed
+And a bank's own compliance officer cannot confirm them, because a change's type, flag and scope are library facts behind proposals.review
 ```
 
 ### WAT-S5 — An unknown key answers unknown_key with the valid keys `@integration` (WAT-03, AC-WAT2)
@@ -115,12 +116,15 @@ Then the request answers 422 with code "unknown_key" and the valid keys listed
 And nothing is stored
 ```
 
-### WAT-S6 — Links to affected obligations carry a confidence and are confirmed by a person `@integration` `@e2e` (WAT-04)
+### WAT-S6 — Links to affected obligations carry a confidence, and the library and the bank decide separately `@integration` `@e2e` (WAT-04)
 ```gherkin
 Given an agent linked a change to two obligations with confidence 0.9 and 0.4
 Then the change screen's "Obligations affected" shows both with the confidence as a suggestion
-When a compliance officer confirms the first and removes the second
-Then the first link is confirmed and audited, the second is gone, and the obligation shows "1 open change"
+When a library editor confirms the first for the shared library
+Then that link reads confirmed for every bank and the audit event records who confirmed
+When a compliance officer accepts the first and removes the second on their own bank's case
+Then both decisions are stored on that bank's case and audited, the second is hidden from that bank's change page, and the obligation shows "1 open change"
+And no library row changed: the second link is still there, still a suggestion, and another bank still sees both
 ```
 
 ### WAT-S7 — The "So what?" is AI-drafted until a person confirms or rewrites it per tenant `@integration` `@e2e` (WAT-05)

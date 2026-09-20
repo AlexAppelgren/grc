@@ -1,5 +1,6 @@
-"""Contract guard for the watch routes an agent or a library editor writes through
-(WAT-01 to WAT-04, AGT-01, AGT-02, NFR-01, chunk 5 `c5-contract-api-agent`).
+"""Contract guard for the watch routes an agent or a library editor writes through, and
+for the two lists of changes a person reads (WAT-01 to WAT-04, AGT-01, AGT-02, FP-03,
+FP-04, NFR-01; chunk 5 `c5-contract-api-agent` and `c5-contract-api-screens`).
 
 Each route is declared before the logic that serves it and answers 501 `not_built` from
 the named function in the module that will build it. What stands in front of that stub is
@@ -8,9 +9,16 @@ what this file proves, per route: no credential is 401, the wrong scope or permi
 or a colour never rides along unseen. Written before the routes existed (2026-09-20):
 every case below failed with 404 until `watch/api.py` landed.
 
+The two lists are separate on purpose and the tests below pin that. `GET /changes` is a
+bank's feed under `watch.read` and joins that bank's own case; `GET /console/changes` is
+the library editor's queue under `proposals.review`, which no tenant role holds, and joins
+no case at all, because a console session has no tenant (`c5-contract-api-screens`). A
+tenant member reaching the console list, or an editor reaching the feed, is a leak between
+the zones, so each is proved refused.
+
 The library fence is not weakened here: none of these routes writes an inventory row, and
-the modules they name (`watch/sources.py`, `registration.py`, `curation.py`) hold nothing
-but their stubs until their own tasks land.
+the modules they name (`watch/sources.py`, `registration.py`, `curation.py`, `reading.py`)
+hold nothing but their stubs until their own tasks land.
 """
 
 from __future__ import annotations
@@ -216,3 +224,119 @@ class WatchRouteStubs(TestCase):
             for name, method, url, body in cases:
                 with self.subTest(operation=name):
                     self.assert_not_built(_call(self.client, method, url, body, AS_SESSION))
+
+
+# ---------------------------------------------------------------------------------------
+# The tenant-facing and console reads (c5-contract-api-screens)
+# ---------------------------------------------------------------------------------------
+FEED = "/api/v1/changes"
+CONSOLE_FEED = "/api/v1/console/changes"
+CHANGE_READ = f"/api/v1/changes/{CHANGE}"
+OBLIGATION_CHANGES = f"/api/v1/obligations/{OBLIGATION}/changes"
+
+# (name, url, the one permission that opens it).
+READ_ONLY_ROUTES = [
+    ("listChanges", FEED, perms.WATCH_READ),
+    ("getChange", CHANGE_READ, perms.WATCH_READ),
+    ("listObligationChanges", OBLIGATION_CHANGES, perms.WATCH_READ),
+    ("listConsoleChanges", CONSOLE_FEED, perms.PROPOSALS_REVIEW),
+]
+
+
+class WatchReadGates(TestCase):
+    def test_no_credential_is_401(self) -> None:
+        for name, url, _ in READ_ONLY_ROUTES:
+            with self.subTest(operation=name):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 401)
+                self.assertEqual(response.json()["code"], "unauthenticated")
+
+    def test_a_session_without_the_permission_is_403_naming_it(self) -> None:
+        with stub_session(user_principal(permissions={perms.CASES_READ}, tenant_id=uuid.uuid4())):
+            for name, url, permission in READ_ONLY_ROUTES:
+                with self.subTest(operation=name):
+                    response = self.client.get(url, **AS_SESSION)
+                    self.assertEqual(response.status_code, 403)
+                    problem = response.json()
+                    self.assertEqual(problem["code"], "permission_denied")
+                    self.assertEqual(problem["requiredPermission"], permission)
+
+    def test_a_key_never_reads_a_banks_feed_or_the_console_queue(self) -> None:
+        """Every one of these joins or serves a tenant's own case, which an agent's key has
+        no business in: a key holding every scope there is still gets no session (NFR-01)."""
+        with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
+            for name, url, _ in READ_ONLY_ROUTES:
+                with self.subTest(operation=name):
+                    self.assertEqual(self.client.get(url, **AS_KEY).status_code, 401)
+
+    def test_a_tenant_member_never_reaches_the_console_queue(self) -> None:
+        """No tenant role holds proposals.review (PRO-01), so the console's list of changes
+        is refused for a member holding every tenant permission there is."""
+        with stub_session(user_principal(permissions=perms.TENANT_PERMISSIONS, tenant_id=uuid.uuid4())):
+            response = self.client.get(CONSOLE_FEED, **AS_SESSION)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["requiredPermission"], perms.PROPOSALS_REVIEW)
+
+    def test_the_console_session_never_reaches_a_banks_feed(self) -> None:
+        """A library editor holds no tenant permission, so the feed — which is one bank's
+        own cases — answers 403 rather than an empty list."""
+        with stub_session(user_principal(permissions={perms.PROPOSALS_REVIEW})):
+            response = self.client.get(FEED, **AS_SESSION)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["requiredPermission"], perms.WATCH_READ)
+
+    def test_the_console_sources_page_reads_the_registry_with_sources_manage(self) -> None:
+        """Ruling 3: the read-only console Sources page calls the registry reads, and a
+        console session has no tenant and therefore no watch.read."""
+        with stub_session(user_principal(permissions={perms.SOURCES_MANAGE})):
+            for name, url, _, _ in READ_ROUTES:
+                with self.subTest(operation=name):
+                    self.assertEqual(self.client.get(url, **AS_SESSION).status_code, 501)
+
+    def test_a_bad_filter_is_422_before_the_stub(self) -> None:
+        cases = [
+            ("listChanges", f"{FEED}?footprint=inside"),
+            ("listChanges", f"{FEED}?tab=triage"),
+            ("listChanges", f"{FEED}?status=retired"),
+            ("listChanges", f"{FEED}?limit=101"),
+            ("listChanges", f"{FEED}?limit=0"),
+            ("listConsoleChanges", f"{CONSOLE_FEED}?confirmed=true"),
+        ]
+        with stub_session(user_principal(permissions={perms.WATCH_READ, perms.PROPOSALS_REVIEW}, tenant_id=uuid.uuid4())):
+            for name, url in cases:
+                with self.subTest(operation=name, url=url):
+                    response = self.client.get(url, **AS_SESSION)
+                    self.assertEqual(response.status_code, 422)
+                    self.assertEqual(response.json()["code"], "validation_error")
+
+    def test_the_designed_in_footprint_pair_is_refused(self) -> None:
+        """INPUT_DELTAS §7: `footprint` is one value (`in`, `all`, `watched`), so a client
+        written against the designed `inFootprint` pair learns it at once instead of being
+        silently given the default."""
+        with stub_session(user_principal(permissions={perms.WATCH_READ}, tenant_id=uuid.uuid4())):
+            response = self.client.get(f"{FEED}?inFootprint=true", **AS_SESSION)
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["code"], "validation_error")
+
+    def test_the_page_defaults_to_twenty_and_stops_at_a_hundred(self) -> None:
+        from django.conf import settings
+
+        self.assertEqual((settings.API_PAGE_SIZE_DEFAULT, settings.API_PAGE_SIZE_MAX), (20, 100))
+        with stub_session(user_principal(permissions={perms.WATCH_READ}, tenant_id=uuid.uuid4())):
+            at_the_cap = self.client.get(f"{FEED}?limit=100", **AS_SESSION)
+        self.assertEqual(at_the_cap.status_code, 501, "the maximum itself is accepted and reaches the stub")
+
+
+class WatchReadStubs(TestCase):
+    def test_a_session_with_its_permission_reaches_the_stub(self) -> None:
+        with stub_session(
+            user_principal(permissions={perms.WATCH_READ, perms.PROPOSALS_REVIEW}, tenant_id=uuid.uuid4())
+        ):
+            for name, url, _ in READ_ONLY_ROUTES:
+                with self.subTest(operation=name):
+                    response = self.client.get(url, **AS_SESSION)
+                    self.assertEqual(response.status_code, 501)
+                    problem = response.json()
+                    self.assertEqual(problem["code"], "not_built")
+                    self.assertEqual(response.headers["Content-Type"], "application/problem+json")
+                    self.assertNotIn("traceback", response.content.decode().lower())

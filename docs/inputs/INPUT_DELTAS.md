@@ -683,3 +683,81 @@ Chunk 5 (watch and the agent API), 2026-09-20:
   library editor's session with `proposals.review` writes it too; the link stays a
   suggestion until a person confirms it. The list is capped at 200 links per call, the cap
   the same list carries inside `POST /changes`.
+
+## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
+
+**`change_case` (`c5-contract-models-cases`).** Built with R1 columns only:
+
+- The chunk 9 columns of the designed `change_case` are **not built**: `triaged_by`,
+  `triaged_at`, `dismissed_reason`, `dismissed_by`, `dismissed_at`,
+  `signoff_requested_by`, `signoff_requested_at`, `signed_off_by`, `close_reason`,
+  `closed_note` and `closed_at`, together with the two CHECKs that read them and the
+  four-eyes CHECK on the sign-off. `c9-case-models` adds them with the workflow they
+  guard (CAS-02 to CAS-08). R1 builds creation, the footprint match and the "So what?".
+- **`urgency_confirmed` is added**, default false: the designed schema has no such
+  column. A case is created with the change's suggested urgency and says, until a person
+  triages it, that the value is the agent's suggestion and not the bank's decision
+  (Alex's item 1, `q-case-urgency-at-creation` Option A). `urgency` stays NOT NULL as
+  designed: every card renders an urgency pill from the moment the case exists.
+- **`case_obligation_link` is a new table**, which `schema.sql` lacks: a bank's own
+  decision (`accepted` or `removed`, the `case_link_decision` kind) about one suggested
+  library obligation link, unique per `(tenant, case, obligation)`. It holds no library
+  row and writes none — a library editor confirms the link for the shared library, and a
+  compliance officer decides it on the bank's own case (WAT-04, chunk 5 ruling C). A
+  removal is stored, never deleted, so the case file can say the bank looked and said no.
+- `briefing_week` is the designed `date` (the Monday of the ISO week the case first
+  appeared in a briefing), not the boolean the prototype fixture shows.
+- No `version` column in R1, so no case write takes `If-Match` and none answers
+  `stale_write`; CAS-08's concurrency lands with chunk 9.
+
+**The screen contract (`c5-contract-api-screens`).** Where the built routes depart from
+`docs/inputs/openapi.yaml`:
+
+- `GET /changes` (`listChanges`) answers `{items, total}` with `limit` and `offset`
+  instead of a cursor page, like every other list (playbook 10): 20 by default, 100 at
+  most, and a larger `limit` is a 422 rather than a clamp. A row carries the library's
+  facts as `{ref: {key, kind, label}, confidence, suggested}` — the vocabulary row itself
+  beside how it came to be on the change — and the reader's own case beside them, never a
+  phrase and never a tone. The provenance is kept out of the reference on purpose: every
+  vocabulary reference in this API is exactly `{key, kind, label}`, and the presentation
+  guard refuses one that is not (NFR-03, NFR-S10). Ordered by key date then first seen,
+  both newest first, with the row id as a stable tiebreak; a change with no key date
+  sorts last. `footprint` is the single value of §7 (`in`, `all`, `watched`) and the
+  designed `inFootprint` pair answers 422 rather than being ignored, because ignoring it
+  would hand a client that asked for `inFootprint=false` the opposite feed in silence.
+- `GET /changes/{changeId}` (`getChange`) answers the library record — timeline,
+  documents, terms and obligation links — plus `inFootprint` and the reader's own bank's
+  `case`. The case block carries the category, the urgency and whether a person confirmed
+  it, the footprint match, the "So what?" and its confirmation, the bank's own
+  obligation-link decisions, and `allowedTransitions`, which is an empty list in R1
+  because the workflow that would move a case is chunk 9.
+- `GET /console/changes` (`listConsoleChanges`) is **new**: the console's queue of
+  changes carrying a fact nobody has confirmed, under `proposals.review`, with a
+  `confirmed=false|all` filter and an authority filter. It joins no case, because a
+  platform console session has no tenant; without it the Change facts screen would call
+  `GET /changes` and read nothing.
+- `POST /changes/{changeId}/case/obligation-links` (`acceptCaseObligationLink`) and
+  `DELETE /changes/{changeId}/case/obligation-links/{obligationId}`
+  (`removeCaseObligationLink`) are **new**, under `cases.work`: the bank's own decision
+  about a suggested link. This fixes the path the UI plan had only proposed.
+- `PUT /changes/{changeId}/so-what` (`saveSoWhat`) and
+  `POST /changes/{changeId}/so-what/confirm` (`confirmSoWhat`) answer the bank's own copy
+  of the "So what?" — `{caseId, changeId, text, confirmed, confirmedAt, confirmedByName,
+  isAiDraft}` — rather than the designed case object, because R1 has no case workflow to
+  answer. Saving text marks it confirmed: a person who rewrote it has already decided.
+- `GET /obligations/{obligationId}/changes` (`listObligationChanges`) answers
+  `{items, total, openCount}`: the related-changes panel and the open-change count the
+  obligation page shows. `openCount` counts the reader's own cases that are neither
+  closed nor dismissed, so two banks reading one obligation see different numbers.
+- `GET /authorities` (`listAuthorities`) is the list chunk 3 cut to chunk 5 (ruling E),
+  answered as a plain array like the other reference reads: `{id, key, shortName, name,
+  jurisdiction{key,kind,label}, url}`. A person with `library.read` or an agent's key with
+  `library:read`.
+- `GET /obligations/{obligationId}/sources` (`getRecordSources`) is **new**: a live
+  record's citations with their source document, url, content hash and fetched date. It is
+  how an agent key holding `library:read` alone re-checks a library record against the page
+  it came from; the correction it finds is a proposal, never an edit (AGT-01, item 3,
+  PRO-01).
+- `GET /sources` and `GET /sources/coverage` also accept a console session holding
+  `sources.manage`, so the read-only console Sources page calls a real route. A console
+  session has no tenant and therefore no `watch.read` (ruling 3).

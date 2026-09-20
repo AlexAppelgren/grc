@@ -46,6 +46,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "FeedFilter": ("feed_filter", "FP-03: inside or outside the footprint"),
     "TicketProvider": ("ticket_provider", "INT-02: the integration branches per provider"),
     "AgentKind": ("agent_kind", "AGT-03: what an agent definition does"),
+    "CaseLinkDecision": (
+        "case_link_decision",
+        "WAT-04: what a bank said about a suggested obligation link on its own case; the "
+        "change page branches on accepted or removed and there is no third answer",
+    ),
     "CaseStatusCategory": (
         "case_status",
         "CAS-02..08: the fixed categories the state machine and its guards read (D-13)",

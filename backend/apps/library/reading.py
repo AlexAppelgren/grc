@@ -40,7 +40,7 @@ from __future__ import annotations
 import datetime
 import uuid
 from collections.abc import Collection, Iterable, Mapping
-from typing import Any, TypeVar
+from typing import Any, NoReturn, TypeVar
 from zoneinfo import ZoneInfo
 
 from django.contrib.postgres.expressions import ArraySubquery
@@ -85,6 +85,7 @@ from apps.library.schemas import (
     VersionDiff,
 )
 from apps.shared.models import Tenant
+from apps.shared.errors import ProblemError
 from apps.taxonomy import matching, terms_logic
 from apps.taxonomy.models import (
     DutyTypeLabel,
@@ -551,3 +552,28 @@ def obligation_diff(order: list[str], obligation_id: uuid.UUID, query: Obligatio
         is_machine=is_machine,
         segments=[DiffSegment(op=op, text=text) for op, text in segments],
     )
+
+
+# ---------------------------------------------------------------------------------------
+# Chunk 5's two library reads, declared ahead of their logic (chunk 5 plan rule 1)
+# ---------------------------------------------------------------------------------------
+def _not_built(detail: str) -> NoReturn:
+    raise ProblemError(status=501, code="not_built", detail=detail)
+
+
+def list_authorities() -> NoReturn:
+    """`GET /authorities`, the authority list chunk 3 cut to chunk 5 (ruling E). Built by
+    `c5-watch-change-reads`. It addresses no single record, so it needs no lookup."""
+    _not_built("The authority list is not built yet.")
+
+
+def get_record_sources() -> NoReturn:
+    """`GET /obligations/{obligationId}/sources`, the citations a re-check compares against
+    (AGT-01, item 3). Built by `c5-library-recheck`.
+
+    It resolves the obligation through `_visible()` above, as every other addressed read in
+    this module does, and never through a lookup of its own: that one function is what makes
+    a record the caller cannot see answer the same 404 as an id that never existed, so a
+    second lookup would be a second chance to leak which of the two it was (INV-07).
+    """
+    _not_built("A record's citations are not built yet.")

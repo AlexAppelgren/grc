@@ -15,13 +15,10 @@ DELETE /webhooks/{} chunk 13
 GET /ai-generations chunk 7
 GET /applicability-requests chunk 8
 GET /audit-events chunk 1
-GET /authorities chunk 3
 GET /briefings/current chunk 6
 GET /briefings/{} chunk 6
 GET /calendar-feeds chunk 6
 GET /calendar/{} chunk 6
-GET /changes chunk 5
-GET /changes/{} chunk 5
 GET /changes/{}/actions chunk 5
 GET /changes/{}/case-file chunk 5
 GET /changes/{}/evidence chunk 5
@@ -40,7 +37,6 @@ GET /me/whats-new chunk 1
 GET /me/work chunk 1
 GET /notifications chunk 10
 GET /obligations/{}/attestations chunk 8
-GET /obligations/{}/changes chunk 5
 GET /obligations/{}/internal-links chunk 8
 GET /obligations/{}/waivers chunk 8
 GET /problem-reports chunk 4
@@ -71,7 +67,6 @@ POST /changes/{}/restore chunk 5
 POST /changes/{}/signoff/approve chunk 5
 POST /changes/{}/signoff/request chunk 5
 POST /changes/{}/signoff/send-back chunk 5
-POST /changes/{}/so-what/confirm chunk 5
 POST /changes/{}/triage chunk 5
 POST /comments chunk 10
 POST /eval/questions chunk 7
@@ -88,5 +83,4 @@ POST /obligations/{}/waivers chunk 8
 POST /saved-searches chunk 13
 POST /webhooks chunk 13
 PUT /changes/{}/assessment chunk 5
-PUT /changes/{}/so-what chunk 5
 PUT /integrations/tickets chunk 13

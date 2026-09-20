@@ -6,7 +6,21 @@ Every factory that writes a tenant row activates that tenant first, because the 
 runner's own connection is the table owner and FORCE ROW LEVEL SECURITY applies to it
 too: a tenant row is invisible and unwritable until `tenancy.activate()` has run in the
 transaction (playbook 14). The activation lasts until the test's savepoint is rolled
-back, or until the next factory activates another tenant."""
+back, or until the next factory activates another tenant.
+
+**No factory here writes or names a library model.** The library fence
+(apps/shared/tests_library_fence.py) treats this file as a production module, so it may
+neither open `library_write()` or `watch_write()` nor name a `LibraryModel` beside a
+write call — that is what keeps a fixture from being a way round the fence. Builders that
+need one live in the app's own `testing.py`, which the fence exempts:
+
+| What you want | Where it is |
+|---|---|
+| An instrument, a provision, an obligation | `apps/library/testing.py` |
+| A source, a source check, a change with its timeline, pages, flags, scope terms and obligation links | `apps/watch/testing.py` |
+| An agent, a platform key bound to it, a platform run | `apps/agents/testing.py` |
+| A bank's case, its obligation-link decision, two banks with different footprints | `apps/cases/testing.py` |
+"""
 
 from __future__ import annotations
 

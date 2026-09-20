@@ -115,6 +115,20 @@ WATCH_LIBRARY_TABLES = frozenset(
 # with a tenant activated; HARDENING.md H16 carries it.
 LIBRARY_OWNED_TABLES = frozenset({"instrument", "obligation"})
 
+# Tables that hold one bank's rows and nothing else, named here so the enumeration cannot
+# quietly stop seeing one. `change_case` and `case_obligation_link` are chunk 5's: a bank's
+# case for a library change and its own decision about a suggested obligation link. They
+# are deliberately not mixed — a change is shared and a case is not, which is why the case
+# is a tenant table and not part of the watch zone (CAS-01, WAT-04, ruling C).
+TENANT_ONLY_TABLES = [
+    "membership",
+    "tenant_role",
+    "support_access",
+    "proposal_tenant",
+    "change_case",
+    "case_obligation_link",
+]
+
 # agent_run has carried the split since the E5 fix (agents 0001) and its write rule also
 # demands a key of the same zone; agents 0002 renamed its read policy to the shared name.
 # Permissive policies OR together, so any policy beside tenant_isolation widens what a
@@ -157,7 +171,7 @@ class RowLevelSecurityGuard(TestCase):
 
     def test_enumeration_finds_the_mixed_tables(self) -> None:
         tables = sorted(model._meta.db_table for model in tenant_scoped_models())
-        for table in sorted(MIXED_TABLES) + sorted(LIBRARY_OWNED_TABLES) + ["membership", "tenant_role", "support_access", "proposal_tenant"]:
+        for table in sorted(MIXED_TABLES) + sorted(LIBRARY_OWNED_TABLES) + TENANT_ONLY_TABLES:
             self.assertIn(table, tables)
 
     def test_the_watch_tables_are_library_tables_and_only_source_holds_a_tenant_column(self) -> None:
