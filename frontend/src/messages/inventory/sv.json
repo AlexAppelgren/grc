@@ -1,0 +1,21 @@
+{
+  "inventory.title": "Inventarie",
+  "inventory.count": "{count, plural, one {# skyldighet} other {# skyldigheter}}",
+  "inventory.showingFirst": "Visar de första {shown} av {total}.",
+  "inventory.filter.regime": "Regelområde",
+  "inventory.filter.allRegimes": "Alla regelområden",
+  "inventory.filter.service": "Tjänst",
+  "inventory.filter.anyService": "Alla tjänster",
+  "inventory.filter.dutyType": "Skyldighetstyp",
+  "inventory.filter.anyDutyType": "Alla skyldighetstyper",
+  "inventory.asOf": "Per den",
+  "inventory.asOfBanner": "Visar de versioner som gällde den {date}.",
+  "inventory.backToToday": "Tillbaka till i dag",
+  "inventory.showOutside": "Visa utanför vår omfattning",
+  "inventory.errorTitle": "Kunde inte hämta inventariet",
+  "inventory.empty.noMatch.title": "Inga skyldigheter matchar",
+  "inventory.empty.noMatch.body": "Ta bort ett filter, eller visa det som ligger utanför vår omfattning.",
+  "inventory.empty.inScope.title": "Biblioteket har ännu inget inom vår omfattning",
+  "inventory.empty.inScope.body": "Källor kontrolleras dagligen; skyldigheter dyker upp när förslag godkänns.",
+  "inventory.empty.inScope.action": "Se regelverksomfattningen under Admin"
+}

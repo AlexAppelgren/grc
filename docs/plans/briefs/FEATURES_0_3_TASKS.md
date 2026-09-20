@@ -77,9 +77,9 @@ API. `f03-T03` is the same work as `chunk3-rest-T7`, so it is built once, there.
 
 **Depends on:** nothing
 
-**Owned paths:** `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`, `frontend/tests/e2e/taxonomy.journey.spec.ts`, `frontend/tests/e2e/shell.journey.spec.ts`, `frontend/src/features/footprint/footprint-presentation.test.ts`, `backend/apps/shared/permissions.py`, `backend/apps/identity/roles_logic.py`
+**Owned paths:** `frontend/src/messages/footprint/{en,sv}.json`, `frontend/src/messages/nav/{en,sv}.json`, `frontend/src/messages/tenant-admin/{en,sv}.json`, `frontend/src/messages/today/{en,sv}.json`, `frontend/tests/e2e/taxonomy.journey.spec.ts`, `frontend/tests/e2e/shell.journey.spec.ts`, `frontend/src/features/footprint/footprint-presentation.test.ts`, `backend/apps/shared/permissions.py`, `backend/apps/identity/roles_logic.py`
 
-**Done when:** No value in `en.json` or `sv.json` matches /footprint|(?<!finger)avtryck/i. The passkey prompts are untouched. `npm run check:messages`, the unit tests, the backend tests, and the taxonomy and shell journeys pass. The scenario prose in `taxonomy/app.md` already says "regulatory scope"; only the code and copy change here.
+**Done when:** No value in any `frontend/src/messages/<namespace>/{en,sv}.json` matches /footprint|(?<!finger)avtryck/i. The passkey prompts are untouched. `npm run check:messages`, the unit tests, the backend tests, and the taxonomy and shell journeys pass. The scenario prose in `taxonomy/app.md` already says "regulatory scope"; only the code and copy change here.
 
 ### f03-T05 — Primitives: dark danger hover, head actions on the right, group hint under the legend
 
@@ -97,7 +97,7 @@ API. `f03-T03` is the same work as `chunk3-rest-T7`, so it is built once, there.
 
 **Depends on:** f03-T04
 
-**Owned paths:** `frontend/src/features/footprint/footprint-presentation.ts`, `frontend/src/features/footprint/footprint-presentation.test.ts`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`
+**Owned paths:** `frontend/src/features/footprint/footprint-presentation.ts`, `frontend/src/features/footprint/footprint-presentation.test.ts`, `frontend/src/messages/footprint/{en,sv}.json`
 
 **Done when:** Vitest passes with the new cases: channel, lifecycle stage, theme and termless dimensions are excluded; narrowing is detected and widening is not; the pending pill's tone is `warning`. The screen does not change yet.
 
@@ -107,7 +107,7 @@ API. `f03-T03` is the same work as `chunk3-rest-T7`, so it is built once, there.
 
 **Depends on:** f03-T05, f03-T06
 
-**Owned paths:** `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`, `frontend/tests/e2e/taxonomy.journey.spec.ts`
+**Owned paths:** `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/messages/footprint/{en,sv}.json`, `frontend/tests/e2e/taxonomy.journey.spec.ts`
 
 **Done when:** `FootprintScreen` no longer imports `Chip`. Before "Propose a change" the page has no checkbox. Channel, lifecycle stage, theme and termless dimensions do not render. While a request waits, a removed term shows "Removed when approved". FP-S2 and FP-S5 pass.
 
@@ -117,7 +117,7 @@ API. `f03-T03` is the same work as `chunk3-rest-T7`, so it is built once, there.
 
 **Depends on:** f03-T07, f03-T03
 
-**Owned paths:** `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/components/admin/FootprintScreen.test.tsx`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`, `frontend/tests/e2e/taxonomy.journey.spec.ts`
+**Owned paths:** `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/components/admin/FootprintScreen.test.tsx`, `frontend/src/messages/footprint/{en,sv}.json`, `frontend/tests/e2e/taxonomy.journey.spec.ts`
 
 **Done when:** The component test shows that after a send the status line has focus and reads "Sent for approval.", that the warn notice renders for a narrowing draft and not for a widening one, and that exactly one cancel button exists during an edit. FP-S2 and FP-S5 pass against the real API, and FP-S2 asserts an obligation count in the Hides column.
 
@@ -127,7 +127,7 @@ API. `f03-T03` is the same work as `chunk3-rest-T7`, so it is built once, there.
 
 **Depends on:** f03-T08
 
-**Owned paths:** `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/components/admin/FootprintScreen.test.tsx`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`, `frontend/tests/e2e/taxonomy.journey.spec.ts`
+**Owned paths:** `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/components/admin/FootprintScreen.test.tsx`, `frontend/src/messages/footprint/{en,sv}.json`, `frontend/tests/e2e/taxonomy.journey.spec.ts`
 
 **Done when:** The component test shows that after approve and after withdraw the status line has focus, that nothing inside a warn notice uses muted or negative text, and that a blank reject submit focuses the text area with `aria-invalid` true. FP-S2 and FP-S5 pass.
 
@@ -272,7 +272,7 @@ needs a chunk 3 route.
 
 **Depends on:** f03-T22, f03-T20, f03-T09
 
-**Owned paths:** `frontend/src/features/footprint/`, `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`
+**Owned paths:** `frontend/src/features/footprint/`, `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/messages/footprint/{en,sv}.json`
 
 **Done when:** The screen matches the updated `admin-footprint.html` in both themes. The frontend compares no dimension key. `check:messages` passes, and the footprint unit tests and J-6 stay green.
 
@@ -328,7 +328,7 @@ has logged the facts it rests on.
 
 **Depends on:** f03-T27, f03-T06, f03-T07
 
-**Owned paths:** `backend/apps/taxonomy/schemas.py`, `frontend/src/features/footprint/footprint-presentation.ts`, `frontend/src/features/footprint/footprint-presentation.test.ts`, `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`
+**Owned paths:** `backend/apps/taxonomy/schemas.py`, `frontend/src/features/footprint/footprint-presentation.ts`, `frontend/src/features/footprint/footprint-presentation.test.ts`, `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/messages/footprint/{en,sv}.json`
 
 **Done when:** The presentation tests cover both empty-group texts ("None followed" for an opt-in group) and keep opt-in groups out of the narrowing list. No string literal appears in JSX. The contract drift gate passes.
 
@@ -368,7 +368,7 @@ has logged the facts it rests on.
 
 **Depends on:** f03-T29, chunk3-rest-T5, chunk3-rest-T13
 
-**Owned paths:** `frontend/src/features/library/obligation-presentation.ts`, `frontend/src/features/library/obligation-presentation.test.ts`, `design/system/pills-and-labels.md`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`
+**Owned paths:** `frontend/src/features/library/obligation-presentation.ts`, `frontend/src/features/library/obligation-presentation.test.ts`, `design/system/pills-and-labels.md`, `frontend/src/messages/common/{en,sv}.json`, `frontend/src/messages/library/{en,sv}.json`
 
 **Done when:** The presentation tests cover a null kind with binding true, a null kind with binding false, and `standard`. A standard never shows "Guidance, comply or explain". The pill gallery check passes.
 
@@ -378,7 +378,7 @@ has logged the facts it rests on.
 
 **Depends on:** f03-T32, chunk3-rest-T18, f03-T35
 
-**Owned paths:** `frontend/src/features/library/`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`, `frontend/tests/e2e/library.journey.spec.ts`
+**Owned paths:** `frontend/src/features/library/`, `frontend/src/messages/library/{en,sv}.json`, `frontend/tests/e2e/library.journey.spec.ts`
 
 **Done when:** INV-S11 is un-fixme'd and green against the real stack. The empty, loading, error and denied states are all present.
 
@@ -424,7 +424,7 @@ second one.
 
 **Depends on:** f03-T36, f03-T19, chunk 3's list routes and inventory screen
 
-**Owned paths:** `backend/apps/library/api.py`, `backend/apps/library/schemas.py`, `backend/apps/library/reading.py`, `frontend/src/features/library/`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`
+**Owned paths:** `backend/apps/library/api.py`, `backend/apps/library/schemas.py`, `backend/apps/library/reading.py`, `frontend/src/features/library/`, `frontend/src/messages/inventory/{en,sv}.json`, `frontend/src/messages/library/{en,sv}.json`
 
 **Done when:** `test_fp_s13` and its journey are green. The lists take one footprint filter value (`in|all|watched`), replacing the designed pair, and return each row's jurisdiction. No new pill. FP-S4 stays green with the `all` value.
 
@@ -687,7 +687,7 @@ page would be empty and a participant would have nothing to hang on.
 
 **Depends on:** f03-T61
 
-**Owned paths:** `frontend/src/app/(tenant)/work/page.tsx`, `frontend/src/components/work/MyWorkScreen.tsx`, `frontend/src/shared/navigation/registry.ts`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`
+**Owned paths:** `frontend/src/app/(tenant)/work/page.tsx`, `frontend/src/components/work/MyWorkScreen.tsx`, `frontend/src/shared/navigation/registry.ts`, `frontend/src/messages/nav/{en,sv}.json`, `frontend/src/messages/work/{en,sv}.json`
 
 **Done when:** HOM-S7 and HOM-S9 are un-fixme'd and green. The registry test (at most four ranked destinations) passes, so the entry sits under More on phones. The screen matches `tenant-my-work.html` in both themes and has every state.
 
@@ -777,7 +777,7 @@ page would be empty and a participant would have nothing to hang on.
 
 **Depends on:** f03-T69, f03-T70, chunk 8's register screens, f03-T60
 
-**Owned paths:** `frontend/src/features/register/units/`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`, `frontend/tests/e2e/register.journey.spec.ts`
+**Owned paths:** `frontend/src/features/register/units/`, `frontend/src/messages/register/{en,sv}.json`, `frontend/tests/e2e/register.journey.spec.ts`
 
 **Done when:** REG-S13 and REG-S14 are un-fixme'd and green, using invented units only. No string literal appears in JSX, and the form asks for the tenant's own words with no field for the standard's text.
 

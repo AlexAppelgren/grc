@@ -1545,7 +1545,7 @@ GET /tenant/footprint gains markets (MarketRow: jurisdiction, operating, watchin
 
 Add a MarketsPanel in features/footprint, composed into FootprintScreen: one row per country, with 'Operating' meta text or a Watching switch that saves at once through the new hooks. It includes the 'also included' line from parentKey and the 'everywhere else' line, is read-only without footprint.request, and has en and sv strings.
 
-**Owned paths:** `frontend/src/features/footprint`, `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`
+**Owned paths:** `frontend/src/features/footprint`, `frontend/src/components/admin/FootprintScreen.tsx`, `frontend/src/messages/footprint/{en,sv}.json`
 
 **Done when:** The screen matches the updated admin-footprint.html in both themes. The frontend compares no dimension key. check:messages passes. The existing footprint unit tests and J-6 stay green.
 
@@ -1575,7 +1575,7 @@ Cross-tenant reads and removals. A test asserts that the request line of every m
 
 GET /instruments and GET /obligations take footprint=in|all|watched, where watched means in F plus W but not in F, and return jurisdiction on each row. The inventory gets a 'Markets we watch' option beside 'Show outside footprint', with the reason as meta text.
 
-**Owned paths:** `backend/apps/library/api.py`, `backend/apps/library/schemas.py`, `backend/apps/library/reading.py`, `frontend/src/features/library`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`
+**Owned paths:** `backend/apps/library/api.py`, `backend/apps/library/schemas.py`, `backend/apps/library/reading.py`, `frontend/src/features/library`, `frontend/src/messages/inventory/{en,sv}.json`, `frontend/src/messages/library/{en,sv}.json`
 
 **Done when:** test_fp_s11 and its e2e test are green. No new pill. FP-S4 stays green with footprint=all.
 
@@ -1715,7 +1715,7 @@ features/my-work: API client, hooks, and a presentation module that maps reasons
 
 The /work route. A my-work registry entry in the secondary group with no dockRank, so it sits under More on phones. MyWorkScreen with the scope switch (remembered in localStorage inside try/catch), the four sections, the link to Today and every state.
 
-**Owned paths:** `frontend/src/app/(tenant)/work/page.tsx`, `frontend/src/components/work/MyWorkScreen.tsx`, `frontend/src/shared/navigation/registry.ts`, `frontend/src/messages/en.json`, `frontend/src/messages/sv.json`
+**Owned paths:** `frontend/src/app/(tenant)/work/page.tsx`, `frontend/src/components/work/MyWorkScreen.tsx`, `frontend/src/shared/navigation/registry.ts`, `frontend/src/messages/nav/{en,sv}.json`, `frontend/src/messages/work/{en,sv}.json`
 
 **Done when:** The HOM-S7 and HOM-S9 e2e tests are green. The registry test (at most four ranked destinations) passes. The screen matches tenant-my-work.html in both themes.
 

@@ -459,8 +459,10 @@ NavIcon gets an icon for console-tenants. The shell copy goes into both catalogs
 - `frontend/src/components/admin/VocabulariesScreen.tsx`
 - `frontend/src/components/admin/VocabularyScreen.tsx`
 - `frontend/src/shared/navigation/**`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/auth/{en,sv}.json`
+- `frontend/src/messages/console/{en,sv}.json`
+- `frontend/src/messages/nav/{en,sv}.json`
+- `frontend/src/messages/vocabularies/{en,sv}.json`
 
 **Done when:**
 
@@ -734,8 +736,8 @@ Also:
 - `frontend/src/components/admin/AuditLogScreen.tsx`
 - `frontend/src/features/governance/**`
 - `frontend/src/shared/navigation/**`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/nav/{en,sv}.json`
+- `frontend/src/messages/tenant-admin/{en,sv}.json`
 - `frontend/tests/e2e/governance.journey.spec.ts`
 
 **Done when:**
@@ -897,8 +899,8 @@ Un-fixme two journeys:
 - `frontend/src/components/console/TenantsScreen.tsx`
 - `frontend/src/features/console-tenants/**`
 - `frontend/src/shared/navigation/**`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/console/{en,sv}.json`
+- `frontend/src/messages/nav/{en,sv}.json`
 - `frontend/tests/e2e/governance.journey.spec.ts`
 
 **Done when:**
@@ -1019,8 +1021,8 @@ Also:
 - `frontend/src/features/shared/tone-by-kind.ts`
 - `frontend/src/features/shared/tone-by-kind.test.ts`
 - `frontend/src/shared/navigation/**`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/console/{en,sv}.json`
+- `frontend/src/messages/nav/{en,sv}.json`
 - `frontend/tests/e2e/proposals.journey.spec.ts`
 
 **Done when:**
@@ -1115,8 +1117,7 @@ Un-fixme three journeys:
 - `frontend/src/components/console/ProposalCorrectionForm.tsx`
 - `frontend/src/components/console/RejectProposalDialog.tsx`
 - `frontend/src/features/proposals/**`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/console/{en,sv}.json`
 - `frontend/tests/e2e/proposals.journey.spec.ts`
 
 **Done when:**
@@ -1175,8 +1176,8 @@ Un-fixme PRO-S7:
 - `frontend/src/features/library-updates/**`
 - `frontend/src/features/shared/tone-by-kind.ts`
 - `frontend/src/features/shared/tone-by-kind.test.ts`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/inventory/{en,sv}.json`
+- `frontend/src/messages/library/{en,sv}.json`
 - `frontend/tests/e2e/proposals.journey.spec.ts`
 
 **Done when:**
@@ -1539,8 +1540,8 @@ No registry entry and no console screen: a report has no destination of its own.
 - `frontend/src/components/inventory/<chunk 3 provision tree> (the section only)`
 - `frontend/src/features/problem-reports/**`
 - `frontend/src/features/shared/tone-by-kind.ts`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/inventory/{en,sv}.json`
+- `frontend/src/messages/library/{en,sv}.json`
 
 **Done when:**
 

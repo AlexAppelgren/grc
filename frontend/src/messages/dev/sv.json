@@ -1,0 +1,20 @@
+{
+  "dev.pills.title": "Piller och etiketter",
+  "dev.pills.lede": "Varje ton, varje plats, båda teman. Tonen ändras aldrig med temat.",
+  "dev.pills.light": "Ljust",
+  "dev.pills.dark": "Mörkt",
+  "dev.pills.tones": "Sex toner",
+  "dev.pills.tenantTag": "Egen tagg",
+  "dev.pills.changeRow": "Ändringsrad",
+  "dev.pills.obligationRow": "Skyldighetsrad",
+  "dev.pills.obligationHeader": "Skyldighetens rubrik",
+  "dev.pills.instrumentHeader": "Instrumentets rubrik",
+  "dev.pills.scopeBlock": "Omfattning",
+  "dev.pills.gap": "Gap",
+  "dev.pills.roadmapItem": "Färdplanspost",
+  "dev.pills.severityScales": "Allvarlighetsskalor",
+  "dev.spike.title": "Green Core-spike (D-04)",
+  "dev.spike.lede": "En Green Core React-komponent under next start. Räknaren bevisar hydrering.",
+  "dev.spike.button": "Räkna klick",
+  "dev.spike.count": "{count, plural, =0 {Inte klickad ännu} one {Klickad # gång} other {Klickad # gånger}}"
+}

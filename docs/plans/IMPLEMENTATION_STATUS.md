@@ -69,7 +69,7 @@ earlier ones.
 ### 2.3 Frontend skeleton
 - [x] `shared/utils/api-client.ts` (one axios instance, bearer, request ID, one-flight refresh, cold-load refresh, `If-Match`)
 - [x] `shared/utils/format.ts` and `shared/utils/logger.ts`
-- [x] `shared/i18n/` and `messages/en.json`, `messages/sv.json`
+- [x] `shared/i18n/` and `messages/<namespace>/{en,sv}.json`
 - [x] `shared/navigation/registry.ts` and `require-permission.tsx` with the Restricted screen
 - [x] `scripts/build-tokens.mjs` writing `styles/tokens.generated.css` from Green; `styles/brand.css` overriding the brand pair with the placeholders
 - [x] `src/styles/theme.css` (`@theme inline`, Tailwind 4 is CSS-first so there is no `tailwind.config.ts`) with semantic colours and the named type scale; numbered sizes generate nothing and ESLint refuses them

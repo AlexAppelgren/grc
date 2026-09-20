@@ -1,0 +1,23 @@
+{
+  "scope.notClientSpecific": "Inte kundspecifik",
+  "scope.notRegimeSpecific": "Inte regelområdesspecifik",
+  "scope.notEntitySpecific": "Inte företagstypsspecifik",
+  "scope.notServiceSpecific": "Inte tjänstespecifik",
+  "scope.notAccountSpecific": "Inte kontospecifik",
+  "scope.notChannelSpecific": "Inte kanalspecifik",
+  "scope.notStageSpecific": "Inte skedesspecifik",
+  "scope.notJurisdictionSpecific": "Inte jurisdiktionsspecifik",
+  "scope.notActivitySpecific": "Inte verksamhetsspecifik",
+  "scope.notProductSpecific": "Inte produktspecifik",
+  "scope.notSpecific": "Inte specifik",
+  "library.outsideFootprint": "Utanför ert avtryck: {terms}",
+  "library.verified": "Verifierad {date}",
+  "version.label": "Version {number}",
+  "version.labelFrom": "Version {number}, från {date}",
+  "version.inForce": "I kraft",
+  "version.inForceFrom": "I kraft från {from}",
+  "version.inForceUntil": "I kraft till och med {to}",
+  "version.inForceRange": "I kraft {from} till {to}",
+  "legal.sectionSign": "§",
+  "legal.machineTranslation": "Maskinöversättning från {language}. Originalet gäller."
+}

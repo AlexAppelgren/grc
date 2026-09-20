@@ -12,7 +12,7 @@ Plan-wide rules:
 1. Slots. Every backend and E2E gate runs inside the task's worktree slot (`set -a; . ./.env.worktree; set +a`).
 2. Generated files. Only the main agent commits openapi.json and frontend/src/types/api.generated.ts. It regenerates them with generate-types.sh after each merge (Appendix D item 6). A task regenerates them locally to run contract_drift.py and the typecheck, then reverts them before it commits. Frontend tasks start from a main that already has the regenerated types.
 3. Library backend chain. One backend task at a time owns backend/apps/library/{api.py, schemas.py, reading.py, testing.py, tests_scenarios.py, tests_reading.py}, shared/permissions.py, docs/inputs/INPUT_DELTAS.md and backend/scripts/contract_drift_pending.txt, in this order: T4, T6, T11b, T13, T16.
-4. Frontend chain. One frontend task at a time owns features/library/{types,api,hooks}.ts, their api.test.ts and hooks.test.tsx, messages/en.json, messages/sv.json and tests/e2e/library.journey.spec.ts, in this order: T5 (messages only), T9, T12, T14, T17, T18.
+4. Frontend chain. One frontend task at a time owns features/library/{types,api,hooks}.ts, their api.test.ts and hooks.test.tsx, messages/common/{en,sv}.json, messages/inventory/{en,sv}.json, messages/library/{en,sv}.json and tests/e2e/library.journey.spec.ts, in this order: T5 (messages only), T9, T12, T14, T17, T18.
 5. Security review before merge (WORKTREES step 4). T1, T2, T3, T4, T6, T7, T8, T11a, T11b, T13 and T16 touch tenancy, the library fence, audit, four eyes or the proposal door. For each of them, the main agent runs a security-review sub-agent over `git diff main...wt/<task>` before the squash merge, together with apps.shared.tests_rls, tests_tenant_isolation, tests_library_fence, tests_route_permissions, tests_audit_on_write and tests_four_eyes. A critical or high finding sends the work back to the task and blocks the merge. T19 is the only review task: one chunk-wide sweep after T18 has merged.
 6. Merge at once (WORKTREES step 5). Each task is squash-merged, and the full checklist run, as soon as it passes review. A task starts once everything in its depends_on is on main. The waves show which tasks can run side by side because their files are disjoint.
 7. Scenario ownership. Each scenario has exactly one task that un-skips its integration test and one that un-fixmes its journey:
@@ -323,8 +323,8 @@ Add en and sv messages for all of it.
 - `frontend/src/components/inventory/DiffText.test.tsx`
 - `frontend/src/components/inventory/LegalText.tsx`
 - `frontend/src/components/inventory/LegalText.test.tsx`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/common/{en,sv}.json`
+- `frontend/src/messages/library/{en,sv}.json`
 - `frontend/tests/e2e/pills.gallery.spec.ts-snapshots/`
 
 **Done when:**
@@ -528,8 +528,8 @@ The instrument filter and the Instruments tab come with T17.
 - `frontend/src/components/inventory/ObligationRow.tsx`
 - `frontend/src/components/inventory/InventoryFilters.tsx`
 - `frontend/src/app/(tenant)/inventory/page.tsx`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/inventory/{en,sv}.json`
+- `frontend/src/messages/library/{en,sv}.json`
 - `frontend/tests/e2e/taxonomy.journey.spec.ts`
 
 **Done when:**
@@ -685,8 +685,8 @@ Strengthen FP-S5 so the officer's preview shows a non-zero count of hidden oblig
 - `frontend/src/features/library/hooks.ts`
 - `frontend/src/features/library/api.test.ts`
 - `frontend/src/features/library/hooks.test.tsx`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/inventory/{en,sv}.json`
+- `frontend/src/messages/library/{en,sv}.json`
 - `frontend/tests/e2e/library.journey.spec.ts`
 - `frontend/tests/e2e/taxonomy.journey.spec.ts`
 
@@ -799,8 +799,8 @@ Un-fixme the obligation half of INV-S7: the source link, 'Verified <date>', and 
 - `frontend/src/features/library/hooks.ts`
 - `frontend/src/features/library/api.test.ts`
 - `frontend/src/features/library/hooks.test.tsx`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/inventory/{en,sv}.json`
+- `frontend/src/messages/library/{en,sv}.json`
 - `frontend/tests/e2e/library.journey.spec.ts`
 
 **Done when:**
@@ -901,8 +901,8 @@ The provision tree panel comes with T18.
 - `frontend/src/features/library/hooks.ts`
 - `frontend/src/features/library/api.test.ts`
 - `frontend/src/features/library/hooks.test.tsx`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/inventory/{en,sv}.json`
+- `frontend/src/messages/library/{en,sv}.json`
 - `frontend/tests/e2e/library.journey.spec.ts`
 
 **Done when:**
@@ -950,8 +950,8 @@ Un-fixme INV-S2 on FFFS 2017:2 9 kap. 6 §, choosing versions by chip and never 
 - `frontend/src/features/library/hooks.ts`
 - `frontend/src/features/library/api.test.ts`
 - `frontend/src/features/library/hooks.test.tsx`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/inventory/{en,sv}.json`
+- `frontend/src/messages/library/{en,sv}.json`
 - `frontend/tests/e2e/library.journey.spec.ts`
 
 **Done when:**

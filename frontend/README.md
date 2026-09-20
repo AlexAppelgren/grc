@@ -34,7 +34,7 @@ Where things are:
 | `src/features/**/*-presentation.ts` | Label, tone and order from keys and kinds |
 | `src/shared/navigation/registry.ts` | Every destination, permission-gated |
 | `src/shared/utils/api-client.ts` | The single axios instance |
-| `src/messages/*.json` | Every user-facing string, one file per language |
+| `src/messages/<namespace>/{en,sv}.json` | Every user-facing string, one file pair per feature namespace |
 | `tests/e2e/support/api-guard.ts` | `test` for every spec |
 | `docs/D-04-spike.md` | Green Core under `next start`: the spike result |
 

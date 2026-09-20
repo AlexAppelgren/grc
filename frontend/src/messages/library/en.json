@@ -1,0 +1,23 @@
+{
+  "scope.notClientSpecific": "Not client-specific",
+  "scope.notRegimeSpecific": "Not regime-specific",
+  "scope.notEntitySpecific": "Not entity-specific",
+  "scope.notServiceSpecific": "Not service-specific",
+  "scope.notAccountSpecific": "Not account-specific",
+  "scope.notChannelSpecific": "Not channel-specific",
+  "scope.notStageSpecific": "Not stage-specific",
+  "scope.notJurisdictionSpecific": "Not jurisdiction-specific",
+  "scope.notActivitySpecific": "Not activity-specific",
+  "scope.notProductSpecific": "Not product-specific",
+  "scope.notSpecific": "Not specific",
+  "library.outsideFootprint": "Outside your footprint: {terms}",
+  "library.verified": "Verified {date}",
+  "version.label": "Version {number}",
+  "version.labelFrom": "Version {number}, from {date}",
+  "version.inForce": "In force",
+  "version.inForceFrom": "In force from {from}",
+  "version.inForceUntil": "In force until {to}",
+  "version.inForceRange": "In force {from} to {to}",
+  "legal.sectionSign": "§",
+  "legal.machineTranslation": "Machine translation from {language}. The original is authoritative."
+}

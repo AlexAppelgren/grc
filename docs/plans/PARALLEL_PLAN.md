@@ -82,6 +82,7 @@ Dispatch is by readiness, not by wave number. A package starts once everything i
      - the tenant-exit exception list of `c12-exit-export` and `c12-exit-deletion` (ruling 36);
      - `backend/apps/shared/e2e_seed.py`, `e2e_logins.py` and `e2e_passkeys.py`, and `frontend/tests/e2e/support/passkeys.ts` (the LOGINS map): one seed call or one login per package;
      - `frontend/src/shared/navigation/registry.ts` entries and `frontend/src/features/shared/tone-by-kind.ts` entries;
+     - `frontend/src/shared/i18n/messages.ts`, where a package adding a message namespace appends only its own two import lines and its own two spread entries, both in alphabetical order (rule 6);
      - each app's `app.md` status cells and `tests_scenarios.py` skip lines;
      - each `frontend/tests/e2e/*.journey.spec.ts`, where a package edits only its own scenarios' test blocks;
      - other shared test modules (`tests_vocabulary.py`, `tests_matching.py` and the like): new test classes only.
@@ -91,9 +92,9 @@ Dispatch is by readiness, not by wave number. A package starts once everything i
      - `openapi.json`, `frontend/src/types/api.generated.ts` and `frontend/tests/e2e/support/e2e-passkeys.generated.ts`, when a route, schema or seed login changed;
      - the navigation and pill-gallery snapshot baselines (win32 and linux), when `registry.ts` or `tone-by-kind.ts` changed, reviewed image by image. A cloud session cannot produce the win32 baseline.
 6. **The frontend split comes before the frontend fans out.**
-   - `x-frontend-split` waits for c4-console-shell, which edits both catalogs. It moves `frontend/src/messages/en.json` and `sv.json` into one en and sv file pair per feature namespace, and teaches `check:messages` and `check:copy-drift` to read the directory.
-   - After the split, each namespace pair belongs to the key of the feature that owns it (section 3.4).
-   - Before the split, any catalog edit holds `cat`.
+   - `x-frontend-split` waited for c4-console-shell, which edited both catalogs. It moved `frontend/src/messages/en.json` and `sv.json` into `frontend/src/messages/<namespace>/en.json` and `sv.json`, one pair per feature namespace, and taught `check:messages` and `check:copy-drift` to read the directory. Landed 2026-09-20 with twelve namespaces: `auth`, `common`, `console`, `dev`, `footprint`, `inventory`, `library`, `me`, `nav`, `tenant-admin`, `today` and `vocabularies`.
+   - Each namespace pair belongs to the key of the feature that owns it (section 3.4). A package that needs a namespace nobody has created yet adds the pair, its two import lines and its two spread entries in `frontend/src/shared/i18n/messages.ts`. That file is an append ledger under rule 5, so two packages may each add their own namespace at the same time; a package never edits another's lines, and a pair nobody imported fails `npm run typecheck` the moment a screen asks for one of its keys, because `MessageKey` is the merged catalog.
+   - `cat` is retired: a package holds the key of the namespace it writes.
 7. **Migrations.** One package per app's migration directory at a time, under the key `mig:<app>`. The later package renumbers after the earlier one merges.
 8. **Guards.** A guard changes only in the package named for it, and only after a security review. The named changes:
    - **Library fence allowlist:** E5 (`agents/seeds/`, found in its diff), then `c5-contract-models-watch`, then `c7-search-index`.
@@ -943,7 +944,8 @@ The keys of the chunk 3, chunk 4 and PRD 0.3 packages come from their owned path
 | `ci` | `.github/workflows/`, `scripts/prepush.sh`, `scripts/ship.sh`. Local only |
 | `gates` | `backend/scripts/requirements_coverage.py`, `compliance_check.py`, `contract_drift.py` |
 | `deps` | `backend/pyproject.toml` and `poetry.lock`, `frontend/package.json` and `package-lock.json`. One dependency change at a time, local only |
-| `cat` | `frontend/src/messages/en.json` and `sv.json`, until `x-frontend-split` lands |
+| `cat` | The whole catalog. Retired when `x-frontend-split` landed; only that package and `c4-console-shell` before it held it |
+| `msg:<namespace>` | `frontend/src/messages/<namespace>/en.json` and `sv.json`. `tenadminmsg` is `msg:tenant-admin`, and the screen keys below each carry their own namespace. The list of namespaces in `frontend/src/shared/i18n/messages.ts` is an append: only a package adding a namespace touches it |
 | `uiprim` | `components/ui/{Button,PageHead,Field}.tsx`, `styles/theme.css`, `styles/contrast.test.ts` |
 | `obpage`, `invscreen`, `changescreen`, `today`, `searchscreen`, `orgscreen`, `fpscreen` | the screen component of the obligation page, the inventory, the change page, Today, search, admin organisation and admin Regulatory scope, each with its catalog namespace |
 | `consoleq`, `libupd`, `vocabfe`, `agentsfe`, `reportsfe`, `intfe` | the screen component of the console queue detail, library updates, the vocabulary screen and picker, admin agents, reports and admin integrations, each with its catalog namespace |

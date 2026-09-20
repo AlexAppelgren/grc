@@ -1170,8 +1170,7 @@ No new permission.
   "frontend/src/features/footprint/footprint-presentation.ts",
   "frontend/src/features/footprint/footprint-presentation.test.ts",
   "frontend/src/components/admin/FootprintScreen.tsx",
-  "frontend/src/messages/en.json",
-  "frontend/src/messages/sv.json"
+  "frontend/src/messages/footprint/{en,sv}.json"
  ],
  "depends_on": [
   "STD-06",
@@ -1249,8 +1248,8 @@ No new permission.
   "frontend/src/features/library/obligation-presentation.ts",
   "frontend/src/features/library/obligation-presentation.test.ts",
   "design/system/pills-and-labels.md",
-  "frontend/src/messages/en.json",
-  "frontend/src/messages/sv.json"
+  "frontend/src/messages/common/{en,sv}.json",
+  "frontend/src/messages/library/{en,sv}.json"
  ],
  "depends_on": [
   "STD-08",
@@ -1267,8 +1266,7 @@ No new permission.
  "summary": "On the instrument card, when bindingLevel.kind is standard, the provision tree reads 'The text of this standard is licensed and not held here', with the catalogue link. Add the INV-S11 E2E step.",
  "owned_paths": [
   "frontend/src/features/library/",
-  "frontend/src/messages/en.json",
-  "frontend/src/messages/sv.json",
+  "frontend/src/messages/library/{en,sv}.json",
   "frontend/tests/e2e/library.journey.spec.ts"
  ],
  "depends_on": [
@@ -1552,8 +1550,7 @@ No new permission.
  "summary": "On the conformance obligation's entity row: the units list, a paste dialog with a dry-run preview and commit, and a hint to write in your own words. The approver's queue is filtered by standard, entity and requester, with a decide-selected action. Add en and sv messages, and the empty, loading, error and denied states.",
  "owned_paths": [
   "frontend/src/features/register/units/",
-  "frontend/src/messages/en.json",
-  "frontend/src/messages/sv.json",
+  "frontend/src/messages/register/{en,sv}.json",
   "frontend/tests/e2e/register.journey.spec.ts"
  ],
  "depends_on": [

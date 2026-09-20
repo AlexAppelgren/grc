@@ -439,15 +439,17 @@ Change the en and sv values, keeping the keys, as in spec §2: nav.admin.footpri
 
 **Owned paths:**
 
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/footprint/{en,sv}.json`
+- `frontend/src/messages/nav/{en,sv}.json`
+- `frontend/src/messages/tenant-admin/{en,sv}.json`
+- `frontend/src/messages/today/{en,sv}.json`
 - `frontend/tests/e2e/taxonomy.journey.spec.ts`
 - `frontend/tests/e2e/shell.journey.spec.ts`
 - `frontend/src/features/footprint/footprint-presentation.test.ts`
 - `backend/apps/shared/permissions.py`
 - `backend/apps/identity/roles_logic.py`
 
-**Done when:** No value in en.json or sv.json matches /footprint|(?<!finger)avtryck/i. The passkey prompts are untouched. npm run check:messages, the unit tests, the backend tests, and the taxonomy and shell journeys pass.
+**Done when:** No value in any frontend/src/messages/<namespace>/{en,sv}.json matches /footprint|(?<!finger)avtryck/i. The passkey prompts are untouched. npm run check:messages, the unit tests, the backend tests, and the taxonomy and shell journeys pass.
 
 ### T05: Primitives: dark danger hover, head actions on the right, group hint under the legend
 
@@ -476,8 +478,7 @@ Add three functions to footprint-presentation.ts. scopeGroups(dimensions, terms)
 
 - `frontend/src/features/footprint/footprint-presentation.ts`
 - `frontend/src/features/footprint/footprint-presentation.test.ts`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/footprint/{en,sv}.json`
 
 **Done when:** Vitest passes with the new cases. The screen does not change yet.
 
@@ -490,8 +491,7 @@ FootprintScreen replaces the Chip rows with scopeGroups(), in a grid of one colu
 **Owned paths:**
 
 - `frontend/src/components/admin/FootprintScreen.tsx`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/footprint/{en,sv}.json`
 - `frontend/tests/e2e/taxonomy.journey.spec.ts`
 
 **Done when:** FootprintScreen no longer imports Chip. Before 'Propose a change', the page has no checkbox. Channel, lifecycle stage, theme and termless dimensions do not render. While a request waits, the Advice item shows 'Removed when approved'. FP-S2 and FP-S5 pass.
@@ -506,8 +506,7 @@ The change panel shows for the whole edit. Its title is footprint.preview.untitl
 
 - `frontend/src/components/admin/FootprintScreen.tsx`
 - `frontend/src/components/admin/FootprintScreen.test.tsx`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/footprint/{en,sv}.json`
 - `frontend/tests/e2e/taxonomy.journey.spec.ts`
 
 **Done when:** The component test shows three things: after a send, document.activeElement is the status line reading 'Sent for approval.'; the warn notice renders for a narrowing draft and not for a widening one; exactly one cancel button exists during an edit. FP-S2 and FP-S5 pass against the real API, and FP-S2 asserts an obligation count in the Hides column.
@@ -522,8 +521,7 @@ Banner per spec §4.4: the pill and the title; the second line by viewer; footpr
 
 - `frontend/src/components/admin/FootprintScreen.tsx`
 - `frontend/src/components/admin/FootprintScreen.test.tsx`
-- `frontend/src/messages/en.json`
-- `frontend/src/messages/sv.json`
+- `frontend/src/messages/footprint/{en,sv}.json`
 - `frontend/tests/e2e/taxonomy.journey.spec.ts`
 
 **Done when:** The component test shows three things: after approve and after withdraw, activeElement is the status line; no element inside [data-notice='warn'] has text-muted or text-negative; a blank reject submit focuses the text area with aria-invalid true. FP-S2 and FP-S5 pass.

@@ -220,7 +220,7 @@ registry entries with `anyOfPermissions`. `api-client.ts`: on 403 `step_up_requi
 the step-up ceremony (a modal) and retry once; on 401 refresh once. WebAuthn in the
 browser through `navigator.credentials` with base64url helpers (no library; keep it in
 `src/shared/webauthn.ts` with unit tests). Empty, loading, error and denied states on
-every screen. Every string in `messages/en.json` and `sv.json`. Labels for roles come from
+every screen. Every string in the `messages/<namespace>/{en,sv}.json` catalogs. Labels for roles come from
 the rows (`{key,kind,label}`), never from code.
 E2E journeys (`identity.journey.spec.ts`, `tenants.journey.spec.ts`): un-fixme ID-S25
 (J-1, @smoke: invite link -> code -> enrol passkey via the virtual authenticator -> skip

@@ -2394,13 +2394,13 @@ Render the register's contribution to the chunk 6 screens:
 - "Where we stand" on Today: the counts per compliance category and the open gaps, each linking into the inventory or `/gaps` with the filter applied.
 - The roadmap's three new branches, each with the "Our deadline" pill in the `brand` tone, the date, the days left and its owner.
 - A tenant with no register entry sees the empty state, never an error.
-- Every string in the `home` catalogs, which this package holds through `today`.
+- Every string in the `today` catalogs, the namespace that holds the home screens' copy.
 
 **Owned paths:**
 
 - `frontend/src/components/home/TodayScreen.tsx`, `frontend/src/components/home/RoadmapScreen.tsx`
 - `frontend/src/features/home/**` (the standing and roadmap presentation)
-- `frontend/src/messages/home/en.json`, `sv.json`
+- `frontend/src/messages/today/{en,sv}.json`
 - `frontend/tests/e2e/home.journey.spec.ts` (the HOM-S1, HOM-S4 and HOM-S6 blocks only, extended)
 
 **Done when:**

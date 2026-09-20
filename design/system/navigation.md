@@ -512,7 +512,7 @@ Source: `design/screens/console-shell.html` ("the dock is the first four plus Mo
 | `frontend/src/app/(tenant)/not-found.tsx` | New. It renders `NotFoundScreen` inside the shell.<br>- Unmatched tenant URLs, which today include `/watch`, `/inventory`, `/search` and `/roadmap`, keep the bar and the rail instead of dropping to the bare root 404.<br>- An anonymous visitor on an unknown URL now reaches sign-in instead of a bare 404.<br>- Explicit routes (auth, dev, the future console) still win |
 | `frontend/src/styles/theme.css` | Add `--shadow-float` |
 | `frontend/src/styles/globals.css` | Add `--tabbar-height`, `--tabbar-bottom`, `--tabbar-top`, `scroll-padding-bottom`, the keyboard rule and the two height rules (section 4a) |
-| `frontend/src/messages/en.json`, `sv.json` | - Add `nav.search.short` ("Search" / "Sök") and `shell.close` ("Close" / "Stäng").<br>- Remove `sidebar.title`, `sidebar.description` and `sidebar.toggle`, which nothing uses after this change.<br>- `nav.more` and `shell.account` already exist |
+| `frontend/src/messages/nav/{en,sv}.json` | - Add `nav.search.short` ("Search" / "Sök") and `shell.close` ("Close" / "Stäng").<br>- Remove `sidebar.title`, `sidebar.description` and `sidebar.toggle`, which nothing uses after this change.<br>- `nav.more` and `shell.account` already exist |
 | `frontend/tests/e2e/support/passkeys.ts` | Change the helpers (section 16) |
 
 ---
