@@ -20,6 +20,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.management import CommandError, call_command
+from django.db import DataError, transaction
 from django.db.models import F
 from django.http import HttpRequest
 from django.test import RequestFactory, TestCase, override_settings
@@ -44,6 +45,7 @@ from apps.identity.models import (
     InvitationKind,
     LoginEvent,
     LoginEventKind,
+    LoginMethod,
     Membership,
     OtpCode,
     PlatformRoleAssignment,
@@ -364,6 +366,39 @@ class BootstrapPlatform(TestCase):
         self.assertEqual([r["key"] for r in me["platformRoles"]], ["platform_admin"])
         self.assertEqual(self.client.get("/api/v1/tenant", **headers).status_code, 404)
         self.assertFalse(WebAuthnCredential.objects.filter(user=user).count() == 0)
+
+
+class ThePlatformRowIsWrittenInASavepointOfItsOwn(TestCase):
+    """`log_event()` leaves the tenant zone to write a platform row (H15), and puts the
+    tenant back on the way out whether the insert worked or not. A failed insert aborts the
+    transaction, so without a savepoint inside that block the way out runs its SET on an
+    aborted transaction and raises there instead — and what the caller sees is that, not
+    the error the insert raised. `record()` nests the two the same way.
+
+    A value too long for its column stands in for every database error an insert can raise:
+    a constraint, a policy, a connection that went away.
+
+    Proven to fail 2026-09-20 by taking the inner transaction back out: the error was
+    TransactionManagementError from the way out, and the DataError was lost.
+    """
+
+    def test_a_failed_insert_surfaces_its_own_error_and_gives_the_tenant_back(self) -> None:
+        tenant = factories.tenant(slug="security-log-savepoint")
+        with transaction.atomic():
+            tenancy.activate(tenant.id)
+
+            with self.assertRaises(DataError):
+                security_log.log_event(
+                    event=LoginEventKind.SIGNIN_FAILED,
+                    method=LoginMethod.PASSKEY,
+                    success=False,
+                    request=None,
+                    tenant_id=None,
+                    failure_reason="x" * 200,  # the column holds 100
+                )
+
+            self.assertEqual(tenancy.database_tenant_id(), tenant.id, "the tenant is back on")
+            self.assertEqual(LoginEvent.objects.filter(tenant__isnull=True).count(), 0)
 
 
 # ---------------------------------------------------------------------------------------

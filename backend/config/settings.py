@@ -406,6 +406,27 @@ PROPOSAL_SOURCE_MAX_CHARS = env_int("PROPOSAL_SOURCE_MAX_CHARS", 2000)
 PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20)
 
 # ---------------------------------------------------------------------------------------
+# ===== AUD-01, CAS-01 the outbox cursor (apps/shared/outbox.py, c5-outbox-cursor) ========
+# One worker delivers `outbox_event` in `(created, id)` order. The batch size bounds one
+# pass, which holds the cursor's row lock for its duration; the poll interval is how often
+# beat runs it, and it is also the longest a change waits for its case at an idle moment.
+# A handler that raises is tried again after the backoff, doubled per attempt (60 s, 120 s,
+# 240 s, 480 s at the defaults); after the last attempt the row is left failed and the
+# cursor moves on, so one broken consumer cannot stop every other row forever.
+# ---------------------------------------------------------------------------------------
+OUTBOX_BATCH_SIZE = env_int("OUTBOX_BATCH_SIZE", 100)
+OUTBOX_POLL_INTERVAL_S = env_int("OUTBOX_POLL_INTERVAL_S", 10)
+OUTBOX_MAX_ATTEMPTS = env_int("OUTBOX_MAX_ATTEMPTS", 5)
+OUTBOX_RETRY_BACKOFF_S = env_int("OUTBOX_RETRY_BACKOFF_S", 60)
+# The beat entry that runs it. CELERY_BEAT_SCHEDULE is declared empty in the Celery block
+# above, which is the one place the worker, beat and the test runner read; the interval
+# has to be defined before an entry can name it, so the entry is added here beside it.
+CELERY_BEAT_SCHEDULE["outbox-deliver"] = {
+    "task": "apps.shared.tasks.deliver_outbox",
+    "schedule": OUTBOX_POLL_INTERVAL_S,
+}
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------

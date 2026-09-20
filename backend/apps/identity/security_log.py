@@ -14,6 +14,7 @@ import uuid
 from contextlib import nullcontext
 
 from django.conf import settings
+from django.db import transaction
 from django.http import HttpRequest
 
 from apps.identity.models import ApiKey, LoginEvent, LoginEventKind, LoginMethod, User
@@ -57,7 +58,11 @@ def log_event(
     failure_reason: str = "",
 ) -> LoginEvent:
     crosses_zones = tenant_id is None and tenancy.database_tenant_id() is not None
-    with tenancy.platform_zone() if crosses_zones else nullcontext():
+    # The zone block outside and an atomic block inside, exactly as record() nests them: a
+    # failed insert rolls back to its own savepoint before the tenant goes back on, so the
+    # caller is handed the error the insert raised and not the one that putting the tenant
+    # back on an aborted transaction would raise over the top of it.
+    with tenancy.platform_zone() if crosses_zones else nullcontext(), transaction.atomic():
         return LoginEvent.objects.create(
             tenant_id=tenant_id,
             user=user,
