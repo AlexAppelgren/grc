@@ -272,6 +272,15 @@ def production_modules() -> list[Path]:
     return modules
 
 
+def _quotes_normalised(text: str) -> str:
+    """One quote style, so a fingerprint reads the same on every machine. `ast.unparse`
+    chooses the quotes itself, and which it chooses for a quote nested inside an f-string
+    changed within 3.12 (PEP 701): the same seed call fingerprinted with `f"..."` here and
+    `f'...'` in CI, and the reviewed list failed on a machine that had reviewed nothing new
+    (2026-09-20)."""
+    return text.replace('"', "'")
+
+
 def _module_constants(tree: ast.Module) -> dict[str, str]:
     """Module-level `NAME = <expr>` as source, so a call naming a constant reads like the
     value it stands for (`SUBJECT_TYPE`, `ACTOR`)."""
@@ -314,7 +323,7 @@ def _library_record_calls() -> dict[str, str]:
             spelled_out = subject.startswith(("'", '"'))
             if spelled_out and subject not in library_types:
                 continue  # a row no tenant ever reads (a proposal, a platform sign-in)
-            fingerprint = (
+            fingerprint = _quotes_normalised(
                 f"{rel} record({subject}) tenant_id={_argument(node, 'tenant_id', constants)} "
                 f"actor={_argument(node, 'actor', constants)} "
                 f"title={_argument(node, 'subject_title', constants)}"
@@ -330,10 +339,11 @@ class LibraryAuditRowsCarryNoTenantWords(SimpleTestCase):
 
     def test_every_such_record_call_has_been_reviewed(self) -> None:
         found = _library_record_calls()
+        reviewed = {_quotes_normalised(call) for call in REVIEWED_LIBRARY_RECORD_CALLS}
         unreviewed = {
             f"{where}  ->  {fingerprint}"
             for fingerprint, where in found.items()
-            if fingerprint not in REVIEWED_LIBRARY_RECORD_CALLS
+            if fingerprint not in reviewed
         }
         self.assertEqual(
             unreviewed,
@@ -345,7 +355,7 @@ class LibraryAuditRowsCarryNoTenantWords(SimpleTestCase):
         )
 
     def test_the_reviewed_list_holds_no_call_that_has_gone(self) -> None:
-        stale = set(REVIEWED_LIBRARY_RECORD_CALLS) - set(_library_record_calls())
+        stale = {_quotes_normalised(call) for call in REVIEWED_LIBRARY_RECORD_CALLS} - set(_library_record_calls())
         self.assertEqual(stale, set(), "these reviewed calls no longer exist; drop them:\n  " + "\n  ".join(sorted(stale)))
 
     def test_the_guard_sees_the_calls_it_is_meant_to_see(self) -> None:

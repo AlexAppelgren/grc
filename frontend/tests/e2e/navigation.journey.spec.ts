@@ -84,14 +84,15 @@ test.describe('navigation on a phone, 375 × 812', () => {
   test('every tab keeps the navigation, on the screens not built yet too', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
-    for (const [name, path] of [
-      ['Watch', '/watch'],
-      ['Inventory', '/inventory'],
-      ['Search', '/search'],
+    // Each tab's own first heading, so a screen that lands stops reading as "not built yet".
+    for (const [name, path, heading] of [
+      ['Watch', '/watch', 'Not found'],
+      ['Inventory', '/inventory', 'Inventory'],
+      ['Search', '/search', 'Not found'],
     ] as const) {
       await mainNav(page).getByRole('link', { name, exact: true }).tap();
       await expect(page).toHaveURL(new RegExp(`${path}$`));
-      await expect(page.getByRole('heading', { level: 1, name: 'Not found' })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
       await expect(mainNav(page).getByRole('link', { name, exact: true })).toHaveAttribute('aria-current', 'page');
     }
     await mainNav(page).getByRole('link', { name: 'Today', exact: true }).tap();
