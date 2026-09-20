@@ -359,6 +359,17 @@ ASK_QUESTION_MAX_CHARS = env_int("ASK_QUESTION_MAX_CHARS", 2000)
 SEARCH_FEEDBACK_NOTE_MAX_CHARS = env_int("SEARCH_FEEDBACK_NOTE_MAX_CHARS", 2000)
 
 # ---------------------------------------------------------------------------------------
+# ===== SRC-01 search index embedding (apps/search/indexing.py embed_pending) =============
+# How many chunks one embedding call carries. The worker fills the embeddings a rebuild
+# owes from the outbox event it emitted, this many at a time, so a full rebuild of the
+# corpus is a series of bounded calls rather than one request the provider would refuse.
+# Raising it costs memory and the provider's own per-request limit; lowering it costs
+# round trips. Nothing waits on it: a chunk with no embedding yet is still found by the
+# keyword leg.
+# ---------------------------------------------------------------------------------------
+SEARCH_EMBED_BATCH_SIZE = env_int("SEARCH_EMBED_BATCH_SIZE", 64)
+
+# ---------------------------------------------------------------------------------------
 # ===== INV-04 "show what changed" (apps/library/logic.py sentence_diff) ==================
 # Aligning two versions costs up to the cube of their sentence count when sentences repeat,
 # and the texts come from fetched sources. Above this many sentences on either side the

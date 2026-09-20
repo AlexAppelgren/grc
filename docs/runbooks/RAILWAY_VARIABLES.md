@@ -53,6 +53,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `LLM_MAX_RESPONSE_BYTES` | api, worker | `4194304` | `4194304` | `4194304` | A streamed answer larger than this is refused; raise it with `LLM_MAX_TOKENS` |
 | `LLM_MAX_ERROR_BODY_BYTES` | api, worker | `65536` | `65536` | `65536` | An error body is read only this far, for its error type |
 | `EMBEDDER_PROVIDER` | api, worker | `mock` | `mock` | per D-09 | Plus the provider's key variable once D-09 is decided; until then the test deploy searches by keyword only |
+| `SEARCH_EMBED_BATCH_SIZE` | worker | `64` | `64` | `64` | How many chunks one embedding call carries when the worker fills a rebuild (SRC-01) |
 | `RERANKER_PROVIDER` | api, worker | `mock` | `mock` | `none` until D-09 names one | `mock` is refused when deployed except in `test`; `none` leaves the fused order as the answer |
 | `RERANKER_TOP_K` | api, worker | `50` | `50` | `50` | How many fused hits the reranker is given (SRC-01) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |

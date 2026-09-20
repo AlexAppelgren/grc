@@ -5,16 +5,18 @@ from __future__ import annotations
 
 import uuid
 
+from apps.search import indexing
+
 
 def reindex(obligation_id: uuid.UUID) -> None:
     """Bring the search index back in line with `obligation_id` (SRC-01, INV-04).
 
-    Called from the approval transaction that applies a new obligation version, so the
-    index moves with the library or not at all: a reader never searches text the library
-    has already replaced, and a failure here leaves the version unwritten and the proposal
+    The hook the approval transaction calls (`apps/proposals/apply.py`), so the index
+    moves with the library or not at all: a reader never searches text the library has
+    already replaced, and a failure here leaves the version unwritten and the proposal
     waiting.
 
-    Chunk 7 builds the chunking and the embeddings this will drive. Until then the hook is
-    the whole contract: where the re-index happens, and that it happens inside the
-    transaction.
+    The rebuild itself lives in `apps/search/indexing.py`, which is the only module that
+    may write a chunk, and it returns counts this hook has no use for.
     """
+    indexing.reindex(obligation_id)
