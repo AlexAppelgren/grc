@@ -11,6 +11,18 @@
 # severity rather than precision, because a bank's vendor review asks what was
 # looked for, not how quiet the tool was.
 #
+# Tiered per language like ci.yml and scripts/prepush.sh (playbook Appendix D):
+# the Python analysis runs when a .py file changed, the JavaScript/TypeScript one
+# when a .ts, .tsx, .js, .jsx, .mjs or .cjs file changed, and both run on the
+# schedule, on a manual run and whenever .github/** changed. A language whose source
+# did not move cannot grow a finding, so analysing it again proves nothing; the two
+# ways a finding could appear anyway are both covered, because a new query bundle
+# arrives with a pinned action under .github/ (everything runs) and the nightly run
+# analyses both languages whatever changed. The `changes` job itself always runs, so
+# a run whose analysis was skipped still has a successful job and concludes green
+# for anything waiting on it (scripts/ship.sh polls the run's conclusion). A ship
+# dispatches this workflow by hand, which is a full run, so it always analyses both.
+#
 # Secrets and variables needed: none beyond the automatic GITHUB_TOKEN.
 
 name: CodeQL
@@ -33,8 +45,68 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Tiering: which languages this run analyses. The same shape as ci.yml's
+  # `changes` job, and scripts/check_ci_tiers.py fails the CI run when the two
+  # filter lists and prepush.sh's drift apart.
+  # ---------------------------------------------------------------------------
+  changes:
+    name: Decide which languages are analysed
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      languages: ${{ steps.decide.outputs.languages }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Detect changed languages
+        id: filter
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          # On push, diff against the branch itself, as in ci.yml.
+          base: ${{ github.ref_name }}
+          filters: |
+            workflows:
+              - '.github/**'
+            python:
+              - '**/*.py'
+            javascript:
+              - '**/*.ts'
+              - '**/*.tsx'
+              - '**/*.js'
+              - '**/*.jsx'
+              - '**/*.mjs'
+              - '**/*.cjs'
+
+      - name: Decide
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGED_WORKFLOWS: ${{ steps.filter.outputs.workflows }}
+          CHANGED_PYTHON: ${{ steps.filter.outputs.python }}
+          CHANGED_JAVASCRIPT: ${{ steps.filter.outputs.javascript }}
+        run: |
+          set -euo pipefail
+          full=false
+          case "$EVENT_NAME" in
+            schedule|workflow_dispatch) full=true ;;
+          esac
+          if [ "$CHANGED_WORKFLOWS" = "true" ]; then full=true; fi
+          languages=""
+          add() { languages="${languages:+$languages,}\"$1\""; }
+          if [ "$full" = true ] || [ "$CHANGED_PYTHON" = "true" ]; then add python; fi
+          if [ "$full" = true ] || [ "$CHANGED_JAVASCRIPT" = "true" ]; then add javascript-typescript; fi
+          echo "languages=[$languages]" | tee -a "$GITHUB_OUTPUT"
+
   analyze:
     name: Analyse (${{ matrix.language }})
+    needs: changes
+    # The documentation promises nothing about a matrix that expands to nothing
+    # (Verification_Log, 2026-09-20), so the job is skipped outright rather than
+    # handed an empty list. `changes` still succeeded, so the run is green.
+    if: needs.changes.outputs.languages != '[]'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
@@ -47,7 +119,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [python, javascript-typescript]
+        language: ${{ fromJSON(needs.changes.outputs.languages) }}
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

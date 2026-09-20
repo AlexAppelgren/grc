@@ -34,7 +34,37 @@
 #                                               attribution for @sebgroup/*             licences
 # Container image scan (Trivy, HIGH+CRITICAL)   Vulnerable OS packages in the images     container-scan
 # CodeQL (own SARIF gate, medium and above)     Injection, traversal, unsafe deserialisation  codeql.yml
+# Tier lists agree (this file, codeql.yml and   A tier changed on one side only, so a green
+#   scripts/prepush.sh)                         prepush stops predicting a green CI      changes
 # ----------------------------------------------------------------------------
+#
+# Tiers (playbook Appendix D). scripts/prepush.sh classifies a changed file exactly
+# the same way, and the `changes` job below fails when the lists drift apart. A file
+# may skip a gate only when it cannot change what that gate measures: this is tiering,
+# never a lowered gate.
+#
+#   workflows   .github/**                        everything, as the nightly run does
+#   backend     backend code, INPUT_DELTAS.md, the contract artefacts, infra/db,
+#               docker-compose.yml                the whole backend job, and E2E
+#   specs       backend/apps/*/app.md, PRD.md, docs/inputs/openapi.yaml
+#                                                 the backend job's static checkers only
+#                                                 (lint, types, compliance, requirements
+#                                                 coverage, contract drift, API
+#                                                 documentation). Spec text has no
+#                                                 migration, no test, no coverage number
+#                                                 and no retrieval score behind it, so
+#                                                 the steps that measure those are
+#                                                 skipped, and so are E2E and the
+#                                                 OpenAPI/TypeScript drift job
+#   frontend    frontend code, the contract artefacts   the frontend job, and E2E
+#   lockfiles   the lockfiles and scripts/        CVEs and licences
+#   containers  the Dockerfiles and the entrypoint       the image scans
+#   python      **/*.py                           codeql.yml's Python analysis
+#   javascript  **/*.{ts,tsx,js,jsx,mjs,cjs}      codeql.yml's JavaScript analysis
+#
+# docs/inputs/INPUT_DELTAS.md stays in `backend` rather than `specs` because a live
+# scenario test reads it (taxonomy tests_scenarios, I18N-S2), so rewording it really
+# can change what the backend suite measures.
 #
 # Shape (playbook 9):
 # - Tiered by the `changes` job (dorny/paths-filter, `base: github.ref_name` on
@@ -95,6 +125,7 @@ jobs:
     outputs:
       full: ${{ steps.decide.outputs.full }}
       backend: ${{ steps.decide.outputs.backend }}
+      specs: ${{ steps.decide.outputs.specs }}
       frontend: ${{ steps.decide.outputs.frontend }}
       lockfiles: ${{ steps.decide.outputs.lockfiles }}
       containers: ${{ steps.decide.outputs.containers }}
@@ -118,16 +149,20 @@ jobs:
               - '.github/**'
             backend:
               - 'backend/**/!(*.md)'
-              # app.md is parsed by requirements_coverage.py, PRD.md is its
-              # source of truth, and contract_drift.py reads the design inputs.
-              - 'backend/apps/*/app.md'
-              - 'PRD.md'
-              - 'docs/inputs/openapi.yaml'
+              # A scenario test asserts on the text of INPUT_DELTAS.md, so it is
+              # code as far as the suite is concerned, not spec text.
               - 'docs/inputs/INPUT_DELTAS.md'
               - 'generate-types.sh'
               - 'openapi.json'
               - 'infra/db/**'
               - 'docker-compose.yml'
+            specs:
+              # Spec text: requirements_coverage.py parses app.md against PRD.md,
+              # contract_drift.py reads the designed contract. Nothing compiles it,
+              # nothing tests it, and no migration or build depends on it.
+              - 'backend/apps/*/app.md'
+              - 'PRD.md'
+              - 'docs/inputs/openapi.yaml'
             frontend:
               - 'frontend/**/!(*.md)'
               - 'openapi.json'
@@ -151,6 +186,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           CHANGED_WORKFLOWS: ${{ steps.filter.outputs.workflows }}
           CHANGED_BACKEND: ${{ steps.filter.outputs.backend }}
+          CHANGED_SPECS: ${{ steps.filter.outputs.specs }}
           CHANGED_FRONTEND: ${{ steps.filter.outputs.frontend }}
           CHANGED_LOCKFILES: ${{ steps.filter.outputs.lockfiles }}
           CHANGED_CONTAINERS: ${{ steps.filter.outputs.containers }}
@@ -167,19 +203,29 @@ jobs:
           {
             echo "full=$full"
             decide backend "$CHANGED_BACKEND"
+            decide specs "$CHANGED_SPECS"
             decide frontend "$CHANGED_FRONTEND"
             decide lockfiles "$CHANGED_LOCKFILES"
             decide containers "$CHANGED_CONTAINERS"
           } | tee -a "$GITHUB_OUTPUT"
 
+      # Always, on every event: a tier that exists here and nowhere else is exactly
+      # the failure this job cannot detect by running.
+      - name: Tier lists agree with codeql.yml and scripts/prepush.sh
+        run: python3 scripts/check_ci_tiers.py
+
   # ---------------------------------------------------------------------------
   # Backend: migrations, tests under coverage, floors, lint, types, compliance
   # lint, requirements coverage, contract drift, search evaluation.
+  #
+  # The `specs` tier reaches this job too, but only its static checkers: spec text
+  # cannot move a migration, a test, a coverage number or a retrieval score, so the
+  # steps that measure those are gated on the `backend` tier.
   # ---------------------------------------------------------------------------
   backend:
     name: Backend gates
     needs: changes
-    if: needs.changes.outputs.backend == 'true'
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.specs == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     services:
@@ -225,18 +271,23 @@ jobs:
           poetry-version: ${{ env.POETRY_VERSION }}
 
       - name: Migration drift
+        if: needs.changes.outputs.backend == 'true'
         run: bash ./run.sh run python manage.py makemigrations --check --dry-run --settings=config.test_settings
 
       - name: Migration graph applies from zero
+        if: needs.changes.outputs.backend == 'true'
         run: bash ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings
 
       - name: Tests under coverage
+        if: needs.changes.outputs.backend == 'true'
         run: bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput
 
       - name: Coverage report
+        if: needs.changes.outputs.backend == 'true'
         run: bash ./run.sh run coverage report
 
       - name: Coverage floors (global + per module)
+        if: needs.changes.outputs.backend == 'true'
         run: bash ./run.sh run python scripts/coverage_gate.py
 
       - name: ruff
@@ -258,6 +309,7 @@ jobs:
         run: bash ./run.sh run python scripts/api_docs_gate.py
 
       - name: Search and classification evaluation
+        if: needs.changes.outputs.backend == 'true'
         run: bash ./run.sh run python scripts/search_eval.py
 
   # ---------------------------------------------------------------------------
@@ -345,6 +397,8 @@ jobs:
   # database, migrates from zero, seeds, boots Django with the E2E flag and
   # `next start`. @smoke on push and pull requests; the full suite nightly and
   # on manual runs. The pill gallery screenshot compare is part of this suite.
+  # Code tiers only: a journey exercises what is built, and no journey reads a
+  # spec file, so the `specs` tier deliberately never starts a browser here.
   # ---------------------------------------------------------------------------
   e2e:
     name: E2E (Playwright)

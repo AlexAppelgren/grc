@@ -1358,3 +1358,35 @@ redis`, or a local PostgreSQL 16 with the `vector` extension installed).
 11. **Copy drift** (any reworded user-facing string): `cd frontend && npm run check:copy-drift`
 12. **Time-anchored fixtures** (any seed or fixture derived from "now"):
     check against the clock rules in Section 8.3.
+
+### Which items a change runs
+
+"Run what the diff touched" is a list, not a judgement call. `scripts/prepush.sh`
+sorts the work since `origin/main` into tiers and the `changes` jobs in
+`.github/workflows/ci.yml` and `.github/workflows/codeql.yml` sort a push the same
+way. The rule behind every row: **a file may skip a gate only when it cannot change
+what that gate measures.** That is tiering; lowering a gate is something else and is
+never allowed.
+
+| Tier | The change | Items it runs |
+|---|---|---|
+| `workflows` | `.github/**` | everything, as the nightly run does |
+| `backend` | backend code, `docs/inputs/INPUT_DELTAS.md`, `generate-types.sh`, `openapi.json`, `infra/db/**`, `docker-compose.yml` | 1 to 6 and 9, the contract-drift and API-documentation gates, and E2E |
+| `specs` | `backend/apps/*/app.md`, `PRD.md`, `docs/inputs/openapi.yaml` | 3, 4, 5, plus the contract-drift and API-documentation gates: everything in the backend job that reads text rather than running code. No migration, no suite, no coverage, no search evaluation, no browser |
+| `frontend` | frontend code, `openapi.json`, `generate-types.sh` | 6, 7, 11, and E2E |
+| `lockfiles` | the lockfiles, `frontend/THIRD_PARTY_NOTICES.md`, `scripts/**` | dependency CVEs and licences |
+| `containers` | the Dockerfiles, `.dockerignore`, `backend/entrypoint.sh` | the image scans |
+| `python` / `javascript` | `**/*.py` / `**/*.{ts,tsx,js,jsx,mjs,cjs}` | that CodeQL language |
+
+Item 10, the secret scan, always runs, and so does the tier guard below. Nothing
+under `docs/` reaches a tier except `docs/inputs/`, so a rewritten plan, runbook or
+decision runs those two and nothing else. `INPUT_DELTAS.md` is
+the one design input that sits in `backend` and not in `specs`, because a live
+scenario test reads its text (taxonomy, I18N-S2), so editing it really can change
+what the suite measures.
+
+The three lists are one promise: a green prepush predicts a green CI run. Nothing
+notices a pattern added to one file and forgotten in the other two, so
+`scripts/check_ci_tiers.py` compares them (reducing both syntaxes to the paths they
+select) and runs on every prepush and in every CI run, whatever changed. Its
+`self-test` argument proves it still catches a dropped pattern.

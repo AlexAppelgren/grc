@@ -13,9 +13,12 @@
 #                                    before main moves
 #
 # "Changed" is the committed, uncommitted and untracked work since origin/main. Tiers
-# mirror the `changes` job in ci.yml: backend, frontend, lockfiles, containers, and a
-# change under .github/ counts as everything. The secret scan always runs. CodeQL runs
-# per language whenever a Python or JavaScript/TypeScript file changed.
+# mirror the `changes` jobs in ci.yml and codeql.yml: backend, specs, frontend,
+# lockfiles, containers, python, javascript, and a change under .github/ counts as
+# everything. `specs` is spec text (an app.md, PRD.md, the designed contract): the
+# checkers that parse it run, and the migrations, suite, coverage, search evaluation
+# and E2E that cannot see it do not. The secret scan and the tier guard always run.
+# scripts/check_ci_tiers.py fails when this list and the two workflows drift apart.
 # Stops at the first failing gate, naming it and the command that reproduces it.
 #
 # Tools download once into <main checkout>/.tools/ (git-ignored), are verified against
@@ -91,19 +94,20 @@ GIT_INDEX_FILE="$index.prepush" git add -A
 snapshot="$(git commit-tree "$(GIT_INDEX_FILE="$index.prepush" git write-tree)" -p HEAD -m "prepush snapshot")"
 rm -f "$index.prepush"
 
-be=0 fe=0 lock=0 cont=0 py=0 js=0 full=$all
+be=0 spec=0 fe=0 lock=0 cont=0 py=0 js=0 full=$all
 while IFS= read -r f; do
   case "$f" in .github/*) full=1 ;; esac
-  case "$f" in backend/apps/*/app.md|PRD.md|docs/inputs/openapi.yaml|docs/inputs/INPUT_DELTAS.md|generate-types.sh|openapi.json|infra/db/*|docker-compose.yml) be=1 ;;
+  case "$f" in backend/apps/*/app.md|PRD.md|docs/inputs/openapi.yaml) spec=1 ;; esac
+  case "$f" in docs/inputs/INPUT_DELTAS.md|generate-types.sh|openapi.json|infra/db/*|docker-compose.yml) be=1 ;;
                backend/*.md) ;; backend/*) be=1 ;; esac
   case "$f" in openapi.json|generate-types.sh) fe=1 ;; frontend/*.md) ;; frontend/*) fe=1 ;; esac
   case "$f" in backend/poetry.lock|backend/pyproject.toml|frontend/package-lock.json|frontend/package.json|frontend/THIRD_PARTY_NOTICES.md|scripts/*) lock=1 ;; esac
   case "$f" in backend/Dockerfile|frontend/Dockerfile|.dockerignore|*/.dockerignore|backend/entrypoint.sh) cont=1 ;; esac
   case "$f" in *.py) py=1 ;; *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) js=1 ;; esac
 done <<< "$(git diff --name-only "origin/main...$snapshot")"
-[ "$full" = 1 ] && be=1 fe=1 lock=1 cont=1 py=1 js=1
+[ "$full" = 1 ] && be=1 spec=1 fe=1 lock=1 cont=1 py=1 js=1
 [ "$quick" = 1 ] && echo "prepush: quick: static gates only; tests, build, E2E, CodeQL and image scans run in CI on candidate (scripts/ship.sh)"
-echo "prepush: full=$full backend=$be frontend=$fe lockfiles=$lock containers=$cont codeql-python=$py codeql-js=$js"
+echo "prepush: full=$full backend=$be specs=$spec frontend=$fe lockfiles=$lock containers=$cont codeql-python=$py codeql-js=$js"
 
 timings=()
 gate() { # gate <name> <dir> <command...>: run it, time it, stop on failure
@@ -126,6 +130,10 @@ gate "gitleaks" . "$gitleaks" git --config .gitleaks.toml --redact -v --exit-cod
 # A merge resolved by hand can leave a conflict marker behind, and no other gate reads for
 # one (2026-09-19: a verification log was committed with its markers). Checked in the snapshot.
 gate "No conflict markers" . bash -c '! git grep -nE "^(<<<<<<<|>>>>>>>)( |$)" "$0" -- . ":!*.png" ":!*.jpg"' "$snapshot"
+
+# The tiers above are a promise that this run predicts CI's. Nothing else notices when
+# a pattern is added to one of the three lists and forgotten in the other two.
+gate "CI tiers agree with ci.yml and codeql.yml" . python3 scripts/check_ci_tiers.py
 
 if [ "$lock" = 1 ]; then  # ci.yml `cve` and `licences`
   gate "CVE: lockfiles present and not empty" . test -s backend/poetry.lock -a -s frontend/package-lock.json
@@ -169,7 +177,7 @@ PY
     --sarif-dir "sarif-results/$lang" --accepted .github/codeql-accepted.json --language "$lang"
 done
 
-if [ "$be" = 1 ]; then  # ci.yml `backend`
+if [ "$be" = 1 ]; then  # ci.yml `backend`, the steps gated on the backend tier
   gate "Backend: migration drift" backend bash ./run.sh run python manage.py makemigrations --check --dry-run --settings=config.test_settings
   if [ "$quick" = 0 ]; then
     gate "Backend: migration graph from zero" backend bash ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings
@@ -177,13 +185,17 @@ if [ "$be" = 1 ]; then  # ci.yml `backend`
     gate "Backend: coverage report" backend bash ./run.sh run coverage report
     gate "Backend: coverage floors" backend bash ./run.sh run python scripts/coverage_gate.py
   fi
+fi
+if [ "$be" = 1 ] || [ "$spec" = 1 ]; then  # ci.yml `backend`, the steps the specs tier also runs
   gate "Backend: ruff" backend bash ./run.sh run ruff check .
   gate "Backend: mypy" backend bash ./run.sh run mypy
   gate "Backend: compliance lint" backend bash ./run.sh run python scripts/compliance_check.py --all
   gate "Backend: requirements coverage" backend bash ./run.sh run python scripts/requirements_coverage.py
   gate "Backend: contract drift" backend bash ./run.sh run python scripts/contract_drift.py
   gate "Backend: API documentation" backend bash ./run.sh run python scripts/api_docs_gate.py
-  [ "$quick" = 0 ] && gate "Backend: search evaluation" backend bash ./run.sh run python scripts/search_eval.py
+fi
+if [ "$be" = 1 ] && [ "$quick" = 0 ]; then
+  gate "Backend: search evaluation" backend bash ./run.sh run python scripts/search_eval.py
 fi
 
 if [ "$be" = 1 ] || [ "$fe" = 1 ]; then  # ci.yml `openapi-types-drift`, against the work before regeneration
