@@ -19,7 +19,7 @@ from django.core.exceptions import ValidationError
 from django.core.management import call_command
 
 from apps.identity.models import User
-from apps.library.models import Language
+from apps.library.models import Jurisdiction, Language
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories
 from apps.shared.audit import Actor
@@ -39,7 +39,9 @@ from apps.taxonomy.models import (
     TenantTag,
 )
 from apps.taxonomy.seeds import (
+    JURISDICTION_DIMENSION,
     LIBRARY_SYSTEM_ROWS,
+    MIRRORED_JURISDICTION_KINDS,
     SystemRow as LibrarySystemRow,
     seed_library_vocabularies,
     seed_taxonomy_terms,
@@ -51,6 +53,10 @@ from config.api import api
 
 V1 = "/api/v1"
 SEED = Actor.system("seed_reference")
+# The kind f03-T30 seeds the International row under (D-38): no bank operates there, so it
+# must stay out of the mirror. Written here rather than imported because that row, and the
+# JurisdictionKind member it carries, land with that task.
+UNOPERATED_JURISDICTION_KIND = "international"
 # schema v0.3's `proposal.rejection_code` CHECK, in its order: the only list the inputs define.
 REJECTION_REASONS = ["wrong_fact", "wrong_scope", "bad_source", "duplicate", "not_relevant", "poor_wording", "other"]
 
@@ -376,7 +382,12 @@ class ReferenceSeedRuns(ScenarioTestCase):
                 self.assertEqual(self._labels(dimension, key), {"en": label_en, "sv": label_sv})
         seeded = {(row.dimension.key, row.key) for row in TaxonomyTerm.objects.select_related("dimension")}
         wanted = {(spec["dimension"], spec["key"]) for spec in taxonomy_term_specs()}
-        self.assertEqual(seeded, wanted, "a seed run files every term of the fixture and no other")
+        # The jurisdiction dimension is not in the fixture's term list: its terms mirror the
+        # jurisdiction rows, one per mirrored row (FP-04).
+        wanted |= {
+            (JURISDICTION_DIMENSION, row.key) for row in Jurisdiction.objects.filter(kind__in=MIRRORED_JURISDICTION_KINDS)
+        }
+        self.assertEqual(seeded, wanted, "a seed run files every term of the fixture, every mirrored jurisdiction and no other")
         # The two new regimes sit at the end of the list, so no earlier term moved (spec §5).
         regimes = list(TaxonomyTerm.objects.filter(dimension__key="regime").order_by("sort_order").values_list("key", flat=True))
         self.assertEqual(regimes[-2:], ["banking", "payments"])
@@ -448,3 +459,154 @@ class ReferenceSeedRuns(ScenarioTestCase):
             seed_library_vocabularies()
         self.assertEqual(refused.exception.code, "system_key_taken")
         self.assertFalse(RejectionReason.objects.get(key="off_topic").is_system)
+
+
+class JurisdictionTermMirror(ScenarioTestCase):
+    """The jurisdiction dimension's terms mirror the jurisdiction rows (FP-04, D-28,
+    ADR 0026, the first half of FP-S12): the reference seed owns them, so nobody keeps two
+    lists in step by hand, and a jurisdiction no bank operates in gets no term.
+
+    What the seed owns and what it leaves alone is the point of most of these. The link, the
+    parent and `active` are put back on every deploy, each with a version bump and an audit
+    row, because no proposal may change a mirrored term. The labels and the sort order are
+    written once, like every other seeded term, so a deploy cannot silently undo an approved
+    translation or reorder; the exactness guard therefore claims the labels for a freshly
+    seeded database only, and a label the jurisdiction dropped stays on the term until a
+    proposal takes it off.
+    """
+
+    def setUp(self) -> None:
+        call_command("seed_reference", stdout=StringIO())
+        self.tenant = factories.tenant(slug="bank")
+        self.activate(self.tenant)
+        self.admin = sign_in(factories.member(self.tenant, roles=("admin",)).user, tenant=self.tenant)
+
+    def _terms(self) -> dict[str, TaxonomyTerm]:
+        rows = TaxonomyTerm.objects.filter(dimension__key=JURISDICTION_DIMENSION).select_related("parent").prefetch_related("labels")
+        return {term.key: term for term in rows}
+
+    def _mirrored_rows(self) -> dict[str, Jurisdiction]:
+        rows = Jurisdiction.objects.filter(kind__in=MIRRORED_JURISDICTION_KINDS).select_related("parent").prefetch_related("labels")
+        return {row.key: row for row in rows}
+
+    def _state(self) -> list[tuple[Any, ...]]:
+        return sorted(
+            (
+                term.id,
+                term.key,
+                term.jurisdiction_id,
+                term.parent and term.parent.key,
+                term.active,
+                term.sort_order,
+                term.version,
+                tuple(sorted((label.language, label.text) for label in term.labels.all())),
+            )
+            for term in self._terms().values()
+        )
+
+    def _term_events(self) -> Any:
+        return AuditEvent.objects.filter(subject_type="taxonomy_term", subject_title__startswith=f"{JURISDICTION_DIMENSION}:")
+
+    def test_the_mirror_is_exact_in_both_directions(self) -> None:
+        terms, mirrored = self._terms(), self._mirrored_rows()
+        self.assertEqual(set(terms), set(mirrored), "every mirrored jurisdiction has a term, and no term invents one")
+        for key, term in terms.items():
+            with self.subTest(key=key):
+                row = mirrored[key]
+                self.assertEqual(term.jurisdiction_id, row.id, "the term names the row it mirrors")
+                self.assertEqual(term.active, row.active)
+                self.assertTrue(term.is_system)
+                self.assertEqual(term.parent and term.parent.key, row.parent and row.parent.key)
+                # A freshly seeded database only: after this the labels are the term's, and a
+                # proposal is the only thing that may change or drop one.
+                self.assertEqual(
+                    {label.language: label.text for label in term.labels.all()},
+                    {label.language: label.text for label in row.labels.all()},
+                )
+        self.assertEqual(terms["no"].parent and terms["no"].parent.key, "eu", "EU rules reach Norway (D-28)")
+        linked = set(TaxonomyTerm.objects.exclude(jurisdiction=None).values_list("dimension__key", flat=True))
+        self.assertEqual(linked, {JURISDICTION_DIMENSION}, "no other dimension holds a mirrored term")
+
+    def test_the_regulatory_scope_page_lists_the_five_jurisdictions(self) -> None:
+        listed = self.client.get(f"{V1}/taxonomy/terms?dimension={JURISDICTION_DIMENSION}", **self.admin)
+        self.assertEqual(listed.status_code, 200, listed.content)
+        rows = listed.json()["items"]
+        self.assertEqual([row["key"] for row in rows], ["eu", "se", "dk", "no", "fi"])
+        self.assertEqual([row["label"] for row in rows], ["European Union", "Sweden", "Denmark", "Norway", "Finland"])
+        self.assertEqual([row["parentKey"] for row in rows], [None, "eu", "eu", "eu", "eu"])
+        self.assertTrue(all(row["isSystem"] for row in rows))
+
+    def test_a_jurisdiction_nobody_operates_in_is_not_mirrored(self) -> None:
+        """f03-T30 adds the International row that standards bodies issue under. It must get
+        no term: a tenant naming its markets would otherwise stop seeing standards (D-38,
+        ADR 0032)."""
+        Jurisdiction.objects.create(
+            key="intl",
+            kind=UNOPERATED_JURISDICTION_KIND,
+            default_language=Language.objects.get(key="en"),
+            sort_order=len(self._terms()),
+            is_system=True,
+        )
+        seed_taxonomy_terms()
+        self.assertEqual(set(self._terms()), {"eu", "se", "dk", "no", "fi"})
+
+    def test_the_seed_records_every_mirrored_term_it_files(self) -> None:
+        filed = self._term_events().filter(action="taxonomy.term_created")
+        self.assertEqual({event.subject_title for event in filed}, {f"{JURISDICTION_DIMENSION}:{key}" for key in self._terms()})
+        union = filed.get(subject_title=f"{JURISDICTION_DIMENSION}:eu")
+        self.assertEqual(
+            union.after,
+            {"dimension": JURISDICTION_DIMENSION, "key": "eu", "labels": {"en": "European Union", "sv": "Europeiska unionen"}},
+        )
+        self.assertEqual((union.actor_type, union.actor_label), ("system", "seed_reference"))
+        self.assertEqual(union.subject_id, self._terms()["eu"].id)
+
+    def test_a_second_seed_run_changes_nothing_and_records_nothing(self) -> None:
+        before, events = self._state(), self._term_events().count()
+        call_command("seed_reference", stdout=StringIO())
+        self.assertEqual(self._state(), before)
+        self.assertEqual(self._term_events().count(), events)
+
+    def test_a_jurisdiction_that_moves_takes_its_term_with_it_and_says_so_in_the_log(self) -> None:
+        """The three facts the seed owns. Norway leaving the internal market would put its
+        term outside the Union's reach, and retiring the row would retire the term; neither
+        may happen without a version bump and a line in the log."""
+        norway = self._mirrored_rows()["no"]
+        Jurisdiction.objects.filter(id=norway.id).update(parent=None, active=False)
+        was = self._terms()["no"]
+        seed_taxonomy_terms()
+        term = self._terms()["no"]
+        self.assertEqual((term.parent, term.active, term.version), (None, False, was.version + 1))
+        event = self._term_events().get(action="taxonomy.term_updated")
+        self.assertEqual(event.before, {"jurisdiction": str(norway.id), "parent": "eu", "active": True})
+        self.assertEqual(event.after, {"jurisdiction": str(norway.id), "parent": None, "active": False})
+        self.assertEqual((event.actor_type, event.actor_label), ("system", "seed_reference"))
+
+    def test_an_approved_translation_and_reorder_of_a_mirrored_term_survive_the_next_deploy(self) -> None:
+        """No proposal may change a mirrored term today (FP-S12 refuses one), but the seed
+        must not be the reason: putting the labels and the sort order back on every deploy
+        would undo an approved change with nothing in the log to say so."""
+        term = self._terms()["se"]
+        with library_write("test"):
+            TaxonomyTerm.objects.filter(id=term.id).update(sort_order=99)
+            TaxonomyTermLabel.objects.filter(term=term, language="sv").update(text="Konungariket Sverige")
+        events = self._term_events().count()
+        seed_taxonomy_terms()
+        kept = self._terms()["se"]
+        self.assertEqual(kept.sort_order, 99, "the deploy must not put the sort order back")
+        self.assertEqual({label.language: label.text for label in kept.labels.all()}["sv"], "Konungariket Sverige")
+        self.assertEqual(kept.version, term.version, "nothing the seed owns changed, so nothing was written")
+        self.assertEqual(self._term_events().count(), events)
+
+    def test_a_term_written_by_hand_under_a_mirrored_key_stops_the_seed(self) -> None:
+        """The brief said such a term is adopted. It is refused instead, as every other
+        reference seed refuses a taken key (INPUT_DELTAS §3): adopting it would keep its
+        author's meaning while the dimension lost the row it is supposed to mirror."""
+        stray = self._terms()["se"]
+        with library_write("test"):
+            TaxonomyTerm.objects.filter(id=stray.id).update(jurisdiction=None, parent=None, is_system=False)
+        with self.assertRaises(ValidationError) as refused:
+            seed_taxonomy_terms()
+        self.assertEqual(refused.exception.code, "system_key_taken")
+        self.assertIsNone(self._terms()["se"].jurisdiction_id, "the stray term is left as its author wrote it")
+        self.assertEqual(TaxonomyTerm.objects.filter(dimension__key=JURISDICTION_DIMENSION, key="se").count(), 1)

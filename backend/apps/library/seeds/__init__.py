@@ -29,12 +29,15 @@ LANGUAGES: dict[str, tuple[str, str]] = {
 }
 
 # key -> (kind, parent key, default language key, labels). Keys follow the fixture's codes
-# lowercased (docs/inputs/schema.sql `jurisdiction`); Norway sits outside the Union.
+# lowercased (docs/inputs/schema.sql `jurisdiction`). The parent is the jurisdiction whose
+# rules reach this one (D-28, ADR 0026), which is why Norway points at the EU: it is outside
+# the Union but inside the internal market under the EEA Agreement, so EU financial rules
+# reach it. A bank operating only in Norway must still see EU law.
 JURISDICTIONS: dict[str, tuple[JurisdictionKind, str | None, str, dict[str, str]]] = {
     "eu": (JurisdictionKind.SUPRANATIONAL, None, "en", {"en": "European Union", "sv": "Europeiska unionen"}),
     "se": (JurisdictionKind.COUNTRY, "eu", "sv", {"en": "Sweden", "sv": "Sverige"}),
     "dk": (JurisdictionKind.COUNTRY, "eu", "da", {"en": "Denmark", "sv": "Danmark"}),
-    "no": (JurisdictionKind.COUNTRY, None, "nb", {"en": "Norway", "sv": "Norge"}),
+    "no": (JurisdictionKind.COUNTRY, "eu", "nb", {"en": "Norway", "sv": "Norge"}),
     "fi": (JurisdictionKind.COUNTRY, "eu", "fi", {"en": "Finland", "sv": "Finland"}),
 }
 DEFAULT_JURISDICTION = "eu"

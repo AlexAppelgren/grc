@@ -6,8 +6,11 @@ sort order, the active flag, the default and the extra columns (VOC-07). Re-appl
 on every deploy would silently undo an approved reorder, retire, default change or term
 update the next time the app deployed. The `kind` is the exception: no proposal and no
 route changes it, every kind needs an active system row, so the code's kind is put back on
-every run. A key an approved proposal already used for a row of its own stops the seed
-rather than being adopted. Every row created and every kind put back leaves one audit row.
+every run. The jurisdiction dimension's mirrored terms are the second exception: no
+proposal may change one at all (FP-S12), so the seed puts back the three facts it owns on
+them. A key an approved proposal already used for a row of its own stops the seed rather
+than being adopted. Every row created, every kind put back and every mirrored fact put back
+leaves one audit row.
 
 Keys, labels and usage notes come from the prototype fixture
 (apps/taxonomy/seeds/fixture.py) so chunk 3 loads the fixture's records against the
@@ -23,7 +26,7 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from apps.library.models import Jurisdiction
+from apps.library.models import Jurisdiction, JurisdictionKind
 from apps.shared.audit import Actor, record
 from apps.shared.tenancy import library_write
 from apps.taxonomy.models import (
@@ -40,6 +43,13 @@ from apps.taxonomy.seeds import fixture
 SEED_REASON = "seed_reference"
 ORIGINAL_LANGUAGE = "en"
 ACTOR = Actor.system(SEED_REASON)
+JURISDICTION_DIMENSION = "jurisdiction"
+# The jurisdiction kinds the `jurisdiction` dimension mirrors (FP-04, D-28, ADR 0026). Its
+# terms are the markets a bank names, so only the jurisdictions a bank can operate in get
+# one; the row international standards bodies issue under is a market nobody operates in and
+# is left unmirrored (D-38, ADR 0032), which is what keeps a standard visible to a tenant
+# that has named its markets.
+MIRRORED_JURISDICTION_KINDS = (JurisdictionKind.SUPRANATIONAL.value, JurisdictionKind.COUNTRY.value)
 
 
 @dataclass(frozen=True)
@@ -211,9 +221,96 @@ def taxonomy_term_specs() -> list[dict[str, Any]]:
     return [*fixture.taxonomy_terms(), *_EXTRA_TERMS]
 
 
+def _mirror_back(term: TaxonomyTerm, row: Jurisdiction, parent: TaxonomyTerm | None) -> None:
+    """Put back the three facts the seed owns on a mirrored term when its jurisdiction row
+    has moved: the link, the term of the jurisdiction whose rules reach it, and whether it
+    is still in use. One version bump and one audit row for the lot, so a reader of the log
+    can see why a term changed with no proposal behind it."""
+    if (term.jurisdiction_id, term.parent_id, term.active) == (row.id, parent.id if parent else None, row.active):
+        return
+    before = {
+        "jurisdiction": str(term.jurisdiction_id) if term.jurisdiction_id else None,
+        "parent": term.parent.key if term.parent is not None else None,
+        "active": term.active,
+    }
+    term.jurisdiction = row
+    term.parent = parent
+    term.active = row.active
+    term.version += 1
+    term.save(update_fields=["jurisdiction", "parent", "active", "version"])
+    record(
+        action="taxonomy.term_updated",
+        actor=ACTOR,
+        subject_type="taxonomy_term",
+        subject_id=term.id,
+        subject_title=f"{JURISDICTION_DIMENSION}:{row.key}",
+        summary=f"Put the jurisdiction {row.key} back on its term in {JURISDICTION_DIMENSION}.",
+        tenant_id=None,
+        before=before,
+        after={"jurisdiction": str(row.id), "parent": parent.key if parent else None, "active": row.active},
+    )
+
+
+def _mirror_jurisdiction_terms(dimension: TermDimension) -> int:
+    """One term per mirrored jurisdiction row (FP-04, D-28, ADR 0026), so nobody keeps two
+    lists in step by hand: the same key, the row's labels, the term of the jurisdiction whose
+    rules reach it as its parent, and `active` mirrored.
+
+    The link, the parent and `active` are put back on every run, because no proposal may
+    change a term of a mirrored dimension (FP-S12) and a jurisdiction that moves must take
+    its term with it. The labels and the sort order are written once, like every other
+    seeded term, so nothing a later deploy does can silently undo an approved translation or
+    reorder; the exactness guard therefore claims the labels for a freshly seeded database
+    only. A term written by hand under a mirrored key stops the seed rather than being
+    adopted: the row would keep its author's meaning while the dimension lost its mirror.
+    Nothing is deleted here either. A jurisdiction that goes inactive takes its term
+    inactive with it, and a label the jurisdiction dropped stays on the term, since only a
+    proposal may take a translation off a term."""
+    # Parents first, so a country's term can point at the term of the jurisdiction whose
+    # rules reach it however the rows are ordered.
+    rows = sorted(
+        Jurisdiction.objects.filter(kind__in=MIRRORED_JURISDICTION_KINDS).select_related("parent").prefetch_related("labels"),
+        key=lambda row: (row.parent_id is not None, row.sort_order, row.key),
+    )
+    terms: dict[str, TaxonomyTerm] = {}
+    for row in rows:
+        parent = terms.get(row.parent.key) if row.parent is not None else None
+        term, created = TaxonomyTerm.objects.get_or_create(
+            dimension=dimension,
+            key=row.key,
+            defaults={"jurisdiction": row, "parent": parent, "sort_order": row.sort_order, "is_system": True, "active": row.active},
+        )
+        if created:
+            labels = {}
+            for label in row.labels.all():
+                TaxonomyTermLabel.objects.create(term=term, language=label.language, text=label.text, is_original=label.is_original)
+                labels[label.language] = label.text
+            record(
+                action="taxonomy.term_created",
+                actor=ACTOR,
+                subject_type="taxonomy_term",
+                subject_id=term.id,
+                subject_title=f"{dimension.key}:{row.key}",
+                summary=f"Filed the term {row.key} in {dimension.key} from the jurisdiction of the same key.",
+                tenant_id=None,
+                after={"dimension": dimension.key, "key": row.key, "labels": labels},
+            )
+        elif not term.is_system:
+            raise ValidationError(
+                f"{dimension.key}:{row.key} is already a term of its own on that dimension, so the "
+                f"jurisdiction {row.key} cannot be mirrored onto it. Give that term another key first.",
+                code="system_key_taken",
+            )
+        else:
+            _mirror_back(term, row, parent)
+        terms[row.key] = term
+    return len(terms)
+
+
 def seed_taxonomy_terms() -> int:
-    """The taxonomy terms per dimension. Without them no footprint can be set and no
-    obligation can be scoped."""
+    """The taxonomy terms per dimension, and the jurisdiction dimension's mirror of the
+    jurisdiction rows. Without them no footprint can be set, no obligation can be scoped and
+    no market can be named."""
     dimensions = {row.key: row for row in TermDimension.objects.all()}
     count = 0
     with transaction.atomic(), library_write(SEED_REASON):
@@ -242,4 +339,5 @@ def seed_taxonomy_terms() -> int:
                     after={"dimension": dimension.key, "key": spec["key"], "labels": labels},
                 )
             count += 1
+        count += _mirror_jurisdiction_terms(dimensions[JURISDICTION_DIMENSION])
     return count
