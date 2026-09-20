@@ -13,6 +13,11 @@ versions. Nothing here writes.
 - `outside_reasons()` is the footprint verdict and its reason, built on
   `taxonomy.matching`: a record is inside when it has no reason to be outside, and
   `scope_and_verdict()` builds both for a row of the list and for a record's own card.
+- `terms_of()` is the one parser of `dimension:key`, for the obligations filter and for
+  an obligation proposal's scope.
+- `active_obligation()` and `unknown_provision_keys()` are what a proposal points at and
+  cites; they live here because the library fence keeps library models out of the
+  proposals app (PRO-01).
 - "As of" a date is `logic.in_force()` and nothing else (AC-INV1). A version's end date is
   never stored: `version_rows()` derives it from the version that follows (INV-04).
 - `_visible()` is the one lookup of a record by id: what row-level security does not show
@@ -51,6 +56,8 @@ from apps.library.models import (
     ObligationTerm,
     ObligationTitle,
     ObligationVersion,
+    Provision,
+    RecordStatus,
     Translation,
 )
 from apps.library.schemas import (
@@ -131,6 +138,61 @@ def vocabulary_refs(label_model: type[Any], rows: Iterable[Any], order: list[str
 def today_for(tenant: Tenant) -> datetime.date:
     """Today where the tenant is: the default "as of" of every library read."""
     return timezone.localdate(timezone=ZoneInfo(tenant.timezone))
+
+
+def terms_of(refs: list[str]) -> list[TaxonomyTerm]:
+    """The active terms `dimension:key`, resolved in one query however many there are. 422
+    for a malformed one, 422 `unknown_key` naming every one that is not a term. The one
+    parser: the obligations filter and an obligation proposal's scope read the same
+    spelling the same way. `refs` is never empty, because an empty list matches every
+    term."""
+    wanted = Q()
+    for ref in refs:
+        dimension, separator, key = ref.partition(":")
+        if not separator:
+            raise ValidationError(f"{ref!r} is not a term. Write it as dimension:key, for example service_type:advice.", code="validation_error")
+        wanted |= Q(dimension__key=dimension, key=key)
+    found = {
+        f"{term.dimension.key}:{term.key}": term
+        for term in TaxonomyTerm.objects.select_related("dimension").filter(wanted, active=True, dimension__active=True)
+    }
+    unknown = [ref for ref in refs if ref not in found]
+    if unknown:
+        raise ValidationError(
+            f"Not a term: {', '.join(unknown)}. GET /taxonomy/terms lists the terms of every dimension.", code="unknown_key"
+        )
+    return list(found.values())
+
+
+# ---------------------------------------------------------------------------------------
+# What a proposal points at (PRO-01). These live here, not in the proposals app, because
+# the library fence refuses a module that names a library model beside a write call
+# (apps/shared/tests_library_fence.py); both are pure reads.
+# ---------------------------------------------------------------------------------------
+def active_obligation(obligation_id: uuid.UUID) -> Obligation:
+    """The obligation `obligation_id` while it is active, or 422 `unknown_key`.
+
+    A proposal that names an obligation nobody can find, or one that has been retired, is
+    refused where it is made rather than left in the queue for a reviewer to discover that
+    it can never be applied (PRO-01).
+    """
+    # INV-07 (R3): once a bank can hold a private obligation of its own, this lookup also
+    # finds that bank's own rows, and a library proposal must only ever target a shared
+    # record. Add `owner_tenant__isnull=True` with the first row that can carry an owner.
+    obligation = Obligation.objects.filter(pk=obligation_id).first()  # ordering: pk lookup, at most one row
+    if obligation is None:
+        raise ValidationError("That obligation is not here.", code="unknown_key")
+    if obligation.status != RecordStatus.ACTIVE.value:
+        raise ValidationError("That obligation is retired: propose a change to one that is in force.", code="unknown_key")
+    return obligation
+
+
+def unknown_provision_keys(keys: Collection[str]) -> set[str]:
+    """Those of `keys` that name no provision of the library, in one query. A proposal may
+    cite its source as a provision's stable key instead of a link (PRO-01), and a key that
+    resolves to nothing is a source nobody can follow."""
+    found = set(Provision.objects.filter(stable_key__in=keys).values_list("stable_key", flat=True))
+    return {key for key in keys if key not in found}
 
 
 # ---------------------------------------------------------------------------------------
@@ -214,27 +276,6 @@ def scope_and_verdict(
 # ---------------------------------------------------------------------------------------
 # GET /obligations
 # ---------------------------------------------------------------------------------------
-def _terms_of(refs: list[str]) -> list[TaxonomyTerm]:
-    """The active terms `dimension:key`, resolved in one query. 422 for a malformed one, 422
-    `unknown_key` naming every one that is not a term."""
-    wanted = Q()
-    for ref in refs:
-        dimension, separator, key = ref.partition(":")
-        if not separator:
-            raise ValidationError(f"{ref!r} is not a term. Write it as dimension:key, for example service_type:advice.", code="validation_error")
-        wanted |= Q(dimension__key=dimension, key=key)
-    found = {
-        f"{term.dimension.key}:{term.key}": term
-        for term in TaxonomyTerm.objects.select_related("dimension").filter(wanted, active=True, dimension__active=True)
-    }
-    unknown = [ref for ref in refs if ref not in found]
-    if unknown:
-        raise ValidationError(
-            f"Not a term: {', '.join(unknown)}. GET /taxonomy/terms lists the terms of every dimension.", code="unknown_key"
-        )
-    return list(found.values())
-
-
 def _version_ref(version: ObligationVersion | None) -> ObligationVersionRef | None:
     if version is None:
         return None
@@ -264,7 +305,7 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
     if query.duty_type:
         queryset = queryset.filter(duty_type__key=query.duty_type)
     if query.term:
-        wanted = Value([term.id for term in _terms_of(query.term)], output_field=ArrayField(UUIDField()))
+        wanted = Value([term.id for term in terms_of(query.term)], output_field=ArrayField(UUIDField()))
         queryset = queryset.filter(DataContains(scope_ids, wanted))
     if query.q:
         titled = ObligationTitle.objects.filter(obligation=OuterRef("pk"), text__icontains=query.q)

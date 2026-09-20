@@ -33,6 +33,12 @@ reviewer's corrections at approval and at apply. A payload is stored when a
 proposal is created, so a check only at apply would leave licensed text in the
 platform database.
 
+The kinds are chunk 2's vocabulary and term kinds plus `new_obligation_version`: a new
+summary in force from a date, with the scope terms that come with it. A proposal a bank's
+own person or agent makes is linked to that bank in `proposal_tenant`, a tenant table, so
+the bank can follow its own proposals while the console sees only that one came from a
+bank, never who made it.
+
 Deliberately simplified for R1: batch proposals (re-tag, backfill) with a
 row-by-row review wait for R2.
 
@@ -67,9 +73,11 @@ updating this file.
 ### PRO-S1 — A proposal carries a source per changed field `@integration` (PRO-01)
 ```gherkin
 Given an agent key with proposals.write
-When it submits a proposal that changes an obligation's summary and duty type
+When it submits a proposal that changes an obligation's summary and scope terms
 Then each changed field carries a source reference
 And a proposal missing a source for any field answers 422 with code "source_missing"
+And a source that is neither an https link nor a provision of the library is refused
+And a source given for a field the proposal does not change is refused
 And the proposal is "Waiting for approval" in the queue
 ```
 

@@ -6,6 +6,10 @@ model rather than a `LibraryModel`, because people and agents create proposals f
 apps/proposals/logic.py while the fence reserves library writes for
 apps/proposals/apply.py, which applies an approved payload inside `library_write()`.
 
+`ProposalTenant` is the tenant half: a proposal a bank's own person or agent made is
+linked to that bank in its own tenant table under forced row-level security, never by a
+column on `proposal`.
+
 `kind` and `status` are tier-one kinds (apps/shared/kinds.py). The payload's shape is
 named per kind in apps/proposals/schemas.py and validated when the proposal is created.
 The check constraint `proposal_four_eyes` (RunSQL in migration 0001) is the database's word
@@ -19,6 +23,8 @@ import uuid
 
 from django.db import models
 
+from apps.shared.tenancy import TenantModel
+
 
 def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
     return [(member.value, member.value) for member in kind]
@@ -26,7 +32,9 @@ def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
 
 class ProposalKind(enum.StrEnum):
     """What a proposal changes; apply() branches on it. Chunk 2: the vocabulary and term
-    kinds. Chunk 4 adds the instrument, provision and obligation kinds of schema v0.3."""
+    kinds. Chunk 4 adds `new_obligation_version`, a new summary in force from a date, with
+    the scope terms it changes. The remaining schema v0.3 kinds arrive with the agents of
+    chunk 5, which are the first thing that produces them."""
 
     VOCABULARY_CREATE = "vocabulary_create"
     VOCABULARY_RELABEL = "vocabulary_relabel"
@@ -35,6 +43,7 @@ class ProposalKind(enum.StrEnum):
     VOCABULARY_RESTORE = "vocabulary_restore"
     TERM_CREATE = "term_create"
     TERM_UPDATE = "term_update"
+    NEW_OBLIGATION_VERSION = "new_obligation_version"
 
 
 class ProposalStatus(enum.StrEnum):
@@ -69,11 +78,15 @@ class Proposal(models.Model):
     proposed_by_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     proposed_by_api_key = models.ForeignKey("identity.ApiKey", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     idempotency_key = models.CharField(max_length=200, null=True, blank=True, unique=True)
+    proposed_in_tenant = models.BooleanField(default=False)
     status = models.CharField(max_length=16, choices=_choices(ProposalStatus), default=ProposalStatus.OPEN.value)
     reviewed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     reviewed_at = models.DateTimeField(null=True, blank=True)
     rejection_code = models.CharField(max_length=64, blank=True)
     review_note = models.TextField(blank=True)
+    corrected_payload = models.JSONField(null=True, blank=True)  # schema: ProposalPayload
+    corrected_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    corrected_at = models.DateTimeField(null=True, blank=True)
     applied_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -88,3 +101,22 @@ class Proposal(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} {self.id}"
+
+
+class ProposalTenant(TenantModel):
+    """Which tenant a proposal was made in (PRO-03). A tenant table of its own, under
+    forced row-level security, so a tenant sees the library proposals its own people made
+    without the library-zone `proposal` row ever carrying a tenant id: the console reads
+    `proposed_in_tenant` and withholds the proposer's identity without learning which bank
+    they work for."""
+
+    proposal = models.ForeignKey(Proposal, on_delete=models.PROTECT, related_name="tenant_links")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "proposal_tenant"
+        ordering = ["created_at", "id"]
+        constraints = [models.UniqueConstraint(fields=["proposal", "tenant"], name="proposal_tenant_unique")]
+
+    def __str__(self) -> str:
+        return f"{self.tenant_id}:{self.proposal_id}"

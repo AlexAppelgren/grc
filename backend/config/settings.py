@@ -394,6 +394,18 @@ LIBRARY_TEXT_MAX_CHARS = env_int("LIBRARY_TEXT_MAX_CHARS", 20000)
 LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20)
 
 # ---------------------------------------------------------------------------------------
+# ===== PRO-01 what a proposal may carry ==================================================
+# A proposal arrives from an agent or a person over the network, so its two unbounded
+# parts are bounded here. A field source is a link or a provision's stable key, and the
+# longest source the library itself stores is `source_url`, a URLField of 2000 characters,
+# so a field source is held to the same length. The scope terms are resolved in one query
+# and stored twice (the payload and its audit row), so their number is bounded like the
+# library's own term filter above.
+# ---------------------------------------------------------------------------------------
+PROPOSAL_SOURCE_MAX_CHARS = env_int("PROPOSAL_SOURCE_MAX_CHARS", 2000)
+PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------

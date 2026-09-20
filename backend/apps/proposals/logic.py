@@ -4,11 +4,19 @@ A proposal is the only door into the library. People and agents create them here
 second person approves one here, and apps/proposals/apply.py applies its payload inside
 `library_write()` in the same transaction as the approval's audit row. Nothing here writes
 a library row, which is why this module names no `LibraryModel` class (the library fence's
-AST guard, apps/shared/tests_library_fence.py).
+AST guard, apps/shared/tests_library_fence.py); the library rows a proposal points at and
+cites are looked up through apps/library/reading.py, which is where every library read
+lives.
 
 Four eyes (AC-PRO2) is checked here and by the `proposal_four_eyes` check constraint; the
 API answers 409 `four_eyes_violation`. An agent's proposal has no proposing user, so any
 reviewer may decide it.
+
+A proposal made inside a tenant (a bank's own person or its agent key) is linked to that
+tenant through `ProposalTenant`, a tenant table under forced row-level security, and its
+creation is audited under that tenant. The `proposal` row itself carries only the boolean
+`proposed_in_tenant`, so the console can withhold the proposer's identity (PRO-03) without
+learning which bank they work for.
 
 Idempotency (playbook 4.3): an agent retries with the same `Idempotency-Key`. The same body
 answers the proposal it already made (200, and an audit row saying the retry happened, so
@@ -23,13 +31,18 @@ from dataclasses import dataclass
 from typing import Any
 
 import pydantic
+from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus
+from apps.library.models import DatePrecision
+from apps.library.reading import active_obligation, terms_of, unknown_provision_keys
+from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus, ProposalTenant
 from apps.proposals.schemas import (
     ProposalActorRef,
+    ProposalObligationVersionPayload,
     ProposalRow,
     ProposalTermCreatePayload,
     ProposalTermUpdatePayload,
@@ -38,9 +51,12 @@ from apps.proposals.schemas import (
     ProposalVocabularyRelabelPayload,
     ProposalVocabularyRetirePayload,
 )
+from apps.shared import tenancy
 from apps.shared.audit import Actor, record
 
 SUBJECT_TYPE = "proposal"
+# What an obligation proposal points at (schema v0.3 `subject_type`).
+OBLIGATION_TARGET = "obligation"
 
 # The named payload schema per kind (PRO-01): apply() never reads a free-form dictionary.
 PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
@@ -51,6 +67,7 @@ PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
     ProposalKind.VOCABULARY_MERGE.value: ProposalVocabularyMergePayload,
     ProposalKind.TERM_CREATE.value: ProposalTermCreatePayload,
     ProposalKind.TERM_UPDATE.value: ProposalTermUpdatePayload,
+    ProposalKind.NEW_OBLIGATION_VERSION.value: ProposalObligationVersionPayload,
 }
 VOCABULARY_KINDS = frozenset(
     kind.value
@@ -62,6 +79,7 @@ VOCABULARY_KINDS = frozenset(
         ProposalKind.VOCABULARY_MERGE,
     )
 )
+OBLIGATION_KINDS = frozenset({ProposalKind.NEW_OBLIGATION_VERSION.value})
 # The payloads that name a row by key and carry labels: the key must be its own slug and
 # the labels real languages, as the vocabulary routes make them.
 NAMED_PAYLOADS = (
@@ -151,6 +169,8 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
                     f"{', '.join(unknown)} is not a column of {name!r}. Valid columns: {named}.", code="validation_error"
                 )
             payload.extra = lists.extra_payload(entry, payload.extra)
+    elif isinstance(payload, ProposalObligationVersionPayload):
+        _validate_obligation_payload(payload)
     else:
         from apps.taxonomy.terms_logic import dimension_by_key
 
@@ -165,8 +185,148 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
         )
 
 
+def _validate_obligation_payload(payload: ProposalObligationVersionPayload) -> None:
+    """A new obligation version carries the summary in real content languages, one of them
+    the original it was written in (INV-05), a legal date with a precision (INV-S10), and
+    scope terms that exist, written as `dimension:key` (FP-01)."""
+    from apps.taxonomy import tenant_lists_logic as lists
+
+    payload.summaries = lists.validated_labels(payload.summaries)
+    if payload.original_language not in payload.summaries:
+        raise ValidationError(
+            f"{payload.original_language!r} is not one of the languages the summary is written in: "
+            f"{', '.join(sorted(payload.summaries))}.",
+            code="validation_error",
+        )
+    precisions = [member.value for member in DatePrecision]
+    if payload.effective_from_precision not in precisions:
+        raise ValidationError(
+            f"{payload.effective_from_precision!r} is not a date precision. "
+            f"Valid values: {', '.join(precisions)}.",
+            code="unknown_key",
+        )
+    if payload.terms:
+        # Stored once each, in the order given: the apply replaces the obligation's term
+        # links, and a repeated ref would break its uniqueness constraint after approval.
+        payload.terms = list(dict.fromkeys(payload.terms))
+        terms_of(payload.terms)
+
+
+def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUID | None) -> None:
+    """An obligation proposal says which obligation it versions, and that obligation is
+    here and in force. A proposal nobody could ever apply never enters the queue."""
+    if kind not in OBLIGATION_KINDS:
+        return
+    if target_type != OBLIGATION_TARGET or target_id is None:
+        raise ValidationError(
+            f"Say which obligation this version belongs to: targetType {OBLIGATION_TARGET!r} and its id.",
+            code="validation_error",
+        )
+    active_obligation(target_id)
+
+
+def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
+    """The fields of `payload` that a source has to be given for, named as the console
+    names them beside the diff: the summary per language, the effective date and the scope
+    terms. A vocabulary payload carries a label a person writes, not a sourced fact from an
+    authority, so it names none (its chunk 2 rules are unchanged)."""
+    if not isinstance(payload, ProposalObligationVersionPayload):
+        return []
+    fields = [f"summaries.{language}" for language in sorted(payload.summaries)]
+    if payload.effective_from is not None:
+        fields.append("effectiveFrom")
+    if payload.terms is not None:
+        fields.append("terms")
+    return fields
+
+
+def sourceable_fields(payload: pydantic.BaseModel) -> list[str]:
+    """The fields `field_sources` may name. For an obligation version they are exactly the
+    fields that need a source; for a vocabulary payload, whose wording a person writes,
+    they are the payload's own fields and none of them is required. A key naming anything
+    else is a source for nothing, so it is refused rather than stored."""
+    if isinstance(payload, ProposalObligationVersionPayload):
+        return sourced_fields(payload)
+    return sorted(payload.model_dump(by_alias=True, exclude_none=True))
+
+
+# An https link, the shape the library stores a source in (`Obligation.source_url`).
+# https only: a source is fetched and shown as the provenance of a legal fact.
+_LINK = URLValidator(schemes=["https"])
+
+
+def check_field_sources(payload: pydantic.BaseModel, field_sources: dict[str, str]) -> None:
+    """Every changed field carries the source its value came from, and nothing else does
+    (PRO-01, AC-PRO1): 422 `source_missing` for a field without one, 422
+    `validation_error` for a source that is not one.
+
+    The one function for that rule: it runs when the proposal is made and again over a
+    reviewer's corrections at approval, so a value nobody can trace to a source never
+    reaches the library, whoever last touched it.
+
+    An agent writes these values and a reviewer and the console read them, so each one is
+    checked here at the boundary rather than trusted: at most
+    `PROPOSAL_SOURCE_MAX_CHARS`, and either an https link or the stable key of a provision
+    the library holds. "n/a", "see above" and `javascript:` are none of those.
+    """
+    missing = [field for field in sourced_fields(payload) if not field_sources.get(field, "").strip()]
+    if missing:
+        raise ValidationError(
+            f"Give the source of every changed field. Missing: {', '.join(missing)}.", code="source_missing"
+        )
+    allowed = sourceable_fields(payload)
+    stray = sorted(set(field_sources) - set(allowed))
+    if stray:
+        raise ValidationError(
+            f"{', '.join(stray)}: this proposal changes no such field. "
+            f"Fields a source belongs to: {', '.join(allowed) or 'none'}.",
+            code="validation_error",
+        )
+    long = [field for field, source in field_sources.items() if len(source) > settings.PROPOSAL_SOURCE_MAX_CHARS]
+    if long:
+        raise ValidationError(
+            f"A source is at most {settings.PROPOSAL_SOURCE_MAX_CHARS} characters. Too long: {', '.join(long)}.",
+            code="validation_error",
+        )
+    refs = {field: source for field, source in field_sources.items() if not _is_link(source)}
+    unknown = unknown_provision_keys(set(refs.values()))
+    unfollowable = sorted(field for field, ref in refs.items() if ref in unknown)
+    if unfollowable:
+        raise ValidationError(
+            "A source is an https link or the stable key of a provision in the library. "
+            f"Not a source: {', '.join(unfollowable)}.",
+            code="validation_error",
+        )
+
+
+def _is_link(value: str) -> bool:
+    try:
+        _LINK(value)
+    except ValidationError:
+        return False
+    return True
+
+
+def _agreed_effective_from(payload: pydantic.BaseModel, effective_from: Any) -> Any:
+    """The date the proposal row shows the reviewer, which is the date approval will write
+    (INV-04). An obligation version holds the date twice, on the row and in the payload,
+    so a row saying one date while the payload carries another is refused rather than
+    shown; a row that says nothing takes the payload's."""
+    if not isinstance(payload, ProposalObligationVersionPayload):
+        return effective_from
+    if effective_from is not None and effective_from != payload.effective_from:
+        raise ValidationError(
+            "The proposal's effective date is not the date in its payload: give one date.",
+            code="validation_error",
+        )
+    return payload.effective_from
+
+
 def payload_dict(payload: pydantic.BaseModel) -> dict[str, Any]:
-    return payload.model_dump(by_alias=True, exclude_none=True)
+    """The payload as the JSON column stores it and the API returns it: camelCase keys and
+    JSON values, so a legal date is the string the reviewer's screen shows, not a Python
+    date the driver would refuse."""
+    return payload.model_dump(mode="json", by_alias=True, exclude_none=True)
 
 
 # ---------------------------------------------------------------------------------------
@@ -193,14 +353,22 @@ def create(
     `(proposal, created)`."""
     validated_kind(kind)
     parsed = validated_payload(kind, payload)
+    _validate_obligation_target(kind, target_type, target_id)
+    sources = {field: value.strip() for field, value in (field_sources or {}).items()}
+    check_field_sources(parsed, sources)
+    effective_from = _agreed_effective_from(parsed, effective_from)
     stored_payload = payload_dict(parsed)
     title = title.strip()
     if not title:
         raise ValidationError("Give the proposal a title.", code="validation_error")
+    # What the database itself is scoped to, not a process-local mirror: this is the tenant
+    # whose rows this transaction may write, so it is the tenant the link row can carry.
+    tenant_id = tenancy.database_tenant_id()
     if idempotency_key:
         existing = Proposal.objects.filter(idempotency_key=idempotency_key).order_by("created_at", "id").first()
         if existing is not None:
-            if (existing.kind, existing.title, existing.payload) != (kind, title, stored_payload):
+            submitted = (kind, title, stored_payload, target_type, target_id, sources)
+            if (existing.kind, existing.title, existing.payload, existing.target_type, existing.target_id, existing.field_sources) != submitted:
                 raise ValidationError(
                     "This Idempotency-Key was already used for a different proposal.",
                     code="idempotency_conflict",
@@ -212,7 +380,7 @@ def create(
                 subject_id=existing.id,
                 subject_title=existing.title,
                 summary="A retried submission answered the proposal it already made.",
-                tenant_id=None,
+                tenant_id=tenant_id,
                 after={"idempotencyKey": idempotency_key},
             )
             return existing, False
@@ -220,7 +388,7 @@ def create(
         kind=kind,
         title=title,
         payload=stored_payload,
-        field_sources=field_sources or {},
+        field_sources=sources,
         target_type=target_type,
         target_id=target_id,
         change_id=change_id,
@@ -234,7 +402,10 @@ def create(
         proposed_by_api_key_id=proposer.api_key_id,
         idempotency_key=idempotency_key or None,
         status=ProposalStatus.OPEN.value,
+        proposed_in_tenant=tenant_id is not None,
     )
+    if tenant_id is not None:
+        ProposalTenant.objects.create(tenant_id=tenant_id, proposal=proposal)
     record(
         action="proposal.created",
         actor=proposer.actor,
@@ -242,7 +413,7 @@ def create(
         subject_id=proposal.id,
         subject_title=proposal.title,
         summary=f"Proposed: {proposal.title}",
-        tenant_id=None,
+        tenant_id=tenant_id,
         after={"kind": kind, "payload": stored_payload, "origin": proposal.origin},
     )
     return proposal, True

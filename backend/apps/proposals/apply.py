@@ -72,7 +72,10 @@ def apply(proposal: Proposal, *, actor: Actor) -> None:
         elif proposal.kind == ProposalKind.TERM_UPDATE.value:
             assert isinstance(payload, ProposalTermUpdatePayload)
             _term_update(payload, proposal, actor)
-        else:  # pragma: no cover - parsed_payload already refused an unknown kind
+        else:
+            # Reached by new_obligation_version, which enters the queue before the apply
+            # that writes it exists: an approval of one is refused where the reviewer can
+            # see it, never applied in part and never silently ignored.
             raise ValidationError(f"{proposal.kind!r} cannot be applied yet.", code="unknown_key")
 
 

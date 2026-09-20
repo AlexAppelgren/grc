@@ -1,7 +1,8 @@
 """Scenario tests for the proposals app (playbook 4.1, Appendix B): one method per
 `@integration` scenario in app.md, each carrying its ID. Chunk 2 un-skips the scenarios a
 vocabulary proposal can prove: PRO-S2 (the library vocabulary half), PRO-S5, PRO-S6 and
-PRO-S9. PRO-S1, S3, S4 and S7 need obligation records and land with chunk 4; PRO-S8 is
+PRO-S9. Chunk 4 adds PRO-S1, the obligation proposal kind with its source per changed
+field; S3, S4 and S7 follow with approval, corrections and the tenant's view; PRO-S8 is
 R2. Never delete a scenario without updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): createProposal,
@@ -12,17 +13,20 @@ Prefixes hosted: PRO.
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 from unittest import skip
 
+from apps.library.models import Instrument, Jurisdiction, Obligation
 from apps.library.seeds import seed_jurisdictions, seed_languages
-from apps.proposals.models import Proposal, ProposalStatus
-from apps.shared import factories, permissions as perms
+from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
+from apps.shared import factories, tenancy, permissions as perms
 from apps.shared.audit import Actor
 from apps.shared.models import AuditEvent
 from apps.shared.routes import iter_operations
+from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
-from apps.taxonomy.models import Flag
+from apps.taxonomy.models import DutyType, Flag, InstrumentLevel
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from config.api import api
@@ -55,6 +59,30 @@ class ProposalsScenarioTests(ScenarioTestCase):
     def _post(self, path: str, body: dict[str, Any] | None, headers: dict[str, Any], **extra: Any) -> Any:  # compliance: allow-kwargs test helper forwarding request headers
         return self.client.post(f"{V1}{path}", data=body or {}, content_type="application/json", **headers, **extra)
 
+    def _obligation(self) -> Obligation:
+        """An obligation to propose a new version of. Chunk 3 seeds the real library; a
+        scenario needs one record, written as the seeds write theirs."""
+        with library_write("scenario"):
+            instrument = Instrument.objects.create(
+                stable_key="fffs-2017-2",
+                short_name="FFFS 2017:2",
+                official_ref="FFFS 2017:2",
+                source_url="https://www.fi.se/",
+                level=InstrumentLevel.objects.get(key="act"),
+                binding=True,
+                jurisdiction=Jurisdiction.objects.get(key="se"),
+                created_origin="user",
+            )
+            return Obligation.objects.create(
+                stable_key="obl-advice-suitability",
+                instrument=instrument,
+                ref_label="9 kap. 6 §",
+                duty_type=DutyType.objects.get(key="conduct"),
+                created_origin="user",
+                source_url="https://www.fi.se/",
+                source_label="FFFS 2017:2, 9 kap. 6 §",
+            )
+
     def _flag_proposal(self) -> dict[str, Any]:
         body = {
             "kind": "vocabulary_create",
@@ -65,12 +93,79 @@ class ProposalsScenarioTests(ScenarioTestCase):
         }
         return body
 
-    @skip("pending: PRO-S1 (PRO-01, chunk 4: obligation proposals)")
     def test_pro_s1(self) -> None:
         """PRO-S1
 
         A proposal carries a source per changed field (PRO-01).
         """
+        obligation = self._obligation()
+        key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        agent = {"HTTP_X_API_KEY": key.plain_key}
+        body: dict[str, Any] = {
+            "kind": "new_obligation_version",
+            "title": "Version 2 of the advice obligation, in force 1 October 2026",
+            "targetType": "obligation",
+            "targetId": str(obligation.id),
+            "payload": {
+                "summaries": {"sv": "Institutet bedömer kunden innan rådgivning.", "en": "The institution assesses the client before advising."},
+                "originalLanguage": "sv",
+                "isMachine": True,
+                "effectiveFrom": "2026-10-01",
+                "effectiveFromPrecision": "day",
+                "terms": ["legal_entity:bank", "client_category:retail"],
+            },
+            "fieldSources": {
+                "summaries.sv": "https://www.fi.se/",
+                "summaries.en": "https://www.fi.se/",
+                "effectiveFrom": "https://www.fi.se/",
+                "terms": "https://www.fi.se/",
+            },
+            "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
+            "sourceUrl": "https://www.fi.se/",
+        }
+        # A proposal missing the source of any changed field is refused, and nothing is stored.
+        for missing in ("summaries.sv", "terms"):
+            without = self._post("/proposals", {**body, "fieldSources": {f: u for f, u in body["fieldSources"].items() if f != missing}}, agent)
+            self.assertEqual(without.status_code, 422, without.content)
+            self.assertEqual(without.json()["code"], "source_missing")
+            self.assertIn(missing, without.json()["detail"])
+        self.assertFalse(Proposal.objects.filter(kind="new_obligation_version").exists())
+        # A source nobody could follow, and a source beside a field this proposal never
+        # changes, are refused as firmly as a missing one.
+        for case, sources in (
+            ("not a source", {**body["fieldSources"], "terms": "n/a"}),
+            ("no such field", {**body["fieldSources"], "dutyType": "https://www.fi.se/"}),
+        ):
+            with self.subTest(case=case):
+                refused = self._post("/proposals", {**body, "fieldSources": sources}, agent)
+                self.assertEqual(refused.status_code, 422, refused.content)
+                self.assertEqual(refused.json()["code"], "validation_error")
+        self.assertFalse(Proposal.objects.filter(kind="new_obligation_version").exists())
+        # With every changed field sourced, the proposal is made and each source is kept.
+        created = self._post("/proposals", body, agent)
+        self.assertEqual(created.status_code, 201, created.content)
+        proposal = created.json()
+        self.assertEqual(proposal["fieldSources"], body["fieldSources"])
+        self.assertEqual(proposal["payload"]["terms"], ["legal_entity:bank", "client_category:retail"])
+        self.assertEqual(proposal["payload"]["originalLanguage"], "sv")
+        # A proposal against an obligation nobody can find never enters the queue.
+        unknown = self._post("/proposals", {**body, "targetId": str(uuid.uuid4())}, agent)
+        self.assertEqual(unknown.status_code, 422, unknown.content)
+        self.assertEqual(unknown.json()["code"], "unknown_key")
+        # It waits for approval in the console's queue, and the editor sees its sources.
+        editor = sign_in(self.editor)
+        waiting = self.client.get(f"{V1}/proposals?status=open&kind=new_obligation_version", **editor)
+        self.assertEqual(waiting.status_code, 200, waiting.content)
+        self.assertEqual([row["id"] for row in waiting.json()["items"]], [proposal["id"]])
+        self.assertEqual(waiting.json()["items"][0]["status"], "open")
+        # The agent proposed inside its tenant: the link row is the tenant's, the proposal
+        # row carries no tenant id, and the audit row is the tenant's (AUD-01).
+        self.assertTrue(Proposal.objects.get(pk=proposal["id"]).proposed_in_tenant)
+        # The link row is the bank's, so it is read from the bank's zone: the editor's session
+        # above is the platform's, and a tenant table shows a platform session nothing (H-C).
+        tenancy.activate(self.tenant.id)
+        self.assertEqual([link.tenant_id for link in ProposalTenant.objects.all()], [self.tenant.id])
+        self.assertEqual(AuditEvent.objects.get(action="proposal.created", subject_id=proposal["id"]).tenant_id, self.tenant.id)
 
     def test_pro_s2(self) -> None:
         """PRO-S2

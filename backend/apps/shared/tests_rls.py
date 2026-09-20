@@ -134,7 +134,7 @@ class RowLevelSecurityGuard(TestCase):
 
     def test_enumeration_finds_the_mixed_tables(self) -> None:
         tables = sorted(model._meta.db_table for model in tenant_scoped_models())
-        for table in sorted(MIXED_TABLES) + sorted(LIBRARY_OWNED_TABLES) + ["membership", "tenant_role", "support_access"]:
+        for table in sorted(MIXED_TABLES) + sorted(LIBRARY_OWNED_TABLES) + ["membership", "tenant_role", "support_access", "proposal_tenant"]:
             self.assertIn(table, tables)
 
     def test_only_the_named_tables_carry_the_identity_lookup_clause(self) -> None:
