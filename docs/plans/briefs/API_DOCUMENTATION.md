@@ -74,6 +74,32 @@ every error the caller must branch on, listed by its RFC 9457 `code` with the
 condition that produces it. An empty answer is a 200 with an empty list, and
 the description says so.
 
+## 4b. Three things the first sweep had to decide
+
+Settled once here so the remaining sweeps do not each answer them differently
+(tenants and agents, 2026-09-20).
+
+**A shape several apps reach has one owner: the app whose `schemas.py` defines
+it.** `RoleRef` lives in identity and carries roles, languages and agent
+definitions at once; `PageQuery` lives in shared and reaches every list. Its
+owner writes its description, and a sweep that meets a shape it does not own
+leaves it alone. Where one shape carries value sets with different rules — a
+role a bank's admin may extend beside a language it may not — the description
+says which is which rather than choosing the convenient half.
+
+**A route published ahead of its logic says so.** Several routes answer 501
+today: the contract is declared first on purpose, so the screens and the agents
+can be built against it. Their descriptions are written in the present tense
+for what the route will do, and end with one sentence: published ahead of the
+logic that will fill it, and answering 501 until that ships. Never document a
+501 as if it were the behaviour, and never leave a reader to discover it.
+
+**An error code is documented only if a route raises it.** The gate reads every
+`code=` literal under `backend/apps` outside its tests, so any code the API
+really answers may be written down — and one that is invented is still refused.
+Name the codes a caller must branch on, one line each, with the condition that
+produces them.
+
 ## 5. How it is enforced
 
 `backend/scripts/api_docs_gate.py` reads the generated `openapi.json` and
