@@ -11,7 +11,9 @@ run those guard proofs, so one source proves each rule. AUD-S7 reads through
 GET /audit-events (chunk 4).
 
 Operations exercised (the audit-on-write guard reads these names): createProposal,
-approveProposal, createConsoleTenant, createFootprintRequest.
+approveProposal, createConsoleTenant, createFootprintRequest. ADM-S4 also drives the
+console routes other apps register — the source registry and the platform agent keys —
+by their gate alone; what each one then does is its own app's scenario.
 
 Prefixes hosted: ADM, AUD.
 """
@@ -77,6 +79,22 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
         f"/console/tenants/{_ANY_ID}/members/{_ANY_ID}/reissue-enrolment",
         {"reason": "The administrator lost every device.", "outOfBandCheck": "Called the registered number."},
     ),
+    # The source registry is the library editor's alone (WAT-01): a platform admin is refused.
+    "createSource": (
+        "POST",
+        "/sources",
+        {"name": "Finansinspektionen news", "kind": "authority_site", "checkFrequency": "daily"},
+    ),
+    "updateSource": ("PATCH", f"/sources/{_ANY_ID}", {"active": False}),
+    # A key bound to an agent is the platform admin's alone (ID-10, AGT-01): a library
+    # editor is refused. Creating one also needs a passkey, which the owner half proves.
+    "listAgentKeys": ("GET", "/agent-keys", None),
+    "createAgentKey": (
+        "POST",
+        "/agent-keys",
+        {"name": "Watch sweeper", "agentId": str(_ANY_ID), "scopes": ["changes:write"]},
+    ),
+    "revokeAgentKey": ("POST", f"/agent-keys/{_ANY_ID}/revoke", {}),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a
@@ -228,7 +246,8 @@ class GovernanceScenarioTests(ScenarioTestCase):
     def _call(self, method: str, path: str, payload: dict[str, Any] | None, headers: dict[str, Any]) -> Any:
         if payload is None:
             return self.client.get(f"{V1}{path}", **headers)
-        return self._post(path, payload, headers)
+        send = getattr(self.client, method.lower())  # POST and PATCH both carry a body
+        return send(f"{V1}{path}", data=payload, content_type="application/json", **headers)
 
     def _platform_gated_operations(self) -> dict[str, str]:
         """Every registered operation a platform permission gates, with that permission."""

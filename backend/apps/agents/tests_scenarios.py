@@ -22,6 +22,7 @@ class AgentsScenarioTests(TestCase):
         """AGT-S1
 
         A run opens, logs checks, finds similar, registers, proposes and closes (AGT-01).
+        Operations: `startAgentRun`, `finishAgentRun`.
         """
 
     @skip("pending: AGT-S2")

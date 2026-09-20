@@ -308,6 +308,9 @@ _CAPABILITY_VOCAB_READ = "Any session reads the list of lists; pickers, filters 
 _LOGIC_LIBRARY_READ = "A person's session, or an agent's key holding library:read; pickers and agents read one endpoint (AGT-02)."
 _LOGIC_VOCAB_WRITE = "vocab.manage writes a tenant list; a library list write is a proposal from proposals.create or library_vocab.manage (VOC-07)."
 _LOGIC_PROPOSE = "A term change is a proposal from proposals.create (tenant) or library_vocab.manage (console); never a direct write (VOC-07)."
+_LOGIC_RUN_LOG = "agents.manage in a tenant reads the library's runs and its own; system.health reads them in the console (AGT-01, item 14). The gate is the `require_any(AGENTS_MANAGE, SYSTEM_HEALTH)` call in apps/agents/api.py:list_agent_runs, which refuses a session holding neither with the structured 403."
+_LOGIC_WATCH_READER = "watch.read in the caller's tenant, or an agent's key with library:read, because a run must know which sources to check (WAT-01, AGT-02). The gate is apps/watch/api.py:require_watch_reader, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
+_LOGIC_CHANGE_FACTS = "An agent's key with changes:write, or a library editor with proposals.review; a change's facts are library facts and no tenant role holds that (WAT-02, WAT-03, PRO-01). The gate is apps/watch/api.py:require_change_writer, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_LIBRARY_RECORDS = "library.read in the caller's tenant, or an agent's key holding library:read; one read serves the inventory and the agents (INV-03, AGT-02)."
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
@@ -396,6 +399,19 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/obligations"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/obligations/{obligation_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/obligations/{obligation_id}/diff"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
+    # Chunk 5 (the agent API). Eight routes serve more than one kind of principal, so
+    # apps/watch/api.py and apps/agents/api.py decide and still answer the structured 403
+    # with requiredPermission. Everything else the chunk declares carries a single gate.
+    # The chunk 5 brief's "none is added to UNGATED_BY_DESIGN" is amended for these eight,
+    # each naming the dual-principal gate it defers to (CHUNK5_TASKS.md, c5-contract-api-agent).
+    ("GET", "/agent-runs"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_RUN_LOG),
+    ("GET", "/sources"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_WATCH_READER),
+    ("GET", "/sources/coverage"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_WATCH_READER),
+    ("POST", "/changes"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
+    ("PATCH", "/changes/{change_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
+    ("POST", "/changes/{change_id}/events"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
+    ("PATCH", "/changes/{change_id}/events/{event_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
+    ("PUT", "/changes/{change_id}/obligations"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
 }
 
 

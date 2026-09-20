@@ -216,7 +216,9 @@ here names it with its backticked `METHOD /path`.
   section 3): it answers `[{key, kind: null, label}]` from the language rows for the
   locale and tenant-language pickers, any session.
 - `GET /tenant/api-keys` answers a page `{items, total}`; `POST /tenant/api-keys` takes
-  `{name, scopes[], expiresAt?}` (no `agentId` until agents exist, chunk 5) and answers
+  `{name, scopes[], expiresAt?}` and never an `agentId` — corrected 2026-09-20: chunk 5
+  puts `agentId` on the platform's `POST /agent-keys`, not here, because a key bound to an
+  agent is the platform's and no tenant route creates one (ID-10, AGT-01) — and answers
   `{id, name, keyPrefix, scopes, createdAt, expiresAt, plainKey}` in one flat object
   instead of the designed `{key, secret}` pair (chunk 1 brief; `plainKey` is the only
   place the secret appears).
@@ -556,3 +558,24 @@ in `docs/DECISIONS.md`; the researched detail is in
   version for is 422 `unknown_key`, and fewer than two versions to compare, or two versions
   with no language in common, are 422. `lang` is accepted here and on the provision diff
   alone; every other read follows the reader's language order.
+
+Chunk 5 (watch and the agent API), 2026-09-20:
+
+- `GET /agent-runs` (`listAgentRuns`) answers `{items, total}` with `limit` and `offset`
+  instead of a cursor page, like every other list (playbook 10). Its rows are the runs the
+  caller may see: a tenant reads the library's runs and its own, the console reads them
+  under `system.health`. bleqq's agents are platform-owned and platform-run in R1, so no
+  session opens or closes a run and the two run writes take an agent key alone (AGT-01,
+  item 14).
+- `POST /agent-keys` (`createAgentKey`), `GET /agent-keys` (`listAgentKeys`) and
+  `POST /agent-keys/{keyId}/revoke` (`revokeAgentKey`) are new: the design has only the
+  tenant's `POST /tenant/api-keys`, and a key bound to an agent needs a route of its own
+  under `agent_definitions.manage` with a passkey step-up on creation. `agentId` is
+  required here and is not accepted on the tenant route (ID-10, AGT-01).
+- `PUT /changes/{changeId}/obligations` (`replaceChangeObligations`) is served to an agent
+  key holding `changes:write`, although the designed contract names no key for it: the
+  agent that registers a change also suggests the obligations it touches, and the same
+  scope already carries `POST /changes` and the change's documents (WAT-04, AGT-01). A
+  library editor's session with `proposals.review` writes it too; the link stays a
+  suggestion until a person confirms it. The list is capped at 200 links per call, the cap
+  the same list carries inside `POST /changes`.

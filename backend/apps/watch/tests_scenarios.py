@@ -22,6 +22,7 @@ class WatchScenarioTests(TestCase):
         """WAT-S1
 
         The source registry and coverage log show what was checked and with what result (WAT-01).
+        Operations: `createSource`, `updateSource`, `recordSourceCheck`.
         """
 
     @skip("pending: WAT-S2")
@@ -29,6 +30,7 @@ class WatchScenarioTests(TestCase):
         """WAT-S2
 
         One record per reform carries a timeline with partial dates (WAT-02).
+        Operations: `createChange`, `addChangeEvent`, `updateChangeEvent`.
         """
 
     @skip("pending: WAT-S3")
@@ -36,6 +38,7 @@ class WatchScenarioTests(TestCase):
         """WAT-S3
 
         A known stableKey merges duplicates and returns the existing change (WAT-02, AC-WAT1).
+        Operations: `createChange`, `addChangeDocument`.
         """
 
     @skip("pending: WAT-S4")
@@ -50,6 +53,7 @@ class WatchScenarioTests(TestCase):
         """WAT-S5
 
         An unknown key answers unknown_key with the valid keys (WAT-03, AC-WAT2).
+        Operations: `updateChange`.
         """
 
     @skip("pending: WAT-S6")
@@ -57,6 +61,7 @@ class WatchScenarioTests(TestCase):
         """WAT-S6
 
         Links to affected obligations carry a confidence and are confirmed by a person (WAT-04).
+        Operations: `replaceChangeObligations`.
         """
 
     @skip("pending: WAT-S7")

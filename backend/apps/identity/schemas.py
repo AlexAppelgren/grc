@@ -12,7 +12,8 @@ from typing import Any
 
 from pydantic import Field
 
-from apps.shared.schemas import CamelSchema
+from apps.shared import permissions as perms
+from apps.shared.schemas import CamelSchema, WriteBody
 
 __all__ = ["CamelSchema"]
 
@@ -336,6 +337,49 @@ class ApiKeyCreated(CamelSchema):
     name: str
     key_prefix: str
     scopes: list[str]
+    created_at: datetime
+    expires_at: datetime | None
+    plain_key: str
+
+
+# ---------------------------------------------------------------------------------------
+# Platform agent keys (ID-10, AGT-01). A key bound to an agent is the platform's: bleqq's
+# agents are platform-owned and platform-run, so `agentId` sits on this request and never
+# on the tenant's `POST /tenant/api-keys` (chunk 5 plan rule 13).
+# ---------------------------------------------------------------------------------------
+class AgentKeyOut(CamelSchema):
+    id: uuid.UUID
+    name: str
+    key_prefix: str
+    scopes: list[str]
+    agent_id: uuid.UUID | None
+    agent: RoleRef | None
+    created_at: datetime
+    expires_at: datetime | None
+    revoked_at: datetime | None
+    last_used_at: datetime | None
+
+
+class AgentKeysPage(CamelSchema):
+    items: list[AgentKeyOut]
+    total: int
+
+
+class AgentKeyCreate(WriteBody):
+    name: str = Field(min_length=1, max_length=200)
+    agent_id: uuid.UUID
+    scopes: list[str] = Field(min_length=1, max_length=len(perms.ALL_SCOPES))
+    expires_at: datetime | None = None
+
+
+class AgentKeyCreated(CamelSchema):
+    """The secret appears here and nowhere else: no log, no audit value, no outbox payload."""
+
+    id: uuid.UUID
+    name: str
+    key_prefix: str
+    scopes: list[str]
+    agent_id: uuid.UUID
     created_at: datetime
     expires_at: datetime | None
     plain_key: str

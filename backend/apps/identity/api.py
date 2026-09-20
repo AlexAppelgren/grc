@@ -23,6 +23,10 @@ from apps.identity import (
 )
 from apps.identity.models import User
 from apps.identity.schemas import (
+    AgentKeyCreate,
+    AgentKeyCreated,
+    AgentKeyOut,
+    AgentKeysPage,
     ApiKeyCreate,
     ApiKeyCreated,
     ApiKeyOut,
@@ -468,6 +472,32 @@ def create_api_key(request: HttpRequest, body: ApiKeyCreate) -> tuple[int, ApiKe
 def revoke_api_key(request: HttpRequest, key_id: uuid.UUID) -> tuple[int, None]:
     api_keys_logic.revoke_api_key(tenant=_tenant(request), actor=session_logic.actor_of(_actor_user(request)), key_id=key_id)
     return 204, None
+
+
+# ---------------------------------------------------------------------------------------
+# Platform agent keys (ID-10, AGT-01, chunk 5): keys bound to an agent, under
+# `agent_definitions.manage` and a fresh passkey assertion. They are the platform's alone —
+# bleqq's agents are platform-owned and platform-run — so a tenant session holds no
+# permission that reaches them and no tenant route creates a key bound to an agent.
+# `c5-platform-agent-keys` serves all three; until then each answers 501 behind its gate.
+# ---------------------------------------------------------------------------------------
+@router.get("/agent-keys", response=AgentKeysPage, auth=SessionAuth(), operation_id="listAgentKeys", by_alias=True)
+@requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
+def list_agent_keys(request: HttpRequest, page: PageQuery = Query(...)) -> AgentKeysPage:
+    return api_keys_logic.list_agent_keys()
+
+
+@router.post("/agent-keys", response={201: AgentKeyCreated}, auth=SessionAuth(), operation_id="createAgentKey", by_alias=True)
+@requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
+@requires_step_up
+def create_agent_key(request: HttpRequest, body: AgentKeyCreate) -> tuple[int, AgentKeyCreated]:
+    return api_keys_logic.create_agent_key()
+
+
+@router.post("/agent-keys/{key_id}/revoke", response=AgentKeyOut, auth=SessionAuth(), operation_id="revokeAgentKey", by_alias=True)
+@requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
+def revoke_agent_key(request: HttpRequest, key_id: uuid.UUID) -> AgentKeyOut:
+    return api_keys_logic.revoke_agent_key()
 
 
 @router.get("/tenant/security-log", response=SecurityLogPage, auth=SessionAuth(), operation_id="listSecurityLog", by_alias=True)

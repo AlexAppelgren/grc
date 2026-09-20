@@ -68,6 +68,21 @@ LINK = re.compile(r"/invite#(\S+)")
 CODE = re.compile(r"Your code is (\d+)")
 COOKIE = settings.REFRESH_COOKIE_NAME
 
+# Every non-GET route an API key's scope reaches, frozen so that none lands unreviewed
+# (ID-10, AC-PRO1). ID-S21 asserts the registered scope-gated set equals this one, so a new
+# agent-writable route fails the scenario until someone adds its line and says here why a
+# key may make that call. None of them touches a library record: the library's only door is
+# a proposal, and what each route does behind its scope is its own app's scenario.
+AGENT_WRITABLE_ROUTES: frozenset[tuple[str, str, str]] = frozenset(
+    {
+        ("POST", "/agent-runs", perms.SCOPE_AGENT_RUNS_WRITE),  # an agent opens its own run (AGT-01)
+        ("PATCH", "/agent-runs/{run_id}", perms.SCOPE_AGENT_RUNS_WRITE),  # and closes it (AGT-01)
+        ("POST", "/agent-runs/{run_id}/source-checks", perms.SCOPE_SOURCES_WRITE),  # what the run checked (WAT-01)
+        ("POST", "/changes/{change_id}/documents", perms.SCOPE_CHANGES_WRITE),  # a page it screened (AGT-07)
+        ("POST", "/search/similar", perms.SCOPE_SEARCH_READ),  # a read over POST: what already exists (AGT-02)
+    }
+)
+
 
 def _find(pattern: re.Pattern[str], text: str) -> str:
     match = pattern.search(text)
@@ -689,6 +704,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         """ID-S20
 
         An API key is shown once, stored hashed and revocable (ID-10).
+        Operations: `createApiKey`, `revokeApiKey`, `createAgentKey`, `revokeAgentKey`.
         """
         headers = sign_in(self.admin, tenant=self.tenant, step_up=True)
         created = self._post("/tenant/api-keys", {"name": "Research agent", "scopes": [perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_WRITE]}, **headers)
@@ -736,15 +752,18 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertFalse(any(scope.split(":")[0] in {"instruments", "provisions", "obligations"} for scope in perms.ALL_SCOPES))
         library_paths = ("/instruments", "/provisions", "/obligations")
         session_bound = {perms.UngatedReason.SELF, perms.UngatedReason.CAPABILITY}
+        scope_gated: set[tuple[str, str, str]] = set()
         probed = 0
         for operation in iter_operations(api):
             if operation.method == "GET":
                 continue
             self.assertFalse(operation.path.startswith(library_paths), f"a library write route exists: {operation.path}")
-            ungated = perms.UNGATED_BY_DESIGN.get((operation.method, operation.path))
             gate = perms.gate_of(operation.view_func)
+            ungated = perms.UNGATED_BY_DESIGN.get((operation.method, operation.path))
             if gate is not None and gate.kind == "scope":
-                continue  # built for a key: @requires_scope, and the scopes asserted above hold no library write
+                # An agent-writable route: AGENT_WRITABLE_ROUTES above is the review hook.
+                scope_gated.add((operation.method, operation.path, gate.value))
+                continue
             if gate is None and (ungated is None or ungated.reason not in session_bound):
                 continue  # a public bootstrap step (code request, sign-in) is no grant to anything
             with self.subTest(route=f"{operation.method} {operation.path}"):
@@ -754,6 +773,14 @@ class IdentityScenarioTests(ScenarioTestCase):
                     self.assertIn(response.status_code, (401, 403), "a key reached a route it must not")
                 probed += 1
         self.assertGreater(probed, 10)
+        # The routes a key may write are named one by one, never waved through by their
+        # decorator: a new one fails here until it is listed and reviewed.
+        self.assertEqual(
+            scope_gated,
+            AGENT_WRITABLE_ROUTES,
+            "a route an API key's scope may write was added, removed or regated; list it in "
+            "AGENT_WRITABLE_ROUTES with the reason that scope may make that call (ID-10, AC-PRO1)",
+        )
 
     def test_id_s22(self) -> None:
         """ID-S22

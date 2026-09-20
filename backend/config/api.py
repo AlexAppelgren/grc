@@ -21,6 +21,7 @@ from ninja import NinjaAPI
 from ninja.errors import AuthenticationError, HttpError
 from ninja.errors import ValidationError as NinjaValidationError
 
+from apps.agents.api import router as agents_router
 from apps.governance.api import router as governance_router
 from apps.identity.api import router as identity_router
 from apps.library.api import router as library_router
@@ -31,6 +32,7 @@ from apps.shared.errors import STATUS_BY_CODE, ProblemError, problem_response
 from apps.shared.middleware import loggable_route
 from apps.taxonomy.api import router as taxonomy_router
 from apps.tenants.api import router as tenants_router
+from apps.watch.api import router as watch_router
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +59,8 @@ api.add_router("", taxonomy_router)
 api.add_router("", proposals_router)
 api.add_router("", governance_router)
 api.add_router("", search_router)
+api.add_router("", agents_router)
+api.add_router("", watch_router)
 
 
 @api.exception_handler(ProblemError)

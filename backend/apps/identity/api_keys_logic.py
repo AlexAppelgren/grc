@@ -7,6 +7,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Iterable
 from datetime import datetime, timedelta
+from typing import NoReturn
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -19,6 +20,7 @@ from apps.shared import permissions as perms
 from apps.shared import tenancy
 from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal, PrincipalKind
+from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 
 
@@ -118,3 +120,28 @@ def revoke_api_key(*, tenant: Tenant, actor: Actor, key_id: uuid.UUID) -> ApiKey
         tenant_id=tenant.id,
     )
     return key
+
+
+# ---------------------------------------------------------------------------------------
+# Platform agent keys (ID-10, AGT-01, chunk 5). Declared ahead of the logic (chunk 5 plan
+# rule 1): each answers 501 `not_built` behind its real gate until `c5-platform-agent-keys`
+# builds them. A key bound to an agent is the platform's alone (rule 13), so these three
+# sit under `agent_definitions.manage` and no tenant route reaches them.
+# ---------------------------------------------------------------------------------------
+def _not_built(detail: str) -> NoReturn:
+    raise ProblemError(status=501, code="not_built", detail=detail)
+
+
+def list_agent_keys() -> NoReturn:
+    """`GET /agent-keys`. Built by `c5-platform-agent-keys`."""
+    _not_built("The agent key list is not built yet.")
+
+
+def create_agent_key() -> NoReturn:
+    """`POST /agent-keys`. Built by `c5-platform-agent-keys`."""
+    _not_built("Creating an agent key is not built yet.")
+
+
+def revoke_agent_key() -> NoReturn:
+    """`POST /agent-keys/{keyId}/revoke`. Built by `c5-platform-agent-keys`."""
+    _not_built("Revoking an agent key is not built yet.")

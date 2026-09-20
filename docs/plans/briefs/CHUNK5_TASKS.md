@@ -498,6 +498,19 @@ Mount the `agents` and `watch` routers in `config/api.py` (an append ledger). Ad
 - `bash generate-types.sh` produces a clean `openapi.json` and `api.generated.ts` locally; neither is committed.
 - The three agent-key routes answer 501 behind `agent_definitions.manage`, and `POST /agent-keys` answers 403 `step_up_required` without a fresh assertion, before the 501.
 - `NFR-S13` is green: no route is ungated and none is added to `UNGATED_BY_DESIGN`.
+  **Amended 2026-09-20, by the review of the branch that built this task.** Eight of the
+  routes above serve two kinds of principal — an agent's key and a person's session — and a
+  decorator gate takes one permission or one scope, so it cannot express either of them.
+  They are added to `UNGATED_BY_DESIGN` with the `logic-gate` reason and each entry now
+  names the function that decides — `watch/api.py:require_watch_reader`,
+  `watch/api.py:require_change_writer`, and the `require_any` call in
+  `agents/api.py:list_agent_runs` — which branches on the principal kind and still answers
+  the structured 403 with the scope or the permission it wanted. The eight are the two
+  registry reads, the run log and the five change-fact writes. Splitting each into a
+  key-only and a session-only route would have doubled the contract to satisfy the wording,
+  not the rule behind it. `NFR-S13` still refuses a route with no gate and no entry, and
+  `watch/tests_contract.py` and `agents/tests_contract.py` prove each of the eight refuses
+  the wrong principal, naming the scope it wanted to a key and the permission to a person.
 - No business logic sits in `api.py`; each route body is the gate, the schema and the call.
 - The diff stays inside the owned paths.
 
