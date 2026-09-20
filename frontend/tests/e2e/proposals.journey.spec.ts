@@ -29,4 +29,8 @@ test.describe('proposals journeys', () => {
   test.fixme("PRO-S9: A rejection needs a reason and is audited", async () => {
     // pending: PRO-S9 (PRO-01)
   });
+
+  test.fixme("PRO-S12: An independent agent confirms a proposal from the same queue", async () => {
+    // pending: PRO-S12 (PRO-01, PRO-02, AUD-02)
+  });
 });

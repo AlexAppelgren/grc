@@ -267,3 +267,17 @@ class ProposalsScenarioTests(ScenarioTestCase):
 
         A standard term never sits on a law's obligation (FP-01, INV-08).
         """
+
+    @skip("pending: PRO-S12 (D-48, chunk 4 c4-agent-approver)")
+    def test_pro_s12(self) -> None:
+        """PRO-S12
+
+        An independent agent confirms a proposal from the same queue (PRO-01, PRO-02, AUD-02).
+        """
+
+    @skip("pending: PRO-S13 (D-48, chunk 4 c4-agent-approver)")
+    def test_pro_s13(self) -> None:
+        """PRO-S13
+
+        The same principal can never both propose and approve (PRO-02, AC-PRO2).
+        """

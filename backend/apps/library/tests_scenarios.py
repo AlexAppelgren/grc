@@ -100,3 +100,10 @@ class LibraryScenarioTests(TestCase):
 
         Every instrument carries a regime from the regime dimension (INV-01, INV-08).
         """
+
+    @skip("pending: INV-S13 (D-48, chunk 4 c4-agent-approver)")
+    def test_inv_s13(self) -> None:
+        """INV-S13
+
+        A record an agent confirmed reads as machine-confirmed (INV-05, INV-06, PRO-02).
+        """

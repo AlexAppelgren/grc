@@ -4,7 +4,7 @@ Written 2026-09-19 by the planning workflow (read, plan, parallelism and coverag
 
 ## Scope, rules and defaults
 
-Chunk 4 plan: proposals and the platform console. Baseline is main at 51f9efa, which already holds the chunk 3 data layer and the redesign foundations (18a935b). The plan has 26 tasks in 10 waves. Nothing was edited while planning, and nothing waits for a decision: the report tail at the end of this file is replanned for Alex's answer to Q1 (2026-09-20).
+Chunk 4 plan: proposals and the platform console. Baseline is main at 51f9efa, which already holds the chunk 3 data layer and the redesign foundations (18a935b). The plan has 28 tasks in 11 waves. Nothing was edited while planning, and nothing waits for a decision: two tails at the end of this file are replanned for Alex's answers of 2026-09-20 — the report tail for Q1 (item 3), and the approver rework for item 19, which makes the second pair of eyes on a proposal an independent agent.
 
 HARD PRECONDITION: THE REST OF CHUNK 3 IS ON MAIN BEFORE WAVE 1
 - What must be on main:
@@ -36,6 +36,7 @@ WHAT IT DELIVERS
   - Shell and platform landing, vocabularies, queue, and tenants with create-and-invite-first-admin. No problem-reports surface: reports stay inside the bank.
   - ADM-S4 is reworded to the surfaces that exist, with each deferred surface named with its chunk.
 - A second library editor login, and bootstrap_platform --role library_editor with an audited role grant.
+- PRO-02's second principal, after item 19: the `proposals:review` scope, the proposal's reviewer columns and the widened four-eyes constraint, the approval path for an agent key, and machine-confirmed provenance on the record it applies. One queue, two kinds of approver; the console screens are built once and never rebuilt.
 
 DEFAULTS TAKEN (say so in commit bodies)
 - Designed and fixture kind names over the brief's obligation_* names, because inputs outrank the brief.
@@ -130,10 +131,14 @@ Tasks in one wave have disjoint files and can run side by side.
 4. `chunk4-T13b`, `chunk4-T14`, `chunk4-T18`
 5. `chunk4-T15`, `chunk4-T17`
 6. `chunk4-T19`, `chunk4-T20`
-7. `chunk4-T21`, `chunk4-T24a`
-8. `chunk4-T22`
+7. `chunk4-T21`, `chunk4-T25`
+8. `chunk4-T22`, `chunk4-T26`
 9. `chunk4-T23`
-10. `chunk4-T24b`
+10. `chunk4-T24a`
+11. `chunk4-T24b`
+
+`chunk4-T24a` moves from wave 7 to wave 10 because it closes the chunk: it cannot set a
+status or a coverage floor before the two approver tasks have landed.
 
 ## Open questions
 
@@ -361,6 +366,13 @@ Also:
 **Requirements:** PRO-02, AC-PRO2, ADM-02, ID-01, AUD-01  
 **Scenarios:** supports AUD-S5, VOC-S11, PRO-S3 (a second editor approves)  
 **Depends on:** nothing
+
+Reframed 2026-09-20 by item 19, unchanged in content. bleqq staffs no editorial function, so
+these two logins are not a staffed team: they are the intervention path — the person who takes
+a proposal over — and the fixtures that prove four eyes between two people, which is still the
+rule the constraint enforces. `bootstrap_platform --role library_editor` stays exactly as
+planned, because it is how a human approver is switched on later with no rework. Nothing in
+this task is cut; the agent approver is `chunk4-T25` and needs none of these files.
 
 Add a second platform library editor to the E2E roster: editor2@bleqq.test, Kari Nygaard (the name on the console cards). An editor who starts a proposal can then have it approved by another editor.
 - Regenerate the fixed passkeys with backend/scripts/generate_e2e_passkeys.py.
@@ -984,6 +996,11 @@ The detail:
 - The vocabulary variant.
 - Applied and rejected states.
 - On the editor's own proposal, the card's four-eyes notice replaces Approve.
+- Reworked 2026-09-20 (item 19): a decided proposal's "decided by" line renders a person or an
+  agent, from the same field pair the API already returns for the proposer (`reviewedBy` gains an
+  agent shape beside the user shape). No second screen, no console surface for agents, and no
+  filter by approver kind: one queue serves both kinds of approver. The copy keys for the agent
+  shape are written here with the rest.
 
 Also:
 - Add features/proposals: api, hooks, presentation, and tones by kind and status in tone-by-kind.ts.
@@ -1113,6 +1130,12 @@ Un-fixme three journeys:
 
 - `cd frontend && npm run lint && npm run typecheck && npm run test:coverage && npm run check:messages && npm run build`
 - `npm run test:e2e -- --grep "PRO-S3|PRO-S4|PRO-S5|PRO-S9"`
+
+Reworked 2026-09-20 (item 19): the screen is built once and is the human half of one queue. A
+proposal an agent already decided renders as decided, with the agent named, and offers no
+Approve; the step-up dialog stays the person's path and is never asked of an agent's decision.
+PRO-S12's E2E half is not this task's: it waits for the confirming agent's definition in chunk 5,
+and stays `test.fixme` here.
 
 **Invariants:**
 
@@ -1671,3 +1694,159 @@ Once chunk4-T23 is on main:
 - Floors never go lower than before.
 - Status reflects git log, not intentions.
 - Only the report tail's operations and modules change here.
+
+## The approver rework, decided 2026-09-20 (item 19)
+
+Alex decided that bleqq staffs no editorial function: "Agents do the work, and there should be
+several agents reading the library. A tenant/bank is then responsible for their interpretation.
+This doesn't change much, just the edit part in bleqq, but maybe in the future we would add this
+on", and "The agent can work from the queue as well, so who does it doesn't change the function
+of a queue, it's still needed." (`OWNER_RECOMMENDATIONS.md` item 19, D-48, ADR 0042, PRD 0.4.)
+
+What does **not** change: a proposal is still the only door into the library; four eyes is still
+a check constraint that refuses the same principal twice; the console queue, its reads, its
+screens and its audit rows are built exactly as planned; a person approving still steps up with a
+passkey; `library_editor` keeps every permission it has.
+
+What changes: the second principal may be an independent agent — a different agent definition and
+a different key from the proposer — reading the same queue with the new platform scope
+`proposals:review`, and the record its approval applies carries machine-confirmed provenance
+instead of a person's verification.
+
+Two tasks carry it. Nothing else in chunk 4 is cut, and no already-merged task is reverted:
+`chunk4-T11` (`c4-door-proof`) is on `main`, and `chunk4-T25` **amends** its guard rather than
+rewriting it, because that guard is the written form of the invariant.
+
+### chunk4-T25: The review scope, the widened four-eyes constraint and an agent's approval
+
+**Requirements:** PRO-01, PRO-02, AC-PRO1, AC-PRO2, ID-10, AUD-01, AUD-02
+**Scenarios:** PRO-S12 (`@integration` half, un-skipped), PRO-S13, ID-S27, AUD-S8 (all un-skipped); PRO-S2, PRO-S5 and ID-S21 stay green
+**Depends on:** chunk4-T6, chunk4-T10
+
+Carries the stop-and-report instruction: it touches the library fence, four eyes and the
+step-up, and a reviewer reads it before it merges.
+
+- **The scope.** `SCOPE_PROPOSALS_REVIEW = "proposals:review"` in `apps/shared/permissions.py`,
+  in `ALL_SCOPES`, with its one-line description. It is platform-only: a key carrying a tenant is
+  refused it at creation (422) and at the gate (403). It reaches the queue read and the approve,
+  correct and reject routes and nothing else. `proposals.review`, the permission, is unchanged and
+  is still held by no tenant role.
+- **The columns.** `proposal` gains `reviewed_by_api_key`, `proposed_by_agent` and
+  `reviewed_by_agent`; the agent columns are copied from each key by the one write path, because a
+  check constraint cannot dereference a key. Migration in `apps/proposals/migrations/`.
+- **The constraint.** `proposal_four_eyes` is replaced, in the same migration, by a constraint
+  that refuses a row whose user, key **or** agent is the same on both sides. It is proven to fail
+  once by inserting each of the three repeats directly, then restored. The 409
+  `four_eyes_violation` in `logic.py` grows the same two branches, so the code answers before the
+  database does and the database still answers on its own.
+- **The route.** `POST /proposals/{id}/approve`, `/reject` and the queue read accept a key
+  principal holding the scope, beside the session principal they accept today. `@requires_step_up`
+  applies to a session and only to a session: a key cannot step up, and the audit row's assertion
+  id is null for an agent's decision. The corrections rule, the source re-check and the standards
+  checks are the same code for both principals.
+- **The fence guard, amended.** `tests_library_fence.py` says today that a route reaching a
+  library write is gated by `proposals.review`, needs a step-up and needs a signed-in person, and
+  that no scope is named for it. Both assertions are rewritten to the post-0.4 rule and are
+  strengthened, never dropped: every route reaching a library write is gated by the permission for
+  a session or by `proposals:review` for a key; a session path still needs a step-up; a key path
+  needs the scope, the four-eyes constraint and an agent binding; no tenant role and no tenant key
+  holds either; and apply is still reached from `proposals/logic.py` alone. It is proven to fail
+  once when a second caller of `apply.apply` is added, and once when the scope is given to a
+  tenant key, then restored.
+- **The audit row.** `record()` names the agent, its definition version and the key, as it already
+  does for a proposal an agent filed. No new audit action and no new outbox topic.
+
+**Owned paths:**
+
+- `backend/apps/shared/permissions.py`
+- `backend/apps/shared/tests_library_fence.py`
+- `backend/apps/proposals/models.py`, `migrations/`, `logic.py`, `api.py`, `schemas.py`
+- `backend/apps/proposals/tests_scenarios.py`, `tests_apply.py`
+- `backend/apps/identity/tests_scenarios.py` (the ID-S27 test only)
+- `backend/apps/governance/tests_scenarios.py` (the AUD-S8 test only)
+- `backend/apps/shared/factories.py` (a platform key bound to an agent, for the fixtures)
+
+**Done when:**
+
+- PRO-S12's integration half, PRO-S13, ID-S27 and AUD-S8 are un-skipped and green, written before
+  the code.
+- A key of the proposing agent, and a second key of the same definition, are both refused 409
+  `four_eyes_violation`; a key of another definition approves and the version applies.
+- A direct insert repeating the user, the key or the agent is refused by the constraint.
+- A key without the scope answers 403; a tenant key carrying it is refused at creation.
+- An agent approval writes one audit row naming the agent and no assertion id; a person's approval
+  is unchanged and still carries one.
+- `migrate_from_zero` is green and the proposals floors hold: apply 90, logic 97, api 96.
+
+**Gates:**
+
+- `set -a; . ./.env.worktree; set +a`
+- `cd backend && ./run.sh run python manage.py makemigrations --check --dry-run --settings=config.test_settings && ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings`
+- `./run.sh run coverage run manage.py test apps.proposals apps.identity apps.governance apps.shared apps.library --settings=config.test_settings --noinput && ./run.sh run coverage report --include='apps/proposals/*'`
+- `./run.sh run ruff check . && ./run.sh run mypy`
+- `python backend/scripts/compliance_check.py --all && python backend/scripts/requirements_coverage.py`
+- `bash generate-types.sh` as a check only; do not commit the generated files
+- `bash scripts/prepush.sh --quick`
+
+**Invariants:**
+
+- Proposals stay the only door; the scope reaches no library row of its own.
+- Four eyes stays a check constraint, and the constraint is widened, never relaxed.
+- The step-up stays exactly where it is for people; no key path ever satisfies one.
+- No tenant role and no tenant key gains the permission or the scope.
+- `record()` on every write, in the same transaction, with the agent as actor.
+
+### chunk4-T26: Machine-confirmed provenance on the record an agent confirmed
+
+**Requirements:** INV-05, INV-06, PRO-02, AUD-01
+**Scenarios:** INV-S13 (un-skipped); INV-S7 and INV-S8 stay green
+**Depends on:** chunk4-T25
+
+- `instrument`, `obligation` and the version rows gain `verified_origin` (the existing
+  `origin_type` kind) and `verified_by_agent` beside `verified_by`. Migration in
+  `apps/library/migrations/`.
+- `proposals/apply.py` sets them from the proposal's two sides: the proposing agent and the
+  confirming agent when an agent confirmed it, and nothing but `approved_by` when a person did.
+- The read returns provenance the screen can label without deciding anything: a record confirmed
+  by agents is machine-confirmed and names both agents; it never reads as verified by a person.
+- INV-06's re-verification stamp is untouched and stays a person's act writing `verified_by`; a
+  later stamp supersedes the machine-confirmed label, which INV-S13 pins.
+
+**Owned paths:**
+
+- `backend/apps/library/models.py`, `migrations/`
+- `backend/apps/library/reading.py`, `schemas.py` (the provenance fields only)
+- `backend/apps/library/tests_scenarios.py` (the INV-S13 test only)
+- `backend/apps/proposals/apply.py`
+
+**Done when:**
+
+- INV-S13 is un-skipped and green, written before the code.
+- A record applied from an agent-confirmed proposal carries `verified_origin` `agent`, both agent
+  ids and no verifier user; one applied from a person's approval is unchanged.
+- A person's re-verification afterwards writes `verified_by` and `verified_origin` `user`.
+- `migrate_from_zero` is green; the library floors hold.
+
+**Gates:**
+
+- `set -a; . ./.env.worktree; set +a`
+- `cd backend && ./run.sh run python manage.py makemigrations --check --dry-run --settings=config.test_settings && ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings`
+- `./run.sh run coverage run manage.py test apps.library apps.proposals apps.shared --settings=config.test_settings --noinput && ./run.sh run coverage report --include='apps/library/*,apps/proposals/*'`
+- `./run.sh run ruff check . && ./run.sh run mypy`
+- `python backend/scripts/compliance_check.py --all && python backend/scripts/requirements_coverage.py`
+- `bash generate-types.sh` as a check only; do not commit the generated files
+
+**Invariants:**
+
+- Nothing is overwritten: provenance is written with the version, never edited afterwards.
+- AI output is labelled until a person confirms it; an agent's confirmation is not a person's.
+- Library writes happen only in `apply.py`, under `library_write()`.
+- The re-verification stamp stays the single exception and stays only a stamp.
+
+### What the E2E half waits for
+
+`PRO-S12` is `@integration` and `@e2e`. Its integration half lands here, with a platform key
+bound to an agent definition built as a fixture. Its journey half needs a confirming agent
+definition that actually decides, which is chunk 5's work (`CHUNK5_TASKS.md`), so the stub in
+`frontend/tests/e2e/proposals.journey.spec.ts` stays `test.fixme` at the end of chunk 4, and
+`chunk4-T24a` records that in the status file rather than treating it as a gap.

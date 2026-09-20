@@ -7,14 +7,24 @@
 
 ## 1. Business / user context
 
-Research agents find and propose; people decide. The agent API lets a run
-open, log source checks, find similar records, register changes
+Research agents find and propose; people decide in their own bank. The agent
+API lets a run open, log source checks, find similar records, register changes
 idempotently, submit proposals and close. Agents read the vocabularies at
 run start and may submit existing keys only. Definitions (prompt, tools,
 skills, evals) are versioned in `agents/` and owned by the platform. The app
 is the scheduler of record: `apps/agents` holds per-tenant settings,
 schedules, research requests, runs and budgets, and the worker starts runs
 through the `agent_runner` adapter.
+
+Since PRD 0.4 (Alex, 2026-09-20, D-48 and ADR 0042) several agents read the
+shared library, and the second pair of eyes on a proposal is one of them: a
+confirming agent, a definition of its own with its own key and the scope
+`proposals:review`, works the same queue a person works. It is independent by
+construction — the check constraint refuses a proposal whose user, key or agent
+is the same on both sides — so a proposing definition never confirms its own
+work, and its decisions are measured by an evaluation of their own, as the
+sweeper's classifications are. A bank still answers for its own interpretation
+of what the library says.
 
 A tenant admin controls which agents are on, cadence within plan limits,
 scope, run now, pause, interrupt, history with findings and cost, a monthly
@@ -189,4 +199,16 @@ Then in-scope accuracy and standard-term accuracy are reported and the gate fail
 Given a run that checked two out-of-scope documents
 When it closes with the stat out_of_scope 2
 Then the run history shows two source checks, no change and no proposal from them, and the count 2
+```
+
+### AGT-S14 — The confirming agent is independent of the proposing agent `@integration` (AGT-01, AGT-03, PRO-02)
+```gherkin
+Given the sweeper agent's key files a proposal in a platform run
+And a confirming agent whose definition, key and prompt differ from the sweeper's
+When the confirming agent opens a run and reads the pending queue with its review scope
+Then it sees the proposal and may approve, correct or reject it
+And its run records the proposals it decided, as a sweep records what it registered
+When a key of the proposing definition tries to confirm the same proposal
+Then the request answers 409 with code "four_eyes_violation"
+And no confirming-agent path writes a library row except through the approved proposal
 ```

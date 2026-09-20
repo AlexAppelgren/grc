@@ -60,7 +60,10 @@ Weakening any of these is a stop: ask the owner (Alex) first.
   row-level security; the app role `cw_app` cannot bypass it and the app
   refuses to boot on a role that can.
 - Proposals are the only door into the library. Agents never edit it; no API
-  key scope reaches it. The re-verification stamp is the single exception.
+  key scope reaches it. The re-verification stamp is the single exception. The
+  approver is a second, independent principal and never the proposer: a person
+  stepping up with a passkey, or an agent of a different definition and key,
+  working the same queue with a review scope that still reaches no library row.
 - Nothing overwritten: versions with effective dates, soft-deleted evidence,
   append-only ledgers with a trigger. Audit and outbox rows in the same
   transaction as every write, through `record()`, the only way to write them.
@@ -71,7 +74,9 @@ Weakening any of these is a stop: ask the owner (Alex) first.
   working the moment the first passkey exists. No self-service fallback.
 - "Applies" and "we comply" are separate facts. Stable keys never change.
 - AI output is labelled until a person confirms it; every model call is
-  logged; fetched content is untrusted.
+  logged; fetched content is untrusted. A library record whose proposal an
+  agent confirmed carries machine-confirmed provenance, naming the proposing
+  and the confirming agent, and never reads as verified by a person.
 - Enums in code are for kinds only. Types, statuses, tags and reasons are rows
   an admin manages; the API returns `key` and `kind`, never a phrase. The case
   state machine's categories and guards are fixed; sub-statuses sit inside.

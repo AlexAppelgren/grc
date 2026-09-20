@@ -313,3 +313,10 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertEqual([mail.to for mail in MockMailer.sent], ["admin@example-bank.test"])
         # The creation is audited in the new tenant's own log.
         self.assertEqual(self._one("tenant.created", tenant.id).tenant_id, tenant.id)
+
+    @skip("pending: AUD-S8 (D-48, chunk 4 c4-agent-approver)")
+    def test_aud_s8(self) -> None:
+        """AUD-S8
+
+        An agent's approval is in the audit trail with the agent named (AUD-01, AUD-02).
+        """

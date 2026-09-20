@@ -48,11 +48,15 @@ if behaviour changes. Numbering never reuses a number.
 | [0039](0039-standards-watched-from-public-metadata.md) | Standards are watched from public metadata, and only from cleared publishers | D-45 | accepted by default |
 | [0040](0040-soa-view-now-export-later.md) | The Statement of Applicability is a filtered register view in R2 and an export in R3 | D-46 | accepted by default |
 | [0041](0041-seed-one-standard-first.md) | One standard is seeded first, and the rest arrive by proposal | D-47 | accepted by default |
+| [0042](0042-agent-approves-from-the-same-queue.md) | The second pair of eyes on a library proposal may be an independent agent | Alex, 2026-09-20 (D-48) | accepted |
 
 Still to write, when the playbook's Appendix C says so: the SSO stance (R3),
 the switch from one branch to `staging` and `main` (supersedes 0015), the
 chosen embedding model (fills 0009), the first real agent runner (fills 0008),
 protection of production data from developer writes (playbook 11.3).
+
+PRD 0.4 (2026-09-20) added 0042 for D-48, Alex's decision that bleqq staffs no
+editorial function.
 
 PRD 0.3 (2026-09-19) added 0026 to 0041 for decisions D-18 to D-47. D-18 to
 D-21 and D-23 to D-26 share ADR 0027, and D-22 and D-34 share ADR 0028, because

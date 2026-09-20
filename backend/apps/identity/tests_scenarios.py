@@ -818,3 +818,10 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(body["requiredPermission"], perms.MEMBERS_MANAGE)
         self.assertTrue(body["detail"])
         self.assertTrue(body["title"])
+
+    @skip("pending: ID-S27 (D-48, chunk 4 c4-agent-approver)")
+    def test_id_s27(self) -> None:
+        """ID-S27
+
+        The review scope reaches the queue and never a library row (ID-10, AC-PRO1, AC-ID3).
+        """

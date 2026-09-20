@@ -18,7 +18,7 @@ Ordered by what blocks testing first. Nothing here is blocked on code.
 - [ ] D-02: confirm the production host and RP ID.
 - [ ] Playbook 6.4 lists button labels under the `microlabel` role (uppercase); the foundations amendment of ADR 0020 sets them in `body` at 500, sentence case, as shadcn does, and the app now follows the design. Confirm, or say so and buttons go back to microlabel.
 - [ ] D-05: choose our own brand green and sand, and clear the use of Green with SEB given your role there.
-- [ ] D-14: name the first library editors.
+- [x] D-14: name the first library editors. **Answered 2026-09-20 (item 19):** nobody. bleqq staffs no editorial function; an independent agent gives the second pair of eyes and the `library_editor` role stays unstaffed, for the proposals you take over yourself (D-48, ADR 0042).
 - [ ] Security review F9 (medium): default taken on 2026-09-19 without waiting: adding or removing a passkey from a full session is allowed only while the session is younger than the step-up window or with a fresh step-up assertion; a sign-in or enrolment no longer counts as a step-up, so every step-up action asks for the passkey explicitly (ID-S14). Revert only if you want passkey management without a second prompt later in a session; the reasoning is in `docs/security/CHUNK1_AUTH_REVIEW_2026-09-19.md`.
 - [ ] Security review F12 (medium): default taken on 2026-09-19: the enrolment code and invitation mails are sent by the worker after commit, so the neutral and sending paths take the same time. Nothing to decide unless you prefer synchronous mail on the test deploy.
 - [ ] Tab bar, open question 1 (`design/system/navigation.md`; default taken on 2026-09-19): the floating bar has a 12 px radius and the current tab 6 px, because the fully rounded shape stays the pill's. iOS 26 draws a capsule-shaped bar with a fully rounded current tab. Say so if you want the capsule instead.
@@ -229,3 +229,44 @@ Change any of them and the answer changes a task, not an invariant.
 - [ ] **AGT-04's wording.** PRD AGT-04 and `backend/apps/agents/app.md` say "a tenant admin
       controls which agents are on", which now means the bank's own agents only. The
       wording needs a line saying so; the decision session owns both files.
+
+## Questions your decision of 2026-09-20 raises (item 19, no editors)
+
+Nothing waits for these: the consolidation of 2026-09-20 took a default for each and says so in
+`docs/plans/briefs/NO_EDITORS_CONSOLIDATION.md`, `docs/DECISIONS.md` D-48 and ADR 0042. Change
+any of them and the answer changes a task, not an invariant — except the last two, which would
+change what four eyes means and are marked as such.
+
+- [ ] **May a bank see which agent confirmed a fact?** Default: **yes**. The record's provenance
+      names the proposing and the confirming agent, exactly as it already names an agent proposer,
+      and the screen labels it machine-confirmed. The alternative is to show only "machine-
+      confirmed" without naming the agents, which is one field fewer in the read and no other
+      change.
+- [ ] **What happens to a proposal no agent confirms?** Default: **nothing** — it stays open in
+      the queue for ever, as an unreviewed proposal does today. No expiry, no auto-approval, no
+      escalation. If you want a window (for example, "unconfirmed after 14 days appears on the
+      console's own list"), it is a setting and a console filter, not a new state; an
+      auto-approval after a window would remove four eyes and is a stop-and-ask.
+- [ ] **How many independent agents read the library?** Default: **one confirming definition** to
+      start, beside the sweeper and the re-check. "Several agents reading the library" is already
+      true of those three; a second confirming definition, or one per record kind, is a chunk 11
+      question.
+- [ ] **Must the confirming agent differ in more than its definition?** Default: a different
+      definition, prompt and key; the same model and provider are allowed. Requiring a different
+      model would be a real independence gain and a cost and latency change, and it needs D-07's
+      EU path settled first.
+- [ ] **Does J-4 stay the golden path as written?** Default: **yes**, unchanged — "an agent
+      registers a change and a proposal, the library editor approves in the console, the tenant
+      sees what changed". It is the intervention path and it stays tested end to end. The
+      agent-confirmed path is `PRO-S12`, whose journey half waits for chunk 5. Say the word if the
+      agent path should become the journey and the person's path the variant.
+- [ ] **Should any change still need a person?** (Would change what four eyes means.) Default:
+      **no** — every proposal kind may be confirmed by an agent. A carve-out is defensible for a
+      first-of-its-kind instrument, a retirement, or anything carrying a standard's term, and it
+      would be one list in the approval logic.
+- [ ] **Is an agent's approval enough for a record a bank relies on?** (Would change what four
+      eyes means.) Default: **yes**, with the labelling that goes with it: machine-confirmed, both
+      agents named, and the bank answering for its own interpretation. If a vendor review or a
+      supervisor expects a person behind every library fact, staffing `library_editor` again is a
+      staffing change and no rework — which is why the queue is built once, for both kinds of
+      approver.

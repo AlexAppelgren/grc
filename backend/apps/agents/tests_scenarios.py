@@ -93,3 +93,10 @@ class AgentsScenarioTests(TestCase):
 
         Out-of-scope documents are counted and never registered, and the eval set gates it (AGT-08, SRC-05).
         """
+
+    @skip("pending: AGT-S14 (D-48, chunks 4 and 5)")
+    def test_agt_s14(self) -> None:
+        """AGT-S14
+
+        The confirming agent is independent of the proposing agent (AGT-01, AGT-03, PRO-02).
+        """
