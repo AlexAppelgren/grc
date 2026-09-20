@@ -2530,7 +2530,7 @@
         "type": "object"
       },
       "PageQuery": {
-        "description": "Pagination on every list (playbook 10): `limit` default 20, max 100, `offset`.\nThe numbers come from settings; a value above the maximum is a 422, not a clamp.",
+        "description": "Pagination on every list (playbook 10): `limit` default 20, max 100, `offset`.\nThe numbers come from settings; a value above the maximum is a 422, not a clamp.\n`offset` is bounded too: PostgreSQL walks every skipped row and raises above a signed\n64-bit integer, so an unbounded offset answers 500 on every list (hardening H1).",
         "properties": {
           "limit": {
             "default": 20,
@@ -2541,6 +2541,7 @@
           },
           "offset": {
             "default": 0,
+            "maximum": 100000,
             "minimum": 0,
             "title": "Offset",
             "type": "integer"
@@ -5692,6 +5693,7 @@
             "required": false,
             "schema": {
               "default": 0,
+              "maximum": 100000,
               "minimum": 0,
               "title": "Offset",
               "type": "integer"
@@ -6096,6 +6098,7 @@
             "required": false,
             "schema": {
               "default": 0,
+              "maximum": 100000,
               "minimum": 0,
               "title": "Offset",
               "type": "integer"
@@ -6590,6 +6593,7 @@
             "required": false,
             "schema": {
               "default": 0,
+              "maximum": 100000,
               "minimum": 0,
               "title": "Offset",
               "type": "integer"
@@ -7469,6 +7473,7 @@
             "required": false,
             "schema": {
               "default": 0,
+              "maximum": 100000,
               "minimum": 0,
               "title": "Offset",
               "type": "integer"
@@ -7827,6 +7832,7 @@
             "required": false,
             "schema": {
               "default": 0,
+              "maximum": 100000,
               "minimum": 0,
               "title": "Offset",
               "type": "integer"
@@ -7947,6 +7953,7 @@
             "required": false,
             "schema": {
               "default": 0,
+              "maximum": 100000,
               "minimum": 0,
               "title": "Offset",
               "type": "integer"
@@ -8369,6 +8376,7 @@
             "required": false,
             "schema": {
               "default": 0,
+              "maximum": 100000,
               "minimum": 0,
               "title": "Offset",
               "type": "integer"

@@ -7,9 +7,10 @@ treated as production (fail closed): `prod`, `Production`, `demo` and `dev` all 
 guard on, `local`, `test` and `ci` are the only non-deployed names, and a host environment
 name alone makes any name deployed.
 
-One case does not name an environment: LIBRARY_DIFF_MAX_SENTENCES is refused outside 1 to
-200 everywhere, because above 200 one "show what changed" can cost seconds on text a source
-fetched, and DEBUG never relaxes a bound.
+Two settings' bounds do not name an environment: LIBRARY_DIFF_MAX_SENTENCES is refused
+outside 1 to 200 everywhere, because above 200 one "show what changed" can cost seconds on
+text a source fetched, and API_PAGE_OFFSET_MAX is refused below API_PAGE_SIZE_MAX, because
+under one page no reader reaches a list's second page. DEBUG never relaxes a bound.
 
 Each case names the rule of the production-safety block it proves. The subprocess
 environment is built from scratch (no inherited variable), so the runner's own settings
@@ -54,6 +55,8 @@ SETTING_NAMES = (
     "DJANGO_SETTINGS_MODULE",
     "SENTRY_DSN",
     "LIBRARY_DIFF_MAX_SENTENCES",
+    "API_PAGE_OFFSET_MAX",
+    "API_PAGE_SIZE_MAX",
 )
 
 
@@ -301,6 +304,27 @@ class ProductionGuard(TestCase):
                 "the diff cap's bounds",
             ),
             Case("the diff cap boots at its ceiling", self._local("local", LIBRARY_DIFF_MAX_SENTENCES="200"), True),
+            # The offset bound (H1): below one page nobody reaches the second page of a
+            # list, and every list answers 422 to a number a caller cannot avoid.
+            Case(
+                "an offset bound below one page refuses to boot",
+                self._local("local", API_PAGE_OFFSET_MAX="50", API_PAGE_SIZE_MAX="100"),
+                False,
+                "API_PAGE_OFFSET_MAX",
+                "the offset bound's floor",
+            ),
+            Case(
+                "a negative offset bound refuses to boot",
+                self._good_deployed("prod", API_PAGE_OFFSET_MAX="-1"),
+                False,
+                "API_PAGE_OFFSET_MAX",
+                "the offset bound's floor",
+            ),
+            Case(
+                "the offset bound boots at its floor",
+                self._local("local", API_PAGE_OFFSET_MAX="100", API_PAGE_SIZE_MAX="100"),
+                True,
+            ),
             Case(
                 "DB_ROLE_GUARD_ENABLED=false does not disarm rule 7 when deployed",
                 self._good_deployed("prod", DATABASE_URL=self.superuser_url, DB_ROLE_GUARD_ENABLED="false"),

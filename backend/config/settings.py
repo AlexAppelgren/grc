@@ -331,6 +331,20 @@ SEARCH_BUDGET_MS = env_int("SEARCH_BUDGET_MS", 800)
 SEARCH_RERANKED_BUDGET_MS = env_int("SEARCH_RERANKED_BUDGET_MS", 1500)
 API_PAGE_SIZE_DEFAULT = env_int("API_PAGE_SIZE_DEFAULT", 20)
 API_PAGE_SIZE_MAX = env_int("API_PAGE_SIZE_MAX", 100)
+# The largest offset a list accepts. PostgreSQL counts an OFFSET row by row and raises on a
+# value beyond a signed 64-bit integer, so an unbounded offset turns every paginated route
+# into a 500 (hardening H1). Above this the answer is a 422 naming the field, not a crash;
+# nothing in the product pages that deep, and a reader that wants the far end filters.
+API_PAGE_OFFSET_MAX = env_int("API_PAGE_OFFSET_MAX", 100000)
+# Bounded like the diff cap below, and for the same reason: a typo here is not a slower
+# product but a broken one. Below API_PAGE_SIZE_MAX no reader can reach the second page of
+# a full list, and at 0 or below every list answers 422 to its own default offset. The
+# production-safety block runs too late for this, so it refuses here.
+if API_PAGE_OFFSET_MAX < API_PAGE_SIZE_MAX:
+    raise ImproperlyConfigured(
+        f"Refusing to boot: API_PAGE_OFFSET_MAX is {API_PAGE_OFFSET_MAX}, "
+        f"below API_PAGE_SIZE_MAX ({API_PAGE_SIZE_MAX})."
+    )
 
 # ---------------------------------------------------------------------------------------
 # ===== SRC-01..03 search and ask input caps (apps/search/schemas.py) =====================

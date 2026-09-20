@@ -21,10 +21,11 @@ from apps.shared.testing import ScenarioTestCase, sign_in
 
 # Queries per members list, measured 2026-09-19 and pinned so an N+1 shows up as a number
 # (playbook 10): the request's savepoint pair (2), the auth layer (identity flag on, the
-# session row, flag off, activate, membership permissions, platform roles, latest step-up:
-# 7), the caller's user and tenant for the label order (2), the count and the page (2), the
-# roles and labels prefetches (2), the test's own activation (1).
-MEMBERS_LIST_QUERIES = 16
+# session row, flag off, activate, membership permissions, latest step-up: 6), the caller's
+# user and tenant for the label order (2), the count and the page (2), the roles and labels
+# prefetches (2), the test's own activation (1). One fewer than measured at chunk 1's close:
+# a bank session no longer reads the platform role assignments at all (hardening H13).
+MEMBERS_LIST_QUERIES = 15
 
 
 class MembersAndInvitations(ScenarioTestCase):

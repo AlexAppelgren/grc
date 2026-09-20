@@ -57,22 +57,23 @@ ALL_SERVICES = (
 )
 # Queries per list read with a real session, measured 2026-09-19 and pinned so an N+1 shows
 # up as a number (playbook 10): the request's savepoint pair (2); the session (identity flag
-# on, the session row, flag off, the tenant activation, tenant and platform role permissions,
-# the latest step-up: 7); the caller's tenant and locale (2); the footprint and its restricting
+# on, the session row, flag off, the tenant activation, the tenant role permissions, the
+# latest step-up: 6 — a bank session does not read the platform roles at all, hardening
+# H13); the caller's tenant and locale (2); the footprint and its restricting
 # dimensions (2); the count and the page (2); the page's titles and versions (2); the scope
 # (own terms, instrument regimes, the terms: 3); the tags of the page and their rows (2); one
 # label query each for terms, tags, duty types and levels (4); the dimensions with their term
 # counts and labels (2).
-LIST_QUERIES = 2 + 7 + 2 + 2 + 2 + 2 + 3 + 2 + 4 + 2
+LIST_QUERIES = 2 + 6 + 2 + 2 + 2 + 2 + 3 + 2 + 4 + 2
 # Queries per card read, measured 2026-09-19 and pinned the same way: the savepoint pair (2);
-# the session (7) and the caller's tenant and locale (2), as above; the obligation with its
+# the session (6) and the caller's tenant and locale (2), as above; the obligation with its
 # instrument, level, duty type and verifier (1); its titles, its instrument's titles, its
 # versions, their summaries, its tags and the provisions it cites (6); the scope (own terms,
 # instrument regimes, the terms: 3); one label query each for terms, tags, duty types and
 # levels (4); the dimensions with their term counts and labels (2); the footprint and its
 # restricting dimensions (2); the relations, the titles of what they point at and the
 # relation types' labels (3).
-DETAIL_QUERIES = 2 + 7 + 2 + 1 + 6 + 3 + 4 + 2 + 2 + 3
+DETAIL_QUERIES = 2 + 6 + 2 + 1 + 6 + 3 + 4 + 2 + 2 + 3
 
 
 def seed_reference() -> None:

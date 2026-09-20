@@ -359,4 +359,13 @@ When the same member signs in after the notice date
 Then the response is 403 with code "credential_policy" and the security log records it
 When an admin sets a date or an allow-list that would refuse their own passkeys
 Then the request answers 409
+
+### ID-S30 — A bank invitation never reaches platform staff `@integration` (ID-01, ID-02, ID-03)
+```gherkin
+Given an address that holds a platform role
+When a tenant admin invites it into the bank
+Then the answer is 422 "platform_account" and no invitation is written
+Given a bank invitation whose address is granted a platform role afterwards
+When the invited person enters the emailed code and registers their first passkey
+Then the answer is 422 "platform_account" with no passkey, no membership and no audit row written
 ```

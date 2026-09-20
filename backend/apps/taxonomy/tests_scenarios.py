@@ -59,16 +59,17 @@ V1 = "/api/v1"
 INPUT_DELTAS = APPS_DIR.parent.parent / "docs" / "inputs" / "INPUT_DELTAS.md"
 
 # Queries per read, measured 2026-09-19 and pinned so an N+1 shows up as a number (playbook
-# 10). Every scenario request starts with the same eleven: the scenario client's audit count
+# 10). Every scenario request starts with the same ten: the scenario client's audit count
 # (1), the request's savepoint pair (2), the auth layer (identity flag on, the session row,
-# flag off, activate, membership permissions, platform roles, latest step-up: 7) and the
-# caller's user for the label order (1). Then the caller's tenant for the label order (1) and
-# the read's own queries, which do not grow with the number of rows:
+# flag off, activate, membership permissions, latest step-up: 6) and the caller's user for
+# the label order (1). One fewer than measured at chunk 2's close: a bank session no longer
+# reads the platform role assignments at all (hardening H13). Then the caller's tenant for
+# the label order (1) and the read's own queries, which do not grow with the number of rows:
 # - a vocabulary list: the rows with their usage count (1) and their labels (1);
-URGENCY_READ_QUERIES = 11 + 1 + 2
+URGENCY_READ_QUERIES = 10 + 1 + 2
 # - the footprint: the selected terms (1) and their labels (1), the dimensions with their
 #   term counts (1) and their labels (1), the pending request (1).
-FOOTPRINT_READ_QUERIES = 11 + 1 + 5
+FOOTPRINT_READ_QUERIES = 10 + 1 + 5
 
 
 def _seed_library() -> None:

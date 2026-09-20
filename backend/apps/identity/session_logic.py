@@ -32,6 +32,7 @@ from apps.identity.models import (
     UserStatus,
 )
 from apps.identity.security_log import client_ip, log_event, user_agent
+from apps.shared import permissions as perms
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal, PrincipalKind
@@ -132,11 +133,20 @@ def build_principal(session: UserSession) -> Principal | None:
     None when a full session in a tenant stands on no active membership there
     (deactivated, or never created): the token then resolves to nothing, so no route that
     takes "any member" as its grant answers a non-member (security review 2026-09-19,
-    finding F7). An enrolment session has no membership yet by definition."""
+    finding F7). An enrolment session has no membership yet by definition.
+
+    A session holds the permissions of its own zone and no others (hardening H2, H13). A
+    tenant session reads the membership's role rows and keeps what `TENANT_PERMISSIONS`
+    names, so a row written around the seeds and the role editor cannot smuggle
+    `proposals.review` past the library fence; a platform session reads the platform
+    assignments and keeps what `PLATFORM_PERMISSIONS` names. Platform staff are separate
+    accounts (bootstrap_platform and every bank invitation refuse an address the other
+    zone knows), so a platform grant is never read in a bank session at all."""
     user = session.user
     if session.kind == SessionKind.ENROLMENT.value:
         return Principal(kind=PrincipalKind.ENROLMENT, subject_id=user.id, tenant_id=session.tenant_id, session_id=session.id)
     granted: set[str] = set()
+    is_platform_staff = False
     if session.tenant_id is not None:
         # One row per role of the active membership; one row with NULL for an active
         # membership with no role; no row at all when there is no active membership.
@@ -147,15 +157,16 @@ def build_principal(session: UserSession) -> Principal | None:
         if not role_rows:
             return None
         for permissions in role_rows:
-            if permissions:
-                granted.update(permissions)
-    platform_rows = PlatformRoleAssignment.objects.filter(user=user, role__active=True).values_list(
-        "role__permissions", flat=True
-    )
-    is_platform_staff = False
-    for permissions in platform_rows:
-        is_platform_staff = True
-        granted.update(permissions or [])
+            granted.update(permissions or [])
+        granted &= perms.TENANT_PERMISSIONS
+    else:
+        platform_rows = PlatformRoleAssignment.objects.filter(user=user, role__active=True).values_list(
+            "role__permissions", flat=True
+        )
+        for permissions in platform_rows:
+            is_platform_staff = True
+            granted.update(permissions or [])
+        granted &= perms.PLATFORM_PERMISSIONS
     assertion = latest_step_up(session.id)
     return Principal(
         kind=PrincipalKind.USER,

@@ -34,7 +34,7 @@ from django.db import DatabaseError, connection, transaction
 from django.test import RequestFactory, override_settings
 from django.utils import timezone
 
-from apps.identity import api_keys_logic, tokens
+from apps.identity import api_keys_logic, roles_logic, tokens
 from apps.identity.models import (
     ApiKey,
     Invitation,
@@ -44,6 +44,8 @@ from apps.identity.models import (
     LoginMethod,
     Membership,
     OtpCode,
+    PlatformRole,
+    PlatformRoleAssignment,
     TenantRole,
     User,
     UserSession,
@@ -842,3 +844,43 @@ class IdentityScenarioTests(ScenarioTestCase):
 
         A stricter passkey policy binds new passkeys now and old ones from its notice date (ID-07).
         """
+
+    def test_id_s30(self) -> None:
+        """ID-S30
+
+        A bank invitation never reaches platform staff (ID-01, ID-02, ID-03).
+        """
+        # At invitation: an address that already holds a platform role is turned away and
+        # no invitation row is written.
+        staff = factories.platform_user(roles=("library_editor",), email="editor@platform.example")
+        refused = self.client.post(
+            "/api/v1/tenant/members",
+            data={"email": staff.email, "roleKeys": ["reader"]},
+            content_type="application/json",
+            **sign_in(self.admin, tenant=self.tenant),
+        )
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "platform_account")
+        self.activate(self.tenant)
+        self.assertFalse(Invitation.objects.filter(tenant=self.tenant, email=staff.email).exists())
+
+        # At enrolment: the platform role arrived after the invitation went out. The
+        # ceremony has to refuse before the credential is stored, because a 422 is built
+        # inside the view and the request's transaction still commits: a credential
+        # written first would stay behind with no audit row, and the account would hold a
+        # live passkey it cannot sign in with and an emailed code that no longer works.
+        _, token = self._invite("late@bank.example")
+        code = self._open_and_get_code(token)
+        late = User.objects.get(email="late@bank.example")
+        roles_logic.ensure_platform_roles()
+        PlatformRoleAssignment.objects.create(user=late, role=PlatformRole.objects.get(key="library_editor"))
+        verified = self._verify_code("late@bank.example", code)
+        self.assertEqual(verified.status_code, 200, verified.content)
+        registered = self._register(verified.json()["accessToken"], SoftwareAuthenticator())
+        self.assertEqual(registered.status_code, 422, registered.content)
+        self.assertEqual(registered.json()["code"], "platform_account")
+        self.assertEqual(WebAuthnCredential.objects.filter(user=late).count(), 0)
+        late.refresh_from_db()
+        self.assertNotEqual(late.status, UserStatus.ACTIVE.value)
+        self.activate(self.tenant)
+        self.assertFalse(Membership.objects.filter(tenant=self.tenant, user=late).exists())

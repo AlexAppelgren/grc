@@ -47,10 +47,12 @@ class ProductInfo(CamelSchema):
 
 class PageQuery(Schema):
     """Pagination on every list (playbook 10): `limit` default 20, max 100, `offset`.
-    The numbers come from settings; a value above the maximum is a 422, not a clamp."""
+    The numbers come from settings; a value above the maximum is a 422, not a clamp.
+    `offset` is bounded too: PostgreSQL walks every skipped row and raises above a signed
+    64-bit integer, so an unbounded offset answers 500 on every list (hardening H1)."""
 
     limit: int = Field(default=settings.API_PAGE_SIZE_DEFAULT, ge=1, le=settings.API_PAGE_SIZE_MAX)
-    offset: int = Field(default=0, ge=0)
+    offset: int = Field(default=0, ge=0, le=settings.API_PAGE_OFFSET_MAX)
 
 
 class MailOutboxMessage(CamelSchema):
