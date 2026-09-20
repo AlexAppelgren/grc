@@ -79,7 +79,6 @@ POST /eval/runs chunk 7
 POST /exports chunk 12
 POST /imports chunk 12
 POST /imports/{}/commit chunk 12
-POST /me/visit chunk 1
 POST /notifications/read-all chunk 10
 POST /notifications/{}/read chunk 10
 POST /obligations/{}/applicability-requests chunk 8

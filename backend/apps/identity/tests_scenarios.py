@@ -9,7 +9,7 @@ passkeyAuthenticateOptions, passkeyAuthenticateVerify, stepUpOptions, stepUpVeri
 refreshSession, signOut, updateMe, renameMyPasskey, removeMyPasskey, revokeMySession,
 inviteMember, updateMember, deactivateMember, revokeMemberSessions, reissueEnrolment,
 resendInvitation, revokeInvitation, createRole, updateRole, retireRole, createApiKey,
-revokeApiKey.
+revokeApiKey, markVisit.
 
 The ceremonies run for real against py_webauthn through the software authenticator in
 tests_webauthn_support.py; the emailed link and code are read from the mock mailer.
@@ -23,7 +23,7 @@ import ast
 import hashlib
 import re
 import secrets
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from unittest import mock, skip
@@ -67,6 +67,9 @@ CHROME_ON_WINDOWS = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.3
 LINK = re.compile(r"/invite#(\S+)")
 CODE = re.compile(r"Your code is (\d+)")
 COOKIE = settings.REFRESH_COOKIE_NAME
+# The library bookmark of ID-S31 starts here, months before any test runs: the move is
+# proven by the stamp leaving this anchor, never by comparing it with today (CLAUDE.md §11).
+SEEN_BEFORE = datetime(2026, 6, 1, 9, 0, tzinfo=UTC)
 
 # Every non-GET route an API key's scope reaches, frozen so that none lands unreviewed
 # (ID-10, AC-PRO1). ID-S21 asserts the registered scope-gated set equals this one, so a new
@@ -911,3 +914,35 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertNotEqual(late.status, UserStatus.ACTIVE.value)
         self.activate(self.tenant)
         self.assertFalse(Membership.objects.filter(tenant=self.tenant, user=late).exists())
+
+    def test_id_s31(self) -> None:
+        """ID-S31
+
+        A member marks the library as seen and only their own bookmark moves (ID-04, AUD-01, AC-AUD1).
+        """
+        self.activate(self.tenant)
+        mine = Membership.objects.get(tenant=self.tenant, user=self.admin)
+        mine.last_visit_at = SEEN_BEFORE
+        mine.save(update_fields=["last_visit_at"])
+        editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+
+        seen = self._post("/me/visit", **sign_in(self.admin, tenant=self.tenant))
+
+        self.assertEqual(seen.status_code, 204, seen.content)
+        self.activate(self.tenant)
+        mine.refresh_from_db()
+        assert mine.last_visit_at is not None
+        self.assertGreater(mine.last_visit_at, SEEN_BEFORE)
+        self.assertIsNone(Membership.objects.get(tenant=self.tenant, user=self.second_admin).last_visit_at)
+        visits = list(AuditEvent.objects.filter(action="member.visited"))
+        self.assertEqual([(row.tenant_id, row.actor_id) for row in visits], [(self.tenant.id, self.admin.id)])
+        self.assertEqual(visits[0].before["lastVisitAt"], SEEN_BEFORE.isoformat())
+        self.assertEqual(visits[0].after["lastVisitAt"], mine.last_visit_at.isoformat())
+
+        # Platform staff hold no membership, so there is no bookmark of theirs to move.
+        refused = self._post("/me/visit", **sign_in(editor))
+
+        self.assertEqual(refused.status_code, 404, refused.content)
+        self.assertEqual(refused.json()["code"], "not_found")
+        self.activate(self.tenant)
+        self.assertEqual(AuditEvent.objects.filter(action="member.visited").count(), 1)

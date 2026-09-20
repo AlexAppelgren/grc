@@ -9028,6 +9028,26 @@
         ]
       }
     },
+    "/api/v1/me/visit": {
+      "post": {
+        "operationId": "markVisit",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Mark Visit",
+        "tags": [
+          "Identity"
+        ]
+      }
+    },
     "/api/v1/obligations": {
       "get": {
         "operationId": "listObligations",

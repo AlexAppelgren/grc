@@ -369,3 +369,13 @@ Given a bank invitation whose address is granted a platform role afterwards
 When the invited person enters the emailed code and registers their first passkey
 Then the answer is 422 "platform_account" with no passkey, no membership and no audit row written
 ```
+
+### ID-S31 — A member marks the library as seen and only their own bookmark moves `@integration` (ID-04, AUD-01, AC-AUD1)
+```gherkin
+Given a member of a bank whose library bookmark stands at an earlier date
+When the tenant app records their visit
+Then the answer is 204, their bookmark stands at now and no colleague's bookmark moved
+And one audit event in that bank records the visit with the bookmark before and after
+When a platform session records a visit
+Then the answer is 404 and nothing is written
+```
