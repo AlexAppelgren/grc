@@ -556,17 +556,51 @@
       },
       "Answer": {
         "description": "Grounded only in the inventory. `noAnswer` is true when nothing supported an\nanswer, and then `statements` is empty: the product says so rather than guessing\n(SRC-03, AC-SRC2). `aiGenerated` stays true until a person confirms it (D-04).",
+        "examples": [
+          {
+            "aiGenerated": true,
+            "asOf": "2026-09-20",
+            "citations": [
+              {
+                "index": 1,
+                "instrumentShortName": "FFFS 2017:2",
+                "obligationId": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+                "provisionId": "3c9d6e21-5b47-4a08-9c13-6f2d8b0e7a15",
+                "refLabel": "Costs and charges",
+                "versionNo": 3
+              }
+            ],
+            "createdAt": "2026-09-20T09:14:02Z",
+            "id": "0f5b8c2d-91a4-4e36-8b7f-5c2a0d94e613",
+            "model": "claude-sonnet-4-5",
+            "noAnswer": false,
+            "question": "What must we disclose about costs before providing a service?",
+            "statements": [
+              {
+                "citationIndexes": [
+                  1
+                ],
+                "pendingChangeId": null,
+                "pendingChangeLabel": null,
+                "text": "Costs and charges must be disclosed in aggregate and itemised before the service is provided, and again afterwards."
+              }
+            ]
+          }
+        ],
         "properties": {
           "aiGenerated": {
+            "description": "True while the answer is machine output nobody has confirmed, which is what the screen's label says. Source: computed by the server. Do not read `false` as verified by a supervisor: it means a person in the bank confirmed it (D-04).",
             "title": "Aigenerated",
             "type": "boolean"
           },
           "asOf": {
+            "description": "The legal date the answer was written against: every citation is the version in force that day. Source: computed by the server from the request. Do not read it as the time the answer was produced, which is `createdAt`.",
             "format": "date",
             "title": "Asof",
             "type": "string"
           },
           "citations": {
+            "description": "Every library passage the statements rest on, numbered. Source: the shared library. Do not read the list as the complete set of obligations on the subject: it is what this answer used, retrieved from what the bank may see.",
             "items": {
               "$ref": "#/components/schemas/AnswerCitation"
             },
@@ -574,28 +608,34 @@
             "type": "array"
           },
           "createdAt": {
+            "description": "When the answer was produced: an RFC 3339 date-time in UTC, such as `2026-09-20T09:14:02Z`. Source: the server, stamped when the stream opened. Do not read it as the date the law was read at, which is `asOf`.",
             "format": "date-time",
             "title": "Createdat",
             "type": "string"
           },
           "id": {
+            "description": "This answer's id, which a reader's verdict points at (`rateAnswer`) and which the AI log records. Source: the server, generated before the first event. Do not read it as a record of the bank's position: an answer is a reading aid, and nothing in the inventory changed because it was given.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
           "model": {
+            "description": "Which model wrote the statements, so a bank's vendor review can trace an answer to the system that produced it. Source: the server's model call, recorded on the AI log row. Do not read a model name as a quality guarantee.",
             "title": "Model",
             "type": "string"
           },
           "noAnswer": {
+            "description": "True when the library held nothing that supported an answer, and then the product says so rather than guessing. Source: computed by the server. Do not read it as there being no obligation: it means nothing was retrieved that answered the question, inside the bank's regulatory scope, on that date.",
             "title": "Noanswer",
             "type": "boolean"
           },
           "question": {
+            "description": "The question as asked, echoed so the answer is readable on its own. Source: the caller, from the bank's own zone. Do not expect to find it anywhere else: it is tenant text and never reaches a log line, an audit summary or a URL.",
             "title": "Question",
             "type": "string"
           },
           "statements": {
+            "description": "The answer, sentence by sentence, each one cited. Empty when `noAnswer` is true. Source: a model, grounded only in the shared library. Do not read the order as priority: it reads as prose, not as a ranking of duties.",
             "items": {
               "$ref": "#/components/schemas/AnswerStatement"
             },
@@ -619,16 +659,29 @@
       },
       "AnswerCitation": {
         "description": "What a statement points at. `index` is the number shown in the answer.",
+        "examples": [
+          {
+            "index": 1,
+            "instrumentShortName": "FFFS 2017:2",
+            "obligationId": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+            "provisionId": "3c9d6e21-5b47-4a08-9c13-6f2d8b0e7a15",
+            "refLabel": "Costs and charges",
+            "versionNo": 3
+          }
+        ],
         "properties": {
           "index": {
+            "description": "The number shown beside the statement, so a reader can follow a sentence to its source. Source: computed by the server for this answer. Do not read it as a stable reference: it numbers the citations of this answer only, and the same obligation is a different number in the next answer.",
             "title": "Index",
             "type": "integer"
           },
           "instrumentShortName": {
+            "description": "The everyday name of the instrument cited, such as `FFFS 2017:2` or `MiFID II`, so the citation reads as a lawyer would write it. Source: the shared library. Do not read it as the official citation, which is on the instrument.",
             "title": "Instrumentshortname",
             "type": "string"
           },
           "obligationId": {
+            "description": "The obligation the statement rests on, which the reader opens to check it. Source: the shared library. Do not read a citation as a finding that the obligation applies to this bank: applicability is a separate judgement.",
             "format": "uuid",
             "title": "Obligationid",
             "type": "string"
@@ -643,13 +696,16 @@
                 "type": "null"
               }
             ],
+            "description": "The exact provision behind the obligation, when the answer could pin one, so the reader lands on the paragraph rather than the card. Source: the shared library. Do not read its absence as a weaker citation: many obligations summarise several provisions and pin none.",
             "title": "Provisionid"
           },
           "refLabel": {
+            "description": "Where in the instrument the cited text sits, as the instrument labels it, such as `9 kap.` or `Costs and charges`. Source: the shared library. Do not read it as a stable identifier: it is the drafter's own label, and a recast renumbers.",
             "title": "Reflabel",
             "type": "string"
           },
           "versionNo": {
+            "description": "Which version of that obligation was read, so the citation stays checkable after the obligation moves on. Source: the shared library. Do not read it as the current version: it is the version in force on the answer's `asOf` date.",
             "title": "Versionno",
             "type": "integer"
           }
@@ -666,12 +722,21 @@
       },
       "AnswerFeedbackBody": {
         "additionalProperties": false,
+        "description": "A reader's verdict on one answer (AUD-02, SRC-05).\n\nThis is the only write in the search contract: it goes through the audit trail like\nany other. It needs no idempotency key because it is idempotent by nature \u2014 the same\nverdict on the same answer twice leaves one row \u2014 and it is not streamed. It answers\ninside the ordinary 250 ms API budget.",
+        "examples": [
+          {
+            "feedback": "wrong",
+            "note": "The itemised disclosure is required before the service, not only afterwards."
+          }
+        ],
         "properties": {
           "feedback": {
-            "$ref": "#/components/schemas/AnswerFeedbackKind"
+            "$ref": "#/components/schemas/AnswerFeedbackKind",
+            "description": "Whether the answer helped, so the people who tune retrieval know where it fails. Source: the reader, in the bank's own zone. Do not read `helpful` as the answer being verified: confirming AI output is a separate act (D-04)."
           },
           "note": {
             "default": "",
+            "description": "What was wrong or useful about it, in the reader's own words. At most 2000 characters; longer answers 422. Source: the reader, in the bank's own zone. Do not put client data or evidence in it: it is stored beside the answer for the bank's own review, and the audit row that records the verdict carries none of this text.",
             "maxLength": 2000,
             "title": "Note",
             "type": "string"
@@ -684,7 +749,7 @@
         "type": "object"
       },
       "AnswerFeedbackKind": {
-        "description": "Tier-one kind: what a reader said about an answer. The evaluation set reads it.",
+        "description": "Tier-one kind: what a reader said about an answer. The evaluation set reads it.\n\nEvery member, and what the system does differently for it:\n\n- `helpful`: the reader found the answer useful. The AI log row is marked helpful and\n  the evaluation set counts it as a positive signal on retrieval.\n- `wrong`: the reader found the answer wrong. The AI log row is marked wrong, which is\n  what the AI log screen filters on for review, and the evaluation set counts it\n  against retrieval quality.",
         "enum": [
           "helpful",
           "wrong"
@@ -694,8 +759,19 @@
       },
       "AnswerStatement": {
         "description": "One sentence of the answer. Every statement carries at least one citation\n(SRC-03, AC-SRC2); a cited obligation with an open change names it, so the screen can\nwarn that the law is about to move.",
+        "examples": [
+          {
+            "citationIndexes": [
+              1
+            ],
+            "pendingChangeId": "a41d0f36-2c88-4e7b-b5a9-13d6c4f80e27",
+            "pendingChangeLabel": "FI adopts amended rules on paying for investment research",
+            "text": "Costs and charges must be disclosed in aggregate and itemised before the service is provided, and again afterwards."
+          }
+        ],
         "properties": {
           "citationIndexes": {
+            "description": "Which citations support this sentence, by their `index` in the answer. Never empty: a statement the library did not support is not sent at all. Source: computed by the server. Do not read several citations as agreement between sources: they are the passages the sentence was drawn from.",
             "items": {
               "type": "integer"
             },
@@ -712,6 +788,7 @@
                 "type": "null"
               }
             ],
+            "description": "A registered change that would move the law this sentence rests on, so a reader is warned before acting on it. Source: the shared library's watch feed. Do not read it as law: a registered change may be a consultation that never takes effect, and the sentence still describes the rule in force.",
             "title": "Pendingchangeid"
           },
           "pendingChangeLabel": {
@@ -723,9 +800,11 @@
                 "type": "null"
               }
             ],
+            "description": "The title of that change, so the warning reads as something rather than an id. Source: the shared library's watch feed. Do not read it as a summary of the effect on the bank: what it means here is the bank's own assessment.",
             "title": "Pendingchangelabel"
           },
           "text": {
+            "description": "One sentence of the answer, written by a model from the cited library text alone. Source: a model, grounded only in the shared library. Do not read it as advice or as a compliance conclusion: it is AI output, labelled as such until a person confirms it, and the citation is the thing to check.",
             "title": "Text",
             "type": "string"
           }
@@ -928,13 +1007,49 @@
       },
       "AskAnswerEvent": {
         "description": "`answer`, the terminal event: the whole answer with its citation list, which is\nwhat a reader keeps and what the `ai_generation` row records (AUD-02).",
+        "examples": [
+          {
+            "answer": {
+              "aiGenerated": true,
+              "asOf": "2026-09-20",
+              "citations": [
+                {
+                  "index": 1,
+                  "instrumentShortName": "FFFS 2017:2",
+                  "obligationId": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+                  "provisionId": "3c9d6e21-5b47-4a08-9c13-6f2d8b0e7a15",
+                  "refLabel": "Costs and charges",
+                  "versionNo": 3
+                }
+              ],
+              "createdAt": "2026-09-20T09:14:02Z",
+              "id": "0f5b8c2d-91a4-4e36-8b7f-5c2a0d94e613",
+              "model": "claude-sonnet-4-5",
+              "noAnswer": false,
+              "question": "What must we disclose about costs before providing a service?",
+              "statements": [
+                {
+                  "citationIndexes": [
+                    1
+                  ],
+                  "pendingChangeId": null,
+                  "pendingChangeLabel": null,
+                  "text": "Costs and charges must be disclosed in aggregate and itemised before the service is provided, and again afterwards."
+                }
+              ]
+            },
+            "event": "answer"
+          }
+        ],
         "properties": {
           "answer": {
-            "$ref": "#/components/schemas/Answer"
+            "$ref": "#/components/schemas/Answer",
+            "description": "The whole answer with its citations, which is what the reader keeps and what the AI log records. Source: a model, grounded only in the shared library. Do not read it as confirmed: it stays labelled AI output until a person says otherwise."
           },
           "event": {
             "const": "answer",
             "default": "answer",
+            "description": "Always `answer`: the kind of this event, and the last one on a stream that succeeded. Source: the server. Do not expect anything after it.",
             "title": "Event",
             "type": "string"
           }
@@ -947,18 +1062,28 @@
       },
       "AskProblemEvent": {
         "description": "`problem`, the other way the stream ends. It carries the `code` an RFC 9457 body\nwould carry (playbook 4.4), because a failure found after the first byte can no longer\nbe a status; no trace and nothing the caller did not send travel with it.",
+        "examples": [
+          {
+            "code": "not_built",
+            "detail": "Ask is not switched on yet.",
+            "event": "problem"
+          }
+        ],
         "properties": {
           "code": {
+            "description": "The machine-readable reason the answer stopped, the same `code` an RFC 9457 problem body would carry; today the one code this stream ends on is `not_built`, while the answering logic is being built. Branch on this, never on `detail`. Source: the server. Do not read a code as a verdict on the question: it says why this stream stopped, not that the library holds no answer, which is `noAnswer` on a stream that finished.",
             "title": "Code",
             "type": "string"
           },
           "detail": {
+            "description": "One sentence a person can read, saying what happened. Source: the server. Do not branch on this text, do not expect it to be stable, and do not expect a trace: nothing of the server's internals travels in it.",
             "title": "Detail",
             "type": "string"
           },
           "event": {
             "const": "problem",
             "default": "problem",
+            "description": "Always `problem`: the kind of this event, and the last one on a stream that failed. Source: the server. Do not expect anything after it, and do not treat the 200 on the stream as success: the events say how it ended.",
             "title": "Event",
             "type": "string"
           }
@@ -972,7 +1097,14 @@
       },
       "AskRequest": {
         "additionalProperties": false,
-        "description": "The question is the only tenant text that reaches a model (D-07, SRC-S6).",
+        "description": "The question is the only tenant text that reaches a model (D-07, SRC-S6).\n\nAsk is the one streamed operation in this contract: the answer arrives as\n`text/event-stream`, because the budget is a first token under 2 s (NFR-02) and an\nanswer that waits for its last sentence cannot meet it. The call needs no idempotency\nkey: asking twice costs two model calls and two logged generations, and never changes\na record.",
+        "examples": [
+          {
+            "asOf": "2026-09-20",
+            "lang": "en",
+            "question": "What must we disclose about costs before providing a service?"
+          }
+        ],
         "properties": {
           "asOf": {
             "anyOf": [
@@ -984,6 +1116,7 @@
                 "type": "null"
               }
             ],
+            "description": "The date the question is asked about: the server ranks and returns the version of each record that was in force on that day, so a reader can see the law as it stood. Absent means today in the bank's own time zone. Source: the caller. Do not read an `asOf` in the past as a record of what the bank knew then: it re-reads today's library at an older legal date, and a record corrected since is returned corrected.",
             "title": "Asof"
           },
           "lang": {
@@ -995,9 +1128,11 @@
                 "type": "null"
               }
             ],
+            "description": "Which language's text to search and return, as a language key. The keys are rows in the library's `Language` list, not an enum, and a sixth language is added by seeding a row rather than by changing code; seeded on day one are `en` (English), `sv` (Svenska), `da` (Dansk), `nb` (Norsk bokmal) and `fi` (Suomi). Absent means the bank's default content language. Source: the caller, choosing from the shared library's language rows. Do not read a language as a jurisdiction: a Swedish obligation has an English summary, and EU material is read in five languages.",
             "title": "Lang"
           },
           "question": {
+            "description": "What the reader wants to know, in their own words. At most 2000 characters; a longer question answers 422 and no stream is opened. Source: the caller, from the bank's own zone. This is the only tenant text that ever reaches a model (D-07), and it reaches no log line, no Sentry event and no URL. Do not put client data, case notes or evidence in it: the answer is grounded only in the shared library, so nothing of the bank's own is needed to answer, and nothing of it should be sent.",
             "maxLength": 2000,
             "minLength": 1,
             "title": "Question",
@@ -1012,14 +1147,22 @@
       },
       "AskStartEvent": {
         "description": "`start`, the first event and the one the 2 s budget is measured to. It carries the\nanswer's id, so a reader's verdict (`rateAnswer`) has something to point at before the\nanswer is finished.",
+        "examples": [
+          {
+            "event": "start",
+            "id": "0f5b8c2d-91a4-4e36-8b7f-5c2a0d94e613"
+          }
+        ],
         "properties": {
           "event": {
             "const": "start",
             "default": "start",
+            "description": "Always `start`: the kind of this event, which the client switches on. Source: the server. Do not read the four event kinds as a fixed sequence: a stream may end at `problem` after `start` and before any statement.",
             "title": "Event",
             "type": "string"
           },
           "id": {
+            "description": "The answer's id, sent first so the screen can offer a verdict while the answer is still arriving. Source: the server. Do not read it as a promise that an answer follows: the stream may still close with a `problem` event.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
@@ -1033,15 +1176,30 @@
       },
       "AskStatementEvent": {
         "description": "`statement`, one cited sentence of the answer, sent as soon as it is grounded.",
+        "examples": [
+          {
+            "event": "statement",
+            "statement": {
+              "citationIndexes": [
+                1
+              ],
+              "pendingChangeId": null,
+              "pendingChangeLabel": null,
+              "text": "Costs and charges must be disclosed in aggregate and itemised before the service is provided, and again afterwards."
+            }
+          }
+        ],
         "properties": {
           "event": {
             "const": "statement",
             "default": "statement",
+            "description": "Always `statement`: the kind of this event. Source: the server. Do not read a statement event as the end of the answer; the `answer` event closes it.",
             "title": "Event",
             "type": "string"
           },
           "statement": {
-            "$ref": "#/components/schemas/AnswerStatement"
+            "$ref": "#/components/schemas/AnswerStatement",
+            "description": "One cited sentence, sent as soon as it is grounded, so the reader sees the answer form. Source: a model, grounded only in the shared library. Do not read a sentence in isolation: the conditions may be in the sentences around it."
           }
         },
         "required": [
@@ -4330,6 +4488,14 @@
       "SearchFilters": {
         "additionalProperties": false,
         "description": "The filters of SRC-02 and SRC-S3, taken from the vocabularies and the tenant's own\nview. Every one of them is a key, never a label, so renaming a jurisdiction or a duty\ntype changes nothing a client sent (playbook 15). The register's own filters\n(applicability, compliance status) are not here: the overlay that would answer them\nlands with the register in chunk 8, and a filter the query cannot honour would be a\n200 that quietly ignored it.",
+        "examples": [
+          {
+            "binding": true,
+            "dutyType": "disclosure",
+            "inFootprint": true,
+            "jurisdiction": "se"
+          }
+        ],
         "properties": {
           "binding": {
             "anyOf": [
@@ -4340,6 +4506,7 @@
                 "type": "null"
               }
             ],
+            "description": "True keeps only binding law, false keeps only guidance such as ESMA's. The value follows the instrument's level, so an act and an EU regulation are binding and EU guidance is not. Source: the shared library. Do not read `false` as optional: a supervisor expects guidance to be followed or the departure explained, and the bank still answers for it.",
             "title": "Binding"
           },
           "dutyType": {
@@ -4351,6 +4518,7 @@
                 "type": "null"
               }
             ],
+            "description": "Narrow the search to one kind of duty, such as what must be reported or disclosed, by key. The keys are rows in the shared library's `duty_type` vocabulary, which an administrator may extend through an approved proposal (VOC-07); seeded on day one are `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical`. Source: the shared library. Do not read a duty type as a department: one obligation carries one duty type, and who in the bank owns it is the bank's own judgement, recorded elsewhere.",
             "title": "Dutytype"
           },
           "inFootprint": {
@@ -4362,6 +4530,7 @@
                 "type": "null"
               }
             ],
+            "description": "True keeps only records inside the bank's own footprint, the licences, entities and services it declared; false keeps only those outside it. Absent applies the bank's standing regulatory scope, which is what the search screen does until a reader asks to look outside it. Source: the bank's own zone, compared against the shared library. Do not read `inFootprint` as `applies to us`: the footprint is a filter on what is worth reading, while whether an obligation applies is a judgement the bank records per entity (chunk 8).",
             "title": "Infootprint"
           },
           "instrumentId": {
@@ -4374,6 +4543,7 @@
                 "type": "null"
               }
             ],
+            "description": "Narrow the search to one instrument, such as the bank's copy of FFFS 2017:2, by the instrument's id. Source: the shared library. Do not read a filtered result as everything the instrument requires of the bank: it is what matched the query inside that instrument, not the instrument's full obligation list.",
             "title": "Instrumentid"
           },
           "jurisdiction": {
@@ -4385,9 +4555,11 @@
                 "type": "null"
               }
             ],
+            "description": "Narrow the search to the law of one jurisdiction, by key. The keys are rows in the shared library's `jurisdiction` vocabulary; the platform seeds and maintains them (they are reference data, not proposable), and on day one they are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland). Source: the shared library. Do not read `se` as excluding EU law that binds a Swedish bank: an EU regulation is filed under `eu` and still applies, so filtering to one jurisdiction hides law the bank must follow.",
             "title": "Jurisdiction"
           },
           "termIds": {
+            "description": "Narrow the search to records tagged with all of these taxonomy terms, such as a regime or a legal entity kind, by term id. Terms are rows in the shared library's taxonomy, which an administrator may extend through an approved proposal; the dimensions seeded on day one are `regime`, `account_type`, `legal_entity`, `service_type`, `client_category`, `channel` and `lifecycle_stage`. At most 20 terms in one call; more answers 422. Source: the shared library. Do not read the terms on a record as the bank's own scope: whether the record applies to this bank is a separate fact the bank decides.",
             "items": {
               "format": "uuid",
               "type": "string"
@@ -4402,6 +4574,26 @@
       },
       "SearchHit": {
         "description": "One result. `matchKind` is on every hit (SRC-02): the reader sees why it is here.\nThe version and validity dates are copied onto the chunk, so \"as of\" needs no join.",
+        "examples": [
+          {
+            "binding": true,
+            "id": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+            "instrumentShortName": "FFFS 2017:2",
+            "matchKind": "both",
+            "score": 0.87,
+            "snippet": "...all costs and charges, aggregated and itemised, before the service is provided...",
+            "title": "Disclose all costs and charges before and after the service",
+            "type": "obligation",
+            "urgency": {
+              "key": "within_3_months",
+              "kind": "warning",
+              "label": "Within 3 months"
+            },
+            "validFrom": "2026-01-01",
+            "validTo": null,
+            "versionNo": 3
+          }
+        ],
         "properties": {
           "binding": {
             "anyOf": [
@@ -4412,9 +4604,11 @@
                 "type": "null"
               }
             ],
+            "description": "Whether the record is binding law or guidance, following the instrument's level. Source: the shared library. Do not read `false` as optional: guidance is expected to be followed or the departure explained.",
             "title": "Binding"
           },
           "id": {
+            "description": "The id of the record the hit points at: the obligation, the provision or the registered change. Source: the shared library. Do not read it as the id of the indexed chunk, which is derived data the API never exposes.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
@@ -4428,25 +4622,31 @@
                 "type": "null"
               }
             ],
+            "description": "The everyday name of the instrument the record belongs to, such as `FFFS 2017:2`, `MiFID II` or `DORA`. Source: the shared library. Do not read it as the official citation: the formal reference is on the instrument itself.",
             "title": "Instrumentshortname"
           },
           "matchKind": {
-            "$ref": "#/components/schemas/SearchMatchKind"
+            "$ref": "#/components/schemas/SearchMatchKind",
+            "description": "Why this record is in the list: its words matched, its meaning matched, or both. Source: computed by the server for this query. Do not read `concept` as weaker evidence, nor its absence as proof the words are missing: a record not yet embedded can only ever match by keyword."
           },
           "score": {
+            "description": "How this hit ranked against the others in this one answer, after the two legs were fused and reranked. Source: computed by the server for this query. Do not read it as relevance the bank can compare across searches, as a probability, or as a measure of how much the record matters: it is only an order.",
             "title": "Score",
             "type": "number"
           },
           "snippet": {
+            "description": "A short extract of the record's text around what matched, so the reader can judge the hit before opening it. Source: the shared library. Do not read a snippet as the text of the law: it is cut mid-sentence and a condition may sit in the words on either side of it.",
             "title": "Snippet",
             "type": "string"
           },
           "title": {
+            "description": "The record's own heading, in the language searched, so a reader recognises it without opening it. Source: the shared library. Do not read a title as the obligation: the duty is in the text, and a title is written to be found.",
             "title": "Title",
             "type": "string"
           },
           "type": {
-            "$ref": "#/components/schemas/SearchHitType"
+            "$ref": "#/components/schemas/SearchHitType",
+            "description": "What this hit points at, and therefore what opens when the reader clicks it. Source: the shared library, copied onto the search index. Do not read the kind as a ranking: an obligation does not outrank a provision by being one."
           },
           "urgency": {
             "anyOf": [
@@ -4456,7 +4656,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "How soon the shared library says this record deserves attention, as a key, its pill tone and a label in the reader's language. The keys are rows in the shared library's `urgency` vocabulary, which an administrator may extend through an approved proposal; seeded on day one are `act_now`, `within_3_months`, `six_months_plus`, `monitor` and `no_action`. Source: the shared library. Do not read it as this bank's priority: it is the library's general view, and the bank's own deadline lives on its case."
           },
           "validFrom": {
             "anyOf": [
@@ -4468,6 +4669,7 @@
                 "type": "null"
               }
             ],
+            "description": "The first day this version of the record was in force, so a reader knows whether it governed a transaction. Source: the shared library. Do not read it as the day the bank had to comply from: a transitional rule may give longer, and that is in the text.",
             "title": "Validfrom"
           },
           "validTo": {
@@ -4480,6 +4682,7 @@
                 "type": "null"
               }
             ],
+            "description": "The last day this version was in force; empty means it still is. Source: the shared library. Do not read an empty value as permanent: a change already registered in the watch feed may be about to close it.",
             "title": "Validto"
           },
           "versionNo": {
@@ -4491,6 +4694,7 @@
                 "type": "null"
               }
             ],
+            "description": "Which version of the obligation was in force on the `asOf` date, so the reader opens the card at the text that was law then. Empty on a provision or a change. Source: the shared library. Do not read a high version number as instability: a correction of a typo is a version too.",
             "title": "Versionno"
           }
         },
@@ -4506,7 +4710,7 @@
         "type": "object"
       },
       "SearchHitType": {
-        "description": "Tier-one kind (apps/shared/kinds.py): what a hit points at. The reader opens an\nobligation, a provision or a change, and the screen branches on it.",
+        "description": "Tier-one kind (apps/shared/kinds.py): what a hit points at. The reader opens an\nobligation, a provision or a change, and the screen branches on it.\n\nEvery member, and what the system does differently for each:\n\n- `obligation`: the hit is an obligation version from the shared inventory. The\n  screen opens the obligation card at that version, the hit carries `versionNo`, and\n  the footprint filter and the regulatory scope apply to it.\n- `provision`: the hit is a provision version, a numbered piece of an instrument's\n  text. The screen opens the instrument at that provision; a provision has no\n  obligation of its own, so it carries no urgency and cannot be put in a case.\n- `change`: the hit is a registered regulatory change from the watch feed. The screen\n  opens the change, and this is the only member whose record may still be a proposal\n  about the future rather than law in force, so its validity dates may be empty.",
         "enum": [
           "obligation",
           "provision",
@@ -4516,7 +4720,7 @@
         "type": "string"
       },
       "SearchMatchKind": {
-        "description": "Tier-one kind: how the hit was won (SRC-02, AC-SRC1). Every hit says so, and the\npill's tone follows the kind, never a person's choice (NFR-03).",
+        "description": "Tier-one kind: how the hit was won (SRC-02, AC-SRC1). Every hit says so, and the\npill's tone follows the kind, never a person's choice (NFR-03).\n\nEvery member, and what the system did differently to find it:\n\n- `keyword`: the words the reader typed were found in the text, by the language's own\n  PostgreSQL text search. An identifier such as `FFFS 2017:2` matches this way.\n- `concept`: no word matched, but the meaning did: the record was found by the\n  nearest-neighbour search over embeddings. A record not yet embedded can never be a\n  `concept` hit, so a fresh approval is found by its words first.\n- `both`: the record was found by both legs and its two ranks were fused, which is why\n  it usually ranks above a hit of either other kind.",
         "enum": [
           "keyword",
           "concept",
@@ -4527,7 +4731,25 @@
       },
       "SearchRequest": {
         "additionalProperties": false,
-        "description": "`q` is the typed query. `asOf` picks the version in force on that date (SRC-02);\nabsent means today in the tenant's timezone. `lang` is a language key (I18N-01). The\nlimit is the page size of playbook 10: above the maximum is a 422, never a clamp.",
+        "description": "`q` is the typed query. `asOf` picks the version in force on that date (SRC-02);\nabsent means today in the tenant's timezone. `lang` is a language key (I18N-01). The\nlimit is the page size of playbook 10: above the maximum is a 422, never a clamp.\n\nBudget: the server answers inside 800 ms without the reranker and 1.5 s with it\n(NFR-02), reported in `Server-Timing`. The call is a read: it writes no audit row,\nneeds no idempotency key, and is not streamed.",
+        "examples": [
+          {
+            "asOf": "2026-09-20",
+            "filters": {
+              "binding": true,
+              "dutyType": "disclosure",
+              "inFootprint": true,
+              "jurisdiction": "se"
+            },
+            "lang": "sv",
+            "limit": 20,
+            "q": "FFFS 2017:2 costs and charges",
+            "types": [
+              "obligation",
+              "provision"
+            ]
+          }
+        ],
         "properties": {
           "asOf": {
             "anyOf": [
@@ -4539,6 +4761,7 @@
                 "type": "null"
               }
             ],
+            "description": "The date the question is asked about: the server ranks and returns the version of each record that was in force on that day, so a reader can see the law as it stood. Absent means today in the bank's own time zone. Source: the caller. Do not read an `asOf` in the past as a record of what the bank knew then: it re-reads today's library at an older legal date, and a record corrected since is returned corrected.",
             "title": "Asof"
           },
           "filters": {
@@ -4549,7 +4772,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Narrows the search before anything is ranked, so a filtered search is not a shortened list of the unfiltered one. Absent means the bank's standing regulatory scope alone. Source: the caller. Do not read a filter the contract does not name as ignored: an unknown filter answers 422."
           },
           "lang": {
             "anyOf": [
@@ -4560,22 +4784,26 @@
                 "type": "null"
               }
             ],
+            "description": "Which language's text to search and return, as a language key. The keys are rows in the library's `Language` list, not an enum, and a sixth language is added by seeding a row rather than by changing code; seeded on day one are `en` (English), `sv` (Svenska), `da` (Dansk), `nb` (Norsk bokmal) and `fi` (Suomi). Absent means the bank's default content language. Source: the caller, choosing from the shared library's language rows. Do not read a language as a jurisdiction: a Swedish obligation has an English summary, and EU material is read in five languages.",
             "title": "Lang"
           },
           "limit": {
             "default": 20,
+            "description": "How many results to return. Default 20, maximum 100; a larger number answers 422 naming the field and is never quietly clamped. Source: the caller. Do not read the number of results as the number of records that matched: it is one page of a ranking, not a count.",
             "maximum": 100,
             "minimum": 1,
             "title": "Limit",
             "type": "integer"
           },
           "q": {
+            "description": "What the reader typed: an identifier such as `FFFS 2017:2`, or a concept such as `kostnader och avgifter`. At most 500 characters, and a longer query answers 422 rather than being truncated into a search for something else. Source: the caller; it is the bank's own text and never reaches a log line, a URL or an error message. Do not read the absence of a hit as the absence of an obligation: the index holds the shared library as it stands today, not the bank's own notes, cases or evidence.",
             "maxLength": 500,
             "minLength": 1,
             "title": "Q",
             "type": "string"
           },
           "types": {
+            "description": "Which kinds of record to search; empty means all three. Source: the caller. Do not read an empty list as a promise of three kinds in the results: a query may simply match nothing of a kind.",
             "items": {
               "$ref": "#/components/schemas/SearchHitType"
             },
@@ -4591,13 +4819,54 @@
       },
       "SearchResponse": {
         "description": "Ranked results, not a page: `asOf` is the date the ranking was taken at, echoed so\nthe screen can say which day's law it is showing.",
+        "examples": [
+          {
+            "asOf": "2026-09-20",
+            "items": [
+              {
+                "binding": true,
+                "id": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+                "instrumentShortName": "FFFS 2017:2",
+                "matchKind": "both",
+                "score": 0.87,
+                "snippet": "...all costs and charges, aggregated and itemised, before the service...",
+                "title": "Disclose all costs and charges before and after the service",
+                "type": "obligation",
+                "urgency": {
+                  "key": "within_3_months",
+                  "kind": "warning",
+                  "label": "Within 3 months"
+                },
+                "validFrom": "2026-01-01",
+                "validTo": null,
+                "versionNo": 3
+              },
+              {
+                "binding": true,
+                "id": "3c9d6e21-5b47-4a08-9c13-6f2d8b0e7a15",
+                "instrumentShortName": "LVM",
+                "matchKind": "keyword",
+                "score": 0.61,
+                "snippet": "...institutet ska lamna information om kostnader och avgifter...",
+                "title": "9 kap. Rorelseregler",
+                "type": "provision",
+                "urgency": null,
+                "validFrom": "2007-11-01",
+                "validTo": null,
+                "versionNo": null
+              }
+            ]
+          }
+        ],
         "properties": {
           "asOf": {
+            "description": "The legal date this ranking was taken at, echoed so the screen can say which day's law it is showing. Source: computed by the server from the request, or today in the bank's time zone. Do not read it as the time the search ran: it is the date of the law, not of the query.",
             "format": "date",
             "title": "Asof",
             "type": "string"
           },
           "items": {
+            "description": "The ranked results, best first, at most `limit` of them. Source: the shared library, ranked by the server. Do not read an empty list as nothing existing: the bank's regulatory scope and any filter were applied before ranking, and a reader can search outside the scope to see what was held back.",
             "items": {
               "$ref": "#/components/schemas/SearchHit"
             },
@@ -4780,22 +5049,35 @@
       },
       "SimilarRequest": {
         "additionalProperties": false,
-        "description": "What an agent sends to find the library records nearest a piece of text: to spot a\nchange already tracked, and to suggest obligation links (AGT-02).",
+        "description": "What an agent sends to find the library records nearest a piece of text: to spot a\nchange already tracked, and to suggest obligation links (AGT-02).\n\nThis is the agents' route, held open by an API key with the `search:read` scope; no\nperson's session reaches it. Same 800 ms budget as `POST /search`. The call is a\nread: no audit row, no idempotency key, not streamed.",
+        "examples": [
+          {
+            "limit": 10,
+            "text": "Institut som tar emot investeringsanalys ska ha kriterier for en arlig bedomning av analysens kvalitet, anvandbarhet och varde.",
+            "types": [
+              "obligation",
+              "change"
+            ]
+          }
+        ],
         "properties": {
           "limit": {
             "default": 20,
+            "description": "How many results to return. Default 20, maximum 100; a larger number answers 422 naming the field and is never quietly clamped. Source: the caller. Do not read the number of results as the number of records that matched: it is one page of a ranking, not a count.",
             "maximum": 100,
             "minimum": 1,
             "title": "Limit",
             "type": "integer"
           },
           "text": {
+            "description": "The passage to find library records near: a paragraph an agent fetched from a supervisor's page, or a change summary. At most 8000 characters; longer answers 422. Source: the calling agent. Do not read this text as trusted: it is fetched content, it is never stored by this call, and nothing it says can direct the server.",
             "maxLength": 8000,
             "minLength": 1,
             "title": "Text",
             "type": "string"
           },
           "types": {
+            "description": "Which kinds of record to compare the text against: `obligation`, an obligation version from the shared inventory; `provision`, a numbered piece of an instrument's text; `change`, a registered regulatory change from the watch feed. An empty list means all three are compared. Source: the calling agent. Do not read an empty list as a promise that all three appear in the results: the text may simply be near nothing of a kind.",
             "items": {
               "$ref": "#/components/schemas/SearchHitType"
             },
@@ -8118,6 +8400,7 @@
     },
     "/api/v1/answers/{answer_id}/feedback": {
       "post": {
+        "description": "Record a reader's verdict on one answer \u2014 helpful or wrong, with an optional note\n\u2014 so the people who tune retrieval know where it fails (AUD-02, SRC-05).\n\nWho may call it: a person with `search.use`, on their own session, about an answer\nof their own bank. An answer of another bank answers 404.\n\nWhat comes back: 204 and no body.\n\nLimits and budgets: the note is at most 2000 characters\n(`SEARCH_FEEDBACK_NOTE_MAX_CHARS`); longer answers 422. The ordinary 250 ms API\nbudget applies.\n\nShape of the call: the one write in this contract. It goes through the audit trail\nlike any other write, and it needs no idempotency key because it is idempotent by\nnature: the same verdict on the same answer twice leaves one row. Neither the\nquestion nor the answer nor the note reaches the audit summary.",
         "operationId": "rateAnswer",
         "parameters": [
           {
@@ -8150,7 +8433,7 @@
             "SessionAuth": []
           }
         ],
-        "summary": "Rate Answer",
+        "summary": "Say whether an answer helped",
         "tags": [
           "Search"
         ]
@@ -8158,6 +8441,7 @@
     },
     "/api/v1/ask": {
       "post": {
+        "description": "Answer a question in the reader's own words, grounded only in the shared library,\nevery sentence carrying a citation and a pending change flagged (SRC-03).\n\nWho may call it: a person with `search.use`, on their own session. An API key is\nrefused: Ask is a reading aid for people, and the question is tenant text.\n\nWhat comes back: an event stream (`text/event-stream`), not one body, because the\nbudget is a first token under 2 s (NFR-02) and an answer that waits for its last\nsentence cannot meet it. The events are `start` carrying the answer's id, one\n`statement` per cited sentence, and then either `answer` with the whole answer or\n`problem` with a `code` to branch on. A stream that has begun cannot change its\nstatus, so a failure found after the first byte arrives as a `problem` event; do not\nread the status line alone as success.\n\nLimits and budgets: the question is at most 2000 characters\n(`ASK_QUESTION_MAX_CHARS`), and a longer one answers 422 before any stream opens. The\nfirst token arrives inside 2 s (NFR-02).\n\nShape of the call: a read of the library and a model call. It needs no idempotency\nkey, because asking twice costs two model calls and changes no record, and it writes\nno audit row, only the AI log row every model call writes (AUD-02). The question is the\nonly text of the bank's own that ever reaches a model (D-07), and it reaches no log\nline, no Sentry event and no URL.",
         "operationId": "ask",
         "parameters": [],
         "requestBody": {
@@ -10371,6 +10655,7 @@
     },
     "/api/v1/search": {
       "post": {
+        "description": "Find obligations, provisions and registered changes in the shared library, by\nidentifier or by concept, as they stood on a chosen date (SRC-01, SRC-02).\n\nWho may call it: a person with `search.use`, on their own session. An API key is\nrefused; agents use `POST /search/similar`.\n\nWhat comes back: one ranked page, best first. `limit` defaults to 20 and may not\nexceed 100; a larger number answers 422 naming the field and is never clamped. The\nbank's regulatory scope and any filter are applied before ranking, so an empty list\nmeans nothing inside the bank's view matched, not that nothing exists.\n\nLimits and budgets: the query is at most 500 characters (`SEARCH_QUERY_MAX_CHARS`),\nand a longer one answers 422 rather than being truncated. The answer arrives inside\n800 ms without the reranker and 1.5 s with it (NFR-02), reported in `Server-Timing`.\n\nShape of the call: a read. It is not streamed, it needs no idempotency key, and it\nwrites no audit row, because nothing changed. It is a POST so the query never travels\nin a URL: what a reader types is the bank's own text.",
         "operationId": "search",
         "parameters": [],
         "requestBody": {
@@ -10400,7 +10685,7 @@
             "SessionAuth": []
           }
         ],
-        "summary": "Search",
+        "summary": "Find an obligation, a provision or a change in the shared library",
         "tags": [
           "Search"
         ]
@@ -10408,6 +10693,7 @@
     },
     "/api/v1/search/similar": {
       "post": {
+        "description": "Find the shared library records nearest a piece of text, so an agent can tell\nwhether a change is already tracked and can suggest obligation links (AGT-02).\n\nWho may call it: an API key holding the `search:read` scope, and nothing else. No\npermission in the PRD's matrix gives a person a similarity read, so a person's\nsession is refused here even with `search.use`.\n\nWhat comes back: the same ranked shape `POST /search` returns, over shared library\nrecords only. No record of any bank's own zone is read or returned.\n\nLimits and budgets: the text is at most 8000 characters\n(`SEARCH_SIMILAR_MAX_CHARS`); longer answers 422. `limit` defaults to 20 and may not\nexceed 100. The same 800 ms budget as `POST /search` applies.\n\nShape of the call: a read. Not streamed, no idempotency key, no audit row. The text\nan agent sends is fetched content and is treated as untrusted: it is not stored, and\nnothing it says directs the server.",
         "operationId": "findSimilar",
         "parameters": [],
         "requestBody": {
@@ -10437,7 +10723,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Find Similar",
+        "summary": "Find the library records nearest a piece of text",
         "tags": [
           "Search"
         ]

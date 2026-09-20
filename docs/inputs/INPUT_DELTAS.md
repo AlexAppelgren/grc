@@ -532,7 +532,14 @@ in `docs/DECISIONS.md`; the researched detail is in
 - `search_chunk` (D-51) is labelled LIBRARY in `schema.sql`. It is not a
   `LibraryModel`: it is derived data with `owner_tenant_id` (NULL in R1), forced
   row-level security in the agents 0001 shape, and its own write fence
-  `index_write()`, allowed by an AST guard only in `search/indexing.py`.
+  `index_write()`, allowed by an AST guard only in `search/indexing.py`. Built
+  2026-09-20: the shape is what `rls_operations(mixed=True,
+  column="owner_tenant_id")` emits since H15, so the chunk table carries the same
+  policies as `agent_run` and `source`. Its `lang` is a foreign key to the
+  `language` rows and its generated `tsv` carries one branch per content language
+  (`english`, `swedish`, `danish`, `norwegian`, `finnish`), so schema.sql's
+  `CHECK (lang IN ('sv', 'en'))`, which would have refused Danish, Norwegian and
+  Finnish, goes with the LIBRARY label (§3).
 - `calendar_feed` (D-52) is new: a token prefix plus SHA-256, the owner, the
   created, last used and revoked times. It becomes the fifth table of the
   identity-lookup clause, and `GET /api/v1/calendar/feed.ics?token=<prefix>.<secret>`

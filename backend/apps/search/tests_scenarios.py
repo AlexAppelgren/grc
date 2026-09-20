@@ -9,9 +9,17 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: SRC.
 """
 
-from unittest import skip
+import uuid
+from unittest import mock, skip
 
+from django.contrib.postgres.search import SearchQuery
 from django.test import TestCase
+
+from apps.library.models import ProblemReport, SubjectType
+from apps.library.seeds import seed_languages
+from apps.search.indexing import index_write
+from apps.search.models import SearchChunk, SearchSource
+from apps.shared import factories, tenancy
 
 
 class SearchScenarioTests(TestCase):
@@ -88,12 +96,54 @@ class SearchScenarioTests(TestCase):
         Search and Ask stay within their budgets and are rate limited (SRC-01, NFR-02).
         """
 
-    @skip("pending: SRC-S11")
     def test_src_s11(self) -> None:
         """SRC-S11
 
-        Only the library is indexed in R1 (SRC-01).
+        Only the library is indexed in R1 (SRC-01, D-10).
+
+        Given a tenant writes a note carrying a distinctive phrase, when the index is
+        built through the only door there is, then no chunk holds the phrase and no
+        embedding was asked for it. The index is fed from three library sources and from
+        nothing else, so a bank's own words have no way in: `SearchSource` names an
+        obligation version, a provision version and a registered change, and a chunk is
+        written only inside `index_write()` from apps/search/indexing.py.
         """
+        seed_languages()
+        phrase = "kvartalsrapporten fastnade i Ekeroth-flodet"  # nothing in the library says this
+        tenant = factories.tenant(slug="src-s11")
+        ProblemReport.objects.create(
+            tenant=tenant,
+            reporter=factories.member_user(tenant),
+            subject_type=SubjectType.OBLIGATION.value,
+            subject_id=uuid.uuid4(),
+            text=phrase,
+        )
+
+        # The indexer runs with no tenant active, which is how a shared chunk is written
+        # at all: since H15 a session inside a bank's zone cannot write the shared one.
+        with mock.patch("apps.shared.adapters.embedder.MockEmbedder.embed") as embed:
+            with tenancy.platform_zone(), index_write("SRC-S11: the library, and only the library"):
+                SearchChunk(
+                    source_type=SearchSource.OBLIGATION_VERSION.value,
+                    source_id=uuid.uuid4(),
+                    language_id="sv",
+                    title="Lamna information om kostnader och avgifter",
+                    body="Institutet ska lamna information om samtliga kostnader och avgifter.",
+                ).save()
+
+        self.assertEqual(SearchChunk.objects.count(), 1, "the index was built, so an empty index is not the reason")
+        self.assertFalse(SearchChunk.objects.filter(title__icontains=phrase).exists())
+        self.assertFalse(SearchChunk.objects.filter(body__icontains=phrase).exists())
+        self.assertFalse(
+            SearchChunk.objects.filter(tsv=SearchQuery("Ekeroth", config="swedish")).exists(),
+            "the tenant's words are searchable in the index",
+        )
+        embed.assert_not_called()
+        self.assertEqual(
+            sorted(SearchSource.values),
+            ["change", "obligation_version", "provision_version"],
+            "a source type outside the library would be a way in for a tenant's own words",
+        )
 
     @skip("pending: SRC-S12 (INV-08, chunk 7)")
     def test_src_s12(self) -> None:
