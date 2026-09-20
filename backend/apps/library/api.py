@@ -130,6 +130,40 @@ REVERIFY_DESCRIPTION = (
 )
 
 # ---------------------------------------------------------------------------------------
+# What the published contract says about the record reads
+# ---------------------------------------------------------------------------------------
+READ_OBLIGATION_ID_DESCRIPTION = (
+    "The obligation to read, by its identifier (a UUID), which is the `id` a row of "
+    "`GET /obligations` carries. A record this caller cannot see answers 404 exactly as an "
+    "identifier that names nothing does, so no id can be probed for."
+)
+DIFF_OBLIGATION_ID_DESCRIPTION = (
+    "The obligation whose two versions are compared, by its identifier (a UUID). Both "
+    "versions belong to this one record: a diff is never taken across obligations. A record "
+    "this caller cannot see answers 404, never 403."
+)
+
+# The languages are a short fixed reference read answered as a plain array, so its example
+# lives on the route: the gate reads it from the 200 response, as it does the authorities'.
+_LANGUAGES_EXAMPLE = {
+    "responses": {
+        200: {
+            "content": {
+                "application/json": {
+                    "example": [
+                        {"key": "da", "kind": None, "label": "Dansk"},
+                        {"key": "en", "kind": None, "label": "English"},
+                        {"key": "fi", "kind": None, "label": "Suomi"},
+                        {"key": "nb", "kind": None, "label": "Norsk bokmål"},
+                        {"key": "sv", "kind": None, "label": "Svenska"},
+                    ]
+                }
+            }
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------------------
 # What the published contract says about the two chunk 5 reads
 # ---------------------------------------------------------------------------------------
 _OBLIGATION_ID = (
@@ -169,8 +203,32 @@ _AUTHORITIES_EXAMPLE = {
 }
 
 
-@router.get("/reference/languages", response=list[RoleRef], auth=SessionAuth(), operation_id="listLanguages", by_alias=True)
+@router.get(
+    "/reference/languages",
+    response=list[RoleRef],
+    auth=SessionAuth(),
+    operation_id="listLanguages",
+    by_alias=True,
+    summary="List the languages a record can be read in",
+    openapi_extra=_LANGUAGES_EXAMPLE,
+)
 def list_languages(request: HttpRequest) -> list[RoleRef]:
+    """Every content language the platform is serving, as key, kind and label: what fills a
+    language picker on a person's profile, on a bank's default-language setting and behind
+    "Show original" on a record. Swedish, Danish, Norwegian, Finnish and English are active
+    on day one.
+
+    A read: it changes nothing and writes no audit row, and any signed-in session may make
+    it. There is no permission to hold, because a person has to be able to choose the
+    language they read in before they can read anything else. The languages are library
+    reference rows, identical for every bank; a platform admin activates or retires one
+    without a deploy, so read this list rather than hard-coding the five. Every row's kind
+    is null: a language belongs to no sub-kind.
+
+    Answers a plain array in key order rather than a page, like the other short reference
+    reads, and an empty array would be a 200. Errors to branch on: `unauthenticated` (401)
+    without a session.
+    """
     # Ungated by design: capability (any session; a reference read for pickers, I18N-01).
     return [
         RoleRef(key=language.key, kind=None, label=language.name)
@@ -178,9 +236,40 @@ def list_languages(request: HttpRequest) -> list[RoleRef]:
     ]
 
 
-@router.get("/obligations", response=ObligationPage, auth=SESSION_OR_KEY, operation_id="listObligations", by_alias=True)
+@router.get(
+    "/obligations",
+    response=ObligationPage,
+    auth=SESSION_OR_KEY,
+    operation_id="listObligations",
+    by_alias=True,
+    summary="Browse the duties the bank has to keep",
+)
 @answers_problems
 def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: Query[PageQuery]) -> ObligationPage:
+    """The obligations inventory: every duty of the shared library whose scope overlaps this
+    bank's footprint, as it stood on a date, narrowed by instrument, duty type, scope terms
+    or a phrase. Call it for the inventory screen, for a picker that has to name a duty, and
+    from an agent run that needs the duties an instrument carries.
+
+    A read: it changes nothing and writes no audit row. It takes a person's session holding
+    `library.read` in their bank, or an agent's key carrying the `library:read` scope. The
+    rows are shared library facts, the same for every bank and changed only through an
+    approved proposal. Whether a duty applies to this bank, and whether the bank complies
+    with it, are separate facts a person records elsewhere; a row appearing here decides
+    neither.
+
+    Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
+    quietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing
+    matching the filters is a 200 with an empty items list and a total of 0, never a 404.
+    Setting outsideFootprint to true adds the duties the footprint hides and says in
+    outsideReason why each of them would have been hidden.
+
+    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
+    (403) without library.read or the library:read scope; `validation_error` (422) when a
+    term filter is not written dimension:key, when the phrase is longer than 200 characters
+    or when the page size or offset is out of range; `unknown_key` (422) when a term filter
+    names no active term, listing every one that was not found.
+    """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
     require_library_read(request)
     tenant = caller_tenant(request)
@@ -189,9 +278,44 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     return ObligationPage(items=items, total=total)
 
 
-@router.get("/obligations/{obligation_id}", response=ObligationDetail, auth=SESSION_OR_KEY, operation_id="getObligation", by_alias=True)
+@router.get(
+    "/obligations/{obligation_id}",
+    response=ObligationDetail,
+    auth=SESSION_OR_KEY,
+    operation_id="getObligation",
+    by_alias=True,
+    summary="Open one duty and read it as of a date",
+)
 @answers_problems
-def get_obligation(request: HttpRequest, obligation_id: uuid.UUID, query: Query[ObligationAsOfQuery]) -> ObligationDetail:
+def get_obligation(
+    request: HttpRequest,
+    obligation_id: Annotated[uuid.UUID, Path(description=READ_OBLIGATION_ID_DESCRIPTION)],
+    query: Query[ObligationAsOfQuery],
+) -> ObligationDetail:
+    """One duty of the shared library as it stood on a date: the plain-language summary in
+    the best language for this reader, the instrument and the provisions it was drawn from,
+    every version with the dates it runs between, the duties filed beside it, the facets
+    that say who it reaches, and the provenance that says where it came from and when a
+    person last held it against its source. Call it for the obligation card, and from an
+    agent run that needs the whole record rather than a row.
+
+    A read: it changes nothing and writes no audit row. It takes a person's session holding
+    `library.read` in their bank, or an agent's key carrying the `library:read` scope.
+    Nothing in the answer is the bank's own judgement: the record says what the rule is, and
+    whether it applies here and whether the bank complies are separate facts held elsewhere.
+
+    A library record is never overwritten, so this read carries no `If-Match` and can answer
+    no stale write: a correction arrives as a new version through an approved proposal, and
+    the older version stays readable at its own number. Reading as of a date before the
+    first version answers the record with a null version and a null summary rather than a
+    404.
+
+    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
+    (403) without library.read or the library:read scope; `not_found` (404) when no
+    obligation has that id or it is one this caller may not see, the two answering alike so
+    that no id can be probed for; `validation_error` (422) when the path segment is not a
+    UUID or asOf is not a date.
+    """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
     require_library_read(request)
     tenant = caller_tenant(request)
@@ -199,10 +323,45 @@ def get_obligation(request: HttpRequest, obligation_id: uuid.UUID, query: Query[
 
 
 @router.get(
-    "/obligations/{obligation_id}/diff", response=VersionDiff, auth=SESSION_OR_KEY, operation_id="getObligationDiff", by_alias=True
+    "/obligations/{obligation_id}/diff",
+    response=VersionDiff,
+    auth=SESSION_OR_KEY,
+    operation_id="getObligationDiff",
+    by_alias=True,
+    summary="See what changed between two versions of a duty",
 )
 @answers_problems
-def get_obligation_diff(request: HttpRequest, obligation_id: uuid.UUID, query: Query[ObligationDiffQuery]) -> VersionDiff:
+def get_obligation_diff(
+    request: HttpRequest,
+    obligation_id: Annotated[uuid.UUID, Path(description=DIFF_OBLIGATION_ID_DESCRIPTION)],
+    query: Query[ObligationDiffQuery],
+) -> VersionDiff:
+    """What changed between two versions of one duty's summary, sentence by sentence: the
+    sentences that stand unchanged, the ones the newer version dropped and the ones it adds.
+    Call it behind "Show what changed" on the obligation card, and whenever a regulatory
+    change is being assessed and somebody has to see exactly which words moved.
+
+    By default it compares the latest version against the one before it; from and to name
+    any two versions by their number. Both are versions of the same obligation: this call
+    never compares one record with another, and there is no way to ask it to. The comparison
+    is made in a language both versions hold, preferring the one lang asks for, and the
+    answer says which language it settled on and whether either side was machine translated
+    and so still unconfirmed by a person.
+
+    A read: it changes nothing, writes no audit row and logs none of the text, which is the
+    library's own content. It takes a person's session holding `library.read` in their bank,
+    or an agent's key carrying the `library:read` scope. A sentence shown as removed is a
+    change to the wording of the rule, never a decision that this bank may stop doing
+    something.
+
+    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
+    (403) without library.read or the library:read scope; `not_found` (404) when no
+    obligation has that id or it is one this caller may not see; `unknown_key` (422) when a
+    version number is asked for that this obligation has no version for; `validation_error`
+    (422) when the obligation has fewer than two versions and neither number was given, when
+    the two versions share no language at all, when lang is longer than 8 characters, or
+    when the path segment is not a UUID.
+    """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-04, AGT-02).
     require_library_read(request)
     tenant = caller_tenant(request)

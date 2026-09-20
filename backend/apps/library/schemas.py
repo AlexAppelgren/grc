@@ -23,6 +23,15 @@ MAX_QUERY_LENGTH = 200
 # `?lang=` is looked up among the languages a version has, so a longer one is a 422.
 MAX_LANGUAGE_LENGTH = 8
 
+# The one sentence a reader of this app needs on every value it returns
+# (docs/plans/briefs/API_DOCUMENTATION.md §1.2). Written once so the list, the card and
+# the diff cannot tell a reader three versions of where the same fact came from.
+LIBRARY_FACT = (
+    "A shared library fact, identical for every bank: taken from the public source the "
+    "record's provenance names, and changed only through a proposal a second, independent "
+    "principal approved."
+)
+
 
 class LibraryResponse(CamelSchema):
     """A response the server builds from plain values, never from an ORM object, and
@@ -52,9 +61,14 @@ class LibraryRef(LibraryResponse):
 
     key: str = Field(
         description=(
-            "The row's immutable key. Store and compare this, never the label, and never "
-            "construct one: a key the list does not hold answers 422 `unknown_key` with the "
-            "valid keys."
+            "The row's immutable key, and the only part of this reference to store, compare "
+            "or send back. Which list it is drawn from is settled by the field that carries "
+            "the reference, and that field names its vocabulary and the endpoint that "
+            "returns the live set; every one of those lists is rows rather than a closed "
+            "set, so an admin may extend, relabel, reorder or retire it without a deploy "
+            "and a key you have not seen before is new data and not an error. Match on the "
+            "key and never on the label, and never construct one: a key the list does not "
+            "hold answers 422 `unknown_key` with the valid keys."
         ),
         examples=["act_now"],
     )
@@ -80,46 +94,245 @@ class LocalizedText(LibraryResponse):
     """One text in one language (INV-05, D-12): which language it is in, whether it is the
     original and whether a machine translated it, so the screen can label it."""
 
-    text: str
-    language: str
-    is_original: bool
-    is_machine: bool
+    text: str = Field(
+        description=(
+            "The wording itself, in the one language this block names. "
+            f"{LIBRARY_FACT} "
+            "It is never rewritten where it stands: a new wording is a new version of the "
+            "record, so the same version read twice always gives the same words."
+        ),
+        examples=["Pay for third-party research only under the permitted models"],
+    )
+    language: str = Field(
+        description=(
+            "Which content language the wording is in, as a language key: the BCP 47 "
+            "primary tag of at most 8 characters that `GET /reference/languages` lists, "
+            "with `sv`, `en`, `da`, `nb` and `fi` active on day one. The languages are "
+            "library reference rows a platform admin may extend or retire without a "
+            "deploy, so read that endpoint for the live set and compare on the key rather "
+            "than on the language's name."
+        ),
+        examples=["en"],
+    )
+    is_original: bool = Field(
+        description=(
+            "True when this is the language the source itself published in, which is the "
+            "wording that governs wherever two languages read differently. False on every "
+            "translation, whoever or whatever made it."
+        ),
+        examples=[False],
+    )
+    is_machine: bool = Field(
+        description=(
+            "True while a machine made this translation and no person has confirmed it, so "
+            "a screen has to label it as such (INV-05). It says nothing about whether the "
+            "translation is faithful, only that nobody has checked it; the original is the "
+            "text that governs either way."
+        ),
+        examples=[True],
+    )
 
 
 class PartialDate(LibraryResponse):
     """A legal date with its precision: day, month, quarter or year (playbook 4.3, INV-S10)."""
 
-    date: datetime.date
-    precision: str
+    date: datetime.date = Field(
+        description=(
+            "A legal date — when a rule starts or stops binding the bank — as a plain "
+            "calendar date such as `2026-10-01`. It is never a timestamp and carries no "
+            "time zone, because a law takes effect on a day and not at an instant. Read it "
+            "with `precision`: where the source named only a quarter or a year, this is the "
+            "first day of that period and not a claim about the day."
+        ),
+        examples=["2026-10-01"],
+    )
+    precision: str = Field(
+        description=(
+            "How exactly the source dated it, and so how much of `date` may be shown or "
+            "compared. `day` means the source named the day. `month` means it named the "
+            "month, which a screen reads as \"October 2026\". `quarter` means it named the "
+            "quarter, read as \"Q4 2026\". `year` means it named the year alone. Anything "
+            "below `day` is not a missing date: it is exactly what the source gave, so a "
+            "reader must not round it into a deadline."
+        ),
+        examples=["day"],
+    )
 
 
 class ObligationVersionRef(LibraryResponse):
     """A summary version by number and the date it takes effect; null means since the
     obligation began (INV-04)."""
 
-    version_number: int
-    effective_from: PartialDate | None
+    version_number: int = Field(
+        description=(
+            "Which version of this duty's summary it is, numbered from 1 in the order the "
+            "versions took effect. A version row is written once and never overwritten, so "
+            "a number always addresses the same words; it is the number to send to the diff "
+            "as `from` or `to`."
+        ),
+        examples=[2],
+    )
+    effective_from: PartialDate | None = Field(
+        description=(
+            "The legal date this version starts binding the bank, at the precision the "
+            "source gave it. Null means the version has been in force since the obligation "
+            "entered the library, never that the date is unknown. "
+            f"{LIBRARY_FACT}"
+        ),
+    )
 
 
 class ScopeDimension(LibraryResponse):
     """The record's terms in one dimension (FP-01). An empty list means no restriction in
     that dimension; `allSelected` means every active term of it is carried."""
 
-    dimension: LibraryRef
-    terms: list[LibraryRef]
-    all_selected: bool
+    dimension: LibraryRef = Field(
+        description=(
+            "Which facet of the taxonomy this entry is about, as key, kind and label. The "
+            "dimensions are vocabulary rows and never a closed set: a platform admin may "
+            "extend, relabel, reorder or retire the list without a deploy, so read "
+            "`GET /taxonomy/dimensions` for the live set and match on the key. Seeded on day "
+            "one: `regime`, `legal_entity`, `service_type`, `account_type`, "
+            "`client_category`, `channel` and `lifecycle_stage`. Every active dimension is "
+            "listed on every record, including the ones a record carries no term in."
+        ),
+    )
+    terms: list[LibraryRef] = Field(
+        description=(
+            "The terms this record carries in that dimension, in the picker's order. An "
+            "empty list means the record puts no restriction on this facet and so reaches "
+            "every bank in it — never that the facet is unknown. The terms are vocabulary "
+            "rows a platform admin may extend or retire without a deploy, and a member of a "
+            "bank may propose a new one, so read `GET /taxonomy/terms` for the live set and "
+            "match on the key. A term's `kind` is null: its dimension is its kind."
+        ),
+    )
+    all_selected: bool = Field(
+        description=(
+            "True when the record carries every active term of the dimension, which lets a "
+            "screen read \"All services\" rather than listing them one by one. False both "
+            "when the record carries some of the terms and when it carries none, so read "
+            "`terms` to tell those two apart."
+        ),
+        examples=[False],
+    )
 
 
 class OutsideReason(LibraryResponse):
     """A dimension in which none of the record's terms is in the footprint (FP-03)."""
 
-    dimension: LibraryRef
-    terms: list[LibraryRef]
+    dimension: LibraryRef = Field(
+        description=(
+            "The facet in which the record's terms and the bank's footprint have nothing in "
+            "common, which is the reason the record would be hidden. The dimensions are "
+            "vocabulary rows a platform admin may extend or retire without a deploy, so read "
+            "`GET /taxonomy/dimensions` for the live set and match on the key. Only a "
+            "dimension that narrows the footprint appears here: `channel` and "
+            "`lifecycle_stage` describe a record and never hide it."
+        ),
+    )
+    terms: list[LibraryRef] = Field(
+        description=(
+            "The terms the record carries in that dimension, so a reader can see what the "
+            "bank's footprint would have to include for the record to appear. They are "
+            "vocabulary rows a platform admin may extend or retire, matched on the key. "
+            "This is the record's own scope and never the bank's footprint: nothing here "
+            "says what the bank does."
+        ),
+    )
 
 
 class ObligationInstrumentRef(LibraryResponse):
-    key: str
-    short_name: str
+    """The instrument a duty was broken out of, as a row or a related record names it: the
+    key to filter on and the short name to print."""
+
+    key: str = Field(
+        description=(
+            "The instrument's stable key, the value to store and to send back as "
+            "`?instrument=`. It is issued once and never changes, however the instrument is "
+            "renamed or amended. "
+            f"{LIBRARY_FACT}"
+        ),
+        examples=["fffs-2017-2"],
+    )
+    short_name: str = Field(
+        description=(
+            "How the instrument is written on a pill or in a column, in its own language. It "
+            "is a label a person wrote and may be reworded, so show it and never match on "
+            "it; `key` is the identifier."
+        ),
+        examples=["FFFS 2017:2"],
+    )
+
+
+# The facts a row of the list and a record's own card both carry. Written once so the two
+# surfaces cannot tell a reader two stories about the same column.
+_OBLIGATION_ID = (
+    "The duty's identifier in the shared library, as a UUID: what every other call "
+    f"addresses this obligation by. {LIBRARY_FACT}"
+)
+_OBLIGATION_STABLE_KEY = (
+    "The duty's immutable key, issued once and readable by a person. It survives every "
+    "amendment, relabelling and new version, which is what makes it safe to keep in an "
+    "export, a report or a system of the bank's own. Store it beside the id and never "
+    "construct one."
+)
+_OBLIGATION_REF_LABEL = (
+    "How the duty is cited inside its instrument, in the words the source itself uses — a "
+    "chapter, a section or the heading the authority gave it. It is there for a reader to "
+    "recognise the place in the rule book, not a structured reference to parse."
+)
+_OBLIGATION_TITLE = (
+    "The duty in one line, in the best language this reader can be served: their own "
+    "first, then their bank's default, then English, then whatever the record has. Null "
+    "only when the record carries no title in any language at all."
+)
+_BINDING_LEVEL = (
+    "What rank of instrument the duty sits in, as key, kind and label: how much weight the "
+    "rule carries. The levels are vocabulary rows and not a closed set — a platform admin "
+    "may extend, relabel or retire the list without a deploy — so read "
+    "`GET /vocab/instrument_level` for the live set and match on the key; "
+    "`eu_regulation`, `eu_directive`, `eu_guidance`, `act` and `authority_regulation` are "
+    "seeded on day one. The level is not the same fact as `binding`: the level carries a "
+    "default and the instrument's own record decides."
+)
+_BINDING = (
+    "Whether the instrument behind this duty binds the bank in law. False means guidance a "
+    "bank either complies with or explains, which is what a screen says in those words. It "
+    "is a fact about the rule and not about the bank: neither value says the duty applies "
+    "here, and neither says whether the bank complies with it."
+)
+_DUTY_TYPE = (
+    "What kind of duty this is, as key, kind and label. `conduct`, `disclosure`, "
+    "`record_keeping`, `reporting`, `governance` and `technical` are the rows seeded on day "
+    "one, and they are vocabulary rows rather than a closed enum: a platform admin may "
+    "extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for "
+    "the live set, send the key as `?dutyType=`, and never match on the label."
+)
+_TAGS = (
+    "The library's own keywords for this duty, as key, kind and label — `research`, "
+    "`inducements`, `costs` and the rest of the rows seeded on day one. They are vocabulary "
+    "rows a platform admin may extend, relabel or retire without a deploy, so read "
+    "`GET /vocab/library_tag` for the live set and match on the key. They describe the duty "
+    "for a reader and never narrow the footprint: a tag is not a scope term."
+)
+_SCOPE = (
+    "Which banks and which business the duty reaches, one entry per active dimension of the "
+    "taxonomy. This is the record's own scope as the library states it: it is not the bank's "
+    "footprint, and it is not the judgement that the duty applies to this bank."
+)
+_IN_FOOTPRINT = (
+    "Whether the duty's scope overlaps the bank's own footprint, which is what decides "
+    "whether the record appears in the default list at all. It is a filter and not a "
+    "decision: inside the footprint is not \"this applies to us\", which a person judges "
+    "separately and records elsewhere, and neither of those is \"we comply\"."
+)
+_OUTSIDE_REASON = (
+    "Why the default list would have hidden this record: one entry per dimension in which "
+    "the duty's terms and the bank's footprint have nothing in common. Empty on a record "
+    "inside the footprint, and so filled only on the records `outsideFootprint=true` "
+    "reveals."
+)
 
 
 class ObligationRow(LibraryResponse):
@@ -128,33 +341,193 @@ class ObligationRow(LibraryResponse):
     `openChangeCount` with the watch feed (chunk 5), `pendingApplicability` and
     `complianceStatus` with the register (chunk 8)."""
 
-    id: UUID
-    stable_key: str
-    ref_label: str
-    title: LocalizedText | None
-    instrument: ObligationInstrumentRef
-    binding_level: LibraryRef
-    binding: bool
-    duty_type: LibraryRef
-    tags: list[LibraryRef]
-    scope: list[ScopeDimension]
-    version: ObligationVersionRef | None
-    upcoming_version: ObligationVersionRef | None
-    in_footprint: bool
-    outside_reason: list[OutsideReason]
-    last_verified_at: datetime.datetime | None
-    open_change_count: int
-    pending_applicability: bool | None
-    compliance_status: LibraryRef | None
+    id: UUID = Field(description=_OBLIGATION_ID, examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"])
+    stable_key: str = Field(description=_OBLIGATION_STABLE_KEY, examples=["obl-research-payments"])
+    ref_label: str = Field(description=_OBLIGATION_REF_LABEL, examples=["Third-party payments"])
+    title: LocalizedText | None = Field(description=_OBLIGATION_TITLE)
+    instrument: ObligationInstrumentRef = Field(
+        description=(
+            "The instrument this duty was broken out of, by key and short name. The card "
+            "adds the instrument's official reference and what it implements; this row "
+            "carries only what a column shows."
+        )
+    )
+    binding_level: LibraryRef = Field(description=_BINDING_LEVEL)
+    binding: bool = Field(description=_BINDING, examples=[True])
+    duty_type: LibraryRef = Field(description=_DUTY_TYPE)
+    tags: list[LibraryRef] = Field(description=_TAGS)
+    scope: list[ScopeDimension] = Field(description=_SCOPE)
+    version: ObligationVersionRef | None = Field(
+        description=(
+            "The version of the summary in force on the date the list was read, by number "
+            "and effective date. Null when every version of this duty starts after that "
+            "date, which is a duty recorded before it begins to bind anyone."
+        )
+    )
+    upcoming_version: ObligationVersionRef | None = Field(
+        description=(
+            "The next version due to take effect after the date the list was read, so a row "
+            "can say new wording is coming. Null when none is waiting. Its presence is not "
+            "work the bank owes: what to do about a change belongs to the watch feed and "
+            "the case, never to the library record."
+        )
+    )
+    in_footprint: bool = Field(description=_IN_FOOTPRINT, examples=[True])
+    outside_reason: list[OutsideReason] = Field(description=_OUTSIDE_REASON)
+    last_verified_at: datetime.datetime | None = Field(
+        description=(
+            "When a bleqq library editor last read this record against its public source "
+            "and found it unchanged, as a UTC timestamp; a screen shows it as \"Verified "
+            "<date>\" in the bank's own time zone. Null on a record nobody has confirmed "
+            "that way. It is not the date the record last changed, and it is not the bank's "
+            "own review date."
+        ),
+        examples=["2026-06-30T07:12:44Z"],
+    )
+    open_change_count: int = Field(
+        description=(
+            "How many regulatory changes touching this duty are still open in the bank's "
+            "watch feed, so a row can carry \"N open changes\". The watch overlay is not "
+            "wired into this list yet, so every row answers 0 until it is: read a 0 here as "
+            "\"not counted on this row\" rather than as \"nothing open\", and read the watch "
+            "feed for the real number."
+        ),
+        examples=[0],
+    )
+    pending_applicability: bool | None = Field(
+        description=(
+            "Whether a change to this duty's applicability is waiting for a second person in "
+            "this bank to approve it. Null means the question is not answered on this row, "
+            "never that the answer is no: the applicability register arrives in a later "
+            "release and every row answers null until it does."
+        )
+    )
+    compliance_status: LibraryRef | None = Field(
+        description=(
+            "How the bank has judged its own compliance with this duty, as key, kind and "
+            "label. This is the bank's own judgement, held in its own zone and never shared "
+            "with another bank, and it is a different fact from whether the duty applies at "
+            "all. The statuses are vocabulary rows the bank's own admin may extend, relabel "
+            "or retire without a deploy, so read `GET /vocab/compliance_status` for the live "
+            "set and match on the key; `compliant`, `partly_compliant`, `gap` and "
+            "`not_assessed` are seeded on day one, each carrying its fixed category as its "
+            "kind. Null until the compliance register arrives in a later release."
+        )
+    )
 
     # A row is validated again when the page takes it, so a row built any other way than
     # through this constructor still never reaches the wire unchecked.
     model_config = ConfigDict(revalidate_instances="always")
 
 
+# One obligation of FFFS 2017:2 as the seeded sample library holds it (the research payment
+# duty, with version 2 waiting for 1 October 2026), used as the example of a row, a card and
+# a diff. Sample data throughout: no bank in it is real.
+_SAMPLE_SCOPE: list[Any] = [
+    {
+        "dimension": {"key": "regime", "kind": None, "label": "Regime"},
+        "terms": [{"key": "securities", "kind": None, "label": "Securities"}],
+        "allSelected": False,
+    },
+    {
+        "dimension": {"key": "legal_entity", "kind": None, "label": "Legal entity type"},
+        "terms": [{"key": "bank", "kind": None, "label": "Bank"}],
+        "allSelected": False,
+    },
+    {
+        "dimension": {"key": "service_type", "kind": None, "label": "Service"},
+        "terms": [
+            {"key": "advice", "kind": None, "label": "Advice"},
+            {"key": "portfolio_management", "kind": None, "label": "Portfolio management"},
+        ],
+        "allSelected": False,
+    },
+    {
+        "dimension": {"key": "account_type", "kind": None, "label": "Account type"},
+        "terms": [
+            {"key": "isk", "kind": None, "label": "ISK"},
+            {"key": "af", "kind": None, "label": "AF"},
+            {"key": "depa", "kind": None, "label": "Depå"},
+            {"key": "kf", "kind": None, "label": "KF"},
+        ],
+        "allSelected": False,
+    },
+    {
+        "dimension": {"key": "client_category", "kind": None, "label": "Client category"},
+        "terms": [
+            {"key": "retail", "kind": None, "label": "Retail"},
+            {"key": "professional", "kind": None, "label": "Professional"},
+        ],
+        "allSelected": True,
+    },
+    {
+        "dimension": {"key": "channel", "kind": None, "label": "Channel"},
+        "terms": [],
+        "allSelected": False,
+    },
+    {
+        "dimension": {"key": "lifecycle_stage", "kind": None, "label": "Lifecycle stage"},
+        "terms": [{"key": "ongoing", "kind": None, "label": "Ongoing"}],
+        "allSelected": False,
+    },
+]
+
+_SAMPLE_TITLE: dict[str, Any] = {
+    "text": "Pay for third-party research only under the permitted models",
+    "language": "en",
+    "isOriginal": True,
+    "isMachine": False,
+}
+
+_SAMPLE_TAGS: list[Any] = [
+    {"key": "research", "kind": None, "label": "research"},
+    {"key": "inducements", "kind": None, "label": "inducements"},
+    {"key": "third_party_payments", "kind": None, "label": "third-party payments"},
+]
+
+_SAMPLE_ROW: dict[str, Any] = {
+    "id": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+    "stableKey": "obl-research-payments",
+    "refLabel": "Third-party payments",
+    "title": _SAMPLE_TITLE,
+    "instrument": {"key": "fffs-2017-2", "shortName": "FFFS 2017:2"},
+    "bindingLevel": {"key": "authority_regulation", "kind": None, "label": "Supervisory regulation"},
+    "binding": True,
+    "dutyType": {"key": "governance", "kind": None, "label": "Governance"},
+    "tags": _SAMPLE_TAGS,
+    "scope": _SAMPLE_SCOPE,
+    "version": {"versionNumber": 1, "effectiveFrom": None},
+    "upcomingVersion": {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}},
+    "inFootprint": True,
+    "outsideReason": [],
+    "lastVerifiedAt": "2026-06-30T07:12:44Z",
+    "openChangeCount": 0,
+    "pendingApplicability": None,
+    "complianceStatus": None,
+}
+
+
 class ObligationPage(LibraryResponse):
-    items: list[ObligationRow]
-    total: int
+    """One page of `GET /obligations`: the rows, and how many rows the filters match in
+    all."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_SAMPLE_ROW], "total": 14}]})
+
+    items: list[ObligationRow] = Field(
+        description=(
+            "The duties on this page, ordered by their stable key so that paging through "
+            "them is repeatable. An empty list is an ordinary 200 and means nothing matched "
+            "the filters, never that something went wrong."
+        )
+    )
+    total: int = Field(
+        description=(
+            "How many duties match the filters in all, not how many are on this page: what a "
+            "screen reads to say \"20 of 137\". It is counted at the moment of the call, so "
+            "a record written between two pages can move it."
+        ),
+        examples=[14],
+    )
 
 
 class ObligationVersionRow(LibraryResponse):
@@ -162,54 +535,302 @@ class ObligationVersionRow(LibraryResponse):
     `effectiveTo` derived as the day before the next version did, and when a library editor
     approved it. The approver is not named: the card names none."""
 
-    version_number: int
-    effective_from: PartialDate | None
-    effective_to: PartialDate | None
-    approved_at: datetime.datetime | None
+    version_number: int = Field(
+        description=(
+            "Which version of this duty's summary it is, numbered from 1 in the order the "
+            "versions took effect. It is the number to send to the diff as `from` or `to`, "
+            "and it never addresses another obligation's version."
+        ),
+        examples=[1],
+    )
+    effective_from: PartialDate | None = Field(
+        description=(
+            "The legal date this version started binding the bank, at the precision the "
+            "source gave it. Null means it has been in force since the obligation entered "
+            "the library. "
+            f"{LIBRARY_FACT}"
+        )
+    )
+    effective_to: PartialDate | None = Field(
+        description=(
+            "The last day this version was in force, worked out as the day before the next "
+            "version took effect: nothing is stored, because a version row is written once "
+            "and never touched afterwards. Null on the version still in force, on one whose "
+            "successor carries no date, and on one corrected the same day it took effect."
+        )
+    )
+    approved_at: datetime.datetime | None = Field(
+        description=(
+            "When a library editor approved the proposal that wrote this version, as a UTC "
+            "timestamp. Null on a version the library was seeded with rather than proposed. "
+            "It is the moment of the decision, never the date the wording takes effect, "
+            "which is `effectiveFrom`. The approver is not named: this card names none."
+        ),
+        examples=["2026-09-15T14:02:11Z"],
+    )
 
 
 class ObligationInstrumentSummary(LibraryResponse):
     """The instrument an obligation belongs to, as "Where it comes from" reads it (INV-01).
     Its provisions and lineage live on the instrument's own read."""
 
-    key: str
-    short_name: str
-    name: LocalizedText | None
-    official_ref: str
-    implements_note: str
+    key: str = Field(
+        description=(
+            "The instrument's stable key, the value to store and to send back as "
+            "`?instrument=`. It is issued once and never changes, however the instrument is "
+            "renamed or amended. "
+            f"{LIBRARY_FACT}"
+        ),
+        examples=["fffs-2017-2"],
+    )
+    short_name: str = Field(
+        description=(
+            "How the instrument is written on a pill or in a column, in its own language. A "
+            "label a person wrote and may reword, so show it and match on `key` instead."
+        ),
+        examples=["FFFS 2017:2"],
+    )
+    name: LocalizedText | None = Field(
+        description=(
+            "The instrument's full name, in the best language this reader can be served. "
+            "The original is the jurisdiction's legal language, so a Swedish regulation read "
+            "in English usually still answers its Swedish name rather than a translation. "
+            "Null only when the record carries no name in any language."
+        )
+    )
+    official_ref: str = Field(
+        description=(
+            "The reference the issuing authority itself publishes the instrument under, "
+            "written as that authority writes it. It is how a lawyer cites the instrument "
+            "and how a reader recognises it on the authority's own site; it is not an "
+            "identifier this API accepts, which is `key`."
+        ),
+        examples=["FFFS 2017:2"],
+    )
+    implements_note: str = Field(
+        description=(
+            "What this instrument implements or elaborates, in the library's own words, so a "
+            "reader can see where a Swedish rule comes from. Free text for a person and "
+            "never a machine-readable link; an empty string when nothing was recorded, never "
+            "null. The structured lineage between instruments lives on the instrument's own "
+            "read."
+        ),
+        examples=["MiFID II delegated directive (EU) 2017/593"],
+    )
 
 
 class ObligationProvisionRef(LibraryResponse):
     """A provision the obligation cites (INV-02, INV-03), by reference and path. The
     verbatim text is the provision tree's, never this read's."""
 
-    id: UUID
-    ref_label: str
-    path: str
+    id: UUID = Field(
+        description=(
+            "The provision's identifier in the shared library, as a UUID: what the provision "
+            "tree is read by. "
+            f"{LIBRARY_FACT}"
+        ),
+        examples=["b6d9f0a4-1c72-4e35-9f88-0a2c4e6b8d10"],
+    )
+    ref_label: str = Field(
+        description=(
+            "How the provision is cited, in the words the source itself uses: `9 kap. 6 §` "
+            "in a Swedish regulation, `Article 25(3)` in an EU one. For a reader to quote, "
+            "not a reference to parse."
+        ),
+        examples=["9 kap. 6 §"],
+    )
+    path: str = Field(
+        description=(
+            "Where the provision sits in its instrument's structure, read from the top, so a "
+            "reader can place the citation without opening the tree. It is a breadcrumb a "
+            "person reads and may be relabelled; cite the provision by `id`. The verbatim "
+            "legal text is not here: it belongs to the provision tree, version by version."
+        ),
+        examples=["FFFS 2017:2 > 9 kap. > 6 §"],
+    )
 
 
 class RelatedObligation(LibraryResponse):
     """An obligation a reader should see beside this one (INV-03), with the relation as a
     vocabulary row."""
 
-    id: UUID
-    title: LocalizedText | None
-    instrument: ObligationInstrumentRef
-    binding: bool
-    relation: LibraryRef
+    id: UUID = Field(description=_OBLIGATION_ID, examples=["1d8c5a09-6b47-4e21-8f3a-0c7e2b4d9a63"])
+    title: LocalizedText | None = Field(description=_OBLIGATION_TITLE)
+    instrument: ObligationInstrumentRef = Field(
+        description="Which instrument the related duty was broken out of, by key and short name."
+    )
+    binding: bool = Field(description=_BINDING, examples=[True])
+    relation: LibraryRef = Field(
+        description=(
+            "How the two duties are related, as key, kind and label: `implements` when this "
+            "one puts the other into effect, `elaborates` when it spells the other out, and "
+            "`related` when the library only says read them together. Those three are seeded "
+            "on day one and they are vocabulary rows, not a closed set: a platform admin may "
+            "extend, relabel or retire the list without a deploy, so read "
+            "`GET /vocab/relation_type` for the live set and match on the key. A relation is "
+            "the library's own cross-reference and never a statement that both duties reach "
+            "this bank."
+        )
+    )
 
 
 class ObligationProvenance(LibraryResponse):
     """Where the record came from and when it was last checked against its source (INV-06).
     `verifiedBy` is a platform person or null: a seeded record has never been re-verified."""
 
-    created_origin: str
-    created_model: str
-    created_at: datetime.datetime
-    verified_by: PersonRef | None
-    last_verified_at: datetime.datetime | None
-    source_url: str
-    source_label: str
+    created_origin: str = Field(
+        description=(
+            "Who drafted this record: `user` when a person wrote it, `agent` when a research "
+            "agent proposed it. Either way it entered the library through a proposal a "
+            "second, independent principal approved, so `agent` does not mean a machine "
+            "wrote straight into the library."
+        ),
+        examples=["agent"],
+    )
+    created_model: str = Field(
+        description=(
+            "Which model drafted the record, under the name it is published as, when an "
+            "agent did. An empty string when a person wrote it, never null. It labels the "
+            "draft's origin and makes no claim about how accurate the record is; a person "
+            "still approved it."
+        ),
+        examples=["agent pipeline 0.4"],
+    )
+    created_at: datetime.datetime = Field(
+        description=(
+            "When the record was first written into the library, as a UTC timestamp. It is "
+            "not the date the rule began to bind anyone: that is the version's effective "
+            "date, which can be years earlier."
+        ),
+        examples=["2026-02-11T08:45:03Z"],
+    )
+    verified_by: PersonRef | None = Field(
+        description=(
+            "The bleqq platform person who last confirmed this record against its source, by "
+            "id and name, or null when nobody has. Never a member of a bank: re-verifying a "
+            "shared fact is bleqq's own check, and a bank reading the record leaves nothing "
+            "here."
+        )
+    )
+    last_verified_at: datetime.datetime | None = Field(
+        description=(
+            "When that check was made, as a UTC timestamp, which is what a reader's "
+            "\"Verified <date>\" shows. It says the source still read the same way on that "
+            "date; it does not say the record's content was re-approved, and it is not the "
+            "date the record last changed."
+        ),
+        examples=["2026-06-30T07:12:44Z"],
+    )
+    source_url: str = Field(
+        description=(
+            "The public page this record was taken from, so a reader can open it and a "
+            "re-check can fetch it again. It is the authority's own page and never a link "
+            "into this product."
+        ),
+        examples=["https://www.fi.se/en/published/regulations/2017/fffs-20172/"],
+    )
+    source_label: str = Field(
+        description=(
+            "What that page is called, in the words a reader recognises, down to the place "
+            "in it the record came from. A label for a person, not a citation a machine "
+            "resolves."
+        ),
+        examples=["FFFS 2017:2, 9 kap. 6 §"],
+    )
+
+
+_SAMPLE_SUMMARY_SV = (
+    "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets "
+    "egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor "
+    "som anges i reglerna."
+)
+_SAMPLE_SUMMARY_EN = (
+    "Research from third parties may be received only if it is paid from the institution's "
+    "own resources, from a research payment account, or jointly with execution under the "
+    "conditions set out in the rules."
+)
+_SAMPLE_DETAIL: dict[str, Any] = {
+    **{key: _SAMPLE_ROW[key] for key in ("id", "stableKey", "refLabel", "title")},
+    "instrument": {
+        "key": "fffs-2017-2",
+        "shortName": "FFFS 2017:2",
+        "name": {
+            "text": "FFFS 2017:2 om värdepappersrörelse",
+            "language": "sv",
+            "isOriginal": True,
+            "isMachine": False,
+        },
+        "officialRef": "FFFS 2017:2",
+        "implementsNote": "MiFID II delegated directive (EU) 2017/593",
+    },
+    "regime": {"key": "securities", "kind": None, "label": "Securities"},
+    "bindingLevel": _SAMPLE_ROW["bindingLevel"],
+    "binding": True,
+    "dutyType": _SAMPLE_ROW["dutyType"],
+    "triggerFrequency": "Annual assessment from 1 October 2026",
+    "retention": "5 years",
+    "sanctionExposure": "FI remark, warning or sanction fee",
+    "productScope": "Third-party research",
+    "tags": _SAMPLE_TAGS,
+    "scope": _SAMPLE_SCOPE,
+    "inFootprint": True,
+    "outsideReason": [],
+    "summary": {"text": _SAMPLE_SUMMARY_EN, "language": "en", "isOriginal": False, "isMachine": True},
+    "translations": [
+        {"text": _SAMPLE_SUMMARY_SV, "language": "sv", "isOriginal": True, "isMachine": False},
+        {"text": _SAMPLE_SUMMARY_EN, "language": "en", "isOriginal": False, "isMachine": True},
+    ],
+    "version": {
+        "versionNumber": 1,
+        "effectiveFrom": None,
+        "effectiveTo": {"date": "2026-09-30", "precision": "day"},
+        "approvedAt": None,
+    },
+    "versions": [
+        {
+            "versionNumber": 1,
+            "effectiveFrom": None,
+            "effectiveTo": {"date": "2026-09-30", "precision": "day"},
+            "approvedAt": None,
+        },
+        {
+            "versionNumber": 2,
+            "effectiveFrom": {"date": "2026-10-01", "precision": "day"},
+            "effectiveTo": None,
+            "approvedAt": "2026-09-15T14:02:11Z",
+        },
+    ],
+    "provisions": [
+        {
+            "id": "b6d9f0a4-1c72-4e35-9f88-0a2c4e6b8d10",
+            "refLabel": "9 kap. 6 §",
+            "path": "FFFS 2017:2 > 9 kap. > 6 §",
+        }
+    ],
+    "related": [
+        {
+            "id": "1d8c5a09-6b47-4e21-8f3a-0c7e2b4d9a63",
+            "title": {
+                "text": "Disclose all costs and charges before and after the service",
+                "language": "en",
+                "isOriginal": True,
+                "isMachine": False,
+            },
+            "instrument": {"key": "fffs-2017-2", "shortName": "FFFS 2017:2"},
+            "binding": True,
+            "relation": {"key": "related", "kind": None, "label": "Related"},
+        }
+    ],
+    "provenance": {
+        "createdOrigin": "agent",
+        "createdModel": "agent pipeline 0.4",
+        "createdAt": "2026-02-11T08:45:03Z",
+        "verifiedBy": {"id": "0a2e6b81-5f4d-4a3b-9c77-1d8e3f5a6c20", "name": "Johan Ek"},
+        "lastVerifiedAt": "2026-06-30T07:12:44Z",
+        "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
+        "sourceLabel": "FFFS 2017:2, 9 kap. 6 §",
+    },
+}
 
 
 class ObligationDetail(LibraryResponse):
@@ -217,37 +838,174 @@ class ObligationDetail(LibraryResponse):
     facets, every version, the provisions it cites, the obligations beside it and its
     provenance. The register overlay lands with chunk 8, the related changes with chunk 5."""
 
-    id: UUID
-    stable_key: str
-    ref_label: str
-    title: LocalizedText | None
-    instrument: ObligationInstrumentSummary
-    regime: LibraryRef | None
-    binding_level: LibraryRef
-    binding: bool
-    duty_type: LibraryRef
-    trigger_frequency: str
-    retention: str
-    sanction_exposure: str
-    product_scope: str
-    tags: list[LibraryRef]
-    scope: list[ScopeDimension]
-    in_footprint: bool
-    outside_reason: list[OutsideReason]
-    summary: LocalizedText | None
-    translations: list[LocalizedText]
-    version: ObligationVersionRow | None
-    versions: list[ObligationVersionRow]
-    provisions: list[ObligationProvisionRef]
-    related: list[RelatedObligation]
-    provenance: ObligationProvenance
+    model_config = ConfigDict(json_schema_extra={"examples": [_SAMPLE_DETAIL]})
+
+    id: UUID = Field(description=_OBLIGATION_ID, examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"])
+    stable_key: str = Field(description=_OBLIGATION_STABLE_KEY, examples=["obl-research-payments"])
+    ref_label: str = Field(description=_OBLIGATION_REF_LABEL, examples=["Third-party payments"])
+    title: LocalizedText | None = Field(description=_OBLIGATION_TITLE)
+    instrument: ObligationInstrumentSummary = Field(
+        description=(
+            "Where the duty comes from: the instrument it was broken out of, with the "
+            "reference the authority publishes it under and what it implements. Its "
+            "provision tree and its lineage to other instruments live on the instrument's "
+            "own read."
+        )
+    )
+    regime: LibraryRef | None = Field(
+        description=(
+            "Which body of law the duty belongs to, as a term of the taxonomy's `regime` "
+            "dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, "
+            "`ai_ict`, `banking` and `payments` are seeded on day one. It is inherited from "
+            "the instrument, which is where the sector boundary is set, and it is null only "
+            "while an instrument carries none. The terms are vocabulary rows a platform "
+            "admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for "
+            "the live set and match on the key."
+        )
+    )
+    binding_level: LibraryRef = Field(description=_BINDING_LEVEL)
+    binding: bool = Field(description=_BINDING, examples=[True])
+    duty_type: LibraryRef = Field(description=_DUTY_TYPE)
+    trigger_frequency: str = Field(
+        description=(
+            "When the duty bites, in the library's own words. Free text for a person to "
+            "read, never a schedule a machine can act on, and an empty string when nothing "
+            "was recorded rather than null. It says when the rule applies, never when this "
+            "bank has to do anything."
+        ),
+        examples=["Annual assessment from 1 October 2026"],
+    )
+    retention: str = Field(
+        description=(
+            "How long the records behind this duty have to be kept, as the source puts it. "
+            "Free text, an empty string when nothing was recorded. It is the rule's own "
+            "retention period and has nothing to do with how long this product keeps the "
+            "bank's data."
+        ),
+        examples=["5 years"],
+    )
+    sanction_exposure: str = Field(
+        description=(
+            "What the authority may do where the duty is not met, in the library's words. "
+            "Free text, an empty string when nothing was recorded. It describes the rule's "
+            "exposure in general and is not this bank's own risk rating or an assessment of "
+            "anything it has done."
+        ),
+        examples=["FI remark, warning or sanction fee"],
+    )
+    product_scope: str = Field(
+        description=(
+            "Which products the duty covers, in the library's words, for a reader who wants "
+            "the sentence rather than the facets. Free text, an empty string when nothing "
+            "was recorded; the scope a filter can act on is `scope`, and the two are written "
+            "separately."
+        ),
+        examples=["Third-party research"],
+    )
+    tags: list[LibraryRef] = Field(description=_TAGS)
+    scope: list[ScopeDimension] = Field(description=_SCOPE)
+    in_footprint: bool = Field(description=_IN_FOOTPRINT, examples=[True])
+    outside_reason: list[OutsideReason] = Field(description=_OUTSIDE_REASON)
+    summary: LocalizedText | None = Field(
+        description=(
+            "The duty in plain language as the version in force on the read's date words "
+            "it, in the best language this reader can be served. Null when that version "
+            "carries no summary in any language, or when no version is in force on the date "
+            "asked for."
+        )
+    )
+    translations: list[LocalizedText] = Field(
+        description=(
+            "Every language the version in force holds its summary in, so a screen can offer "
+            "\"Show original\" and label what a machine translated. `summary` is the one of "
+            "these picked for this reader; the list is the same for everyone."
+        )
+    )
+    version: ObligationVersionRow | None = Field(
+        description=(
+            "The version in force on the date the record was read, with the dates it runs "
+            "between. Null when every version starts after that date."
+        )
+    )
+    versions: list[ObligationVersionRow] = Field(
+        description=(
+            "Every version of this duty in version order, including the ones still to take "
+            "effect, so a reader can see the whole history and ask for a diff between any "
+            "two. Nothing here is ever rewritten: a correction is another version."
+        )
+    )
+    provisions: list[ObligationProvisionRef] = Field(
+        description=(
+            "The provisions of the instrument this duty was drawn from, as citations. An "
+            "empty list means no provision was cited, not that the duty is unsourced: "
+            "`provenance` still names the page it came from. The verbatim legal text is not "
+            "here; it lives in the provision tree."
+        )
+    )
+    related: list[RelatedObligation] = Field(
+        description=(
+            "The duties a reader should see beside this one, as the library files them. "
+            "Only records this caller may read appear: a relation to one they may not is "
+            "left out silently rather than hinted at."
+        )
+    )
+    provenance: ObligationProvenance = Field(
+        description=(
+            "Where this record came from and when a person last held it against its source: "
+            "the sourcing a bank's own reviewer, and a vendor review, asks for."
+        )
+    )
 
 
 class DiffSegment(LibraryResponse):
     """One sentence of a diff and what happened to it (AC-INV1)."""
 
-    op: str
-    text: str
+    op: str = Field(
+        description=(
+            "What became of this sentence between the two versions. `equal` means it stands "
+            "unchanged in both. `delete` means the older version had it and the newer one "
+            "does not. `insert` means the newer version adds it. A reworded sentence appears "
+            "twice, once as `delete` and once as `insert`; there is no \"changed\", so a "
+            "reader must not take a delete on its own as a duty being dropped."
+        ),
+        examples=["insert"],
+    )
+    text: str = Field(
+        description=(
+            "The sentence itself, in the language the diff names, as plain text with no "
+            "markup: a screen colours it by `op`. Where a summary is longer than the server "
+            "will split sentence by sentence, one segment holds the whole text instead of a "
+            "sentence, which is coarser but still correct."
+        ),
+        examples=["The institution sets criteria for an annual assessment of the research it uses."],
+    )
+
+
+_SAMPLE_DIFF: dict[str, Any] = {
+    "fromVersion": 1,
+    "toVersion": 2,
+    "fromEffective": None,
+    "toEffective": {"date": "2026-10-01", "precision": "day"},
+    "language": "en",
+    "isMachine": True,
+    "segments": [
+        {"op": "equal", "text": _SAMPLE_SUMMARY_EN},
+        {
+            "op": "insert",
+            "text": (
+                "The institution sets criteria for an annual assessment of the quality, "
+                "usability and value of the research it uses."
+            ),
+        },
+        {
+            "op": "insert",
+            "text": (
+                "If the research does not contribute to better investment decisions, the "
+                "institution takes corrective action."
+            ),
+        },
+    ],
+}
 
 
 class VersionDiff(LibraryResponse):
@@ -255,20 +1013,86 @@ class VersionDiff(LibraryResponse):
     numbers and the dates they took effect, the language both versions have and whether a
     machine translated it, and the sentences. Serves obligations now and provisions next."""
 
-    from_version: int
-    to_version: int
-    from_effective: PartialDate | None
-    to_effective: PartialDate | None
-    language: str
-    is_machine: bool
-    segments: list[DiffSegment]
+    model_config = ConfigDict(json_schema_extra={"examples": [_SAMPLE_DIFF]})
+
+    from_version: int = Field(
+        description=(
+            "The number of the version the comparison starts from. Both numbers belong to "
+            "the same obligation: this call compares two versions of one record and never "
+            "one record with another."
+        ),
+        examples=[1],
+    )
+    to_version: int = Field(
+        description=(
+            "The number of the version the comparison ends at, again a version of the same "
+            "obligation."
+        ),
+        examples=[2],
+    )
+    from_effective: PartialDate | None = Field(
+        description=(
+            "The legal date the older version started binding the bank, so a screen can name "
+            "the two dates being compared. Null when that version has been in force since "
+            "the obligation entered the library."
+        )
+    )
+    to_effective: PartialDate | None = Field(
+        description=(
+            "The legal date the newer version starts binding the bank. It may be in the "
+            "future, which is a change already approved and not yet in force; that is not by "
+            "itself work this bank owes."
+        )
+    )
+    language: str = Field(
+        description=(
+            "Which content language the two summaries were compared in, as a language key "
+            "that `GET /reference/languages` lists. It is the first language both versions "
+            "hold, preferring the `lang` asked for, then the reader's own order, then an "
+            "original over a translation — so it may not be the language that was asked for."
+        ),
+        examples=["en"],
+    )
+    is_machine: bool = Field(
+        description=(
+            "True when either side of the comparison is a machine translation nobody has "
+            "confirmed, so a screen must label the whole diff as machine-made (INV-05). It "
+            "does not say the difference is wrong; it says the words compared are not the "
+            "ones that govern, which are the original's."
+        ),
+        examples=[True],
+    )
+    segments: list[DiffSegment] = Field(
+        description=(
+            "The comparison itself, sentence by sentence in reading order, so the unchanged "
+            "sentences are there as well as the changed ones. Empty only when both versions' "
+            "summaries are empty in that language."
+        )
+    )
+
+
+_AS_OF = (
+    "Read the record as it stood on this date, as a plain calendar date such as "
+    "`2026-06-30`: the answer carries the version in force on it, which is the version with "
+    "the latest effective date on or before it. It defaults to today in the bank's own time "
+    "zone and not the caller's, so two people in one bank always read the same day. Reading "
+    "as of a future date shows wording that does not bind yet, and is never itself a "
+    "statement that the bank has something to do."
+)
 
 
 class ObligationAsOfQuery(CamelSchema):
     """`asOf` on the obligation read: the version in force on that date, today in the
     tenant's time zone by default (AC-INV1)."""
 
-    as_of: datetime.date | None = None
+    as_of: datetime.date | None = Field(
+        default=None,
+        description=(
+            f"{_AS_OF} A date before the record's first version answers the record with a "
+            "null `version` and a null `summary` rather than a 404."
+        ),
+        examples=["2026-06-30"],
+    )
 
 
 class ObligationDiffQuery(CamelSchema):
@@ -276,9 +1100,45 @@ class ObligationDiffQuery(CamelSchema):
     before it. `lang` asks for a language; the diff falls back to the reader's language
     order when neither version has it (INV-05)."""
 
-    from_version: int | None = Field(default=None, alias="from", ge=1)
-    to_version: int | None = Field(default=None, alias="to", ge=1)
-    lang: str | None = Field(default=None, max_length=MAX_LANGUAGE_LENGTH)
+    from_version: int | None = Field(
+        default=None,
+        alias="from",
+        ge=1,
+        description=(
+            "Which version to compare from, by its version number, 1 at the lowest. It "
+            "defaults to the version before the latest one, so a plain call shows the most "
+            "recent change. Both versions are versions of the same obligation: there is no "
+            "comparison across records. A number this obligation has no version for is "
+            "refused with 422 `unknown_key`."
+        ),
+        examples=[1],
+    )
+    to_version: int | None = Field(
+        default=None,
+        alias="to",
+        ge=1,
+        description=(
+            "Which version to compare to, by its version number, 1 at the lowest. It "
+            "defaults to the latest version the obligation has, including one that has been "
+            "approved and does not take effect until later. A number this obligation has no "
+            "version for is refused with 422 `unknown_key`."
+        ),
+        examples=[2],
+    )
+    lang: str | None = Field(
+        default=None,
+        max_length=MAX_LANGUAGE_LENGTH,
+        description=(
+            "Which content language to compare in, as a language key of at most 8 "
+            "characters such as `sv` or `en`. It is a preference and never a filter: a key "
+            "the two versions do not both hold is not an error, and the diff falls back to "
+            "the reader's own language order and then to an original before a translation, "
+            "saying in `language` what it settled on. A key longer than 8 characters is "
+            "refused with 422 `validation_error`, and two versions with no language in "
+            "common answer 422 because there is nothing to compare."
+        ),
+        examples=["en"],
+    )
 
 
 class ObligationQuery(CamelSchema):
@@ -287,12 +1147,73 @@ class ObligationQuery(CamelSchema):
     defaults to today in the tenant's time zone. `outsideFootprint=true` lifts the
     footprint filter and reports why each hidden row would be hidden."""
 
-    instrument: str | None = None
-    duty_type: str | None = None
-    term: list[str] = Field(default_factory=list, max_length=settings.LIBRARY_TERM_FILTER_MAX)
-    q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
-    as_of: datetime.date | None = None
-    outside_footprint: bool = False
+    instrument: str | None = Field(
+        default=None,
+        description=(
+            "Only the duties broken out of this instrument, by the instrument's stable key: "
+            "`fffs-2017-2` for FFFS 2017:2. A key no instrument has is not an error — it "
+            "matches nothing, and the call answers 200 with an empty page."
+        ),
+        examples=["fffs-2017-2"],
+    )
+    duty_type: str | None = Field(
+        default=None,
+        description=(
+            "Only the duties of this kind, by the duty type's key. `conduct`, `disclosure`, "
+            "`record_keeping`, `reporting`, `governance` and `technical` are seeded on day "
+            "one, and they are vocabulary rows rather than a closed set: a platform admin "
+            "may extend, relabel or retire the list without a deploy. Read "
+            "`GET /vocab/duty_type` for the live set and send the key, never the label. A "
+            "key no duty type has matches nothing and answers 200 with an empty page."
+        ),
+        examples=["governance"],
+    )
+    term: list[str] = Field(
+        default_factory=list,
+        max_length=settings.LIBRARY_TERM_FILTER_MAX,
+        description=(
+            "Only the duties whose scope carries every one of these terms, each written "
+            "`dimension:key`. Repeat the parameter for more than one; they are combined "
+            "with AND, and at most 20 are accepted "
+            "(`LIBRARY_TERM_FILTER_MAX`). The terms are taxonomy vocabulary rows a platform "
+            "admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for "
+            "the live set and match on the key. A value with no colon is refused with 422 "
+            "`validation_error`, and one that names no active term with 422 `unknown_key` "
+            "naming every term that was not found."
+        ),
+        examples=[["service_type:advice", "account_type:isk"]],
+    )
+    q: str | None = Field(
+        default=None,
+        max_length=MAX_QUERY_LENGTH,
+        description=(
+            "Find the duties whose title or citation contains these words, ignoring case: a "
+            "phrase to look for, never a document. At most 200 characters "
+            "(`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`. It "
+            "narrows this list and is not the product's search: ranking, synonyms and the "
+            "text of the summaries belong to `GET /search`."
+        ),
+        examples=["research"],
+    )
+    as_of: datetime.date | None = Field(
+        default=None,
+        description=(
+            f"{_AS_OF} On the list it changes which wording each row carries, never which "
+            "duties are listed."
+        ),
+        examples=["2026-06-30"],
+    )
+    outside_footprint: bool = Field(
+        default=False,
+        description=(
+            "Whether to include the duties the bank's footprint would otherwise hide, each "
+            "saying in `outsideReason` why it would be hidden. It is false by default, which "
+            "is the working inventory: only the duties whose scope overlaps the footprint. "
+            "Set it to true to review the boundary itself — a duty that appears only this "
+            "way is not one the bank has decided applies to it."
+        ),
+        examples=[False],
+    )
 
 
 # ---------------------------------------------------------------------------------------

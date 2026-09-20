@@ -109,6 +109,8 @@ RAISABLE_CODES = raisable_codes()
 VOCABULARY_PROPERTIES = frozenset(
     {
         "JurisdictionRow.parentKey",
+        "ObligationQuery.dutyType",
+        "ObligationQuery.term",
         "TaxonomyTermRow.parentKey",
         "VocabularyCreateBody.kind",
         "VocabularyCreateBody.key",

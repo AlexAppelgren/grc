@@ -1930,10 +1930,18 @@
         "description": "One sentence of a diff and what happened to it (AC-INV1).",
         "properties": {
           "op": {
+            "description": "What became of this sentence between the two versions. `equal` means it stands unchanged in both. `delete` means the older version had it and the newer one does not. `insert` means the newer version adds it. A reworded sentence appears twice, once as `delete` and once as `insert`; there is no \"changed\", so a reader must not take a delete on its own as a duty being dropped.",
+            "examples": [
+              "insert"
+            ],
             "title": "Op",
             "type": "string"
           },
           "text": {
+            "description": "The sentence itself, in the language the diff names, as plain text with no markup: a screen colours it by `op`. Where a summary is longer than the server will split sentence by sentence, one segment holds the whole text instead of a sentence, which is coarser but still correct.",
+            "examples": [
+              "The institution sets criteria for an annual assessment of the research it uses."
+            ],
             "title": "Text",
             "type": "string"
           }
@@ -2677,7 +2685,7 @@
         ],
         "properties": {
           "key": {
-            "description": "The row's immutable key. Store and compare this, never the label, and never construct one: a key the list does not hold answers 422 `unknown_key` with the valid keys.",
+            "description": "The row's immutable key, and the only part of this reference to store, compare or send back. Which list it is drawn from is settled by the field that carries the reference, and that field names its vocabulary and the endpoint that returns the live set; every one of those lists is rows rather than a closed set, so an admin may extend, relabel, reorder or retire it without a deploy and a key you have not seen before is new data and not an error. Match on the key and never on the label, and never construct one: a key the list does not hold answers 422 `unknown_key` with the valid keys.",
             "examples": [
               "act_now"
             ],
@@ -2720,18 +2728,34 @@
         "description": "One text in one language (INV-05, D-12): which language it is in, whether it is the\noriginal and whether a machine translated it, so the screen can label it.",
         "properties": {
           "isMachine": {
+            "description": "True while a machine made this translation and no person has confirmed it, so a screen has to label it as such (INV-05). It says nothing about whether the translation is faithful, only that nobody has checked it; the original is the text that governs either way.",
+            "examples": [
+              true
+            ],
             "title": "Ismachine",
             "type": "boolean"
           },
           "isOriginal": {
+            "description": "True when this is the language the source itself published in, which is the wording that governs wherever two languages read differently. False on every translation, whoever or whatever made it.",
+            "examples": [
+              false
+            ],
             "title": "Isoriginal",
             "type": "boolean"
           },
           "language": {
+            "description": "Which content language the wording is in, as a language key: the BCP 47 primary tag of at most 8 characters that `GET /reference/languages` lists, with `sv`, `en`, `da`, `nb` and `fi` active on day one. The languages are library reference rows a platform admin may extend or retire without a deploy, so read that endpoint for the live set and compare on the key rather than on the language's name.",
+            "examples": [
+              "en"
+            ],
             "title": "Language",
             "type": "string"
           },
           "text": {
+            "description": "The wording itself, in the one language this block names. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved. It is never rewritten where it stands: a new wording is a new version of the record, so the same version read twice always gives the same words.",
+            "examples": [
+              "Pay for third-party research only under the permitted models"
+            ],
             "title": "Text",
             "type": "string"
           }
@@ -3094,6 +3118,10 @@
                 "type": "null"
               }
             ],
+            "description": "Read the record as it stood on this date, as a plain calendar date such as `2026-06-30`: the answer carries the version in force on it, which is the version with the latest effective date on or before it. It defaults to today in the bank's own time zone and not the caller's, so two people in one bank always read the same day. Reading as of a future date shows wording that does not bind yet, and is never itself a statement that the bank has something to do. A date before the record's first version answers the record with a null `version` and a null `summary` rather than a 404.",
+            "examples": [
+              "2026-06-30"
+            ],
             "title": "Asof"
           }
         },
@@ -3102,30 +3130,325 @@
       },
       "ObligationDetail": {
         "description": "`GET /obligations/{obligationId}` (INV-03..INV-06): the duty as of a date, with its\nfacets, every version, the provisions it cites, the obligations beside it and its\nprovenance. The register overlay lands with chunk 8, the related changes with chunk 5.",
+        "examples": [
+          {
+            "binding": true,
+            "bindingLevel": {
+              "key": "authority_regulation",
+              "kind": null,
+              "label": "Supervisory regulation"
+            },
+            "dutyType": {
+              "key": "governance",
+              "kind": null,
+              "label": "Governance"
+            },
+            "id": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+            "inFootprint": true,
+            "instrument": {
+              "implementsNote": "MiFID II delegated directive (EU) 2017/593",
+              "key": "fffs-2017-2",
+              "name": {
+                "isMachine": false,
+                "isOriginal": true,
+                "language": "sv",
+                "text": "FFFS 2017:2 om v\u00e4rdepappersr\u00f6relse"
+              },
+              "officialRef": "FFFS 2017:2",
+              "shortName": "FFFS 2017:2"
+            },
+            "outsideReason": [],
+            "productScope": "Third-party research",
+            "provenance": {
+              "createdAt": "2026-02-11T08:45:03Z",
+              "createdModel": "agent pipeline 0.4",
+              "createdOrigin": "agent",
+              "lastVerifiedAt": "2026-06-30T07:12:44Z",
+              "sourceLabel": "FFFS 2017:2, 9 kap. 6 \u00a7",
+              "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
+              "verifiedBy": {
+                "id": "0a2e6b81-5f4d-4a3b-9c77-1d8e3f5a6c20",
+                "name": "Johan Ek"
+              }
+            },
+            "provisions": [
+              {
+                "id": "b6d9f0a4-1c72-4e35-9f88-0a2c4e6b8d10",
+                "path": "FFFS 2017:2 > 9 kap. > 6 \u00a7",
+                "refLabel": "9 kap. 6 \u00a7"
+              }
+            ],
+            "refLabel": "Third-party payments",
+            "regime": {
+              "key": "securities",
+              "kind": null,
+              "label": "Securities"
+            },
+            "related": [
+              {
+                "binding": true,
+                "id": "1d8c5a09-6b47-4e21-8f3a-0c7e2b4d9a63",
+                "instrument": {
+                  "key": "fffs-2017-2",
+                  "shortName": "FFFS 2017:2"
+                },
+                "relation": {
+                  "key": "related",
+                  "kind": null,
+                  "label": "Related"
+                },
+                "title": {
+                  "isMachine": false,
+                  "isOriginal": true,
+                  "language": "en",
+                  "text": "Disclose all costs and charges before and after the service"
+                }
+              }
+            ],
+            "retention": "5 years",
+            "sanctionExposure": "FI remark, warning or sanction fee",
+            "scope": [
+              {
+                "allSelected": false,
+                "dimension": {
+                  "key": "regime",
+                  "kind": null,
+                  "label": "Regime"
+                },
+                "terms": [
+                  {
+                    "key": "securities",
+                    "kind": null,
+                    "label": "Securities"
+                  }
+                ]
+              },
+              {
+                "allSelected": false,
+                "dimension": {
+                  "key": "legal_entity",
+                  "kind": null,
+                  "label": "Legal entity type"
+                },
+                "terms": [
+                  {
+                    "key": "bank",
+                    "kind": null,
+                    "label": "Bank"
+                  }
+                ]
+              },
+              {
+                "allSelected": false,
+                "dimension": {
+                  "key": "service_type",
+                  "kind": null,
+                  "label": "Service"
+                },
+                "terms": [
+                  {
+                    "key": "advice",
+                    "kind": null,
+                    "label": "Advice"
+                  },
+                  {
+                    "key": "portfolio_management",
+                    "kind": null,
+                    "label": "Portfolio management"
+                  }
+                ]
+              },
+              {
+                "allSelected": false,
+                "dimension": {
+                  "key": "account_type",
+                  "kind": null,
+                  "label": "Account type"
+                },
+                "terms": [
+                  {
+                    "key": "isk",
+                    "kind": null,
+                    "label": "ISK"
+                  },
+                  {
+                    "key": "af",
+                    "kind": null,
+                    "label": "AF"
+                  },
+                  {
+                    "key": "depa",
+                    "kind": null,
+                    "label": "Dep\u00e5"
+                  },
+                  {
+                    "key": "kf",
+                    "kind": null,
+                    "label": "KF"
+                  }
+                ]
+              },
+              {
+                "allSelected": true,
+                "dimension": {
+                  "key": "client_category",
+                  "kind": null,
+                  "label": "Client category"
+                },
+                "terms": [
+                  {
+                    "key": "retail",
+                    "kind": null,
+                    "label": "Retail"
+                  },
+                  {
+                    "key": "professional",
+                    "kind": null,
+                    "label": "Professional"
+                  }
+                ]
+              },
+              {
+                "allSelected": false,
+                "dimension": {
+                  "key": "channel",
+                  "kind": null,
+                  "label": "Channel"
+                },
+                "terms": []
+              },
+              {
+                "allSelected": false,
+                "dimension": {
+                  "key": "lifecycle_stage",
+                  "kind": null,
+                  "label": "Lifecycle stage"
+                },
+                "terms": [
+                  {
+                    "key": "ongoing",
+                    "kind": null,
+                    "label": "Ongoing"
+                  }
+                ]
+              }
+            ],
+            "stableKey": "obl-research-payments",
+            "summary": {
+              "isMachine": true,
+              "isOriginal": false,
+              "language": "en",
+              "text": "Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules."
+            },
+            "tags": [
+              {
+                "key": "research",
+                "kind": null,
+                "label": "research"
+              },
+              {
+                "key": "inducements",
+                "kind": null,
+                "label": "inducements"
+              },
+              {
+                "key": "third_party_payments",
+                "kind": null,
+                "label": "third-party payments"
+              }
+            ],
+            "title": {
+              "isMachine": false,
+              "isOriginal": true,
+              "language": "en",
+              "text": "Pay for third-party research only under the permitted models"
+            },
+            "translations": [
+              {
+                "isMachine": false,
+                "isOriginal": true,
+                "language": "sv",
+                "text": "Investeringsanalys fr\u00e5n tredje part f\u00e5r tas emot endast om den betalas med institutets egna medel, fr\u00e5n ett analyskonto, eller gemensamt med orderutf\u00f6rande enligt de villkor som anges i reglerna."
+              },
+              {
+                "isMachine": true,
+                "isOriginal": false,
+                "language": "en",
+                "text": "Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules."
+              }
+            ],
+            "triggerFrequency": "Annual assessment from 1 October 2026",
+            "version": {
+              "approvedAt": null,
+              "effectiveFrom": null,
+              "effectiveTo": {
+                "date": "2026-09-30",
+                "precision": "day"
+              },
+              "versionNumber": 1
+            },
+            "versions": [
+              {
+                "approvedAt": null,
+                "effectiveFrom": null,
+                "effectiveTo": {
+                  "date": "2026-09-30",
+                  "precision": "day"
+                },
+                "versionNumber": 1
+              },
+              {
+                "approvedAt": "2026-09-15T14:02:11Z",
+                "effectiveFrom": {
+                  "date": "2026-10-01",
+                  "precision": "day"
+                },
+                "effectiveTo": null,
+                "versionNumber": 2
+              }
+            ]
+          }
+        ],
         "properties": {
           "binding": {
+            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
+            "examples": [
+              true
+            ],
             "title": "Binding",
             "type": "boolean"
           },
           "bindingLevel": {
-            "$ref": "#/components/schemas/LibraryRef"
+            "$ref": "#/components/schemas/LibraryRef",
+            "description": "What rank of instrument the duty sits in, as key, kind and label: how much weight the rule carries. The levels are vocabulary rows and not a closed set \u2014 a platform admin may extend, relabel or retire the list without a deploy \u2014 so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act` and `authority_regulation` are seeded on day one. The level is not the same fact as `binding`: the level carries a default and the instrument's own record decides."
           },
           "dutyType": {
-            "$ref": "#/components/schemas/LibraryRef"
+            "$ref": "#/components/schemas/LibraryRef",
+            "description": "What kind of duty this is, as key, kind and label. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are the rows seeded on day one, and they are vocabulary rows rather than a closed enum: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set, send the key as `?dutyType=`, and never match on the label."
           },
           "id": {
+            "description": "The duty's identifier in the shared library, as a UUID: what every other call addresses this obligation by. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.",
+            "examples": [
+              "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
+            ],
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
           "inFootprint": {
+            "description": "Whether the duty's scope overlaps the bank's own footprint, which is what decides whether the record appears in the default list at all. It is a filter and not a decision: inside the footprint is not \"this applies to us\", which a person judges separately and records elsewhere, and neither of those is \"we comply\".",
+            "examples": [
+              true
+            ],
             "title": "Infootprint",
             "type": "boolean"
           },
           "instrument": {
-            "$ref": "#/components/schemas/ObligationInstrumentSummary"
+            "$ref": "#/components/schemas/ObligationInstrumentSummary",
+            "description": "Where the duty comes from: the instrument it was broken out of, with the reference the authority publishes it under and what it implements. Its provision tree and its lineage to other instruments live on the instrument's own read."
           },
           "outsideReason": {
+            "description": "Why the default list would have hidden this record: one entry per dimension in which the duty's terms and the bank's footprint have nothing in common. Empty on a record inside the footprint, and so filled only on the records `outsideFootprint=true` reveals.",
             "items": {
               "$ref": "#/components/schemas/OutsideReason"
             },
@@ -3133,13 +3456,19 @@
             "type": "array"
           },
           "productScope": {
+            "description": "Which products the duty covers, in the library's words, for a reader who wants the sentence rather than the facets. Free text, an empty string when nothing was recorded; the scope a filter can act on is `scope`, and the two are written separately.",
+            "examples": [
+              "Third-party research"
+            ],
             "title": "Productscope",
             "type": "string"
           },
           "provenance": {
-            "$ref": "#/components/schemas/ObligationProvenance"
+            "$ref": "#/components/schemas/ObligationProvenance",
+            "description": "Where this record came from and when a person last held it against its source: the sourcing a bank's own reviewer, and a vendor review, asks for."
           },
           "provisions": {
+            "description": "The provisions of the instrument this duty was drawn from, as citations. An empty list means no provision was cited, not that the duty is unsourced: `provenance` still names the page it came from. The verbatim legal text is not here; it lives in the provision tree.",
             "items": {
               "$ref": "#/components/schemas/ObligationProvisionRef"
             },
@@ -3147,6 +3476,10 @@
             "type": "array"
           },
           "refLabel": {
+            "description": "How the duty is cited inside its instrument, in the words the source itself uses \u2014 a chapter, a section or the heading the authority gave it. It is there for a reader to recognise the place in the rule book, not a structured reference to parse.",
+            "examples": [
+              "Third-party payments"
+            ],
             "title": "Reflabel",
             "type": "string"
           },
@@ -3158,9 +3491,11 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Which body of law the duty belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. It is inherited from the instrument, which is where the sector boundary is set, and it is null only while an instrument carries none. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key."
           },
           "related": {
+            "description": "The duties a reader should see beside this one, as the library files them. Only records this caller may read appear: a relation to one they may not is left out silently rather than hinted at.",
             "items": {
               "$ref": "#/components/schemas/RelatedObligation"
             },
@@ -3168,14 +3503,23 @@
             "type": "array"
           },
           "retention": {
+            "description": "How long the records behind this duty have to be kept, as the source puts it. Free text, an empty string when nothing was recorded. It is the rule's own retention period and has nothing to do with how long this product keeps the bank's data.",
+            "examples": [
+              "5 years"
+            ],
             "title": "Retention",
             "type": "string"
           },
           "sanctionExposure": {
+            "description": "What the authority may do where the duty is not met, in the library's words. Free text, an empty string when nothing was recorded. It describes the rule's exposure in general and is not this bank's own risk rating or an assessment of anything it has done.",
+            "examples": [
+              "FI remark, warning or sanction fee"
+            ],
             "title": "Sanctionexposure",
             "type": "string"
           },
           "scope": {
+            "description": "Which banks and which business the duty reaches, one entry per active dimension of the taxonomy. This is the record's own scope as the library states it: it is not the bank's footprint, and it is not the judgement that the duty applies to this bank.",
             "items": {
               "$ref": "#/components/schemas/ScopeDimension"
             },
@@ -3183,6 +3527,10 @@
             "type": "array"
           },
           "stableKey": {
+            "description": "The duty's immutable key, issued once and readable by a person. It survives every amendment, relabelling and new version, which is what makes it safe to keep in an export, a report or a system of the bank's own. Store it beside the id and never construct one.",
+            "examples": [
+              "obl-research-payments"
+            ],
             "title": "Stablekey",
             "type": "string"
           },
@@ -3194,9 +3542,11 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The duty in plain language as the version in force on the read's date words it, in the best language this reader can be served. Null when that version carries no summary in any language, or when no version is in force on the date asked for."
           },
           "tags": {
+            "description": "The library's own keywords for this duty, as key, kind and label \u2014 `research`, `inducements`, `costs` and the rest of the rows seeded on day one. They are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/library_tag` for the live set and match on the key. They describe the duty for a reader and never narrow the footprint: a tag is not a scope term.",
             "items": {
               "$ref": "#/components/schemas/LibraryRef"
             },
@@ -3211,9 +3561,11 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The duty in one line, in the best language this reader can be served: their own first, then their bank's default, then English, then whatever the record has. Null only when the record carries no title in any language at all."
           },
           "translations": {
+            "description": "Every language the version in force holds its summary in, so a screen can offer \"Show original\" and label what a machine translated. `summary` is the one of these picked for this reader; the list is the same for everyone.",
             "items": {
               "$ref": "#/components/schemas/LocalizedText"
             },
@@ -3221,6 +3573,10 @@
             "type": "array"
           },
           "triggerFrequency": {
+            "description": "When the duty bites, in the library's own words. Free text for a person to read, never a schedule a machine can act on, and an empty string when nothing was recorded rather than null. It says when the rule applies, never when this bank has to do anything.",
+            "examples": [
+              "Annual assessment from 1 October 2026"
+            ],
             "title": "Triggerfrequency",
             "type": "string"
           },
@@ -3232,9 +3588,11 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The version in force on the date the record was read, with the dates it runs between. Null when every version starts after that date."
           },
           "versions": {
+            "description": "Every version of this duty in version order, including the ones still to take effect, so a reader can see the whole history and ask for a diff between any two. Nothing here is ever rewritten: a correction is another version.",
             "items": {
               "$ref": "#/components/schemas/ObligationVersionRow"
             },
@@ -3284,6 +3642,10 @@
                 "type": "null"
               }
             ],
+            "description": "Which version to compare from, by its version number, 1 at the lowest. It defaults to the version before the latest one, so a plain call shows the most recent change. Both versions are versions of the same obligation: there is no comparison across records. A number this obligation has no version for is refused with 422 `unknown_key`.",
+            "examples": [
+              1
+            ],
             "title": "From"
           },
           "lang": {
@@ -3295,6 +3657,10 @@
               {
                 "type": "null"
               }
+            ],
+            "description": "Which content language to compare in, as a language key of at most 8 characters such as `sv` or `en`. It is a preference and never a filter: a key the two versions do not both hold is not an error, and the diff falls back to the reader's own language order and then to an original before a translation, saying in `language` what it settled on. A key longer than 8 characters is refused with 422 `validation_error`, and two versions with no language in common answer 422 because there is nothing to compare.",
+            "examples": [
+              "en"
             ],
             "title": "Lang"
           },
@@ -3308,6 +3674,10 @@
                 "type": "null"
               }
             ],
+            "description": "Which version to compare to, by its version number, 1 at the lowest. It defaults to the latest version the obligation has, including one that has been approved and does not take effect until later. A number this obligation has no version for is refused with 422 `unknown_key`.",
+            "examples": [
+              2
+            ],
             "title": "To"
           }
         },
@@ -3315,12 +3685,21 @@
         "type": "object"
       },
       "ObligationInstrumentRef": {
+        "description": "The instrument a duty was broken out of, as a row or a related record names it: the\nkey to filter on and the short name to print.",
         "properties": {
           "key": {
+            "description": "The instrument's stable key, the value to store and to send back as `?instrument=`. It is issued once and never changes, however the instrument is renamed or amended. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.",
+            "examples": [
+              "fffs-2017-2"
+            ],
             "title": "Key",
             "type": "string"
           },
           "shortName": {
+            "description": "How the instrument is written on a pill or in a column, in its own language. It is a label a person wrote and may be reworded, so show it and never match on it; `key` is the identifier.",
+            "examples": [
+              "FFFS 2017:2"
+            ],
             "title": "Shortname",
             "type": "string"
           }
@@ -3336,10 +3715,18 @@
         "description": "The instrument an obligation belongs to, as \"Where it comes from\" reads it (INV-01).\nIts provisions and lineage live on the instrument's own read.",
         "properties": {
           "implementsNote": {
+            "description": "What this instrument implements or elaborates, in the library's own words, so a reader can see where a Swedish rule comes from. Free text for a person and never a machine-readable link; an empty string when nothing was recorded, never null. The structured lineage between instruments lives on the instrument's own read.",
+            "examples": [
+              "MiFID II delegated directive (EU) 2017/593"
+            ],
             "title": "Implementsnote",
             "type": "string"
           },
           "key": {
+            "description": "The instrument's stable key, the value to store and to send back as `?instrument=`. It is issued once and never changes, however the instrument is renamed or amended. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.",
+            "examples": [
+              "fffs-2017-2"
+            ],
             "title": "Key",
             "type": "string"
           },
@@ -3351,13 +3738,22 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The instrument's full name, in the best language this reader can be served. The original is the jurisdiction's legal language, so a Swedish regulation read in English usually still answers its Swedish name rather than a translation. Null only when the record carries no name in any language."
           },
           "officialRef": {
+            "description": "The reference the issuing authority itself publishes the instrument under, written as that authority writes it. It is how a lawyer cites the instrument and how a reader recognises it on the authority's own site; it is not an identifier this API accepts, which is `key`.",
+            "examples": [
+              "FFFS 2017:2"
+            ],
             "title": "Officialref",
             "type": "string"
           },
           "shortName": {
+            "description": "How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may reword, so show it and match on `key` instead.",
+            "examples": [
+              "FFFS 2017:2"
+            ],
             "title": "Shortname",
             "type": "string"
           }
@@ -3373,8 +3769,203 @@
         "type": "object"
       },
       "ObligationPage": {
+        "description": "One page of `GET /obligations`: the rows, and how many rows the filters match in\nall.",
+        "examples": [
+          {
+            "items": [
+              {
+                "binding": true,
+                "bindingLevel": {
+                  "key": "authority_regulation",
+                  "kind": null,
+                  "label": "Supervisory regulation"
+                },
+                "complianceStatus": null,
+                "dutyType": {
+                  "key": "governance",
+                  "kind": null,
+                  "label": "Governance"
+                },
+                "id": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+                "inFootprint": true,
+                "instrument": {
+                  "key": "fffs-2017-2",
+                  "shortName": "FFFS 2017:2"
+                },
+                "lastVerifiedAt": "2026-06-30T07:12:44Z",
+                "openChangeCount": 0,
+                "outsideReason": [],
+                "pendingApplicability": null,
+                "refLabel": "Third-party payments",
+                "scope": [
+                  {
+                    "allSelected": false,
+                    "dimension": {
+                      "key": "regime",
+                      "kind": null,
+                      "label": "Regime"
+                    },
+                    "terms": [
+                      {
+                        "key": "securities",
+                        "kind": null,
+                        "label": "Securities"
+                      }
+                    ]
+                  },
+                  {
+                    "allSelected": false,
+                    "dimension": {
+                      "key": "legal_entity",
+                      "kind": null,
+                      "label": "Legal entity type"
+                    },
+                    "terms": [
+                      {
+                        "key": "bank",
+                        "kind": null,
+                        "label": "Bank"
+                      }
+                    ]
+                  },
+                  {
+                    "allSelected": false,
+                    "dimension": {
+                      "key": "service_type",
+                      "kind": null,
+                      "label": "Service"
+                    },
+                    "terms": [
+                      {
+                        "key": "advice",
+                        "kind": null,
+                        "label": "Advice"
+                      },
+                      {
+                        "key": "portfolio_management",
+                        "kind": null,
+                        "label": "Portfolio management"
+                      }
+                    ]
+                  },
+                  {
+                    "allSelected": false,
+                    "dimension": {
+                      "key": "account_type",
+                      "kind": null,
+                      "label": "Account type"
+                    },
+                    "terms": [
+                      {
+                        "key": "isk",
+                        "kind": null,
+                        "label": "ISK"
+                      },
+                      {
+                        "key": "af",
+                        "kind": null,
+                        "label": "AF"
+                      },
+                      {
+                        "key": "depa",
+                        "kind": null,
+                        "label": "Dep\u00e5"
+                      },
+                      {
+                        "key": "kf",
+                        "kind": null,
+                        "label": "KF"
+                      }
+                    ]
+                  },
+                  {
+                    "allSelected": true,
+                    "dimension": {
+                      "key": "client_category",
+                      "kind": null,
+                      "label": "Client category"
+                    },
+                    "terms": [
+                      {
+                        "key": "retail",
+                        "kind": null,
+                        "label": "Retail"
+                      },
+                      {
+                        "key": "professional",
+                        "kind": null,
+                        "label": "Professional"
+                      }
+                    ]
+                  },
+                  {
+                    "allSelected": false,
+                    "dimension": {
+                      "key": "channel",
+                      "kind": null,
+                      "label": "Channel"
+                    },
+                    "terms": []
+                  },
+                  {
+                    "allSelected": false,
+                    "dimension": {
+                      "key": "lifecycle_stage",
+                      "kind": null,
+                      "label": "Lifecycle stage"
+                    },
+                    "terms": [
+                      {
+                        "key": "ongoing",
+                        "kind": null,
+                        "label": "Ongoing"
+                      }
+                    ]
+                  }
+                ],
+                "stableKey": "obl-research-payments",
+                "tags": [
+                  {
+                    "key": "research",
+                    "kind": null,
+                    "label": "research"
+                  },
+                  {
+                    "key": "inducements",
+                    "kind": null,
+                    "label": "inducements"
+                  },
+                  {
+                    "key": "third_party_payments",
+                    "kind": null,
+                    "label": "third-party payments"
+                  }
+                ],
+                "title": {
+                  "isMachine": false,
+                  "isOriginal": true,
+                  "language": "en",
+                  "text": "Pay for third-party research only under the permitted models"
+                },
+                "upcomingVersion": {
+                  "effectiveFrom": {
+                    "date": "2026-10-01",
+                    "precision": "day"
+                  },
+                  "versionNumber": 2
+                },
+                "version": {
+                  "effectiveFrom": null,
+                  "versionNumber": 1
+                }
+              }
+            ],
+            "total": 14
+          }
+        ],
         "properties": {
           "items": {
+            "description": "The duties on this page, ordered by their stable key so that paging through them is repeatable. An empty list is an ordinary 200 and means nothing matched the filters, never that something went wrong.",
             "items": {
               "$ref": "#/components/schemas/ObligationRow"
             },
@@ -3382,6 +3973,10 @@
             "type": "array"
           },
           "total": {
+            "description": "How many duties match the filters in all, not how many are on this page: what a screen reads to say \"20 of 137\". It is counted at the moment of the call, so a record written between two pages can move it.",
+            "examples": [
+              14
+            ],
             "title": "Total",
             "type": "integer"
           }
@@ -3397,15 +3992,27 @@
         "description": "Where the record came from and when it was last checked against its source (INV-06).\n`verifiedBy` is a platform person or null: a seeded record has never been re-verified.",
         "properties": {
           "createdAt": {
+            "description": "When the record was first written into the library, as a UTC timestamp. It is not the date the rule began to bind anyone: that is the version's effective date, which can be years earlier.",
+            "examples": [
+              "2026-02-11T08:45:03Z"
+            ],
             "format": "date-time",
             "title": "Createdat",
             "type": "string"
           },
           "createdModel": {
+            "description": "Which model drafted the record, under the name it is published as, when an agent did. An empty string when a person wrote it, never null. It labels the draft's origin and makes no claim about how accurate the record is; a person still approved it.",
+            "examples": [
+              "agent pipeline 0.4"
+            ],
             "title": "Createdmodel",
             "type": "string"
           },
           "createdOrigin": {
+            "description": "Who drafted this record: `user` when a person wrote it, `agent` when a research agent proposed it. Either way it entered the library through a proposal a second, independent principal approved, so `agent` does not mean a machine wrote straight into the library.",
+            "examples": [
+              "agent"
+            ],
             "title": "Createdorigin",
             "type": "string"
           },
@@ -3419,13 +4026,25 @@
                 "type": "null"
               }
             ],
+            "description": "When that check was made, as a UTC timestamp, which is what a reader's \"Verified <date>\" shows. It says the source still read the same way on that date; it does not say the record's content was re-approved, and it is not the date the record last changed.",
+            "examples": [
+              "2026-06-30T07:12:44Z"
+            ],
             "title": "Lastverifiedat"
           },
           "sourceLabel": {
+            "description": "What that page is called, in the words a reader recognises, down to the place in it the record came from. A label for a person, not a citation a machine resolves.",
+            "examples": [
+              "FFFS 2017:2, 9 kap. 6 \u00a7"
+            ],
             "title": "Sourcelabel",
             "type": "string"
           },
           "sourceUrl": {
+            "description": "The public page this record was taken from, so a reader can open it and a re-check can fetch it again. It is the authority's own page and never a link into this product.",
+            "examples": [
+              "https://www.fi.se/en/published/regulations/2017/fffs-20172/"
+            ],
             "title": "Sourceurl",
             "type": "string"
           },
@@ -3437,7 +4056,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The bleqq platform person who last confirmed this record against its source, by id and name, or null when nobody has. Never a member of a bank: re-verifying a shared fact is bleqq's own check, and a bank reading the record leaves nothing here."
           }
         },
         "required": [
@@ -3456,15 +4076,27 @@
         "description": "A provision the obligation cites (INV-02, INV-03), by reference and path. The\nverbatim text is the provision tree's, never this read's.",
         "properties": {
           "id": {
+            "description": "The provision's identifier in the shared library, as a UUID: what the provision tree is read by. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.",
+            "examples": [
+              "b6d9f0a4-1c72-4e35-9f88-0a2c4e6b8d10"
+            ],
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
           "path": {
+            "description": "Where the provision sits in its instrument's structure, read from the top, so a reader can place the citation without opening the tree. It is a breadcrumb a person reads and may be relabelled; cite the provision by `id`. The verbatim legal text is not here: it belongs to the provision tree, version by version.",
+            "examples": [
+              "FFFS 2017:2 > 9 kap. > 6 \u00a7"
+            ],
             "title": "Path",
             "type": "string"
           },
           "refLabel": {
+            "description": "How the provision is cited, in the words the source itself uses: `9 kap. 6 \u00a7` in a Swedish regulation, `Article 25(3)` in an EU one. For a reader to quote, not a reference to parse.",
+            "examples": [
+              "9 kap. 6 \u00a7"
+            ],
             "title": "Reflabel",
             "type": "string"
           }
@@ -3490,6 +4122,10 @@
                 "type": "null"
               }
             ],
+            "description": "Read the record as it stood on this date, as a plain calendar date such as `2026-06-30`: the answer carries the version in force on it, which is the version with the latest effective date on or before it. It defaults to today in the bank's own time zone and not the caller's, so two people in one bank always read the same day. Reading as of a future date shows wording that does not bind yet, and is never itself a statement that the bank has something to do. On the list it changes which wording each row carries, never which duties are listed.",
+            "examples": [
+              "2026-06-30"
+            ],
             "title": "Asof"
           },
           "dutyType": {
@@ -3500,6 +4136,10 @@
               {
                 "type": "null"
               }
+            ],
+            "description": "Only the duties of this kind, by the duty type's key. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are seeded on day one, and they are vocabulary rows rather than a closed set: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set and send the key, never the label. A key no duty type has matches nothing and answers 200 with an empty page.",
+            "examples": [
+              "governance"
             ],
             "title": "Dutytype"
           },
@@ -3512,10 +4152,18 @@
                 "type": "null"
               }
             ],
+            "description": "Only the duties broken out of this instrument, by the instrument's stable key: `fffs-2017-2` for FFFS 2017:2. A key no instrument has is not an error \u2014 it matches nothing, and the call answers 200 with an empty page.",
+            "examples": [
+              "fffs-2017-2"
+            ],
             "title": "Instrument"
           },
           "outsideFootprint": {
             "default": false,
+            "description": "Whether to include the duties the bank's footprint would otherwise hide, each saying in `outsideReason` why it would be hidden. It is false by default, which is the working inventory: only the duties whose scope overlaps the footprint. Set it to true to review the boundary itself \u2014 a duty that appears only this way is not one the bank has decided applies to it.",
+            "examples": [
+              false
+            ],
             "title": "Outsidefootprint",
             "type": "boolean"
           },
@@ -3529,9 +4177,20 @@
                 "type": "null"
               }
             ],
+            "description": "Find the duties whose title or citation contains these words, ignoring case: a phrase to look for, never a document. At most 200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`. It narrows this list and is not the product's search: ranking, synonyms and the text of the summaries belong to `GET /search`.",
+            "examples": [
+              "research"
+            ],
             "title": "Q"
           },
           "term": {
+            "description": "Only the duties whose scope carries every one of these terms, each written `dimension:key`. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The terms are taxonomy vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. A value with no colon is refused with 422 `validation_error`, and one that names no active term with 422 `unknown_key` naming every term that was not found.",
+            "examples": [
+              [
+                "service_type:advice",
+                "account_type:isk"
+              ]
+            ],
             "items": {
               "type": "string"
             },
@@ -3547,11 +4206,16 @@
         "description": "One row of `GET /obligations` (INV-03). `version` is the one in force on the read's\ndate and `upcomingVersion` the next one after it. The register overlay arrives later:\n`openChangeCount` with the watch feed (chunk 5), `pendingApplicability` and\n`complianceStatus` with the register (chunk 8).",
         "properties": {
           "binding": {
+            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
+            "examples": [
+              true
+            ],
             "title": "Binding",
             "type": "boolean"
           },
           "bindingLevel": {
-            "$ref": "#/components/schemas/LibraryRef"
+            "$ref": "#/components/schemas/LibraryRef",
+            "description": "What rank of instrument the duty sits in, as key, kind and label: how much weight the rule carries. The levels are vocabulary rows and not a closed set \u2014 a platform admin may extend, relabel or retire the list without a deploy \u2014 so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act` and `authority_regulation` are seeded on day one. The level is not the same fact as `binding`: the level carries a default and the instrument's own record decides."
           },
           "complianceStatus": {
             "anyOf": [
@@ -3561,22 +4225,33 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "How the bank has judged its own compliance with this duty, as key, kind and label. This is the bank's own judgement, held in its own zone and never shared with another bank, and it is a different fact from whether the duty applies at all. The statuses are vocabulary rows the bank's own admin may extend, relabel or retire without a deploy, so read `GET /vocab/compliance_status` for the live set and match on the key; `compliant`, `partly_compliant`, `gap` and `not_assessed` are seeded on day one, each carrying its fixed category as its kind. Null until the compliance register arrives in a later release."
           },
           "dutyType": {
-            "$ref": "#/components/schemas/LibraryRef"
+            "$ref": "#/components/schemas/LibraryRef",
+            "description": "What kind of duty this is, as key, kind and label. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are the rows seeded on day one, and they are vocabulary rows rather than a closed enum: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set, send the key as `?dutyType=`, and never match on the label."
           },
           "id": {
+            "description": "The duty's identifier in the shared library, as a UUID: what every other call addresses this obligation by. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.",
+            "examples": [
+              "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
+            ],
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
           "inFootprint": {
+            "description": "Whether the duty's scope overlaps the bank's own footprint, which is what decides whether the record appears in the default list at all. It is a filter and not a decision: inside the footprint is not \"this applies to us\", which a person judges separately and records elsewhere, and neither of those is \"we comply\".",
+            "examples": [
+              true
+            ],
             "title": "Infootprint",
             "type": "boolean"
           },
           "instrument": {
-            "$ref": "#/components/schemas/ObligationInstrumentRef"
+            "$ref": "#/components/schemas/ObligationInstrumentRef",
+            "description": "The instrument this duty was broken out of, by key and short name. The card adds the instrument's official reference and what it implements; this row carries only what a column shows."
           },
           "lastVerifiedAt": {
             "anyOf": [
@@ -3588,13 +4263,22 @@
                 "type": "null"
               }
             ],
+            "description": "When a bleqq library editor last read this record against its public source and found it unchanged, as a UTC timestamp; a screen shows it as \"Verified <date>\" in the bank's own time zone. Null on a record nobody has confirmed that way. It is not the date the record last changed, and it is not the bank's own review date.",
+            "examples": [
+              "2026-06-30T07:12:44Z"
+            ],
             "title": "Lastverifiedat"
           },
           "openChangeCount": {
+            "description": "How many regulatory changes touching this duty are still open in the bank's watch feed, so a row can carry \"N open changes\". The watch overlay is not wired into this list yet, so every row answers 0 until it is: read a 0 here as \"not counted on this row\" rather than as \"nothing open\", and read the watch feed for the real number.",
+            "examples": [
+              0
+            ],
             "title": "Openchangecount",
             "type": "integer"
           },
           "outsideReason": {
+            "description": "Why the default list would have hidden this record: one entry per dimension in which the duty's terms and the bank's footprint have nothing in common. Empty on a record inside the footprint, and so filled only on the records `outsideFootprint=true` reveals.",
             "items": {
               "$ref": "#/components/schemas/OutsideReason"
             },
@@ -3610,13 +4294,19 @@
                 "type": "null"
               }
             ],
+            "description": "Whether a change to this duty's applicability is waiting for a second person in this bank to approve it. Null means the question is not answered on this row, never that the answer is no: the applicability register arrives in a later release and every row answers null until it does.",
             "title": "Pendingapplicability"
           },
           "refLabel": {
+            "description": "How the duty is cited inside its instrument, in the words the source itself uses \u2014 a chapter, a section or the heading the authority gave it. It is there for a reader to recognise the place in the rule book, not a structured reference to parse.",
+            "examples": [
+              "Third-party payments"
+            ],
             "title": "Reflabel",
             "type": "string"
           },
           "scope": {
+            "description": "Which banks and which business the duty reaches, one entry per active dimension of the taxonomy. This is the record's own scope as the library states it: it is not the bank's footprint, and it is not the judgement that the duty applies to this bank.",
             "items": {
               "$ref": "#/components/schemas/ScopeDimension"
             },
@@ -3624,10 +4314,15 @@
             "type": "array"
           },
           "stableKey": {
+            "description": "The duty's immutable key, issued once and readable by a person. It survives every amendment, relabelling and new version, which is what makes it safe to keep in an export, a report or a system of the bank's own. Store it beside the id and never construct one.",
+            "examples": [
+              "obl-research-payments"
+            ],
             "title": "Stablekey",
             "type": "string"
           },
           "tags": {
+            "description": "The library's own keywords for this duty, as key, kind and label \u2014 `research`, `inducements`, `costs` and the rest of the rows seeded on day one. They are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/library_tag` for the live set and match on the key. They describe the duty for a reader and never narrow the footprint: a tag is not a scope term.",
             "items": {
               "$ref": "#/components/schemas/LibraryRef"
             },
@@ -3642,7 +4337,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The duty in one line, in the best language this reader can be served: their own first, then their bank's default, then English, then whatever the record has. Null only when the record carries no title in any language at all."
           },
           "upcomingVersion": {
             "anyOf": [
@@ -3652,7 +4348,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The next version due to take effect after the date the list was read, so a row can say new wording is coming. Null when none is waiting. Its presence is not work the bank owes: what to do about a change belongs to the watch feed and the case, never to the library record."
           },
           "version": {
             "anyOf": [
@@ -3662,7 +4359,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The version of the summary in force on the date the list was read, by number and effective date. Null when every version of this duty starts after that date, which is a duty recorded before it begins to bind anyone."
           }
         },
         "required": [
@@ -3699,9 +4397,14 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The legal date this version starts binding the bank, at the precision the source gave it. Null means the version has been in force since the obligation entered the library, never that the date is unknown. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved."
           },
           "versionNumber": {
+            "description": "Which version of this duty's summary it is, numbered from 1 in the order the versions took effect. A version row is written once and never overwritten, so a number always addresses the same words; it is the number to send to the diff as `from` or `to`.",
+            "examples": [
+              2
+            ],
             "title": "Versionnumber",
             "type": "integer"
           }
@@ -3726,6 +4429,10 @@
                 "type": "null"
               }
             ],
+            "description": "When a library editor approved the proposal that wrote this version, as a UTC timestamp. Null on a version the library was seeded with rather than proposed. It is the moment of the decision, never the date the wording takes effect, which is `effectiveFrom`. The approver is not named: this card names none.",
+            "examples": [
+              "2026-09-15T14:02:11Z"
+            ],
             "title": "Approvedat"
           },
           "effectiveFrom": {
@@ -3736,7 +4443,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The legal date this version started binding the bank, at the precision the source gave it. Null means it has been in force since the obligation entered the library. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved."
           },
           "effectiveTo": {
             "anyOf": [
@@ -3746,9 +4454,14 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The last day this version was in force, worked out as the day before the next version took effect: nothing is stored, because a version row is written once and never touched afterwards. Null on the version still in force, on one whose successor carries no date, and on one corrected the same day it took effect."
           },
           "versionNumber": {
+            "description": "Which version of this duty's summary it is, numbered from 1 in the order the versions took effect. It is the number to send to the diff as `from` or `to`, and it never addresses another obligation's version.",
+            "examples": [
+              1
+            ],
             "title": "Versionnumber",
             "type": "integer"
           }
@@ -3844,9 +4557,11 @@
         "description": "A dimension in which none of the record's terms is in the footprint (FP-03).",
         "properties": {
           "dimension": {
-            "$ref": "#/components/schemas/LibraryRef"
+            "$ref": "#/components/schemas/LibraryRef",
+            "description": "The facet in which the record's terms and the bank's footprint have nothing in common, which is the reason the record would be hidden. The dimensions are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/dimensions` for the live set and match on the key. Only a dimension that narrows the footprint appears here: `channel` and `lifecycle_stage` describe a record and never hide it."
           },
           "terms": {
+            "description": "The terms the record carries in that dimension, so a reader can see what the bank's footprint would have to include for the record to appear. They are vocabulary rows a platform admin may extend or retire, matched on the key. This is the record's own scope and never the bank's footprint: nothing here says what the bank does.",
             "items": {
               "$ref": "#/components/schemas/LibraryRef"
             },
@@ -3894,11 +4609,19 @@
         "description": "A legal date with its precision: day, month, quarter or year (playbook 4.3, INV-S10).",
         "properties": {
           "date": {
+            "description": "A legal date \u2014 when a rule starts or stops binding the bank \u2014 as a plain calendar date such as `2026-10-01`. It is never a timestamp and carries no time zone, because a law takes effect on a day and not at an instant. Read it with `precision`: where the source named only a quarter or a year, this is the first day of that period and not a claim about the day.",
+            "examples": [
+              "2026-10-01"
+            ],
             "format": "date",
             "title": "Date",
             "type": "string"
           },
           "precision": {
+            "description": "How exactly the source dated it, and so how much of `date` may be shown or compared. `day` means the source named the day. `month` means it named the month, which a screen reads as \"October 2026\". `quarter` means it named the quarter, read as \"Q4 2026\". `year` means it named the year alone. Anything below `day` is not a missing date: it is exactly what the source gave, so a reader must not round it into a deadline.",
+            "examples": [
+              "day"
+            ],
             "title": "Precision",
             "type": "string"
           }
@@ -4813,19 +5536,29 @@
         "description": "An obligation a reader should see beside this one (INV-03), with the relation as a\nvocabulary row.",
         "properties": {
           "binding": {
+            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
+            "examples": [
+              true
+            ],
             "title": "Binding",
             "type": "boolean"
           },
           "id": {
+            "description": "The duty's identifier in the shared library, as a UUID: what every other call addresses this obligation by. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.",
+            "examples": [
+              "1d8c5a09-6b47-4e21-8f3a-0c7e2b4d9a63"
+            ],
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
           "instrument": {
-            "$ref": "#/components/schemas/ObligationInstrumentRef"
+            "$ref": "#/components/schemas/ObligationInstrumentRef",
+            "description": "Which instrument the related duty was broken out of, by key and short name."
           },
           "relation": {
-            "$ref": "#/components/schemas/LibraryRef"
+            "$ref": "#/components/schemas/LibraryRef",
+            "description": "How the two duties are related, as key, kind and label: `implements` when this one puts the other into effect, `elaborates` when it spells the other out, and `related` when the library only says read them together. Those three are seeded on day one and they are vocabulary rows, not a closed set: a platform admin may extend, relabel or retire the list without a deploy, so read `GET /vocab/relation_type` for the live set and match on the key. A relation is the library's own cross-reference and never a statement that both duties reach this bank."
           },
           "title": {
             "anyOf": [
@@ -4835,7 +5568,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The duty in one line, in the best language this reader can be served: their own first, then their bank's default, then English, then whatever the record has. Null only when the record carries no title in any language at all."
           }
         },
         "required": [
@@ -5057,13 +5791,19 @@
         "description": "The record's terms in one dimension (FP-01). An empty list means no restriction in\nthat dimension; `allSelected` means every active term of it is carried.",
         "properties": {
           "allSelected": {
+            "description": "True when the record carries every active term of the dimension, which lets a screen read \"All services\" rather than listing them one by one. False both when the record carries some of the terms and when it carries none, so read `terms` to tell those two apart.",
+            "examples": [
+              false
+            ],
             "title": "Allselected",
             "type": "boolean"
           },
           "dimension": {
-            "$ref": "#/components/schemas/LibraryRef"
+            "$ref": "#/components/schemas/LibraryRef",
+            "description": "Which facet of the taxonomy this entry is about, as key, kind and label. The dimensions are vocabulary rows and never a closed set: a platform admin may extend, relabel, reorder or retire the list without a deploy, so read `GET /taxonomy/dimensions` for the live set and match on the key. Seeded on day one: `regime`, `legal_entity`, `service_type`, `account_type`, `client_category`, `channel` and `lifecycle_stage`. Every active dimension is listed on every record, including the ones a record carries no term in."
           },
           "terms": {
+            "description": "The terms this record carries in that dimension, in the picker's order. An empty list means the record puts no restriction on this facet and so reaches every bank in it \u2014 never that the facet is unknown. The terms are vocabulary rows a platform admin may extend or retire without a deploy, and a member of a bank may propose a new one, so read `GET /taxonomy/terms` for the live set and match on the key. A term's `kind` is null: its dimension is its kind.",
             "items": {
               "$ref": "#/components/schemas/LibraryRef"
             },
@@ -6213,6 +6953,33 @@
       },
       "VersionDiff": {
         "description": "\"Show what changed\" between two versions (INV-04, AC-INV1, INV-05): the two version\nnumbers and the dates they took effect, the language both versions have and whether a\nmachine translated it, and the sentences. Serves obligations now and provisions next.",
+        "examples": [
+          {
+            "fromEffective": null,
+            "fromVersion": 1,
+            "isMachine": true,
+            "language": "en",
+            "segments": [
+              {
+                "op": "equal",
+                "text": "Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules."
+              },
+              {
+                "op": "insert",
+                "text": "The institution sets criteria for an annual assessment of the quality, usability and value of the research it uses."
+              },
+              {
+                "op": "insert",
+                "text": "If the research does not contribute to better investment decisions, the institution takes corrective action."
+              }
+            ],
+            "toEffective": {
+              "date": "2026-10-01",
+              "precision": "day"
+            },
+            "toVersion": 2
+          }
+        ],
         "properties": {
           "fromEffective": {
             "anyOf": [
@@ -6222,21 +6989,35 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The legal date the older version started binding the bank, so a screen can name the two dates being compared. Null when that version has been in force since the obligation entered the library."
           },
           "fromVersion": {
+            "description": "The number of the version the comparison starts from. Both numbers belong to the same obligation: this call compares two versions of one record and never one record with another.",
+            "examples": [
+              1
+            ],
             "title": "Fromversion",
             "type": "integer"
           },
           "isMachine": {
+            "description": "True when either side of the comparison is a machine translation nobody has confirmed, so a screen must label the whole diff as machine-made (INV-05). It does not say the difference is wrong; it says the words compared are not the ones that govern, which are the original's.",
+            "examples": [
+              true
+            ],
             "title": "Ismachine",
             "type": "boolean"
           },
           "language": {
+            "description": "Which content language the two summaries were compared in, as a language key that `GET /reference/languages` lists. It is the first language both versions hold, preferring the `lang` asked for, then the reader's own order, then an original over a translation \u2014 so it may not be the language that was asked for.",
+            "examples": [
+              "en"
+            ],
             "title": "Language",
             "type": "string"
           },
           "segments": {
+            "description": "The comparison itself, sentence by sentence in reading order, so the unchanged sentences are there as well as the changed ones. Empty only when both versions' summaries are empty in that language.",
             "items": {
               "$ref": "#/components/schemas/DiffSegment"
             },
@@ -6251,9 +7032,14 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The legal date the newer version starts binding the bank. It may be in the future, which is a change already approved and not yet in force; that is not by itself work this bank owes."
           },
           "toVersion": {
+            "description": "The number of the version the comparison ends at, again a version of the same obligation.",
+            "examples": [
+              2
+            ],
             "title": "Toversion",
             "type": "integer"
           }
@@ -13900,9 +14686,14 @@
     },
     "/api/v1/obligations": {
       "get": {
+        "description": "The obligations inventory: every duty of the shared library whose scope overlaps this\nbank's footprint, as it stood on a date, narrowed by instrument, duty type, scope terms\nor a phrase. Call it for the inventory screen, for a picker that has to name a duty, and\nfrom an agent run that needs the duties an instrument carries.\n\nA read: it changes nothing and writes no audit row. It takes a person's session holding\n`library.read` in their bank, or an agent's key carrying the `library:read` scope. The\nrows are shared library facts, the same for every bank and changed only through an\napproved proposal. Whether a duty applies to this bank, and whether the bank complies\nwith it, are separate facts a person records elsewhere; a row appearing here decides\nneither.\n\nPaginated: 20 rows by default and 100 at most, with a larger limit refused rather than\nquietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing\nmatching the filters is a 200 with an empty items list and a total of 0, never a 404.\nSetting outsideFootprint to true adds the duties the footprint hides and says in\noutsideReason why each of them would have been hidden.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope; `validation_error` (422) when a\nterm filter is not written dimension:key, when the phrase is longer than 200 characters\nor when the page size or offset is out of range; `unknown_key` (422) when a term filter\nnames no active term, listing every one that was not found.",
         "operationId": "listObligations",
         "parameters": [
           {
+            "description": "Only the duties broken out of this instrument, by the instrument's stable key: `fffs-2017-2` for FFFS 2017:2. A key no instrument has is not an error \u2014 it matches nothing, and the call answers 200 with an empty page.",
+            "examples": [
+              "fffs-2017-2"
+            ],
             "in": "query",
             "name": "instrument",
             "required": false,
@@ -13915,10 +14706,18 @@
                   "type": "null"
                 }
               ],
+              "description": "Only the duties broken out of this instrument, by the instrument's stable key: `fffs-2017-2` for FFFS 2017:2. A key no instrument has is not an error \u2014 it matches nothing, and the call answers 200 with an empty page.",
+              "examples": [
+                "fffs-2017-2"
+              ],
               "title": "Instrument"
             }
           },
           {
+            "description": "Only the duties of this kind, by the duty type's key. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are seeded on day one, and they are vocabulary rows rather than a closed set: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set and send the key, never the label. A key no duty type has matches nothing and answers 200 with an empty page.",
+            "examples": [
+              "governance"
+            ],
             "in": "query",
             "name": "dutyType",
             "required": false,
@@ -13931,14 +14730,32 @@
                   "type": "null"
                 }
               ],
+              "description": "Only the duties of this kind, by the duty type's key. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are seeded on day one, and they are vocabulary rows rather than a closed set: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set and send the key, never the label. A key no duty type has matches nothing and answers 200 with an empty page.",
+              "examples": [
+                "governance"
+              ],
               "title": "Dutytype"
             }
           },
           {
+            "description": "Only the duties whose scope carries every one of these terms, each written `dimension:key`. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The terms are taxonomy vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. A value with no colon is refused with 422 `validation_error`, and one that names no active term with 422 `unknown_key` naming every term that was not found.",
+            "examples": [
+              [
+                "service_type:advice",
+                "account_type:isk"
+              ]
+            ],
             "in": "query",
             "name": "term",
             "required": false,
             "schema": {
+              "description": "Only the duties whose scope carries every one of these terms, each written `dimension:key`. Repeat the parameter for more than one; they are combined with AND, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The terms are taxonomy vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. A value with no colon is refused with 422 `validation_error`, and one that names no active term with 422 `unknown_key` naming every term that was not found.",
+              "examples": [
+                [
+                  "service_type:advice",
+                  "account_type:isk"
+                ]
+              ],
               "items": {
                 "type": "string"
               },
@@ -13948,6 +14765,10 @@
             }
           },
           {
+            "description": "Find the duties whose title or citation contains these words, ignoring case: a phrase to look for, never a document. At most 200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`. It narrows this list and is not the product's search: ranking, synonyms and the text of the summaries belong to `GET /search`.",
+            "examples": [
+              "research"
+            ],
             "in": "query",
             "name": "q",
             "required": false,
@@ -13961,10 +14782,18 @@
                   "type": "null"
                 }
               ],
+              "description": "Find the duties whose title or citation contains these words, ignoring case: a phrase to look for, never a document. At most 200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`. It narrows this list and is not the product's search: ranking, synonyms and the text of the summaries belong to `GET /search`.",
+              "examples": [
+                "research"
+              ],
               "title": "Q"
             }
           },
           {
+            "description": "Read the record as it stood on this date, as a plain calendar date such as `2026-06-30`: the answer carries the version in force on it, which is the version with the latest effective date on or before it. It defaults to today in the bank's own time zone and not the caller's, so two people in one bank always read the same day. Reading as of a future date shows wording that does not bind yet, and is never itself a statement that the bank has something to do. On the list it changes which wording each row carries, never which duties are listed.",
+            "examples": [
+              "2026-06-30"
+            ],
             "in": "query",
             "name": "asOf",
             "required": false,
@@ -13978,15 +14807,27 @@
                   "type": "null"
                 }
               ],
+              "description": "Read the record as it stood on this date, as a plain calendar date such as `2026-06-30`: the answer carries the version in force on it, which is the version with the latest effective date on or before it. It defaults to today in the bank's own time zone and not the caller's, so two people in one bank always read the same day. Reading as of a future date shows wording that does not bind yet, and is never itself a statement that the bank has something to do. On the list it changes which wording each row carries, never which duties are listed.",
+              "examples": [
+                "2026-06-30"
+              ],
               "title": "Asof"
             }
           },
           {
+            "description": "Whether to include the duties the bank's footprint would otherwise hide, each saying in `outsideReason` why it would be hidden. It is false by default, which is the working inventory: only the duties whose scope overlaps the footprint. Set it to true to review the boundary itself \u2014 a duty that appears only this way is not one the bank has decided applies to it.",
+            "examples": [
+              false
+            ],
             "in": "query",
             "name": "outsideFootprint",
             "required": false,
             "schema": {
               "default": false,
+              "description": "Whether to include the duties the bank's footprint would otherwise hide, each saying in `outsideReason` why it would be hidden. It is false by default, which is the working inventory: only the duties whose scope overlaps the footprint. Set it to true to review the boundary itself \u2014 a duty that appears only this way is not one the bank has decided applies to it.",
+              "examples": [
+                false
+              ],
               "title": "Outsidefootprint",
               "type": "boolean"
             }
@@ -14052,7 +14893,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "List Obligations",
+        "summary": "Browse the duties the bank has to keep",
         "tags": [
           "Library"
         ]
@@ -14060,19 +14901,26 @@
     },
     "/api/v1/obligations/{obligation_id}": {
       "get": {
+        "description": "One duty of the shared library as it stood on a date: the plain-language summary in\nthe best language for this reader, the instrument and the provisions it was drawn from,\nevery version with the dates it runs between, the duties filed beside it, the facets\nthat say who it reaches, and the provenance that says where it came from and when a\nperson last held it against its source. Call it for the obligation card, and from an\nagent run that needs the whole record rather than a row.\n\nA read: it changes nothing and writes no audit row. It takes a person's session holding\n`library.read` in their bank, or an agent's key carrying the `library:read` scope.\nNothing in the answer is the bank's own judgement: the record says what the rule is, and\nwhether it applies here and whether the bank complies are separate facts held elsewhere.\n\nA library record is never overwritten, so this read carries no `If-Match` and can answer\nno stale write: a correction arrives as a new version through an approved proposal, and\nthe older version stays readable at its own number. Reading as of a date before the\nfirst version answers the record with a null version and a null summary rather than a\n404.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope; `not_found` (404) when no\nobligation has that id or it is one this caller may not see, the two answering alike so\nthat no id can be probed for; `validation_error` (422) when the path segment is not a\nUUID or asOf is not a date.",
         "operationId": "getObligation",
         "parameters": [
           {
+            "description": "The obligation to read, by its identifier (a UUID), which is the `id` a row of `GET /obligations` carries. A record this caller cannot see answers 404 exactly as an identifier that names nothing does, so no id can be probed for.",
             "in": "path",
             "name": "obligation_id",
             "required": true,
             "schema": {
+              "description": "The obligation to read, by its identifier (a UUID), which is the `id` a row of `GET /obligations` carries. A record this caller cannot see answers 404 exactly as an identifier that names nothing does, so no id can be probed for.",
               "format": "uuid",
               "title": "Obligation Id",
               "type": "string"
             }
           },
           {
+            "description": "Read the record as it stood on this date, as a plain calendar date such as `2026-06-30`: the answer carries the version in force on it, which is the version with the latest effective date on or before it. It defaults to today in the bank's own time zone and not the caller's, so two people in one bank always read the same day. Reading as of a future date shows wording that does not bind yet, and is never itself a statement that the bank has something to do. A date before the record's first version answers the record with a null `version` and a null `summary` rather than a 404.",
+            "examples": [
+              "2026-06-30"
+            ],
             "in": "query",
             "name": "asOf",
             "required": false,
@@ -14085,6 +14933,10 @@
                 {
                   "type": "null"
                 }
+              ],
+              "description": "Read the record as it stood on this date, as a plain calendar date such as `2026-06-30`: the answer carries the version in force on it, which is the version with the latest effective date on or before it. It defaults to today in the bank's own time zone and not the caller's, so two people in one bank always read the same day. Reading as of a future date shows wording that does not bind yet, and is never itself a statement that the bank has something to do. A date before the record's first version answers the record with a null `version` and a null `summary` rather than a 404.",
+              "examples": [
+                "2026-06-30"
               ],
               "title": "Asof"
             }
@@ -14110,7 +14962,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Get Obligation",
+        "summary": "Open one duty and read it as of a date",
         "tags": [
           "Library"
         ]
@@ -14199,19 +15051,26 @@
     },
     "/api/v1/obligations/{obligation_id}/diff": {
       "get": {
+        "description": "What changed between two versions of one duty's summary, sentence by sentence: the\nsentences that stand unchanged, the ones the newer version dropped and the ones it adds.\nCall it behind \"Show what changed\" on the obligation card, and whenever a regulatory\nchange is being assessed and somebody has to see exactly which words moved.\n\nBy default it compares the latest version against the one before it; from and to name\nany two versions by their number. Both are versions of the same obligation: this call\nnever compares one record with another, and there is no way to ask it to. The comparison\nis made in a language both versions hold, preferring the one lang asks for, and the\nanswer says which language it settled on and whether either side was machine translated\nand so still unconfirmed by a person.\n\nA read: it changes nothing, writes no audit row and logs none of the text, which is the\nlibrary's own content. It takes a person's session holding `library.read` in their bank,\nor an agent's key carrying the `library:read` scope. A sentence shown as removed is a\nchange to the wording of the rule, never a decision that this bank may stop doing\nsomething.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope; `not_found` (404) when no\nobligation has that id or it is one this caller may not see; `unknown_key` (422) when a\nversion number is asked for that this obligation has no version for; `validation_error`\n(422) when the obligation has fewer than two versions and neither number was given, when\nthe two versions share no language at all, when lang is longer than 8 characters, or\nwhen the path segment is not a UUID.",
         "operationId": "getObligationDiff",
         "parameters": [
           {
+            "description": "The obligation whose two versions are compared, by its identifier (a UUID). Both versions belong to this one record: a diff is never taken across obligations. A record this caller cannot see answers 404, never 403.",
             "in": "path",
             "name": "obligation_id",
             "required": true,
             "schema": {
+              "description": "The obligation whose two versions are compared, by its identifier (a UUID). Both versions belong to this one record: a diff is never taken across obligations. A record this caller cannot see answers 404, never 403.",
               "format": "uuid",
               "title": "Obligation Id",
               "type": "string"
             }
           },
           {
+            "description": "Which version to compare from, by its version number, 1 at the lowest. It defaults to the version before the latest one, so a plain call shows the most recent change. Both versions are versions of the same obligation: there is no comparison across records. A number this obligation has no version for is refused with 422 `unknown_key`.",
+            "examples": [
+              1
+            ],
             "in": "query",
             "name": "from",
             "required": false,
@@ -14225,10 +15084,18 @@
                   "type": "null"
                 }
               ],
+              "description": "Which version to compare from, by its version number, 1 at the lowest. It defaults to the version before the latest one, so a plain call shows the most recent change. Both versions are versions of the same obligation: there is no comparison across records. A number this obligation has no version for is refused with 422 `unknown_key`.",
+              "examples": [
+                1
+              ],
               "title": "From"
             }
           },
           {
+            "description": "Which version to compare to, by its version number, 1 at the lowest. It defaults to the latest version the obligation has, including one that has been approved and does not take effect until later. A number this obligation has no version for is refused with 422 `unknown_key`.",
+            "examples": [
+              2
+            ],
             "in": "query",
             "name": "to",
             "required": false,
@@ -14242,10 +15109,18 @@
                   "type": "null"
                 }
               ],
+              "description": "Which version to compare to, by its version number, 1 at the lowest. It defaults to the latest version the obligation has, including one that has been approved and does not take effect until later. A number this obligation has no version for is refused with 422 `unknown_key`.",
+              "examples": [
+                2
+              ],
               "title": "To"
             }
           },
           {
+            "description": "Which content language to compare in, as a language key of at most 8 characters such as `sv` or `en`. It is a preference and never a filter: a key the two versions do not both hold is not an error, and the diff falls back to the reader's own language order and then to an original before a translation, saying in `language` what it settled on. A key longer than 8 characters is refused with 422 `validation_error`, and two versions with no language in common answer 422 because there is nothing to compare.",
+            "examples": [
+              "en"
+            ],
             "in": "query",
             "name": "lang",
             "required": false,
@@ -14258,6 +15133,10 @@
                 {
                   "type": "null"
                 }
+              ],
+              "description": "Which content language to compare in, as a language key of at most 8 characters such as `sv` or `en`. It is a preference and never a filter: a key the two versions do not both hold is not an error, and the diff falls back to the reader's own language order and then to an original before a translation, saying in `language` what it settled on. A key longer than 8 characters is refused with 422 `validation_error`, and two versions with no language in common answer 422 because there is nothing to compare.",
+              "examples": [
+                "en"
               ],
               "title": "Lang"
             }
@@ -14283,7 +15162,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Get Obligation Diff",
+        "summary": "See what changed between two versions of a duty",
         "tags": [
           "Library"
         ]
@@ -14726,12 +15605,40 @@
     },
     "/api/v1/reference/languages": {
       "get": {
+        "description": "Every content language the platform is serving, as key, kind and label: what fills a\nlanguage picker on a person's profile, on a bank's default-language setting and behind\n\"Show original\" on a record. Swedish, Danish, Norwegian, Finnish and English are active\non day one.\n\nA read: it changes nothing and writes no audit row, and any signed-in session may make\nit. There is no permission to hold, because a person has to be able to choose the\nlanguage they read in before they can read anything else. The languages are library\nreference rows, identical for every bank; a platform admin activates or retires one\nwithout a deploy, so read this list rather than hard-coding the five. Every row's kind\nis null: a language belongs to no sub-kind.\n\nAnswers a plain array in key order rather than a page, like the other short reference\nreads, and an empty array would be a 200. Errors to branch on: `unauthenticated` (401)\nwithout a session.",
         "operationId": "listLanguages",
         "parameters": [],
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": [
+                  {
+                    "key": "da",
+                    "kind": null,
+                    "label": "Dansk"
+                  },
+                  {
+                    "key": "en",
+                    "kind": null,
+                    "label": "English"
+                  },
+                  {
+                    "key": "fi",
+                    "kind": null,
+                    "label": "Suomi"
+                  },
+                  {
+                    "key": "nb",
+                    "kind": null,
+                    "label": "Norsk bokm\u00e5l"
+                  },
+                  {
+                    "key": "sv",
+                    "kind": null,
+                    "label": "Svenska"
+                  }
+                ],
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/RoleRef"
@@ -14749,7 +15656,7 @@
             "SessionAuth": []
           }
         ],
-        "summary": "List Languages",
+        "summary": "List the languages a record can be read in",
         "tags": [
           "Library"
         ]
