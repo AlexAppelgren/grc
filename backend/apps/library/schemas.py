@@ -15,9 +15,13 @@ from django.conf import settings
 from pydantic import ConfigDict, Field, ModelWrapValidatorHandler, ValidationInfo, model_validator
 
 from apps.shared.schemas import CamelSchema
+from apps.taxonomy.schemas import PersonRef
 
 # The longest `q` a list accepts: a phrase to look for, never a document.
 MAX_QUERY_LENGTH = 200
+# A language key is a BCP 47 primary tag (`Language.key`, a slug of at most 8 characters);
+# `?lang=` is looked up among the languages a version has, so a longer one is a 422.
+MAX_LANGUAGE_LENGTH = 8
 
 
 class LibraryResponse(CamelSchema):
@@ -122,6 +126,130 @@ class ObligationRow(LibraryResponse):
 class ObligationPage(LibraryResponse):
     items: list[ObligationRow]
     total: int
+
+
+class ObligationVersionRow(LibraryResponse):
+    """One summary version on the card's version list (INV-04): when it took effect,
+    `effectiveTo` derived as the day before the next version did, and when a library editor
+    approved it. The approver is not named: the card names none."""
+
+    version_number: int
+    effective_from: PartialDate | None
+    effective_to: PartialDate | None
+    approved_at: datetime.datetime | None
+
+
+class ObligationInstrumentSummary(LibraryResponse):
+    """The instrument an obligation belongs to, as "Where it comes from" reads it (INV-01).
+    Its provisions and lineage live on the instrument's own read."""
+
+    key: str
+    short_name: str
+    name: LocalizedText | None
+    official_ref: str
+    implements_note: str
+
+
+class ObligationProvisionRef(LibraryResponse):
+    """A provision the obligation cites (INV-02, INV-03), by reference and path. The
+    verbatim text is the provision tree's, never this read's."""
+
+    id: UUID
+    ref_label: str
+    path: str
+
+
+class RelatedObligation(LibraryResponse):
+    """An obligation a reader should see beside this one (INV-03), with the relation as a
+    vocabulary row."""
+
+    id: UUID
+    title: LocalizedText | None
+    instrument: ObligationInstrumentRef
+    binding: bool
+    relation: LibraryRef
+
+
+class ObligationProvenance(LibraryResponse):
+    """Where the record came from and when it was last checked against its source (INV-06).
+    `verifiedBy` is a platform person or null: a seeded record has never been re-verified."""
+
+    created_origin: str
+    created_model: str
+    created_at: datetime.datetime
+    verified_by: PersonRef | None
+    last_verified_at: datetime.datetime | None
+    source_url: str
+    source_label: str
+
+
+class ObligationDetail(LibraryResponse):
+    """`GET /obligations/{obligationId}` (INV-03..INV-06): the duty as of a date, with its
+    facets, every version, the provisions it cites, the obligations beside it and its
+    provenance. The register overlay lands with chunk 8, the related changes with chunk 5."""
+
+    id: UUID
+    stable_key: str
+    ref_label: str
+    title: LocalizedText | None
+    instrument: ObligationInstrumentSummary
+    regime: LibraryRef | None
+    binding_level: LibraryRef
+    binding: bool
+    duty_type: LibraryRef
+    trigger_frequency: str
+    retention: str
+    sanction_exposure: str
+    product_scope: str
+    tags: list[LibraryRef]
+    scope: list[ScopeDimension]
+    in_footprint: bool
+    outside_reason: list[OutsideReason]
+    summary: LocalizedText | None
+    translations: list[LocalizedText]
+    version: ObligationVersionRow | None
+    versions: list[ObligationVersionRow]
+    provisions: list[ObligationProvisionRef]
+    related: list[RelatedObligation]
+    provenance: ObligationProvenance
+
+
+class DiffSegment(LibraryResponse):
+    """One sentence of a diff and what happened to it (AC-INV1)."""
+
+    op: str
+    text: str
+
+
+class VersionDiff(LibraryResponse):
+    """"Show what changed" between two versions (INV-04, AC-INV1, INV-05): the two version
+    numbers and the dates they took effect, the language both versions have and whether a
+    machine translated it, and the sentences. Serves obligations now and provisions next."""
+
+    from_version: int
+    to_version: int
+    from_effective: PartialDate | None
+    to_effective: PartialDate | None
+    language: str
+    is_machine: bool
+    segments: list[DiffSegment]
+
+
+class ObligationAsOfQuery(CamelSchema):
+    """`asOf` on the obligation read: the version in force on that date, today in the
+    tenant's time zone by default (AC-INV1)."""
+
+    as_of: datetime.date | None = None
+
+
+class ObligationDiffQuery(CamelSchema):
+    """`from` and `to` are version numbers, defaulting to the latest version against the one
+    before it. `lang` asks for a language; the diff falls back to the reader's language
+    order when neither version has it (INV-05)."""
+
+    from_version: int | None = Field(default=None, alias="from", ge=1)
+    to_version: int | None = Field(default=None, alias="to", ge=1)
+    lang: str | None = Field(default=None, max_length=MAX_LANGUAGE_LENGTH)
 
 
 class ObligationQuery(CamelSchema):

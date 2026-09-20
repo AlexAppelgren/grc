@@ -415,6 +415,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/obligations/{obligation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Obligation */
+        get: operations["getObligation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Obligation Diff */
+        get: operations["getObligationDiff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/proposals": {
         parameters: {
             query?: never;
@@ -1524,6 +1558,16 @@ export interface components {
             status: string;
         };
         /**
+         * DiffSegment
+         * @description One sentence of a diff and what happened to it (AC-INV1).
+         */
+        DiffSegment: {
+            /** Op */
+            op: string;
+            /** Text */
+            text: string;
+        };
+        /**
          * Empty
          * @description `{}`: the neutral answer of the code request and the accepted re-issue.
          */
@@ -1892,10 +1936,100 @@ export interface components {
             /** Total */
             total: number;
         };
+        /**
+         * ObligationAsOfQuery
+         * @description `asOf` on the obligation read: the version in force on that date, today in the
+         *     tenant's time zone by default (AC-INV1).
+         */
+        ObligationAsOfQuery: {
+            /** Asof */
+            asOf?: string | null;
+        };
+        /**
+         * ObligationDetail
+         * @description `GET /obligations/{obligationId}` (INV-03..INV-06): the duty as of a date, with its
+         *     facets, every version, the provisions it cites, the obligations beside it and its
+         *     provenance. The register overlay lands with chunk 8, the related changes with chunk 5.
+         */
+        ObligationDetail: {
+            /** Binding */
+            binding: boolean;
+            bindingLevel: components["schemas"]["LibraryRef"];
+            dutyType: components["schemas"]["LibraryRef"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Infootprint */
+            inFootprint: boolean;
+            instrument: components["schemas"]["ObligationInstrumentSummary"];
+            /** Outsidereason */
+            outsideReason: components["schemas"]["OutsideReason"][];
+            /** Productscope */
+            productScope: string;
+            provenance: components["schemas"]["ObligationProvenance"];
+            /** Provisions */
+            provisions: components["schemas"]["ObligationProvisionRef"][];
+            /** Reflabel */
+            refLabel: string;
+            regime: components["schemas"]["LibraryRef"] | null;
+            /** Related */
+            related: components["schemas"]["RelatedObligation"][];
+            /** Retention */
+            retention: string;
+            /** Sanctionexposure */
+            sanctionExposure: string;
+            /** Scope */
+            scope: components["schemas"]["ScopeDimension"][];
+            /** Stablekey */
+            stableKey: string;
+            summary: components["schemas"]["LocalizedText"] | null;
+            /** Tags */
+            tags: components["schemas"]["LibraryRef"][];
+            title: components["schemas"]["LocalizedText"] | null;
+            /** Translations */
+            translations: components["schemas"]["LocalizedText"][];
+            /** Triggerfrequency */
+            triggerFrequency: string;
+            version: components["schemas"]["ObligationVersionRow"] | null;
+            /** Versions */
+            versions: components["schemas"]["ObligationVersionRow"][];
+        };
+        /**
+         * ObligationDiffQuery
+         * @description `from` and `to` are version numbers, defaulting to the latest version against the one
+         *     before it. `lang` asks for a language; the diff falls back to the reader's language
+         *     order when neither version has it (INV-05).
+         */
+        ObligationDiffQuery: {
+            /** From */
+            from?: number | null;
+            /** Lang */
+            lang?: string | null;
+            /** To */
+            to?: number | null;
+        };
         /** ObligationInstrumentRef */
         ObligationInstrumentRef: {
             /** Key */
             key: string;
+            /** Shortname */
+            shortName: string;
+        };
+        /**
+         * ObligationInstrumentSummary
+         * @description The instrument an obligation belongs to, as "Where it comes from" reads it (INV-01).
+         *     Its provisions and lineage live on the instrument's own read.
+         */
+        ObligationInstrumentSummary: {
+            /** Implementsnote */
+            implementsNote: string;
+            /** Key */
+            key: string;
+            name: components["schemas"]["LocalizedText"] | null;
+            /** Officialref */
+            officialRef: string;
             /** Shortname */
             shortName: string;
         };
@@ -1905,6 +2039,45 @@ export interface components {
             items: components["schemas"]["ObligationRow"][];
             /** Total */
             total: number;
+        };
+        /**
+         * ObligationProvenance
+         * @description Where the record came from and when it was last checked against its source (INV-06).
+         *     `verifiedBy` is a platform person or null: a seeded record has never been re-verified.
+         */
+        ObligationProvenance: {
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Createdmodel */
+            createdModel: string;
+            /** Createdorigin */
+            createdOrigin: string;
+            /** Lastverifiedat */
+            lastVerifiedAt: string | null;
+            /** Sourcelabel */
+            sourceLabel: string;
+            /** Sourceurl */
+            sourceUrl: string;
+            verifiedBy: components["schemas"]["PersonRef"] | null;
+        };
+        /**
+         * ObligationProvisionRef
+         * @description A provision the obligation cites (INV-02, INV-03), by reference and path. The
+         *     verbatim text is the provision tree's, never this read's.
+         */
+        ObligationProvisionRef: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Path */
+            path: string;
+            /** Reflabel */
+            refLabel: string;
         };
         /**
          * ObligationQuery
@@ -1978,6 +2151,20 @@ export interface components {
          */
         ObligationVersionRef: {
             effectiveFrom: components["schemas"]["PartialDate"] | null;
+            /** Versionnumber */
+            versionNumber: number;
+        };
+        /**
+         * ObligationVersionRow
+         * @description One summary version on the card's version list (INV-04): when it took effect,
+         *     `effectiveTo` derived as the day before the next version did, and when a library editor
+         *     approved it. The approver is not named: the card names none.
+         */
+        ObligationVersionRow: {
+            /** Approvedat */
+            approvedAt: string | null;
+            effectiveFrom: components["schemas"]["PartialDate"] | null;
+            effectiveTo: components["schemas"]["PartialDate"] | null;
             /** Versionnumber */
             versionNumber: number;
         };
@@ -2333,6 +2520,23 @@ export interface components {
             accessToken: string;
             /** Expiresin */
             expiresIn: number;
+        };
+        /**
+         * RelatedObligation
+         * @description An obligation a reader should see beside this one (INV-03), with the relation as a
+         *     vocabulary row.
+         */
+        RelatedObligation: {
+            /** Binding */
+            binding: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            instrument: components["schemas"]["ObligationInstrumentRef"];
+            relation: components["schemas"]["LibraryRef"];
+            title: components["schemas"]["LocalizedText"] | null;
         };
         /** RoleCreate */
         RoleCreate: {
@@ -2738,6 +2942,26 @@ export interface components {
             kind?: string | null;
             /** Label */
             label: string;
+        };
+        /**
+         * VersionDiff
+         * @description "Show what changed" between two versions (INV-04, AC-INV1, INV-05): the two version
+         *     numbers and the dates they took effect, the language both versions have and whether a
+         *     machine translated it, and the sentences. Serves obligations now and provisions next.
+         */
+        VersionDiff: {
+            fromEffective: components["schemas"]["PartialDate"] | null;
+            /** Fromversion */
+            fromVersion: number;
+            /** Ismachine */
+            isMachine: boolean;
+            /** Language */
+            language: string;
+            /** Segments */
+            segments: components["schemas"]["DiffSegment"][];
+            toEffective: components["schemas"]["PartialDate"] | null;
+            /** Toversion */
+            toVersion: number;
         };
         /**
          * VocabularyCreateBody
@@ -3780,6 +4004,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ObligationPage"];
+                };
+            };
+        };
+    };
+    getObligation: {
+        parameters: {
+            query?: {
+                asOf?: string | null;
+            };
+            header?: never;
+            path: {
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObligationDetail"];
+                };
+            };
+        };
+    };
+    getObligationDiff: {
+        parameters: {
+            query?: {
+                from?: number | null;
+                to?: number | null;
+                lang?: string | null;
+            };
+            header?: never;
+            path: {
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDiff"];
                 };
             };
         };

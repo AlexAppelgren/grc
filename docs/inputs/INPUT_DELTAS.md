@@ -518,3 +518,41 @@ in `docs/DECISIONS.md`; the researched detail is in
   register nothing in the shared library. `research_request` follows the same
   split: a bank's request names its own agent, and a `retag` request is a console
   request.
+
+- `GET /obligations/{obligationId}` (`getObligation`) answers the whole card as of a date
+  rather than the designed `Obligation`: `{id, stableKey, refLabel, title, instrument{key,
+  shortName, name, officialRef, implementsNote}, regime, bindingLevel, binding, dutyType,
+  triggerFrequency, retention, sanctionExposure, productScope, tags[], scope[], inFootprint,
+  outsideReason[], summary, translations[], version, versions[], provisions[], related[],
+  provenance}`. Same caller as the list. Each departure has its reason:
+  - The summary is `{text, language, isOriginal, isMachine}` with every language of that
+    version in `translations[]`, instead of the designed `summaryEn`/`summarySv` pair
+    (sections 1 and 3): the languages are rows and a machine translation stays labelled
+    (INV-05). `?asOf=` picks the version in force, today in the tenant's time zone by
+    default; the record is answered whatever the footprint says, with the verdict and its
+    reason beside it, because an address always resolves (FP-03).
+  - `versions[]` is embedded here, so the designed `GET /obligations/{obligationId}/versions`
+    (`listObligationVersions`) is not built. A row is `{versionNumber, effectiveFrom,
+    effectiveTo, approvedAt}`: `effectiveTo` is derived as the day before the next version
+    takes effect, because nothing stores an end date (INV-04), and the approver is not
+    named, matching the card.
+  - `provisions[]` is `{id, refLabel, path}` and holds no text: the verbatim text belongs to
+    the provision tree read, and the card shows none. `related[]` is `{id, title, instrument,
+    binding, relation}`.
+  - `provenance` is `{createdOrigin, createdModel, createdAt, verifiedBy, lastVerifiedAt,
+    sourceUrl, sourceLabel}` (INV-06). `verifiedBy` is null until someone re-verifies the
+    record, and is then a platform person, never a tenant member.
+  - The designed `lineage` sits on the instrument's read, and `register`,
+    `pendingApplicabilityRequest` and `internalLinks` wait for the register (chunk 8);
+    related changes are `GET /obligations/{obligationId}/changes` (chunk 5).
+  - A record the caller cannot see answers 404 `not_found`, never 403, so no address can be
+    probed for what another bank holds privately (INV-07).
+- `GET /obligations/{obligationId}/diff` (`getObligationDiff`, the designed
+  `diffObligationVersions`) answers `{fromVersion, toVersion, fromEffective, toEffective,
+  language, isMachine, segments[{op, text}]}` instead of the designed `{fromVersion,
+  toVersion, lang, segments}`: the screen names both effective dates and says when the text
+  it compares is a machine translation (INV-05). `from` and `to` are version numbers and
+  default to the latest version against the one before it; a number the obligation has no
+  version for is 422 `unknown_key`, and fewer than two versions to compare, or two versions
+  with no language in common, are 422. `lang` is accepted here and on the provision diff
+  alone; every other read follows the reader's language order.

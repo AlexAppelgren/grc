@@ -1,5 +1,6 @@
-"""Reading the library (INV-03, INV-04, INV-05, FP-01, FP-03): the helpers every library
-read shares, and the obligations list. Nothing here writes.
+"""Reading the library (INV-03, INV-04, INV-05, INV-06, FP-01, FP-03): the helpers every
+library read shares, the obligations list, one obligation and the diff between two of its
+versions. Nothing here writes.
 
 - `localized()` picks one translation row in the caller's language order (INV-05).
 - `partial_date()` is a legal date with its precision (playbook 4.3).
@@ -10,11 +11,17 @@ read shares, and the obligations list. Nothing here writes.
   `scope_term_ids()` is its SQL twin, which the list hands to the database's
   `taxonomy_in_footprint` and to the term filter; the tests pin the two to each other.
 - `outside_reasons()` is the footprint verdict and its reason, built on
-  `taxonomy.matching`: a record is inside when it has no reason to be outside.
-- "As of" a date is `logic.in_force()` and nothing else (AC-INV1).
+  `taxonomy.matching`: a record is inside when it has no reason to be outside, and
+  `scope_and_verdict()` builds both for a row of the list and for a record's own card.
+- "As of" a date is `logic.in_force()` and nothing else (AC-INV1). A version's end date is
+  never stored: `version_rows()` derives it from the version that follows (INV-04).
+- `_visible()` is the one lookup of a record by id: what row-level security does not show
+  the caller is a 404, never a 403, so no id can be probed for.
 
 Every response object is validated as it is built, natively by pydantic
-(`schemas.LibraryResponse`), and the page validates every row again when it takes them.
+(`schemas.LibraryResponse`), and the page validates every row again when it takes them: a
+value the database or a later change gets wrong fails the read rather than reaching the
+caller.
 
 Every query runs on the request's connection, as cw_app under forced row-level security
 in production: an instrument or obligation is shared or the caller's own (INPUT_DELTAS
@@ -33,26 +40,53 @@ from django.contrib.postgres.expressions import ArraySubquery
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.lookups import DataContains
 from django.core.exceptions import ValidationError
-from django.db.models import BooleanField, Exists, F, Func, OuterRef, Q, UUIDField, Value
+from django.db.models import BooleanField, Exists, F, Func, OuterRef, Q, QuerySet, UUIDField, Value
 from django.utils import timezone
 
-from apps.library.logic import in_force
-from apps.library.models import Obligation, ObligationTag, ObligationTerm, ObligationTitle, ObligationVersion, Translation
+from apps.library.logic import in_force, version_diff
+from apps.library.models import (
+    Obligation,
+    ObligationRelation,
+    ObligationTag,
+    ObligationTerm,
+    ObligationTitle,
+    ObligationVersion,
+    Translation,
+)
 from apps.library.schemas import (
+    DiffSegment,
     LibraryRef,
     LocalizedText,
+    ObligationAsOfQuery,
+    ObligationDetail,
+    ObligationDiffQuery,
     ObligationInstrumentRef,
+    ObligationInstrumentSummary,
+    ObligationProvenance,
+    ObligationProvisionRef,
     ObligationQuery,
     ObligationRow,
     ObligationVersionRef,
+    ObligationVersionRow,
     OutsideReason,
     PartialDate,
+    RelatedObligation,
     ScopeDimension,
+    VersionDiff,
 )
 from apps.shared.models import Tenant
 from apps.taxonomy import matching, terms_logic
-from apps.taxonomy.models import DutyTypeLabel, InstrumentLevelLabel, LibraryTag, LibraryTagLabel, TaxonomyTerm, TaxonomyTermLabel
+from apps.taxonomy.models import (
+    DutyTypeLabel,
+    InstrumentLevelLabel,
+    LibraryTag,
+    LibraryTagLabel,
+    RelationTypeLabel,
+    TaxonomyTerm,
+    TaxonomyTermLabel,
+)
 from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.schemas import PersonRef
 
 
 # ---------------------------------------------------------------------------------------
@@ -65,9 +99,13 @@ def localized(rows: Iterable[Translation], order: list[str]) -> LocalizedText | 
     chosen = next((by_language[code] for code in order if code in by_language), None)
     chosen = chosen or next((row for row in by_language.values() if row.is_original), None)
     chosen = chosen or next(iter(by_language.values()), None)
-    if chosen is None:
-        return None
-    return LocalizedText(text=chosen.text, language=chosen.language_id, is_original=chosen.is_original, is_machine=chosen.is_machine)
+    return None if chosen is None else text_of(chosen)
+
+
+def text_of(row: Translation) -> LocalizedText:
+    """One translation row as the screen reads it: the text, its language, and whether it is
+    the original or a machine translation still waiting for a person (INV-05)."""
+    return LocalizedText(text=row.text, language=row.language_id, is_original=row.is_original, is_machine=row.is_machine)
 
 
 def partial_date(value: datetime.date | None, precision: str) -> PartialDate | None:
@@ -136,24 +174,41 @@ def outside_reasons(
     ]
 
 
-def scope_rows(
+def footprint_dimensions(order: list[str]) -> dict[str, tuple[LibraryRef, int]]:
+    """Every active dimension by key, labelled, in the picker's order, with the number of
+    active terms in it: what `allSelected` is measured against. Read once per request,
+    whatever the page size."""
+    return {
+        ref.key: (LibraryRef(key=ref.key, kind=ref.kind, label=ref.label), term_count)
+        for ref, _restricts, term_count in terms_logic.dimensions_for_footprint(order)
+    }
+
+
+def scope_and_verdict(
     scope: Mapping[str, list[TaxonomyTerm]],
-    dimensions: list[tuple[LibraryRef, int]],
+    dimensions: Mapping[str, tuple[LibraryRef, int]],
     refs: Mapping[uuid.UUID, LibraryRef],
-) -> list[ScopeDimension]:
-    """Every active dimension with the record's terms in it, in the picker's order: an empty
-    one is listed too, because it means "no restriction" and the screen says so."""
-    rows: list[ScopeDimension] = []
-    for dimension, term_count in dimensions:
-        terms = scope.get(dimension.key, [])
-        rows.append(
+    footprint: Mapping[str, Collection[str]],
+    restricting: Collection[str],
+) -> tuple[list[ScopeDimension], list[OutsideReason]]:
+    """What one record carries and why the footprint would hide it, built in one place so a
+    row of the list and the record's own card can never answer differently (FP-01, FP-03).
+
+    Every active dimension is listed, an empty one too, because it means "no restriction"
+    and the screen says so; `allSelected` means every active term of it is carried."""
+    carried: list[ScopeDimension] = []
+    for key, (dimension, term_count) in dimensions.items():
+        terms = scope.get(key, [])
+        carried.append(
             ScopeDimension(
                 dimension=dimension,
                 terms=[refs[term.id] for term in terms],
                 all_selected=bool(term_count) and sum(term.active for term in terms) == term_count,
             )
         )
-    return rows
+    outside = outside_reasons({key: {term.key for term in terms} for key, terms in scope.items()}, footprint, restricting)
+    reasons = [OutsideReason(dimension=dimensions[key][0], terms=[refs[term.id] for term in scope[key]]) for key in outside]
+    return carried, reasons
 
 
 # ---------------------------------------------------------------------------------------
@@ -236,15 +291,11 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
     tags_of: dict[uuid.UUID, list[LibraryRef]] = {}
     for obligation_id, tag_id in tag_pairs:
         tags_of.setdefault(obligation_id, []).append(tag_refs[tag_id])
-    dimensions = [
-        (LibraryRef(key=ref.key, kind=ref.kind, label=ref.label), term_count)
-        for ref, _restricts, term_count in terms_logic.dimensions_for_footprint(order)
-    ]
-    by_key = {dimension.key: dimension for dimension, _count in dimensions}
+    dimensions = footprint_dimensions(order)
     rows: list[ObligationRow] = []
     for obligation in page:
         scope = scopes.get(obligation.id, {})
-        outside = outside_reasons({key: {term.key for term in terms} for key, terms in scope.items()}, footprint, restricting)
+        carried, outside = scope_and_verdict(scope, dimensions, term_refs, footprint, restricting)
         versions = list(obligation.versions.all())
         instrument = obligation.instrument
         rows.append(
@@ -258,14 +309,11 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
                 binding=instrument.binding,
                 duty_type=duty_refs[obligation.duty_type_id],
                 tags=tags_of.get(obligation.id, []),
-                scope=scope_rows(scope, dimensions, term_refs),
+                scope=carried,
                 version=_version_ref(in_force(versions, as_of)),
                 upcoming_version=_version_ref(upcoming(versions, as_of)),
                 in_footprint=not outside,
-                outside_reason=[
-                    OutsideReason(dimension=by_key[key], terms=[term_refs[term.id] for term in scope[key]])
-                    for key in outside
-                ],
+                outside_reason=outside,
                 last_verified_at=obligation.last_verified_at,
                 open_change_count=0,
                 pending_applicability=None,
@@ -273,3 +321,175 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
             )
         )
     return rows, total
+
+
+# ---------------------------------------------------------------------------------------
+# GET /obligations/{id} and GET /obligations/{id}/diff
+# ---------------------------------------------------------------------------------------
+NOT_FOUND = "There is nothing at this address in your organisation."
+
+
+def _visible(queryset: QuerySet[Obligation], obligation_id: uuid.UUID) -> Obligation:
+    """The obligation as row-level security lets the caller see it: a shared record or their
+    own (INPUT_DELTAS §5). A record they cannot see is not there, so another tenant's
+    private obligation and an id that never existed answer the same 404 (INV-07)."""
+    obligation = queryset.filter(pk=obligation_id).first()  # ordering: pk lookup, at most one row
+    if obligation is None:
+        raise ValidationError(NOT_FOUND, code="not_found")
+    return obligation
+
+
+def version_rows(versions: list[ObligationVersion]) -> dict[int, ObligationVersionRow]:
+    """Every version by number, in version order. `effectiveTo` is derived: a version runs
+    until the day before the next one takes effect, at the precision that next date is known
+    to. Nothing is stored, because a version row is written once and never touched (INV-04).
+    The last version, one whose successor has no date, and one corrected the same day it
+    took effect (`logic.in_force`: the later number wins) have no end, since an end before
+    the start would be a lie on the card."""
+    rows: dict[int, ObligationVersionRow] = {}
+    for index, version in enumerate(versions):
+        following = versions[index + 1] if index + 1 < len(versions) else None
+        ends = None
+        if (
+            following is not None
+            and following.effective_from is not None
+            and (version.effective_from is None or following.effective_from > version.effective_from)
+        ):
+            ends = partial_date(following.effective_from - datetime.timedelta(days=1), following.effective_from_precision)
+        rows[version.version_number] = ObligationVersionRow(
+            version_number=version.version_number,
+            effective_from=partial_date(version.effective_from, version.effective_from_precision),
+            effective_to=ends,
+            approved_at=version.approved_at,
+        )
+    return rows
+
+
+def _related_obligations(obligation: Obligation, order: list[str]) -> list[RelatedObligation]:
+    """The obligations a reader should see beside this one (INV-03). The join to the related
+    record runs under the same row-level security, so a relation to a record the caller
+    cannot see brings back nothing and is never reported."""
+    relations = list(
+        ObligationRelation.objects.filter(from_obligation=obligation).select_related("to_obligation__instrument", "relation_type")
+    )
+    titles: dict[uuid.UUID, list[ObligationTitle]] = {}
+    for title in ObligationTitle.objects.filter(obligation_id__in=[relation.to_obligation_id for relation in relations]):
+        titles.setdefault(title.obligation_id, []).append(title)
+    relation_refs = vocabulary_refs(RelationTypeLabel, (relation.relation_type for relation in relations), order)
+    return [
+        RelatedObligation(
+            id=relation.to_obligation_id,
+            title=localized(titles.get(relation.to_obligation_id, []), order),
+            instrument=ObligationInstrumentRef(
+                key=relation.to_obligation.instrument.stable_key, short_name=relation.to_obligation.instrument.short_name
+            ),
+            binding=relation.to_obligation.instrument.binding,
+            relation=relation_refs[relation.relation_type_id],
+        )
+        for relation in relations
+    ]
+
+
+def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID, query: ObligationAsOfQuery) -> ObligationDetail:
+    """One obligation as of a date (INV-03, INV-04) in the caller's language order (INV-05),
+    with the footprint verdict the list gives it (FP-03) and its provenance (INV-06). The
+    queries fan out: their number does not grow with the versions, terms, tags, provisions
+    or related obligations the record carries."""
+    obligation = _visible(
+        Obligation.objects.select_related("instrument__level", "duty_type", "verified_by").prefetch_related(
+            "titles", "instrument__titles", "versions__summaries", "tags", "provisions"
+        ),
+        obligation_id,
+    )
+    as_of = query.as_of or today_for(tenant)
+    instrument = obligation.instrument
+    versions = list(obligation.versions.all())
+    current = in_force(versions, as_of)
+    summaries = list(current.summaries.all()) if current is not None else []
+    scope = obligation_scopes([obligation.id]).get(obligation.id, {})
+    tags = list(obligation.tags.all())
+    term_refs = vocabulary_refs(TaxonomyTermLabel, (term for terms in scope.values() for term in terms), order, field="term")
+    tag_refs = vocabulary_refs(LibraryTagLabel, tags, order)
+    duty_refs = vocabulary_refs(DutyTypeLabel, [obligation.duty_type], order)
+    level_refs = vocabulary_refs(InstrumentLevelLabel, [instrument.level], order)
+    carried, outside = scope_and_verdict(
+        scope, footprint_dimensions(order), term_refs, matching.footprint_of(tenant.id), matching.restricting_dimensions()
+    )
+    rows = version_rows(versions)
+    verifier = obligation.verified_by
+    return ObligationDetail(
+        id=obligation.id,
+        stable_key=obligation.stable_key,
+        ref_label=obligation.ref_label,
+        title=localized(obligation.titles.all(), order),
+        instrument=ObligationInstrumentSummary(
+            key=instrument.stable_key,
+            short_name=instrument.short_name,
+            name=localized(instrument.titles.all(), order),
+            official_ref=instrument.official_ref,
+            implements_note=instrument.implements_note,
+        ),
+        regime=term_refs[instrument.regime_id] if instrument.regime_id else None,
+        binding_level=level_refs[instrument.level_id],
+        binding=instrument.binding,
+        duty_type=duty_refs[obligation.duty_type_id],
+        trigger_frequency=obligation.trigger_frequency,
+        retention=obligation.retention,
+        sanction_exposure=obligation.sanction_exposure,
+        product_scope=obligation.product_scope,
+        tags=[tag_refs[tag.id] for tag in tags],
+        scope=carried,
+        in_footprint=not outside,
+        outside_reason=outside,
+        summary=localized(summaries, order),
+        translations=[text_of(summary) for summary in summaries],
+        version=rows[current.version_number] if current is not None else None,
+        versions=list(rows.values()),
+        provisions=[
+            ObligationProvisionRef(id=provision.id, ref_label=provision.ref_label, path=provision.path)
+            for provision in obligation.provisions.all()
+        ],
+        related=_related_obligations(obligation, order),
+        provenance=ObligationProvenance(
+            created_origin=obligation.created_origin,
+            created_model=obligation.created_model,
+            created_at=obligation.created_at,
+            verified_by=None if verifier is None else PersonRef(id=verifier.id, name=verifier.name),
+            last_verified_at=obligation.last_verified_at,
+            source_url=obligation.source_url,
+            source_label=obligation.source_label,
+        ),
+    )
+
+
+def _numbered(versions: list[ObligationVersion], number: int) -> ObligationVersion:
+    """The version the caller named; a number this obligation has no version for is a 422."""
+    found = next((version for version in versions if version.version_number == number), None)
+    if found is None:
+        raise ValidationError(f"This obligation has no version {number}.", code="unknown_key")
+    return found
+
+
+def obligation_diff(order: list[str], obligation_id: uuid.UUID, query: ObligationDiffQuery) -> VersionDiff:
+    """"Show what changed" between two versions of one obligation (INV-04, AC-INV1), by
+    default the latest against the one before it. The comparison itself is `version_diff`,
+    which is pure and writes nothing to a log: the summaries are the library's content."""
+    obligation = _visible(Obligation.objects.prefetch_related("versions__summaries"), obligation_id)
+    versions = list(obligation.versions.all())
+    if len(versions) < 2 and (query.from_version is None or query.to_version is None):
+        raise ValidationError("There are not two versions of this obligation to compare.")
+    older = _numbered(versions, query.from_version) if query.from_version is not None else versions[-2]
+    newer = _numbered(versions, query.to_version) if query.to_version is not None else versions[-1]
+    compared = version_diff(older.summaries.all(), newer.summaries.all(), order, query.lang)
+    if compared is None:
+        raise ValidationError("These two versions have no language in common, so there is nothing to compare.")
+    language, is_machine, segments = compared
+    return VersionDiff(
+        from_version=older.version_number,
+        to_version=newer.version_number,
+        from_effective=partial_date(older.effective_from, older.effective_from_precision),
+        to_effective=partial_date(newer.effective_from, newer.effective_from_precision),
+        language=language,
+        is_machine=is_machine,
+        segments=[DiffSegment(op=op, text=text) for op, text in segments],
+    )

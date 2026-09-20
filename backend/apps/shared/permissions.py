@@ -394,6 +394,8 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ),
     # Chunk 3 (library reads). apps/taxonomy/http.py require_library_read decides.
     ("GET", "/obligations"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
+    ("GET", "/obligations/{obligation_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
+    ("GET", "/obligations/{obligation_id}/diff"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
 }
 
 

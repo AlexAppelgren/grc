@@ -875,6 +875,25 @@
         "title": "ConsoleTenantRow",
         "type": "object"
       },
+      "DiffSegment": {
+        "description": "One sentence of a diff and what happened to it (AC-INV1).",
+        "properties": {
+          "op": {
+            "title": "Op",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "op",
+          "text"
+        ],
+        "title": "DiffSegment",
+        "type": "object"
+      },
       "Empty": {
         "description": "`{}`: the neutral answer of the code request and the accepted re-issue.",
         "properties": {},
@@ -1769,6 +1788,239 @@
         "title": "MembersPage",
         "type": "object"
       },
+      "ObligationAsOfQuery": {
+        "description": "`asOf` on the obligation read: the version in force on that date, today in the\ntenant's time zone by default (AC-INV1).",
+        "properties": {
+          "asOf": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asof"
+          }
+        },
+        "title": "ObligationAsOfQuery",
+        "type": "object"
+      },
+      "ObligationDetail": {
+        "description": "`GET /obligations/{obligationId}` (INV-03..INV-06): the duty as of a date, with its\nfacets, every version, the provisions it cites, the obligations beside it and its\nprovenance. The register overlay lands with chunk 8, the related changes with chunk 5.",
+        "properties": {
+          "binding": {
+            "title": "Binding",
+            "type": "boolean"
+          },
+          "bindingLevel": {
+            "$ref": "#/components/schemas/LibraryRef"
+          },
+          "dutyType": {
+            "$ref": "#/components/schemas/LibraryRef"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "inFootprint": {
+            "title": "Infootprint",
+            "type": "boolean"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/ObligationInstrumentSummary"
+          },
+          "outsideReason": {
+            "items": {
+              "$ref": "#/components/schemas/OutsideReason"
+            },
+            "title": "Outsidereason",
+            "type": "array"
+          },
+          "productScope": {
+            "title": "Productscope",
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/ObligationProvenance"
+          },
+          "provisions": {
+            "items": {
+              "$ref": "#/components/schemas/ObligationProvisionRef"
+            },
+            "title": "Provisions",
+            "type": "array"
+          },
+          "refLabel": {
+            "title": "Reflabel",
+            "type": "string"
+          },
+          "regime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LibraryRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "related": {
+            "items": {
+              "$ref": "#/components/schemas/RelatedObligation"
+            },
+            "title": "Related",
+            "type": "array"
+          },
+          "retention": {
+            "title": "Retention",
+            "type": "string"
+          },
+          "sanctionExposure": {
+            "title": "Sanctionexposure",
+            "type": "string"
+          },
+          "scope": {
+            "items": {
+              "$ref": "#/components/schemas/ScopeDimension"
+            },
+            "title": "Scope",
+            "type": "array"
+          },
+          "stableKey": {
+            "title": "Stablekey",
+            "type": "string"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalizedText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryRef"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalizedText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "translations": {
+            "items": {
+              "$ref": "#/components/schemas/LocalizedText"
+            },
+            "title": "Translations",
+            "type": "array"
+          },
+          "triggerFrequency": {
+            "title": "Triggerfrequency",
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObligationVersionRow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/ObligationVersionRow"
+            },
+            "title": "Versions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "stableKey",
+          "refLabel",
+          "title",
+          "instrument",
+          "regime",
+          "bindingLevel",
+          "binding",
+          "dutyType",
+          "triggerFrequency",
+          "retention",
+          "sanctionExposure",
+          "productScope",
+          "tags",
+          "scope",
+          "inFootprint",
+          "outsideReason",
+          "summary",
+          "translations",
+          "version",
+          "versions",
+          "provisions",
+          "related",
+          "provenance"
+        ],
+        "title": "ObligationDetail",
+        "type": "object"
+      },
+      "ObligationDiffQuery": {
+        "description": "`from` and `to` are version numbers, defaulting to the latest version against the one\nbefore it. `lang` asks for a language; the diff falls back to the reader's language\norder when neither version has it (INV-05).",
+        "properties": {
+          "from": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From"
+          },
+          "lang": {
+            "anyOf": [
+              {
+                "maxLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lang"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To"
+          }
+        },
+        "title": "ObligationDiffQuery",
+        "type": "object"
+      },
       "ObligationInstrumentRef": {
         "properties": {
           "key": {
@@ -1785,6 +2037,46 @@
           "shortName"
         ],
         "title": "ObligationInstrumentRef",
+        "type": "object"
+      },
+      "ObligationInstrumentSummary": {
+        "description": "The instrument an obligation belongs to, as \"Where it comes from\" reads it (INV-01).\nIts provisions and lineage live on the instrument's own read.",
+        "properties": {
+          "implementsNote": {
+            "title": "Implementsnote",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalizedText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "officialRef": {
+            "title": "Officialref",
+            "type": "string"
+          },
+          "shortName": {
+            "title": "Shortname",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "shortName",
+          "name",
+          "officialRef",
+          "implementsNote"
+        ],
+        "title": "ObligationInstrumentSummary",
         "type": "object"
       },
       "ObligationPage": {
@@ -1806,6 +2098,90 @@
           "total"
         ],
         "title": "ObligationPage",
+        "type": "object"
+      },
+      "ObligationProvenance": {
+        "description": "Where the record came from and when it was last checked against its source (INV-06).\n`verifiedBy` is a platform person or null: a seeded record has never been re-verified.",
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "createdModel": {
+            "title": "Createdmodel",
+            "type": "string"
+          },
+          "createdOrigin": {
+            "title": "Createdorigin",
+            "type": "string"
+          },
+          "lastVerifiedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastverifiedat"
+          },
+          "sourceLabel": {
+            "title": "Sourcelabel",
+            "type": "string"
+          },
+          "sourceUrl": {
+            "title": "Sourceurl",
+            "type": "string"
+          },
+          "verifiedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "createdOrigin",
+          "createdModel",
+          "createdAt",
+          "verifiedBy",
+          "lastVerifiedAt",
+          "sourceUrl",
+          "sourceLabel"
+        ],
+        "title": "ObligationProvenance",
+        "type": "object"
+      },
+      "ObligationProvisionRef": {
+        "description": "A provision the obligation cites (INV-02, INV-03), by reference and path. The\nverbatim text is the provision tree's, never this read's.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "refLabel": {
+            "title": "Reflabel",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "refLabel",
+          "path"
+        ],
+        "title": "ObligationProvisionRef",
         "type": "object"
       },
       "ObligationQuery": {
@@ -2042,6 +2418,55 @@
           "effectiveFrom"
         ],
         "title": "ObligationVersionRef",
+        "type": "object"
+      },
+      "ObligationVersionRow": {
+        "description": "One summary version on the card's version list (INV-04): when it took effect,\n`effectiveTo` derived as the day before the next version did, and when a library editor\napproved it. The approver is not named: the card names none.",
+        "properties": {
+          "approvedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approvedat"
+          },
+          "effectiveFrom": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartialDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effectiveTo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartialDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "versionNumber": {
+            "title": "Versionnumber",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "versionNumber",
+          "effectiveFrom",
+          "effectiveTo",
+          "approvedAt"
+        ],
+        "title": "ObligationVersionRow",
         "type": "object"
       },
       "Onboarding": {
@@ -2866,6 +3291,45 @@
           "expiresIn"
         ],
         "title": "RefreshResult",
+        "type": "object"
+      },
+      "RelatedObligation": {
+        "description": "An obligation a reader should see beside this one (INV-03), with the relation as a\nvocabulary row.",
+        "properties": {
+          "binding": {
+            "title": "Binding",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/ObligationInstrumentRef"
+          },
+          "relation": {
+            "$ref": "#/components/schemas/LibraryRef"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalizedText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "instrument",
+          "binding",
+          "relation"
+        ],
+        "title": "RelatedObligation",
         "type": "object"
       },
       "RoleCreate": {
@@ -3932,6 +4396,65 @@
           "label"
         ],
         "title": "TermRef",
+        "type": "object"
+      },
+      "VersionDiff": {
+        "description": "\"Show what changed\" between two versions (INV-04, AC-INV1, INV-05): the two version\nnumbers and the dates they took effect, the language both versions have and whether a\nmachine translated it, and the sentences. Serves obligations now and provisions next.",
+        "properties": {
+          "fromEffective": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartialDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fromVersion": {
+            "title": "Fromversion",
+            "type": "integer"
+          },
+          "isMachine": {
+            "title": "Ismachine",
+            "type": "boolean"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/DiffSegment"
+            },
+            "title": "Segments",
+            "type": "array"
+          },
+          "toEffective": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PartialDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "toVersion": {
+            "title": "Toversion",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fromVersion",
+          "toVersion",
+          "fromEffective",
+          "toEffective",
+          "language",
+          "isMachine",
+          "segments"
+        ],
+        "title": "VersionDiff",
         "type": "object"
       },
       "VocabularyCreateBody": {
@@ -6094,6 +6617,156 @@
           }
         ],
         "summary": "List Obligations",
+        "tags": [
+          "Library"
+        ]
+      }
+    },
+    "/api/v1/obligations/{obligation_id}": {
+      "get": {
+        "operationId": "getObligation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "obligation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Obligation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "asOf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Asof"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObligationDetail"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Get Obligation",
+        "tags": [
+          "Library"
+        ]
+      }
+    },
+    "/api/v1/obligations/{obligation_id}/diff": {
+      "get": {
+        "operationId": "getObligationDiff",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "obligation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Obligation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 8,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionDiff"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "Get Obligation Diff",
         "tags": [
           "Library"
         ]

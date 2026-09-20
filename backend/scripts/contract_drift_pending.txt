@@ -40,12 +40,9 @@ GET /integrations/tickets chunk 13
 GET /me/whats-new chunk 1
 GET /me/work chunk 1
 GET /notifications chunk 10
-GET /obligations/{} chunk 3
 GET /obligations/{}/attestations chunk 8
-GET /obligations/{}/changes chunk 3
-GET /obligations/{}/diff chunk 3
+GET /obligations/{}/changes chunk 5
 GET /obligations/{}/internal-links chunk 8
-GET /obligations/{}/versions chunk 3
 GET /obligations/{}/waivers chunk 8
 GET /problem-reports chunk 4
 GET /provisions/{}/versions chunk 3

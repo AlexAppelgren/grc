@@ -1,5 +1,6 @@
-"""Library builders for tests (playbook 8.1): an instrument, and an obligation with its
-title, scope terms, tags and summary versions. Each builder writes inside
+"""Library builders for tests (playbook 8.1): an instrument, a provision, an obligation
+with its title, scope terms, tags, cited provisions and summary versions, and a relation
+between two obligations. Each builder writes inside
 `library_write()` and sets every field when it creates a row; nothing here saves or
 updates a row afterwards, because version, summary and text rows are append-only.
 
@@ -18,16 +19,19 @@ from apps.library.models import (
     InstrumentTitle,
     Jurisdiction,
     Obligation,
+    ObligationProvision,
+    ObligationRelation,
     ObligationSummary,
     ObligationTag,
     ObligationTerm,
     ObligationTitle,
     ObligationVersion,
+    Provision,
 )
 from apps.proposals.models import OriginType
 from apps.shared.models import Tenant
 from apps.shared.tenancy import library_write
-from apps.taxonomy.models import DutyType, InstrumentLevel, LibraryTag, TaxonomyTerm
+from apps.taxonomy.models import DutyType, InstrumentLevel, LibraryTag, ProvisionKind, RelationType, TaxonomyTerm
 
 REASON = "test builder"
 SOURCE_URL = "https://www.example.test/source"
@@ -67,6 +71,27 @@ def instrument(
     return row
 
 
+def provision(on: Instrument, *, key: str, ref_label: str = "9 kap.", kind: str = "chapter") -> Provision:
+    """A node of an instrument's tree, which an obligation cites. Its verbatim text versions
+    belong to the provision tree read, never to an obligation."""
+    with library_write(REASON):
+        return Provision.objects.create(
+            stable_key=key,
+            instrument=on,
+            kind=ProvisionKind.objects.get(key=kind),
+            ref_label=ref_label,
+            path=f"{on.short_name} > {ref_label}",
+        )
+
+
+def relate(source: Obligation, target: Obligation, *, relation: str = "related") -> None:
+    """Files `target` beside `source`, the direction the fixture writes a relation in."""
+    with library_write(REASON):
+        ObligationRelation.objects.create(
+            from_obligation=source, to_obligation=target, relation_type=RelationType.objects.get(key=relation)
+        )
+
+
 def _texts(model: type[ObligationTitle] | type[ObligationSummary], parent: str, row: object, texts: Mapping[str, str]) -> None:
     """The first language is the original; every other one is a machine translation
     until a person confirms it (INV-05), as the seeded library has them."""
@@ -83,9 +108,14 @@ def obligation(
     duty_type: str = "conduct",
     terms: Iterable[str] = (),
     tags: Iterable[str] = (),
+    cites: Iterable[Provision] = (),
     versions: Iterable[tuple[datetime.date | None, Mapping[str, str]]] = DEFAULT_VERSIONS,
     owner_tenant: Tenant | None = None,
     last_verified_at: datetime.datetime | None = None,
+    product_scope: str = "",
+    trigger_frequency: str = "",
+    retention: str = "",
+    sanction_exposure: str = "",
 ) -> Obligation:
     """An obligation of `on`. `versions` are `(effective_from, {language: summary})` in
     version order, numbered from 1; a null date means since always."""
@@ -95,6 +125,10 @@ def obligation(
             instrument=on,
             ref_label=ref_label,
             duty_type=DutyType.objects.get(key=duty_type),
+            product_scope=product_scope,
+            trigger_frequency=trigger_frequency,
+            retention=retention,
+            sanction_exposure=sanction_exposure,
             owner_tenant=owner_tenant,
             created_origin=OriginType.USER.value,
             source_url=SOURCE_URL,
@@ -106,6 +140,8 @@ def obligation(
             ObligationTerm.objects.create(obligation=row, term=term(ref))
         for tag in tags:
             ObligationTag.objects.create(obligation=row, tag=LibraryTag.objects.get(key=tag))
+        for cited in cites:
+            ObligationProvision.objects.create(obligation=row, provision=cited)
         for number, (effective_from, summaries) in enumerate(versions, start=1):
             version = ObligationVersion.objects.create(obligation=row, version_number=number, effective_from=effective_from)
             _texts(ObligationSummary, "version", version, summaries)
