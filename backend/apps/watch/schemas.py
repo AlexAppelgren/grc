@@ -22,6 +22,13 @@ zone it comes from and what a reader must not conclude from it (Alex's API rule,
   `tenant_id` under row-level security, never leave the bank, and are invisible to bleqq,
   to every other bank and to every model endpoint (NFR-01, NFR-04, D-07).
 
+The shapes the two lists answer extend `LibraryResponse` rather than `CamelSchema`: the
+server builds them from plain values and never from an ORM object, and that base is the
+one that answers a validated instance as it is instead of walking every field of every
+nested object through Ninja's Django getter, which was most of a full page's server time
+(NFR-02, measured 2026-09-19 and again 2026-09-21). The aliases and the published contract
+are identical either way.
+
 Limits, in words as well as in the keywords: every list here pages at 20 by default and
 100 at most, and a `limit` above the maximum answers 422 rather than being clamped
 (`apps/shared/schemas.py:PageQuery`). No record in this app is versioned in R1, so no
@@ -42,7 +49,7 @@ from ninja import Field
 from pydantic import ConfigDict, HttpUrl
 from pydantic.json_schema import JsonDict
 
-from apps.library.schemas import LibraryRef
+from apps.library.schemas import LibraryRef, LibraryResponse
 from apps.shared.schemas import CamelSchema, PageQuery, WriteBody
 
 __all__ = ["CamelSchema"]
@@ -723,7 +730,7 @@ class WatchObligationLinkInput(WriteBody):
     )
 
 
-class WatchObligationLink(CamelSchema):
+class WatchObligationLink(LibraryResponse):
     """A link the agent suggested or a person set. `confirmed` is the library editor's
     decision; a bank's own decision lives on its case, never here (WAT-04, ruling C)."""
 
@@ -1211,7 +1218,7 @@ class WatchChange(CamelSchema):
 # ---------------------------------------------------------------------------------------
 # The tenant-facing reads (WAT-02, WAT-03, WAT-04, CAS-01, FP-03, FP-04)
 # ---------------------------------------------------------------------------------------
-class WatchFact(CamelSchema):
+class WatchFact(LibraryResponse):
     """A classification fact on a change — its type, a flag or a scope term — with how it
     got there.
 
@@ -1236,7 +1243,7 @@ class WatchFact(CamelSchema):
     suggested: bool = Field(description=_SUGGESTED, examples=[True])
 
 
-class WatchCaseObligationDecision(CamelSchema):
+class WatchCaseObligationDecision(LibraryResponse):
     """What this bank decided about one suggested obligation link. The bank's own zone: it
     is invisible to bleqq, to every other bank and to every model endpoint, and it changes
     no library row (WAT-04, ruling C)."""
@@ -1267,7 +1274,7 @@ class WatchCaseObligationDecision(CamelSchema):
     )
 
 
-class WatchChangeCase(CamelSchema):
+class WatchChangeCase(LibraryResponse):
     """This bank's own case for the change: its judgement and its work. Everything here is
     in the bank's zone under row-level security. No other bank and no bleqq person sees it,
     and none of it reaches a model endpoint (NFR-01, NFR-04, D-07)."""
@@ -1367,7 +1374,7 @@ class WatchChangeCase(CamelSchema):
     )
 
 
-class WatchChangeRow(CamelSchema):
+class WatchChangeRow(LibraryResponse):
     """One line of the watch feed: the library's facts about a reform beside this bank's
     own case for it. The library half is the same for every bank; the `case` half is this
     bank's alone and never leaves it."""
@@ -1455,7 +1462,7 @@ class WatchChangeDetail(WatchChange):
     )
 
 
-class WatchChangePage(CamelSchema):
+class WatchChangePage(LibraryResponse):
     """`GET /changes`: one page of the watch feed."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"items": [CHANGE_ROW_EXAMPLE], "total": 42}]})
@@ -1595,7 +1602,7 @@ class WatchChangeQuery(PageQuery, CamelSchema):
     )
 
 
-class WatchConsoleChangeRow(CamelSchema):
+class WatchConsoleChangeRow(LibraryResponse):
     """One line of the console's Change facts queue: a library change and the facts an
     agent proposed for it. Library only — a platform console session has no tenant, so no
     bank's case, footprint, owner or 'So what?' is joined or answered here (NFR-01)."""
@@ -1643,7 +1650,7 @@ class WatchConsoleChangeRow(CamelSchema):
     )
 
 
-class WatchConsoleChangePage(CamelSchema):
+class WatchConsoleChangePage(LibraryResponse):
     """`GET /console/changes`: one page of the console's Change facts queue."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"items": [CONSOLE_ROW_EXAMPLE], "total": 7}]})
@@ -1699,7 +1706,15 @@ class WatchObligationChangePage(CamelSchema):
         json_schema_extra={"examples": [{"items": [CHANGE_ROW_EXAMPLE], "total": 3, "openCount": 1}]}
     )
 
-    items: list[WatchChangeRow] = Field(description="The changes linked to this obligation, newest key date first, with the reader's own case on each.")
+    items: list[WatchChangeRow] = Field(
+        description=(
+            "The changes linked to this obligation, with the reader's own case on each. The "
+            "links a library editor has confirmed come first, because they are the ones "
+            "somebody has checked; inside each group the rows are ordered by key date, newest "
+            "first. An unconfirmed link is a suggestion, never a statement that the change "
+            "does not affect the duty."
+        )
+    )
     total: int = Field(description="How many changes are linked to the obligation, across every page. Zero is a 200.", examples=[3])
     open_count: int = Field(
         description=(

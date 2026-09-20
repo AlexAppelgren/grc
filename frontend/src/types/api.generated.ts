@@ -489,11 +489,11 @@ export interface paths {
          *     reads. Library facts, the same for every bank, changed only through an approved proposal;
          *     an authority's `key` never changes, so store the key and never the name.
          *
+         *     Ordered by the authority's key, so the list a picker renders is the same on every call.
+         *     An empty library would be a 200 with an empty array.
+         *
          *     Errors: `permission_denied` without `library.read` or `library:read`; `unauthenticated`
          *     without a credential.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         get: operations["listAuthorities"];
         put?: never;
@@ -731,12 +731,14 @@ export interface paths {
          *
          *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. An empty feed is a
          *     200 with an empty `items` and a `total` of 0, never a 404. Errors: `permission_denied`
-         *     when the session lacks `watch.read`, `unauthenticated` when there is no session, and
-         *     `validation_error` for a filter value the schema refuses — including the designed
-         *     `inFootprint`, which this build replaced with the single `footprint` value.
+         *     when the session lacks `watch.read`, `unauthenticated` when there is no session,
+         *     `not_found` when the session belongs to no bank, and `validation_error` for a filter
+         *     value the schema refuses — including the designed `inFootprint`, which this build
+         *     replaced with the single `footprint` value.
          *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
+         *     `footprint=watched` is answered and empty for now: a change's jurisdiction is derived
+         *     from its authority, which the market view is still waiting for, and an empty answer is
+         *     the honest one until it lands.
          */
         get: operations["listChanges"];
         put?: never;
@@ -767,15 +769,15 @@ export interface paths {
          *     `watch.read` in their own bank. Everything outside `case` is a library fact shared by
          *     every bank and changed only by a library editor or through a proposal; everything inside
          *     `case` is this bank's own and is invisible to bleqq, to every other bank and to every
-         *     model endpoint. A classification an agent proposed carries `suggested: true` until a
-         *     library editor confirms it, and must not be read as checked.
+         *     model endpoint. An obligation link says on itself whether a library editor confirmed it;
+         *     `confirmed: false` is a suggestion an agent made and must not be read as checked, nor as
+         *     a statement that the change does not touch that duty. The change's type, flags and scope
+         *     terms are the rows an agent put forward too, and a library editor confirms them in the
+         *     console rather than here.
          *
-         *     Errors: `not_found` when no change has that id, or when the caller may not see it — the
-         *     two are answered the same way on purpose, so no id can be probed; `permission_denied`
-         *     without `watch.read`; `unauthenticated` without a session.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
+         *     Errors: `not_found` when no change has that id, when the caller may not see it, or when
+         *     the session belongs to no bank — all answered the same way on purpose, so no id can be
+         *     probed; `permission_denied` without `watch.read`; `unauthenticated` without a session.
          */
         get: operations["getChange"];
         put?: never;
@@ -1151,9 +1153,6 @@ export interface paths {
          *     the reform was first seen. An empty queue is a 200 with an empty `items` and a `total` of
          *     0. Errors: `permission_denied` without `proposals.review`, `unauthenticated` without a
          *     session, `validation_error` for a filter value the schema refuses.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         get: operations["listConsoleChanges"];
         put?: never;
@@ -1581,13 +1580,13 @@ export interface paths {
          *     says nothing about whether the bank complies, which is a separate fact in the register
          *     (REG-02).
          *
-         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. An obligation no
-         *     change touches is a 200 with an empty `items`, a `total` of 0 and an `openCount` of 0.
-         *     Errors: `not_found` when no obligation has that id or the caller may not see it;
+         *     The links a library editor has confirmed come first; the rest follow the feed's own
+         *     order, newest key date first. Pages with `limit` and `offset`, 20 rows by default and
+         *     100 at most, and `openCount` is counted over every linked change rather than over the
+         *     page, so paging never changes it. An obligation no change touches is a 200 with an empty
+         *     `items`, a `total` of 0 and an `openCount` of 0. Errors: `not_found` when no obligation
+         *     has that id, when the caller may not see it, or when the session belongs to no bank;
          *     `permission_denied` without `watch.read`; `unauthenticated` without a session.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         get: operations["listObligationChanges"];
         put?: never;
@@ -9885,7 +9884,7 @@ export interface components {
         WatchObligationChangePage: {
             /**
              * Items
-             * @description The changes linked to this obligation, newest key date first, with the reader's own case on each.
+             * @description The changes linked to this obligation, with the reader's own case on each. The links a library editor has confirmed come first, because they are the ones somebody has checked; inside each group the rows are ordered by key date, newest first. An unconfirmed link is a suggestion, never a statement that the change does not affect the duty.
              */
             items: components["schemas"]["WatchChangeRow"][];
             /**

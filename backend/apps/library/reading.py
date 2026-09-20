@@ -52,7 +52,9 @@ from django.utils import timezone
 
 from apps.library.logic import in_force, version_diff
 from apps.library.models import (
+    Authority,
     Instrument,
+    JurisdictionLabel,
     Obligation,
     ObligationRelation,
     ObligationTag,
@@ -65,6 +67,7 @@ from apps.library.models import (
 )
 from apps.library.schemas import (
     DiffSegment,
+    LibraryAuthority,
     LibraryRef,
     LocalizedText,
     ObligationAsOfQuery,
@@ -555,16 +558,36 @@ def obligation_diff(order: list[str], obligation_id: uuid.UUID, query: Obligatio
 
 
 # ---------------------------------------------------------------------------------------
-# Chunk 5's two library reads, declared ahead of their logic (chunk 5 plan rule 1)
+# GET /authorities (FP-04, AGT-02, chunk 5 ruling E)
+# ---------------------------------------------------------------------------------------
+def list_authorities(order: list[str]) -> list[LibraryAuthority]:
+    """Every issuing authority the shared library knows, with its jurisdiction labelled in
+    the caller's language. Two queries: the authorities with their jurisdiction rows, and
+    every jurisdiction label at once.
+
+    It addresses no single record, so it needs no `_visible()` lookup: an authority is a
+    shared reference row, the same list for every bank and for every agent key.
+    """
+    authorities = list(Authority.objects.select_related("jurisdiction"))
+    jurisdictions = vocabulary_refs(JurisdictionLabel, (row.jurisdiction for row in authorities), order)
+    return [
+        LibraryAuthority(
+            id=row.id,
+            key=row.key,
+            short_name=row.short_name,
+            name=row.name,
+            jurisdiction=jurisdictions[row.jurisdiction_id],
+            url=row.url,
+        )
+        for row in authorities
+    ]
+
+
+# ---------------------------------------------------------------------------------------
+# Declared ahead of its logic (chunk 5 plan rule 1)
 # ---------------------------------------------------------------------------------------
 def _not_built(detail: str) -> NoReturn:
     raise ProblemError(status=501, code="not_built", detail=detail)
-
-
-def list_authorities() -> NoReturn:
-    """`GET /authorities`, the authority list chunk 3 cut to chunk 5 (ruling E). Built by
-    `c5-watch-change-reads`. It addresses no single record, so it needs no lookup."""
-    _not_built("The authority list is not built yet.")
 
 
 def get_record_sources() -> NoReturn:

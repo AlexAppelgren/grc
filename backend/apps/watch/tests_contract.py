@@ -2,12 +2,13 @@
 for the two lists of changes a person reads (WAT-01 to WAT-04, AGT-01, AGT-02, FP-03,
 FP-04, NFR-01; chunk 5 `c5-contract-api-agent` and `c5-contract-api-screens`).
 
-Each route is declared before the logic that serves it and answers 501 `not_built` from
-the named function in the module that will build it. What stands in front of that stub is
-what this file proves, per route: no credential is 401, the wrong scope or permission is
-403 naming what was needed, and a body the schema does not accept is 422 — a term, a tone
-or a colour never rides along unseen. Written before the routes existed (2026-09-20):
-every case below failed with 404 until `watch/api.py` landed.
+Every route here was declared before the logic that serves it, and the writes still answer
+501 `not_built` from the named function in the module that will build them. What stands in
+front of the logic is what this file proves, per route, whether or not that logic exists
+yet: no credential is 401, the wrong scope or permission is 403 naming what was needed, and
+a body the schema does not accept is 422 — a term, a tone or a colour never rides along
+unseen. Written before the routes existed (2026-09-20): every case below failed with 404
+until `watch/api.py` landed.
 
 The two lists are separate on purpose and the tests below pin that. `GET /changes` is a
 bank's feed under `watch.read` and joins that bank's own case; `GET /console/changes` is
@@ -22,8 +23,9 @@ below on 2026-09-21 while keeping every gate assertion they had. Everything else
 still declared ahead of its logic.
 
 The library fence is not weakened here: none of these routes writes an inventory row, and
-the modules they name (`watch/sources.py`, `registration.py`, `reading.py`) hold nothing
-but their stubs until their own tasks land.
+the write modules they name (`watch/sources.py`, `registration.py`, `curation.py`) hold
+nothing but their stubs until their own tasks land. `watch/reading.py` is built and writes
+nothing at all.
 """
 
 from __future__ import annotations
@@ -264,6 +266,10 @@ READ_ONLY_ROUTES = [
     ("listObligationChanges", OBLIGATION_CHANGES, perms.WATCH_READ),
     ("listConsoleChanges", CONSOLE_FEED, perms.PROPOSALS_REVIEW),
 ]
+# All four are built (`c5-watch-feed-read`, `c5-watch-change-reads`) and answer real rows;
+# what this file still guards is the gate in front of each, which is the same whatever the
+# logic behind it does. What they answer is proved on real data in `tests_reading.py` and
+# `tests_change_reads.py`.
 
 
 class WatchReadGates(TestCase):
@@ -347,19 +353,7 @@ class WatchReadGates(TestCase):
         self.assertEqual((settings.API_PAGE_SIZE_DEFAULT, settings.API_PAGE_SIZE_MAX), (20, 100))
         with stub_session(user_principal(permissions={perms.WATCH_READ}, tenant_id=uuid.uuid4())):
             at_the_cap = self.client.get(f"{FEED}?limit=100", **AS_SESSION)
-        self.assertEqual(at_the_cap.status_code, 501, "the maximum itself is accepted and reaches the stub")
-
-
-class WatchReadStubs(TestCase):
-    def test_a_session_with_its_permission_reaches_the_stub(self) -> None:
-        with stub_session(
-            user_principal(permissions={perms.WATCH_READ, perms.PROPOSALS_REVIEW}, tenant_id=uuid.uuid4())
-        ):
-            for name, url, _ in READ_ONLY_ROUTES:
-                with self.subTest(operation=name):
-                    response = self.client.get(url, **AS_SESSION)
-                    self.assertEqual(response.status_code, 501)
-                    problem = response.json()
-                    self.assertEqual(problem["code"], "not_built")
-                    self.assertEqual(response.headers["Content-Type"], "application/problem+json")
-                    self.assertNotIn("traceback", response.content.decode().lower())
+        # The maximum itself is accepted: what refuses this stubbed session is its tenant,
+        # which is an id no bank has. The page sizes themselves are proved on real rows in
+        # `tests_reading.py`.
+        self.assertNotEqual(at_the_cap.status_code, 422, "the maximum itself is accepted")

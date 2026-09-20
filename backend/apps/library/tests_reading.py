@@ -33,6 +33,7 @@ from apps.library.models import Obligation, Provision
 from apps.library.reading import obligation_scopes, scope_term_ids
 from apps.library.schemas import ObligationRow
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.library.seeds.library import seed_authorities
 from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
 from apps.shared.logging import JsonFormatter
@@ -781,3 +782,54 @@ class PrivateObligationIsolation(TransactionTestCase):
                     self.assertEqual(refused.json()["detail"], reading.NOT_FOUND)
             own = self.client.get(f"{URL}/{self.private.id}", HTTP_X_API_KEY=self.key_b.plain_key)
             self.assertEqual((own.status_code, own.json()["stableKey"]), (200, "obl-b-private"))
+
+
+class AuthorityListTests(TestCase):
+    """`GET /authorities` (FP-04, AGT-02, ruling E): the short reference list the watch
+    feed's authority filter, the console's Change facts queue and an agent run all read.
+    A library fact, the same for every bank and for every key."""
+
+    tenant: Tenant
+    reader: User
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        seed_reference()
+        seed_authorities()
+        cls.tenant = factories.tenant(slug="authority-reader")
+        cls.reader = factories.member_user(cls.tenant, roles=("reader",))
+
+    def get(self, headers: Any) -> Any:
+        return self.client.get("/api/v1/authorities", **headers)
+
+    def test_every_authority_with_its_jurisdiction(self) -> None:
+        response = self.get(sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual(response.status_code, 200, response.content)
+        rows = {row["key"]: row for row in response.json()}
+        self.assertIn("fi", rows)
+        self.assertEqual(rows["fi"]["shortName"], "FI")
+        self.assertEqual(rows["fi"]["name"], "Finansinspektionen")
+        self.assertEqual(rows["fi"]["url"], "https://www.fi.se/")
+        self.assertEqual(rows["fi"]["jurisdiction"], {"key": "se", "kind": "country", "label": "Sweden"})
+        self.assertEqual(rows["esma"]["jurisdiction"]["kind"], "supranational")
+        self.assertEqual([row["key"] for row in response.json()], sorted(rows), "ordered by the key a filter stores")
+        self.assertEqual(sorted(rows["fi"]), ["id", "jurisdiction", "key", "name", "shortName", "url"])
+
+    def test_one_query_for_the_rows_and_one_for_their_labels(self) -> None:
+        headers = sign_in(self.reader, tenant=self.tenant)
+        # The savepoint pair (2), the session (6), the caller's locale and the tenant's
+        # default language (2), the authorities with their jurisdictions (1) and one query
+        # for every jurisdiction label (1).
+        with self.assertNumQueries(2 + 6 + 2 + 1 + 1):
+            self.assertEqual(self.get(headers).status_code, 200)
+
+    def test_a_person_needs_library_read_and_a_key_needs_the_scope(self) -> None:
+        self.assertEqual(self.get({}).status_code, 401)
+        without = user_principal(permissions={perms.CASES_READ}, tenant_id=self.tenant.id)
+        with stub_session(without):
+            refused = self.get({"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"})
+        self.assertEqual((refused.status_code, refused.json()["requiredPermission"]), (403, perms.LIBRARY_READ))
+        no_scope = factories.api_key(self.tenant, scopes=(perms.SCOPE_CHANGES_WRITE,))
+        self.assertEqual(self.get({"HTTP_X_API_KEY": no_scope.plain_key}).status_code, 403)
+        key = factories.api_key(self.tenant, scopes=(perms.SCOPE_LIBRARY_READ,))
+        self.assertEqual(self.get({"HTTP_X_API_KEY": key.plain_key}).status_code, 200)

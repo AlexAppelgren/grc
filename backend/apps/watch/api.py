@@ -37,7 +37,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, PrincipalKind, SessionAuth
 from apps.shared.permissions import requires_permission, requires_scope
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, deny, principal, require_any
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, deny, principal, require_any
 from apps.taxonomy.reading import language_order
 from apps.watch import curation, reading, registration, sources
 from apps.watch.schemas import (
@@ -226,14 +226,17 @@ def list_changes(request: HttpRequest, query: Query[WatchChangeQuery]) -> Any:
 
     Pages with `limit` and `offset`, 20 rows by default and 100 at most. An empty feed is a
     200 with an empty `items` and a `total` of 0, never a 404. Errors: `permission_denied`
-    when the session lacks `watch.read`, `unauthenticated` when there is no session, and
-    `validation_error` for a filter value the schema refuses — including the designed
-    `inFootprint`, which this build replaced with the single `footprint` value.
+    when the session lacks `watch.read`, `unauthenticated` when there is no session,
+    `not_found` when the session belongs to no bank, and `validation_error` for a filter
+    value the schema refuses — including the designed `inFootprint`, which this build
+    replaced with the single `footprint` value.
 
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    `footprint=watched` is answered and empty for now: a change's jurisdiction is derived
+    from its authority, which the market view is still waiting for, and an empty answer is
+    the honest one until it lands.
     """
-    return reading.list_changes()
+    tenant = caller_tenant(request)
+    return reading.list_changes(tenant, language_order(request, tenant=tenant), query)
 
 
 @router.get(
@@ -262,11 +265,8 @@ def list_console_changes(request: HttpRequest, query: Query[WatchConsoleChangeQu
     the reform was first seen. An empty queue is a 200 with an empty `items` and a `total` of
     0. Errors: `permission_denied` without `proposals.review`, `unauthenticated` without a
     session, `validation_error` for a filter value the schema refuses.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return reading.list_console_changes()
+    return reading.list_console_changes(language_order(request), query)
 
 
 @router.get(
@@ -290,17 +290,18 @@ def get_change(request: HttpRequest, change_id: uuid.UUID = Path(..., descriptio
     `watch.read` in their own bank. Everything outside `case` is a library fact shared by
     every bank and changed only by a library editor or through a proposal; everything inside
     `case` is this bank's own and is invisible to bleqq, to every other bank and to every
-    model endpoint. A classification an agent proposed carries `suggested: true` until a
-    library editor confirms it, and must not be read as checked.
+    model endpoint. An obligation link says on itself whether a library editor confirmed it;
+    `confirmed: false` is a suggestion an agent made and must not be read as checked, nor as
+    a statement that the change does not touch that duty. The change's type, flags and scope
+    terms are the rows an agent put forward too, and a library editor confirms them in the
+    console rather than here.
 
-    Errors: `not_found` when no change has that id, or when the caller may not see it — the
-    two are answered the same way on purpose, so no id can be probed; `permission_denied`
-    without `watch.read`; `unauthenticated` without a session.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    Errors: `not_found` when no change has that id, when the caller may not see it, or when
+    the session belongs to no bank — all answered the same way on purpose, so no id can be
+    probed; `permission_denied` without `watch.read`; `unauthenticated` without a session.
     """
-    return reading.get_change()
+    tenant = caller_tenant(request)
+    return reading.get_change(tenant, language_order(request, tenant=tenant), change_id)
 
 
 @router.get(
@@ -330,15 +331,16 @@ def list_obligation_changes(
     says nothing about whether the bank complies, which is a separate fact in the register
     (REG-02).
 
-    Pages with `limit` and `offset`, 20 rows by default and 100 at most. An obligation no
-    change touches is a 200 with an empty `items`, a `total` of 0 and an `openCount` of 0.
-    Errors: `not_found` when no obligation has that id or the caller may not see it;
+    The links a library editor has confirmed come first; the rest follow the feed's own
+    order, newest key date first. Pages with `limit` and `offset`, 20 rows by default and
+    100 at most, and `openCount` is counted over every linked change rather than over the
+    page, so paging never changes it. An obligation no change touches is a 200 with an empty
+    `items`, a `total` of 0 and an `openCount` of 0. Errors: `not_found` when no obligation
+    has that id, when the caller may not see it, or when the session belongs to no bank;
     `permission_denied` without `watch.read`; `unauthenticated` without a session.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return reading.list_obligation_changes()
+    tenant = caller_tenant(request)
+    return reading.list_obligation_changes(tenant, language_order(request, tenant=tenant), obligation_id, page)
 
 
 # ---------------------------------------------------------------------------------------

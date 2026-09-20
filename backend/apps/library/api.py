@@ -391,16 +391,16 @@ def list_authorities(request: HttpRequest) -> Any:
     reads. Library facts, the same for every bank, changed only through an approved proposal;
     an authority's `key` never changes, so store the key and never the name.
 
+    Ordered by the authority's key, so the list a picker renders is the same on every call.
+    An empty library would be a 200 with an empty array.
+
     Errors: `permission_denied` without `library.read` or `library:read`; `unauthenticated`
     without a credential.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; FP-04, AGT-02).
     # A short fixed reference list, answered as a plain array like the other reference reads.
     require_library_read(request)
-    return reading.list_authorities()
+    return reading.list_authorities(language_order(request))
 
 
 @router.get(

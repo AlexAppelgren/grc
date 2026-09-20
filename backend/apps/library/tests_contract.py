@@ -8,8 +8,10 @@ can read it: that is how a run re-checks a library record against the page it ca
 without holding a single write scope, and the correction it finds is a proposal, never an
 edit (AGT-01, item 3, PRO-01).
 
-Each answers 501 `not_built` from the named function in `library/reading.py`, behind the
-same logic gate chunk 3's record reads use. Written before the routes existed: both cases
+Both sit behind the same logic gate chunk 3's record reads use, which is what this file
+proves. `GET /authorities` is built (`c5-watch-change-reads`) and answers rows, proved on
+real data in `tests_reading.py`; a record's citations still answer 501 `not_built` from
+the named function in `library/reading.py`. Written before the routes existed: both cases
 below failed with 404 until the routes landed.
 """
 
@@ -40,6 +42,8 @@ LIBRARY_READS = [
     ("listAuthorities", "/api/v1/authorities"),
     ("getRecordSources", f"/api/v1/obligations/{OBLIGATION}/sources"),
 ]
+# The one of them still declared ahead of its logic (`c5-library-recheck`).
+STILL_DECLARED_AHEAD = {"getRecordSources"}
 
 
 class LibraryReadGates(TestCase):
@@ -76,13 +80,16 @@ class LibraryReadGates(TestCase):
         with stub_api_key(agent_principal(scopes={perms.SCOPE_LIBRARY_READ})):
             for name, url in LIBRARY_READS:
                 with self.subTest(operation=name):
-                    self.assertEqual(self.client.get(url, **AS_KEY).status_code, 501)
+                    # Past the gate: the built read answers rows, the declared one its stub.
+                    self.assertIn(self.client.get(url, **AS_KEY).status_code, (200, 501))
 
 
 class LibraryReadStubs(TestCase):
     def test_a_session_with_library_read_reaches_the_stub(self) -> None:
         with stub_session(user_principal(permissions={perms.LIBRARY_READ}, tenant_id=uuid.uuid4())):
             for name, url in LIBRARY_READS:
+                if name not in STILL_DECLARED_AHEAD:
+                    continue
                 with self.subTest(operation=name):
                     response = self.client.get(url, **AS_SESSION)
                     self.assertEqual(response.status_code, 501)
