@@ -502,6 +502,19 @@ contract does not allow. Log the record id instead. The compliance lint
 checks both classes. Logs contain personal data by design and inherit a
 retention limit.
 
+### 4.8 The specification documents itself
+
+A bank's integration team reads `openapi.json` and often nothing else, so the
+text lives in `Field(description=..., examples=[...])` and in the view's
+docstring, and `backend/scripts/openapi_quality.py` gates it (CONVENTIONS 1.8).
+
+- Every request and response property carries a `description` saying what it means to a bank and when it is used, never its type and never the field name again.
+- Every property whose meaning is not obvious carries an `examples` entry from the prototype's data; a credential-shaped field carries none.
+- A vocabulary-backed `key` or `kind` says "a key from the `<name>` list, which an admin manages", and never pretends to be an enum (enums in code are for kinds only).
+- A set fixed in code names each of its values; a caller-invented key says it is chosen by the bank and never changed afterwards.
+- Every operation keeps its summary and gains a description naming the permission or scope it needs, the problem codes it can answer with, and what a bank uses it for.
+- What genuinely needs nothing goes in `scripts/openapi_quality_allowlist.txt` with its reason; a line that suppresses nothing fails, so the list shrinks as each app is documented.
+
 ---
 
 ## 5. Structural guard tests (build these first, keep them forever)
@@ -827,6 +840,7 @@ D); CI is insurance, not first detection.
 | CodeQL (own SARIF gate, medium and above) | Injection, traversal, unsafe deserialisation. Findings are accepted per fingerprint with a reason, never per rule; stale acceptances are reported so the list cannot rot into a mute |
 | Requirements coverage | A PRD requirement with no scenario, or a scenario with no test |
 | Contract drift | A designed operation in `docs/inputs/openapi.yaml` that is missing or reshaped without an entry in `INPUT_DELTAS.md` |
+| OpenAPI quality | A property or operation reaching the spec with no description, a description that only restates the field name or its type, or an enumerated or keyed field that never says where its values come from (Section 4.8) |
 | Search and classification evaluation | Retrieval or agent tagging quality dropping beyond the recorded tolerance |
 | Message catalogs | A UI string missing in a shipped language |
 | Pill gallery screenshot | The design's tones, slots and labels drifting, in either theme |

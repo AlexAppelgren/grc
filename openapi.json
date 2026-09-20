@@ -13,14 +13,29 @@
                 "type": "null"
               }
             ],
+            "description": "When it should stop working, UTC; a moment already past answers 422 `expiry_in_past`. Leave it out for a key the bank will revoke by hand.",
+            "examples": [
+              "2027-09-01T10:15:00Z"
+            ],
             "title": "Expiresat"
           },
           "name": {
+            "description": "What this key is for, so a later administrator can tell what revoking it would break.",
+            "examples": [
+              "Nightly watch agent"
+            ],
             "maxLength": 200,
             "title": "Name",
             "type": "string"
           },
           "scopes": {
+            "description": "What the key may reach; at least one, and an unknown one answers 422 `unknown_key`. The set is fixed in code, and none of them reaches the shared library.",
+            "examples": [
+              [
+                "changes:write",
+                "library:read"
+              ]
+            ],
             "items": {
               "type": "string"
             },
@@ -37,8 +52,13 @@
         "type": "object"
       },
       "ApiKeyCreated": {
+        "description": "The one answer that carries the secret. It is shown once, so a bank stores it in\nits own vault there and then; nothing can hand it out again.",
         "properties": {
           "createdAt": {
+            "description": "When the bank issued this key, UTC; the security log carries the same moment.",
+            "examples": [
+              "2026-09-01T10:15:00Z"
+            ],
             "format": "date-time",
             "title": "Createdat",
             "type": "string"
@@ -53,26 +73,47 @@
                 "type": "null"
               }
             ],
+            "description": "When it stops working, UTC, or null where the bank set no expiry.",
+            "examples": [
+              "2027-09-01T10:15:00Z"
+            ],
             "title": "Expiresat"
           },
           "id": {
+            "description": "Name this key when revoking it.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
           "keyPrefix": {
+            "description": "The middle part of the key, for matching one in a log or a configuration file against this row later.",
+            "examples": [
+              "9f2c1a7b"
+            ],
             "title": "Keyprefix",
             "type": "string"
           },
           "name": {
+            "description": "What the bank said the key is for.",
+            "examples": [
+              "Nightly watch agent"
+            ],
             "title": "Name",
             "type": "string"
           },
           "plainKey": {
+            "description": "The secret itself, in the only answer that will ever carry it. Put it straight into the bank's vault; nothing can show it again.",
             "title": "Plainkey",
             "type": "string"
           },
           "scopes": {
+            "description": "What the key may reach, as it was created with.",
+            "examples": [
+              [
+                "changes:write",
+                "library:read"
+              ]
+            ],
             "items": {
               "type": "string"
             },
@@ -93,8 +134,13 @@
         "type": "object"
       },
       "ApiKeyOut": {
+        "description": "One key a bank's integration or agent authenticates with. The secret itself is\nshown once, at creation, and never again.",
         "properties": {
           "createdAt": {
+            "description": "When the bank issued this key, UTC; the security log carries the same moment.",
+            "examples": [
+              "2026-09-01T10:15:00Z"
+            ],
             "format": "date-time",
             "title": "Createdat",
             "type": "string"
@@ -109,14 +155,23 @@
                 "type": "null"
               }
             ],
+            "description": "When it stops working, UTC, or null where the bank set no expiry.",
+            "examples": [
+              "2027-09-01T10:15:00Z"
+            ],
             "title": "Expiresat"
           },
           "id": {
+            "description": "Name this key when revoking it.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
           "keyPrefix": {
+            "description": "The middle part of the key, which reads `cw_<prefix>_<secret>`: enough to match a key in a log or a configuration file against this row, and useless on its own.",
+            "examples": [
+              "9f2c1a7b"
+            ],
             "title": "Keyprefix",
             "type": "string"
           },
@@ -130,9 +185,17 @@
                 "type": "null"
               }
             ],
+            "description": "When it last authenticated a call, UTC, or null if never. It is how a bank finds the integration nobody runs any more.",
+            "examples": [
+              "2026-09-20T02:00:11Z"
+            ],
             "title": "Lastusedat"
           },
           "name": {
+            "description": "What the key is for, in the bank's own words, so a year later somebody knows what revoking it would break.",
+            "examples": [
+              "Nightly watch agent"
+            ],
             "title": "Name",
             "type": "string"
           },
@@ -146,9 +209,20 @@
                 "type": "null"
               }
             ],
+            "description": "When the bank withdrew it, UTC, or null while it is live. A revoked row stays for the audit trail.",
+            "examples": [
+              null
+            ],
             "title": "Revokedat"
           },
           "scopes": {
+            "description": "What the key may reach; each is narrow by design, and none of them reaches the shared library or a person's own records.",
+            "examples": [
+              [
+                "changes:write",
+                "library:read"
+              ]
+            ],
             "items": {
               "type": "string"
             },
@@ -172,6 +246,7 @@
       "ApiKeysPage": {
         "properties": {
           "items": {
+            "description": "The keys on this page, newest first.",
             "items": {
               "$ref": "#/components/schemas/ApiKeyOut"
             },
@@ -179,6 +254,10 @@
             "type": "array"
           },
           "total": {
+            "description": "How many keys the bank has in all, revoked ones included.",
+            "examples": [
+              4
+            ],
             "title": "Total",
             "type": "integer"
           }
@@ -389,6 +468,10 @@
       "CodeRequestBody": {
         "properties": {
           "email": {
+            "description": "Where to send the one-time enrolment code. The answer is the same whether or not anyone holds this address, so an outsider cannot learn who banks here.",
+            "examples": [
+              "anna@example-bank.test"
+            ],
             "maxLength": 254,
             "title": "Email",
             "type": "string"
@@ -403,11 +486,16 @@
       "CodeVerifyBody": {
         "properties": {
           "code": {
+            "description": "What the email said. It buys one enrolment and stops working the moment the person's first passkey exists.",
             "maxLength": 12,
             "title": "Code",
             "type": "string"
           },
           "email": {
+            "description": "The address the code was asked for, compared trimmed and lower-cased.",
+            "examples": [
+              "anna@example-bank.test"
+            ],
             "maxLength": 254,
             "title": "Email",
             "type": "string"
@@ -421,19 +509,32 @@
         "type": "object"
       },
       "ConsoleReissueBody": {
+        "description": "Why bleqq is putting a bank's member back on an emailed code (ID-05). Nobody can\ndo this without writing down what they checked, and the answer is audited.",
         "properties": {
           "outOfBandCheck": {
+            "description": "How the person was proved to be themselves away from the product: a call back on a known number, an identity check by the bank. Without it the answer is 422 `check_required`.",
+            "examples": [
+              "Called back on the bank's switchboard number and confirmed with the head of compliance."
+            ],
             "maxLength": 1000,
             "title": "Outofbandcheck",
             "type": "string"
           },
           "reason": {
+            "description": "Why the bank asked for this, in the words the audit trail and the bank's own security log will carry.",
+            "examples": [
+              "Every device was lost when the laptop was stolen; the bank's administrator asked us in ticket 4471."
+            ],
             "maxLength": 1000,
             "title": "Reason",
             "type": "string"
           },
           "ticketRef": {
             "default": "",
+            "description": "Where the request is recorded on bleqq's side, so an assessor can follow it out of the product.",
+            "examples": [
+              "SUP-4471"
+            ],
             "maxLength": 100,
             "title": "Ticketref",
             "type": "string"
@@ -450,6 +551,13 @@
         "description": "Create a bank and invite its first administrator in one action (ADM-02, ID-01).\nThe address must be the administrator's own: platform staff are separate accounts.",
         "properties": {
           "contentLanguages": {
+            "description": "The languages the bank will keep its own assessments in; at least one. Keys from the languages list, which an admin manages.",
+            "examples": [
+              [
+                "sv",
+                "en"
+              ]
+            ],
             "items": {
               "type": "string"
             },
@@ -458,32 +566,56 @@
             "type": "array"
           },
           "defaultLanguage": {
+            "description": "Which language the bank reads regulation in until someone chooses otherwise. A key from the languages list, which an admin manages.",
+            "examples": [
+              "sv"
+            ],
             "maxLength": 8,
             "title": "Defaultlanguage",
             "type": "string"
           },
           "firstAdminEmail": {
+            "description": "Where the first invitation goes. It must belong to somebody at the bank, never to bleqq: from here on the bank invites its own people.",
+            "examples": [
+              "admin@example-bank.test"
+            ],
             "maxLength": 254,
             "title": "Firstadminemail",
             "type": "string"
           },
           "firstAdminTitle": {
             "default": "",
+            "description": "What that person does at the bank, shown beside their name; leave it empty if it is not known yet.",
+            "examples": [
+              "Administrator"
+            ],
             "maxLength": 200,
             "title": "Firstadmintitle",
             "type": "string"
           },
           "name": {
+            "description": "What the bank calls itself; it goes on its screens and its exports.",
+            "examples": [
+              "Example Bank AB"
+            ],
             "maxLength": 200,
             "title": "Name",
             "type": "string"
           },
           "slug": {
+            "description": "The short name for links and support conversations: lower-case letters, digits and hyphens, unique across banks, and never changed afterwards.",
+            "examples": [
+              "example-bank"
+            ],
             "maxLength": 80,
             "title": "Slug",
             "type": "string"
           },
           "timezone": {
+            "description": "The zone the bank's days are counted in, as an IANA name, so its deadlines fall where its people sit.",
+            "examples": [
+              "Europe/Stockholm"
+            ],
             "maxLength": 64,
             "title": "Timezone",
             "type": "string"
@@ -503,6 +635,7 @@
       "ConsoleTenantPage": {
         "properties": {
           "items": {
+            "description": "The banks on this page, in order of their short name.",
             "items": {
               "$ref": "#/components/schemas/ConsoleTenantRow"
             },
@@ -510,6 +643,10 @@
             "type": "array"
           },
           "total": {
+            "description": "How many banks there are in all.",
+            "examples": [
+              12
+            ],
             "title": "Total",
             "type": "integer"
           }
@@ -525,6 +662,10 @@
         "description": "One bank as the platform console lists it (ADM-02). No member count and no\ntenant-side content: a platform session reads the tenant row and nothing under it.",
         "properties": {
           "createdAt": {
+            "description": "When the bank was created here, UTC.",
+            "examples": [
+              "2026-01-15T09:30:00Z"
+            ],
             "format": "date-time",
             "title": "Createdat",
             "type": "string"
@@ -537,22 +678,36 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Which language the bank reads regulation in by default, or null before it has picked one."
           },
           "id": {
+            "description": "The bank, for the console's own calls about it.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
           "name": {
+            "description": "The bank as it names itself.",
+            "examples": [
+              "Example Bank AB"
+            ],
             "title": "Name",
             "type": "string"
           },
           "slug": {
+            "description": "The bank's short name in links and support conversations.",
+            "examples": [
+              "example-bank"
+            ],
             "title": "Slug",
             "type": "string"
           },
           "status": {
+            "description": "`active` while the bank is working in the product, `deactivated` once its subscription has ended. The pair is fixed in code.",
+            "examples": [
+              "active"
+            ],
             "title": "Status",
             "type": "string"
           }
@@ -908,11 +1063,13 @@
         "description": "The invitation path: the link's token names the account, so no address travels.\nThe token rides in the body, never the path, so no access log holds it (F6, F29).",
         "properties": {
           "code": {
+            "description": "What the second email said, so a link alone, forwarded or intercepted, enrols nobody.",
             "maxLength": 12,
             "title": "Code",
             "type": "string"
           },
           "token": {
+            "description": "The same single-use value the opened link carried, proving which invitation is being answered.",
             "maxLength": 128,
             "title": "Token",
             "type": "string"
@@ -929,6 +1086,7 @@
         "description": "Opening the emailed link. The token rides in the body, never a path, so no server\nthat logs request lines ever holds it (security review F29).",
         "properties": {
           "token": {
+            "description": "What the emailed link carries. Single use, and it names the account, so no address has to travel with it.",
             "maxLength": 128,
             "title": "Token",
             "type": "string"
@@ -941,31 +1099,50 @@
         "type": "object"
       },
       "InvitationOut": {
+        "description": "One outstanding invitation or re-enrolment, so an administrator can see who has\nnot come in yet and resend or withdraw it.",
         "properties": {
           "createdAt": {
+            "description": "When it was sent, UTC; resending moves it.",
+            "examples": [
+              "2026-09-18T09:00:00Z"
+            ],
             "format": "date-time",
             "title": "Createdat",
             "type": "string"
           },
           "email": {
+            "description": "Where the invitation was sent, which is also the address the person will sign in with.",
+            "examples": [
+              "anna@example-bank.test"
+            ],
             "title": "Email",
             "type": "string"
           },
           "expiresAt": {
+            "description": "When it stops working, UTC. After this the link answers 410 `invitation_expired` and an administrator has to resend.",
+            "examples": [
+              "2026-09-25T09:00:00Z"
+            ],
             "format": "date-time",
             "title": "Expiresat",
             "type": "string"
           },
           "id": {
+            "description": "Name this invitation when resending or revoking it.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
           "kind": {
+            "description": "`invite` for somebody joining the bank, `reenrolment` for a member who lost every device and was verified again out of band. Both are fixed in code.",
+            "examples": [
+              "invite"
+            ],
             "title": "Kind",
             "type": "string"
           },
           "roles": {
+            "description": "What the person will hold the moment they enrol.",
             "items": {
               "$ref": "#/components/schemas/RoleRef"
             },
@@ -973,10 +1150,18 @@
             "type": "array"
           },
           "status": {
+            "description": "`pending` while it can still be used, `accepted` once the person enrolled, `revoked` when the bank withdrew it, `expired` when its window closed. The four are fixed in code.",
+            "examples": [
+              "pending"
+            ],
             "title": "Status",
             "type": "string"
           },
           "title": {
+            "description": "What they will do at the bank, as the invitation recorded it.",
+            "examples": [
+              "Compliance officer"
+            ],
             "title": "Title",
             "type": "string"
           }
@@ -997,6 +1182,7 @@
       "InvitationsPage": {
         "properties": {
           "items": {
+            "description": "The invitations on this page, newest first.",
             "items": {
               "$ref": "#/components/schemas/InvitationOut"
             },
@@ -1004,6 +1190,10 @@
             "type": "array"
           },
           "total": {
+            "description": "How many the bank has outstanding in all.",
+            "examples": [
+              3
+            ],
             "title": "Total",
             "type": "integer"
           }
@@ -1151,16 +1341,30 @@
         "type": "object"
       },
       "Me": {
+        "description": "Everything the shell needs about the caller in one read: who they are, which bank\nthey are inside, what they may do, and how far their enrolment has got.",
         "properties": {
           "enrolmentPending": {
+            "description": "True while the person has come in on an emailed code and has no passkey yet: the only thing they may do is add one.",
             "title": "Enrolmentpending",
             "type": "boolean"
           },
           "passkeyCount": {
+            "description": "How many live devices can sign this person in. At one, removing it is refused, so nobody locks themselves out.",
+            "examples": [
+              2
+            ],
             "title": "Passkeycount",
             "type": "integer"
           },
           "permissions": {
+            "description": "What this session may do, flattened from those roles. Screens and buttons branch on these keys, never on a role name, so a bank can rename or rebuild its roles freely.",
+            "examples": [
+              [
+                "cases.work",
+                "register.read",
+                "search.use"
+              ]
+            ],
             "items": {
               "type": "string"
             },
@@ -1168,6 +1372,7 @@
             "type": "array"
           },
           "platformRoles": {
+            "description": "The bleqq roles this account holds, empty for everyone at a bank. They govern the console, never a bank's own records.",
             "items": {
               "$ref": "#/components/schemas/RoleRef"
             },
@@ -1175,6 +1380,7 @@
             "type": "array"
           },
           "roles": {
+            "description": "The roles the bank has given this person, for showing; what they may actually do is the permission list below.",
             "items": {
               "$ref": "#/components/schemas/RoleRef"
             },
@@ -1191,6 +1397,10 @@
                 "type": "null"
               }
             ],
+            "description": "How long a fresh passkey check still counts, UTC, or null when the next sensitive action will ask for one.",
+            "examples": [
+              "2026-09-20T09:05:00Z"
+            ],
             "title": "Stepupvaliduntil"
           },
           "tenant": {
@@ -1201,10 +1411,12 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The bank this session is inside, or null for the platform staff, who sit in none of them."
           },
           "user": {
-            "$ref": "#/components/schemas/MeUser"
+            "$ref": "#/components/schemas/MeUser",
+            "description": "Who is signed in: the account the audit trail will name for everything done in this session."
           }
         },
         "required": [
@@ -1232,6 +1444,10 @@
                 "type": "null"
               }
             ],
+            "description": "Which language to answer in from now on. A key from the languages list, which an admin manages; an unknown one answers 422 `unknown_key`.",
+            "examples": [
+              "sv"
+            ],
             "title": "Locale"
           },
           "name": {
@@ -1244,6 +1460,10 @@
                 "type": "null"
               }
             ],
+            "description": "What the bank's screens should show beside this person's work; leave it out to keep what is there.",
+            "examples": [
+              "Sara Lindqvist"
+            ],
             "title": "Name"
           }
         },
@@ -1251,21 +1471,35 @@
         "type": "object"
       },
       "MeTenant": {
+        "description": "The bank this session is inside. Null on a platform session, which is inside none.",
         "properties": {
           "id": {
+            "description": "The bank whose rows this session may touch; every tenant record answers 404 outside it.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
           "name": {
+            "description": "The bank as it names itself, shown in the shell so nobody works in the wrong one.",
+            "examples": [
+              "Example Bank AB"
+            ],
             "title": "Name",
             "type": "string"
           },
           "slug": {
+            "description": "The bank's short name in links and support conversations; lower-case letters, digits and hyphens.",
+            "examples": [
+              "example-bank"
+            ],
             "title": "Slug",
             "type": "string"
           },
           "timezone": {
+            "description": "The zone the bank's own days are counted in, so a deadline falls where its compliance officers sit rather than where a server does.",
+            "examples": [
+              "Europe/Stockholm"
+            ],
             "title": "Timezone",
             "type": "string"
           }
@@ -1280,12 +1514,18 @@
         "type": "object"
       },
       "MeUser": {
+        "description": "The signed-in person.",
         "properties": {
           "email": {
+            "description": "Where this person's invitations and enrolment codes go; it is also how a bank recognises them in the member list.",
+            "examples": [
+              "sara@example-bank.test"
+            ],
             "title": "Email",
             "type": "string"
           },
           "id": {
+            "description": "The account, as every audit row and assignment in the bank refers to it.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
@@ -1299,9 +1539,17 @@
                 "type": "null"
               }
             ],
+            "description": "Which language the interface answers in, or null while the person has not chosen and the bank's default applies. A key from the languages list, which an admin manages.",
+            "examples": [
+              "sv"
+            ],
             "title": "Locale"
           },
           "name": {
+            "description": "What the bank's own screens show beside this person's decisions and comments.",
+            "examples": [
+              "Sara Lindqvist"
+            ],
             "title": "Name",
             "type": "string"
           }
@@ -1318,11 +1566,22 @@
       "MemberInvite": {
         "properties": {
           "email": {
+            "description": "Where the invitation goes. It must be the person's own address: an invitation is how someone joins the bank, and it is traceable to them alone.",
+            "examples": [
+              "anna@example-bank.test"
+            ],
             "maxLength": 254,
             "title": "Email",
             "type": "string"
           },
           "roleKeys": {
+            "description": "What the person will be able to do once they enrol; at least one is required. Keys from the bank's own roles list, which an admin manages.",
+            "examples": [
+              [
+                "compliance_officer",
+                "reader"
+              ]
+            ],
             "items": {
               "type": "string"
             },
@@ -1332,6 +1591,10 @@
           },
           "title": {
             "default": "",
+            "description": "What they do at the bank, shown beside their name. Leave it empty if the bank does not track titles.",
+            "examples": [
+              "Compliance officer"
+            ],
             "maxLength": 200,
             "title": "Title",
             "type": "string"
@@ -1345,12 +1608,21 @@
         "type": "object"
       },
       "MemberOut": {
+        "description": "One person at the bank as its administrator sees them, with the two counts an\nadministrator acts on: how many devices can sign them in, and how many sessions are live.",
         "properties": {
           "activeSessions": {
+            "description": "How many sign-ins are live right now, so an administrator can see what revoking them would end.",
+            "examples": [
+              2
+            ],
             "title": "Activesessions",
             "type": "integer"
           },
           "email": {
+            "description": "Where this person's invitations and re-enrolments go, and how an administrator recognises them.",
+            "examples": [
+              "owner@example-bank.test"
+            ],
             "title": "Email",
             "type": "string"
           },
@@ -1364,17 +1636,30 @@
                 "type": "null"
               }
             ],
+            "description": "When they last called the API, UTC, or null if never. It is how a bank finds the accounts nobody uses.",
+            "examples": [
+              "2026-09-19T15:20:03Z"
+            ],
             "title": "Lastseenat"
           },
           "name": {
+            "description": "What the bank's screens show beside their decisions.",
+            "examples": [
+              "Johan Berg"
+            ],
             "title": "Name",
             "type": "string"
           },
           "passkeyCount": {
+            "description": "How many live devices can sign this person in; zero means they are still waiting to enrol.",
+            "examples": [
+              1
+            ],
             "title": "Passkeycount",
             "type": "integer"
           },
           "roles": {
+            "description": "The roles this person holds at the bank, which is what their permissions are flattened from.",
             "items": {
               "$ref": "#/components/schemas/RoleRef"
             },
@@ -1382,14 +1667,23 @@
             "type": "array"
           },
           "status": {
+            "description": "`invited` while they have not enrolled, `active` once they have, `deactivated` when the bank has ended their access. The three are fixed in code.",
+            "examples": [
+              "active"
+            ],
             "title": "Status",
             "type": "string"
           },
           "title": {
+            "description": "What the person does at the bank, in the bank's own words; it sits beside their name so a reader knows who signed off.",
+            "examples": [
+              "Obligation owner, digital investing"
+            ],
             "title": "Title",
             "type": "string"
           },
           "userId": {
+            "description": "The account, as every audit row, case and assignment refers to it.",
             "format": "uuid",
             "title": "Userid",
             "type": "string"
@@ -1423,6 +1717,12 @@
                 "type": "null"
               }
             ],
+            "description": "The roles the person should hold from now on, replacing the ones they have; changing them needs a fresh passkey check. Keys from the bank's own roles list, which an admin manages. Leave it out to change only the title.",
+            "examples": [
+              [
+                "approver"
+              ]
+            ],
             "title": "Rolekeys"
           },
           "title": {
@@ -1435,6 +1735,10 @@
                 "type": "null"
               }
             ],
+            "description": "What they do at the bank from now on; leave it out to keep what is there.",
+            "examples": [
+              "Approver, head of compliance"
+            ],
             "title": "Title"
           }
         },
@@ -1444,6 +1748,7 @@
       "MembersPage": {
         "properties": {
           "items": {
+            "description": "The members on this page, in the order they joined the bank.",
             "items": {
               "$ref": "#/components/schemas/MemberOut"
             },
@@ -1451,6 +1756,10 @@
             "type": "array"
           },
           "total": {
+            "description": "How many members the bank has in all, so a screen can show how much is left to page through.",
+            "examples": [
+              42
+            ],
             "title": "Total",
             "type": "integer"
           }
@@ -1738,8 +2047,10 @@
         "type": "object"
       },
       "Onboarding": {
+        "description": "How far the bank has got in setting itself up (TEN-01).",
         "properties": {
           "steps": {
+            "description": "Every step and whether it is done, in the order a bank works through them.",
             "items": {
               "$ref": "#/components/schemas/OnboardingStep"
             },
@@ -1747,6 +2058,10 @@
             "type": "array"
           },
           "stepsDone": {
+            "description": "How many of the five are finished, so a screen can show progress without counting them itself.",
+            "examples": [
+              3
+            ],
             "title": "Stepsdone",
             "type": "integer"
           }
@@ -1759,12 +2074,18 @@
         "type": "object"
       },
       "OnboardingStep": {
+        "description": "One thing a bank does once, when it starts, before the product is any use to it.",
         "properties": {
           "done": {
+            "description": "Whether the bank has finished it. The home screen shows what is left and stops showing anything once all five are true.",
             "title": "Done",
             "type": "boolean"
           },
           "key": {
+            "description": "Which step this is: `profile`, `members`, `footprint`, `vocabularies` or `passkey`, in the order a bank works through them. The five are fixed in code.",
+            "examples": [
+              "footprint"
+            ],
             "title": "Key",
             "type": "string"
           }
@@ -1840,7 +2161,8 @@
       "PasskeyAssertBody": {
         "properties": {
           "credential": {
-            "$ref": "#/components/schemas/PasskeyAuthenticationCredential"
+            "$ref": "#/components/schemas/PasskeyAuthenticationCredential",
+            "description": "What `navigator.credentials.get()` returned, passed through untouched for the server to verify."
           }
         },
         "required": [
@@ -1861,6 +2183,10 @@
                 "type": "null"
               }
             ],
+            "description": "Where the passkey that answered lives: `platform` on this device, `cross-platform` on a key carried between them.",
+            "examples": [
+              "platform"
+            ],
             "title": "Authenticatorattachment"
           },
           "clientExtensionResults": {
@@ -1873,20 +2199,28 @@
                 "type": "null"
               }
             ],
+            "description": "Whatever WebAuthn extensions the browser ran, as the specification defines them. Nothing here changes the decision.",
             "title": "Clientextensionresults"
           },
           "id": {
+            "description": "The credential handle of the passkey that answered, base64url.",
             "title": "Id",
             "type": "string"
           },
           "rawId": {
+            "description": "The same handle as raw bytes, base64url, exactly as the browser produced it.",
             "title": "Rawid",
             "type": "string"
           },
           "response": {
-            "$ref": "#/components/schemas/WebAuthnAssertionResponse"
+            "$ref": "#/components/schemas/WebAuthnAssertionResponse",
+            "description": "The signed answer the server verifies against the stored public key."
           },
           "type": {
+            "description": "Always `public-key`, the only credential family WebAuthn defines.",
+            "examples": [
+              "public-key"
+            ],
             "title": "Type",
             "type": "string"
           }
@@ -1901,21 +2235,32 @@
         "type": "object"
       },
       "PasskeyOut": {
+        "description": "One passkey as its owner and a bank's administrator see it: enough to recognise a\ndevice and retire the one that was lost, and nothing that could be used to sign in.",
         "properties": {
           "backedUp": {
+            "description": "Whether the provider holds a copy, so losing the device does not lock the person out. A bank reads it when it judges how many passkeys someone needs.",
             "title": "Backedup",
             "type": "boolean"
           },
           "createdAt": {
+            "description": "When the passkey was enrolled, UTC. A bank's security review reads it beside the security log.",
+            "examples": [
+              "2026-09-14T08:12:31Z"
+            ],
             "format": "date-time",
             "title": "Createdat",
             "type": "string"
           },
           "deviceType": {
+            "description": "`single_device` for a passkey that lives on one authenticator, `multi_device` for one a provider syncs between the person's devices. The pair is fixed in code.",
+            "examples": [
+              "multi_device"
+            ],
             "title": "Devicetype",
             "type": "string"
           },
           "id": {
+            "description": "Name this passkey in the rename and remove calls.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
@@ -1930,13 +2275,28 @@
                 "type": "null"
               }
             ],
+            "description": "When it last signed anything, UTC; null until it is first used. It is how a bank spots the device nobody carries any more.",
+            "examples": [
+              "2026-09-20T06:41:02Z"
+            ],
             "title": "Lastusedat"
           },
           "nickname": {
+            "description": "What the person calls this device, or what the server named it from the device when they did not.",
+            "examples": [
+              "Work laptop"
+            ],
             "title": "Nickname",
             "type": "string"
           },
           "transports": {
+            "description": "How this passkey is reached: `internal`, `hybrid`, `usb` or `nfc`, as the authenticator reported at registration.",
+            "examples": [
+              [
+                "internal",
+                "hybrid"
+              ]
+            ],
             "items": {
               "type": "string"
             },
@@ -1959,6 +2319,10 @@
       "PasskeyPatch": {
         "properties": {
           "nickname": {
+            "description": "What this device should be called from now on, so a person can tell their laptop from their phone when they retire one.",
+            "examples": [
+              "Work laptop"
+            ],
             "maxLength": 100,
             "title": "Nickname",
             "type": "string"
@@ -1973,7 +2337,8 @@
       "PasskeyRegisterBody": {
         "properties": {
           "credential": {
-            "$ref": "#/components/schemas/PasskeyRegistrationCredential"
+            "$ref": "#/components/schemas/PasskeyRegistrationCredential",
+            "description": "What `navigator.credentials.create()` returned, passed through untouched for the server to verify."
           },
           "nickname": {
             "anyOf": [
@@ -1985,6 +2350,10 @@
                 "type": "null"
               }
             ],
+            "description": "What this passkey should be called in the person's own list. Leave it out and the server names it after the device, so the list stays readable without anyone typing.",
+            "examples": [
+              "Work laptop"
+            ],
             "title": "Nickname"
           }
         },
@@ -1995,6 +2364,7 @@
         "type": "object"
       },
       "PasskeyRegistered": {
+        "description": "The answer to enrolling a passkey: the new device, and the full session it earns\nwhen the emailed code is what got the person this far.",
         "properties": {
           "accessToken": {
             "anyOf": [
@@ -2005,6 +2375,7 @@
                 "type": "null"
               }
             ],
+            "description": "The bearer token of the full session the enrolment earned, or null when the caller already had one and simply added another device.",
             "title": "Accesstoken"
           },
           "expiresIn": {
@@ -2016,12 +2387,21 @@
                 "type": "null"
               }
             ],
+            "description": "Seconds of life in that bearer token, or null when no new session was issued.",
+            "examples": [
+              600
+            ],
             "title": "Expiresin"
           },
           "passkey": {
-            "$ref": "#/components/schemas/PasskeyOut"
+            "$ref": "#/components/schemas/PasskeyOut",
+            "description": "The device as it now appears in the person's own list."
           },
           "sessionKind": {
+            "description": "Always `full` here: from this passkey on, the emailed code is dead and the person signs in with the device. Fixed in code.",
+            "examples": [
+              "full"
+            ],
             "title": "Sessionkind",
             "type": "string"
           }
@@ -2047,6 +2427,10 @@
                 "type": "null"
               }
             ],
+            "description": "Where the passkey ended up: `platform` on this device, `cross-platform` on a key carried between devices. It is what the suggested name is derived from.",
+            "examples": [
+              "platform"
+            ],
             "title": "Authenticatorattachment"
           },
           "clientExtensionResults": {
@@ -2059,20 +2443,28 @@
                 "type": "null"
               }
             ],
+            "description": "Whatever WebAuthn extensions the browser ran, passed through as the specification defines them. Nothing here changes the decision.",
             "title": "Clientextensionresults"
           },
           "id": {
+            "description": "The credential handle the authenticator issued, base64url; it names this passkey in every later call.",
             "title": "Id",
             "type": "string"
           },
           "rawId": {
+            "description": "The same handle as raw bytes, base64url, exactly as the browser produced it.",
             "title": "Rawid",
             "type": "string"
           },
           "response": {
-            "$ref": "#/components/schemas/WebAuthnAttestationResponse"
+            "$ref": "#/components/schemas/WebAuthnAttestationResponse",
+            "description": "The authenticator's signed answer, which the server verifies before it trusts the new key."
           },
           "type": {
+            "description": "Always `public-key`, the only credential family WebAuthn defines.",
+            "examples": [
+              "public-key"
+            ],
             "title": "Type",
             "type": "string"
           }
@@ -2087,16 +2479,29 @@
         "type": "object"
       },
       "PermissionOut": {
+        "description": "One thing a role can be given. The role editor lists these; nothing else in the\nproduct decides anything from a role's name.",
         "properties": {
           "description": {
+            "description": "What holding it lets a person do, in the words the role editor shows.",
+            "examples": [
+              "Sign off a case worked by someone else."
+            ],
             "title": "Description",
             "type": "string"
           },
           "group": {
+            "description": "The area this belongs to, taken from the part before the dot, so the editor can show permissions in sections.",
+            "examples": [
+              "cases"
+            ],
             "title": "Group",
             "type": "string"
           },
           "key": {
+            "description": "What a role stores and what a screen branches on. The set is fixed in code, one per capability the product has.",
+            "examples": [
+              "cases.signoff"
+            ],
             "title": "Key",
             "type": "string"
           }
@@ -2546,10 +2951,15 @@
       "RefreshResult": {
         "properties": {
           "accessToken": {
+            "description": "The replacement bearer token for the `Authorization` header of every later call.",
             "title": "Accesstoken",
             "type": "string"
           },
           "expiresIn": {
+            "description": "Seconds of life left in the replacement, counted from this answer.",
+            "examples": [
+              600
+            ],
             "title": "Expiresin",
             "type": "integer"
           }
@@ -2564,6 +2974,10 @@
       "RoleCreate": {
         "properties": {
           "key": {
+            "description": "The stable name this role is stored under, chosen by the bank and never changed afterwards, since every member row and audit entry keeps it.",
+            "examples": [
+              "outsourcing_officer"
+            ],
             "maxLength": 80,
             "title": "Key",
             "type": "string"
@@ -2572,10 +2986,24 @@
             "additionalProperties": {
               "type": "string"
             },
+            "description": "What to call the role, in at least one of the bank's languages; the others fall back to it.",
+            "examples": [
+              {
+                "en": "Outsourcing officer",
+                "sv": "Outsourcingansvarig"
+              }
+            ],
             "title": "Labels",
             "type": "object"
           },
           "permissions": {
+            "description": "What the role may do; an unknown key answers 422 `unknown_key`, and nothing a bank cannot hold is accepted.",
+            "examples": [
+              [
+                "register.read",
+                "cases.contribute"
+              ]
+            ],
             "items": {
               "type": "string"
             },
@@ -2584,6 +3012,10 @@
           },
           "usageNote": {
             "default": "",
+            "description": "When to give somebody this role, so a second administrator makes the same call a year from now.",
+            "examples": [
+              "Owns the obligations that come with outsourced operations."
+            ],
             "maxLength": 1000,
             "title": "Usagenote",
             "type": "string"
@@ -2598,16 +3030,23 @@
         "type": "object"
       },
       "RoleOut": {
+        "description": "One role of the bank's own list: a named bundle of permissions, seeded with the\nproduct's seven and extended by the bank itself (ID-09).",
         "properties": {
           "active": {
+            "description": "False once the bank has retired the role: it stays for the audit trail and for old rows, and nobody can be given it again.",
             "title": "Active",
             "type": "boolean"
           },
           "isSystem": {
+            "description": "True for the seven roles the product ships. A bank relabels them but cannot change what they may do or retire them, so an upgrade never changes who can approve.",
             "title": "Issystem",
             "type": "boolean"
           },
           "key": {
+            "description": "What every member row and audit entry stores; it never changes, while the labels are translated and relabelled. A key from the bank's roles list, which an admin manages.",
+            "examples": [
+              "compliance_officer"
+            ],
             "title": "Key",
             "type": "string"
           },
@@ -2620,9 +3059,17 @@
                 "type": "null"
               }
             ],
+            "description": "Groups roles that behave alike where the bank uses such groups, null where it does not. A key from the list's own groups, which an admin manages.",
+            "examples": [
+              null
+            ],
             "title": "Kind"
           },
           "label": {
+            "description": "The role's name in the caller's language, for screens and pickers.",
+            "examples": [
+              "Compliance officer"
+            ],
             "title": "Label",
             "type": "string"
           },
@@ -2630,10 +3077,25 @@
             "additionalProperties": {
               "type": "string"
             },
+            "description": "The name in every language the bank has, keyed by language, so the role editor can show them all at once.",
+            "examples": [
+              {
+                "en": "Compliance officer",
+                "sv": "Compliance officer"
+              }
+            ],
             "title": "Labels",
             "type": "object"
           },
           "permissions": {
+            "description": "What holding this role lets a person do. A session's rights are these, flattened across the roles it holds.",
+            "examples": [
+              [
+                "cases.triage",
+                "proposals.create",
+                "vocab.manage"
+              ]
+            ],
             "items": {
               "type": "string"
             },
@@ -2641,13 +3103,16 @@
             "type": "array"
           },
           "usageNote": {
+            "description": "When to give somebody this role, in the bank's own words, shown under it in the picker so two administrators choose alike.",
+            "examples": [
+              "Triages changes, assesses, proposes to the library, manages vocabularies."
+            ],
             "title": "Usagenote",
             "type": "string"
           }
         },
         "required": [
           "key",
-          "kind",
           "label",
           "labels",
           "usageNote",
@@ -2672,6 +3137,12 @@
                 "type": "null"
               }
             ],
+            "description": "What to call the role from now on; leave it out to keep the names it has.",
+            "examples": [
+              {
+                "en": "Outsourcing officer"
+              }
+            ],
             "title": "Labels"
           },
           "permissions": {
@@ -2686,6 +3157,13 @@
                 "type": "null"
               }
             ],
+            "description": "What the role may do from now on, replacing what it may do today; changing this needs a fresh passkey check, and a system role refuses it (422 `system_role`).",
+            "examples": [
+              [
+                "register.read",
+                "cases.work"
+              ]
+            ],
             "title": "Permissions"
           },
           "usageNote": {
@@ -2698,6 +3176,7 @@
                 "type": "null"
               }
             ],
+            "description": "When to give somebody the role, rewritten; leave it out to keep what is there.",
             "title": "Usagenote"
           }
         },
@@ -2705,8 +3184,13 @@
         "type": "object"
       },
       "RoleRef": {
+        "description": "A row of an admin-managed list as the API hands it out: the key to store and the\nlabel to show. Used for roles and for languages.",
         "properties": {
           "key": {
+            "description": "What to store, compare and send back; it never changes, while labels are relabelled and translated. A key from the roles or languages list, which an admin manages.",
+            "examples": [
+              "compliance_officer"
+            ],
             "title": "Key",
             "type": "string"
           },
@@ -2719,9 +3203,17 @@
                 "type": "null"
               }
             ],
+            "description": "Groups rows that behave alike where the list has such groups, and is null where it has none. A key from the list's own groups, which an admin manages.",
+            "examples": [
+              null
+            ],
             "title": "Kind"
           },
           "label": {
+            "description": "What to print on screen, already in the caller's language; two banks may name the same key differently, so never branch on it.",
+            "examples": [
+              "Compliance officer"
+            ],
             "title": "Label",
             "type": "string"
           }
@@ -2760,20 +3252,37 @@
         "type": "object"
       },
       "SecurityEventOut": {
+        "description": "One line of the bank's own sign-in and key record (ID-11). It is what a bank's\nsecurity review and a vendor assessment read, so it holds attempts as well as successes.",
         "properties": {
           "email": {
+            "description": "The address the attempt was made with, as typed. It is what makes a run of failures against one person visible.",
+            "examples": [
+              "anna@example-bank.test"
+            ],
             "title": "Email",
             "type": "string"
           },
           "event": {
+            "description": "What happened, from `code_sent` and `signin` to `signin_failed`, `code_locked`, `session_revoked` and `key_revoked`. The set is fixed in code, one per thing worth reviewing.",
+            "examples": [
+              "signin"
+            ],
             "title": "Event",
             "type": "string"
           },
           "failureReason": {
+            "description": "Why it did not, in a few fixed words, and empty when it did. It never says whether an address is known here.",
+            "examples": [
+              "wrong_code"
+            ],
             "title": "Failurereason",
             "type": "string"
           },
           "id": {
+            "description": "Where this line sits in the ledger; the numbers only ever climb, so a gap means a row was never written, not removed.",
+            "examples": [
+              10482
+            ],
             "title": "Id",
             "type": "integer"
           },
@@ -2786,22 +3295,39 @@
                 "type": "null"
               }
             ],
+            "description": "Where it came from, or null where the deployment does not pass it through.",
+            "examples": [
+              "81.229.14.7"
+            ],
             "title": "Ip"
           },
           "method": {
+            "description": "How the person or system authenticated: `email_code` for the one-time enrolment code, `passkey` for a device, `api_key` for an integration. The three are fixed in code.",
+            "examples": [
+              "passkey"
+            ],
             "title": "Method",
             "type": "string"
           },
           "occurredAt": {
+            "description": "When the attempt was made, UTC, as the bank's own security review reads it.",
+            "examples": [
+              "2026-09-20T07:02:11Z"
+            ],
             "format": "date-time",
             "title": "Occurredat",
             "type": "string"
           },
           "success": {
+            "description": "Whether the attempt worked, so a reviewer can count failures against one address or one key.",
             "title": "Success",
             "type": "boolean"
           },
           "userAgent": {
+            "description": "The browser or client as it identified itself, empty where there was none.",
+            "examples": [
+              "Chrome 141 on macOS"
+            ],
             "title": "Useragent",
             "type": "string"
           },
@@ -2815,6 +3341,7 @@
                 "type": "null"
               }
             ],
+            "description": "Which account it concerned, or null when the attempt matched nobody at the bank.",
             "title": "Userid"
           }
         },
@@ -2836,6 +3363,7 @@
       "SecurityLogPage": {
         "properties": {
           "items": {
+            "description": "The lines on this page, newest first.",
             "items": {
               "$ref": "#/components/schemas/SecurityEventOut"
             },
@@ -2843,6 +3371,10 @@
             "type": "array"
           },
           "total": {
+            "description": "How many lines the bank's record holds in all.",
+            "examples": [
+              10482
+            ],
             "title": "Total",
             "type": "integer"
           }
@@ -2855,17 +3387,24 @@
         "type": "object"
       },
       "SessionOut": {
+        "description": "One live sign-in. A person reviews their own; an administrator reviews a member's\nwhen they suspect a device was lost.",
         "properties": {
           "createdAt": {
+            "description": "When the person signed in, UTC.",
+            "examples": [
+              "2026-09-20T07:02:11Z"
+            ],
             "format": "date-time",
             "title": "Createdat",
             "type": "string"
           },
           "current": {
+            "description": "Whether this is the session making the call, so a person does not sign themselves out while clearing the others.",
             "title": "Current",
             "type": "boolean"
           },
           "id": {
+            "description": "Name this sign-in when revoking it.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
@@ -2879,14 +3418,26 @@
                 "type": "null"
               }
             ],
+            "description": "Where the sign-in came from, or null where the deployment does not pass it through. Kept for the security review and nothing else.",
+            "examples": [
+              "81.229.14.7"
+            ],
             "title": "Ip"
           },
           "lastSeenAt": {
+            "description": "When this sign-in last called the API, UTC. It is what makes a forgotten browser somewhere obvious.",
+            "examples": [
+              "2026-09-20T08:44:57Z"
+            ],
             "format": "date-time",
             "title": "Lastseenat",
             "type": "string"
           },
           "userAgent": {
+            "description": "The browser and operating system as they identified themselves, so a person recognises their own device in the list.",
+            "examples": [
+              "Chrome 141 on macOS"
+            ],
             "title": "Useragent",
             "type": "string"
           }
@@ -2905,14 +3456,23 @@
       "SessionTokens": {
         "properties": {
           "accessToken": {
+            "description": "Send it as `Authorization: Bearer \u2026` on every later call. Short-lived on purpose; the refresh cookie set beside it buys the next one.",
             "title": "Accesstoken",
             "type": "string"
           },
           "expiresIn": {
+            "description": "Seconds of life left in the bearer token. Refresh before it runs out or the next call answers 401 `unauthenticated`.",
+            "examples": [
+              600
+            ],
             "title": "Expiresin",
             "type": "integer"
           },
           "sessionKind": {
+            "description": "`enrolment` while the person has only the emailed code and may do nothing but add a passkey, `full` once a passkey has signed them in. The pair is fixed in code.",
+            "examples": [
+              "full"
+            ],
             "title": "Sessionkind",
             "type": "string"
           }
@@ -2926,13 +3486,19 @@
         "type": "object"
       },
       "StepUpResult": {
+        "description": "The proof of a fresh passkey check, which the sensitive calls demand (ID-06).",
         "properties": {
           "assertionId": {
+            "description": "The proof itself, which the audit row of the action it unlocks carries, so an assurance pack can tie a decision to the moment somebody confirmed it with a passkey. The session now counts as stepped up, so the call that asked simply runs again.",
             "format": "uuid",
             "title": "Assertionid",
             "type": "string"
           },
           "expiresAt": {
+            "description": "When the proof stops counting, UTC. After it, the same call answers 403 `step_up_required` and the person is asked for their passkey again.",
+            "examples": [
+              "2026-09-20T09:05:00Z"
+            ],
             "format": "date-time",
             "title": "Expiresat",
             "type": "string"
@@ -3170,8 +3736,10 @@
         "type": "object"
       },
       "TenantOut": {
+        "description": "The bank's own profile: who it is, which languages its content is kept in, and how\nfar its setting-up has got.",
         "properties": {
           "contentLanguages": {
+            "description": "The languages the bank keeps its own assessments and summaries in; a Nordic bank usually holds its own and English.",
             "items": {
               "$ref": "#/components/schemas/RoleRef"
             },
@@ -3186,29 +3754,48 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Which language the bank reads regulation in when a person has chosen none, or null before it has picked one."
           },
           "id": {
+            "description": "The bank itself, as every tenant row refers to it.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
           },
           "name": {
+            "description": "The bank as it names itself, shown in the shell and on everything it exports.",
+            "examples": [
+              "Example Bank AB"
+            ],
             "title": "Name",
             "type": "string"
           },
           "onboarding": {
-            "$ref": "#/components/schemas/Onboarding"
+            "$ref": "#/components/schemas/Onboarding",
+            "description": "How far the bank has got in setting itself up."
           },
           "slug": {
+            "description": "The bank's short name in links and in support conversations; lower-case letters, digits and hyphens, and it never changes.",
+            "examples": [
+              "example-bank"
+            ],
             "title": "Slug",
             "type": "string"
           },
           "status": {
+            "description": "`active` while the bank is working in the product, `deactivated` once its subscription has ended and it may only be read. The pair is fixed in code.",
+            "examples": [
+              "active"
+            ],
             "title": "Status",
             "type": "string"
           },
           "timezone": {
+            "description": "The zone the bank's own days are counted in, so a deadline falls where its compliance officers sit rather than where a server does.",
+            "examples": [
+              "Europe/Stockholm"
+            ],
             "title": "Timezone",
             "type": "string"
           }
@@ -3240,6 +3827,13 @@
                 "type": "null"
               }
             ],
+            "description": "The languages the bank keeps its own content in from now on, replacing the ones it keeps today; at least one. Keys from the languages list, which an admin manages.",
+            "examples": [
+              [
+                "sv",
+                "en"
+              ]
+            ],
             "title": "Contentlanguages"
           },
           "defaultLanguage": {
@@ -3251,6 +3845,10 @@
               {
                 "type": "null"
               }
+            ],
+            "description": "Which language to fall back on for people who have chosen none. A key from the languages list, which an admin manages.",
+            "examples": [
+              "sv"
             ],
             "title": "Defaultlanguage"
           },
@@ -3264,6 +3862,10 @@
                 "type": "null"
               }
             ],
+            "description": "What the bank should be called from now on; leave it out to keep the name it has.",
+            "examples": [
+              "Example Bank AB"
+            ],
             "title": "Name"
           },
           "timezone": {
@@ -3275,6 +3877,10 @@
               {
                 "type": "null"
               }
+            ],
+            "description": "Which zone the bank's days should be counted in from now on, as an IANA name; anything else answers 422 `unknown_key`.",
+            "examples": [
+              "Europe/Stockholm"
             ],
             "title": "Timezone"
           }
@@ -3955,16 +4561,20 @@
         "type": "object"
       },
       "WebAuthnAssertionResponse": {
+        "description": "The authenticator's answer to `get()`, passed through untouched.",
         "properties": {
           "authenticatorData": {
+            "description": "What the authenticator did, base64url: whether it checked the person, and its signature counter, which a cloned device betrays.",
             "title": "Authenticatordata",
             "type": "string"
           },
           "clientDataJSON": {
+            "description": "What the browser saw, base64url: the challenge, the origin and the operation, for the server to compare with what it asked for.",
             "title": "Clientdatajson",
             "type": "string"
           },
           "signature": {
+            "description": "The authenticator's signature over the challenge, base64url. It is the whole proof: it verifies against the stored public key or the attempt is refused.",
             "title": "Signature",
             "type": "string"
           },
@@ -3977,6 +4587,7 @@
                 "type": "null"
               }
             ],
+            "description": "Which account the authenticator thinks it just signed for. The server compares it and refuses a passkey that belongs to somebody else (422 `user_handle_mismatch`).",
             "title": "Userhandle"
           }
         },
@@ -3989,12 +4600,15 @@
         "type": "object"
       },
       "WebAuthnAttestationResponse": {
+        "description": "The authenticator's answer to `create()`, passed through untouched.",
         "properties": {
           "attestationObject": {
+            "description": "The new public key and the authenticator's own data, base64url, for the server to store and verify against.",
             "title": "Attestationobject",
             "type": "string"
           },
           "clientDataJSON": {
+            "description": "What the browser saw, base64url: the challenge, the origin and the operation. The server checks it against what it asked for, which is how a relayed prompt is caught.",
             "title": "Clientdatajson",
             "type": "string"
           },
@@ -4010,6 +4624,13 @@
                 "type": "null"
               }
             ],
+            "description": "How this authenticator can be reached, so a later sign-in prompt offers the right option first.",
+            "examples": [
+              [
+                "internal",
+                "hybrid"
+              ]
+            ],
             "title": "Transports"
           }
         },
@@ -4021,6 +4642,7 @@
         "type": "object"
       },
       "WebAuthnAuthenticatorSelection": {
+        "description": "What the server demands of the authenticator before it accepts the new passkey.",
         "properties": {
           "authenticatorAttachment": {
             "anyOf": [
@@ -4030,6 +4652,10 @@
               {
                 "type": "null"
               }
+            ],
+            "description": "Whether the passkey must live on this device (`platform`) or may be a security key carried between them (`cross-platform`); absent leaves the person free to choose.",
+            "examples": [
+              "platform"
             ],
             "title": "Authenticatorattachment"
           },
@@ -4042,6 +4668,10 @@
                 "type": "null"
               }
             ],
+            "description": "The same demand in the wording older browsers understand; kept so they behave the same.",
+            "examples": [
+              true
+            ],
             "title": "Requireresidentkey"
           },
           "residentKey": {
@@ -4053,6 +4683,10 @@
                 "type": "null"
               }
             ],
+            "description": "Whether the passkey must be stored on the authenticator itself, which is what lets a person sign in without first typing who they are.",
+            "examples": [
+              "required"
+            ],
             "title": "Residentkey"
           },
           "userVerification": {
@@ -4063,6 +4697,10 @@
               {
                 "type": "null"
               }
+            ],
+            "description": "Whether the authenticator must prove the person is present and is themselves, by biometric or device PIN. A bank keeps this `required`: it is the second factor.",
+            "examples": [
+              "required"
             ],
             "title": "Userverification"
           }
@@ -4082,6 +4720,10 @@
                 "type": "null"
               }
             ],
+            "description": "How much the authenticator must say about itself. `none` is what a bank asks for here: the device model is not worth the privacy cost.",
+            "examples": [
+              "none"
+            ],
             "title": "Attestation"
           },
           "authenticatorSelection": {
@@ -4092,9 +4734,11 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "What the new passkey must satisfy before the server will take it."
           },
           "challenge": {
+            "description": "Random bytes, base64url, that the authenticator has to sign. It is good once and for a few minutes, so a captured answer cannot be replayed.",
             "title": "Challenge",
             "type": "string"
           },
@@ -4110,6 +4754,7 @@
                 "type": "null"
               }
             ],
+            "description": "The passkeys this account already has. The authenticator refuses to make a second one for the same device, so nobody ends up with duplicates they cannot tell apart.",
             "title": "Excludecredentials"
           },
           "hints": {
@@ -4124,9 +4769,16 @@
                 "type": "null"
               }
             ],
+            "description": "What the browser should suggest first, so the prompt matches how this bank enrols people: `client-device`, `hybrid` or `security-key`.",
+            "examples": [
+              [
+                "client-device"
+              ]
+            ],
             "title": "Hints"
           },
           "pubKeyCredParams": {
+            "description": "The signature algorithms the server accepts, best first.",
             "items": {
               "$ref": "#/components/schemas/WebAuthnPubKeyCredParam"
             },
@@ -4134,7 +4786,8 @@
             "type": "array"
           },
           "rp": {
-            "$ref": "#/components/schemas/WebAuthnRpEntity"
+            "$ref": "#/components/schemas/WebAuthnRpEntity",
+            "description": "Who the passkey is being made for, and the one domain it will ever work on."
           },
           "timeout": {
             "anyOf": [
@@ -4145,10 +4798,15 @@
                 "type": "null"
               }
             ],
+            "description": "How long the browser should wait for the person, in milliseconds, before giving up on the prompt; it matches the life of the challenge.",
+            "examples": [
+              120000
+            ],
             "title": "Timeout"
           },
           "user": {
-            "$ref": "#/components/schemas/WebAuthnUserEntity"
+            "$ref": "#/components/schemas/WebAuthnUserEntity",
+            "description": "The account the new passkey signs in, as the operating system will list it."
           }
         },
         "required": [
@@ -4161,8 +4819,10 @@
         "type": "object"
       },
       "WebAuthnCredentialDescriptor": {
+        "description": "One passkey named to the browser: to exclude on registration, to offer on sign-in.",
         "properties": {
           "id": {
+            "description": "The credential handle, base64url, as the authenticator issued it.",
             "title": "Id",
             "type": "string"
           },
@@ -4178,9 +4838,20 @@
                 "type": "null"
               }
             ],
+            "description": "How this passkey can be reached, so the browser offers the right prompt instead of every one: `internal` for the device itself, `hybrid` for a phone, `usb` or `nfc` for a security key.",
+            "examples": [
+              [
+                "internal",
+                "hybrid"
+              ]
+            ],
             "title": "Transports"
           },
           "type": {
+            "description": "Always `public-key`, the only credential family WebAuthn defines.",
+            "examples": [
+              "public-key"
+            ],
             "title": "Type",
             "type": "string"
           }
@@ -4193,12 +4864,21 @@
         "type": "object"
       },
       "WebAuthnPubKeyCredParam": {
+        "description": "One signature algorithm the server will accept from the authenticator.",
         "properties": {
           "alg": {
+            "description": "The COSE algorithm the new key may sign with: -7 is ECDSA on P-256, -257 is RSA. The server lists what it accepts, best first.",
+            "examples": [
+              -7
+            ],
             "title": "Alg",
             "type": "integer"
           },
           "type": {
+            "description": "Always `public-key`: WebAuthn defines no other credential family, and the browser rejects anything else.",
+            "examples": [
+              "public-key"
+            ],
             "title": "Type",
             "type": "string"
           }
@@ -4225,9 +4905,11 @@
                 "type": "null"
               }
             ],
+            "description": "Which passkeys may answer. Empty on sign-in, so no list of a person's devices leaks before anyone has proved who they are; filled on a step-up, where the session already says who is asking.",
             "title": "Allowcredentials"
           },
           "challenge": {
+            "description": "Random bytes, base64url, for the authenticator to sign. Good once and for a few minutes, so a captured answer proves nothing later.",
             "title": "Challenge",
             "type": "string"
           },
@@ -4240,6 +4922,10 @@
                 "type": "null"
               }
             ],
+            "description": "The domain whose passkeys may answer. The browser will not hand a passkey to any other site, which is what makes a phishing page useless.",
+            "examples": [
+              "app.bleqq.com"
+            ],
             "title": "Rpid"
           },
           "timeout": {
@@ -4250,6 +4936,10 @@
               {
                 "type": "null"
               }
+            ],
+            "description": "How long the browser should wait for the person, in milliseconds, before giving up on the prompt; it matches the life of the challenge.",
+            "examples": [
+              120000
             ],
             "title": "Timeout"
           },
@@ -4262,6 +4952,10 @@
                 "type": "null"
               }
             ],
+            "description": "Whether the authenticator must check the person by biometric or device PIN before it signs. A bank keeps this `required`.",
+            "examples": [
+              "required"
+            ],
             "title": "Userverification"
           }
         },
@@ -4272,6 +4966,7 @@
         "type": "object"
       },
       "WebAuthnRpEntity": {
+        "description": "The relying party the browser shows the person while they create a passkey.",
         "properties": {
           "id": {
             "anyOf": [
@@ -4282,9 +4977,17 @@
                 "type": "null"
               }
             ],
+            "description": "The domain the passkey is bound to. A passkey made here works on this domain and no other, which is what stops a lookalike site from using it.",
+            "examples": [
+              "app.bleqq.com"
+            ],
             "title": "Id"
           },
           "name": {
+            "description": "What the browser and the operating system show for this site while somebody creates a passkey, so they can see who it is for.",
+            "examples": [
+              "bleqq"
+            ],
             "title": "Name",
             "type": "string"
           }
@@ -4296,16 +4999,26 @@
         "type": "object"
       },
       "WebAuthnUserEntity": {
+        "description": "Who the browser is making the passkey for.",
         "properties": {
           "displayName": {
+            "description": "The person's own name, shown beside the account in the same prompt.",
+            "examples": [
+              "Anna Lindgren"
+            ],
             "title": "Displayname",
             "type": "string"
           },
           "id": {
+            "description": "The account handle, base64url, opaque to the browser. It is a random per-account value, never an address.",
             "title": "Id",
             "type": "string"
           },
           "name": {
+            "description": "What the operating system lists beside the passkey when the person is asked to pick one.",
+            "examples": [
+              "anna@example-bank.test"
+            ],
             "title": "Name",
             "type": "string"
           }
@@ -4480,6 +5193,7 @@
     },
     "/api/v1/auth/code/request": {
       "post": {
+        "description": "Asks for a one-time code by address, for the one case that needs it: somebody who was\ninvited and has no passkey yet. Needs no permission. The answer is 202 whatever the address,\nso nobody learns from it who banks here, and a person who already holds a passkey is sent\nnothing at all. Too many attempts answer 429 `rate_limited`.",
         "operationId": "requestCode",
         "parameters": [],
         "requestBody": {
@@ -4512,6 +5226,7 @@
     },
     "/api/v1/auth/code/verify": {
       "post": {
+        "description": "Turns an emailed code into an enrolment session that may do one thing: add the person's\nfirst passkey. Needs no permission. A wrong code answers 400 `invalid_code`, too many wrong\nones 400 `code_locked`, and a flood 429 `rate_limited`. Once a passkey exists this path is\nclosed for good: a bank has no password and no self-service way back in.",
         "operationId": "verifyCode",
         "parameters": [],
         "requestBody": {
@@ -4544,6 +5259,7 @@
     },
     "/api/v1/auth/invitations/open": {
       "post": {
+        "description": "Opens the emailed invitation link and sends the person their one-time code. Needs no\npermission: the single-use token in the body is the grant, and it travels in the body so no\naccess log or proxy ever holds it. A link already used, withdrawn or out of date answers 410\n`invitation_expired`, and too many attempts answer 429 `rate_limited`. Everyone at a bank\nstarts here.",
         "operationId": "openInvitation",
         "parameters": [],
         "requestBody": {
@@ -4576,6 +5292,7 @@
     },
     "/api/v1/auth/invitations/verify": {
       "post": {
+        "description": "Turns the invitation's token and the code from the email into an enrolment session, whose\nonly power is to add the person's first passkey. Needs no permission: the token and the code\ntogether are the grant. A wrong code answers 400 `invalid_code`, too many wrong ones 400\n`code_locked`, an invitation that has run out 410 `invitation_expired`, and a flood 429\n`rate_limited`.",
         "operationId": "verifyInvitationCode",
         "parameters": [],
         "requestBody": {
@@ -4608,6 +5325,7 @@
     },
     "/api/v1/auth/passkeys/authenticate/options": {
       "post": {
+        "description": "Starts a sign-in: the challenge for `navigator.credentials.get()`. Needs no permission,\nsince nobody has proved who they are yet. It names no credentials at all, so nothing about a\nperson's devices leaks before anything has been signed.",
         "operationId": "passkeyAuthenticateOptions",
         "parameters": [],
         "responses": {
@@ -4630,6 +5348,7 @@
     },
     "/api/v1/auth/passkeys/authenticate/verify": {
       "post": {
+        "description": "Signs a person in with their passkey and opens a full session, with the refresh cookie\nbeside it. Needs no permission: the signed challenge is the proof. Anything that does not\nverify answers 401 `signin_failed` and says no more than that; a passkey belonging to\nanother account answers 422 `user_handle_mismatch`. This is how everyone at a bank signs in\nafter their first day.",
         "operationId": "passkeyAuthenticateVerify",
         "parameters": [],
         "requestBody": {
@@ -4662,6 +5381,7 @@
     },
     "/api/v1/auth/passkeys/register/options": {
       "post": {
+        "description": "Starts enrolling a passkey: the challenge and the rules the new device must satisfy, to hand\nstraight to `navigator.credentials.create()`. Needs no permission; the enrolment session\nfrom the emailed code, or a full session adding another device, is the grant. It names the\ndevices the person already has, so an authenticator does not quietly make a second passkey\nfor the same one.",
         "operationId": "passkeyRegisterOptions",
         "parameters": [],
         "responses": {
@@ -4692,6 +5412,7 @@
     },
     "/api/v1/auth/passkeys/register/verify": {
       "post": {
+        "description": "Finishes enrolling the passkey the browser just made and, for somebody who came in on an\nemailed code, hands back the full session it earns. Needs no permission, but adding an\nauthentication factor from a full session needs a recent sign-in or a fresh passkey check\n(403 `step_up_required`). A challenge that timed out answers 400 `challenge_expired`, and\nanything that does not verify 400 `registration_failed`.",
         "operationId": "passkeyRegisterVerify",
         "parameters": [],
         "requestBody": {
@@ -4732,6 +5453,7 @@
     },
     "/api/v1/auth/refresh": {
       "post": {
+        "description": "Exchanges the refresh cookie for a new bearer token, so somebody working through the day\nstays signed in without proving themselves again. Needs no permission: the cookie is the\ncredential. A missing, spent or revoked cookie answers 401 `unauthenticated`; a replayed one\nends the whole session and is written to the bank's security log.",
         "operationId": "refreshSession",
         "parameters": [],
         "responses": {
@@ -4754,6 +5476,7 @@
     },
     "/api/v1/auth/sign-out": {
       "post": {
+        "description": "Ends this sign-in and clears the refresh cookie. Needs no permission. It answers 204 whether\nor not a live session was found, so a browser can always finish signing out, and the bank's\nsecurity log keeps the line.",
         "operationId": "signOut",
         "parameters": [],
         "responses": {
@@ -4769,6 +5492,7 @@
     },
     "/api/v1/auth/step-up/options": {
       "post": {
+        "description": "Starts the fresh passkey check that the sensitive actions demand: the challenge for\n`navigator.credentials.get()`, limited to the caller's own devices. Needs no permission\nbeyond a session, since it acts on the caller alone. Approvals, sign-off, footprint changes,\nexports, key creation and role changes all begin here (ID-06).",
         "operationId": "stepUpOptions",
         "parameters": [],
         "responses": {
@@ -4796,6 +5520,7 @@
     },
     "/api/v1/auth/step-up/verify": {
       "post": {
+        "description": "Records that the person has just proved themselves with a passkey, so the session counts as\nstepped up and the call that demanded it can simply be made again. Needs no permission beyond\na session. A check that does not verify answers 400 `step_up_failed`, and a passkey from\nanother account 422 `user_handle_mismatch`. The proof lasts one short window, and the answer\nsays until when.",
         "operationId": "stepUpVerify",
         "parameters": [],
         "requestBody": {
@@ -4833,6 +5558,7 @@
     },
     "/api/v1/console/tenants": {
       "get": {
+        "description": "Every bank on the platform, in order of their short name, for bleqq's own console. Needs `tenants.manage`.\nIt carries the tenant row and nothing under it: no member counts and no bank content,\nbecause a platform session reads no bank's records.",
         "operationId": "listConsoleTenants",
         "parameters": [
           {
@@ -4882,6 +5608,7 @@
         ]
       },
       "post": {
+        "description": "Creates a bank and invites its first administrator in one action, which is how every\ncustomer starts. Needs `tenants.manage`. A short name already taken answers 409\n`duplicate_key`, a malformed one 422 `invalid_slug`, an empty name 422 `name_required`, and\nan unknown language or time zone 422 `unknown_key`. An address belonging to platform staff\nanswers 422 `platform_account`: the first administrator is always somebody at the bank.",
         "operationId": "createConsoleTenant",
         "parameters": [],
         "requestBody": {
@@ -4919,6 +5646,7 @@
     },
     "/api/v1/console/tenants/{tenant_id}/members/{user_id}/reissue-enrolment": {
       "post": {
+        "description": "bleqq's last way back in for a bank that has lost every administrator (ID-05): it puts one\nnamed member back on a one-time code. Needs `support_access.grant` and a fresh passkey check\n(403 `step_up_required`), and the caller has to write down why and how the person was\nverified away from the product, or the answer is 422 `check_required`. A bank or member that\ndoes not exist answers 404 `not_found`. Every use is audited and shows in the bank's own\nsecurity log.",
         "operationId": "consoleReissueEnrolment",
         "parameters": [
           {
@@ -5003,6 +5731,7 @@
     },
     "/api/v1/me": {
       "get": {
+        "description": "Everything the interface needs about the caller in one read: the person, the bank they are\ninside, the roles they hold, the permissions their screens branch on, and whether they still\nowe an enrolment. Needs no permission beyond a session, since it only ever describes the\ncaller. An enrolment session may call it too, and sees `enrolmentPending` true.",
         "operationId": "getMe",
         "parameters": [],
         "responses": {
@@ -5031,6 +5760,7 @@
         ]
       },
       "patch": {
+        "description": "Changes the caller's own name and interface language. Needs no permission beyond a session.\nAn empty name answers 422 `name_required`, and a language the product does not hold 422\n`unknown_key`.",
         "operationId": "updateMe",
         "parameters": [],
         "requestBody": {
@@ -5068,6 +5798,7 @@
     },
     "/api/v1/me/passkeys": {
       "get": {
+        "description": "The caller's own devices, with when each was last used, so somebody can spot the one they no\nlonger carry. Needs no permission beyond a session. Nothing here can sign anyone in: it is a\nlist to recognise devices by, and to retire them from.",
         "operationId": "listMyPasskeys",
         "parameters": [],
         "responses": {
@@ -5099,6 +5830,7 @@
     },
     "/api/v1/me/passkeys/{passkey_id}": {
       "delete": {
+        "description": "Retires one of the caller's own devices, which is the first thing to do when one is lost.\nNeeds no permission beyond a session, but a recent sign-in or a fresh passkey check (403\n`step_up_required`), since it removes an authentication factor. The last live passkey is\nrefused with 409 `last_passkey`: with no password anywhere, removing it would lock the\nperson out.",
         "operationId": "removeMyPasskey",
         "parameters": [
           {
@@ -5128,6 +5860,7 @@
         ]
       },
       "patch": {
+        "description": "Renames one of the caller's own devices, so a list of three reads as a laptop, a phone and a\nsecurity key. Needs no permission beyond a session; another person's device answers 404\n`not_found`.",
         "operationId": "renameMyPasskey",
         "parameters": [
           {
@@ -5176,6 +5909,7 @@
     },
     "/api/v1/me/sessions": {
       "get": {
+        "description": "Where the caller is signed in right now, with the browser, the time last seen and which row\nis this very session. Needs no permission beyond a session. It is how somebody notices a\nsign-in they do not recognise.",
         "operationId": "listMySessions",
         "parameters": [],
         "responses": {
@@ -5207,6 +5941,7 @@
     },
     "/api/v1/me/sessions/{session_id}": {
       "delete": {
+        "description": "Ends one of the caller's own sign-ins, on a device they no longer have with them. Needs no\npermission beyond a session; a session that is not theirs answers 404 `not_found`.",
         "operationId": "revokeMySession",
         "parameters": [
           {
@@ -5698,6 +6433,7 @@
     },
     "/api/v1/reference/permissions": {
       "get": {
+        "description": "Every permission a role can be given, grouped by area and described in the words the role\neditor shows. Needs no permission beyond a session. The set is fixed in code, one per\ncapability the product has, and a bank composes its roles from it.",
         "operationId": "listPermissions",
         "parameters": [],
         "responses": {
@@ -5920,6 +6656,7 @@
     },
     "/api/v1/tenant": {
       "get": {
+        "description": "The bank's profile: its name, short name, time zone, languages, and how far its setting-up\nhas got. Needs no permission beyond a session, since the whole shell is built from it. A\nplatform session, which is inside no bank, answers 404 `not_found`.",
         "operationId": "getTenant",
         "parameters": [],
         "responses": {
@@ -5945,6 +6682,7 @@
         ]
       },
       "patch": {
+        "description": "Changes the bank's name, time zone, default language or the languages it keeps its own\ncontent in. Needs `security.manage`. An empty name answers 422 `name_required`, an unknown\ntime zone or language 422 `unknown_key`, and an empty language list 422\n`languages_required`. The time zone is what decides where the bank's deadlines fall.",
         "operationId": "updateTenant",
         "parameters": [],
         "requestBody": {
@@ -5982,6 +6720,7 @@
     },
     "/api/v1/tenant/api-keys": {
       "get": {
+        "description": "The bank's API keys, with what each may reach and when it was last used, revoked ones\nincluded. Needs `integrations.manage`. The secret itself is not here: it was shown once,\nwhen the key was created.",
         "operationId": "listApiKeys",
         "parameters": [
           {
@@ -6031,6 +6770,7 @@
         ]
       },
       "post": {
+        "description": "Issues an API key for one of the bank's own integrations or agents, and hands back the\nsecret in the only answer that will ever carry it. Needs `integrations.manage` and a fresh\npasskey check (403 `step_up_required`). No name answers 422 `name_required`, no scope 422\n`scopes_required`, an unknown scope 422 `unknown_key`, and an expiry already past 422\n`expiry_in_past`. No scope reaches the shared library: an agent proposes, it never writes.",
         "operationId": "createApiKey",
         "parameters": [],
         "requestBody": {
@@ -6068,6 +6808,7 @@
     },
     "/api/v1/tenant/api-keys/{key_id}": {
       "delete": {
+        "description": "Stops a key working, the moment an integration is retired or a secret may have leaked. Needs\n`integrations.manage`; a key of another bank answers 404 `not_found`. The row stays,\nrevoked, for the audit trail.",
         "operationId": "revokeApiKey",
         "parameters": [
           {
@@ -6340,6 +7081,7 @@
     },
     "/api/v1/tenant/invitations": {
       "get": {
+        "description": "The invitations and re-enrolments still outstanding, with when each one runs out. Needs\n`members.manage`. It answers the administrator's question of who has been asked to join and\nhas not come in yet.",
         "operationId": "listInvitations",
         "parameters": [
           {
@@ -6391,6 +7133,7 @@
     },
     "/api/v1/tenant/invitations/{invitation_id}": {
       "delete": {
+        "description": "Withdraws an outstanding invitation, so its link stops working. Needs `members.manage`; an\ninvitation belonging to another bank answers 404 `not_found`. The row itself stays, for the\naudit trail.",
         "operationId": "revokeInvitation",
         "parameters": [
           {
@@ -6422,6 +7165,7 @@
     },
     "/api/v1/tenant/invitations/{invitation_id}/resend": {
       "post": {
+        "description": "Sends the invitation again, with a fresh link and a fresh window, for the mail that never\narrived. Needs `members.manage`. An invitation already accepted, withdrawn or out of date\nanswers 409 `invitation_closed`, and one belonging to another bank 404 `not_found`.",
         "operationId": "resendInvitation",
         "parameters": [
           {
@@ -6460,6 +7204,7 @@
     },
     "/api/v1/tenant/members": {
       "get": {
+        "description": "The bank's people, with the roles they hold, how many devices can sign them in, and how many\nsessions are live. Needs `members.manage`, or the answer is 403 `permission_denied`. It is\nthe administrator's working list: who is still to enrol, who has left, and who holds what.",
         "operationId": "listMembers",
         "parameters": [
           {
@@ -6509,6 +7254,7 @@
         ]
       },
       "post": {
+        "description": "Invites somebody to the bank with the roles they will hold, and sends the invitation. Needs\n`members.manage`. An address that is already a member answers 409 `already_member`, a\nmalformed one 422 `invalid_email`, no roles 422 `roles_required`, and an unknown role 422\n`unknown_key`. The invited person enrols their own passkey; nobody here ever sets a\npassword.",
         "operationId": "inviteMember",
         "parameters": [],
         "requestBody": {
@@ -6546,6 +7292,7 @@
     },
     "/api/v1/tenant/members/{user_id}": {
       "delete": {
+        "description": "Ends a person's access to the bank and revokes every session they hold, for the day they\nleave. Needs `members.manage`, and the last administrator answers 409 `last_admin`. Their\nwork, decisions and audit trail stay exactly as they are: nothing is deleted.",
         "operationId": "deactivateMember",
         "parameters": [
           {
@@ -6575,6 +7322,7 @@
         ]
       },
       "patch": {
+        "description": "Changes a member's roles or their title. Needs `members.manage`, and changing roles needs a\nfresh passkey check (403 `step_up_required`), because it changes what somebody may do.\nTaking `members.manage` from the last administrator answers 409 `last_admin`, an unknown\nrole 422 `unknown_key`, and a person who is not a member 404 `not_found`.",
         "operationId": "updateMember",
         "parameters": [
           {
@@ -6623,6 +7371,7 @@
     },
     "/api/v1/tenant/members/{user_id}/reissue-enrolment": {
       "post": {
+        "description": "Puts a member who has lost every device back on a one-time code, so they can enrol a new\npasskey. Needs `members.manage` and a fresh passkey check (403 `step_up_required`): this is\nthe way back in, so an administrator confirms it with their own device. Somebody who is not\na member answers 404 `not_found`. Every re-issue is audited and shows in the bank's security\nlog.",
         "operationId": "reissueEnrolment",
         "parameters": [
           {
@@ -6661,6 +7410,7 @@
     },
     "/api/v1/tenant/members/{user_id}/sessions": {
       "delete": {
+        "description": "Signs one member out everywhere in a single call, when a device is lost or somebody leaves.\nNeeds `members.manage`. Their passkeys stay, so they can sign in again on a device they\nstill hold, unless the bank has also ended their access.",
         "operationId": "revokeMemberSessions",
         "parameters": [
           {
@@ -6690,6 +7440,7 @@
         ]
       },
       "get": {
+        "description": "Where one member is signed in right now, for the administrator asked whether a lost laptop\nstill has a live session. Needs `members.manage`; somebody who is not a member of this bank\nanswers 404 `not_found`.",
         "operationId": "listMemberSessions",
         "parameters": [
           {
@@ -6732,6 +7483,7 @@
     },
     "/api/v1/tenant/roles": {
       "get": {
+        "description": "The bank's roles with their labels, usage notes and permissions. Needs no permission beyond\na session: every picker and every screen that names a role needs the labels. What a person\nmay actually do is the permission list on `GET /me`, never a role's name.",
         "operationId": "listRoles",
         "parameters": [],
         "responses": {
@@ -6761,6 +7513,7 @@
         ]
       },
       "post": {
+        "description": "Adds a role of the bank's own beside the seven the product ships, for a bank whose structure\nneeds one. Needs `roles.manage` and a fresh passkey check (403 `step_up_required`), since it\ncreates a bundle of permissions. A key already taken answers 409 `duplicate_key`, an empty\nkey 422 `key_required`, no label 422 `label_required`, and an unknown permission or language\n422 `unknown_key`.",
         "operationId": "createRole",
         "parameters": [],
         "requestBody": {
@@ -6798,6 +7551,7 @@
     },
     "/api/v1/tenant/roles/{key}": {
       "patch": {
+        "description": "Relabels a role, rewrites its usage note, or changes what it may do. Needs `roles.manage`,\nand changing the permissions needs a fresh passkey check (403 `step_up_required`). A system\nrole's permissions answer 422 `system_role`: a bank relabels those but cannot change what\nthey may do, so an upgrade never quietly changes who can approve. An unknown permission or\nlanguage answers 422 `unknown_key`.",
         "operationId": "updateRole",
         "parameters": [
           {
@@ -6845,6 +7599,7 @@
     },
     "/api/v1/tenant/roles/{key}/retire": {
       "post": {
+        "description": "Retires one of the bank's own roles, so nobody can be given it again while the audit trail\nkeeps it. Needs `roles.manage`. A role somebody still holds answers 409 `role_in_use`, so\nthe bank reassigns those people first, and a system role answers 422 `system_role`.",
         "operationId": "retireRole",
         "parameters": [
           {
@@ -6882,6 +7637,7 @@
     },
     "/api/v1/tenant/security-log": {
       "get": {
+        "description": "The bank's own record of sign-ins, failures, code requests, revocations and key use, newest\nfirst. Needs `security.manage`. It is what a bank's security review and a vendor assessment\nread, so it holds the attempts that failed as well as the ones that worked.",
         "operationId": "listSecurityLog",
         "parameters": [
           {

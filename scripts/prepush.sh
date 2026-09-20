@@ -182,6 +182,7 @@ if [ "$be" = 1 ]; then  # ci.yml `backend`
   gate "Backend: compliance lint" backend bash ./run.sh run python scripts/compliance_check.py --all
   gate "Backend: requirements coverage" backend bash ./run.sh run python scripts/requirements_coverage.py
   gate "Backend: contract drift" backend bash ./run.sh run python scripts/contract_drift.py
+  gate "Backend: OpenAPI quality" backend bash ./run.sh run python scripts/openapi_quality.py
   [ "$quick" = 0 ] && gate "Backend: search evaluation" backend bash ./run.sh run python scripts/search_eval.py
 fi
 

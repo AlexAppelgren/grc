@@ -30,7 +30,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Request Code */
+        /**
+         * Request Code
+         * @description Asks for a one-time code by address, for the one case that needs it: somebody who was
+         *     invited and has no passkey yet. Needs no permission. The answer is 202 whatever the address,
+         *     so nobody learns from it who banks here, and a person who already holds a passkey is sent
+         *     nothing at all. Too many attempts answer 429 `rate_limited`.
+         */
         post: operations["requestCode"];
         delete?: never;
         options?: never;
@@ -47,7 +53,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Verify Code */
+        /**
+         * Verify Code
+         * @description Turns an emailed code into an enrolment session that may do one thing: add the person's
+         *     first passkey. Needs no permission. A wrong code answers 400 `invalid_code`, too many wrong
+         *     ones 400 `code_locked`, and a flood 429 `rate_limited`. Once a passkey exists this path is
+         *     closed for good: a bank has no password and no self-service way back in.
+         */
         post: operations["verifyCode"];
         delete?: never;
         options?: never;
@@ -64,7 +76,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Open Invitation */
+        /**
+         * Open Invitation
+         * @description Opens the emailed invitation link and sends the person their one-time code. Needs no
+         *     permission: the single-use token in the body is the grant, and it travels in the body so no
+         *     access log or proxy ever holds it. A link already used, withdrawn or out of date answers 410
+         *     `invitation_expired`, and too many attempts answer 429 `rate_limited`. Everyone at a bank
+         *     starts here.
+         */
         post: operations["openInvitation"];
         delete?: never;
         options?: never;
@@ -81,7 +100,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Verify Invitation Code */
+        /**
+         * Verify Invitation Code
+         * @description Turns the invitation's token and the code from the email into an enrolment session, whose
+         *     only power is to add the person's first passkey. Needs no permission: the token and the code
+         *     together are the grant. A wrong code answers 400 `invalid_code`, too many wrong ones 400
+         *     `code_locked`, an invitation that has run out 410 `invitation_expired`, and a flood 429
+         *     `rate_limited`.
+         */
         post: operations["verifyInvitationCode"];
         delete?: never;
         options?: never;
@@ -98,7 +124,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Passkey Authenticate Options */
+        /**
+         * Passkey Authenticate Options
+         * @description Starts a sign-in: the challenge for `navigator.credentials.get()`. Needs no permission,
+         *     since nobody has proved who they are yet. It names no credentials at all, so nothing about a
+         *     person's devices leaks before anything has been signed.
+         */
         post: operations["passkeyAuthenticateOptions"];
         delete?: never;
         options?: never;
@@ -115,7 +146,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Passkey Authenticate Verify */
+        /**
+         * Passkey Authenticate Verify
+         * @description Signs a person in with their passkey and opens a full session, with the refresh cookie
+         *     beside it. Needs no permission: the signed challenge is the proof. Anything that does not
+         *     verify answers 401 `signin_failed` and says no more than that; a passkey belonging to
+         *     another account answers 422 `user_handle_mismatch`. This is how everyone at a bank signs in
+         *     after their first day.
+         */
         post: operations["passkeyAuthenticateVerify"];
         delete?: never;
         options?: never;
@@ -132,7 +170,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Passkey Register Options */
+        /**
+         * Passkey Register Options
+         * @description Starts enrolling a passkey: the challenge and the rules the new device must satisfy, to hand
+         *     straight to `navigator.credentials.create()`. Needs no permission; the enrolment session
+         *     from the emailed code, or a full session adding another device, is the grant. It names the
+         *     devices the person already has, so an authenticator does not quietly make a second passkey
+         *     for the same one.
+         */
         post: operations["passkeyRegisterOptions"];
         delete?: never;
         options?: never;
@@ -149,7 +194,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Passkey Register Verify */
+        /**
+         * Passkey Register Verify
+         * @description Finishes enrolling the passkey the browser just made and, for somebody who came in on an
+         *     emailed code, hands back the full session it earns. Needs no permission, but adding an
+         *     authentication factor from a full session needs a recent sign-in or a fresh passkey check
+         *     (403 `step_up_required`). A challenge that timed out answers 400 `challenge_expired`, and
+         *     anything that does not verify 400 `registration_failed`.
+         */
         post: operations["passkeyRegisterVerify"];
         delete?: never;
         options?: never;
@@ -166,7 +218,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Refresh Session */
+        /**
+         * Refresh Session
+         * @description Exchanges the refresh cookie for a new bearer token, so somebody working through the day
+         *     stays signed in without proving themselves again. Needs no permission: the cookie is the
+         *     credential. A missing, spent or revoked cookie answers 401 `unauthenticated`; a replayed one
+         *     ends the whole session and is written to the bank's security log.
+         */
         post: operations["refreshSession"];
         delete?: never;
         options?: never;
@@ -183,7 +241,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Sign Out */
+        /**
+         * Sign Out
+         * @description Ends this sign-in and clears the refresh cookie. Needs no permission. It answers 204 whether
+         *     or not a live session was found, so a browser can always finish signing out, and the bank's
+         *     security log keeps the line.
+         */
         post: operations["signOut"];
         delete?: never;
         options?: never;
@@ -200,7 +263,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Step Up Options */
+        /**
+         * Step Up Options
+         * @description Starts the fresh passkey check that the sensitive actions demand: the challenge for
+         *     `navigator.credentials.get()`, limited to the caller's own devices. Needs no permission
+         *     beyond a session, since it acts on the caller alone. Approvals, sign-off, footprint changes,
+         *     exports, key creation and role changes all begin here (ID-06).
+         */
         post: operations["stepUpOptions"];
         delete?: never;
         options?: never;
@@ -217,7 +286,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Step Up Verify */
+        /**
+         * Step Up Verify
+         * @description Records that the person has just proved themselves with a passkey, so the session counts as
+         *     stepped up and the call that demanded it can simply be made again. Needs no permission beyond
+         *     a session. A check that does not verify answers 400 `step_up_failed`, and a passkey from
+         *     another account 422 `user_handle_mismatch`. The proof lasts one short window, and the answer
+         *     says until when.
+         */
         post: operations["stepUpVerify"];
         delete?: never;
         options?: never;
@@ -232,10 +308,22 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Console Tenants */
+        /**
+         * List Console Tenants
+         * @description Every bank on the platform, in order of their short name, for bleqq's own console. Needs `tenants.manage`.
+         *     It carries the tenant row and nothing under it: no member counts and no bank content,
+         *     because a platform session reads no bank's records.
+         */
         get: operations["listConsoleTenants"];
         put?: never;
-        /** Create Console Tenant */
+        /**
+         * Create Console Tenant
+         * @description Creates a bank and invites its first administrator in one action, which is how every
+         *     customer starts. Needs `tenants.manage`. A short name already taken answers 409
+         *     `duplicate_key`, a malformed one 422 `invalid_slug`, an empty name 422 `name_required`, and
+         *     an unknown language or time zone 422 `unknown_key`. An address belonging to platform staff
+         *     answers 422 `platform_account`: the first administrator is always somebody at the bank.
+         */
         post: operations["createConsoleTenant"];
         delete?: never;
         options?: never;
@@ -252,7 +340,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Console Reissue Enrolment */
+        /**
+         * Console Reissue Enrolment
+         * @description bleqq's last way back in for a bank that has lost every administrator (ID-05): it puts one
+         *     named member back on a one-time code. Needs `support_access.grant` and a fresh passkey check
+         *     (403 `step_up_required`), and the caller has to write down why and how the person was
+         *     verified away from the product, or the answer is 422 `check_required`. A bank or member that
+         *     does not exist answers 404 `not_found`. Every use is audited and shows in the bank's own
+         *     security log.
+         */
         post: operations["consoleReissueEnrolment"];
         delete?: never;
         options?: never;
@@ -284,14 +380,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Me */
+        /**
+         * Get Me
+         * @description Everything the interface needs about the caller in one read: the person, the bank they are
+         *     inside, the roles they hold, the permissions their screens branch on, and whether they still
+         *     owe an enrolment. Needs no permission beyond a session, since it only ever describes the
+         *     caller. An enrolment session may call it too, and sees `enrolmentPending` true.
+         */
         get: operations["getMe"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Me */
+        /**
+         * Update Me
+         * @description Changes the caller's own name and interface language. Needs no permission beyond a session.
+         *     An empty name answers 422 `name_required`, and a language the product does not hold 422
+         *     `unknown_key`.
+         */
         patch: operations["updateMe"];
         trace?: never;
     };
@@ -302,7 +409,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List My Passkeys */
+        /**
+         * List My Passkeys
+         * @description The caller's own devices, with when each was last used, so somebody can spot the one they no
+         *     longer carry. Needs no permission beyond a session. Nothing here can sign anyone in: it is a
+         *     list to recognise devices by, and to retire them from.
+         */
         get: operations["listMyPasskeys"];
         put?: never;
         post?: never;
@@ -322,11 +434,23 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Remove My Passkey */
+        /**
+         * Remove My Passkey
+         * @description Retires one of the caller's own devices, which is the first thing to do when one is lost.
+         *     Needs no permission beyond a session, but a recent sign-in or a fresh passkey check (403
+         *     `step_up_required`), since it removes an authentication factor. The last live passkey is
+         *     refused with 409 `last_passkey`: with no password anywhere, removing it would lock the
+         *     person out.
+         */
         delete: operations["removeMyPasskey"];
         options?: never;
         head?: never;
-        /** Rename My Passkey */
+        /**
+         * Rename My Passkey
+         * @description Renames one of the caller's own devices, so a list of three reads as a laptop, a phone and a
+         *     security key. Needs no permission beyond a session; another person's device answers 404
+         *     `not_found`.
+         */
         patch: operations["renameMyPasskey"];
         trace?: never;
     };
@@ -337,7 +461,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List My Sessions */
+        /**
+         * List My Sessions
+         * @description Where the caller is signed in right now, with the browser, the time last seen and which row
+         *     is this very session. Needs no permission beyond a session. It is how somebody notices a
+         *     sign-in they do not recognise.
+         */
         get: operations["listMySessions"];
         put?: never;
         post?: never;
@@ -357,7 +486,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Revoke My Session */
+        /**
+         * Revoke My Session
+         * @description Ends one of the caller's own sign-ins, on a device they no longer have with them. Needs no
+         *     permission beyond a session; a session that is not theirs answers 404 `not_found`.
+         */
         delete: operations["revokeMySession"];
         options?: never;
         head?: never;
@@ -491,7 +624,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Permissions */
+        /**
+         * List Permissions
+         * @description Every permission a role can be given, grouped by area and described in the words the role
+         *     editor shows. Needs no permission beyond a session. The set is fixed in code, one per
+         *     capability the product has, and a bank composes its roles from it.
+         */
         get: operations["listPermissions"];
         put?: never;
         post?: never;
@@ -577,14 +715,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Tenant */
+        /**
+         * Get Tenant
+         * @description The bank's profile: its name, short name, time zone, languages, and how far its setting-up
+         *     has got. Needs no permission beyond a session, since the whole shell is built from it. A
+         *     platform session, which is inside no bank, answers 404 `not_found`.
+         */
         get: operations["getTenant"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Tenant */
+        /**
+         * Update Tenant
+         * @description Changes the bank's name, time zone, default language or the languages it keeps its own
+         *     content in. Needs `security.manage`. An empty name answers 422 `name_required`, an unknown
+         *     time zone or language 422 `unknown_key`, and an empty language list 422
+         *     `languages_required`. The time zone is what decides where the bank's deadlines fall.
+         */
         patch: operations["updateTenant"];
         trace?: never;
     };
@@ -595,10 +744,22 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Api Keys */
+        /**
+         * List Api Keys
+         * @description The bank's API keys, with what each may reach and when it was last used, revoked ones
+         *     included. Needs `integrations.manage`. The secret itself is not here: it was shown once,
+         *     when the key was created.
+         */
         get: operations["listApiKeys"];
         put?: never;
-        /** Create Api Key */
+        /**
+         * Create Api Key
+         * @description Issues an API key for one of the bank's own integrations or agents, and hands back the
+         *     secret in the only answer that will ever carry it. Needs `integrations.manage` and a fresh
+         *     passkey check (403 `step_up_required`). No name answers 422 `name_required`, no scope 422
+         *     `scopes_required`, an unknown scope 422 `unknown_key`, and an expiry already past 422
+         *     `expiry_in_past`. No scope reaches the shared library: an agent proposes, it never writes.
+         */
         post: operations["createApiKey"];
         delete?: never;
         options?: never;
@@ -616,7 +777,12 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Revoke Api Key */
+        /**
+         * Revoke Api Key
+         * @description Stops a key working, the moment an integration is retired or a secret may have leaked. Needs
+         *     `integrations.manage`; a key of another bank answers 404 `not_found`. The row stays,
+         *     revoked, for the audit trail.
+         */
         delete: operations["revokeApiKey"];
         options?: never;
         head?: never;
@@ -716,7 +882,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Invitations */
+        /**
+         * List Invitations
+         * @description The invitations and re-enrolments still outstanding, with when each one runs out. Needs
+         *     `members.manage`. It answers the administrator's question of who has been asked to join and
+         *     has not come in yet.
+         */
         get: operations["listInvitations"];
         put?: never;
         post?: never;
@@ -736,7 +907,12 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Revoke Invitation */
+        /**
+         * Revoke Invitation
+         * @description Withdraws an outstanding invitation, so its link stops working. Needs `members.manage`; an
+         *     invitation belonging to another bank answers 404 `not_found`. The row itself stays, for the
+         *     audit trail.
+         */
         delete: operations["revokeInvitation"];
         options?: never;
         head?: never;
@@ -752,7 +928,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Resend Invitation */
+        /**
+         * Resend Invitation
+         * @description Sends the invitation again, with a fresh link and a fresh window, for the mail that never
+         *     arrived. Needs `members.manage`. An invitation already accepted, withdrawn or out of date
+         *     answers 409 `invitation_closed`, and one belonging to another bank 404 `not_found`.
+         */
         post: operations["resendInvitation"];
         delete?: never;
         options?: never;
@@ -767,10 +948,22 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Members */
+        /**
+         * List Members
+         * @description The bank's people, with the roles they hold, how many devices can sign them in, and how many
+         *     sessions are live. Needs `members.manage`, or the answer is 403 `permission_denied`. It is
+         *     the administrator's working list: who is still to enrol, who has left, and who holds what.
+         */
         get: operations["listMembers"];
         put?: never;
-        /** Invite Member */
+        /**
+         * Invite Member
+         * @description Invites somebody to the bank with the roles they will hold, and sends the invitation. Needs
+         *     `members.manage`. An address that is already a member answers 409 `already_member`, a
+         *     malformed one 422 `invalid_email`, no roles 422 `roles_required`, and an unknown role 422
+         *     `unknown_key`. The invited person enrols their own passkey; nobody here ever sets a
+         *     password.
+         */
         post: operations["inviteMember"];
         delete?: never;
         options?: never;
@@ -788,11 +981,22 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Deactivate Member */
+        /**
+         * Deactivate Member
+         * @description Ends a person's access to the bank and revokes every session they hold, for the day they
+         *     leave. Needs `members.manage`, and the last administrator answers 409 `last_admin`. Their
+         *     work, decisions and audit trail stay exactly as they are: nothing is deleted.
+         */
         delete: operations["deactivateMember"];
         options?: never;
         head?: never;
-        /** Update Member */
+        /**
+         * Update Member
+         * @description Changes a member's roles or their title. Needs `members.manage`, and changing roles needs a
+         *     fresh passkey check (403 `step_up_required`), because it changes what somebody may do.
+         *     Taking `members.manage` from the last administrator answers 409 `last_admin`, an unknown
+         *     role 422 `unknown_key`, and a person who is not a member 404 `not_found`.
+         */
         patch: operations["updateMember"];
         trace?: never;
     };
@@ -805,7 +1009,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reissue Enrolment */
+        /**
+         * Reissue Enrolment
+         * @description Puts a member who has lost every device back on a one-time code, so they can enrol a new
+         *     passkey. Needs `members.manage` and a fresh passkey check (403 `step_up_required`): this is
+         *     the way back in, so an administrator confirms it with their own device. Somebody who is not
+         *     a member answers 404 `not_found`. Every re-issue is audited and shows in the bank's security
+         *     log.
+         */
         post: operations["reissueEnrolment"];
         delete?: never;
         options?: never;
@@ -820,11 +1031,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Member Sessions */
+        /**
+         * List Member Sessions
+         * @description Where one member is signed in right now, for the administrator asked whether a lost laptop
+         *     still has a live session. Needs `members.manage`; somebody who is not a member of this bank
+         *     answers 404 `not_found`.
+         */
         get: operations["listMemberSessions"];
         put?: never;
         post?: never;
-        /** Revoke Member Sessions */
+        /**
+         * Revoke Member Sessions
+         * @description Signs one member out everywhere in a single call, when a device is lost or somebody leaves.
+         *     Needs `members.manage`. Their passkeys stay, so they can sign in again on a device they
+         *     still hold, unless the bank has also ended their access.
+         */
         delete: operations["revokeMemberSessions"];
         options?: never;
         head?: never;
@@ -838,10 +1059,22 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Roles */
+        /**
+         * List Roles
+         * @description The bank's roles with their labels, usage notes and permissions. Needs no permission beyond
+         *     a session: every picker and every screen that names a role needs the labels. What a person
+         *     may actually do is the permission list on `GET /me`, never a role's name.
+         */
         get: operations["listRoles"];
         put?: never;
-        /** Create Role */
+        /**
+         * Create Role
+         * @description Adds a role of the bank's own beside the seven the product ships, for a bank whose structure
+         *     needs one. Needs `roles.manage` and a fresh passkey check (403 `step_up_required`), since it
+         *     creates a bundle of permissions. A key already taken answers 409 `duplicate_key`, an empty
+         *     key 422 `key_required`, no label 422 `label_required`, and an unknown permission or language
+         *     422 `unknown_key`.
+         */
         post: operations["createRole"];
         delete?: never;
         options?: never;
@@ -862,7 +1095,14 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Role */
+        /**
+         * Update Role
+         * @description Relabels a role, rewrites its usage note, or changes what it may do. Needs `roles.manage`,
+         *     and changing the permissions needs a fresh passkey check (403 `step_up_required`). A system
+         *     role's permissions answer 422 `system_role`: a bank relabels those but cannot change what
+         *     they may do, so an upgrade never quietly changes who can approve. An unknown permission or
+         *     language answers 422 `unknown_key`.
+         */
         patch: operations["updateRole"];
         trace?: never;
     };
@@ -875,7 +1115,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Retire Role */
+        /**
+         * Retire Role
+         * @description Retires one of the bank's own roles, so nobody can be given it again while the audit trail
+         *     keeps it. Needs `roles.manage`. A role somebody still holds answers 409 `role_in_use`, so
+         *     the bank reassigns those people first, and a system role answers 422 `system_role`.
+         */
         post: operations["retireRole"];
         delete?: never;
         options?: never;
@@ -890,7 +1135,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Security Log */
+        /**
+         * List Security Log
+         * @description The bank's own record of sign-ins, failures, code requests, revocations and key use, newest
+         *     first. Needs `security.manage`. It is what a bank's security review and a vendor assessment
+         *     read, so it holds the attempts that failed as well as the ones that worked.
+         */
         get: operations["listSecurityLog"];
         put?: never;
         post?: never;
@@ -1078,66 +1328,151 @@ export interface components {
     schemas: {
         /** ApiKeyCreate */
         ApiKeyCreate: {
-            /** Expiresat */
+            /**
+             * Expiresat
+             * @description When it should stop working, UTC; a moment already past answers 422 `expiry_in_past`. Leave it out for a key the bank will revoke by hand.
+             * @example 2027-09-01T10:15:00Z
+             */
             expiresAt?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description What this key is for, so a later administrator can tell what revoking it would break.
+             * @example Nightly watch agent
+             */
             name: string;
-            /** Scopes */
+            /**
+             * Scopes
+             * @description What the key may reach; at least one, and an unknown one answers 422 `unknown_key`. The set is fixed in code, and none of them reaches the shared library.
+             * @example [
+             *       "changes:write",
+             *       "library:read"
+             *     ]
+             */
             scopes: string[];
         };
-        /** ApiKeyCreated */
+        /**
+         * ApiKeyCreated
+         * @description The one answer that carries the secret. It is shown once, so a bank stores it in
+         *     its own vault there and then; nothing can hand it out again.
+         */
         ApiKeyCreated: {
             /**
              * Createdat
              * Format: date-time
+             * @description When the bank issued this key, UTC; the security log carries the same moment.
+             * @example 2026-09-01T10:15:00Z
              */
             createdAt: string;
-            /** Expiresat */
+            /**
+             * Expiresat
+             * @description When it stops working, UTC, or null where the bank set no expiry.
+             * @example 2027-09-01T10:15:00Z
+             */
             expiresAt: string | null;
             /**
              * Id
              * Format: uuid
+             * @description Name this key when revoking it.
              */
             id: string;
-            /** Keyprefix */
+            /**
+             * Keyprefix
+             * @description The middle part of the key, for matching one in a log or a configuration file against this row later.
+             * @example 9f2c1a7b
+             */
             keyPrefix: string;
-            /** Name */
+            /**
+             * Name
+             * @description What the bank said the key is for.
+             * @example Nightly watch agent
+             */
             name: string;
-            /** Plainkey */
+            /**
+             * Plainkey
+             * @description The secret itself, in the only answer that will ever carry it. Put it straight into the bank's vault; nothing can show it again.
+             */
             plainKey: string;
-            /** Scopes */
+            /**
+             * Scopes
+             * @description What the key may reach, as it was created with.
+             * @example [
+             *       "changes:write",
+             *       "library:read"
+             *     ]
+             */
             scopes: string[];
         };
-        /** ApiKeyOut */
+        /**
+         * ApiKeyOut
+         * @description One key a bank's integration or agent authenticates with. The secret itself is
+         *     shown once, at creation, and never again.
+         */
         ApiKeyOut: {
             /**
              * Createdat
              * Format: date-time
+             * @description When the bank issued this key, UTC; the security log carries the same moment.
+             * @example 2026-09-01T10:15:00Z
              */
             createdAt: string;
-            /** Expiresat */
+            /**
+             * Expiresat
+             * @description When it stops working, UTC, or null where the bank set no expiry.
+             * @example 2027-09-01T10:15:00Z
+             */
             expiresAt: string | null;
             /**
              * Id
              * Format: uuid
+             * @description Name this key when revoking it.
              */
             id: string;
-            /** Keyprefix */
+            /**
+             * Keyprefix
+             * @description The middle part of the key, which reads `cw_<prefix>_<secret>`: enough to match a key in a log or a configuration file against this row, and useless on its own.
+             * @example 9f2c1a7b
+             */
             keyPrefix: string;
-            /** Lastusedat */
+            /**
+             * Lastusedat
+             * @description When it last authenticated a call, UTC, or null if never. It is how a bank finds the integration nobody runs any more.
+             * @example 2026-09-20T02:00:11Z
+             */
             lastUsedAt: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description What the key is for, in the bank's own words, so a year later somebody knows what revoking it would break.
+             * @example Nightly watch agent
+             */
             name: string;
-            /** Revokedat */
+            /**
+             * Revokedat
+             * @description When the bank withdrew it, UTC, or null while it is live. A revoked row stays for the audit trail.
+             * @example null
+             */
             revokedAt: string | null;
-            /** Scopes */
+            /**
+             * Scopes
+             * @description What the key may reach; each is narrow by design, and none of them reaches the shared library or a person's own records.
+             * @example [
+             *       "changes:write",
+             *       "library:read"
+             *     ]
+             */
             scopes: string[];
         };
         /** ApiKeysPage */
         ApiKeysPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The keys on this page, newest first.
+             */
             items: components["schemas"]["ApiKeyOut"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many keys the bank has in all, revoked ones included.
+             * @example 4
+             */
             total: number;
         };
         /**
@@ -1215,25 +1550,50 @@ export interface components {
         };
         /** CodeRequestBody */
         CodeRequestBody: {
-            /** Email */
+            /**
+             * Email
+             * @description Where to send the one-time enrolment code. The answer is the same whether or not anyone holds this address, so an outsider cannot learn who banks here.
+             * @example anna@example-bank.test
+             */
             email: string;
         };
         /** CodeVerifyBody */
         CodeVerifyBody: {
-            /** Code */
+            /**
+             * Code
+             * @description What the email said. It buys one enrolment and stops working the moment the person's first passkey exists.
+             */
             code: string;
-            /** Email */
+            /**
+             * Email
+             * @description The address the code was asked for, compared trimmed and lower-cased.
+             * @example anna@example-bank.test
+             */
             email: string;
         };
-        /** ConsoleReissueBody */
+        /**
+         * ConsoleReissueBody
+         * @description Why bleqq is putting a bank's member back on an emailed code (ID-05). Nobody can
+         *     do this without writing down what they checked, and the answer is audited.
+         */
         ConsoleReissueBody: {
-            /** Outofbandcheck */
+            /**
+             * Outofbandcheck
+             * @description How the person was proved to be themselves away from the product: a call back on a known number, an identity check by the bank. Without it the answer is 422 `check_required`.
+             * @example Called back on the bank's switchboard number and confirmed with the head of compliance.
+             */
             outOfBandCheck: string;
-            /** Reason */
+            /**
+             * Reason
+             * @description Why the bank asked for this, in the words the audit trail and the bank's own security log will carry.
+             * @example Every device was lost when the laptop was stolen; the bank's administrator asked us in ticket 4471.
+             */
             reason: string;
             /**
              * Ticketref
+             * @description Where the request is recorded on bleqq's side, so an assessor can follow it out of the product.
              * @default
+             * @example SUP-4471
              */
             ticketRef: string;
         };
@@ -1243,29 +1603,65 @@ export interface components {
          *     The address must be the administrator's own: platform staff are separate accounts.
          */
         ConsoleTenantCreateBody: {
-            /** Contentlanguages */
+            /**
+             * Contentlanguages
+             * @description The languages the bank will keep its own assessments in; at least one. Keys from the languages list, which an admin manages.
+             * @example [
+             *       "sv",
+             *       "en"
+             *     ]
+             */
             contentLanguages: string[];
-            /** Defaultlanguage */
+            /**
+             * Defaultlanguage
+             * @description Which language the bank reads regulation in until someone chooses otherwise. A key from the languages list, which an admin manages.
+             * @example sv
+             */
             defaultLanguage: string;
-            /** Firstadminemail */
+            /**
+             * Firstadminemail
+             * @description Where the first invitation goes. It must belong to somebody at the bank, never to bleqq: from here on the bank invites its own people.
+             * @example admin@example-bank.test
+             */
             firstAdminEmail: string;
             /**
              * Firstadmintitle
+             * @description What that person does at the bank, shown beside their name; leave it empty if it is not known yet.
              * @default
+             * @example Administrator
              */
             firstAdminTitle: string;
-            /** Name */
+            /**
+             * Name
+             * @description What the bank calls itself; it goes on its screens and its exports.
+             * @example Example Bank AB
+             */
             name: string;
-            /** Slug */
+            /**
+             * Slug
+             * @description The short name for links and support conversations: lower-case letters, digits and hyphens, unique across banks, and never changed afterwards.
+             * @example example-bank
+             */
             slug: string;
-            /** Timezone */
+            /**
+             * Timezone
+             * @description The zone the bank's days are counted in, as an IANA name, so its deadlines fall where its people sit.
+             * @example Europe/Stockholm
+             */
             timezone: string;
         };
         /** ConsoleTenantPage */
         ConsoleTenantPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The banks on this page, in order of their short name.
+             */
             items: components["schemas"]["ConsoleTenantRow"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many banks there are in all.
+             * @example 12
+             */
             total: number;
         };
         /**
@@ -1277,19 +1673,35 @@ export interface components {
             /**
              * Createdat
              * Format: date-time
+             * @description When the bank was created here, UTC.
+             * @example 2026-01-15T09:30:00Z
              */
             createdAt: string;
+            /** @description Which language the bank reads regulation in by default, or null before it has picked one. */
             defaultLanguage: components["schemas"]["RoleRef"] | null;
             /**
              * Id
              * Format: uuid
+             * @description The bank, for the console's own calls about it.
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description The bank as it names itself.
+             * @example Example Bank AB
+             */
             name: string;
-            /** Slug */
+            /**
+             * Slug
+             * @description The bank's short name in links and support conversations.
+             * @example example-bank
+             */
             slug: string;
-            /** Status */
+            /**
+             * Status
+             * @description `active` while the bank is working in the product, `deactivated` once its subscription has ended. The pair is fixed in code.
+             * @example active
+             */
             status: string;
         };
         /**
@@ -1454,9 +1866,15 @@ export interface components {
          *     The token rides in the body, never the path, so no access log holds it (F6, F29).
          */
         InvitationCodeVerifyBody: {
-            /** Code */
+            /**
+             * Code
+             * @description What the second email said, so a link alone, forwarded or intercepted, enrols nobody.
+             */
             code: string;
-            /** Token */
+            /**
+             * Token
+             * @description The same single-use value the opened link carried, proving which invitation is being answered.
+             */
             token: string;
         };
         /**
@@ -1465,42 +1883,80 @@ export interface components {
          *     that logs request lines ever holds it (security review F29).
          */
         InvitationOpenBody: {
-            /** Token */
+            /**
+             * Token
+             * @description What the emailed link carries. Single use, and it names the account, so no address has to travel with it.
+             */
             token: string;
         };
-        /** InvitationOut */
+        /**
+         * InvitationOut
+         * @description One outstanding invitation or re-enrolment, so an administrator can see who has
+         *     not come in yet and resend or withdraw it.
+         */
         InvitationOut: {
             /**
              * Createdat
              * Format: date-time
+             * @description When it was sent, UTC; resending moves it.
+             * @example 2026-09-18T09:00:00Z
              */
             createdAt: string;
-            /** Email */
+            /**
+             * Email
+             * @description Where the invitation was sent, which is also the address the person will sign in with.
+             * @example anna@example-bank.test
+             */
             email: string;
             /**
              * Expiresat
              * Format: date-time
+             * @description When it stops working, UTC. After this the link answers 410 `invitation_expired` and an administrator has to resend.
+             * @example 2026-09-25T09:00:00Z
              */
             expiresAt: string;
             /**
              * Id
              * Format: uuid
+             * @description Name this invitation when resending or revoking it.
              */
             id: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description `invite` for somebody joining the bank, `reenrolment` for a member who lost every device and was verified again out of band. Both are fixed in code.
+             * @example invite
+             */
             kind: string;
-            /** Roles */
+            /**
+             * Roles
+             * @description What the person will hold the moment they enrol.
+             */
             roles: components["schemas"]["RoleRef"][];
-            /** Status */
+            /**
+             * Status
+             * @description `pending` while it can still be used, `accepted` once the person enrolled, `revoked` when the bank withdrew it, `expired` when its window closed. The four are fixed in code.
+             * @example pending
+             */
             status: string;
-            /** Title */
+            /**
+             * Title
+             * @description What they will do at the bank, as the invitation recorded it.
+             * @example Compliance officer
+             */
             title: string;
         };
         /** InvitationsPage */
         InvitationsPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The invitations on this page, newest first.
+             */
             items: components["schemas"]["InvitationOut"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many the bank has outstanding in all.
+             * @example 3
+             */
             total: number;
         };
         /**
@@ -1559,106 +2015,243 @@ export interface components {
             /** To */
             to: string;
         };
-        /** Me */
+        /**
+         * Me
+         * @description Everything the shell needs about the caller in one read: who they are, which bank
+         *     they are inside, what they may do, and how far their enrolment has got.
+         */
         Me: {
-            /** Enrolmentpending */
+            /**
+             * Enrolmentpending
+             * @description True while the person has come in on an emailed code and has no passkey yet: the only thing they may do is add one.
+             */
             enrolmentPending: boolean;
-            /** Passkeycount */
+            /**
+             * Passkeycount
+             * @description How many live devices can sign this person in. At one, removing it is refused, so nobody locks themselves out.
+             * @example 2
+             */
             passkeyCount: number;
-            /** Permissions */
+            /**
+             * Permissions
+             * @description What this session may do, flattened from those roles. Screens and buttons branch on these keys, never on a role name, so a bank can rename or rebuild its roles freely.
+             * @example [
+             *       "cases.work",
+             *       "register.read",
+             *       "search.use"
+             *     ]
+             */
             permissions: string[];
-            /** Platformroles */
+            /**
+             * Platformroles
+             * @description The bleqq roles this account holds, empty for everyone at a bank. They govern the console, never a bank's own records.
+             */
             platformRoles: components["schemas"]["RoleRef"][];
-            /** Roles */
+            /**
+             * Roles
+             * @description The roles the bank has given this person, for showing; what they may actually do is the permission list below.
+             */
             roles: components["schemas"]["RoleRef"][];
-            /** Stepupvaliduntil */
+            /**
+             * Stepupvaliduntil
+             * @description How long a fresh passkey check still counts, UTC, or null when the next sensitive action will ask for one.
+             * @example 2026-09-20T09:05:00Z
+             */
             stepUpValidUntil: string | null;
+            /** @description The bank this session is inside, or null for the platform staff, who sit in none of them. */
             tenant: components["schemas"]["MeTenant"] | null;
+            /** @description Who is signed in: the account the audit trail will name for everything done in this session. */
             user: components["schemas"]["MeUser"];
         };
         /** MePatch */
         MePatch: {
-            /** Locale */
+            /**
+             * Locale
+             * @description Which language to answer in from now on. A key from the languages list, which an admin manages; an unknown one answers 422 `unknown_key`.
+             * @example sv
+             */
             locale?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description What the bank's screens should show beside this person's work; leave it out to keep what is there.
+             * @example Sara Lindqvist
+             */
             name?: string | null;
         };
-        /** MeTenant */
+        /**
+         * MeTenant
+         * @description The bank this session is inside. Null on a platform session, which is inside none.
+         */
         MeTenant: {
             /**
              * Id
              * Format: uuid
+             * @description The bank whose rows this session may touch; every tenant record answers 404 outside it.
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description The bank as it names itself, shown in the shell so nobody works in the wrong one.
+             * @example Example Bank AB
+             */
             name: string;
-            /** Slug */
+            /**
+             * Slug
+             * @description The bank's short name in links and support conversations; lower-case letters, digits and hyphens.
+             * @example example-bank
+             */
             slug: string;
-            /** Timezone */
+            /**
+             * Timezone
+             * @description The zone the bank's own days are counted in, so a deadline falls where its compliance officers sit rather than where a server does.
+             * @example Europe/Stockholm
+             */
             timezone: string;
         };
-        /** MeUser */
+        /**
+         * MeUser
+         * @description The signed-in person.
+         */
         MeUser: {
-            /** Email */
+            /**
+             * Email
+             * @description Where this person's invitations and enrolment codes go; it is also how a bank recognises them in the member list.
+             * @example sara@example-bank.test
+             */
             email: string;
             /**
              * Id
              * Format: uuid
+             * @description The account, as every audit row and assignment in the bank refers to it.
              */
             id: string;
-            /** Locale */
+            /**
+             * Locale
+             * @description Which language the interface answers in, or null while the person has not chosen and the bank's default applies. A key from the languages list, which an admin manages.
+             * @example sv
+             */
             locale: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description What the bank's own screens show beside this person's decisions and comments.
+             * @example Sara Lindqvist
+             */
             name: string;
         };
         /** MemberInvite */
         MemberInvite: {
-            /** Email */
+            /**
+             * Email
+             * @description Where the invitation goes. It must be the person's own address: an invitation is how someone joins the bank, and it is traceable to them alone.
+             * @example anna@example-bank.test
+             */
             email: string;
-            /** Rolekeys */
+            /**
+             * Rolekeys
+             * @description What the person will be able to do once they enrol; at least one is required. Keys from the bank's own roles list, which an admin manages.
+             * @example [
+             *       "compliance_officer",
+             *       "reader"
+             *     ]
+             */
             roleKeys: string[];
             /**
              * Title
+             * @description What they do at the bank, shown beside their name. Leave it empty if the bank does not track titles.
              * @default
+             * @example Compliance officer
              */
             title: string;
         };
-        /** MemberOut */
+        /**
+         * MemberOut
+         * @description One person at the bank as its administrator sees them, with the two counts an
+         *     administrator acts on: how many devices can sign them in, and how many sessions are live.
+         */
         MemberOut: {
-            /** Activesessions */
+            /**
+             * Activesessions
+             * @description How many sign-ins are live right now, so an administrator can see what revoking them would end.
+             * @example 2
+             */
             activeSessions: number;
-            /** Email */
+            /**
+             * Email
+             * @description Where this person's invitations and re-enrolments go, and how an administrator recognises them.
+             * @example owner@example-bank.test
+             */
             email: string;
-            /** Lastseenat */
+            /**
+             * Lastseenat
+             * @description When they last called the API, UTC, or null if never. It is how a bank finds the accounts nobody uses.
+             * @example 2026-09-19T15:20:03Z
+             */
             lastSeenAt: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description What the bank's screens show beside their decisions.
+             * @example Johan Berg
+             */
             name: string;
-            /** Passkeycount */
+            /**
+             * Passkeycount
+             * @description How many live devices can sign this person in; zero means they are still waiting to enrol.
+             * @example 1
+             */
             passkeyCount: number;
-            /** Roles */
+            /**
+             * Roles
+             * @description The roles this person holds at the bank, which is what their permissions are flattened from.
+             */
             roles: components["schemas"]["RoleRef"][];
-            /** Status */
+            /**
+             * Status
+             * @description `invited` while they have not enrolled, `active` once they have, `deactivated` when the bank has ended their access. The three are fixed in code.
+             * @example active
+             */
             status: string;
-            /** Title */
+            /**
+             * Title
+             * @description What the person does at the bank, in the bank's own words; it sits beside their name so a reader knows who signed off.
+             * @example Obligation owner, digital investing
+             */
             title: string;
             /**
              * Userid
              * Format: uuid
+             * @description The account, as every audit row, case and assignment refers to it.
              */
             userId: string;
         };
         /** MemberPatch */
         MemberPatch: {
-            /** Rolekeys */
+            /**
+             * Rolekeys
+             * @description The roles the person should hold from now on, replacing the ones they have; changing them needs a fresh passkey check. Keys from the bank's own roles list, which an admin manages. Leave it out to change only the title.
+             * @example [
+             *       "approver"
+             *     ]
+             */
             roleKeys?: string[] | null;
-            /** Title */
+            /**
+             * Title
+             * @description What they do at the bank from now on; leave it out to keep what is there.
+             * @example Approver, head of compliance
+             */
             title?: string | null;
         };
         /** MembersPage */
         MembersPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The members on this page, in the order they joined the bank.
+             */
             items: components["schemas"]["MemberOut"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many members the bank has in all, so a screen can show how much is left to page through.
+             * @example 42
+             */
             total: number;
         };
         /** ObligationInstrumentRef */
@@ -1750,18 +2343,38 @@ export interface components {
             /** Versionnumber */
             versionNumber: number;
         };
-        /** Onboarding */
+        /**
+         * Onboarding
+         * @description How far the bank has got in setting itself up (TEN-01).
+         */
         Onboarding: {
-            /** Steps */
+            /**
+             * Steps
+             * @description Every step and whether it is done, in the order a bank works through them.
+             */
             steps: components["schemas"]["OnboardingStep"][];
-            /** Stepsdone */
+            /**
+             * Stepsdone
+             * @description How many of the five are finished, so a screen can show progress without counting them itself.
+             * @example 3
+             */
             stepsDone: number;
         };
-        /** OnboardingStep */
+        /**
+         * OnboardingStep
+         * @description One thing a bank does once, when it starts, before the product is any use to it.
+         */
         OnboardingStep: {
-            /** Done */
+            /**
+             * Done
+             * @description Whether the bank has finished it. The home screen shows what is left and stops showing anything once all five are true.
+             */
             done: boolean;
-            /** Key */
+            /**
+             * Key
+             * @description Which step this is: `profile`, `members`, `footprint`, `vocabularies` or `passkey`, in the order a bank works through them. The five are fixed in code.
+             * @example footprint
+             */
             key: string;
         };
         /**
@@ -1805,6 +2418,7 @@ export interface components {
         };
         /** PasskeyAssertBody */
         PasskeyAssertBody: {
+            /** @description What `navigator.credentials.get()` returned, passed through untouched for the server to verify. */
             credential: components["schemas"]["PasskeyAuthenticationCredential"];
         };
         /**
@@ -1812,62 +2426,134 @@ export interface components {
          * @description What the browser returns from `get()`, serialised with base64url fields.
          */
         PasskeyAuthenticationCredential: {
-            /** Authenticatorattachment */
+            /**
+             * Authenticatorattachment
+             * @description Where the passkey that answered lives: `platform` on this device, `cross-platform` on a key carried between them.
+             * @example platform
+             */
             authenticatorAttachment?: string | null;
-            /** Clientextensionresults */
+            /**
+             * Clientextensionresults
+             * @description Whatever WebAuthn extensions the browser ran, as the specification defines them. Nothing here changes the decision.
+             */
             clientExtensionResults?: {
                 [key: string]: unknown;
             } | null;
-            /** Id */
+            /**
+             * Id
+             * @description The credential handle of the passkey that answered, base64url.
+             */
             id: string;
-            /** Rawid */
+            /**
+             * Rawid
+             * @description The same handle as raw bytes, base64url, exactly as the browser produced it.
+             */
             rawId: string;
+            /** @description The signed answer the server verifies against the stored public key. */
             response: components["schemas"]["WebAuthnAssertionResponse"];
-            /** Type */
+            /**
+             * Type
+             * @description Always `public-key`, the only credential family WebAuthn defines.
+             * @example public-key
+             */
             type: string;
         };
-        /** PasskeyOut */
+        /**
+         * PasskeyOut
+         * @description One passkey as its owner and a bank's administrator see it: enough to recognise a
+         *     device and retire the one that was lost, and nothing that could be used to sign in.
+         */
         PasskeyOut: {
-            /** Backedup */
+            /**
+             * Backedup
+             * @description Whether the provider holds a copy, so losing the device does not lock the person out. A bank reads it when it judges how many passkeys someone needs.
+             */
             backedUp: boolean;
             /**
              * Createdat
              * Format: date-time
+             * @description When the passkey was enrolled, UTC. A bank's security review reads it beside the security log.
+             * @example 2026-09-14T08:12:31Z
              */
             createdAt: string;
-            /** Devicetype */
+            /**
+             * Devicetype
+             * @description `single_device` for a passkey that lives on one authenticator, `multi_device` for one a provider syncs between the person's devices. The pair is fixed in code.
+             * @example multi_device
+             */
             deviceType: string;
             /**
              * Id
              * Format: uuid
+             * @description Name this passkey in the rename and remove calls.
              */
             id: string;
-            /** Lastusedat */
+            /**
+             * Lastusedat
+             * @description When it last signed anything, UTC; null until it is first used. It is how a bank spots the device nobody carries any more.
+             * @example 2026-09-20T06:41:02Z
+             */
             lastUsedAt: string | null;
-            /** Nickname */
+            /**
+             * Nickname
+             * @description What the person calls this device, or what the server named it from the device when they did not.
+             * @example Work laptop
+             */
             nickname: string;
-            /** Transports */
+            /**
+             * Transports
+             * @description How this passkey is reached: `internal`, `hybrid`, `usb` or `nfc`, as the authenticator reported at registration.
+             * @example [
+             *       "internal",
+             *       "hybrid"
+             *     ]
+             */
             transports: string[];
         };
         /** PasskeyPatch */
         PasskeyPatch: {
-            /** Nickname */
+            /**
+             * Nickname
+             * @description What this device should be called from now on, so a person can tell their laptop from their phone when they retire one.
+             * @example Work laptop
+             */
             nickname: string;
         };
         /** PasskeyRegisterBody */
         PasskeyRegisterBody: {
+            /** @description What `navigator.credentials.create()` returned, passed through untouched for the server to verify. */
             credential: components["schemas"]["PasskeyRegistrationCredential"];
-            /** Nickname */
+            /**
+             * Nickname
+             * @description What this passkey should be called in the person's own list. Leave it out and the server names it after the device, so the list stays readable without anyone typing.
+             * @example Work laptop
+             */
             nickname?: string | null;
         };
-        /** PasskeyRegistered */
+        /**
+         * PasskeyRegistered
+         * @description The answer to enrolling a passkey: the new device, and the full session it earns
+         *     when the emailed code is what got the person this far.
+         */
         PasskeyRegistered: {
-            /** Accesstoken */
+            /**
+             * Accesstoken
+             * @description The bearer token of the full session the enrolment earned, or null when the caller already had one and simply added another device.
+             */
             accessToken: string | null;
-            /** Expiresin */
+            /**
+             * Expiresin
+             * @description Seconds of life in that bearer token, or null when no new session was issued.
+             * @example 600
+             */
             expiresIn: number | null;
+            /** @description The device as it now appears in the person's own list. */
             passkey: components["schemas"]["PasskeyOut"];
-            /** Sessionkind */
+            /**
+             * Sessionkind
+             * @description Always `full` here: from this passkey on, the emailed code is dead and the person signs in with the device. Fixed in code.
+             * @example full
+             */
             sessionKind: string;
         };
         /**
@@ -1875,27 +2561,61 @@ export interface components {
          * @description What the browser returns from `create()`, serialised with base64url fields.
          */
         PasskeyRegistrationCredential: {
-            /** Authenticatorattachment */
+            /**
+             * Authenticatorattachment
+             * @description Where the passkey ended up: `platform` on this device, `cross-platform` on a key carried between devices. It is what the suggested name is derived from.
+             * @example platform
+             */
             authenticatorAttachment?: string | null;
-            /** Clientextensionresults */
+            /**
+             * Clientextensionresults
+             * @description Whatever WebAuthn extensions the browser ran, passed through as the specification defines them. Nothing here changes the decision.
+             */
             clientExtensionResults?: {
                 [key: string]: unknown;
             } | null;
-            /** Id */
+            /**
+             * Id
+             * @description The credential handle the authenticator issued, base64url; it names this passkey in every later call.
+             */
             id: string;
-            /** Rawid */
+            /**
+             * Rawid
+             * @description The same handle as raw bytes, base64url, exactly as the browser produced it.
+             */
             rawId: string;
+            /** @description The authenticator's signed answer, which the server verifies before it trusts the new key. */
             response: components["schemas"]["WebAuthnAttestationResponse"];
-            /** Type */
+            /**
+             * Type
+             * @description Always `public-key`, the only credential family WebAuthn defines.
+             * @example public-key
+             */
             type: string;
         };
-        /** PermissionOut */
+        /**
+         * PermissionOut
+         * @description One thing a role can be given. The role editor lists these; nothing else in the
+         *     product decides anything from a role's name.
+         */
         PermissionOut: {
-            /** Description */
+            /**
+             * Description
+             * @description What holding it lets a person do, in the words the role editor shows.
+             * @example Sign off a case worked by someone else.
+             */
             description: string;
-            /** Group */
+            /**
+             * Group
+             * @description The area this belongs to, taken from the part before the dot, so the editor can show permissions in sections.
+             * @example cases
+             */
             group: string;
-            /** Key */
+            /**
+             * Key
+             * @description What a role stores and what a screen branches on. The set is fixed in code, one per capability the product has.
+             * @example cases.signoff
+             */
             key: string;
         };
         /**
@@ -2098,66 +2818,166 @@ export interface components {
         };
         /** RefreshResult */
         RefreshResult: {
-            /** Accesstoken */
+            /**
+             * Accesstoken
+             * @description The replacement bearer token for the `Authorization` header of every later call.
+             */
             accessToken: string;
-            /** Expiresin */
+            /**
+             * Expiresin
+             * @description Seconds of life left in the replacement, counted from this answer.
+             * @example 600
+             */
             expiresIn: number;
         };
         /** RoleCreate */
         RoleCreate: {
-            /** Key */
+            /**
+             * Key
+             * @description The stable name this role is stored under, chosen by the bank and never changed afterwards, since every member row and audit entry keeps it.
+             * @example outsourcing_officer
+             */
             key: string;
-            /** Labels */
+            /**
+             * Labels
+             * @description What to call the role, in at least one of the bank's languages; the others fall back to it.
+             * @example {
+             *       "en": "Outsourcing officer",
+             *       "sv": "Outsourcingansvarig"
+             *     }
+             */
             labels: {
                 [key: string]: string;
             };
-            /** Permissions */
+            /**
+             * Permissions
+             * @description What the role may do; an unknown key answers 422 `unknown_key`, and nothing a bank cannot hold is accepted.
+             * @example [
+             *       "register.read",
+             *       "cases.contribute"
+             *     ]
+             */
             permissions: string[];
             /**
              * Usagenote
+             * @description When to give somebody this role, so a second administrator makes the same call a year from now.
              * @default
+             * @example Owns the obligations that come with outsourced operations.
              */
             usageNote: string;
         };
-        /** RoleOut */
+        /**
+         * RoleOut
+         * @description One role of the bank's own list: a named bundle of permissions, seeded with the
+         *     product's seven and extended by the bank itself (ID-09).
+         */
         RoleOut: {
-            /** Active */
+            /**
+             * Active
+             * @description False once the bank has retired the role: it stays for the audit trail and for old rows, and nobody can be given it again.
+             */
             active: boolean;
-            /** Issystem */
+            /**
+             * Issystem
+             * @description True for the seven roles the product ships. A bank relabels them but cannot change what they may do or retire them, so an upgrade never changes who can approve.
+             */
             isSystem: boolean;
-            /** Key */
+            /**
+             * Key
+             * @description What every member row and audit entry stores; it never changes, while the labels are translated and relabelled. A key from the bank's roles list, which an admin manages.
+             * @example compliance_officer
+             */
             key: string;
-            /** Kind */
-            kind: string | null;
-            /** Label */
+            /**
+             * Kind
+             * @description Groups roles that behave alike where the bank uses such groups, null where it does not. A key from the list's own groups, which an admin manages.
+             * @example null
+             */
+            kind?: string | null;
+            /**
+             * Label
+             * @description The role's name in the caller's language, for screens and pickers.
+             * @example Compliance officer
+             */
             label: string;
-            /** Labels */
+            /**
+             * Labels
+             * @description The name in every language the bank has, keyed by language, so the role editor can show them all at once.
+             * @example {
+             *       "en": "Compliance officer",
+             *       "sv": "Compliance officer"
+             *     }
+             */
             labels: {
                 [key: string]: string;
             };
-            /** Permissions */
+            /**
+             * Permissions
+             * @description What holding this role lets a person do. A session's rights are these, flattened across the roles it holds.
+             * @example [
+             *       "cases.triage",
+             *       "proposals.create",
+             *       "vocab.manage"
+             *     ]
+             */
             permissions: string[];
-            /** Usagenote */
+            /**
+             * Usagenote
+             * @description When to give somebody this role, in the bank's own words, shown under it in the picker so two administrators choose alike.
+             * @example Triages changes, assesses, proposes to the library, manages vocabularies.
+             */
             usageNote: string;
         };
         /** RolePatch */
         RolePatch: {
-            /** Labels */
+            /**
+             * Labels
+             * @description What to call the role from now on; leave it out to keep the names it has.
+             * @example {
+             *       "en": "Outsourcing officer"
+             *     }
+             */
             labels?: {
                 [key: string]: string;
             } | null;
-            /** Permissions */
+            /**
+             * Permissions
+             * @description What the role may do from now on, replacing what it may do today; changing this needs a fresh passkey check, and a system role refuses it (422 `system_role`).
+             * @example [
+             *       "register.read",
+             *       "cases.work"
+             *     ]
+             */
             permissions?: string[] | null;
-            /** Usagenote */
+            /**
+             * Usagenote
+             * @description When to give somebody the role, rewritten; leave it out to keep what is there.
+             */
             usageNote?: string | null;
         };
-        /** RoleRef */
+        /**
+         * RoleRef
+         * @description A row of an admin-managed list as the API hands it out: the key to store and the
+         *     label to show. Used for roles and for languages.
+         */
         RoleRef: {
-            /** Key */
+            /**
+             * Key
+             * @description What to store, compare and send back; it never changes, while labels are relabelled and translated. A key from the roles or languages list, which an admin manages.
+             * @example compliance_officer
+             */
             key: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description Groups rows that behave alike where the list has such groups, and is null where it has none. A key from the list's own groups, which an admin manages.
+             * @example null
+             */
             kind?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description What to print on screen, already in the caller's language; two banks may name the same key differently, so never branch on it.
+             * @example Compliance officer
+             */
             label: string;
         };
         /**
@@ -2172,82 +2992,166 @@ export interface components {
             /** Terms */
             terms: components["schemas"]["LibraryRef"][];
         };
-        /** SecurityEventOut */
+        /**
+         * SecurityEventOut
+         * @description One line of the bank's own sign-in and key record (ID-11). It is what a bank's
+         *     security review and a vendor assessment read, so it holds attempts as well as successes.
+         */
         SecurityEventOut: {
-            /** Email */
+            /**
+             * Email
+             * @description The address the attempt was made with, as typed. It is what makes a run of failures against one person visible.
+             * @example anna@example-bank.test
+             */
             email: string;
-            /** Event */
+            /**
+             * Event
+             * @description What happened, from `code_sent` and `signin` to `signin_failed`, `code_locked`, `session_revoked` and `key_revoked`. The set is fixed in code, one per thing worth reviewing.
+             * @example signin
+             */
             event: string;
-            /** Failurereason */
+            /**
+             * Failurereason
+             * @description Why it did not, in a few fixed words, and empty when it did. It never says whether an address is known here.
+             * @example wrong_code
+             */
             failureReason: string;
-            /** Id */
+            /**
+             * Id
+             * @description Where this line sits in the ledger; the numbers only ever climb, so a gap means a row was never written, not removed.
+             * @example 10482
+             */
             id: number;
-            /** Ip */
+            /**
+             * Ip
+             * @description Where it came from, or null where the deployment does not pass it through.
+             * @example 81.229.14.7
+             */
             ip: string | null;
-            /** Method */
+            /**
+             * Method
+             * @description How the person or system authenticated: `email_code` for the one-time enrolment code, `passkey` for a device, `api_key` for an integration. The three are fixed in code.
+             * @example passkey
+             */
             method: string;
             /**
              * Occurredat
              * Format: date-time
+             * @description When the attempt was made, UTC, as the bank's own security review reads it.
+             * @example 2026-09-20T07:02:11Z
              */
             occurredAt: string;
-            /** Success */
+            /**
+             * Success
+             * @description Whether the attempt worked, so a reviewer can count failures against one address or one key.
+             */
             success: boolean;
-            /** Useragent */
+            /**
+             * Useragent
+             * @description The browser or client as it identified itself, empty where there was none.
+             * @example Chrome 141 on macOS
+             */
             userAgent: string;
-            /** Userid */
+            /**
+             * Userid
+             * @description Which account it concerned, or null when the attempt matched nobody at the bank.
+             */
             userId: string | null;
         };
         /** SecurityLogPage */
         SecurityLogPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The lines on this page, newest first.
+             */
             items: components["schemas"]["SecurityEventOut"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many lines the bank's record holds in all.
+             * @example 10482
+             */
             total: number;
         };
-        /** SessionOut */
+        /**
+         * SessionOut
+         * @description One live sign-in. A person reviews their own; an administrator reviews a member's
+         *     when they suspect a device was lost.
+         */
         SessionOut: {
             /**
              * Createdat
              * Format: date-time
+             * @description When the person signed in, UTC.
+             * @example 2026-09-20T07:02:11Z
              */
             createdAt: string;
-            /** Current */
+            /**
+             * Current
+             * @description Whether this is the session making the call, so a person does not sign themselves out while clearing the others.
+             */
             current: boolean;
             /**
              * Id
              * Format: uuid
+             * @description Name this sign-in when revoking it.
              */
             id: string;
-            /** Ip */
+            /**
+             * Ip
+             * @description Where the sign-in came from, or null where the deployment does not pass it through. Kept for the security review and nothing else.
+             * @example 81.229.14.7
+             */
             ip: string | null;
             /**
              * Lastseenat
              * Format: date-time
+             * @description When this sign-in last called the API, UTC. It is what makes a forgotten browser somewhere obvious.
+             * @example 2026-09-20T08:44:57Z
              */
             lastSeenAt: string;
-            /** Useragent */
+            /**
+             * Useragent
+             * @description The browser and operating system as they identified themselves, so a person recognises their own device in the list.
+             * @example Chrome 141 on macOS
+             */
             userAgent: string;
         };
         /** SessionTokens */
         SessionTokens: {
-            /** Accesstoken */
+            /**
+             * Accesstoken
+             * @description Send it as `Authorization: Bearer …` on every later call. Short-lived on purpose; the refresh cookie set beside it buys the next one.
+             */
             accessToken: string;
-            /** Expiresin */
+            /**
+             * Expiresin
+             * @description Seconds of life left in the bearer token. Refresh before it runs out or the next call answers 401 `unauthenticated`.
+             * @example 600
+             */
             expiresIn: number;
-            /** Sessionkind */
+            /**
+             * Sessionkind
+             * @description `enrolment` while the person has only the emailed code and may do nothing but add a passkey, `full` once a passkey has signed them in. The pair is fixed in code.
+             * @example full
+             */
             sessionKind: string;
         };
-        /** StepUpResult */
+        /**
+         * StepUpResult
+         * @description The proof of a fresh passkey check, which the sensitive calls demand (ID-06).
+         */
         StepUpResult: {
             /**
              * Assertionid
              * Format: uuid
+             * @description The proof itself, which the audit row of the action it unlocks carries, so an assurance pack can tie a decision to the moment somebody confirmed it with a passkey. The session now counts as stepped up, so the call that asked simply runs again.
              */
             assertionId: string;
             /**
              * Expiresat
              * Format: date-time
+             * @description When the proof stops counting, UTC. After it, the same call answers 403 `step_up_required` and the person is asked for their passkey again.
+             * @example 2026-09-20T09:05:00Z
              */
             expiresAt: string;
         };
@@ -2348,35 +3252,80 @@ export interface components {
              */
             version: number;
         };
-        /** TenantOut */
+        /**
+         * TenantOut
+         * @description The bank's own profile: who it is, which languages its content is kept in, and how
+         *     far its setting-up has got.
+         */
         TenantOut: {
-            /** Contentlanguages */
+            /**
+             * Contentlanguages
+             * @description The languages the bank keeps its own assessments and summaries in; a Nordic bank usually holds its own and English.
+             */
             contentLanguages: components["schemas"]["RoleRef"][];
+            /** @description Which language the bank reads regulation in when a person has chosen none, or null before it has picked one. */
             defaultLanguage: components["schemas"]["RoleRef"] | null;
             /**
              * Id
              * Format: uuid
+             * @description The bank itself, as every tenant row refers to it.
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description The bank as it names itself, shown in the shell and on everything it exports.
+             * @example Example Bank AB
+             */
             name: string;
+            /** @description How far the bank has got in setting itself up. */
             onboarding: components["schemas"]["Onboarding"];
-            /** Slug */
+            /**
+             * Slug
+             * @description The bank's short name in links and in support conversations; lower-case letters, digits and hyphens, and it never changes.
+             * @example example-bank
+             */
             slug: string;
-            /** Status */
+            /**
+             * Status
+             * @description `active` while the bank is working in the product, `deactivated` once its subscription has ended and it may only be read. The pair is fixed in code.
+             * @example active
+             */
             status: string;
-            /** Timezone */
+            /**
+             * Timezone
+             * @description The zone the bank's own days are counted in, so a deadline falls where its compliance officers sit rather than where a server does.
+             * @example Europe/Stockholm
+             */
             timezone: string;
         };
         /** TenantPatch */
         TenantPatch: {
-            /** Contentlanguages */
+            /**
+             * Contentlanguages
+             * @description The languages the bank keeps its own content in from now on, replacing the ones it keeps today; at least one. Keys from the languages list, which an admin manages.
+             * @example [
+             *       "sv",
+             *       "en"
+             *     ]
+             */
             contentLanguages?: string[] | null;
-            /** Defaultlanguage */
+            /**
+             * Defaultlanguage
+             * @description Which language to fall back on for people who have chosen none. A key from the languages list, which an admin manages.
+             * @example sv
+             */
             defaultLanguage?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description What the bank should be called from now on; leave it out to keep the name it has.
+             * @example Example Bank AB
+             */
             name?: string | null;
-            /** Timezone */
+            /**
+             * Timezone
+             * @description Which zone the bank's days should be counted in from now on, as an IANA name; anything else answers 422 `unknown_key`.
+             * @example Europe/Stockholm
+             */
             timezone?: string | null;
         };
         /** TermRef */
@@ -2706,35 +3655,85 @@ export interface components {
              */
             usageNote: string;
         };
-        /** WebAuthnAssertionResponse */
+        /**
+         * WebAuthnAssertionResponse
+         * @description The authenticator's answer to `get()`, passed through untouched.
+         */
         WebAuthnAssertionResponse: {
-            /** Authenticatordata */
+            /**
+             * Authenticatordata
+             * @description What the authenticator did, base64url: whether it checked the person, and its signature counter, which a cloned device betrays.
+             */
             authenticatorData: string;
-            /** Clientdatajson */
+            /**
+             * Clientdatajson
+             * @description What the browser saw, base64url: the challenge, the origin and the operation, for the server to compare with what it asked for.
+             */
             clientDataJSON: string;
-            /** Signature */
+            /**
+             * Signature
+             * @description The authenticator's signature over the challenge, base64url. It is the whole proof: it verifies against the stored public key or the attempt is refused.
+             */
             signature: string;
-            /** Userhandle */
+            /**
+             * Userhandle
+             * @description Which account the authenticator thinks it just signed for. The server compares it and refuses a passkey that belongs to somebody else (422 `user_handle_mismatch`).
+             */
             userHandle?: string | null;
         };
-        /** WebAuthnAttestationResponse */
+        /**
+         * WebAuthnAttestationResponse
+         * @description The authenticator's answer to `create()`, passed through untouched.
+         */
         WebAuthnAttestationResponse: {
-            /** Attestationobject */
+            /**
+             * Attestationobject
+             * @description The new public key and the authenticator's own data, base64url, for the server to store and verify against.
+             */
             attestationObject: string;
-            /** Clientdatajson */
+            /**
+             * Clientdatajson
+             * @description What the browser saw, base64url: the challenge, the origin and the operation. The server checks it against what it asked for, which is how a relayed prompt is caught.
+             */
             clientDataJSON: string;
-            /** Transports */
+            /**
+             * Transports
+             * @description How this authenticator can be reached, so a later sign-in prompt offers the right option first.
+             * @example [
+             *       "internal",
+             *       "hybrid"
+             *     ]
+             */
             transports?: string[] | null;
         };
-        /** WebAuthnAuthenticatorSelection */
+        /**
+         * WebAuthnAuthenticatorSelection
+         * @description What the server demands of the authenticator before it accepts the new passkey.
+         */
         WebAuthnAuthenticatorSelection: {
-            /** Authenticatorattachment */
+            /**
+             * Authenticatorattachment
+             * @description Whether the passkey must live on this device (`platform`) or may be a security key carried between them (`cross-platform`); absent leaves the person free to choose.
+             * @example platform
+             */
             authenticatorAttachment?: string | null;
-            /** Requireresidentkey */
+            /**
+             * Requireresidentkey
+             * @description The same demand in the wording older browsers understand; kept so they behave the same.
+             * @example true
+             */
             requireResidentKey?: boolean | null;
-            /** Residentkey */
+            /**
+             * Residentkey
+             * @description Whether the passkey must be stored on the authenticator itself, which is what lets a person sign in without first typing who they are.
+             * @example required
+             */
             residentKey?: string | null;
-            /** Userverification */
+            /**
+             * Userverification
+             * @description Whether the authenticator must prove the person is present and is themselves, by biometric or device PIN. A bank keeps this `required`: it is the second factor.
+             * @example required
+             */
             userVerification?: string | null;
         };
         /**
@@ -2742,36 +3741,90 @@ export interface components {
          * @description `navigator.credentials.create({publicKey: ...})`, bytes as base64url.
          */
         WebAuthnCreationOptions: {
-            /** Attestation */
+            /**
+             * Attestation
+             * @description How much the authenticator must say about itself. `none` is what a bank asks for here: the device model is not worth the privacy cost.
+             * @example none
+             */
             attestation?: string | null;
+            /** @description What the new passkey must satisfy before the server will take it. */
             authenticatorSelection?: components["schemas"]["WebAuthnAuthenticatorSelection"] | null;
-            /** Challenge */
+            /**
+             * Challenge
+             * @description Random bytes, base64url, that the authenticator has to sign. It is good once and for a few minutes, so a captured answer cannot be replayed.
+             */
             challenge: string;
-            /** Excludecredentials */
+            /**
+             * Excludecredentials
+             * @description The passkeys this account already has. The authenticator refuses to make a second one for the same device, so nobody ends up with duplicates they cannot tell apart.
+             */
             excludeCredentials?: components["schemas"]["WebAuthnCredentialDescriptor"][] | null;
-            /** Hints */
+            /**
+             * Hints
+             * @description What the browser should suggest first, so the prompt matches how this bank enrols people: `client-device`, `hybrid` or `security-key`.
+             * @example [
+             *       "client-device"
+             *     ]
+             */
             hints?: string[] | null;
-            /** Pubkeycredparams */
+            /**
+             * Pubkeycredparams
+             * @description The signature algorithms the server accepts, best first.
+             */
             pubKeyCredParams: components["schemas"]["WebAuthnPubKeyCredParam"][];
+            /** @description Who the passkey is being made for, and the one domain it will ever work on. */
             rp: components["schemas"]["WebAuthnRpEntity"];
-            /** Timeout */
+            /**
+             * Timeout
+             * @description How long the browser should wait for the person, in milliseconds, before giving up on the prompt; it matches the life of the challenge.
+             * @example 120000
+             */
             timeout?: number | null;
+            /** @description The account the new passkey signs in, as the operating system will list it. */
             user: components["schemas"]["WebAuthnUserEntity"];
         };
-        /** WebAuthnCredentialDescriptor */
+        /**
+         * WebAuthnCredentialDescriptor
+         * @description One passkey named to the browser: to exclude on registration, to offer on sign-in.
+         */
         WebAuthnCredentialDescriptor: {
-            /** Id */
+            /**
+             * Id
+             * @description The credential handle, base64url, as the authenticator issued it.
+             */
             id: string;
-            /** Transports */
+            /**
+             * Transports
+             * @description How this passkey can be reached, so the browser offers the right prompt instead of every one: `internal` for the device itself, `hybrid` for a phone, `usb` or `nfc` for a security key.
+             * @example [
+             *       "internal",
+             *       "hybrid"
+             *     ]
+             */
             transports?: string[] | null;
-            /** Type */
+            /**
+             * Type
+             * @description Always `public-key`, the only credential family WebAuthn defines.
+             * @example public-key
+             */
             type: string;
         };
-        /** WebAuthnPubKeyCredParam */
+        /**
+         * WebAuthnPubKeyCredParam
+         * @description One signature algorithm the server will accept from the authenticator.
+         */
         WebAuthnPubKeyCredParam: {
-            /** Alg */
+            /**
+             * Alg
+             * @description The COSE algorithm the new key may sign with: -7 is ECDSA on P-256, -257 is RSA. The server lists what it accepts, best first.
+             * @example -7
+             */
             alg: number;
-            /** Type */
+            /**
+             * Type
+             * @description Always `public-key`: WebAuthn defines no other credential family, and the browser rejects anything else.
+             * @example public-key
+             */
             type: string;
         };
         /**
@@ -2779,31 +3832,74 @@ export interface components {
          * @description `navigator.credentials.get({publicKey: ...})`, bytes as base64url.
          */
         WebAuthnRequestOptions: {
-            /** Allowcredentials */
+            /**
+             * Allowcredentials
+             * @description Which passkeys may answer. Empty on sign-in, so no list of a person's devices leaks before anyone has proved who they are; filled on a step-up, where the session already says who is asking.
+             */
             allowCredentials?: components["schemas"]["WebAuthnCredentialDescriptor"][] | null;
-            /** Challenge */
+            /**
+             * Challenge
+             * @description Random bytes, base64url, for the authenticator to sign. Good once and for a few minutes, so a captured answer proves nothing later.
+             */
             challenge: string;
-            /** Rpid */
+            /**
+             * Rpid
+             * @description The domain whose passkeys may answer. The browser will not hand a passkey to any other site, which is what makes a phishing page useless.
+             * @example app.bleqq.com
+             */
             rpId?: string | null;
-            /** Timeout */
+            /**
+             * Timeout
+             * @description How long the browser should wait for the person, in milliseconds, before giving up on the prompt; it matches the life of the challenge.
+             * @example 120000
+             */
             timeout?: number | null;
-            /** Userverification */
+            /**
+             * Userverification
+             * @description Whether the authenticator must check the person by biometric or device PIN before it signs. A bank keeps this `required`.
+             * @example required
+             */
             userVerification?: string | null;
         };
-        /** WebAuthnRpEntity */
+        /**
+         * WebAuthnRpEntity
+         * @description The relying party the browser shows the person while they create a passkey.
+         */
         WebAuthnRpEntity: {
-            /** Id */
+            /**
+             * Id
+             * @description The domain the passkey is bound to. A passkey made here works on this domain and no other, which is what stops a lookalike site from using it.
+             * @example app.bleqq.com
+             */
             id?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description What the browser and the operating system show for this site while somebody creates a passkey, so they can see who it is for.
+             * @example bleqq
+             */
             name: string;
         };
-        /** WebAuthnUserEntity */
+        /**
+         * WebAuthnUserEntity
+         * @description Who the browser is making the passkey for.
+         */
         WebAuthnUserEntity: {
-            /** Displayname */
+            /**
+             * Displayname
+             * @description The person's own name, shown beside the account in the same prompt.
+             * @example Anna Lindgren
+             */
             displayName: string;
-            /** Id */
+            /**
+             * Id
+             * @description The account handle, base64url, opaque to the browser. It is a random per-account value, never an address.
+             */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description What the operating system lists beside the passkey when the person is asked to pick one.
+             * @example anna@example-bank.test
+             */
             name: string;
         };
     };

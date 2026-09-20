@@ -172,6 +172,44 @@ A query string is tenant content (`?q=` is what someone searched for): the
 access log prints the path without it, and no formatter or Sentry hook may
 pass one on.
 
+### 1.8 The specification documents itself
+
+`openapi.json` is what a bank's integration team reads, and often all it reads. The text
+lives with the code — Pydantic `Field(description=..., examples=[...])` in `schemas.py`,
+the view's docstring in `api.py` — so it reaches the generated spec; nothing is written
+into the exported file by hand. `backend/scripts/openapi_quality.py` is the gate, beside
+contract drift in `scripts/prepush.sh` and in CI.
+
+- **Every request and response property carries a `description`** saying what the field
+  means to a bank and when it is used. Never what its type is, never the field name in
+  other words: at least six words, of which at least three say something the name and the
+  type do not.
+- **Every property whose meaning is not obvious carries an `examples` entry** with a
+  realistic value from the prototype's data: Example Bank AB, `example-bank`,
+  `Europe/Stockholm`, `sv`, `legal_entity:bank`, an FFFS or EU instrument. A
+  credential-shaped field (a token, a plain key, a challenge, a signature) carries none,
+  so no example in a public document can be mistaken for a live secret.
+- **An enumerated or keyed field says where its values come from**, in one of three
+  documented ways, since enums in code are for kinds only (CLAUDE.md section 5):
+
+  | The field | What its description says |
+  |---|---|
+  | Values come from a vocabulary | "A key from the `<name>` list, **which an admin manages**" — never a list of values, which a tenant admin changes without a deploy |
+  | The set is fixed in code (a kind) | Names each value in backticks and says the set is **fixed in code** |
+  | The caller invents the value (a new role's key) | Says it is **chosen by the** bank, and what it may never change to afterwards |
+
+  A property that carries an `enum` in the spec must name each of its values in its
+  description; `key`, `kind`, `*Kind` and `*Keys` are held to the same rule by name. A
+  singular `*Key` (`plainKey`, `keyPrefix`) is a secret or an identifier, not a list
+  member, and is not.
+- **Every operation keeps its summary and gains a description** — the view's docstring —
+  naming the permission or scope it needs (or saying it needs none and why), the problem
+  codes it can answer with, and what a bank uses it for.
+- **`backend/scripts/openapi_quality_allowlist.txt`** exempts what genuinely needs
+  nothing, and the apps whose documentation task has not run yet. Every line carries its
+  reason after `#`; a line without one fails, and so does a line that suppresses nothing,
+  so the list shrinks as each app lands and can never rot into a mute.
+
 ## 2. Structural guard tests (playbook 5)
 
 Built first, kept forever, in `apps/shared/tests_*.py`. Each fails with a
@@ -357,6 +395,7 @@ on committed lockfiles plus `npm audit` under `bash -eo pipefail` and
 refusing an empty lockfile, CodeQL with its own SARIF gate (medium and above,
 acceptances per fingerprint with a reason, stale ones reported),
 requirements coverage, contract drift against `docs/inputs/openapi.yaml`,
+OpenAPI quality (every property and operation documented, section 1.8),
 search and classification evaluation, message catalogs, pill gallery
 screenshot, dependency licences (no copyleft, Apache attribution for Green),
 container image scan.

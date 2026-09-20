@@ -1,0 +1,41 @@
+# What scripts/openapi_quality.py does not yet demand a description for. One line per
+# entry, each carrying its reason after `#`; an entry with no reason fails the gate, and
+# so does an entry that suppresses nothing, so this list shrinks as each app is documented
+# and can never rot into a mute (CONVENTIONS 1.8).
+#
+# Entry forms:
+#   <Schema>.<property>   a property, glob-matched (`Vocabulary*.*` is every vocabulary schema)
+#   op:<operationId>      one operation, glob-matched
+#   tag:<Tag>             every operation carrying that tag
+#
+# Everything below is an app whose documentation task has not run yet
+# (docs/plans/PARALLEL_PLAN.md section 3.3, the `oas-` packages). Identity and tenants
+# carry no entry: they are documented. Delete a block when its task lands.
+
+# oas-library-taxonomy: the library and taxonomy shapes, documented with that package
+Footprint*.*              # oas-library-taxonomy documents the footprint shapes
+Jurisdiction*.*           # oas-library-taxonomy documents the jurisdiction rows
+LibraryRef.*              # oas-library-taxonomy documents the library reference shape
+LocalizedText.*           # oas-library-taxonomy documents the localized text shape
+Obligation*.*             # oas-library-taxonomy documents the inventory shapes
+OutsideReason.*           # oas-library-taxonomy documents why an obligation sits outside the footprint
+PartialDate.*             # oas-library-taxonomy documents legal dates and their precision
+PersonRef.*               # oas-library-taxonomy documents the person reference the requests carry
+ScopeDimension.*          # oas-library-taxonomy documents an obligation's scope dimensions
+Taxonomy*.*               # oas-library-taxonomy documents the taxonomy dimensions and terms
+TermRef.*                 # oas-library-taxonomy documents the term reference shape
+Vocabulary*.*             # oas-library-taxonomy documents the vocabulary lists and their rows
+tag:Library               # oas-library-taxonomy documents the library operations
+tag:Taxonomy              # oas-library-taxonomy documents the taxonomy and vocabulary operations
+
+# oas-proposals-governance: proposals and the audit trail, documented with that package
+Audit*.*                  # oas-proposals-governance documents the audit rows
+Proposal*.*               # oas-proposals-governance documents the proposal shapes
+tag:Governance            # oas-proposals-governance documents the audit operations
+tag:Proposals             # oas-proposals-governance documents the proposal operations
+
+# oas-shared-errors: the shared shapes and the RFC 9457 problem details
+MailOutboxMessage.*       # oas-shared-errors documents the E2E mail outbox shape
+PageQuery.*               # oas-shared-errors documents pagination, shared by every list
+ProductInfo.*             # oas-shared-errors documents the product shape
+tag:Shared                # oas-shared-errors documents the product and E2E operations

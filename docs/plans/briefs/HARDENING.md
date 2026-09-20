@@ -21,6 +21,7 @@ The main agent adds a row here whenever a review turns up such a finding.
 | H13 | Sessions carry platform grants even inside a bank, and a bank invitation does not refuse an address holding a platform role | chunk4-T4 review | medium | Task H-A (cloud, in progress) |
 | H14 | Every deploy resets sort order, active and default on each tenant's own system list rows (`taxonomy/tenant_hooks.py` uses update_or_create), undoing a tenant admin's reorder | scope T01 review | medium | The T01 integration task (local, next) |
 | H15 | `rls_operations(mixed=True)` gives `api_key`, `problem_report`, `ai_generation` and `outbox_event` one FOR ALL policy whose write check equals the mixed read rule, so a bank session can insert, change or delete platform rows at the database level (for example the platform agent's API key); two zones must hold in the database, not only in code | E5 fix, 2026-09-19 | high | Task H-C below, after H-B merges (both touch `migration_helpers.py`) |
+| H16 | Every one of the API's schema properties reaches `openapi.json` with no description and no example, and no operation says which permission it needs or which problem codes it answers, so a bank's integration team cannot read the specification on its own | Alex, 2026-09-20 | medium, assurance | `oas-quality-gate` below, then one package per app (PARALLEL_PLAN section 3.3.2) |
 
 ## Task H-A: three small guards (after chunk3-rest-T3 merges, which owns `apps/shared/schemas.py`)
 
@@ -60,3 +61,25 @@ Split every mixed table's policy the way `agent_run` does since the E5 fix: a FO
 **Added from the H-B review (low, same file):** the append-only guard's hatch check names the role to refuse (`current_user <> 'cw_app'`), so any other role, a SECURITY DEFINER function owned by the migrator, or a cascading foreign key into an append-only table could still use it. Replace it with an allowlist: `current_setting('cw.maintenance', true) = 'on' AND session_user = <the migrator role>` in a new shared migration, and add a guard test that no SECURITY DEFINER function exists and no foreign key into an append-only table has a delete or update action. The compliance lint also accepts the quoted spelling `"CW"."MAINTENANCE"`: widen its pattern to optional quotes (case-insensitive) with a planted test.
 
 **On `problem_report` (added 2026-09-20, from Alex's answer to chunk 4's Q1):** a bank's problem reports stay inside the bank, so no platform read window is built on top of H-C's split — H15's fix keeps the plain split policy for `problem_report`, with no extra policy, no column trigger and no transaction-local flag, and `chunk4-T16` pins that shape in `tests_rls.py`.
+
+## The OpenAPI quality gate and its allowlist (H16, 2026-09-20)
+
+`backend/scripts/openapi_quality.py` runs from `scripts/prepush.sh` and CI beside the
+contract-drift gate, and fails when a property or an operation reaches `openapi.json`
+undocumented, when a description only restates the field name or its type, or when an
+enumerated or keyed field never says where its values come from (the standard is
+CONVENTIONS 1.8 and PLAYBOOK 4.8).
+
+**The gate starts with an allowlist covering the apps that are not documented yet**
+(`backend/scripts/openapi_quality_allowlist.txt`: the library, taxonomy, proposals,
+governance and shared shapes, and their operations by tag), so it is green from the first
+commit instead of blocking every branch until the whole API is written. Each line carries
+the package that will document it. The gate **tightens as each app lands**: a package
+deletes its own block, and, because a line that suppresses nothing is itself a finding, a
+block left behind after its app is documented fails the gate. The allowlist can only
+shrink, and it can never rot into a mute.
+
+Identity and tenants carry no block: `oas-quality-gate` documented them as the worked
+example, so the gate holds 212 of the 480 properties and 43 of the 76 operations, and 22
+allowlist lines cover the apps still to come. The four packages that document them are in
+`docs/plans/PARALLEL_PLAN.md` section 3.3.2.

@@ -252,6 +252,9 @@ jobs:
       - name: Contract drift
         run: bash ./run.sh run python scripts/contract_drift.py
 
+      - name: OpenAPI quality (every property and operation documented)
+        run: bash ./run.sh run python scripts/openapi_quality.py
+
       - name: Search and classification evaluation
         run: bash ./run.sh run python scripts/search_eval.py
 

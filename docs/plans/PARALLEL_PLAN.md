@@ -2,7 +2,7 @@
 
 Written 2026-09-19 by the planning workflow. Revised the same day after a review that sent 35 corrections (section 9 lists the parts not taken). The plan changes only the order of work and where each piece runs. No requirement, invariant or gate is lowered. The review found some pieces missing, and the plan now adds them: a fix package after every security review, an R1 performance check, owners for console surfaces nobody had picked up, and a stronger gate at each merge.
 
-It covers 454 work packages (the replan of 2026-09-20 removed one chunk 4 package and added two in chunk 11; section 3.3.1). 8 are done, 7 are built and waiting for review or merge, 2 are running, and 436 are still to start. That is about 356 agent-hours of package work, plus about 240 agent-hours of review. The packages are:
+It covers 459 work packages (the replan of 2026-09-20 removed one chunk 4 package and added two in chunk 11, section 3.3.1, and the API documentation work of 2026-09-20 added five, section 3.3.2). 8 are done, 8 are built and waiting for review or merge, 2 are running, and 441 are still to start. That is about 356 agent-hours of package work, plus about 240 agent-hours of review. The packages are:
 - the package maps for chunks 5 to 14;
 - the rest of chunk 3 and all of chunk 4, from `docs/plans/briefs/CHUNK3_TASKS.md` and `CHUNK4_TASKS.md`, renamed `c3-` and `c4-` (their files, gates and done-conditions stay as written there);
 - the PRD 0.3 tasks, from `docs/plans/briefs/FEATURES_0_3_TASKS.md` on the p03 branch, as `f03-T01` to `f03-T83`. They replace the old `rs-` Regulatory scope tasks;
@@ -308,7 +308,7 @@ The maps, task files and briefs were written separately. Where they plan the sam
 ### 3.3 Every package
 
 Columns:
-- **ch**: the chunk. X is the frontend split, P the PRD 0.3 consolidation, H the hardening follow-ups, CI the CI change, RS the Regulatory scope tasks, R1 the R1 checks and ADM the console language and jurisdiction work.
+- **ch**: the chunk. X is the frontend split, P the PRD 0.3 consolidation, H the hardening follow-ups, CI the CI change, RS the Regulatory scope tasks, R1 the R1 checks, ADM the console language and jurisdiction work, and OAS the API documentation packages (section 3.3.2).
 - **rel**: the release the package belongs to.
 - **depends on**: a `q-` entry waits for an Alex decision and a `k-` entry for a key or account (section 7). For a package in review or running, it means "merges after".
 - **lane**: the simulated placement (section 2). `(c)` marks a cloud-eligible package that the plan still runs locally. `local` or `cloud` for a built package says where its branch is.
@@ -325,6 +325,11 @@ Columns:
 | h-a-guards | H | R1 | c3-no-tone | local-unit (c) | 45 | 1 | shschema idp | yes |
 | h9-footprint-antijoin | H | R1 | c3-obligations-read | local-unit (c) | 45 | 3 | libread | yes |
 | ci-e2e-shards | CI | R1 | none | local-unit | 45 | 0 | ci |  |
+| oas-quality-gate | OAS | R1 | none | cloud | 45 | review | gates idapi ten |  |
+| oas-library-taxonomy | OAS | R1 | none | cloud | 45 | — | gates libread taxapi |  |
+| oas-proposals-governance | OAS | R1 | none | cloud | 40 | — | gates prop gov |  |
+| oas-shared-errors | OAS | R1 | none | cloud | 40 | — | gates shschema |  |
+| oas-search-watch-agents | OAS | R2 | c5-chunk-close, c7-chunk-close, c11-chunk-close | cloud | 45 | — | gates searchapi watchapi agentsapi |  |
 | rs-t15 | RS | R1 | - | - | 30 | done | - |  |
 | f03-T02 | RS | R1 | p03-consolidation | local-unit | 45 | running | mig:taxonomy fp taxapi | yes |
 | f03-T01 | RS | R1 | none | cloud | 35 | 2 | seedlib taxseed | yes |
@@ -860,6 +865,44 @@ chunk 11 packages split along ownership:
 - AGT-S4, AGT-S5, AGT-S6 and AGT-S11 are reworded to this split by the packages that own
   `agents/app.md`; AGT-S5's "switch on nordic-watch" becomes a tenant's own agent.
 
+### 3.3.2 The API documentation packages (added 2026-09-20)
+
+Alex asked on 2026-09-20 that `openapi.json` stand on its own: a bank's integration team
+should read it and understand the business context and how to use each field, not only its
+type. `oas-quality-gate` (this branch) wrote the standard into `docs/CONVENTIONS.md` 1.8 and
+`docs/PLAYBOOK.md` 4.8, built the gate (`backend/scripts/openapi_quality.py`, run from
+`scripts/prepush.sh` and `.github/workflows/ci.yml` beside contract drift), and documented
+identity and tenants as the worked example. The gate starts with an allowlist covering the
+apps below, so it is green from the first commit and tightens as each package lands.
+
+The four remaining packages are one per group of apps. Each one:
+
+- documents **every property** of its apps' `schemas.py` through `Field(description=...,
+  examples=[...])` and **every operation** through the view's docstring in `api.py`, to the
+  standard in CONVENTIONS 1.8;
+- **deletes its own block** from `backend/scripts/openapi_quality_allowlist.txt`, which is why
+  the gate then fails on anything it missed and on any line left over;
+- runs `bash generate-types.sh` and commits the regenerated `openapi.json` and
+  `frontend/src/types/api.generated.ts`;
+- runs the same gates: `python backend/scripts/openapi_quality.py`, the touched apps' suites
+  and `apps.shared.tests_openapi_quality`, ruff, mypy, `compliance_check.py --all`,
+  `requirements_coverage.py`, the contract-drift check, then `bash scripts/prepush.sh --quick`.
+
+All four hold the `gates` key (section 3.4): they edit one allowlist and regenerate the same
+two artefacts, so they run one after another, in any order. None changes behaviour, a
+migration or a test's meaning, so none needs a security review; the reviewer reads the new
+text for anything a public specification should not carry — a real secret, an internal
+hostname, a claim the code does not keep. They were added after the schedule in section 4 was
+run, so they carry no wave: they are dispatched by readiness like everything else (section 1),
+and none of them is on a critical path.
+
+| Package | Owned paths | Documents |
+|---|---|---|
+| `oas-library-taxonomy` | `backend/apps/library/{schemas.py,api.py}`, `backend/apps/taxonomy/{schemas.py,api.py}`, the `oas-library-taxonomy` block of the allowlist | The inventory and obligation shapes, localized text and legal dates with their precision, the footprint and its change requests, jurisdictions, taxonomy dimensions and terms, and the vocabulary lists, rows and suggestions |
+| `oas-proposals-governance` | `backend/apps/proposals/{schemas.py,api.py}`, `backend/apps/governance/{schemas.py,api.py}`, the `oas-proposals-governance` block | Proposals from filing to decision, four eyes as the API answers it, and the audit rows a bank's assurance pack is built from |
+| `oas-shared-errors` | `backend/apps/shared/schemas.py`, `backend/apps/shared/api.py`, `backend/config/api.py` (the problem-detail responses only), the `oas-shared-errors` block | Pagination, the product and E2E shapes, and the RFC 9457 problem detail: `code`, `errors[]`, `requiredPermission`, and the table of codes a client branches on |
+| `oas-search-watch-agents` | `backend/apps/search/{schemas.py,api.py}`, `backend/apps/watch/{schemas.py,api.py}`, `backend/apps/agents/{schemas.py,api.py}`, the `oas-search-watch-agents` block | Hybrid search and Ask, the watch feed and its changes, and the agent runs and their idempotent writes, including which answers are AI-labelled until a person confirms them |
+
 ### 3.4 Serialization keys
 
 A key stands for files that only one running package may edit. Append ledgers (rule 5) are not keys.
@@ -890,7 +933,7 @@ The keys of the chunk 3, chunk 4 and PRD 0.3 packages come from their owned path
 | `sweeper` | `agents/watch-sweeper/v1/` |
 | `eval` | `backend/eval/` and `backend/scripts/search_eval.py` |
 | `ci` | `.github/workflows/`, `scripts/prepush.sh`, `scripts/ship.sh`. Local only |
-| `gates` | `backend/scripts/requirements_coverage.py`, `compliance_check.py`, `contract_drift.py` |
+| `gates` | `backend/scripts/requirements_coverage.py`, `compliance_check.py`, `contract_drift.py`, `openapi_quality.py` and `openapi_quality_allowlist.txt`, and the regenerated `openapi.json` and `frontend/src/types/api.generated.ts` beside them |
 | `deps` | `backend/pyproject.toml` and `poetry.lock`, `frontend/package.json` and `package-lock.json`. One dependency change at a time, local only |
 | `cat` | `frontend/src/messages/en.json` and `sv.json`, until `x-frontend-split` lands |
 | `uiprim` | `components/ui/{Button,PageHead,Field}.tsx`, `styles/theme.css`, `styles/contrast.test.ts` |
