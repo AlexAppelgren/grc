@@ -368,6 +368,14 @@ LIBRARY_TEXT_MAX_CHARS = env_int("LIBRARY_TEXT_MAX_CHARS", 20000)
 LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20)
 
 # ---------------------------------------------------------------------------------------
+# ===== INV-06 what a person types on a library record ====================================
+# The longest "this looks wrong" description and re-verification note the API accepts. A
+# report says what looks wrong and which words were on screen; it is not a document, and
+# an unbounded free-text field at a trust boundary is a way to fill a table.
+# ---------------------------------------------------------------------------------------
+LIBRARY_REPORT_TEXT_MAX_CHARS = env_int("LIBRARY_REPORT_TEXT_MAX_CHARS", 4000)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------

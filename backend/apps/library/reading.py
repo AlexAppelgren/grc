@@ -12,6 +12,8 @@ read shares, and the obligations list. Nothing here writes.
 - `outside_reasons()` is the footprint verdict and its reason, built on
   `taxonomy.matching`: a record is inside when it has no reason to be outside.
 - "As of" a date is `logic.in_force()` and nothing else (AC-INV1).
+- `visible_obligation()` and `visible_instrument()` are the subject lookup every record
+  route shares: the record this caller may read, or nothing at all.
 
 Every response object is validated as it is built, natively by pydantic
 (`schemas.LibraryResponse`), and the page validates every row again when it takes them.
@@ -37,7 +39,15 @@ from django.db.models import BooleanField, Exists, F, Func, OuterRef, Q, UUIDFie
 from django.utils import timezone
 
 from apps.library.logic import in_force
-from apps.library.models import Obligation, ObligationTag, ObligationTerm, ObligationTitle, ObligationVersion, Translation
+from apps.library.models import (
+    Instrument,
+    Obligation,
+    ObligationTag,
+    ObligationTerm,
+    ObligationTitle,
+    ObligationVersion,
+    Translation,
+)
 from apps.library.schemas import (
     LibraryRef,
     LocalizedText,
@@ -93,6 +103,58 @@ def vocabulary_refs(label_model: type[Any], rows: Iterable[Any], order: list[str
 def today_for(tenant: Tenant) -> datetime.date:
     """Today where the tenant is: the default "as of" of every library read."""
     return timezone.localdate(timezone=ZoneInfo(tenant.timezone))
+
+
+# ---------------------------------------------------------------------------------------
+# The subject lookup (INV-06, INV-07)
+# ---------------------------------------------------------------------------------------
+def _own_or_shared(tenant: Tenant | None) -> Q:
+    """What this caller may read of the library (INPUT_DELTAS §5): every shared record,
+    plus the records their own bank owns. A platform reader is in no tenant and sees the
+    shared library only."""
+    shared = Q(owner_tenant__isnull=True)
+    return shared if tenant is None else shared | Q(owner_tenant_id=tenant.id)
+
+
+def visible_obligation(obligation_id: uuid.UUID, *, tenant: Tenant | None) -> Obligation | None:
+    """The obligation this caller may read, or `None` for one they may not. Row-level
+    security scopes the query as well; the rule is written here too so that a route
+    answers 404 rather than a 403 that would confirm another bank's record exists."""
+    return Obligation.objects.filter(_own_or_shared(tenant), id=obligation_id).first()  # ordering: pk lookup, at most one row
+
+
+def visible_instrument(instrument_id: uuid.UUID, *, tenant: Tenant | None) -> Instrument | None:
+    """The instrument this caller may read, or `None`. A provision is reported through the
+    instrument it sits under, so this lookup serves both (chunk 3 defaults)."""
+    return Instrument.objects.filter(_own_or_shared(tenant), id=instrument_id).first()  # ordering: pk lookup, at most one row
+
+
+def _record_id(raw: str) -> uuid.UUID | None:
+    """The id a route's path carries, or `None` when it is not an id at all."""
+    try:
+        return uuid.UUID(raw)
+    except ValueError:
+        return None
+
+
+def obligation_subject(raw_id: str, *, tenant: Tenant | None) -> Obligation:
+    """The obligation a route acts on, refused as `not_found` when this caller may not read
+    it. A record another bank owns, an id that names nothing and a string that is not an id
+    all get the same answer, so a refusal never confirms that a record is there."""
+    record_id = _record_id(raw_id)
+    row = None if record_id is None else visible_obligation(record_id, tenant=tenant)
+    if row is None:
+        raise ValidationError("Not found.", code="not_found")
+    return row
+
+
+def instrument_subject(raw_id: str, *, tenant: Tenant | None) -> Instrument:
+    """The instrument a route acts on; refused exactly as `obligation_subject()` is."""
+    record_id = _record_id(raw_id)
+    row = None if record_id is None else visible_instrument(record_id, tenant=tenant)
+    if row is None:
+        raise ValidationError("Not found.", code="not_found")
+    return row
 
 
 # ---------------------------------------------------------------------------------------

@@ -76,6 +76,10 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
         f"/console/tenants/{_ANY_ID}/members/{_ANY_ID}/reissue-enrolment",
         {"reason": "The administrator lost every device.", "outOfBandCheck": "Called the registered number."},
     ),
+    # The re-verification stamp (chunk 3, INV-S8): a console action on a library record,
+    # so a platform_admin is refused it and a library_editor reaches it (and is then asked
+    # for a passkey, which is a different refusal).
+    "reverifyObligation": ("POST", f"/obligations/{_ANY_ID}/verifications", {"outcome": "no_change"}),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a

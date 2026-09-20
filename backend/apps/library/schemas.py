@@ -14,7 +14,8 @@ from uuid import UUID
 from django.conf import settings
 from pydantic import ConfigDict, Field, ModelWrapValidatorHandler, ValidationInfo, model_validator
 
-from apps.shared.schemas import CamelSchema
+from apps.shared.schemas import CamelSchema, WriteBody
+from apps.taxonomy.schemas import PersonRef
 
 # The longest `q` a list accepts: a phrase to look for, never a document.
 MAX_QUERY_LENGTH = 200
@@ -136,3 +137,48 @@ class ObligationQuery(CamelSchema):
     q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
     as_of: datetime.date | None = None
     outside_footprint: bool = False
+
+
+# ---------------------------------------------------------------------------------------
+# Writes on a record (INV-06)
+# ---------------------------------------------------------------------------------------
+class ProblemReportBody(WriteBody):
+    """"This looks wrong" (INV-06). `description` is what the reader believes is wrong;
+    `versionNumber` and `language` say which words were on their screen, so a colleague
+    opens the same ones. The subject is the path, and the bank is the reader's session:
+    neither is ever taken from the body."""
+
+    description: str = Field(min_length=1, max_length=settings.LIBRARY_REPORT_TEXT_MAX_CHARS)
+    version_number: int | None = Field(default=None, ge=1)
+    language: str | None = Field(default=None, max_length=8)
+
+
+class ProblemReportCreated(LibraryResponse):
+    """The acknowledgement the reader sees: the report exists, it is open, and this is when
+    it was filed. What they wrote is not sent back; it is in the row, and the screen it was
+    typed on still has it."""
+
+    id: UUID
+    status: str
+    created_at: datetime.datetime
+
+
+class ReverificationBody(WriteBody):
+    """A check of a record against its source (INV-06, INV-S8). `outcome` is a
+    VerificationOutcome key; the note says what the checker saw, and belongs to the check
+    rather than to the record."""
+
+    outcome: str = Field(min_length=1, max_length=64)
+    note: str = Field(default="", max_length=settings.LIBRARY_REPORT_TEXT_MAX_CHARS)
+
+
+class VerificationCreated(LibraryResponse):
+    """What the check recorded, and the stamp the record now carries. `lastVerifiedAt` and
+    `verifiedBy` move only on `no_change`; any other outcome leaves the old stamp standing
+    and the correction arrives as a proposal."""
+
+    id: UUID
+    outcome: str
+    verified_at: datetime.datetime
+    last_verified_at: datetime.datetime | None
+    verified_by: PersonRef | None

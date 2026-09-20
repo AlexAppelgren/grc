@@ -738,7 +738,16 @@ class IdentityScenarioTests(ScenarioTestCase):
         for operation in iter_operations(api):
             if operation.method == "GET":
                 continue
-            self.assertFalse(operation.path.startswith(library_paths), f"a library write route exists: {operation.path}")
+            # Chunk 3 adds the first writes under these prefixes: the two problem reports,
+            # which write no library row at all, and the re-verification stamp, the single
+            # sanctioned exception (INV-S8). What ID-S21 claims is not that no such route
+            # exists but that no key reaches one, so each is required to carry a gate and is
+            # then probed with the all-scopes key below. Which function each may reach is
+            # pinned separately by the library fence (apps/shared/tests_library_fence.py).
+            if operation.path.startswith(library_paths):
+                self.assertIsNotNone(
+                    perms.gate_of(operation.view_func), f"an ungated write under {operation.path}"
+                )
             ungated = perms.UNGATED_BY_DESIGN.get((operation.method, operation.path))
             if perms.gate_of(operation.view_func) is None and (ungated is None or ungated.reason not in session_bound):
                 continue  # a public bootstrap step (code request, sign-in) is no grant to anything
