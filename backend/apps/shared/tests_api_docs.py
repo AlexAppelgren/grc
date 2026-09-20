@@ -312,6 +312,32 @@ class EveryRuleFires(SimpleTestCase):
         self.assertIn(("listObligations.limit", "description"), found)
 
 
+class TheRaisableCodesComeFromTheSource(SimpleTestCase):
+    """The codes a sweep may document are read from `backend/apps/`, never typed by hand.
+
+    The hand-written list that came before held 26 codes while the API answered far more,
+    so the first sweep could not document `invalid_slug`, `in_use` or `idempotency_conflict`
+    — codes a caller really has to branch on — and the honest way past the gate was to
+    leave them out (2026-09-20)."""
+
+    def test_a_code_a_route_raises_is_accepted(self) -> None:
+        codes = load_gate().RAISABLE_CODES
+        for code in ("invalid_slug", "in_use", "system_row", "idempotency_conflict"):
+            with self.subTest(code=code):
+                self.assertIn(code, codes)
+
+    def test_a_code_nothing_raises_is_not(self) -> None:
+        self.assertNotIn("obligation_frozen", load_gate().RAISABLE_CODES)
+
+    def test_a_code_only_a_test_names_is_not_raisable(self) -> None:
+        """A test module is not a source: `tests_*.py` is skipped by the scan."""
+        self.assertNotIn("a_code_no_route_raises", load_gate().RAISABLE_CODES)
+
+    def test_the_scan_fails_closed_when_it_finds_nothing(self) -> None:
+        module = load_gate()
+        self.assertGreaterEqual(len(module.RAISABLE_CODES), module.CODES_FLOOR)
+
+
 class TheLedgerOnlyShrinks(SimpleTestCase):
     """The ledger explains what is not documented yet. Anything undocumented that is not in
     it fails, and a line whose subject is now documented fails as stale, so no sweep can

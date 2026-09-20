@@ -74,37 +74,34 @@ CODE_TOKEN = re.compile(r"`([a-z][a-z0-9]*(?:_[a-z0-9]+)+)`")
 
 # Every `code` a route can raise. apps/shared/errors.py is the contract's vocabulary: its
 # STATUS_BY_CODE table plus the codes config/api.py raises for a request no route sees.
-RAISABLE_CODES = frozenset(
-    {
-        "not_found",
-        "unauthenticated",
-        "signin_failed",
-        "invalid_code",
-        "code_locked",
-        "step_up_failed",
-        "invalid_credential",
-        "registration_failed",
-        "challenge_expired",
-        "invitation_expired",
-        "invitation_closed",
-        "last_admin",
-        "last_passkey",
-        "already_member",
-        "duplicate_key",
-        "role_in_use",
-        "stale_write",
-        "four_eyes_violation",
-        "step_up_required",
-        "permission_denied",
-        "validation_error",
-        "bad_request",
-        "internal_error",
-        "unknown_key",
-        "open_actions",
-        "evidence_missing",
-        "invalid_transition",
-    }
-)
+# A code a route can actually raise, read from the source rather than typed here. The
+# hand-written list this replaces held 26 codes while `apps/` raised far more, so a sweep
+# documenting `invalid_slug` or `idempotency_conflict` — codes the API really answers —
+# failed the gate for telling the truth, and the honest way out was to leave the
+# integrator without the value to branch on (first sweep, 2026-09-20). A test module is
+# not a source: a code only a test names is a code no route raises.
+CODE_LITERAL = re.compile(r"""code\s*=\s*["']([a-z][a-z0-9_]*)["']""")
+# Below this, the scan found nothing rather than the truth: fail closed.
+CODES_FLOOR = 40
+
+
+def raisable_codes() -> frozenset[str]:
+    """Every `code=` literal under `backend/apps/`, outside its tests."""
+    found: set[str] = set()
+    for path in (BACKEND / "apps").rglob("*.py"):
+        name = path.name
+        if name.startswith("tests_") or "/migrations/" in path.as_posix():
+            continue
+        found.update(CODE_LITERAL.findall(path.read_text(encoding="utf-8")))
+    if len(found) < CODES_FLOOR:
+        raise SystemExit(
+            f"api_docs_gate: only {len(found)} error codes found under backend/apps, below the floor of "
+            f"{CODES_FLOOR}. The scan is broken, not the contract; fix it rather than lowering the floor."
+        )
+    return frozenset(found)
+
+
+RAISABLE_CODES = raisable_codes()
 
 # Bare-string properties whose value set is a vocabulary an admin manages, where the
 # `key`/`kind` shape is not visible in the contract. Short on purpose: a sweep adds the
@@ -414,8 +411,8 @@ def check_operation(operation_id: str, operation: dict, schemas: dict) -> list[F
         )
     for code in sorted(documented_codes(operation) - RAISABLE_CODES):
         fails(
-            f"documents the error code `{code}`, which no route raises; use one of the codes in "
-            f"apps/shared/errors.py or stop documenting it"
+            f"documents the error code `{code}`, which no route under backend/apps raises; document a code "
+            f"the API can actually answer, or stop documenting it"
         )
     return findings
 
