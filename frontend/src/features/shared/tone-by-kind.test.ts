@@ -12,7 +12,10 @@ describe('tone by kind: the watch and console entries', () => {
   it('reads the outcome of a source check off the check, not off its text', () => {
     expect(checkStatusTone.ok).toBe('positive');
     expect(checkStatusTone.failed).toBe('negative');
-    expect(Object.keys(checkStatusTone)).toEqual(['ok', 'failed']);
+    // A source nobody has checked yet is a neutral fact, not a failure: the
+    // coverage read answers `never` as the third member of the same kind.
+    expect(checkStatusTone.never).toBe('information');
+    expect(Object.keys(checkStatusTone)).toEqual(['ok', 'failed', 'never']);
   });
 
   it('reads the state of an agent key off its own facts', () => {
@@ -31,6 +34,7 @@ describe('tone by kind: the watch and console entries', () => {
     expect(slotTone.apiScope).toBe('information');
     expect(slotTone.sourceKind).toBe('information');
     expect(slotTone.paused).toBe('information');
+    expect(slotTone.stale).toBe('warning');
   });
 
   it('takes every tone from the six, so no seventh can be introduced here', () => {

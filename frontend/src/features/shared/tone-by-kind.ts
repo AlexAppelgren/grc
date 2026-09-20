@@ -41,12 +41,14 @@ export const severityTone: Record<SeverityKind, PillTone> = {
 
 // WAT-01: how a source check ended, as `CheckStatus` names it in the API.
 // The coverage log and the feed's Coverage tab read the check, never the
-// sentence it carries.
-export type CheckStatusKind = 'ok' | 'failed';
+// sentence it carries. `never` is the third member the coverage read answers:
+// a source nobody has checked yet is a neutral fact, not a failure.
+export type CheckStatusKind = 'ok' | 'failed' | 'never';
 
 export const checkStatusTone: Record<CheckStatusKind, PillTone> = {
   ok: 'positive',
   failed: 'negative',
+  never: 'information',
 };
 
 // ID-10: an agent key's state, computed from the key's own dates. Revoked
@@ -107,4 +109,7 @@ export const slotTone = {
   apiScope: 'information',
   sourceKind: 'information',
   paused: 'information',
+  // A source that has gone past its cadence, or failed more times in a row
+  // than the stale rule allows: it needs attention, it is not itself bad.
+  stale: 'warning',
 } as const satisfies Record<string, PillTone>;

@@ -86,7 +86,7 @@ test.describe('navigation on a phone, 375 × 812', () => {
     await signInAs(page, LOGINS.reader);
     // Each tab's own first heading, so a screen that lands stops reading as "not built yet".
     for (const [name, path, heading] of [
-      ['Watch', '/watch', 'Not found'],
+      ['Watch', '/watch', 'Watch'],
       ['Inventory', '/inventory', 'Inventory'],
       ['Search', '/search', 'Not found'],
     ] as const) {
