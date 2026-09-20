@@ -18,9 +18,12 @@ from apps.identity.roles_logic import ensure_platform_roles, ensure_system_roles
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
 from apps.shared import tenancy
+from apps.shared.audit import Actor
 from apps.shared.models import Tenant
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
+
+SEED_ACTOR = Actor.system("seed_reference")
 
 
 def seed_tenant_system_roles() -> int:
@@ -34,13 +37,13 @@ def seed_tenant_system_roles() -> int:
 
 
 def seed_tenant_vocabularies() -> int:
-    """Every existing tenant gets the system rows of every tier-3 list (VOC-01, VOC-04);
-    kinds and defaults follow the code, labels stay the tenant's. New tenants get them from
-    the tenant-creation hook (apps/taxonomy/tenant_hooks.py)."""
+    """Every existing tenant gets the system rows of every tier-3 list it lacks (VOC-01,
+    VOC-04); a row it already has is the tenant's and is left alone. New tenants get them
+    from the tenant-creation hook (apps/taxonomy/tenant_hooks.py)."""
     count = 0
     for tenant in Tenant.objects.all():
         tenancy.activate(tenant.id)
-        count += ensure_tenant_vocabularies(tenant)
+        count += ensure_tenant_vocabularies(tenant, actor=SEED_ACTOR)
     return count
 
 

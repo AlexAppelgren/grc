@@ -26,6 +26,7 @@ from unittest import skip
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals.models import Proposal
 from apps.shared import factories
+from apps.shared.audit import Actor
 from apps.shared import permissions as perms
 from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in
@@ -155,7 +156,7 @@ class SharedScenarioTests(ScenarioTestCase):
         seed_taxonomy_terms()
         tenant = factories.tenant(slug="bank")
         self.activate(tenant)
-        ensure_tenant_vocabularies(tenant)
+        ensure_tenant_vocabularies(tenant, actor=Actor.system("test"))
         # vocab.manage for the tenant's lists, proposals.create for the library's.
         session = sign_in(factories.member(tenant, roles=("admin", "compliance_officer")).user, tenant=tenant)
         openapi = api.get_openapi_schema(path_prefix=V1)

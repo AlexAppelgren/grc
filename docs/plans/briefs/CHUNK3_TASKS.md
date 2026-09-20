@@ -401,6 +401,8 @@ Every read goes through shared-or-mine RLS, and a record the caller cannot see a
 
 ### chunk3-rest-T7: Footprint preview counts and library vocabulary usage
 
+**Note (2026-09-19):** the preview-count half is done by REGULATORY_SCOPE T03, merged with the T01 integration branch: `preview_of` counts through `library.reading.obligation_scopes()` and `matching.in_footprint`, and test_fp_s2 asserts real counts. T7 keeps only the library vocabulary usage counts in `registry.py`.
+
 **Requirements:** FP-02, FP-03, AC-FP1, J-6, VOC-02  
 **Scenarios:** FP-S2, FP-S4  
 **Depends on:** chunk3-rest-T4, chunk3-rest-T2

@@ -40,6 +40,7 @@ from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.models import ComplianceStatus, Flag
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
 from config.api import api
 
 V1 = "/api/v1"
@@ -319,7 +320,14 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertIsNone(invitation.accepted_at)
         self.assertEqual([mail.to for mail in MockMailer.sent], ["admin@example-bank.test"])
         # The creation is audited in the new tenant's own log.
-        self.assertEqual(self._one("tenant.created", tenant.id).tenant_id, tenant.id)
+        creation = self._one("tenant.created", tenant.id)
+        self.assertEqual(creation.tenant_id, tenant.id)
+        # So are the lists it was given, under the same person: the console's rows are
+        # nobody's deploy, and the log says who created the bank.
+        listed_rows = AuditEvent.objects.filter(tenant=tenant, action="vocabulary.created")
+        self.assertEqual(listed_rows.count(), sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values()))
+        self.assertEqual({(row.actor_type, row.actor_id) for row in listed_rows}, {(creation.actor_type, creation.actor_id)})
+        self.assertEqual((creation.actor_type, creation.actor_id), ("user", platform_admin.id))
 
     @skip("pending: AUD-S8 (AUD-04, chunk 12)")
     def test_aud_s8(self) -> None:

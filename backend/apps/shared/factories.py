@@ -62,7 +62,7 @@ def tenant(*, name: str | None = None, slug: str | None = None, timezone: str = 
         TenantContentLanguage.objects.create(tenant=row, language=english, sort_order=0)
         roles_logic.ensure_system_roles(row)
         # The tenant's own lists (chunk 2, apps/taxonomy/tenant_hooks.py), as a new tenant has them.
-        ensure_tenant_vocabularies(row)
+        ensure_tenant_vocabularies(row, actor=Actor.system("test_factory"))
     return row
 
 

@@ -52,7 +52,7 @@ class ProposalApply(ScenarioTestCase):
         seed_taxonomy_terms()
         self.tenant = factories.tenant(slug="bank")
         self.activate(self.tenant)
-        ensure_tenant_vocabularies(self.tenant)
+        ensure_tenant_vocabularies(self.tenant, actor=Actor.system("test"))
         self.officer = factories.member(self.tenant, roles=("compliance_officer",)).user
         self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
         self.reviewer = factories.platform_user(roles=("library_editor",), email="reviewer@bleqq.test")

@@ -18,6 +18,7 @@ from unittest import skip
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals.models import Proposal, ProposalStatus
 from apps.shared import factories, permissions as perms
+from apps.shared.audit import Actor
 from apps.shared.models import AuditEvent
 from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in
@@ -45,7 +46,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         seed_taxonomy_terms()
         self.tenant = factories.tenant(slug="bank")
         self.activate(self.tenant)
-        ensure_tenant_vocabularies(self.tenant)
+        ensure_tenant_vocabularies(self.tenant, actor=Actor.system("test"))
         self.officer = factories.member(self.tenant, roles=("compliance_officer",), user_row=factories.user(name="Sara Lindqvist")).user
         self.admin = factories.member(self.tenant, roles=("admin",)).user
         self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")

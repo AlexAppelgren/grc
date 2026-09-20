@@ -1,20 +1,30 @@
 """Reference seeds of the taxonomy app (VOC-01, FP-01, I18N-01), run by `manage.py
 seed_reference` on every deploy: idempotent, matched on the immutable key, inside
-`library_write("seed_reference")` because these are library rows. Labels and usage notes
-are written once (a proposal relabels them afterwards); the kind, the extra columns and
-the default follow the code and the fixture.
+`library_write("seed_reference")` because these are library rows. Everything a proposal
+can change is written once, when the seed creates the row: the labels, the usage note, the
+sort order, the active flag, the default and the extra columns (VOC-07). Re-applying them
+on every deploy would silently undo an approved reorder, retire, default change or term
+update the next time the app deployed. The `kind` is the exception: no proposal and no
+route changes it, every kind needs an active system row, so the code's kind is put back on
+every run. A key an approved proposal already used for a row of its own stops the seed
+rather than being adopted. Every row created and every kind put back leaves one audit row.
 
 Keys, labels and usage notes come from the prototype fixture
 (apps/taxonomy/seeds/fixture.py) so chunk 3 loads the fixture's records against the
-rows these seeds wrote. The lists the prototype has no rows for (provision kinds, the
-four dimensions beyond the prototype's seven, the rejection reasons) are authored here."""
+rows these seeds wrote. What the prototype has no rows for (provision kinds, the four
+dimensions beyond the prototype's seven, the rejection reasons, the licensed activities)
+is authored here."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
 
+from django.core.exceptions import ValidationError
+from django.db import transaction
+
 from apps.library.models import Jurisdiction
+from apps.shared.audit import Actor, record
 from apps.shared.tenancy import library_write
 from apps.taxonomy.models import (
     ChangeLifecycleKind,
@@ -29,6 +39,7 @@ from apps.taxonomy.seeds import fixture
 
 SEED_REASON = "seed_reference"
 ORIGINAL_LANGUAGE = "en"
+ACTOR = Actor.system(SEED_REASON)
 
 
 @dataclass(frozen=True)
@@ -66,6 +77,16 @@ _EXTRA_DIMENSIONS: list[SystemRow] = [
     SystemRow("theme", {"en": "Theme", "sv": "Tema"}, "What the rule is about, for browsing and briefings. Never narrows the footprint.", TermDimensionKind.CLASSIFICATION.value, {"restricts_footprint": False}),
     SystemRow("licensed_activity", {"en": "Licensed activity", "sv": "Tillståndspliktig verksamhet"}, "The licence under which the firm acts: banking, securities, insurance, fund management.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
     SystemRow("product_type", {"en": "Product type", "sv": "Produkttyp"}, "The financial product the rule concerns.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
+]
+
+# The payment services of PSD2 Annex I point 5, as the two businesses a firm is licensed
+# for (Directive (EU) 2015/2366, Annex I; lag (2010:751) om betaltjänster 1 kap. 2 § 5,
+# "utgivning av betalningsinstrument eller inlösen av transaktionsbelopp"). They are terms
+# of `licensed_activity`, a dimension the prototype fixture has no rows for, so they are
+# authored here like the other lists the prototype does not cover.
+_EXTRA_TERMS: list[dict[str, Any]] = [
+    {"dimension": "licensed_activity", "key": "card_issuing", "label_en": "Card issuing", "label_sv": "Kortutgivning", "sort_order": 1},
+    {"dimension": "licensed_activity", "key": "card_acquiring", "label_en": "Card acquiring", "label_sv": "Kortinlösen", "sort_order": 2},
 ]
 
 _PROVISION_KINDS: list[SystemRow] = [
@@ -128,12 +149,44 @@ def _ensure_rows(list_name: str, default_key: str, rows: list[SystemRow]) -> int
         }
         if "jurisdiction" in entry.extra_fields:
             defaults["jurisdiction"] = jurisdictions.get(spec.extra.get("jurisdiction") or "")
-        row, created = entry.model._default_manager.update_or_create(key=spec.key, defaults=defaults)
+        row, created = entry.model._default_manager.get_or_create(key=spec.key, defaults=defaults)
         if created:
             row.usage_note = spec.usage_note
             row.save(update_fields=["usage_note"])
             for language, text in spec.labels.items():
                 entry.label_model._default_manager.create(vocabulary=row, language=language, text=text, is_original=language == ORIGINAL_LANGUAGE)
+            record(
+                action="library.seeded",
+                actor=ACTOR,
+                subject_type="vocabulary",
+                subject_id=row.id,
+                subject_title=f"{list_name}:{spec.key}",
+                summary=f"Filed the {list_name} row {spec.key} from the reference seed.",
+                tenant_id=None,
+                after={"list": list_name, "key": spec.key, "labels": spec.labels},
+            )
+        elif not row.is_system:
+            raise ValidationError(
+                f"{list_name}:{spec.key} is already a row of its own on that list, so the system row "
+                "cannot be filed. Give that row another key first.",
+                code="system_key_taken",
+            )
+        elif row.kind != spec.kind:
+            before = row.kind
+            row.kind = spec.kind
+            row.version += 1
+            row.save(update_fields=["kind", "version"])
+            record(
+                action="vocabulary.updated",
+                actor=ACTOR,
+                subject_type="vocabulary",
+                subject_id=row.id,
+                subject_title=f"{list_name}:{spec.key}",
+                summary=f"Put the kind of {spec.key} on {list_name} back.",
+                tenant_id=None,
+                before={"kind": before},
+                after={"kind": spec.kind},
+            )
         count += 1
     return count
 
@@ -141,34 +194,52 @@ def _ensure_rows(list_name: str, default_key: str, rows: list[SystemRow]) -> int
 def seed_library_vocabularies() -> int:
     """Every tier-2 list's system rows (the dimensions included). Without it agents get an
     empty vocabulary read and every classification is unknown_key."""
-    with library_write(SEED_REASON):
+    with transaction.atomic(), library_write(SEED_REASON):
         return sum(_ensure_rows(name, default_key, rows) for name, (default_key, rows) in LIBRARY_SYSTEM_ROWS.items())
 
 
 def seed_term_dimensions() -> int:
     """The eleven dimensions alone, for callers that need them before the rest."""
     default_key, rows = LIBRARY_SYSTEM_ROWS["term_dimension"]
-    with library_write(SEED_REASON):
+    with transaction.atomic(), library_write(SEED_REASON):
         return _ensure_rows("term_dimension", default_key, rows)
 
 
+def taxonomy_term_specs() -> list[dict[str, Any]]:
+    """The fixture's terms, then the ones authored here for dimensions the prototype has
+    no rows for."""
+    return [*fixture.taxonomy_terms(), *_EXTRA_TERMS]
+
+
 def seed_taxonomy_terms() -> int:
-    """The prototype's taxonomy terms per dimension. Without them no footprint can be set
-    and no obligation can be scoped."""
+    """The taxonomy terms per dimension. Without them no footprint can be set and no
+    obligation can be scoped."""
     dimensions = {row.key: row for row in TermDimension.objects.all()}
     count = 0
-    with library_write(SEED_REASON):
-        for spec in fixture.taxonomy_terms():
+    with transaction.atomic(), library_write(SEED_REASON):
+        for spec in taxonomy_term_specs():
             dimension = dimensions[spec["dimension"]]
-            term, created = TaxonomyTerm.objects.update_or_create(
+            term, created = TaxonomyTerm.objects.get_or_create(
                 dimension=dimension,
                 key=spec["key"],
                 defaults={"sort_order": int(spec.get("sort_order", 0)), "is_system": True, "active": True},
             )
             if created:
+                labels = {}
                 for language in ("en", "sv"):
                     text = spec.get(f"label_{language}")
                     if text:
                         TaxonomyTermLabel.objects.create(term=term, language=language, text=text, is_original=language == ORIGINAL_LANGUAGE)
+                        labels[language] = text
+                record(
+                    action="taxonomy.term_created",
+                    actor=ACTOR,
+                    subject_type="taxonomy_term",
+                    subject_id=term.id,
+                    subject_title=f"{dimension.key}:{spec['key']}",
+                    summary=f"Filed the term {spec['key']} in {dimension.key} from the reference seed.",
+                    tenant_id=None,
+                    after={"dimension": dimension.key, "key": spec["key"], "labels": labels},
+                )
             count += 1
     return count

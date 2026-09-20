@@ -40,6 +40,7 @@ from apps.shared.models import AuditEvent, Tenant
 from apps.taxonomy.matching import footprint_of, in_footprint, restricting_dimensions
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm
 from apps.taxonomy.registry import REGISTRY
+from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
 
 
 def _scope(obligation: Obligation) -> dict[str, set[str]]:
@@ -164,6 +165,12 @@ class SeedIntegrityGuard(TestCase):
         self.assertEqual((User.objects.count(), Membership.objects.count(), WebAuthnCredential.objects.count()), (users, memberships, credentials))
         with tenancy.identity_lookup():
             self.assertEqual(Invitation.objects.filter(accepted_at__isnull=True, revoked_at__isnull=True).count(), 1)
+        # Each tenant's own list rows are recorded as this seed's work, not as a deploy's.
+        for tenant in Tenant.objects.all():
+            tenancy.activate(tenant.id)
+            created = AuditEvent.objects.filter(tenant=tenant, action="vocabulary.created")
+            self.assertEqual(created.count(), sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values()))
+            self.assertEqual(set(created.values_list("actor_label", flat=True)), {"seed_e2e"})
 
     def test_each_tenant_has_exactly_its_seeded_footprint_and_the_pending_request(self) -> None:
         """Chunk 2 (J-5, J-6): tenant A carries the prototype's footprint, tenant B a
@@ -189,7 +196,8 @@ class SeedIntegrityGuard(TestCase):
         self.assertEqual(request.requested_by.email, EXPECTED_PENDING_REQUEST.requested_by_email)
         self.assertEqual({f"{t.dimension.key}:{t.key}" for t in request.removes.all()}, set(EXPECTED_PENDING_REQUEST.removes))
         self.assertEqual({f"{t.dimension.key}:{t.key}" for t in request.adds.all()}, set(EXPECTED_PENDING_REQUEST.adds))
-        self.assertEqual(request.preview["obligations"]["available"], False)
+        # The seeded request removes Advice, which hides the one advice-only obligation.
+        self.assertEqual(request.preview["obligations"], {"hidden": 1, "revealed": 0, "available": True})
         # Idempotent: a second run keeps one request and the same footprint rows.
         seed_e2e()
         tenancy.activate(tenant_a.id)

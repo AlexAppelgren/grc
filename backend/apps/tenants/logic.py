@@ -276,7 +276,9 @@ def create_tenant(
     tenancy.activate(tenant.id)
     set_content_languages(tenant, languages)
     roles_logic.ensure_system_roles(tenant)
-    ensure_tenant_vocabularies(tenant)
+    # The lists are this person's work too, not a deploy's: the same actor the creation
+    # below is recorded under.
+    ensure_tenant_vocabularies(tenant, actor=actor)
     record(
         action="tenant.created",
         actor=actor,

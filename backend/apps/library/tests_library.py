@@ -155,12 +155,13 @@ class LibraryLoaderTests(TestCase):
 
     def test_the_loader_is_idempotent_and_audits_each_record_once(self) -> None:
         seed_library()
-        audited = AuditEvent.objects.filter(action="library.seeded").count()
+        filed = AuditEvent.objects.filter(action="library.seeded", subject_type__in=("authority", "instrument", "obligation"))
+        audited = filed.count()
         self.assertEqual(audited, 8 + 15 + 16, "one audit row per authority, instrument and obligation")
         summaries = ObligationSummary.objects.count()
         self.assertEqual(load_library(), {"instruments": 15, "provisions": 2, "obligations": 16, "obligation_versions": 17})
         self.assertEqual(seed_authorities(), 8)
-        self.assertEqual(AuditEvent.objects.filter(action="library.seeded").count(), audited)
+        self.assertEqual(filed.count(), audited)
         self.assertEqual(ObligationSummary.objects.count(), summaries)
 
     def test_library_rows_refuse_a_write_outside_the_fence(self) -> None:

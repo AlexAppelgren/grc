@@ -11,9 +11,10 @@ arrive as rows from apps/taxonomy/terms_logic.py, and the read half of the footp
 there too. The library fence's AST guard refuses any module that both names a
 `LibraryModel` and calls a write method (apps/shared/tests_library_fence.py).
 
-The preview counts per record kind. Chunk 2 has no obligations and no cases yet, so both
-answer zero with `available: false`: "not counted" and "none" are different answers, and a
-screen that cannot tell them apart would lie to the person deciding (playbook 4.4).
+The preview counts per record kind. Obligations are counted; cases answer zero with
+`available: false` until chunk 9 builds them, because "not counted" and "none" are
+different answers and a screen that cannot tell them apart would lie to the person
+deciding (playbook 4.4).
 """
 
 from __future__ import annotations
@@ -25,9 +26,10 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from apps.library import reading
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
-from apps.taxonomy import terms_logic
+from apps.taxonomy import matching, terms_logic
 from apps.taxonomy.models import (
     ApprovalStatus,
     FootprintAction,
@@ -102,8 +104,7 @@ def _person(user: Any) -> PersonRef | None:
 
 
 def request_row(request: FootprintChangeRequest, order: list[str]) -> FootprintRequestRow:
-    adds = list(request.adds.select_related("dimension").order_by("dimension__sort_order", "sort_order", "key"))
-    removes = list(request.removes.select_related("dimension").order_by("dimension__sort_order", "sort_order", "key"))
+    adds, removes = _changes(request)
     return FootprintRequestRow(
         id=request.id,
         status=request.status,
@@ -111,7 +112,7 @@ def request_row(request: FootprintChangeRequest, order: list[str]) -> FootprintR
         requested_at=request.requested_at,
         adds=terms_logic.labelled_term_refs(adds, order),
         removes=terms_logic.labelled_term_refs(removes, order),
-        preview=FootprintPreview(**request.preview) if request.preview else FootprintPreview(),
+        preview=_preview_now(request, adds, removes),
         decided_by=_person(request.decided_by),
         decided_at=request.decided_at,
         decision_note=request.decision_note,
@@ -122,14 +123,59 @@ def request_row(request: FootprintChangeRequest, order: list[str]) -> FootprintR
 # ---------------------------------------------------------------------------------------
 # The preview (AC-FP1)
 # ---------------------------------------------------------------------------------------
+def _after(now: dict[str, set[str]], adds: list[Any], removes: list[Any]) -> dict[str, set[str]]:
+    """The footprint the change would leave behind."""
+    after = {dimension: set(keys) for dimension, keys in now.items()}
+    for term in adds:
+        after.setdefault(term.dimension.key, set()).add(term.key)
+    for term in removes:
+        after.get(term.dimension.key, set()).discard(term.key)
+    return after
+
+
 def preview_of(tenant_id: uuid.UUID, adds: list[Any], removes: list[Any]) -> FootprintPreview:
-    """What the change would hide and reveal, per record kind. Chunk 2 computes from the
-    tables that exist; obligations (chunk 3) and cases (chunk 9) answer `available: false`
-    until theirs do, and this function grows one branch per kind as they land."""
+    """What the change would hide and reveal, per record kind (AC-FP1). Hidden means in
+    scope now and out of it afterwards; revealed is the other way. The count runs the pure
+    matching rule twice over the scope of every obligation this company can see (the
+    library's one scope rule, `reading.obligation_scopes`, under row-level security),
+    because the SQL function reads the stored footprint and this asks about one that does
+    not exist yet. An obligation with no scope matches both and is not listed. Cases answer
+    `available: false` until chunk 9, and this function grows one branch per kind as they
+    land."""
+    now = matching.footprint_of(tenant_id)
+    after = _after(now, adds, removes)
+    restricting = matching.restricting_dimensions()
+    hidden = revealed = 0
+    for scope in reading.obligation_scopes().values():
+        record_terms = {dimension: {term.key for term in terms} for dimension, terms in scope.items()}
+        was_in = matching.in_footprint(record_terms, now, restricting=restricting)
+        is_in = matching.in_footprint(record_terms, after, restricting=restricting)
+        if was_in and not is_in:
+            hidden += 1
+        elif is_in and not was_in:
+            revealed += 1
     return FootprintPreview(
-        obligations=FootprintPreviewCount(hidden=0, revealed=0, available=False),
+        obligations=FootprintPreviewCount(hidden=hidden, revealed=revealed, available=True),
         cases=FootprintPreviewCount(hidden=0, revealed=0, available=False),
     )
+
+
+def _changes(request: FootprintChangeRequest) -> tuple[list[Any], list[Any]]:
+    """The terms a request would switch on and off, in the picker's order."""
+    order = ("dimension__sort_order", "sort_order", "key")
+    return (
+        list(request.adds.select_related("dimension").order_by(*order)),
+        list(request.removes.select_related("dimension").order_by(*order)),
+    )
+
+
+def _preview_now(request: FootprintChangeRequest, adds: list[Any], removes: list[Any]) -> FootprintPreview:
+    """A waiting request is recounted every time it is read, so the approver decides against
+    today's library rather than against whatever it held when the request was made. A
+    decided request keeps the counts it was decided against."""
+    if request.status == ApprovalStatus.PENDING.value:
+        return preview_of(request.tenant_id, adds, removes)
+    return FootprintPreview(**request.preview) if request.preview else FootprintPreview()
 
 
 def dry_run(tenant_id: uuid.UUID, adds: list[Any], removes: list[Any], order: list[str]) -> FootprintDryRun:
@@ -333,8 +379,9 @@ def approve(
             "A footprint change is approved by someone other than the person who asked for it.",
             code="four_eyes_violation",
         )
-    adds = list(request.adds.select_related("dimension").order_by("dimension__sort_order", "sort_order", "key"))
-    removes = list(request.removes.select_related("dimension").order_by("dimension__sort_order", "sort_order", "key"))
+    adds, removes = _changes(request)
+    # Counted before the switch, against the footprint the approver was looking at.
+    counted = preview_of(tenant.id, adds, removes)
     _switch_on(
         tenant=tenant,
         actor=actor,
@@ -360,6 +407,7 @@ def approve(
         status=ApprovalStatus.APPROVED,
         action="footprint.change_approved",
         step_up_assertion_id=step_up_assertion_id,
+        preview=counted,
     )
 
 
@@ -387,6 +435,7 @@ def reject(
         status=ApprovalStatus.REJECTED,
         action="footprint.change_rejected",
         step_up_assertion_id=None,
+        preview=preview_of(tenant.id, *_changes(request)),
     )
 
 
@@ -410,6 +459,7 @@ def withdraw(
         status=ApprovalStatus.WITHDRAWN,
         action="footprint.change_withdrawn",
         step_up_assertion_id=None,
+        preview=preview_of(tenant.id, *_changes(request)),
     )
 
 
@@ -423,14 +473,20 @@ def _decide(
     status: ApprovalStatus,
     action: str,
     step_up_assertion_id: uuid.UUID | None,
+    preview: FootprintPreview,
 ) -> FootprintChangeRequest:
+    """Every decision — approved, rejected, withdrawn — stores the counts it was taken
+    against on the request and in its audit row, so a decided request never shows the
+    counts from when it was sent."""
     before = {"status": request.status, "version": request.version}
     request.status = status.value
     request.decided_by = decider
     request.decided_at = timezone.now()
     request.decision_note = note
     request.version += 1
-    request.save(update_fields=["status", "decided_by", "decided_at", "decision_note", "version"])
+    request.preview = preview.model_dump(by_alias=True)
+    request.save(update_fields=["status", "decided_by", "decided_at", "decision_note", "version", "preview"])
+    after: dict[str, Any] = {"status": status.value, "version": request.version, "note": note, "preview": request.preview}
     record(
         action=action,
         actor=actor,
@@ -440,7 +496,7 @@ def _decide(
         summary=f"Footprint change {status.value}.",
         tenant_id=tenant.id,
         before=before,
-        after={"status": request.status, "version": request.version, "note": note},
+        after=after,
         step_up_assertion_id=step_up_assertion_id,
     )
     return request

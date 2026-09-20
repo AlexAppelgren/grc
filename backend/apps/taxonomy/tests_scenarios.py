@@ -28,12 +28,15 @@ from django.test import Client
 from django.db.models import ForeignKey
 
 from apps.identity.models import TenantRole, User
-from apps.library.models import Jurisdiction, Language
+from apps.library.models import Jurisdiction, Language, Obligation, ObligationTerm
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.library.seeds.library import load_library, seed_authorities
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
 from apps.shared import factories, permissions as perms
+from apps.shared.audit import Actor
 from apps.shared.models import AuditEvent
 from apps.shared.routes import iter_operations
+from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.shared.vocabulary import LibraryVocabulary, TenantVocabulary
 from apps.taxonomy import tenant_lists_logic
@@ -83,7 +86,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         _seed_library()
         self.tenant = factories.tenant(slug="bank")
         self.activate(self.tenant)
-        ensure_tenant_vocabularies(self.tenant)
+        ensure_tenant_vocabularies(self.tenant, actor=Actor.system("test"))
         self.admin = factories.member(self.tenant, roles=("admin",), user_row=factories.user(name="Erik Holm")).user
         self.officer = factories.member(
             self.tenant, roles=("compliance_officer",), user_row=factories.user(name="Sara Lindqvist")
@@ -582,6 +585,8 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         A footprint change previews, waits for a second person and audits per term (FP-02, AC-FP1).
         """
+        seed_authorities()
+        load_library()
         self._set_footprint(["service_type:advice", "service_type:custody", "regime:securities"])
         officer = sign_in(self.officer, tenant=self.tenant)
         body = {"adds": [{"dimension": "client_category", "key": "retail"}], "removes": [{"dimension": "service_type", "key": "advice"}]}
@@ -591,7 +596,13 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(dry.status_code, 200, dry.content)
         self.assertTrue(dry.json()["dryRun"])
         self.assertEqual([t["key"] for t in dry.json()["removes"]], ["advice"])
-        self.assertEqual(dry.json()["preview"]["obligations"], {"hidden": 0, "revealed": 0, "available": False})
+        # Four of the six obligations in scope are advised business the change would hide;
+        # adding retail hides none, because the client category group was empty before.
+        self.assertEqual(dry.json()["preview"]["obligations"], {"hidden": 4, "revealed": 0, "available": True})
+        # The other direction: widening the regimes reveals two insurance obligations it hid.
+        widen = {"adds": [{"dimension": "regime", "key": "insurance"}], "removes": []}
+        wider = self._preview("/tenant/footprint/requests?dryRun=true", widen, officer)
+        self.assertEqual(wider.json()["preview"]["obligations"], {"hidden": 0, "revealed": 2, "available": True})
         self.assertEqual((AuditEvent.objects.count(), FootprintChangeRequest.objects.count()), writes_before)
         self.assertIsNone(self._footprint(officer)["pendingRequest"])
         self.assertEqual(self._preview("/tenant/footprint/requests?dryRun=true", body, sign_in(self.reader, tenant=self.tenant)).status_code, 403)
@@ -604,9 +615,19 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(request["removes"][0]["label"], "Advice")
         # The preview lists what would be hidden and revealed per record kind; the kinds that
         # have no table yet say so instead of pretending.
-        self.assertEqual(request["preview"]["obligations"], {"hidden": 0, "revealed": 0, "available": False})
+        self.assertEqual(request["preview"]["obligations"], {"hidden": 4, "revealed": 0, "available": True})
         self.assertEqual(request["preview"]["cases"], {"hidden": 0, "revealed": 0, "available": False})
         self.assertEqual(self._footprint(officer)["pendingRequest"]["id"], request["id"])
+        # The library changes while the request waits: the suitability statement now covers
+        # custody too, so removing Advice no longer hides it. A waiting request is counted
+        # again on every read, so the approver decides against today's library.
+        with library_write("test"):
+            ObligationTerm.objects.create(
+                obligation=Obligation.objects.get(stable_key="obl-suitability-statement"),
+                term=tenant_lists_logic.term_by_ref("service_type", "custody"),
+            )
+        today = {"hidden": 3, "revealed": 0, "available": True}
+        self.assertEqual(self._footprint(officer)["pendingRequest"]["preview"]["obligations"], today)
         # One pending request at a time; an unknown term is refused with the valid keys.
         again = self._post("/tenant/footprint/requests", body, officer)
         self.assertEqual(again.status_code, 409)
@@ -638,6 +659,12 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertIsNotNone(assertion_ids.pop())
         history = FootprintHistory.objects.filter(tenant=self.tenant, request_id=request["id"]).order_by("action")
         self.assertEqual([(h.action, h.term.key) for h in history], [("added", "retail"), ("removed", "advice")])
+        # The decision keeps the counts it was taken against, not the ones from when the
+        # request was sent: the request shows what its audit row says.
+        decision = AuditEvent.objects.get(action="footprint.change_approved", tenant=self.tenant)
+        self.assertEqual(decision.after["preview"]["obligations"], today)
+        self.assertEqual(approved.json()["preview"], decision.after["preview"])
+        self.assertEqual(FootprintChangeRequest.objects.get(pk=request["id"]).preview, decision.after["preview"])
         # Nothing else can happen to a decided request.
         twice = self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH="2")
         self.assertEqual(twice.status_code, 409)
@@ -648,16 +675,33 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(listed.status_code, 200)
         self.assertEqual(listed.json()["total"], 1)
         self.assertEqual(listed.json()["items"][0]["decisionNote"], "Advice was wound down in June.")
-        # A request can be rejected with a note, or withdrawn by its requester.
-        rejected_request = self._post("/tenant/footprint/requests", {"adds": [{"dimension": "channel", "key": "digital"}], "removes": []}, officer).json()
+        self.assertEqual(listed.json()["items"][0]["preview"], decision.after["preview"])
+        # A request can be rejected with a note, or withdrawn by its requester. Adding
+        # portfolio management would bring back three securities obligations; by the time it
+        # is rejected the ESMA warnings cover it too, and the rejection keeps that count.
+        widening = {"adds": [{"dimension": "service_type", "key": "portfolio_management"}], "removes": []}
+        rejected_request = self._post("/tenant/footprint/requests", widening, officer).json()
+        self.assertEqual(rejected_request["preview"]["obligations"], {"hidden": 0, "revealed": 3, "available": True})
+        with library_write("test"):
+            ObligationTerm.objects.create(
+                obligation=Obligation.objects.get(stable_key="obl-esma-warnings"),
+                term=tenant_lists_logic.term_by_ref("service_type", "portfolio_management"),
+            )
         rejected = self._post(f"/tenant/footprint/requests/{rejected_request['id']}/reject", {"note": "Not yet."}, approver, HTTP_IF_MATCH="1")
         self.assertEqual(rejected.status_code, 200, rejected.content)
         self.assertEqual(rejected.json()["status"], "rejected")
+        self.activate(self.tenant)
+        rejection = AuditEvent.objects.get(action="footprint.change_rejected", tenant=self.tenant)
+        self.assertEqual(rejection.after["preview"]["obligations"], {"hidden": 0, "revealed": 4, "available": True})
+        self.assertEqual(rejected.json()["preview"], rejection.after["preview"])
         withdrawn_request = self._post("/tenant/footprint/requests", {"adds": [{"dimension": "channel", "key": "digital"}], "removes": []}, officer).json()
         self.assertEqual(self._post(f"/tenant/footprint/requests/{withdrawn_request['id']}/withdraw", {}, approver, HTTP_IF_MATCH="1").status_code, 403)
         withdrawn = self._post(f"/tenant/footprint/requests/{withdrawn_request['id']}/withdraw", {}, officer, HTTP_IF_MATCH="1")
         self.assertEqual(withdrawn.status_code, 200, withdrawn.content)
         self.assertEqual(withdrawn.json()["status"], "withdrawn")
+        self.activate(self.tenant)
+        withdrawal = AuditEvent.objects.get(action="footprint.change_withdrawn", tenant=self.tenant)
+        self.assertEqual(withdrawn.json()["preview"], withdrawal.after["preview"])
         unknown = self._post("/tenant/footprint/requests", {"adds": [{"dimension": "service_type", "key": "lending"}], "removes": []}, officer)
         self.assertEqual(unknown.status_code, 422)
         self.assertEqual(unknown.json()["code"], "unknown_key")

@@ -242,9 +242,12 @@ Given a compliance officer with footprint.request
 When they choose "Propose a change" and remove "Advice"
 Then the preview counts the obligations that would be hidden and any that would appear, and cases are not counted yet
 And a change request is stored and shown as "Waiting for approval"
+When the library changes while it waits
+Then the waiting request's preview is counted again against today's library
 When an approver with footprint.approve and a fresh step-up approves it
 Then advice-only obligations and changes are hidden everywhere
 And one audit event per term records the change with the assertion reference
+And every decided request — approved, rejected or withdrawn — carries the counts it was decided against, the same ones its decision event holds
 ```
 
 ### FP-S3 — The requester cannot approve their own footprint change `@integration` (FP-02)

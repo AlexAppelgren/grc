@@ -33,6 +33,7 @@ from apps.identity.api_keys_logic import resolve_api_key
 from apps.identity.models import ApiKey
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, tenancy
+from apps.shared.audit import Actor
 from apps.shared.authentication import PrincipalKind
 from apps.shared.models import AuditEvent
 from apps.shared.tenancy import LibraryWriteRefused, library_write
@@ -353,7 +354,7 @@ class AgentKeyActorTests(ScenarioTestCase):
         self.agent = Agent.objects.get(key="watch-sweeper")
         self.tenant = factories.tenant(slug="agent-actor")
         self.activate(self.tenant)
-        ensure_tenant_vocabularies(self.tenant)
+        ensure_tenant_vocabularies(self.tenant, actor=Actor.system("test"))
         # The key and everything the agent does with it belong to the platform's zone, and a
         # request of its own would carry no tenant: what the factory activated goes off again,
         # or the platform rows below are outside this session's zone (H15).

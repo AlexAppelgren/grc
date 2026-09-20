@@ -91,6 +91,8 @@ EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
         "regime:data_protection",
         "regime:aml",
         "regime:ai_ict",
+        "regime:banking",
+        "regime:payments",
         "account_type:isk",
         "account_type:af",
         "account_type:depa",
@@ -189,7 +191,7 @@ def seed_tenants() -> list[Tenant]:
         tenancy.activate(row.id)
         set_content_languages(row, [languages[key] for key in spec.content_languages])
         roles_logic.ensure_system_roles(row)
-        ensure_tenant_vocabularies(row)
+        ensure_tenant_vocabularies(row, actor=SEED_ACTOR)
         if created:
             record(
                 action="tenant.seeded",

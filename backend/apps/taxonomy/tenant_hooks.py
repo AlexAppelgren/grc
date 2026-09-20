@@ -1,7 +1,15 @@
-"""The tenant-creation hook of chunk 2: `ensure_tenant_vocabularies(tenant)` seeds the
+"""The tenant-creation hook of chunk 2: `ensure_tenant_vocabularies(tenant, actor=...)` seeds the
 system rows of every tier-3 list for one tenant (VOC-01, VOC-04, VOC-05, VOC-06),
-idempotently, matched on the immutable key. Labels and usage notes are written once and
-left to the tenant afterwards; the kind, the ordinal and the default follow the code.
+idempotently, matched on the immutable key. Everything a tenant can change is written
+once, when the hook creates the row: its labels, usage note, sort order, active flag,
+default and extra columns. `seed_reference` runs this for every tenant on every deploy, so
+re-applying those would silently undo a tenant's reorder, retire or default change. The
+`kind` is the exception: no route lets a tenant change it, the case state machine needs a
+system row per category, so the code's kind is put back on every run. Every row created
+and every kind put back leaves one audit row, and the caller says whose work it is.
+
+A key the tenant already used for a value of its own stops the seed rather than being
+adopted: the row would keep the tenant's meaning while the list lost its system value.
 
 Call it, with the tenant activated, wherever a tenant comes into being: the E2E seed
 (apps/shared/e2e_seed.py), `seed_reference` for every existing tenant, the test factory
@@ -15,12 +23,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from django.core.exceptions import ValidationError
+
+from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
 from apps.taxonomy.models import CaseStatusCategory, CloseReason, ComplianceCategory
 from apps.taxonomy.registry import REGISTRY, TENANT_LISTS
 from apps.taxonomy.seeds import fixture
 
 ORIGINAL_LANGUAGE = "en"
+SUBJECT_TYPE = "vocabulary"
 
 
 @dataclass(frozen=True)
@@ -105,9 +117,11 @@ TENANT_SYSTEM_ROWS: dict[str, tuple[str, list[SystemRow]]] = {
 }
 
 
-def ensure_tenant_vocabularies(tenant: Tenant) -> int:
-    """Create or refresh the system rows of every tenant list for one tenant. Must run
-    with the tenant activated. Returns the number of rows ensured."""
+def ensure_tenant_vocabularies(tenant: Tenant, *, actor: Actor) -> int:
+    """Create the system rows of every tenant list this tenant does not have yet, and put
+    back a system row's kind. `actor` is whoever is seeding: the deploy's `seed_reference`,
+    the E2E seed, the test factory or, later, the console creating the tenant. Must run
+    with the tenant activated, inside a transaction. Returns the number of rows ensured."""
     count = 0
     for list_name in TENANT_LISTS:
         entry = REGISTRY[list_name]
@@ -119,15 +133,46 @@ def ensure_tenant_vocabularies(tenant: Tenant) -> int:
                 "active": True,
                 "sort_order": sort_order,
                 "is_default": spec.key == default_key,
+                "usage_note": spec.usage_note,
                 **spec.extra,
             }
-            row, created = entry.model._default_manager.update_or_create(tenant=tenant, key=spec.key, defaults=defaults)
+            row, created = entry.model._default_manager.get_or_create(tenant=tenant, key=spec.key, defaults=defaults)
             if created:
-                row.usage_note = spec.usage_note
-                row.save(update_fields=["usage_note"])
                 for language, text in spec.labels.items():
                     entry.label_model._default_manager.create(
                         tenant=tenant, vocabulary=row, language=language, text=text, is_original=language == ORIGINAL_LANGUAGE
                     )
+                record(
+                    action="vocabulary.created",
+                    actor=actor,
+                    subject_type=SUBJECT_TYPE,
+                    subject_id=row.id,
+                    subject_title=f"{list_name}:{spec.key}",
+                    summary=f"Added {spec.key} to {list_name} from the reference seed.",
+                    tenant_id=tenant.id,
+                    after={"list": list_name, "key": spec.key, "labels": spec.labels, "kind": spec.kind},
+                )
+            elif not row.is_system:
+                raise ValidationError(
+                    f"{list_name}:{spec.key} is already one of this organisation's own values, so the "
+                    f"system value cannot be added. Give that value another key first (tenant {tenant.id}).",
+                    code="system_key_taken",
+                )
+            elif row.kind != spec.kind:
+                before = row.kind
+                row.kind = spec.kind
+                row.version += 1
+                row.save(update_fields=["kind", "version"])
+                record(
+                    action="vocabulary.updated",
+                    actor=actor,
+                    subject_type=SUBJECT_TYPE,
+                    subject_id=row.id,
+                    subject_title=f"{list_name}:{spec.key}",
+                    summary=f"Put the kind of {spec.key} on {list_name} back.",
+                    tenant_id=tenant.id,
+                    before={"kind": before},
+                    after={"kind": spec.kind},
+                )
             count += 1
     return count

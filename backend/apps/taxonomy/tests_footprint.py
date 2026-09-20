@@ -11,6 +11,9 @@ which a status check on an unlocked row lets both through: the second session re
 Proven to fail 2026-09-19 without the row lock and the partial unique constraint: in both
 decision races both decisions landed, and the second request never waited on the first, so
 two requests would have waited at once.
+
+The last class pins the other thing only the app role can prove: a scope change's preview
+counts what the organisation may see and nothing else (INV-07, AC-FP1).
 """
 
 from __future__ import annotations
@@ -27,7 +30,9 @@ from django.db import DEFAULT_DB_ALIAS, IntegrityError, connection, connections,
 from django.test import TestCase, TransactionTestCase
 
 from apps.identity.models import User
+from apps.library import testing as build
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.library.tests_reading import as_app_role
 from apps.shared import factories, tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
@@ -211,3 +216,42 @@ class CreateRequestRefusals(TestCase):
         with self.assertRaises(IntegrityError) as caught:
             footprint_logic.create_request(tenant=tenant, requester=nobody, actor=Actor.system("test"), adds=[retail], removes=[])
         self.assertIn("requested_by", caught.exception.__cause__.diag.constraint_name)  # type: ignore[union-attr]
+
+
+class PreviewIsolation(TransactionTestCase):
+    """A scope change's preview counts only what the organisation may see (INV-07, AC-FP1):
+    counted as cw_app under forced row-level security, another tenant's private obligation
+    never enters it."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def setUp(self) -> None:
+        _seed_library()
+        self.advice = terms_logic.term_by_ref("service_type", "advice")
+        custody = terms_logic.term_by_ref("service_type", "custody")
+        self.tenant_a = factories.tenant(slug="preview-a")
+        self.tenant_b = factories.tenant(slug="preview-b")
+        with transaction.atomic():
+            build.obligation(build.instrument(key="lvm", regime="regime:securities"), key="obl-shared-advice", terms=("service_type:advice",))
+        with transaction.atomic():
+            tenancy.activate(self.tenant_b.id)
+            private = build.instrument(key="bank-b-policy", regime="regime:securities", owner_tenant=self.tenant_b)
+            build.obligation(private, key="obl-b-private", terms=("service_type:advice",), owner_tenant=self.tenant_b)
+        for tenant in (self.tenant_a, self.tenant_b):
+            with transaction.atomic():
+                tenancy.activate(tenant.id)
+                footprint_logic.seed_terms(tenant=tenant, actor=Actor.system("test"), terms=[self.advice, custody])
+
+    def _hidden_by_removing_advice(self, tenant_id: uuid.UUID) -> int:
+        """What removing Advice would hide, counted on the app role's own connection."""
+        with as_app_role(), transaction.atomic():
+            tenancy.activate(tenant_id)
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_user")
+                assert cursor.fetchone()[0] == connections.settings["app"]["USER"], "the count must read as cw_app"
+            return footprint_logic.preview_of(tenant_id, [], [self.advice]).obligations.hidden
+
+    def test_another_tenants_private_obligation_never_enters_the_counts(self) -> None:
+        self.assertEqual(self._hidden_by_removing_advice(self.tenant_a.id), 1, "the shared obligation only")
+        # The owner counts its own beside the shared one, so the proof above is not vacuous.
+        self.assertEqual(self._hidden_by_removing_advice(self.tenant_b.id), 2)

@@ -91,7 +91,8 @@ class ConsoleTenants(ScenarioTestCase):
         tenant = Tenant.objects.get(slug="example-bank")
         written = AuditEvent.objects.exclude(id__in=before)
         self.assertEqual({event.tenant_id for event in written}, {tenant.id})
-        self.assertEqual({event.action for event in written}, {"tenant.created", "invitation.created"})
+        # The bank's own lists are created here too, and recorded like everything else.
+        self.assertEqual({event.action for event in written}, {"tenant.created", "vocabulary.created", "invitation.created"})
         self.activate(other)
         self.assertFalse(Invitation.objects.filter(tenant=other).exists())
 

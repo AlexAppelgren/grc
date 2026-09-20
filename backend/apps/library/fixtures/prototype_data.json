@@ -278,7 +278,7 @@
     "label_sv": "Regelområde",
     "kind": null,
     "restricts_footprint": true,
-    "usage_note": "The body of law: securities, insurance, tax, data protection, AML, AI and ICT."
+    "usage_note": "The body of law: banking, payments, securities, insurance, tax, data protection, AML, AI and ICT."
    },
    "account_type": {
     "label_en": "Account type",
@@ -497,6 +497,22 @@
    "from_prototype": true
   },
   {
+   "dimension": "regime",
+   "key": "banking",
+   "label_en": "Banking",
+   "label_sv": "Bankverksamhet",
+   "sort_order": 7,
+   "from_prototype": false
+  },
+  {
+   "dimension": "regime",
+   "key": "payments",
+   "label_en": "Payments",
+   "label_sv": "Betalningar",
+   "sort_order": 8,
+   "from_prototype": false
+  },
+  {
    "dimension": "account_type",
    "key": "isk",
    "label_en": "ISK",
@@ -559,6 +575,38 @@
    "label_sv": "Fondbolag",
    "sort_order": 3,
    "from_prototype": true
+  },
+  {
+   "dimension": "legal_entity",
+   "key": "payment_institution",
+   "label_en": "Payment institution",
+   "label_sv": "Betalningsinstitut",
+   "sort_order": 4,
+   "from_prototype": false
+  },
+  {
+   "dimension": "legal_entity",
+   "key": "emoney_institution",
+   "label_en": "E-money institution",
+   "label_sv": "Institut för elektroniska pengar",
+   "sort_order": 5,
+   "from_prototype": false
+  },
+  {
+   "dimension": "legal_entity",
+   "key": "credit_market_company",
+   "label_en": "Credit market company",
+   "label_sv": "Kreditmarknadsföretag",
+   "sort_order": 6,
+   "from_prototype": false
+  },
+  {
+   "dimension": "legal_entity",
+   "key": "investment_firm",
+   "label_en": "Investment firm",
+   "label_sv": "Värdepappersbolag",
+   "sort_order": 7,
+   "from_prototype": false
   },
   {
    "dimension": "service_type",
@@ -4108,6 +4156,18 @@
   {
    "tenant": "example-group",
    "term": "regime:ai_ict",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "regime:banking",
+   "added_by": "erik",
+   "added_at": "2026-01-15T09:00:00"
+  },
+  {
+   "tenant": "example-group",
+   "term": "regime:payments",
    "added_by": "erik",
    "added_at": "2026-01-15T09:00:00"
   },
