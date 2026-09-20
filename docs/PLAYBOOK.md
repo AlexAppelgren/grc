@@ -516,7 +516,7 @@ says what to do. Each lives in `apps/shared/tests_*.py`.
 | **Row-level security** | Every model with a tenant foreign key, against `pg_policies` and `pg_class` | RLS is enabled and forced, and a tenant policy exists. A new tenant table without a policy fails here, not in production. |
 | **Database role** | The role the app connects with | Not a superuser, not the table owner, no `BYPASSRLS`. |
 | **Tenant isolation** | Every tenant-scoped GET, PATCH and DELETE route, with a record that belongs to another tenant | 404, never 403 and never data. |
-| **Library fence** | The AST of every module that writes a `LibraryModel` | Writes happen only inside `library_write()` in the allowlisted modules (`proposals/apply.py`, `watch/logic.py`, reference seeds). |
+| **Library fence** | The AST of every module that writes a `LibraryModel` | Writes happen only inside `library_write()` in the allowlisted modules (`proposals/apply.py`, `watch/write.py`, reference seeds). `watch/write.py` is the watch door: the only module under `apps/watch/` on the list, and it reaches the seven watch tables and no inventory table. |
 | **Four eyes** | Every table in the four-eyes list | The requester-is-not-approver check constraint exists. |
 | **Audit on write** | Every non-GET operation, through its scenario test | The request wrote at least one `audit_event`. A mutating route with no scenario fails too. |
 | **Kinds only** | Every `TextChoices`, Postgres enum and generated TypeScript union | Each is in the tier-one allowlist of Section 15 with a reason. |

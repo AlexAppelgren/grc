@@ -26,6 +26,12 @@ was proven to fail 2026-09-20 by handing every mixed table the old single policy
 tenant A's session the insert of a platform row went through, so did the update and the
 delete of one on api_key, invitation, invitation_role, user_session and problem_report, and
 on the three ledgers the update got past the policy as far as the append-only trigger.
+
+The watch list was proven to fail 2026-09-20 by giving ChangeTerm a tenant foreign key: the
+watch test named the table and the missing policy, and the enumeration named it too. `source`
+was proven to fail the same day by leaving the hand-written policies of watch 0001 in place:
+the read policy's name was not the shared one, so the policy census and the mixed-table
+write proof both named it.
 """
 
 from __future__ import annotations
@@ -61,7 +67,11 @@ from apps.shared.migration_helpers import (
     TENANT_SETTING,
 )
 from apps.shared.models import AuditEvent, OutboxEvent, Tenant
+from apps.shared.tenancy import library_write
 from apps.shared.testing import production_models
+from apps.taxonomy.models import SourceKind
+from apps.watch.models import Source
+from apps.watch.write import watch_write
 
 # The only tables whose policy carries the identity-lookup clause (apps/shared/tenancy.py):
 # the auth layer reads them before a tenant is known. Adding one here is a review question.
@@ -81,8 +91,17 @@ MIXED_TABLES = {
     "login_event": "tenant_id",
     "outbox_event": "tenant_id",
     "problem_report": "tenant_id",
+    "source": "owner_tenant_id",
     "user_session": "tenant_id",
 }
+
+# The watch zone is library-only (chunk 5, watch 0001): its seven tables carry no tenant
+# column, so a bank's judgement cannot hide in them — it lives on change_case. `source`
+# alone carries the nullable owner_tenant_id of WAT-06 (INPUT_DELTAS §5), which makes it a
+# mixed table and puts it in MIXED_TABLES above. Adding a table here is a review question.
+WATCH_LIBRARY_TABLES = frozenset(
+    {"source", "source_check", "regulatory_change", "change_event", "change_document", "change_term", "change_obligation"}
+)
 
 # instrument and obligation are mixed on `owner_tenant_id` ("shared or mine", INPUT_DELTAS
 # §5, INV-07) and still carry the old single policy, so their write rule accepts the
@@ -136,6 +155,18 @@ class RowLevelSecurityGuard(TestCase):
         tables = sorted(model._meta.db_table for model in tenant_scoped_models())
         for table in sorted(MIXED_TABLES) + sorted(LIBRARY_OWNED_TABLES) + ["membership", "tenant_role", "support_access", "proposal_tenant"]:
             self.assertIn(table, tables)
+
+    def test_the_watch_tables_are_library_tables_and_only_source_holds_a_tenant_column(self) -> None:
+        tables = {model._meta.db_table for model in tenant_scoped_models()}
+        self.assertEqual(
+            WATCH_LIBRARY_TABLES & tables,
+            {"source"},
+            "a watch table grew a tenant column; the tenant's judgement belongs on change_case (WAT-03, CAS-01)",
+        )
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute("SELECT relname FROM pg_class WHERE relname = ANY(%s)", [sorted(WATCH_LIBRARY_TABLES)])
+            found = {row[0] for row in cursor.fetchall()}
+        self.assertEqual(found, set(WATCH_LIBRARY_TABLES), "the watch migration did not create every table it guards")
 
     def test_only_the_named_tables_carry_the_identity_lookup_clause(self) -> None:
         with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
@@ -331,7 +362,9 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
     moved into the library, and both rows still read exactly as before.
 
     agent_run is not here: it has carried this rule since the E5 fix and is proven, with the
-    key of its own zone, in apps/agents/tests_models.py.
+    key of its own zone, in apps/agents/tests_models.py. `source` is: it is the one watch
+    table with a zone column (WAT-06), and a bank must not be able to reach the shared source
+    registry the sweeps read.
     """
 
     databases = {DEFAULT_DB_ALIAS, "app"}
@@ -347,6 +380,8 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
         with transaction.atomic():
             tenancy.activate(self.tenant_a.id)
             self.role_id = TenantRole.objects.filter(tenant=self.tenant_a).order_by("key").values_list("id", flat=True)[0]
+        with library_write("a zone probe"):
+            self.source_kind = SourceKind.objects.create(key="zone-probe")
         self.platform = self._rows(None)
         self.own = self._rows(self.tenant_a.id)
 
@@ -394,6 +429,13 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
             return ApiKey.objects.using("app").create(
                 tenant_id=tenant_id, name="Zone probe", key_prefix=token[:8], key_hash=token, scopes=[]
             )
+        if table == "source":
+            # The one watch table with a zone column (WAT-06). It is a library record, so the
+            # Python fence has to be open too; the door it belongs behind is watch_write().
+            with watch_write("a zone probe"):
+                return Source.objects.using("app").create(
+                    owner_tenant_id=tenant_id, name=f"Probe {token}", kind=self.source_kind
+                )
         if table == "login_event":
             return LoginEvent.objects.using("app").create(
                 tenant_id=tenant_id,

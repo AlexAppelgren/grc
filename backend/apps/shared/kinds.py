@@ -116,4 +116,14 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "verification_outcome",
         "INV-06: a re-verification found no change, found a change (a proposal follows) or could not reach the source; the re-verify queue branches on it",
     ),
+    # Chunk 5 (watch). `check_status`, `change_status` and `feed_filter` were already
+    # allowlisted above; these two are the build's own, recorded in INPUT_DELTAS §1.
+    "SourceCheckKind": (
+        "source_check_kind",
+        "WAT-01, AGT-01: a sweep for new documents or a re-check of one library record; the check names a subject only when it is a re-check",
+    ),
+    "CheckFrequency": (
+        "check_frequency",
+        "WAT-01: how often a source is checked; the scheduler and the stale rule branch on it, and no admin adds a cadence",
+    ),
 }

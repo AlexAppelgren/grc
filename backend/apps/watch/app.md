@@ -44,13 +44,13 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| WAT-01 | Source registry and coverage log: what was checked, when, with what result. Every run also re-checks the library records of the sources it checked and proposes a correction where a record has drifted (D-50) | M | R1 | pending |
-| WAT-02 | One record per reform with a timeline from consultation to in force, partial dates, duplicates merged | M | R1 | pending |
-| WAT-03 | Change types, flags and scope from vocabularies, with at least one regime on every change and a standard term only on a change from a standards body; agent classifications shown as suggestions until confirmed | M | R1 | pending |
-| WAT-04 | Links to affected obligations with confidence, confirmed by a person | M | R1 | pending |
+| WAT-01 | Source registry and coverage log: what was checked, when, with what result. Every run also re-checks the library records of the sources it checked and proposes a correction where a record has drifted (D-50) | M | R1 | in_progress |
+| WAT-02 | One record per reform with a timeline from consultation to in force, partial dates, duplicates merged | M | R1 | in_progress |
+| WAT-03 | Change types, flags and scope from vocabularies, with at least one regime on every change and a standard term only on a change from a standards body; agent classifications shown as suggestions until confirmed | M | R1 | in_progress |
+| WAT-04 | Links to affected obligations with confidence, confirmed by a person | M | R1 | in_progress |
 | WAT-05 | A drafted "So what?" per change, labelled AI-drafted until a person confirms or rewrites it per tenant | M | R1 | pending |
 | WAT-06 | Tenants can request a source; private sources are visible to that tenant only, are public pages checked at the request and again at each run, and run only on an approved EU model endpoint (D-57) | S | R3 | pending |
-| WAT-07 | Standards watched from public metadata: one change per edition or amendment, a timeline from draft to publication, a key date for the end of the transition, no snapshot of a publisher's page, and automated checks only where the terms allow | S | R1 | pending |
+| WAT-07 | Standards watched from public metadata: one change per edition or amendment, a timeline from draft to publication, a key date for the end of the transition, no snapshot of a publisher's page, and automated checks only where the terms allow | S | R1 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 

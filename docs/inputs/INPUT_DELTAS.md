@@ -32,6 +32,12 @@ ordinal), `link_kind`, `effort_size`, case sub-statuses, dismissal and close
 reasons, `impact_assessment.contributors` (teams or functions, never
 `text[]`), tenant tags.
 
+Chunk 5 adds two tier-one kinds the designed schema spells differently:
+`source_check_kind` (`sweep` or `recheck`), which `schema.sql` does not have at all, and
+`check_frequency` (`daily`, `weekly`, `monthly`), which `schema.sql` has as a `CHECK`
+constraint on a `text` column. Both are things the scheduler and the re-check branch on
+and neither is a list an admin curates, so both are kinds in code (WAT-01, AGT-01).
+
 Every vocabulary row: immutable `key`, optional `kind`, labels per language,
 `usage_note`, `sort_order`, `active`, `is_system`, `is_default`.
 
@@ -94,6 +100,33 @@ or has differently:
 - `Instrument.regime` becomes NOT NULL, as `schema.sql` already has it; one
   trigger on `provision` refuses a row under a standard-level instrument
   (INV-01, INV-08, D-35, D-39).
+- `source_check` gains `kind` (`sweep` or `recheck`, default `sweep`) and the
+  nullable `subject_type` and `subject_id` a re-check names, which `schema.sql`
+  lacks: every watch run re-checks the library records its sources cover and
+  logs each re-check as a source check, and a correction goes through the
+  proposal door (WAT-01, AGT-01, INV-06, Alex 2026-09-19 item 3). A check
+  constraint pins the pairing: a re-check names a subject, a sweep names none.
+- `change_term` gains `confidence`, `suggested`, `confirmed_by` and
+  `confirmed_at`, which `schema.sql` lacks: an agent's classification is a
+  suggestion carrying its confidence until a library editor confirms it
+  (WAT-03). The same four columns' shape on `change_obligation` is the designed
+  one, with `suggested` read off `confirmed_at` (WAT-04).
+- `regulatory_change.flags text[]` is dropped. A flag is a row of the `flag`
+  list and a scope term a row of a dimension, and both are `change_term` rows —
+  one table, exactly one of `flag_id` and `term_id` set — so a flag carries the
+  same confidence and suggestion marker as a scope term and a usage count and a
+  merge reach both (§1 above, VOC-02, WAT-03). `change_document.risk_flags`
+  stays the designed `text[]`: its values are what the injection screen found
+  (`apps/agents/screen.py`), which engineering owns, not a list an admin curates.
+- `source.check_frequency` and `source_check.status` are kinds in code, and
+  `source.kind`, `regulatory_change.change_type` and
+  `regulatory_change.suggested_urgency` are foreign keys to the library
+  vocabulary rows chunk 2 seeded, never the designed Postgres enums (§1 above).
+- `watch/logic.py` is replaced by `watch/write.py`, the one module under
+  `apps/watch/` that may call `library_write()`. It opens `watch_write()`, which
+  reaches the seven watch tables and refuses every other library table at
+  runtime, so no watch step can write an authority, an instrument, a provision,
+  an obligation or a version table (PRO-01, chunk 5 ruling H).
 In the API every such field is `{key, kind, label}` on reads and `key` on
 writes, never an OpenAPI `enum`.
 

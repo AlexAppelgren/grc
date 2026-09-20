@@ -1,8 +1,11 @@
 """Guard: library fence (playbook 5, 14, PRO-01, AC-PRO1, INV-06).
 
 Walks the AST of every production module under apps/ and demands that `library_write(`
-is called only from the allowlisted modules: the proposal applier, the watch pipeline and
-the reference seeds. It also demands that every concrete LibraryModel subclass is
+is called only from the allowlisted modules: the proposal applier, the watch door and
+the reference seeds. `apps/watch/write.py` is the only module under apps/watch/ on that
+list (chunk 5, ruling H), and the second allowlist below restricts who may open that
+door; the door's own runtime refusal — the seven watch tables and no inventory table —
+is proven in apps/watch/tests_write.py. It also demands that every concrete LibraryModel subclass is
 mentioned in no other module together with a write call (`save`, `create`, `update`,
 `delete`, `bulk_create`, `bulk_update`, `update_or_create`, `get_or_create`), so a write
 cannot be smuggled in beside the fence. Tests may call it (they prove it).
@@ -12,6 +15,11 @@ The runtime half is proven below: a LibraryModel refuses save, update and delete
 
 Proven to fail 2026-09-19 by adding `with library_write("x"): pass` to apps/home/logic.py:
 the test named the file and the allowlist.
+
+The watch half proven to fail 2026-09-20, each breach then reverted: `library_write()` in
+apps/watch/schemas.py (named the file and the allowlist); `watch/reading.py` added to
+`LIBRARY_WRITE_ALLOWLIST` (named the second watch module); `watch_write()` in
+apps/watch/api.py (named the file and the four steps that may open the door).
 
 The door over the real routes (AC-PRO1) is `ProposalDoorGuard`. It indexes what every
 production module defines at top level (functions, classes, methods, module-level names)
@@ -68,8 +76,19 @@ APPS_DIR = Path(__file__).resolve().parent.parent
 LIBRARY_WRITE_ALLOWLIST = frozenset(
     {
         "proposals/apply.py",
-        "watch/logic.py",
+        "watch/write.py",  # the watch door, and the only module under apps/watch/ (ruling H)
         "shared/tenancy.py",  # the definition
+    }
+)
+# The watch door reaches the seven watch tables and no inventory table (apps/watch/write.py).
+# These four modules may open it; nothing else under apps/watch/ may write a library row.
+WATCH_WRITE_ALLOWLIST = frozenset(
+    {
+        "watch/write.py",  # the definition
+        "watch/registration.py",
+        "watch/curation.py",
+        "watch/sources.py",
+        "watch/so_what_draft.py",
     }
 )
 # Any path under these directories may call it too: reference seeds.
@@ -96,6 +115,7 @@ def _is_allowed(rel: str) -> bool:
 class LibraryWriteCalls(ast.NodeVisitor):
     def __init__(self) -> None:
         self.calls: list[int] = []
+        self.watch_calls: list[int] = []
         self.write_calls: list[tuple[int, str]] = []
         self.names: set[str] = set()
 
@@ -104,6 +124,8 @@ class LibraryWriteCalls(ast.NodeVisitor):
         name = target.id if isinstance(target, ast.Name) else target.attr if isinstance(target, ast.Attribute) else None
         if name == "library_write":
             self.calls.append(node.lineno)
+        if name == "watch_write":
+            self.watch_calls.append(node.lineno)
         if name in WRITE_METHODS:
             self.write_calls.append((node.lineno, name))
         self.generic_visit(node)
@@ -163,6 +185,42 @@ class LibraryFenceGuard(SimpleTestCase):
         }  # fmt: skip
         self.assertLessEqual(chunk3 | {"TaxonomyTerm", "RelationType"}, names)
         self.assertNotIn("ProblemReport", names, "any member reports a problem; it is a mixed tenant table, not a library record")
+
+    def test_only_the_watch_door_may_write_the_library_from_a_watch_module(self) -> None:
+        # Ruling H: `watch/logic.py` came off this list and `watch/write.py` took its place,
+        # so no module under apps/watch/ can reach an inventory table through library_write().
+        watch_modules = sorted(path for path in LIBRARY_WRITE_ALLOWLIST if path.startswith("watch/"))
+        self.assertEqual(watch_modules, ["watch/write.py"])
+        self.assertFalse(any(prefix.startswith("watch/") for prefix in LIBRARY_WRITE_ALLOWED_DIRS))
+
+    def test_watch_write_is_called_only_from_the_modules_that_own_a_watch_step(self) -> None:
+        offenders: list[str] = []
+        for path in production_modules():
+            rel = path.relative_to(APPS_DIR).as_posix()
+            visitor = LibraryWriteCalls()
+            visitor.visit(ast.parse(path.read_text(encoding="utf-8")))
+            if visitor.watch_calls and rel not in WATCH_WRITE_ALLOWLIST:
+                offenders.append(f"apps/{rel}:{visitor.watch_calls[0]}")
+        self.assertEqual(
+            offenders,
+            [],
+            "watch_write() is called outside the allowlist:\n  "
+            + "\n  ".join(offenders)
+            + f"\nAllowed: {sorted(WATCH_WRITE_ALLOWLIST)}. The watch door is opened by the watch "
+            "pipeline's own steps only (chunk 5 plan rule 8).",
+        )
+
+    def test_the_watch_door_reaches_no_inventory_table_and_no_key_scope_names_one(self) -> None:
+        from apps.watch.write import WATCH_TABLES
+
+        inventory = {"authority", "instrument", "provision", "obligation", "provision_version", "obligation_version"}
+        self.assertEqual(WATCH_TABLES & inventory, set(), "the watch door must not reach the inventory")
+        resources = {scope.split(":")[0] for scope in perms.ALL_SCOPES}
+        self.assertEqual(
+            resources & {"instruments", "provisions", "obligations"},
+            set(),
+            "no API key scope names an inventory table, so no watch path reaches one (AC-PRO1)",
+        )
 
 
 # ---------------------------------------------------------------------------------------

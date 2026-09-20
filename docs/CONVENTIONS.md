@@ -183,7 +183,7 @@ message that says what to do.
 | Row-level security | Every model with a tenant FK, against `pg_policies` and `pg_class` | RLS enabled and forced, a tenant policy exists |
 | Database role | The app's role | Not superuser, not owner, no `BYPASSRLS` |
 | Tenant isolation | Every tenant-scoped GET, PATCH, DELETE with another tenant's record | 404, never 403, never data |
-| Library fence | The AST of every module writing a `LibraryModel` | Only inside `library_write()` in `proposals/apply.py`, `watch/logic.py`, reference seeds |
+| Library fence | The AST of every module writing a `LibraryModel` | Only inside `library_write()` in `proposals/apply.py`, `watch/write.py` (the watch door: the seven watch tables, no inventory table), reference seeds |
 | Four eyes | Every table in the four-eyes list | The requester-is-not-approver check constraint exists |
 | Audit on write | Every non-GET operation through its scenario test | At least one `audit_event` written; a mutating route with no scenario fails |
 | Kinds only | Every `TextChoices`, Postgres enum, generated TS union | In the tier-one allowlist with a reason |
