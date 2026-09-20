@@ -277,6 +277,116 @@ class ProposalApply(ScenarioTestCase):
         self.assertEqual(self.client.get(f"{V1}/proposals/00000000-0000-4000-8000-000000000000", **sign_in(self.editor)).status_code, 404)
 
 
+class ApprovalCorrectionsAndTheAssertion(ScenarioTestCase):
+    """PRO-02, AC-PRO2, AC-ID3: what a reviewer may change on the way through, and what
+    every row the approval writes has to carry.
+
+    The scenarios (PRO-S3, PRO-S4) prove an obligation version applied and corrected. These
+    prove the two rules that hold for every kind: corrections belong to a sourced fact
+    alone, and the passkey assertion the reviewer just made is on every audit row the
+    approval's transaction leaves, the library change included, so the log of a library
+    change says which passkey opened the door.
+    """
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        self.tenant = factories.tenant(slug="bank")
+        self.activate(self.tenant)
+        ensure_tenant_vocabularies(self.tenant, actor=Actor.system("test"))
+        self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        self.reviewer = factories.platform_user(roles=("library_editor",), email="reviewer@bleqq.test")
+        with library_write("test fixture"):
+            instrument = Instrument.objects.create(
+                stable_key="fffs-2017-2",
+                short_name="FFFS 2017:2",
+                official_ref="FFFS 2017:2",
+                source_url="https://www.fi.se/",
+                level=InstrumentLevel.objects.get(key="act"),
+                binding=True,
+                jurisdiction=Jurisdiction.objects.get(key="se"),
+                created_origin="user",
+            )
+            self.obligation = Obligation.objects.create(
+                stable_key="obl-advice-suitability",
+                instrument=instrument,
+                ref_label="9 kap. 6 §",
+                duty_type=DutyType.objects.get(key="conduct"),
+                created_origin="user",
+                source_url="https://www.fi.se/",
+                source_label="FFFS 2017:2, 9 kap. 6 §",
+            )
+
+    def _post(self, path: str, body: dict[str, Any], headers: dict[str, Any], **extra: Any) -> Any:  # compliance: allow-kwargs test helper forwarding request headers
+        return self.client.post(f"{V1}{path}", data=body, content_type="application/json", **headers, **extra)
+
+    def _flag_proposal(self) -> dict[str, Any]:
+        created = self._post(
+            "/proposals",
+            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}},
+            sign_in(self.editor),
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        row: dict[str, Any] = created.json()
+        return row
+
+    def _version_proposal(self) -> dict[str, Any]:
+        created = self._post(
+            "/proposals",
+            {
+                "kind": "new_obligation_version",
+                "title": "Version 2 of the advice obligation, in force 1 October 2026",
+                "targetType": "obligation",
+                "targetId": str(self.obligation.id),
+                "payload": {
+                    "summaries": {"sv": "Institutet bedömer kunden innan rådgivning."},
+                    "originalLanguage": "sv",
+                    "effectiveFrom": "2026-10-01",
+                    "effectiveFromPrecision": "day",
+                },
+                "fieldSources": {"summaries.sv": "https://www.fi.se/", "effectiveFrom": "https://www.fi.se/"},
+            },
+            sign_in(self.editor),
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        row: dict[str, Any] = created.json()
+        return row
+
+    def test_a_correction_belongs_to_a_sourced_fact_and_not_to_a_label(self) -> None:
+        # A vocabulary row's label is wording a person writes, not a fact from an
+        # authority, so there is nothing to correct it against: a reviewer who disagrees
+        # rejects it with a reason instead.
+        proposal = self._flag_proposal()
+
+        refused = self._post(
+            f"/proposals/{proposal['id']}/approve",
+            {"payloadOverrides": {"labels": {"en": "Client funds"}}},
+            sign_in(self.reviewer, step_up=True),
+        )
+
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "validation_error")
+        self.assertFalse(Flag.objects.filter(key="client_money").exists())
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
+
+    def test_every_audit_row_an_approval_writes_carries_the_reviewers_assertion(self) -> None:
+        for name, proposal in (("a vocabulary row", self._flag_proposal()), ("an obligation version", self._version_proposal())):
+            with self.subTest(kind=name):
+                reviewer = sign_in(self.reviewer, step_up=True)  # signing in is its own audited act
+                written_before = set(AuditEvent.objects.values_list("id", flat=True))
+
+                approved = self._post(f"/proposals/{proposal['id']}/approve", {}, reviewer)
+
+                self.assertEqual(approved.status_code, 200, approved.content)
+                rows = list(AuditEvent.objects.exclude(id__in=written_before))
+                # The decision and the library change it made, and nothing without an assertion.
+                self.assertGreaterEqual(len(rows), 2)
+                self.assertEqual([row.action for row in rows if row.step_up_assertion_id is None], [])
+
+
 class ReverificationStamp(ScenarioTestCase):
     """INV-06, INV-S8: re-verifying a record against its source is the one library write
     that is not a proposal, and it stays a stamp. Every outcome files a Verification row —

@@ -412,6 +412,9 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("POST", "/changes/{change_id}/events"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
     ("PATCH", "/changes/{change_id}/events/{event_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
     ("PUT", "/changes/{change_id}/obligations"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
+    # Chunk 4 (proposals and the platform console). New entries are appended here, so two
+    # sessions adding one at the same time do not land on the same line.
+    ("POST", "/me/visit"): Ungated(UngatedReason.SELF, _SELF_ME),
 }
 
 

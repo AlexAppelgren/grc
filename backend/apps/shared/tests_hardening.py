@@ -241,6 +241,13 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/library/seeds/library.py record(subject_type) tenant_id=None actor=Actor.system(SEED_REASON) title=key": (
         "The reference seed: a system actor, and the title is the fixture's stable key."
     ),
+    "apps/proposals/apply.py record('obligation') tenant_id=None actor=actor title=obligation.stable_key": (
+        "A new obligation version applied by a library editor: the title is the obligation's "
+        "own stable key, the summary and scope in the row are the library's text from the "
+        "moment it is approved, and the reviewer is platform staff. The proposal's title and "
+        "the proposer are not in the row, so a proposal a bank member made reaches no other "
+        "bank through it."
+    ),
     "apps/proposals/apply.py record('vocabulary') tenant_id=None actor=actor title=f'{payload.list}:{payload.key}'": (
         "An approved proposal applied by a library editor: the key is a library fact from "
         "the moment it is approved, and the editor is platform staff."

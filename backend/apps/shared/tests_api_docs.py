@@ -305,6 +305,36 @@ class EveryRuleFires(SimpleTestCase):
         """The check refuses an invented code, not the act of documenting one."""
         self.assertEqual(findings_for(DOCUMENTED), [])
 
+    def test_a_call_with_no_body_either_way_needs_no_example(self) -> None:
+        """A 204 answers with no content, so there is nothing to exemplify.
+
+        Demanding one pushed `markVisit` into declaring `content: application/json` on a 204
+        and typing its body as `unknown` in the generated client — the gate bending the API
+        rather than describing it (2026-09-20)."""
+        document = copy.deepcopy(DOCUMENTED)
+        document["paths"]["/api/v1/me/visit"] = {
+            "post": {
+                "operationId": "markVisit",
+                "summary": "Mark the library as seen, so what is new is new to you",
+                "description": "Moves your own bookmark to now, in your own bank, and records it in the audit log.",
+                "responses": {"204": {"description": "Seen."}},
+            }
+        }
+        self.assertEqual([what for where, _, what in findings_for(document) if where == "markVisit"], [])
+
+    def test_a_call_that_answers_a_body_still_needs_one(self) -> None:
+        document = copy.deepcopy(DOCUMENTED)
+        document["paths"]["/api/v1/me/visit"] = {
+            "post": {
+                "operationId": "markVisit",
+                "summary": "Mark the library as seen, so what is new is new to you",
+                "description": "Moves your own bookmark to now, in your own bank, and records it in the audit log.",
+                "responses": {"200": {"description": "Seen.", "content": {"application/json": {"schema": {}}}}},
+            }
+        }
+        found = [what for where, rule, what in findings_for(document) if where == "markVisit" and rule == "operations"]
+        self.assertTrue(any("no example" in what for what in found), found)
+
     def test_a_query_parameter_needs_its_own_description(self) -> None:
         """Ninja inlines a Query model, so the pagination limits only exist here."""
         document = without("paths", "/api/v1/obligations", "get", "parameters", 0, "description")

@@ -81,3 +81,40 @@ def update_me(principal: Principal, *, name: str | None, locale: str | None) -> 
         after={"name": user.name, "locale": user.locale.key if user.locale else None},
     )
     return me(principal)
+
+
+def mark_visit(principal: Principal) -> None:
+    """Move the caller's "seen the library" bookmark to now (PRO-03, AUD-01).
+
+    The bookmark is a column of the caller's own membership, so the tenant app writes it
+    for the person who is signed in and for nobody else; the library-updates screen reads
+    it back to decide which updates are new to them. It is a reading habit, not a
+    judgement about a regulation, so it stays inside the bank that owns the membership row
+    and never reaches the library zone.
+
+    Platform staff read the library itself rather than a bank's view of it, so a session
+    with no tenant has no bookmark to move: 404, like every other tenant route, with
+    nothing written.
+    """
+    membership = None
+    if principal.tenant_id is not None:
+        query = Membership.objects.select_related("user").filter(
+            tenant_id=principal.tenant_id, user_id=principal.subject_id, deactivated_at__isnull=True
+        )
+        membership = query.first()  # ordering: unique (tenant, user), at most one row
+    if membership is None:
+        raise ValidationError("Not found.", code="not_found")
+    seen_before = membership.last_visit_at
+    membership.last_visit_at = timezone.now()
+    membership.save(update_fields=["last_visit_at"])
+    record(
+        action="member.visited",
+        actor=session_logic.actor_of(membership.user),
+        subject_type="membership",
+        subject_id=membership.id,
+        subject_title=membership.user.name,
+        summary="Marked the library as seen.",
+        tenant_id=principal.tenant_id,
+        before={"lastVisitAt": seen_before.isoformat() if seen_before else None},
+        after={"lastVisitAt": membership.last_visit_at.isoformat()},
+    )

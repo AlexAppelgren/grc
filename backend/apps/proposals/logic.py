@@ -496,22 +496,70 @@ def _decidable(proposal: Proposal, reviewer: Any) -> None:
         )
 
 
+def corrected(proposal: Proposal, reviewer: Any, overrides: dict[str, Any]) -> dict[str, Any]:
+    """The payload as the reviewer corrected it, checked as firmly as the one that arrived
+    (PRO-02, AC-PRO1).
+
+    Corrections merge field by field over what was proposed, so a reviewer who rewrites the
+    wording keeps the date and the scope that came with it. The merged result goes through
+    the kind's own schema and through the same source check the proposal passed when it was
+    made: a correction that introduces a field the proposal never sourced is 422
+    `source_missing`, because the rule is that no value reaches the library without a source
+    a reader can follow, whoever typed it last.
+
+    Only an obligation version may be corrected. A vocabulary row's labels are wording a
+    person writes rather than a fact from an authority, so there is nothing to correct
+    against a source, and a reviewer who disagrees rejects with a reason instead.
+    """
+    if proposal.kind not in OBLIGATION_KINDS:
+        raise ValidationError(
+            "Corrections belong to an obligation version. Reject this one with a reason instead.",
+            code="validation_error",
+        )
+    merged = {**proposal.payload, **overrides}
+    parsed = validated_payload(proposal.kind, merged)
+    check_field_sources(parsed, proposal.field_sources)
+    proposal.corrected_payload = payload_dict(parsed)
+    proposal.corrected_by = reviewer
+    proposal.corrected_at = timezone.now()
+    # The row's own date follows the correction, because a queue row that showed one date
+    # while the version carried another would be a proposal nobody could read straight
+    # (the same rule `_agreed_effective_from()` holds the proposer to).
+    proposal.effective_from = getattr(parsed, "effective_from", proposal.effective_from)
+    return proposal.corrected_payload
+
+
 def approve(
-    *, proposal: Proposal, reviewer: Any, actor: Actor, note: str, step_up_assertion_id: uuid.UUID
+    *,
+    proposal: Proposal,
+    reviewer: Any,
+    actor: Actor,
+    note: str,
+    payload_overrides: dict[str, Any] | None = None,
+    step_up_assertion_id: uuid.UUID,
 ) -> Proposal:
     """Apply the payload and approve, in one transaction (PRO-02): the library row, its
-    audit row and the proposal's own audit row commit together or not at all."""
+    audit row and the proposal's own audit row commit together or not at all.
+
+    A reviewer may correct the payload on the way through (`payload_overrides`). What they
+    approved is stored beside what was proposed, as their own correction, so the queue and
+    the audit trail keep both.
+    """
     from apps.proposals import apply
 
     _decidable(proposal, reviewer)
-    apply.apply(proposal, actor=actor)
+    decided = ["status", "reviewed_by", "reviewed_at", "applied_at", "review_note"]
+    if payload_overrides:
+        corrected(proposal, reviewer, payload_overrides)
+        decided += ["corrected_payload", "corrected_by", "corrected_at", "effective_from"]
+    apply.apply(proposal, actor=actor, reviewer=reviewer, step_up=step_up_assertion_id)
     now = timezone.now()
     proposal.status = ProposalStatus.APPROVED.value
     proposal.reviewed_by = reviewer
     proposal.reviewed_at = now
     proposal.applied_at = now
     proposal.review_note = note.strip()
-    proposal.save(update_fields=["status", "reviewed_by", "reviewed_at", "applied_at", "review_note"])
+    proposal.save(update_fields=decided)
     record(
         action="proposal.approved",
         actor=actor,
@@ -521,7 +569,7 @@ def approve(
         summary=f"Approved: {proposal.title}",
         tenant_id=None,
         before={"status": ProposalStatus.OPEN.value},
-        after={"status": proposal.status, "note": proposal.review_note},
+        after={"status": proposal.status, "note": proposal.review_note, "corrected": proposal.corrected_payload is not None},
         step_up_assertion_id=step_up_assertion_id,
     )
     return proposal

@@ -21,6 +21,7 @@ from __future__ import annotations
 import uuid
 from datetime import date
 from typing import Any
+from unittest import mock
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -221,13 +222,18 @@ class ObligationProposalCreation(TestCase):
         self.assertEqual(self._create(effective_from=date(2026, 10, 1)).effective_from, date(2026, 10, 1))
 
     # -----------------------------------------------------------------------------------
-    # Applying, before the obligation apply is built
+    # Applying a kind nothing can write yet
     # -----------------------------------------------------------------------------------
-    def test_the_new_kind_is_refused_by_apply_until_its_apply_is_built(self) -> None:
-        # The kind reaches the deployed queue before anything can apply it. An approval of
-        # one is refused where a reviewer sees it, never silently ignored.
-        with self.assertRaises(ValidationError) as caught:
-            apply.apply(self._create(), actor=factories.user_actor())
+    def test_a_kind_whose_apply_is_not_built_is_refused_where_a_reviewer_sees_it(self) -> None:
+        # A kind can reach the deployed queue before the apply that writes it exists, as
+        # new_obligation_version itself did between chunk 4's first and second tasks. An
+        # approval of one is refused where a reviewer can act on it, never applied in part
+        # and never silently approved with nothing written.
+        proposal = self._create()
+        proposal.kind = "retire_obligation"
+        with mock.patch.dict(logic.PAYLOAD_SCHEMAS, {proposal.kind: ProposalObligationVersionPayload}):
+            with self.assertRaises(ValidationError) as caught:
+                apply.apply(proposal, actor=factories.user_actor(), reviewer=None, step_up=uuid.uuid4())
         self.assertEqual(caught.exception.code, "unknown_key")
         self.assertEqual(ObligationVersion.objects.count(), 0)
 

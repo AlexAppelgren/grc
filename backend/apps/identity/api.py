@@ -236,6 +236,40 @@ def update_me(request: HttpRequest, body: MePatch) -> Me:
     return Me.model_validate(me_logic.update_me(_principal(request), name=body.name, locale=body.locale))
 
 
+@router.post(
+    "/me/visit",
+    response={204: None},
+    auth=SessionAuth(),
+    operation_id="markVisit",
+    by_alias=True,
+    summary="Mark the library as seen, so what is new is new to you",
+)
+def mark_visit(request: HttpRequest) -> tuple[int, None]:
+    """Move your own "seen the library" bookmark to now, so that the library updates a
+    bank reads next are the ones that arrived after this moment. A screen calls it when
+    the reader has actually looked at the updates, not on every page load.
+
+    It writes one column of one row: `lastVisitAt` on the caller's own membership of the
+    bank the session is signed in to. It is a reading habit and not a judgement about a
+    regulation, so it stays inside that bank, never reaches the shared library, and moves
+    nobody else's bookmark — not a colleague's, and not the same person's bookmark in
+    another bank they belong to. There is nothing to read back here: `GET /me` and the
+    library-updates list carry the bookmark.
+
+    Self-gated, so it asks for no permission and no scope: a signed-in member may move
+    their own bookmark and the route addresses no one else's. It writes one audit event,
+    `member.visited`, in that bank, carrying the bookmark before and after.
+
+    Answers 204 with no body. Platform staff read the library itself rather than a bank's
+    view of it and hold no membership, so a session with no bank answers 404 `not_found`
+    and writes nothing; an expired or missing session answers 401.
+    """
+    # Ungated by design: self. Moves the caller's own "seen the library" bookmark; a
+    # session with no tenant has no membership to move and answers 404.
+    me_logic.mark_visit(_principal(request))
+    return 204, None
+
+
 @router.get("/me/passkeys", response=list[PasskeyOut], auth=SessionAuth(), operation_id="listMyPasskeys", by_alias=True)
 def list_my_passkeys(request: HttpRequest) -> list[PasskeyOut]:
     # Ungated by design: self.

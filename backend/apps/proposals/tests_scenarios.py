@@ -14,19 +14,28 @@ Prefixes hosted: PRO.
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from typing import Any
-from unittest import skip
+from unittest import mock, skip
 
-from apps.library.models import Instrument, Jurisdiction, Obligation
+from apps.library.models import (
+    Instrument,
+    Jurisdiction,
+    Obligation,
+    ObligationSummary,
+    ObligationTerm,
+    ObligationVersion,
+)
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.proposals import apply
 from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
 from apps.shared import factories, tenancy, permissions as perms
 from apps.shared.audit import Actor
-from apps.shared.models import AuditEvent
+from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.routes import iter_operations
 from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
-from apps.taxonomy.models import DutyType, Flag, InstrumentLevel
+from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from config.api import api
@@ -37,6 +46,11 @@ V1 = "/api/v1"
 # auth layer for a platform session with no tenant (identity flag on, the session row, flag
 # off, platform roles, latest step-up: 5) and the page with its proposer and reviewer (1).
 PROPOSAL_QUEUE_QUERIES = 1 + 2 + 5 + 1
+# The change an agent's watch run linked the proposal to (chunk 5 makes these rows; the
+# column is a plain id until then), and the summary version 1 carries, so a scenario can
+# prove that applying version 2 leaves version 1 exactly as it was written.
+CHANGE_ID = uuid.UUID("b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33")
+VERSION_ONE_SV = "Institutet bedömer kunden innan rådgivning enligt tidigare lydelse."
 
 
 class ProposalsScenarioTests(ScenarioTestCase):
@@ -92,6 +106,56 @@ class ProposalsScenarioTests(ScenarioTestCase):
             "sourceUrl": "https://www.fi.se/",
         }
         return body
+
+    def _version_one(self, obligation: Obligation) -> ObligationVersion:
+        """The version in force before the proposal: chunk 3 seeds these, a scenario needs one."""
+        with library_write("scenario"):
+            version = ObligationVersion.objects.create(obligation=obligation, version_number=1, effective_from=date(2024, 1, 1))
+            ObligationSummary.objects.create(version=version, language_id="sv", text=VERSION_ONE_SV, is_original=True)
+            ObligationTerm.objects.create(obligation=obligation, term=self._term("legal_entity", "bank"))
+        return version
+
+    def _term(self, dimension: str, key: str) -> Any:
+        return TaxonomyTerm.objects.get(dimension__key=dimension, key=key)
+
+    def _version_proposal(self, obligation: Obligation, *, scoped: bool = True) -> dict[str, Any]:
+        """An agent's proposal of a new version, sourced field by field, waiting in the
+        queue. `scoped=False` leaves the scope alone, and then names no source for it."""
+        payload: dict[str, Any] = {
+            "summaries": {"sv": "Institutet bedömer kunden innan rådgivning.", "en": "The institution assesses the client before advising."},
+            "originalLanguage": "sv",
+            "isMachine": True,
+            "effectiveFrom": "2026-10-01",
+            "effectiveFromPrecision": "day",
+        }
+        sources = {
+            "summaries.sv": "https://www.fi.se/",
+            "summaries.en": "https://www.fi.se/",
+            "effectiveFrom": "https://www.fi.se/",
+        }
+        if scoped:
+            payload["terms"] = ["legal_entity:bank", "client_category:retail"]
+            sources["terms"] = "https://www.fi.se/"
+        key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        created = self._post(
+            "/proposals",
+            {
+                "kind": "new_obligation_version",
+                "title": "Version 2 of the advice obligation, in force 1 October 2026",
+                "targetType": "obligation",
+                "targetId": str(obligation.id),
+                "changeId": str(CHANGE_ID),
+                "payload": payload,
+                "fieldSources": sources,
+                "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
+                "sourceUrl": "https://www.fi.se/",
+            },
+            {"HTTP_X_API_KEY": key.plain_key},
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        self.activate(self.tenant)
+        row: dict[str, Any] = created.json()
+        return row
 
     def test_pro_s1(self) -> None:
         """PRO-S1
@@ -206,19 +270,121 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(approved.status_code, 200, approved.content)
         self.assertTrue(Flag.objects.filter(key="client_money").exists())
 
-    @skip("pending: PRO-S3 (PRO-02, chunk 4: obligation versions and re-index)")
     def test_pro_s3(self) -> None:
         """PRO-S3
 
         Approval applies payload, version, audit row and re-index in one transaction (PRO-02).
         """
+        obligation = self._obligation()
+        first = self._version_one(obligation)
+        proposal = self._version_proposal(obligation)
 
-    @skip("pending: PRO-S4 (PRO-02, chunk 4: obligation payload overrides)")
+        # The re-index cannot be written: the whole request rolls back, so nothing is
+        # applied, nothing is audited and the proposal is still waiting for a reviewer.
+        with mock.patch.object(apply, "reindex", side_effect=RuntimeError("index unavailable")):
+            failed = self._post(f"/proposals/{proposal['id']}/approve", {}, sign_in(self.second_editor, step_up=True))
+        self.assertEqual(failed.status_code, 500, failed.content)
+        self.assertEqual([version.version_number for version in obligation.versions.all()], [1])
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
+        self.assertFalse(AuditEvent.objects.filter(action="obligation.version_applied").exists())
+        self.assertFalse(AuditEvent.objects.filter(action="proposal.approved").exists())
+
+        approved = self._post(f"/proposals/{proposal['id']}/approve", {"note": "Matches the decision."}, sign_in(self.second_editor, step_up=True))
+
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertEqual(approved.json()["status"], "approved")
+        # A new version, with the stated effective date. Version 1 is untouched: the
+        # history is read as it was written (INV-04).
+        version = obligation.versions.order_by("-version_number").first()
+        assert version is not None
+        self.assertEqual(version.version_number, 2)
+        self.assertEqual(version.effective_from, date(2026, 10, 1))
+        self.assertEqual(version.effective_from_precision, "day")
+        self.assertEqual(str(version.applied_by_proposal_id), proposal["id"])
+        self.assertEqual(version.approved_by_id, self.second_editor.id)
+        self.assertIsNotNone(version.approved_at)
+        self.assertEqual(version.caused_by_change, CHANGE_ID)
+        self.assertEqual(
+            {row.language_id: (row.text, row.is_original, row.is_machine) for row in version.summaries.all()},
+            {
+                "sv": ("Institutet bedömer kunden innan rådgivning.", True, False),
+                "en": ("The institution assesses the client before advising.", False, True),
+            },
+        )
+        self.assertEqual(first.summaries.get(language_id="sv").text, VERSION_ONE_SV)
+        # The scope the payload carried replaced the obligation's own.
+        self.assertEqual(
+            sorted(f"{link.term.dimension.key}:{link.term.key}" for link in ObligationTerm.objects.filter(obligation=obligation)),
+            ["client_category:retail", "legal_entity:bank"],
+        )
+        # The audit row, its outbox row and the decision are one transaction, and the
+        # library change carries the reviewer's assertion.
+        applied = AuditEvent.objects.get(action="obligation.version_applied", subject_id=obligation.id)
+        self.assertIsNone(applied.tenant_id)
+        self.assertIsNotNone(applied.step_up_assertion_id)
+        self.assertEqual(applied.after["versionNumber"], 2)
+        self.assertEqual(applied.before["versionNumber"], 1)
+        self.assertTrue(OutboxEvent.objects.filter(topic="obligation.version_applied").exists())
+        self.assertTrue(OutboxEvent.objects.filter(topic="proposal.approved").exists())
+
     def test_pro_s4(self) -> None:
         """PRO-S4
 
         The reviewer corrects scope and wording before approving (PRO-02).
         """
+        obligation = self._obligation()
+        self._version_one(obligation)
+        proposal = self._version_proposal(obligation)
+        reviewer = sign_in(self.second_editor, step_up=True)
+        corrected_sv = "Institutet bedömer kundens kunskap och erfarenhet innan rådgivning."
+
+        # A correction that introduces a field nobody sourced is refused, and applies
+        # nothing: this proposal left the scope alone, so it named no source for it.
+        unscoped = self._version_proposal(obligation, scoped=False)
+        no_source = self._post(
+            f"/proposals/{unscoped['id']}/approve",
+            {"payloadOverrides": {"terms": ["legal_entity:bank", "client_category:professional"]}},
+            reviewer,
+        )
+        self.assertEqual(no_source.status_code, 422, no_source.content)
+        self.assertEqual(no_source.json()["code"], "source_missing")
+        self.assertIn("terms", no_source.json()["detail"])
+        self.assertEqual([version.version_number for version in obligation.versions.all()], [1])
+        self.assertIsNone(Proposal.objects.get(pk=unscoped["id"]).corrected_payload)
+        self.assertEqual(Proposal.objects.get(pk=unscoped["id"]).status, ProposalStatus.OPEN.value)
+
+        # The editor disagrees with the scope and the wording, and approves their own version.
+        approved = self._post(
+            f"/proposals/{proposal['id']}/approve",
+            {
+                "note": "Retail only, and the wording follows the decision.",
+                "payloadOverrides": {"summaries": {"sv": corrected_sv, "en": "The institution assesses the client's knowledge and experience before advising."}, "terms": ["client_category:retail"]},
+            },
+            reviewer,
+        )
+
+        self.assertEqual(approved.status_code, 200, approved.content)
+        # The applied version carries the corrected values.
+        version = obligation.versions.order_by("-version_number").first()
+        assert version is not None
+        self.assertEqual(version.version_number, 2)
+        self.assertEqual(version.summaries.get(language_id="sv").text, corrected_sv)
+        self.assertEqual(
+            [f"{link.term.dimension.key}:{link.term.key}" for link in ObligationTerm.objects.filter(obligation=obligation)],
+            ["client_category:retail"],
+        )
+        # Both payloads are kept, and the correction is the reviewer's own.
+        row = Proposal.objects.get(pk=proposal["id"])
+        applied = dict(row.corrected_payload or {})
+        self.assertEqual(row.payload["summaries"]["sv"], "Institutet bedömer kunden innan rådgivning.")
+        self.assertEqual(row.payload["terms"], ["legal_entity:bank", "client_category:retail"])
+        self.assertEqual(applied["summaries"]["sv"], corrected_sv)
+        self.assertEqual(applied["terms"], ["client_category:retail"])
+        # The date nobody corrected came through untouched.
+        self.assertEqual(applied["effectiveFrom"], "2026-10-01")
+        self.assertEqual(row.corrected_by_id, self.second_editor.id)
+        self.assertIsNotNone(row.corrected_at)
+        self.assertEqual(AuditEvent.objects.get(action="proposal.approved", subject_id=row.id).after["corrected"], True)
 
     def test_pro_s5(self) -> None:
         """PRO-S5

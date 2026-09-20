@@ -12,7 +12,7 @@ apps/proposals/apply.py.
 from typing import Any
 
 from django.http import HttpRequest
-from ninja import Query, Router
+from ninja import Path, Query, Router
 
 from apps.proposals import logic
 from apps.proposals.schemas import (
@@ -87,17 +87,61 @@ def get_proposal(request: HttpRequest, proposal_id: str) -> ProposalRow:
     return logic.row(logic.by_id(uuid_or_404(proposal_id)))
 
 
-@router.post("/proposals/{proposal_id}/approve", response=ProposalRow, auth=SESSION, operation_id="approveProposal", by_alias=True)
+@router.post(
+    "/proposals/{proposal_id}/approve",
+    response=ProposalRow,
+    auth=SESSION,
+    operation_id="approveProposal",
+    by_alias=True,
+    summary="Approve a proposal and let the change into the shared library",
+)
 @requires_permission(perms.PROPOSALS_REVIEW)
 @requires_step_up
 @answers_problems
-def approve_proposal(request: HttpRequest, proposal_id: str, body: ProposalApproveBody) -> ProposalRow:
+def approve_proposal(
+    request: HttpRequest,
+    body: ProposalApproveBody,
+    proposal_id: str = Path(
+        ...,
+        description=(
+            "The proposal being decided, the UUID the queue returns as `id`. A proposal "
+            "that does not exist, and anything that is not a UUID, answers `not_found`."
+        ),
+    ),
+) -> ProposalRow:
+    """The only door into the shared library. Call it once a reviewer has read the
+    proposal, opened its sources and satisfied themselves that the facts are right; what
+    it applies is what every bank on the platform will read as the library's own text.
+
+    In one transaction it applies the payload, writes the new library version, writes the
+    audit rows for the library record and for the proposal, and re-indexes the record for
+    search: all of it commits or none of it does. The reviewer may correct the payload on
+    the way through with `payloadOverrides`, and what they approved is stored beside what
+    was proposed, so the queue and the audit trail keep both. The answer is the proposal
+    row as it now stands, with `status` `approved` and `appliedAt` set.
+
+    Needs the platform permission `proposals.review` and a fresh passkey step-up, whose
+    assertion id is written on the audit rows the approval leaves. The reviewer is never
+    the proposer. No API key scope reaches this call: a key holds no passkey assertion, so
+    an agent working the same queue is a separate, independent principal by construction.
+
+    Errors to branch on: `permission_denied` without `proposals.review`;
+    `step_up_required` when no fresh passkey assertion accompanies the call;
+    `four_eyes_violation` when the reviewer is the person who made the proposal;
+    `invalid_transition` when the proposal was already approved or rejected, which is also
+    what a repeated call answers, since nothing is ever applied twice; `source_missing`
+    when a correction introduces a field the proposal never sourced; `validation_error`
+    when a correction is offered on a kind that cannot be corrected or does not fit its
+    payload; `unknown_key` when the payload names a row the library does not hold;
+    `not_found` when there is no such proposal.
+    """
     reviewer = caller_user(request)
     proposal = logic.approve(
         proposal=logic.by_id(uuid_or_404(proposal_id)),
         reviewer=reviewer,
         actor=actor_for(request, reviewer),
         note=body.note,
+        payload_overrides=body.payload_overrides,
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
     return logic.row(proposal)

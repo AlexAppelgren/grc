@@ -801,6 +801,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/visit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark the library as seen, so what is new is new to you
+         * @description Move your own "seen the library" bookmark to now, so that the library updates a
+         *     bank reads next are the ones that arrived after this moment. A screen calls it when
+         *     the reader has actually looked at the updates, not on every page load.
+         *
+         *     It writes one column of one row: `lastVisitAt` on the caller's own membership of the
+         *     bank the session is signed in to. It is a reading habit and not a judgement about a
+         *     regulation, so it stays inside that bank, never reaches the shared library, and moves
+         *     nobody else's bookmark — not a colleague's, and not the same person's bookmark in
+         *     another bank they belong to. There is nothing to read back here: `GET /me` and the
+         *     library-updates list carry the bookmark.
+         *
+         *     Self-gated, so it asks for no permission and no scope: a signed-in member may move
+         *     their own bookmark and the route addresses no one else's. It writes one audit event,
+         *     `member.visited`, in that bank, carrying the bookmark before and after.
+         *
+         *     Answers 204 with no body. Platform staff read the library itself rather than a bank's
+         *     view of it and hold no membership, so a session with no bank answers 404 `not_found`
+         *     and writes nothing; an expired or missing session answers 401.
+         */
+        post: operations["markVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/obligations": {
         parameters: {
             query?: never;
@@ -954,7 +991,34 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Approve Proposal */
+        /**
+         * Approve a proposal and let the change into the shared library
+         * @description The only door into the shared library. Call it once a reviewer has read the
+         *     proposal, opened its sources and satisfied themselves that the facts are right; what
+         *     it applies is what every bank on the platform will read as the library's own text.
+         *
+         *     In one transaction it applies the payload, writes the new library version, writes the
+         *     audit rows for the library record and for the proposal, and re-indexes the record for
+         *     search: all of it commits or none of it does. The reviewer may correct the payload on
+         *     the way through with `payloadOverrides`, and what they approved is stored beside what
+         *     was proposed, so the queue and the audit trail keep both. The answer is the proposal
+         *     row as it now stands, with `status` `approved` and `appliedAt` set.
+         *
+         *     Needs the platform permission `proposals.review` and a fresh passkey step-up, whose
+         *     assertion id is written on the audit rows the approval leaves. The reviewer is never
+         *     the proposer. No API key scope reaches this call: a key holds no passkey assertion, so
+         *     an agent working the same queue is a separate, independent principal by construction.
+         *
+         *     Errors to branch on: `permission_denied` without `proposals.review`;
+         *     `step_up_required` when no fresh passkey assertion accompanies the call;
+         *     `four_eyes_violation` when the reviewer is the person who made the proposal;
+         *     `invalid_transition` when the proposal was already approved or rejected, which is also
+         *     what a repeated call answers, since nothing is ever applied twice; `source_missing`
+         *     when a correction introduces a field the proposal never sourced; `validation_error`
+         *     when a correction is offered on a kind that cannot be corrected or does not fit its
+         *     payload; `unknown_key` when the payload names a row the library does not hold;
+         *     `not_found` when there is no such proposal.
+         */
         post: operations["approveProposal"];
         delete?: never;
         options?: never;
@@ -3659,13 +3723,48 @@ export interface components {
             /** Name */
             name: string;
         };
-        /** ProposalApproveBody */
+        /**
+         * ProposalApproveBody
+         * @description The body of `POST /proposals/{proposalId}/approve`: the reviewer's word that this
+         *     change may enter the shared library, and the corrections they made first.
+         *
+         *     Approving is the only door into the library, so this call needs `proposals.review`
+         *     and a passkey step-up no older than the step-up window; without a fresh assertion it
+         *     answers 403 `step_up_required`, and the assertion's id is written on every audit row
+         *     the approval leaves. The reviewer is never the proposer: the database refuses that row
+         *     and the call answers 409 `four_eyes_violation`. Approval carries no
+         *     `Idempotency-Key` and no `If-Match`: a proposal is decided once, and a second call on
+         *     a decided proposal answers 409 `invalid_transition` rather than applying anything
+         *     twice. The audit and outbox rows the approval writes are append-only.
+         *
+         *     The whole call is platform work in the shared zone. Neither field ever names the bank
+         *     a proposal came from, because a bank member's identity does not reach the console, and
+         *     nothing a bank wrote about its own compliance is touched by an approval.
+         * @example {
+         *       "note": "Wording follows the board decision; scope narrowed to the retail categories the decision names.",
+         *       "payloadOverrides": {
+         *         "effectiveFrom": "2026-10-01",
+         *         "summaries": {
+         *           "en": "Research from third parties may be received only if it is paid from the institution's own resources or from a research payment account.",
+         *           "sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel eller från ett analyskonto."
+         *         }
+         *       }
+         *     }
+         */
         ProposalApproveBody: {
             /**
              * Note
+             * @description The reviewer's own sentence to the proposer, stored on the proposal and sent to them with the decision. Optional on an approval, unlike a rejection, which needs a reason and a note. It is the reviewer's comment on the request and never becomes part of the library record's text, so a reader must not quote it as what the authority said.
              * @default
              */
             note: string;
+            /**
+             * Payloadoverrides
+             * @description The reviewer's corrections, merged field by field over the proposal's own payload before it is applied; the fields left out keep what was proposed. Accepted only for the `new_obligation_version` kind, since the vocabulary kinds carry a label a person wrote rather than a sourced fact; on any other kind the call answers 422 `validation_error`. The fields a reviewer may correct are the ones that kind's payload names: `summaries` (the whole set of texts per language, which replaces the proposed set), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (one of `day`, `month`, `quarter` and `year`, which says how exactly the date is known) and `terms` (the scope facets as `dimension:key`, at most 20, which replace the obligation's scope). The merged payload must still carry a source for every field it changes, so a correction that introduces a field the proposal never sourced answers 422 `source_missing` and applies nothing. What is applied is kept beside what was proposed, as the reviewer's own correction: a reader must not take the proposal's payload as the text the library now holds.
+             */
+            payloadOverrides?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** ProposalCreateBody */
         ProposalCreateBody: {
@@ -3744,81 +3843,178 @@ export interface components {
              */
             rejectionCode: string;
         };
-        /** ProposalRow */
+        /**
+         * ProposalRow
+         * @description One row of the review queue: a change somebody wants made to the shared library,
+         *     and how far it has got. Every field is the proposal's own record of the request, not
+         *     the library: until `status` is `approved` the library still says what it said before,
+         *     and a reader must not quote a proposal as the law. The whole row is platform data; a
+         *     bank sees a proposal of its own only through `GET /tenant/proposals`.
+         *
+         *     Read-only and written by the server. Nothing here is a bank's judgement about whether
+         *     a duty applies to it: that is the bank's own zone and never travels with a proposal.
+         * @example {
+         *       "agentRunId": "5a2b9c7d-1e3f-4a8b-9c0d-2e4f6a8b0c12",
+         *       "appliedAt": null,
+         *       "changeId": "b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33",
+         *       "createdAt": "2026-09-16T07:12:00Z",
+         *       "effectiveFrom": "2026-10-01",
+         *       "fieldSources": {
+         *         "effectiveFrom": "https://www.fi.se/",
+         *         "summaries.en": "https://www.fi.se/",
+         *         "summaries.sv": "https://www.fi.se/"
+         *       },
+         *       "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+         *       "kind": "new_obligation_version",
+         *       "model": "agent pipeline 0.4",
+         *       "origin": "agent",
+         *       "payload": {
+         *         "effectiveFrom": "2026-10-01",
+         *         "effectiveFromPrecision": "day",
+         *         "isMachine": true,
+         *         "originalLanguage": "sv",
+         *         "summaries": {
+         *           "en": "Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules.",
+         *           "sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor som anges i reglerna."
+         *         }
+         *       },
+         *       "proposedBy": null,
+         *       "rejectionCode": "",
+         *       "reviewNote": "",
+         *       "reviewedAt": null,
+         *       "reviewedBy": null,
+         *       "scopeSuggestion": [],
+         *       "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
+         *       "sourceUrl": "https://www.fi.se/",
+         *       "status": "open",
+         *       "targetId": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *       "targetType": "obligation",
+         *       "title": "Add version 2 of the research payment obligation, in force 1 October 2026"
+         *     }
+         */
         ProposalRow: {
-            /** Agentrunid */
+            /**
+             * Agentrunid
+             * @description The agent run that produced the proposal, as a UUID the run log addresses. Null for a person's proposal.
+             */
             agentRunId?: string | null;
-            /** Appliedat */
+            /**
+             * Appliedat
+             * @description When the change reached the library: a UTC timestamp, date and time together, which is the moment of approval. Null unless the status is `approved`.
+             */
             appliedAt?: string | null;
-            /** Changeid */
+            /**
+             * Changeid
+             * @description The regulatory change that prompted this, as a UUID, when an agent's watch run found one. Null means nobody linked one, not that no change exists.
+             */
             changeId?: string | null;
             /**
              * Createdat
              * Format: date-time
+             * @description When the proposal was filed: a UTC timestamp, date and time together. Not the legal date of the change, which is `effectiveFrom`.
              */
             createdAt: string;
-            /** Effectivefrom */
+            /**
+             * Effectivefrom
+             * @description The legal date the proposed change comes into force, as the proposal states it. A plain date, never a timestamp, and null when the proposal names none. Read the library record for the dates actually in force.
+             */
             effectiveFrom?: string | null;
-            /** Fieldsources */
+            /**
+             * Fieldsources
+             * @description Per changed field, where its value came from: an https link or the stable key of a provision the library holds, at most 2000 characters. An obligation proposal carries one for every field it changes or it is refused; the vocabulary kinds, whose wording a person writes, carry none. A source is the authority's page, not our reading of it.
+             */
             fieldSources?: {
                 [key: string]: string;
             };
             /**
              * Id
              * Format: uuid
+             * @description The proposal, as the console addresses it: a UUID the server assigns once and never changes.
              */
             id: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             */
             kind: string;
             /**
              * Model
+             * @description The model that drafted the text, recorded because AI output is labelled until a person confirms it (AUD-02). Empty means no model was named, not that no model was used.
              * @default
              */
             model: string;
-            /** Origin */
+            /**
+             * Origin
+             * @description Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI output and stays labelled until a person confirms it by approving; `user` means a person typed it. Neither tells a reader whether the facts are right.
+             */
             origin: string;
-            /** Payload */
+            /**
+             * Payload
+             * @description What was proposed, in the shape its `kind` names (`ProposalPayload`). This is the request as it arrived, kept unchanged for the audit trail even when a reviewer corrected it before approving: it is not necessarily what the library now holds.
+             */
             payload?: {
                 [key: string]: unknown;
             };
+            /** @description The platform person who made the proposal. Null for an agent's proposal, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
             proposedBy?: components["schemas"]["ProposalActorRef"] | null;
             /**
              * Rejectioncode
+             * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `poor_wording` and `other`. Empty unless the status is `rejected`.
              * @default
              */
             rejectionCode: string;
             /**
              * Reviewnote
+             * @description The reviewer's own sentence to the proposer, on an approval or a rejection. A platform person's words; it is not part of the library record.
              * @default
              */
             reviewNote: string;
-            /** Reviewedat */
+            /**
+             * Reviewedat
+             * @description When the decision was made: a UTC timestamp, date and time together. Null while the proposal is open.
+             */
             reviewedAt?: string | null;
+            /** @description The platform reviewer who decided it. Always a different person from the proposer, which the database enforces. Null while the proposal is open. */
             reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
-            /** Scopesuggestion */
+            /**
+             * Scopesuggestion
+             * @description Scope terms an agent suggests for a record it is creating. Always empty today, since the kinds that would carry one are not built: an empty list is not a claim that a record has no scope.
+             */
             scopeSuggestion?: {
                 [key: string]: unknown;
             }[];
             /**
              * Sourcelabel
+             * @description How the proposal names its source in a sentence a reviewer can read, for example "Finansinspektionen, board decision 15 September 2026". Written by the proposer, so it is a claim to check against `sourceUrl`, not a verified fact.
              * @default
              */
             sourceLabel: string;
             /**
              * Sourceurl
+             * @description The page the proposal was drawn from, for a reviewer to open. An agent wrote it; that the link resolves says nothing about whether it supports the change.
              * @default
              */
             sourceUrl: string;
-            /** Status */
+            /**
+             * Status
+             * @description Where the request stands. A fixed kind: `open` is waiting for a reviewer, `approved` means the library carries it and `appliedAt` says when, `rejected` means it was refused with a reason and changed nothing, and `superseded` means a later proposal overtook it. Only `approved` says anything about what the library holds.
+             */
             status: string;
-            /** Targetid */
+            /**
+             * Targetid
+             * @description The library record the proposal changes, as a UUID, or null when it creates one. Read the record itself for what it currently says.
+             */
             targetId?: string | null;
             /**
              * Targettype
+             * @description What the proposal changes, when it changes a record that already exists: `obligation` today, empty for a proposal that creates something.
              * @default
              */
             targetType: string;
-            /** Title */
+            /**
+             * Title
+             * @description The one-line request as its author wrote it: an agent's own wording, or a platform editor's. It is never a bank member's words, because a proposal made inside a bank reaches the console without its proposer, and it is not the library record's title.
+             */
             title: string;
         };
         /** RefreshResult */
@@ -6409,6 +6605,24 @@ export interface operations {
             };
         };
     };
+    markVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listObligations: {
         parameters: {
             query?: {
@@ -6628,6 +6842,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The proposal being decided, the UUID the queue returns as `id`. A proposal that does not exist, and anything that is not a UUID, answers `not_found`. */
                 proposal_id: string;
             };
             cookie?: never;

@@ -351,6 +351,20 @@ def documented_codes(operation: dict) -> set[str]:
     return set(CODE_TOKEN.findall(text))
 
 
+def has_nothing_to_show(operation: dict) -> bool:
+    """True when the call carries no body in either direction, so there is no example to give.
+
+    A `204` answers with no content by definition. Demanding an example of one pushed the
+    first operation that met the rule into declaring `content: application/json` on a 204
+    and typing its body as `unknown` in the generated client, which is the gate bending the
+    API rather than describing it (`markVisit`, 2026-09-20). The description still has to
+    say what the call changes; there is simply nothing to exemplify."""
+    if operation.get("requestBody"):
+        return False
+    successes = [str(code) for code in (operation.get("responses") or {}) if str(code).startswith("2")]
+    return bool(successes) and all(code == "204" for code in successes)
+
+
 def has_example(operation: dict, schemas: dict) -> bool:
     """An example on the request body or on a 2xx response, written either beside the media
     type (`example`/`examples`) or on the schema the response points at."""
@@ -404,7 +418,7 @@ def check_operation(operation_id: str, operation: dict, schemas: dict) -> list[F
             "no description; say when to call it, what it changes, which permission or scope it "
             "needs and what it records in the audit"
         )
-    if not has_example(operation, schemas):
+    if not has_nothing_to_show(operation) and not has_example(operation, schemas):
         fails(
             "no example on the request body or on any 2xx response; give one taken from the "
             "prototype's data, never from a real bank"

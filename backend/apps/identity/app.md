@@ -388,3 +388,13 @@ When a key tries a step-up
 Then there is no path for it: a key holds no assertion, and the review routes ask for none
 And a tenant key carrying "proposals:review" is refused: the scope is platform-only
 ```
+
+### ID-S32 — A member marks the library as seen and only their own bookmark moves `@integration` (PRO-03, AUD-01, AC-AUD1)
+```gherkin
+Given a member of a bank whose library bookmark stands at an earlier date
+When the tenant app records their visit
+Then the answer is 204, their bookmark stands at now and no colleague's bookmark moved
+And one audit event in that bank records the visit with the bookmark before and after
+When a platform session records a visit
+Then the answer is 404 and nothing is written
+```
