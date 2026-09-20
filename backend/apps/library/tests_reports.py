@@ -12,6 +12,7 @@ The routes over this writer are chunk3-rest-T11b (INV-S7).
 from __future__ import annotations
 
 import uuid
+from typing import get_type_hints
 
 from django.core.exceptions import ValidationError
 from django.db import DEFAULT_DB_ALIAS, ProgrammingError, transaction
@@ -72,21 +73,16 @@ class ReportWriter(ScenarioTestCase):
         self.assertEqual(row.tenant_id, self.tenant.id)
         self.assertEqual(row.reporter_id, self.reader.id)
 
-    def test_a_platform_reader_files_a_report_with_no_tenant(self) -> None:
-        staff = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
-        # No tenant activated, as a platform session has it: problem_report accepts a row of
-        # the session's own zone only (H15), and the setUp above left tenant A on.
-        with transaction.atomic(), tenancy.platform_zone():
-            report = create_report(
-                subject_type=SubjectType.INSTRUMENT,
-                subject_id=SUBJECT,
-                subject_title="FFFS 2017:2",
-                tenant_id=None,
-                reporter=staff,
-                actor=Actor(kind=ActorType.USER, id=staff.id, label=staff.name),
-                description=TEXT,
-            )
-        self.assertIsNone(ProblemReport.objects.get(id=report.id).tenant_id)
+    def test_every_report_carries_a_bank(self) -> None:
+        """A report with no tenant would be a library row under the mixed policy, readable
+        by every bank, which is the opposite of what Alex decided on 2026-09-19
+        (OWNER_RECOMMENDATIONS item 3). The writer takes a tenant, never an absence, so
+        there is no call that writes one; the route cannot either, because
+        `caller_tenant()` answers 404 to a principal in no bank."""
+        self.assertIs(get_type_hints(create_report)["tenant_id"], uuid.UUID)
+        self._create()
+        self.activate(self.tenant)
+        self.assertFalse(ProblemReport.objects.filter(tenant__isnull=True).exists())
 
     # --- the text stays in the row ------------------------------------------------------
     def test_neither_the_audit_summary_nor_the_outbox_payload_holds_the_text(self) -> None:

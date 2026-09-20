@@ -10,7 +10,10 @@ The subject arrives already resolved — its kind, its id and the public title a
 will read — so nothing here names an `Instrument` or an `Obligation`, and the library
 fence has nothing to catch. The tenant and the reporter come from the caller's principal,
 never from the request body, so a report can only ever be filed for the bank the reader
-is signed in to.
+is signed in to. A tenant is required: `problem_report` is a mixed table, so a row with
+no tenant would be the library's own and readable by every bank, which is the opposite of
+what the report is for. The route cannot produce one either, because `caller_tenant()`
+answers 404 to a principal in no bank.
 
 What the reader wrote is tenant content (playbook 4.7). It lives in `problem_report.text`
 and reaches nothing else: not the audit summary, not the audit before and after, not the
@@ -37,7 +40,7 @@ def create_report(
     subject_type: SubjectType,
     subject_id: uuid.UUID,
     subject_title: str,
-    tenant_id: uuid.UUID | None,
+    tenant_id: uuid.UUID,
     reporter: Any,
     actor: Actor,
     description: str,

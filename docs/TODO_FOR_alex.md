@@ -247,6 +247,16 @@ Change any of them and the answer changes a task, not an invariant.
       only their own, under `problems.report`, which everyone holds. That adds no
       permission and leaves PRD section 6's matrix alone, as D-19 did for participants. A
       dedicated `problems.manage` would be a PRD section 6 bump; say the word.
+- [ ] **Should `problem_report.tenant` become NOT NULL?** Default: **no, leave it
+      nullable for now.** Since your item 3 no report belongs to the library, so a row
+      with no tenant is dead shape — and under the mixed policy it would be readable by
+      every bank. The writer already refuses one (`create_report` takes a tenant, not an
+      optional one) and the route cannot reach it, so nothing can write one today. Making
+      the column itself NOT NULL means taking `problem_report` out of the five mixed
+      tables named in `docs/CONVENTIONS.md` section 11 and in `MIXED_TABLES` in
+      `backend/apps/shared/tests_rls.py`, replacing its policies and rewriting the guards
+      that build and probe a tenant-less row. That is a change to the two-zone contract,
+      so it waits for you. No data migration is involved: nothing has ever written a row.
 - [ ] **How does a report close?** Default: the reporter or a permitted colleague sets
       `answered`, `fixed` or `rejected` with a required note, using the kinds chunk 3
       already wrote. No close-reason vocabulary is added.

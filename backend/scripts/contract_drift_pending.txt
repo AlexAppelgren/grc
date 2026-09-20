@@ -85,8 +85,6 @@ POST /notifications/{}/read chunk 10
 POST /obligations/{}/applicability-requests chunk 8
 POST /obligations/{}/attestations chunk 8
 POST /obligations/{}/internal-links chunk 8
-POST /obligations/{}/problem-reports chunk 3
-POST /obligations/{}/verifications chunk 3
 POST /obligations/{}/waivers chunk 8
 POST /saved-searches chunk 13
 POST /webhooks chunk 13

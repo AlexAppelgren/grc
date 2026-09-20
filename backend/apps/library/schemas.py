@@ -14,7 +14,7 @@ from uuid import UUID
 from django.conf import settings
 from pydantic import ConfigDict, Field, ModelWrapValidatorHandler, ValidationInfo, model_validator
 
-from apps.shared.schemas import CamelSchema
+from apps.shared.schemas import CamelSchema, WriteBody
 from apps.taxonomy.schemas import PersonRef
 
 # The longest `q` a list accepts: a phrase to look for, never a document.
@@ -264,3 +264,196 @@ class ObligationQuery(CamelSchema):
     q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
     as_of: datetime.date | None = None
     outside_footprint: bool = False
+
+
+# ---------------------------------------------------------------------------------------
+# Writes on a record (INV-06)
+# ---------------------------------------------------------------------------------------
+class ProblemReportBody(WriteBody):
+    """"This looks wrong" (INV-06). `description` is what the reader believes is wrong;
+    `versionNumber` and `language` say which words were on their screen, so a colleague
+    opens the same ones. The subject is the path, and the bank is the reader's session:
+    neither is ever taken from the body."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "description": (
+                    "The retention line says the records are kept for five years, but FFFS 2017:2 "
+                    "9 kap. 6 § says ten."
+                ),
+                "versionNumber": 2,
+                "language": "sv",
+            }
+        }
+    )
+
+    description: str = Field(
+        min_length=1,
+        max_length=settings.LIBRARY_REPORT_TEXT_MAX_CHARS,
+        description=(
+            "What the reader believes is wrong with this record, in their own words. This is the "
+            "bank's own content, not a library fact: it is stored inside the bank that filed it and "
+            "reaches nobody outside it, bleqq included, and it is kept out of the audit row, the "
+            "outbox payload, the logs and every model prompt. At most 4000 characters "
+            "(`LIBRARY_REPORT_TEXT_MAX_CHARS`); a longer one is refused, and so is one that is only "
+            "whitespace."
+        ),
+    )
+    version_number: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "Which version of the summary the reader had on screen, numbered from 1 in the order the "
+            "versions took effect, so a colleague opens the same words rather than today's. The "
+            "default is none, for a screen that showed no particular version. It records what was "
+            "read and is not checked against the record, so it never changes what the server stores."
+        ),
+    )
+    language: str | None = Field(
+        default=None,
+        max_length=MAX_LANGUAGE_LENGTH,
+        description=(
+            "Which content language the reader was reading, as a language key of at most 8 "
+            "characters such as `sv` or `en`. The content languages are library vocabulary rows "
+            "that a platform admin may extend or retire, so read `GET /reference/languages` for the "
+            "live set, and send the key rather than the label. The default is none, for a screen "
+            "that showed no particular language; a key that is not an active content language is "
+            "refused."
+        ),
+    )
+
+
+class ProblemReportCreated(LibraryResponse):
+    """The acknowledgement the reader sees: the report exists, it is open, and this is when
+    it was filed. What they wrote is not sent back; it is in the row, and the screen it was
+    typed on still has it."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": "6f4c1f3e-9a21-4c8e-9a2f-2b0d5c7a1e44",
+                "status": "open",
+                "createdAt": "2026-09-20T09:14:22Z",
+            }
+        }
+    )
+
+    id: UUID = Field(
+        description=(
+            "The identifier of the report that was just filed, as a UUID a colleague in the same "
+            "bank can quote. It addresses a row that lives in that bank's own zone: nobody outside "
+            "the bank, bleqq included, can read what it points at."
+        )
+    )
+    status: str = Field(
+        description=(
+            "Where the report stands. A new one is always `open`, meaning it has been filed and "
+            "nobody has answered it. The other three arrive later, when the bank works it: "
+            "`answered` when a colleague replied without the library changing, `fixed` when the "
+            "library record was corrected, and `rejected` when the bank decided the record was "
+            "right after all."
+        )
+    )
+    created_at: datetime.datetime = Field(
+        description=(
+            "When the report was filed, as a UTC timestamp. The screen shows it in the bank's own "
+            "time zone; the stored value is always UTC."
+        )
+    )
+
+
+class ReverificationBody(WriteBody):
+    """A check of a record against its source (INV-06, INV-S8). `outcome` is a
+    VerificationOutcome key; the note says what the checker saw, and belongs to the check
+    rather than to the record."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "outcome": "no_change",
+                "note": "Read against FI's published text of FFFS 2017:2; 9 kap. 6 § is unchanged.",
+            }
+        }
+    )
+
+    outcome: str = Field(
+        min_length=1,
+        max_length=64,
+        description=(
+            "What the checker found when they read the record against its source, as one of three "
+            "fixed keys of at most 64 characters. `no_change` means the source still says what the "
+            "record says, and it is the only outcome that moves the stamp. `change_found` means the "
+            "source has moved on; the check is filed and the stamp is left standing, because the "
+            "correction itself has to arrive as a proposal. `source_unavailable` means the source "
+            "could not be reached at all, so nothing was confirmed either way. Any other value is "
+            "refused and nothing is written."
+        ),
+    )
+    note: str = Field(
+        default="",
+        max_length=settings.LIBRARY_REPORT_TEXT_MAX_CHARS,
+        description=(
+            "What the checker saw, kept with the check and never copied onto the record: it reaches "
+            "no summary, no title and no version, so it cannot become library text by accident. The "
+            "default is an empty string, and it holds at most 4000 characters "
+            "(`LIBRARY_REPORT_TEXT_MAX_CHARS`)."
+        ),
+    )
+
+
+class VerificationCreated(LibraryResponse):
+    """What the check recorded, and the stamp the record now carries. `lastVerifiedAt` and
+    `verifiedBy` move only on `no_change`; any other outcome leaves the old stamp standing
+    and the correction arrives as a proposal."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": "b1a7d4c2-3e55-4a90-8d17-6c9f0e2a5b38",
+                "outcome": "no_change",
+                "verifiedAt": "2026-09-20T09:31:07Z",
+                "lastVerifiedAt": "2026-09-20T09:31:07Z",
+                "verifiedBy": {"id": "0a2e6b81-5f4d-4a3b-9c77-1d8e3f5a6c20", "name": "Johan Ek"},
+            }
+        }
+    )
+
+    id: UUID = Field(
+        description=(
+            "The identifier of the check that was just recorded, as a UUID. Every check is kept, "
+            "not only the most recent one, so this row stays readable after a later check has "
+            "replaced the stamp below."
+        )
+    )
+    outcome: str = Field(
+        description=(
+            "The outcome that was recorded, echoed back: `no_change`, `change_found` or "
+            "`source_unavailable`. Only `no_change` moved the stamp; on the other two the check was "
+            "filed and the record was left exactly as it was."
+        )
+    )
+    verified_at: datetime.datetime = Field(
+        description=(
+            "When this check was made, as a UTC timestamp. It is the time of the check and not of "
+            "the stamp: a `change_found` check carries a time here and still leaves `lastVerifiedAt` "
+            "where it was."
+        )
+    )
+    last_verified_at: datetime.datetime | None = Field(
+        description=(
+            "The stamp the record now carries: when a person last confirmed it against its source, "
+            "as a UTC timestamp, which is what a reader's \"Verified <date>\" shows. A library fact, "
+            "moved by this one call and otherwise changed only through an approved proposal. It is "
+            "null on a record nobody has ever confirmed, and it does not mean the record's content "
+            "was approved here, only that the source still said the same thing on that date."
+        )
+    )
+    verified_by: PersonRef | None = Field(
+        description=(
+            "Who backed the stamp with their passkey: a bleqq platform person, by id and name, and "
+            "never a member of a bank, because re-verifying a shared fact is bleqq's own check. Null "
+            "on a record nobody has ever confirmed, and left as it was when the outcome was not "
+            "`no_change`."
+        )
+    )

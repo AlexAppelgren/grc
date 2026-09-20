@@ -626,6 +626,35 @@ in `docs/DECISIONS.md`; the researched detail is in
   version for is 422 `unknown_key`, and fewer than two versions to compare, or two versions
   with no language in common, are 422. `lang` is accepted here and on the provision diff
   alone; every other read follows the reader's language order.
+- `POST /obligations/{}/problem-reports` (`reportObligationProblem`) answers 201 with
+  `{id, status, createdAt}` instead of the designed whole `ProblemReport`. The reader is
+  told their report exists and is open; their own words are not read back to them, since
+  they are on the screen already and every copy of tenant content is a place it can
+  leak (playbook 4.7). The body is `{description, versionNumber?, language?}`: the
+  version and language record what was on screen, so a colleague opens the same words.
+  There is no problem-area field ("Where" in tenant-obligation.html): nothing branches on
+  one, and under "types and reasons are rows" it would be a library vocabulary rather
+  than a code enum. It waits for Alex's answer (the open question in
+  docs/plans/briefs/CHUNK3_TASKS.md). The gate is `problems.report`, which every member
+  of a bank holds and no platform role does.
+- `POST /instruments/{}/problem-reports` (`reportInstrumentProblem`) is not in the design,
+  which reports obligations only. A reader sees instruments and provisions too, and a
+  provision is reported through the instrument whose card shows it (chunk 3 default), so
+  the same body and the same answer serve both. `GET /problem-reports` stays in chunk 4.
+- `POST /obligations/{}/verifications` (`reverifyObligation`) takes `{outcome, note?}`,
+  where `outcome` is a VerificationOutcome key, and answers 201
+  `{id, outcome, verifiedAt, lastVerifiedAt, verifiedBy{id,name}|null}` instead of the
+  designed 200 `{lastVerifiedAt, verifiedBy}`: a row is created on every outcome, and the
+  answer says which check was recorded as well as what the record now carries. The stamp
+  moves only on `no_change`; any other outcome files the check and leaves the old stamp
+  standing, because the correction itself arrives as a proposal.
+  The designed `x-roles` names `compliance_officer` beside `library_editor`. The build is
+  stricter: `proposals.review` plus a fresh passkey, and no tenant role holds
+  `proposals.review` (PRD §6). Re-verification is the single exception to "a proposal is
+  the only door into the library" (INV-06, INV-S8), so it stays with the reviewers the
+  fence already trusts, and a bank that thinks a record is wrong files a problem report
+  instead. A report stays inside that bank (Alex, 2026-09-19): bleqq's watch agents find
+  the deviation themselves by re-checking the source, and propose the correction.
 
 Chunk 5 (watch and the agent API), 2026-09-20:
 

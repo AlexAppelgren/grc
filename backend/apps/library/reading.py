@@ -20,8 +20,10 @@ versions. Nothing here writes.
   proposals app (PRO-01).
 - "As of" a date is `logic.in_force()` and nothing else (AC-INV1). A version's end date is
   never stored: `version_rows()` derives it from the version that follows (INV-04).
-- `_visible()` is the one lookup of a record by id: what row-level security does not show
-  the caller is a 404, never a 403, so no id can be probed for.
+- `_visible()` is the one lookup of a record by id, and `obligation_subject()` and
+  `instrument_subject()` are what the write routes address their record through: what
+  row-level security does not show the caller is a 404, never a 403, so no id can be
+  probed for.
 
 Every response object is validated as it is built, natively by pydantic
 (`schemas.LibraryResponse`), and the page validates every row again when it takes them: a
@@ -38,18 +40,19 @@ from __future__ import annotations
 import datetime
 import uuid
 from collections.abc import Collection, Iterable, Mapping
-from typing import Any
+from typing import Any, TypeVar
 from zoneinfo import ZoneInfo
 
 from django.contrib.postgres.expressions import ArraySubquery
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.lookups import DataContains
 from django.core.exceptions import ValidationError
-from django.db.models import BooleanField, Exists, F, Func, OuterRef, Q, QuerySet, UUIDField, Value
+from django.db.models import BooleanField, Exists, F, Func, Model, OuterRef, Q, QuerySet, UUIDField, Value
 from django.utils import timezone
 
 from apps.library.logic import in_force, version_diff
 from apps.library.models import (
+    Instrument,
     Obligation,
     ObligationRelation,
     ObligationTag,
@@ -365,19 +368,33 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
 
 
 # ---------------------------------------------------------------------------------------
-# GET /obligations/{id} and GET /obligations/{id}/diff
+# Addressing one record: GET /obligations/{id}, its diff, and the writes a record accepts
 # ---------------------------------------------------------------------------------------
 NOT_FOUND = "There is nothing at this address in your organisation."
 
+_Record = TypeVar("_Record", bound=Model)
 
-def _visible(queryset: QuerySet[Obligation], obligation_id: uuid.UUID) -> Obligation:
-    """The obligation as row-level security lets the caller see it: a shared record or their
-    own (INPUT_DELTAS §5). A record they cannot see is not there, so another tenant's
-    private obligation and an id that never existed answer the same 404 (INV-07)."""
-    obligation = queryset.filter(pk=obligation_id).first()  # ordering: pk lookup, at most one row
-    if obligation is None:
+
+def _visible(queryset: QuerySet[_Record], record_id: uuid.UUID) -> _Record:
+    """The record as row-level security lets the caller see it: a shared one or their own
+    (INPUT_DELTAS §5). A record they cannot see is not there, so another tenant's private
+    obligation and an id that never existed answer the same 404 (INV-07)."""
+    record = queryset.filter(pk=record_id).first()  # ordering: pk lookup, at most one row
+    if record is None:
         raise ValidationError(NOT_FOUND, code="not_found")
-    return obligation
+    return record
+
+
+def obligation_subject(obligation_id: uuid.UUID) -> Obligation:
+    """The obligation a write acts on (INV-06). It carries no prefetch: a report and a
+    re-verification read the record itself, never its versions or its scope."""
+    return _visible(Obligation.objects.all(), obligation_id)
+
+
+def instrument_subject(instrument_id: uuid.UUID) -> Instrument:
+    """The instrument a write acts on. A provision is reported through the instrument whose
+    card shows it (chunk 3 default), so this one lookup serves both."""
+    return _visible(Instrument.objects.all(), instrument_id)
 
 
 def version_rows(versions: list[ObligationVersion]) -> dict[int, ObligationVersionRow]:

@@ -641,6 +641,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/instruments/{instrument_id}/problem-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tell us an instrument or one of its provisions looks wrong
+         * @description Files a reader's "this looks wrong" report against one instrument of the shared library. Call it when someone reading a record believes a public fact is wrong. Nothing in the library changes here: a proposal is the only door into it.
+         *
+         *     A provision is reported through the instrument whose card shows it, so there is no separate provision route; say which provision in the text. The instrument has to be one this caller can already read: a shared record, or one their own bank owns privately.
+         *
+         *     The report is created inside the bank the caller is signed in to and stays there. No bleqq editor, no other bank, no agent and no model ever reads it, and no console surface lists it (Alex, 2026-09-19). The loop back to the library is closed the other way round: bleqq's watch agents re-check library records against their sources on every run, find the deviation themselves, and propose the correction for a second, independent principal to approve.
+         *
+         *     The reporter and the bank are taken from the caller's session and never from the body, so do not send them; versionNumber and language record which words were on screen.
+         *
+         *     Needs the `problems.report` permission, which every member of a bank holds and no platform role does. Answers 201 with the report's id, its status and when it was filed, and never reads the reader's own words back. Writes one audit event, library.problem_reported, carrying the record, the report's id and the version and language on screen, and never the text itself.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the instrument is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language.
+         */
+        post: operations["reportInstrumentProblem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -773,6 +803,64 @@ export interface paths {
         get: operations["getObligationDiff"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/problem-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tell us an obligation looks wrong
+         * @description Files a reader's "this looks wrong" report against one obligation of the shared library. Call it when someone reading a record believes a public fact is wrong. Nothing in the library changes here: a proposal is the only door into it.
+         *
+         *     The obligation has to be one this caller can already read: a shared record, or one their own bank owns privately.
+         *
+         *     The report is created inside the bank the caller is signed in to and stays there. No bleqq editor, no other bank, no agent and no model ever reads it, and no console surface lists it (Alex, 2026-09-19). The loop back to the library is closed the other way round: bleqq's watch agents re-check library records against their sources on every run, find the deviation themselves, and propose the correction for a second, independent principal to approve.
+         *
+         *     The reporter and the bank are taken from the caller's session and never from the body, so do not send them; versionNumber and language record which words were on screen.
+         *
+         *     Needs the `problems.report` permission, which every member of a bank holds and no platform role does. Answers 201 with the report's id, its status and when it was filed, and never reads the reader's own words back. Writes one audit event, library.problem_reported, carrying the record, the report's id and the version and language on screen, and never the text itself.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the obligation is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language.
+         */
+        post: operations["reportObligationProblem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/obligations/{obligation_id}/verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record that you checked an obligation against its source
+         * @description Records that a library editor has read this obligation against its source, and moves the record's re-verification stamp when the source still says the same thing. This is the single sanctioned exception to "a proposal is the only door into the library": it writes lastVerifiedAt and verifiedBy and nothing else. It creates no record, and changes no text, date, scope or facet.
+         *
+         *     What it does not mean: nobody re-approved the record's content here and no new version was written. A no_change outcome says one person looked at the source on this date and found it unchanged; a correction still has to arrive as a proposal that a second, independent principal approves.
+         *
+         *     Only no_change moves the stamp. change_found and source_unavailable file the check and leave the earlier stamp standing, so a reader is never told a record was confirmed when it was not. Every check is kept, not only the most recent one.
+         *
+         *     Needs the `proposals.review` permission and a fresh passkey assertion (a step-up). No tenant role holds `proposals.review`, and the route takes a person's session only, so no API key scope reaches it and an agent can never stamp a record. Writes one audit event, library.reverified, carrying the assertion the passkey produced.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission; `step_up_required` (403) when the session carries no fresh passkey assertion; `not_found` (404) when the obligation is not one this caller may read; `validation_error` (422) when the body is malformed, the note is longer than 4000 characters or the path segment is not a UUID; `unknown_key` (422) when the outcome is not one of the three.
+         */
+        post: operations["reverifyObligation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3207,6 +3295,65 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * ProblemReportBody
+         * @description "This looks wrong" (INV-06). `description` is what the reader believes is wrong;
+         *     `versionNumber` and `language` say which words were on their screen, so a colleague
+         *     opens the same ones. The subject is the path, and the bank is the reader's session:
+         *     neither is ever taken from the body.
+         * @example {
+         *       "description": "The retention line says the records are kept for five years, but FFFS 2017:2 9 kap. 6 § says ten.",
+         *       "language": "sv",
+         *       "versionNumber": 2
+         *     }
+         */
+        ProblemReportBody: {
+            /**
+             * Description
+             * @description What the reader believes is wrong with this record, in their own words. This is the bank's own content, not a library fact: it is stored inside the bank that filed it and reaches nobody outside it, bleqq included, and it is kept out of the audit row, the outbox payload, the logs and every model prompt. At most 4000 characters (`LIBRARY_REPORT_TEXT_MAX_CHARS`); a longer one is refused, and so is one that is only whitespace.
+             */
+            description: string;
+            /**
+             * Language
+             * @description Which content language the reader was reading, as a language key of at most 8 characters such as `sv` or `en`. The content languages are library vocabulary rows that a platform admin may extend or retire, so read `GET /reference/languages` for the live set, and send the key rather than the label. The default is none, for a screen that showed no particular language; a key that is not an active content language is refused.
+             */
+            language?: string | null;
+            /**
+             * Versionnumber
+             * @description Which version of the summary the reader had on screen, numbered from 1 in the order the versions took effect, so a colleague opens the same words rather than today's. The default is none, for a screen that showed no particular version. It records what was read and is not checked against the record, so it never changes what the server stores.
+             */
+            versionNumber?: number | null;
+        };
+        /**
+         * ProblemReportCreated
+         * @description The acknowledgement the reader sees: the report exists, it is open, and this is when
+         *     it was filed. What they wrote is not sent back; it is in the row, and the screen it was
+         *     typed on still has it.
+         * @example {
+         *       "createdAt": "2026-09-20T09:14:22Z",
+         *       "id": "6f4c1f3e-9a21-4c8e-9a2f-2b0d5c7a1e44",
+         *       "status": "open"
+         *     }
+         */
+        ProblemReportCreated: {
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the report was filed, as a UTC timestamp. The screen shows it in the bank's own time zone; the stored value is always UTC.
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The identifier of the report that was just filed, as a UUID a colleague in the same bank can quote. It addresses a row that lives in that bank's own zone: nobody outside the bank, bleqq included, can read what it points at.
+             */
+            id: string;
+            /**
+             * Status
+             * @description Where the report stands. A new one is always `open`, meaning it has been filed and nobody has answered it. The other three arrive later, when the bank works it: `answered` when a colleague replied without the library changing, `fixed` when the library record was corrected, and `rejected` when the bank decided the record was right after all.
+             */
+            status: string;
+        };
         /** ProductInfo */
         ProductInfo: {
             /** Productname */
@@ -3414,6 +3561,29 @@ export interface components {
             instrument: components["schemas"]["ObligationInstrumentRef"];
             relation: components["schemas"]["LibraryRef"];
             title: components["schemas"]["LocalizedText"] | null;
+        };
+        /**
+         * ReverificationBody
+         * @description A check of a record against its source (INV-06, INV-S8). `outcome` is a
+         *     VerificationOutcome key; the note says what the checker saw, and belongs to the check
+         *     rather than to the record.
+         * @example {
+         *       "note": "Read against FI's published text of FFFS 2017:2; 9 kap. 6 § is unchanged.",
+         *       "outcome": "no_change"
+         *     }
+         */
+        ReverificationBody: {
+            /**
+             * Note
+             * @description What the checker saw, kept with the check and never copied onto the record: it reaches no summary, no title and no version, so it cannot become library text by accident. The default is an empty string, and it holds at most 4000 characters (`LIBRARY_REPORT_TEXT_MAX_CHARS`).
+             * @default
+             */
+            note: string;
+            /**
+             * Outcome
+             * @description What the checker found when they read the record against its source, as one of three fixed keys of at most 64 characters. `no_change` means the source still says what the record says, and it is the only outcome that moves the stamp. `change_found` means the source has moved on; the check is filed and the stamp is left standing, because the correction itself has to arrive as a proposal. `source_unavailable` means the source could not be reached at all, so nothing was confirmed either way. Any other value is refused and nothing is written.
+             */
+            outcome: string;
         };
         /** RoleCreate */
         RoleCreate: {
@@ -3927,6 +4097,48 @@ export interface components {
             kind?: string | null;
             /** Label */
             label: string;
+        };
+        /**
+         * VerificationCreated
+         * @description What the check recorded, and the stamp the record now carries. `lastVerifiedAt` and
+         *     `verifiedBy` move only on `no_change`; any other outcome leaves the old stamp standing
+         *     and the correction arrives as a proposal.
+         * @example {
+         *       "id": "b1a7d4c2-3e55-4a90-8d17-6c9f0e2a5b38",
+         *       "lastVerifiedAt": "2026-09-20T09:31:07Z",
+         *       "outcome": "no_change",
+         *       "verifiedAt": "2026-09-20T09:31:07Z",
+         *       "verifiedBy": {
+         *         "id": "0a2e6b81-5f4d-4a3b-9c77-1d8e3f5a6c20",
+         *         "name": "Johan Ek"
+         *       }
+         *     }
+         */
+        VerificationCreated: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The identifier of the check that was just recorded, as a UUID. Every check is kept, not only the most recent one, so this row stays readable after a later check has replaced the stamp below.
+             */
+            id: string;
+            /**
+             * Lastverifiedat
+             * @description The stamp the record now carries: when a person last confirmed it against its source, as a UTC timestamp, which is what a reader's "Verified <date>" shows. A library fact, moved by this one call and otherwise changed only through an approved proposal. It is null on a record nobody has ever confirmed, and it does not mean the record's content was approved here, only that the source still said the same thing on that date.
+             */
+            lastVerifiedAt: string | null;
+            /**
+             * Outcome
+             * @description The outcome that was recorded, echoed back: `no_change`, `change_found` or `source_unavailable`. Only `no_change` moved the stamp; on the other two the check was filed and the record was left exactly as it was.
+             */
+            outcome: string;
+            /**
+             * Verifiedat
+             * Format: date-time
+             * @description When this check was made, as a UTC timestamp. It is the time of the check and not of the stamp: a `change_found` check carries a time here and still leaves `lastVerifiedAt` where it was.
+             */
+            verifiedAt: string;
+            /** @description Who backed the stamp with their passkey: a bleqq platform person, by id and name, and never a member of a bank, because re-verifying a shared fact is bleqq's own check. Null on a record nobody has ever confirmed, and left as it was when the outcome was not `no_change`. */
+            verifiedBy: components["schemas"]["PersonRef"] | null;
         };
         /**
          * VersionDiff
@@ -5551,6 +5763,33 @@ export interface operations {
             };
         };
     };
+    reportInstrumentProblem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The instrument the report is about, by its identifier (a UUID). It has to be one the caller can already read, so another bank's private record and an identifier that names nothing both answer 404 rather than telling you which of the two it was. */
+                instrument_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProblemReportBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemReportCreated"];
+                };
+            };
+        };
+    };
     getMe: {
         parameters: {
             query?: never;
@@ -5778,6 +6017,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VersionDiff"];
+                };
+            };
+        };
+    };
+    reportObligationProblem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The obligation the report is about, by its identifier (a UUID). It has to be one the caller can already read, so another bank's private record and an identifier that names nothing both answer 404 rather than telling you which of the two it was. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProblemReportBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemReportCreated"];
+                };
+            };
+        };
+    };
+    reverifyObligation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The obligation that was checked, by its identifier (a UUID). A library editor works in no bank and so addresses the shared library alone: a record a bank owns privately answers 404 here, exactly as an identifier that names nothing does. */
+                obligation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReverificationBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerificationCreated"];
                 };
             };
         };

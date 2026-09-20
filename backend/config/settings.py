@@ -406,6 +406,14 @@ PROPOSAL_SOURCE_MAX_CHARS = env_int("PROPOSAL_SOURCE_MAX_CHARS", 2000)
 PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20)
 
 # ---------------------------------------------------------------------------------------
+# ===== INV-06 what a person types on a library record ====================================
+# The longest "this looks wrong" description and re-verification note the API accepts. A
+# report says what looks wrong and which words were on screen; it is not a document, and
+# an unbounded free-text field at a trust boundary is a way to fill a table.
+# ---------------------------------------------------------------------------------------
+LIBRARY_REPORT_TEXT_MAX_CHARS = env_int("LIBRARY_REPORT_TEXT_MAX_CHARS", 4000)
+
+# ---------------------------------------------------------------------------------------
 # ===== AUD-01, CAS-01 the outbox cursor (apps/shared/outbox.py, c5-outbox-cursor) ========
 # One worker delivers `outbox_event` in `(created, id)` order. The batch size bounds one
 # pass, which holds the cursor's row lock for its duration; the poll interval is how often

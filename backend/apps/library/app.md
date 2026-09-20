@@ -144,7 +144,8 @@ And "Show original" reveals the sv text
 Given any instrument, provision or obligation
 Then the screen shows the source link and "Verified <date>"
 When a reader chooses "This looks wrong" and describes the problem
-Then a problem report is created for the library editors and the reader sees it acknowledged
+Then a problem report is created inside the reader's own bank and the reader sees it acknowledged
+And nobody outside that bank reads it, bleqq included (Alex, 2026-09-19, OWNER_RECOMMENDATIONS item 3)
 ```
 
 ### INV-S8 — The re-verification stamp is the only write outside a proposal `@integration` (INV-06)
