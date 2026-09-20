@@ -281,6 +281,12 @@ Full text with the bugs behind each rule: `docs/CONVENTIONS.md`.
   `schemas.py`, never `Dict[str, Any]`. No bare `except Exception:`. No `admin.py`.
 - Never expose a trace: RFC 9457 problem details with `code`; the client
   branches on `code`, never on `detail`. An empty answer is 200.
+- The published API explains itself: every attribute a description, every value
+  set spelled out in words, every limit stated in the sentence and not only in
+  the keyword, every operation a summary, a description and an example
+  (`docs/plans/briefs/API_DOCUMENTATION.md`, gated by
+  `backend/scripts/api_docs_gate.py`). Document what you write in the same
+  commit and delete its line from `backend/scripts/api_docs_pending.txt`.
 - Logging: a person's name and id at most, tenant content never. `logger`
   only, never `console.log`.
 - Kinds-only enums; vocabularies are rows; store and compare keys, never labels.

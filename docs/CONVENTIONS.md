@@ -172,6 +172,41 @@ A query string is tenant content (`?q=` is what someone searched for): the
 access log prints the path without it, and no formatter or Sentry hook may
 pass one on.
 
+### 1.8 The published API explains itself
+
+The standard is `docs/plans/briefs/API_DOCUMENTATION.md`; read it before
+writing a schema or a route. The reader is an integrator at a bank who has
+never seen this codebase and cannot ask a question, so `openapi.json` is the
+whole manual.
+
+- **Every attribute carries a description** in full sentences: what the fact
+  is in the bank's language, where it comes from (the library, the bank's own
+  zone, an agent, the server) and what a reader must not conclude from it
+  ("applies to us" is not "we comply"). A description that re-spaces the
+  property name documents nothing.
+- **Every value set is spelled out in words.** A kind enum names each member
+  and what the system does differently for it. A vocabulary names its
+  vocabulary and kinds, says the values are rows an admin may extend and
+  points at the vocabulary endpoint; it is never presented as a closed enum,
+  and never matched on the label.
+- **Every limit is in the sentence, not only in the keyword.** Pagination
+  default and maximum, the longest accepted text, which records need
+  `If-Match` and that a stale ETag is 412, which calls need a step-up or an
+  idempotency key, what is append-only or soft-delete-only, and which fields
+  never leave the bank.
+- **Every operation carries** a summary in the user's voice, a description
+  saying when to call it, what it changes, which permission or scope it needs
+  and what it records in the audit, at least one example from the prototype's
+  data and never from a real bank, and each error `code` the caller must
+  branch on with the condition that produces it.
+
+`backend/scripts/api_docs_gate.py` reads the exported contract, never the
+source, and blocks in `prepush.sh` and CI beside the contract-drift gate.
+What is not documented yet is listed in `backend/scripts/api_docs_pending.txt`,
+one line per schema class or operationId; the gate fails on a line that is
+already documented and on anything undocumented that is not listed, so the
+ledger only shrinks. It must be empty before R1 is called done.
+
 ## 2. Structural guard tests (playbook 5)
 
 Built first, kept forever, in `apps/shared/tests_*.py`. Each fails with a
@@ -357,6 +392,7 @@ on committed lockfiles plus `npm audit` under `bash -eo pipefail` and
 refusing an empty lockfile, CodeQL with its own SARIF gate (medium and above,
 acceptances per fingerprint with a reason, stale ones reported),
 requirements coverage, contract drift against `docs/inputs/openapi.yaml`,
+API documentation against the standard (Section 1.8),
 search and classification evaluation, message catalogs, pill gallery
 screenshot, dependency licences (no copyleft, Apache attribution for Green),
 container image scan.

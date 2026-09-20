@@ -15,6 +15,8 @@
 #                                               with no test                             backend
 # Contract drift                                A designed operation missing or reshaped
 #                                               without an INPUT_DELTAS entry            backend
+# API documentation                             A published attribute, value set, limit or
+#                                               operation an integrator cannot understand backend
 # Search and classification evaluation          Retrieval/tagging quality dropping       backend
 # OpenAPI + TypeScript drift                    Frontend types diverging from the API    openapi-types-drift
 # Frontend lint, typecheck, unit coverage,
@@ -251,6 +253,9 @@ jobs:
 
       - name: Contract drift
         run: bash ./run.sh run python scripts/contract_drift.py
+
+      - name: API documentation
+        run: bash ./run.sh run python scripts/api_docs_gate.py
 
       - name: Search and classification evaluation
         run: bash ./run.sh run python scripts/search_eval.py
