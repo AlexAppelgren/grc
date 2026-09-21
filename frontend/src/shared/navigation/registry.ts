@@ -75,6 +75,7 @@ export const destinations: readonly Destination[] = [
   // The platform console (ADM-02): a destination joins with its page, so none
   // renders "coming soon". The queue takes rank 1 with its page (chunk 4),
   // sources with theirs (chunk 5).
+  { id: 'console-queue', href: '/console/queue', labelKey: 'nav.console.queue', surface: 'console', anyOfPermissions: ['proposals.review'], dockRank: 1, group: 'primary' },
   { id: 'console-vocabularies', href: '/console/vocabularies', labelKey: 'nav.console.vocabularies', surface: 'console', anyOfPermissions: ['library_vocab.manage'], dockRank: 2, group: 'primary' },
   // Chunk 5. A library editor settles a change's facts and reads the source
   // registry; the platform admin holds the agent keys. Change facts and

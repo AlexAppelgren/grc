@@ -631,7 +631,13 @@ export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; s
         </Rows>
       )}
 
-      {/* What this tenant has proposed on a library list returns with chunk 4, which adds a read scoped to the proposer's tenant. */}
+      {/* chunk4-T20: what this tenant itself proposed on this list and is still waiting on
+          (GET /tenant/proposals, `useTenantProposals` in features/proposals/hooks.ts, built
+          and unit-tested). Not called here: the route is chunk4-T10's and is not on `main`
+          yet, and firing it unconditionally on every tenant library-list visit would 404 on
+          every one of them, tripping the api-guard on every other journey that opens this
+          screen. Render `<PendingProposals list={list} />` here (below, defined the same way
+          RenameForm and the other inline pieces of this screen are) once T10 lands. */}
 
       {retiring !== null ? <RetireDialog list={list} row={retiring} onClose={() => setRetiring(null)} /> : null}
       {merging !== null ? (

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { pillToneNames } from '@/components/ui/pill-tones';
 
-import { apiKeyStateTone, checkStatusTone, slotTone } from './tone-by-kind';
+import { apiKeyStateTone, checkStatusTone, proposalStatusTone, slotTone } from './tone-by-kind';
 
 // The chunk 5 entries, pinned against design/system/pills-and-labels.md and
 // the cards. A tone comes from the row's own kind or from the slot it sits
@@ -37,8 +37,19 @@ describe('tone by kind: the watch and console entries', () => {
     expect(slotTone.stale).toBe('warning');
   });
 
+  it('gives the queue kind pill the change-type slot: notice, chosen by where it sits', () => {
+    expect(slotTone.proposalKind).toBe('notice');
+  });
+
+  it('reads a proposal\'s status off its own fixed kind: waiting needs attention, approved is good, a decision stands as a neutral fact', () => {
+    expect(proposalStatusTone.open).toBe('warning');
+    expect(proposalStatusTone.approved).toBe('positive');
+    expect(proposalStatusTone.rejected).toBe('information');
+    expect(proposalStatusTone.superseded).toBe('information');
+  });
+
   it('takes every tone from the six, so no seventh can be introduced here', () => {
-    const tones = [...Object.values(checkStatusTone), ...Object.values(apiKeyStateTone), ...Object.values(slotTone)];
+    const tones = [...Object.values(checkStatusTone), ...Object.values(apiKeyStateTone), ...Object.values(slotTone), ...Object.values(proposalStatusTone)];
     for (const tone of tones) expect(pillToneNames).toContain(tone);
   });
 });

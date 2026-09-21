@@ -39,6 +39,20 @@ export const severityTone: Record<SeverityKind, PillTone> = {
   low: 'information',
 };
 
+// PRO-01, PRO-02: a proposal's status, on the queue's tabs and rows. `open`
+// needs attention (warning, "Waiting"), `approved` is good (positive), and
+// `rejected` and `superseded` are neutral facts the record still carries
+// (information) — never negative, because a rejection is a decision made on
+// purpose, not a failure.
+export type ProposalStatusKind = 'open' | 'approved' | 'rejected' | 'superseded';
+
+export const proposalStatusTone: Record<ProposalStatusKind, PillTone> = {
+  open: 'warning',
+  approved: 'positive',
+  rejected: 'information',
+  superseded: 'information',
+};
+
 // WAT-01: how a source check ended, as `CheckStatus` names it in the API.
 // The coverage log and the feed's Coverage tab read the check, never the
 // sentence it carries. `never` is the third member the coverage read answers:
@@ -76,6 +90,9 @@ export const applicabilityTone: Record<ApplicabilityKind, PillTone> = {
 // neutral fact (information), as the obligation and instrument cards show.
 export const slotTone = {
   changeType: 'notice',
+  // The queue's kind pill (console-queue.html): "New version", "Vocabulary"
+  // and so on, in the same slot a change type occupies elsewhere.
+  proposalKind: 'notice',
   instrument: 'brand',
   jurisdiction: 'brand',
   flag: 'brand',

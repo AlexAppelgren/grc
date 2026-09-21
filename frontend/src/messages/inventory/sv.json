@@ -17,5 +17,6 @@
   "inventory.empty.noMatch.body": "Ta bort ett filter, eller visa det som ligger utanför vår omfattning.",
   "inventory.empty.inScope.title": "Biblioteket har ännu inget inom vår omfattning",
   "inventory.empty.inScope.body": "Källor kontrolleras dagligen; skyldigheter dyker upp när förslag godkänns.",
-  "inventory.empty.inScope.action": "Se regelverksomfattningen under Admin"
+  "inventory.empty.inScope.action": "Se regelverksomfattningen under Admin",
+  "inventory.libraryUpdatesLink": "Bibliotekets uppdateringar"
 }

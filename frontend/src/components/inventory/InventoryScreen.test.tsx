@@ -190,7 +190,9 @@ describe('InventoryScreen', () => {
     renderIn(<InventoryScreen />);
     expect(screen.getByRole('status')).toHaveAttribute('data-loading-state');
     await waitFor(() => expect(screen.getByText('2 obligations')).toBeVisible());
-    expect(screen.getAllByRole('link')).toHaveLength(2);
+    // Scoped to the obligation rows: the screen's own "Library updates" link
+    // (chunk4-T19) sits in the head, beside the rows, not among them.
+    expect(within(document.querySelector('[data-obligation-rows]') as HTMLElement).getAllByRole('link')).toHaveLength(2);
     expect(screen.queryByText(/Showing the first/)).toBeNull();
   });
 

@@ -135,7 +135,7 @@ describe('the console landing', () => {
         <ConsolePage />
       </ConsoleLayout>,
     );
-    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/console/vocabularies'));
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/console/queue'));
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -148,7 +148,7 @@ describe('the console landing', () => {
     );
     const alert = await screen.findByRole('alert');
     expect(within(alert).getByRole('heading', { name: 'This page is not available to you' })).toBeInTheDocument();
-    expect(alert).toHaveTextContent('Needs library vocab manage');
+    expect(alert).toHaveTextContent('Needs proposals review');
     expect(nav.replace).not.toHaveBeenCalled();
     // The console rail holds nothing a tenant member may open.
     expect(within(railNav()).queryAllByRole('link')).toHaveLength(0);
@@ -196,7 +196,7 @@ describe('the surface follows the principal', () => {
       </TenantLayout>,
     );
     expect(await screen.findByRole('heading', { name: 'My passkeys' })).toBeInTheDocument();
-    expect(within(railNav()).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/console/vocabularies', '/console/change-facts', '/console/sources']);
+    expect(within(railNav()).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/console/queue', '/console/vocabularies', '/console/change-facts', '/console/sources']);
     expect(within(rail()).getByText('Platform console')).toBeInTheDocument();
   });
 

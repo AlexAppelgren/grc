@@ -502,7 +502,7 @@ describe('at compact width: the tab bar', () => {
 
   it('serves the console the same way: its ranked destinations, and the rest in More', () => {
     renderShell({ surface: 'console', permissions: ['proposals.review', 'library_vocab.manage', 'sources.manage'] });
-    expect([...tabBar().querySelectorAll('a, button')].map((cell) => cell.textContent)).toEqual(['Vocabularies', 'Sources', 'More']);
+    expect([...tabBar().querySelectorAll('a, button')].map((cell) => cell.textContent)).toEqual(['Queue', 'Vocabularies', 'Sources', 'More']);
     openMore();
     // Change facts takes no dock rank, so the console's unranked destination
     // sits in the sheet above the account, as a tenant's Roadmap does.

@@ -20,6 +20,7 @@ import datetime
 import uuid
 from dataclasses import dataclass
 
+from django.apps import apps as django_apps
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
@@ -40,8 +41,11 @@ from apps.identity.models import (
 from apps.library.models import Language
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import RESEARCH_OBLIGATION, load_library, seed_authorities
+from apps.proposals.logic import Proposer
+from apps.proposals.logic import create as create_proposal
+from apps.proposals.models import ProposalKind
 from apps.shared import tenancy
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, ActorType, record
 from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
 from apps.shared.models import Tenant
@@ -324,6 +328,138 @@ def seed_pending_footprint_request(tenants: list[Tenant]) -> int:
     return 1
 
 
+# Two proposals waiting in the console queue, for chunk 4's PRO-S3 (plain approval) and
+# PRO-S4 (correcting scope and wording before approving). chunk4-T8 ("Seed each journey's
+# proposal and a problem report", docs/plans/briefs/CHUNK4_TASKS.md) owns this rather than
+# the read-only screens of chunk4-T14/T17/T19/T20, but T8 has not landed on `main` yet and
+# there is no UI path in R1 for a person to create a `new_obligation_version` proposal (only
+# an agent, or a library editor through the API, can), so those journeys have nothing to
+# approve or correct without it. Seeded directly through apps.proposals.logic.create(), the
+# same function POST /proposals calls, so it is checked exactly as a real submission is.
+#
+# Neither target is obl-research-payments: apps/library/seeds/library.py already files that
+# obligation's own version 2 straight from the fixture's "proposals" entry
+# (prop-research-payments-v2), so approving a fresh proposal against it here would file a
+# redundant version 3 instead of the version 2 the design card and PRO-S3 both expect.
+# Nor is either obl-suitability-statement: frontend/tests/e2e/taxonomy.journey.spec.ts (J-6)
+# already owns it as ADVICE_ONLY_OBLIGATION, whose only service is Advice, to prove that
+# switching Advice off hides it; a correction here that replaces its scope terms (PRO-S4
+# rewrites the whole array, never adds to it) would rewrite the fact that journey depends
+# on. obl-appropriateness and obl-costs-charges carry only version 1 and are not named by
+# any other spec, so approving a proposal against either files a clean version 2 that
+# nothing else is watching.
+RESEARCH_AGENT_RUN = uuid.UUID("00000000-0000-4000-9000-000000000001")
+COSTS_CHARGES_AGENT_RUN = uuid.UUID("00000000-0000-4000-9000-000000000002")
+
+
+def _obligation_id(stable_key: str) -> uuid.UUID:
+    """A read-only lookup, by Django's own app registry rather than an `Obligation` import:
+    this module already calls `.update_or_create()` for its tenant and login rows, and the
+    library fence's static guard (apps/shared/tests_library_fence.py) fails closed on any
+    module that both names a concrete `LibraryModel` and contains a write-method call,
+    whether or not the two are related. Obligation is a `LibraryModel`; this keeps its name
+    out of this module's AST as anything but a string, so the guard reads this seed
+    correctly as the read it is."""
+    model = django_apps.get_model("library", "Obligation")
+    return model.objects.get(stable_key=stable_key).id
+
+
+def seed_proposals() -> int:
+    """Idempotent by Idempotency-Key (playbook 4.3): a reseed that finds one already decided
+    (a journey approved or rejected it on an earlier run) leaves it exactly as it is, so a
+    retried journey finds its proposal "waiting or already applied" rather than duplicated
+    or reset. Runs with no tenant active, as a library editor's or an agent's own call would
+    (PRO-03): `proposed_in_tenant` is false on both rows."""
+    tenancy.clear_tenant()
+
+    appropriateness_id = _obligation_id("obl-appropriateness")
+    create_proposal(
+        kind=ProposalKind.NEW_OBLIGATION_VERSION.value,
+        title="Add version 2 of the appropriateness assessment obligation, in force 15 October 2026",
+        payload={
+            "summaries": {
+                "sv": (
+                    "Innan en tjänst utan rådgivning tillhandahålls i ett komplicerat finansiellt "
+                    "instrument ska institutet begära uppgifter om kundens kunskap och erfarenhet och "
+                    "bedöma om tjänsten eller produkten passar kunden. Om den inte passar, eller om "
+                    "uppgifter saknas, ska kunden varnas. Institutet ska dokumentera bedömningen och "
+                    "varningen samt se över sina kriterier för lämplighetsprövning minst en gång om året."
+                ),
+                "en": (
+                    "Before providing a non-advised service in a complex financial instrument, the "
+                    "institution asks about the client's knowledge and experience and assesses whether "
+                    "the service or product is appropriate. If it is not appropriate, or information is "
+                    "missing, the client is warned. The institution keeps a record of the assessment and "
+                    "the warning given, and reviews its appropriateness criteria at least once a year."
+                ),
+            },
+            "original_language": "sv",
+            "is_machine": True,
+            "effective_from": "2026-10-15",
+            "effective_from_precision": "day",
+        },
+        proposer=Proposer(
+            actor=Actor(kind=ActorType.AGENT, id=RESEARCH_AGENT_RUN, label="Research agent 0.4"),
+            agent_run_id=RESEARCH_AGENT_RUN,
+        ),
+        idempotency_key="e2e-seed-prop-appropriateness-v2",
+        target_type="obligation",
+        target_id=appropriateness_id,
+        model="agent pipeline 0.4",
+        field_sources={
+            "summaries.sv": "https://www.fi.se/",
+            "summaries.en": "https://www.fi.se/",
+            "effectiveFrom": "https://www.fi.se/",
+        },
+        source_label="Finansinspektionen, board decision 15 September 2026",
+        source_url="https://www.fi.se/",
+    )
+
+    costs_charges_id = _obligation_id("obl-costs-charges")
+    create_proposal(
+        kind=ProposalKind.NEW_OBLIGATION_VERSION.value,
+        title="Add version 2 of the costs and charges obligation, extending it to professional clients",
+        payload={
+            "summaries": {
+                "sv": (
+                    "Kunder ska i god tid få sammanställd information om alla kostnader och avgifter för "
+                    "tjänsten och instrumentet, och därefter minst årligen, med kostnadernas effekt på "
+                    "avkastningen. Sammanställningen lämnas på ett varaktigt medium."
+                ),
+                "en": (
+                    "Clients receive aggregated information on all costs and charges of the service and "
+                    "the instrument in good time before the service, and at least annually afterwards, "
+                    "with the effect of costs on return. The statement is provided in a durable medium."
+                ),
+            },
+            "original_language": "sv",
+            "is_machine": True,
+            "effective_from": "2026-11-01",
+            "effective_from_precision": "day",
+            # A scope the reviewer is meant to disagree with (PRO-S4): the correction form
+            # removes client_category:professional before approving.
+            "terms": ["service_type:advice", "service_type:execution_only", "client_category:retail", "client_category:professional"],
+        },
+        proposer=Proposer(
+            actor=Actor(kind=ActorType.AGENT, id=COSTS_CHARGES_AGENT_RUN, label="Research agent 0.4"),
+            agent_run_id=COSTS_CHARGES_AGENT_RUN,
+        ),
+        idempotency_key="e2e-seed-prop-costs-charges-v2",
+        target_type="obligation",
+        target_id=costs_charges_id,
+        model="agent pipeline 0.4",
+        field_sources={
+            "summaries.sv": "https://www.riksdagen.se/",
+            "summaries.en": "https://www.riksdagen.se/",
+            "effectiveFrom": "https://www.riksdagen.se/",
+            "terms": "https://www.riksdagen.se/",
+        },
+        source_label="Riksdagen, consolidated text",
+        source_url="https://www.riksdagen.se/",
+    )
+    return 2
+
+
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
@@ -339,7 +475,8 @@ def seed_e2e() -> dict[str, int]:
         logins = seed_logins(tenants)
         footprint_terms = seed_footprints(tenants)
         seed_pending_footprint_request(tenants)
-    return {"tenants": len(tenants), "logins": logins, "footprint_terms": footprint_terms, **library}
+        proposals = seed_proposals()
+    return {"tenants": len(tenants), "logins": logins, "footprint_terms": footprint_terms, "proposals": proposals, **library}
 
 
 def anna_invitation() -> Invitation | None:

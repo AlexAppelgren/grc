@@ -38,6 +38,7 @@ describe('navigation registry (playbook 6.2)', () => {
     // from chunk 4, Change facts, Sources and Agent keys from chunk 5. The
     // queue joins with its own.
     expect(visibleDestinations('console', PLATFORM).map((d) => d.id)).toEqual([
+      'console-queue',
       'console-vocabularies',
       'console-change-facts',
       'console-sources',
@@ -48,9 +49,10 @@ describe('navigation registry (playbook 6.2)', () => {
     // its permission, so neither platform role sees the other's (ADM-S4).
     expect(visibleDestinations('console', ['library_vocab.manage']).map((d) => d.id)).toEqual(['console-vocabularies']);
     expect(visibleDestinations('console', ['tenants.manage']).map((d) => d.id)).toEqual(['console-tenants']);
-    // A library editor reads the change facts and the sources; the platform
-    // admin holds the agent keys. Neither reaches the other's.
-    expect(visibleDestinations('console', ['proposals.review']).map((d) => d.id)).toEqual(['console-change-facts']);
+    // A library editor reviews the queue, reads the change facts and the
+    // sources; the platform admin holds the agent keys. Neither reaches the
+    // other's. Queue and Change facts share proposals.review (chunk4-T14).
+    expect(visibleDestinations('console', ['proposals.review']).map((d) => d.id)).toEqual(['console-queue', 'console-change-facts']);
     expect(visibleDestinations('console', ['sources.manage']).map((d) => d.id)).toEqual(['console-sources']);
     expect(visibleDestinations('console', ['agent_definitions.manage']).map((d) => d.id)).toEqual(['console-agent-keys']);
   });
@@ -84,7 +86,7 @@ describe('navigation registry (playbook 6.2)', () => {
   it('orders the phone dock by rank', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(dockDestinations('tenant', all).map((d) => d.id)).toEqual(['today', 'watch', 'inventory', 'search']);
-    expect(dockDestinations('console', all).map((d) => d.id)).toEqual(['console-vocabularies', 'console-tenants', 'console-sources']);
+    expect(dockDestinations('console', all).map((d) => d.id)).toEqual(['console-queue', 'console-vocabularies', 'console-tenants', 'console-sources']);
   });
 
   // iOS shows at most four tabs plus More (UIKit UITabBarController), and

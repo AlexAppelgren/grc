@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { InventoryFilterBar, REGIME, SERVICE, type InventoryFilters } from '@/components/inventory/InventoryFilters';
@@ -81,7 +82,15 @@ export function InventoryScreen() {
 
   return (
     <>
-      <PageHead title={t('inventory.title')} lede={obligations.data === undefined ? undefined : t('inventory.count', { count: total })} />
+      <PageHead
+        title={t('inventory.title')}
+        lede={obligations.data === undefined ? undefined : t('inventory.count', { count: total })}
+        actions={
+          <Link href="/inventory/updates" className="font-medium underline" data-library-updates-link="">
+            {t('inventory.libraryUpdatesLink')}
+          </Link>
+        }
+      />
       <InventoryFilterBar filters={filters} onChange={apply} />
 
       {filters.asOf === '' ? null : (
