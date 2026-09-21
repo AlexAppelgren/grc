@@ -16,14 +16,7 @@ import { REFRESH_PATH } from '@/shared/utils/api-client';
 const ME_PATH = '/api/v1/me';
 const SOURCES_PATH = '/api/v1/sources';
 const COVERAGE_PATH = '/api/v1/sources/coverage';
-const AUTHORITIES_PATH = '/api/v1/authorities';
-
 const NOW = new Date('2026-09-19T08:00:00Z');
-
-const AUTHORITIES = [
-  { id: 'a1', key: 'fi-se', shortName: 'FI', name: 'Finansinspektionen', jurisdiction: { key: 'se', kind: null, label: 'Sweden' }, url: 'https://www.fi.se/' },
-  { id: 'a2', key: 'eurlex', shortName: 'EUR-Lex', name: 'Publications Office of the EU', jurisdiction: { key: 'eu', kind: null, label: 'EU' }, url: 'https://eur-lex.europa.eu/' },
-];
 
 const fi = { id: 's1', name: 'Finansinspektionen, publicerat', url: 'https://www.fi.se/sv/publicerat/', kind: { key: 'authority_site', kind: null, label: 'Authority site' }, authorityId: 'a1', checkFrequency: 'daily', active: true };
 const eurlex = { id: 's2', name: 'EUR-Lex, Official Journal L series', url: 'https://eur-lex.europa.eu/oj/', kind: { key: 'official_journal', kind: null, label: 'Official journal' }, authorityId: 'a2', checkFrequency: 'daily', active: true };
@@ -50,7 +43,6 @@ function server(sources: Answer, coverage: Answer = { status: 200, data: COVERAG
   return installAdapter((sent) => {
     if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: editor };
-    if (sent.path === AUTHORITIES_PATH) return { status: 200, data: AUTHORITIES };
     if (sent.path === COVERAGE_PATH) return coverage;
     if (sent.path === SOURCES_PATH && sent.method === 'get') return sources;
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
@@ -82,10 +74,8 @@ describe('console sources', () => {
 
     const healthy = rowOf('s1');
     expect(within(healthy).getByText('Authority site')).toBeInTheDocument();
-    expect(within(healthy).getByText('Sweden')).toBeInTheDocument();
     expect(within(healthy).getByText('Checked')).toBeInTheDocument();
     expect(within(healthy).getByText('Checked daily')).toBeInTheDocument();
-    expect(within(healthy).getByText('Finansinspektionen')).toBeInTheDocument();
     expect(within(healthy).getByText('Checked 19 Sept 2026, 08:02')).toBeInTheDocument();
 
     // A failing source says so, is marked stale, and shows what went wrong.
@@ -109,22 +99,26 @@ describe('console sources', () => {
     expect(screen.getByText('1 failing')).toBeInTheDocument();
   });
 
-  it('filters by jurisdiction, by kind and to the failing rows', async () => {
+  it('filters by kind and to the failing rows', async () => {
     server({ status: 200, data: [fi, eurlex, sweep] });
     renderIn(<SourcesScreen />);
     await screen.findByText(fi.name);
     expect(names()).toEqual(['s1', 's2', 's3']);
 
-    fireEvent.change(screen.getByLabelText('Jurisdiction'), { target: { value: 'eu' } });
-    await waitFor(() => expect(names()).toEqual(['s2']));
-
-    fireEvent.change(screen.getByLabelText('Jurisdiction'), { target: { value: '' } });
     fireEvent.change(screen.getByLabelText('Kind'), { target: { value: 'open_web' } });
     await waitFor(() => expect(names()).toEqual(['s3']));
 
     fireEvent.change(screen.getByLabelText('Kind'), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Failing only' }));
     await waitFor(() => expect(names()).toEqual(['s2']));
+  });
+
+  it('asks for the registry and its coverage, and for nothing a console session cannot read', async () => {
+    const sent = server({ status: 200, data: [fi] });
+    renderIn(<SourcesScreen />);
+    await screen.findByText(fi.name);
+    const paths = [...new Set(sent.map((s) => s.path))].sort();
+    expect(paths).toEqual([COVERAGE_PATH, ME_PATH, REFRESH_PATH, SOURCES_PATH].sort());
   });
 
   it('is read-only: it writes nothing, and no control the console cannot pass is offered', async () => {

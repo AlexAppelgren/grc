@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 import { destinations, type Destination } from '@/shared/navigation/registry';
 
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, inviteLinkFrom, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
+import { allowFreshContext, BACKEND_URL, inviteLinkFrom, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
 // governance: the @e2e scenarios from backend/apps/governance/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -160,12 +160,12 @@ test.describe('governance journeys', () => {
 
     // A bank's report that a library record looks wrong stays inside that bank
     // (Alex, 2026-09-20, item 3): the console offers no surface for one, and no
-    // console route serves one. Asserted directly, so it cannot come back
-    // unnoticed. The request fixture is used on purpose — the guard watches the
-    // page, and this 404 is the point of the assertion.
+    // console route serves one. Asserted directly against the API, so it cannot
+    // come back unnoticed. The request fixture is used on purpose — the guard
+    // watches the page, and these 404s are the point of the assertion.
     expect(CONSOLE_DESTINATIONS.map((d) => d.id)).not.toContain('console-problem-reports');
     for (const path of ['/api/v1/console/problem-reports', '/api/v1/console/reports']) {
-      expect((await request.get(path)).status(), `${path} must not exist`).toBe(404);
+      expect((await request.get(`${BACKEND_URL}${path}`)).status(), `${path} must not exist`).toBe(404);
     }
   });
 

@@ -5,21 +5,12 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Select } from '@/components/ui/Field';
 import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
-import {
-  CONSOLE_CHANGES_PAGE,
-  authorityAndPublished,
-  firstSeen,
-  presentConsoleChange,
-  useAuthorities,
-  useConsoleChanges,
-  type ConsoleChangeRow,
-} from '@/features/console-watch/change-facts';
+import { CONSOLE_CHANGES_PAGE, authorityAndPublished, firstSeen, presentConsoleChange, useConsoleChanges, type ConsoleChangeRow } from '@/features/console-watch/change-facts';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
@@ -28,8 +19,10 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 // carrying a fact nobody has confirmed. It is the console, so a row holds the
 // shared library and nothing of a bank's: no case, no footprint verdict, no
 // owner and no problem report is read here or anywhere else in the console.
-// Both filters are the route's own, so a row the server left out never
-// reappears because the browser kept it.
+// The filter is the route's own, so a row the server left out never reappears
+// because the browser kept it. The card's authority filter is absent rather
+// than wrong: `GET /authorities` is gated inside a tenant and refuses a
+// console session, and no screen calls a route it cannot pass.
 
 function QueueRow({ row }: { row: ConsoleChangeRow }) {
   const t = useT();
@@ -52,39 +45,24 @@ function QueueRow({ row }: { row: ConsoleChangeRow }) {
 
 export function ChangeFactsScreen() {
   const t = useT();
-  const [authorityId, setAuthorityId] = useState('');
   const [unconfirmedOnly, setUnconfirmedOnly] = useState(true);
   const [offset, setOffset] = useState(0);
 
   // A changed filter starts again at the first page: the offset of the old
   // result means nothing in the new one.
-  const refilter = (change: () => void) => {
-    change();
+  const toggleUnconfirmed = () => {
+    setUnconfirmedOnly(!unconfirmedOnly);
     setOffset(0);
   };
 
-  const authorities = useAuthorities();
-  const changes = useConsoleChanges({
-    confirmed: unconfirmedOnly ? 'false' : 'all',
-    ...(authorityId === '' ? {} : { authorityId }),
-    limit: CONSOLE_CHANGES_PAGE,
-    offset,
-  });
+  const changes = useConsoleChanges({ confirmed: unconfirmedOnly ? 'false' : 'all', limit: CONSOLE_CHANGES_PAGE, offset });
 
   return (
     <>
       <PageHead title={t('console.changeFacts.title')} lede={t('console.changeFacts.lede')} />
       <Notice>{t('console.changeFacts.explain')}</Notice>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Select aria-label={t('console.changeFacts.filter.authority')} value={authorityId} onChange={(e) => refilter(() => setAuthorityId(e.target.value))}>
-          <option value="">{t('console.changeFacts.filter.anyAuthority')}</option>
-          {(authorities.data ?? []).map((authority) => (
-            <option key={authority.id} value={authority.id}>
-              {authority.shortName}
-            </option>
-          ))}
-        </Select>
-        <Button variant="outline" size="small" aria-pressed={unconfirmedOnly} onClick={() => refilter(() => setUnconfirmedOnly(!unconfirmedOnly))}>
+        <Button variant="outline" size="small" aria-pressed={unconfirmedOnly} onClick={toggleUnconfirmed}>
           {t('console.changeFacts.filter.onlyUnconfirmed')}
         </Button>
       </div>

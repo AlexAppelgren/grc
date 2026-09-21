@@ -16,7 +16,6 @@ import {
   presentSource,
   registryRows,
   sourceMeta,
-  useAuthorities,
   useSourceCoverage,
   useSources,
   type RegistryRow,
@@ -30,7 +29,10 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 // are not on this page: the first is sources.manage work R1 does not put here
 // and the last is AGT-05, which chunk 11 builds on a key-only route. Each is
 // absent rather than disabled, so nothing on this page calls a route this
-// session could not pass, and the diff holds no call that writes.
+// session could not pass, and the diff holds no call that writes. The same
+// rule keeps the card's jurisdiction filter and the issuing authority's name
+// off the page: `GET /authorities` is gated inside a tenant and refuses a
+// console session.
 
 function SourceRow({ row }: { row: RegistryRow }) {
   const t = useT();
@@ -54,8 +56,6 @@ export function SourcesScreen() {
   const t = useT();
   const sources = useSources();
   const coverage = useSourceCoverage();
-  const authorities = useAuthorities();
-  const [jurisdiction, setJurisdiction] = useState('');
   const [kind, setKind] = useState('');
   const [failingOnly, setFailingOnly] = useState(false);
 
@@ -74,9 +74,9 @@ export function SourcesScreen() {
     );
   }
 
-  const rows = registryRows(sources.data, coverage.data, authorities.data ?? []);
+  const rows = registryRows(sources.data, coverage.data);
   const options = filterOptions(rows);
-  const shown = applyFilters(rows, { jurisdiction, kind, failingOnly });
+  const shown = applyFilters(rows, { kind, failingOnly });
   const summary = coverageSummary(rows, new Date());
 
   return (
@@ -90,14 +90,6 @@ export function SourcesScreen() {
             <span>{t('console.sources.failing', { count: summary.failing })}</span>
           </Meta>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Select aria-label={t('console.sources.filter.jurisdiction')} value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)}>
-              <option value="">{t('console.sources.filter.anyJurisdiction')}</option>
-              {options.jurisdictions.map((option) => (
-                <option key={option.key} value={option.key}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
             <Select aria-label={t('console.sources.filter.kind')} value={kind} onChange={(e) => setKind(e.target.value)}>
               <option value="">{t('console.sources.filter.anyKind')}</option>
               {options.kinds.map((option) => (

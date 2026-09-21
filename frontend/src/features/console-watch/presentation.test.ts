@@ -110,11 +110,8 @@ const coverageOf = (src: Source, over: Partial<SourceCoverage>): SourceCoverage 
 describe('source registry rows', () => {
   it('leaves a source the coverage read has not answered for standing on its own', () => {
     const unknown = source({ id: 's9', authorityId: 'a-gone' });
-    const [row] = registryRows([unknown], [], []);
+    const [row] = registryRows([unknown], []);
     expect(row!.coverage).toBeNull();
-    // An authority the library no longer holds is the same as none: the row
-    // still renders, it simply says less.
-    expect(row!.authority).toBeNull();
     expect(presentSource(row!, t).map((p) => p.key)).toEqual(['kind:authority_site']);
     expect(sourceMeta(row!, t, defaultFormatContext)).toEqual(['Checked weekly', 'No check logged yet']);
   });
@@ -122,19 +119,19 @@ describe('source registry rows', () => {
   it('counts a source with no coverage row in the registry but in neither number', () => {
     const fresh = source({ id: 's1' });
     const rows: RegistryRow[] = [
-      { source: fresh, coverage: coverageOf(fresh, { lastCheckedAt: '2026-09-19T06:00:00Z', lastStatus: 'ok' }), authority: null },
-      { source: source({ id: 's2' }), coverage: null, authority: null },
+      { source: fresh, coverage: coverageOf(fresh, { lastCheckedAt: '2026-09-19T06:00:00Z', lastStatus: 'ok' }) },
+      { source: source({ id: 's2' }), coverage: null },
     ];
     expect(coverageSummary(rows, NOW)).toEqual({ total: 2, checked: 1, failing: 0 });
   });
 
   it('treats a stale source as failing even when its last check succeeded', () => {
     const stale = source({ id: 's3' });
-    const rows: RegistryRow[] = [{ source: stale, coverage: coverageOf(stale, { lastCheckedAt: '2026-09-01T06:00:00Z', lastStatus: 'ok', overdue: true }), authority: null }];
+    const rows: RegistryRow[] = [{ source: stale, coverage: coverageOf(stale, { lastCheckedAt: '2026-09-01T06:00:00Z', lastStatus: 'ok', overdue: true }) }];
     expect(coverageSummary(rows, NOW).failing).toBe(1);
-    expect(applyFilters(rows, { jurisdiction: '', kind: '', failingOnly: true })).toHaveLength(1);
+    expect(applyFilters(rows, { kind: '', failingOnly: true })).toHaveLength(1);
     // A row with no coverage at all is neither failing nor fresh, so the
     // failing filter leaves it out rather than guessing.
-    expect(applyFilters([{ source: stale, coverage: null, authority: null }], { jurisdiction: '', kind: '', failingOnly: true })).toEqual([]);
+    expect(applyFilters([{ source: stale, coverage: null }], { kind: '', failingOnly: true })).toEqual([]);
   });
 });

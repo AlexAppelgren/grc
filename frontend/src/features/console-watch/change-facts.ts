@@ -14,6 +14,11 @@ import type { components, operations } from '@/types/api.generated';
 // library, so nothing here joins a bank: `GET /console/changes` answers the
 // library record and the facts an agent put forward, and no case, owner,
 // footprint verdict or problem report exists on this shape to render.
+//
+// It is the screen's only read. The card's authority filter would need
+// `GET /authorities`, which is gated on `library.read` inside a tenant and so
+// answers 403 to a console session; the filter waits for that gate to admit a
+// library editor, as the source reads already do (reported).
 
 type Schemas = components['schemas'];
 
@@ -23,13 +28,11 @@ export type ConsoleChangePage = Schemas['WatchConsoleChangePage'];
 /** `{ref: {key, kind, label}, confidence, suggested}` — the vocabulary row is under `ref`. */
 export type ChangeFact = Schemas['WatchFact'];
 export type ObligationLink = Schemas['WatchObligationLink'];
-export type Authority = Schemas['LibraryAuthority'];
 
 /** The queue's filters, exactly as the route declares them. */
 export type ConsoleChangeQuery = NonNullable<operations['listConsoleChanges']['parameters']['query']>;
 
 const CONSOLE_CHANGES = '/api/v1/console/changes';
-const AUTHORITIES = '/api/v1/authorities';
 
 /** The page the queue asks for; the route caps a page at 100. */
 export const CONSOLE_CHANGES_PAGE = 20;
@@ -38,22 +41,12 @@ export async function listConsoleChanges(query: ConsoleChangeQuery = {}): Promis
   return (await api.get<ConsoleChangePage>(CONSOLE_CHANGES, { params: query })).data;
 }
 
-/** The issuing authorities the authority filter offers. A library fact, the same for every reader. */
-export async function listAuthorities(): Promise<Authority[]> {
-  return (await api.get<Authority[]>(AUTHORITIES)).data;
-}
-
 export const consoleChangeKeys = {
   changes: (query: ConsoleChangeQuery) => ['console', 'changes', query] as const,
-  authorities: ['console', 'authorities'] as const,
 };
 
 export function useConsoleChanges(query: ConsoleChangeQuery): UseQueryResult<ConsoleChangePage> {
   return useQuery({ queryKey: consoleChangeKeys.changes(query), queryFn: () => listConsoleChanges(query) });
-}
-
-export function useAuthorities(): UseQueryResult<Authority[]> {
-  return useQuery({ queryKey: consoleChangeKeys.authorities, queryFn: listAuthorities });
 }
 
 // ---------------------------------------------------------------------------

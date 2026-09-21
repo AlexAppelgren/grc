@@ -14,13 +14,6 @@ import { REFRESH_PATH } from '@/shared/utils/api-client';
 
 const ME_PATH = '/api/v1/me';
 const CHANGES_PATH = '/api/v1/console/changes';
-const AUTHORITIES_PATH = '/api/v1/authorities';
-
-const AUTHORITIES = [
-  { id: 'a1', key: 'fi-se', shortName: 'FI', name: 'Finansinspektionen', jurisdiction: { key: 'se', kind: null, label: 'Sweden' }, url: 'https://www.fi.se/' },
-  { id: 'a2', key: 'esma', shortName: 'ESMA', name: 'European Securities and Markets Authority', jurisdiction: { key: 'eu', kind: null, label: 'EU' }, url: 'https://www.esma.europa.eu/' },
-];
-
 const fact = (key: string, label: string, confidence: number | null, suggested: boolean) => ({ ref: { key, kind: null, label }, confidence, suggested });
 
 const waiting = {
@@ -66,12 +59,11 @@ const editor = {
   stepUpValidUntil: null,
 };
 
-/** The server: the session, the two reads the screen makes, and nothing else. */
+/** The server: the session, the one read the screen makes, and nothing else. */
 function server(changes: Answer, extra: (sent: Sent) => Answer | undefined = () => undefined): Sent[] {
   return installAdapter((sent) => {
     if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: editor };
-    if (sent.path === AUTHORITIES_PATH) return { status: 200, data: AUTHORITIES };
     const answer = extra(sent);
     if (answer !== undefined) return answer;
     if (sent.path === CHANGES_PATH && sent.method === 'get') return changes;
@@ -113,19 +105,15 @@ describe('console change facts queue', () => {
     expect(within(other).getByText('EUR-Lex')).toBeInTheDocument();
   });
 
-  it('asks the server for each filter, so nothing is filtered in the browser', async () => {
+  it('asks the server for the filter, so nothing is filtered in the browser', async () => {
     const sent = server({ status: 200, data: { items: [waiting], total: 1 } });
     renderIn(<ChangeFactsScreen />);
     await screen.findByText(waiting.title);
     expect(queryOf(sent)).toEqual([{ confirmed: 'false', limit: 20, offset: 0 }]);
 
-    fireEvent.change(await screen.findByLabelText('Authority'), { target: { value: 'a2' } });
-    await waitFor(() => expect(queryOf(sent)).toHaveLength(2));
-    expect(queryOf(sent)[1]).toEqual({ confirmed: 'false', authorityId: 'a2', limit: 20, offset: 0 });
-
     fireEvent.click(screen.getByRole('button', { name: 'Only unconfirmed' }));
-    await waitFor(() => expect(queryOf(sent)).toHaveLength(3));
-    expect(queryOf(sent)[2]).toEqual({ confirmed: 'all', authorityId: 'a2', limit: 20, offset: 0 });
+    await waitFor(() => expect(queryOf(sent)).toHaveLength(2));
+    expect(queryOf(sent)[1]).toEqual({ confirmed: 'all', limit: 20, offset: 0 });
   });
 
   it('pages with the server and starts again at the first page when a filter moves', async () => {
@@ -139,7 +127,7 @@ describe('console change facts queue', () => {
     await waitFor(() => expect(queryOf(sent)).toHaveLength(2));
     expect(queryOf(sent)[1]).toMatchObject({ offset: 20 });
 
-    fireEvent.change(screen.getByLabelText('Authority'), { target: { value: 'a1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Only unconfirmed' }));
     await waitFor(() => expect(queryOf(sent)).toHaveLength(3));
     expect(queryOf(sent)[2]).toMatchObject({ offset: 0 });
   });
@@ -153,7 +141,7 @@ describe('console change facts queue', () => {
     // problem-report surface are not merely hidden here — they are never asked
     // for (NFR-01, and Alex's item 3: a bank's report stays inside the bank).
     const paths = [...new Set(sent.map((s) => s.path))].sort();
-    expect(paths).toEqual([AUTHORITIES_PATH, CHANGES_PATH, ME_PATH, REFRESH_PATH].sort());
+    expect(paths).toEqual([CHANGES_PATH, ME_PATH, REFRESH_PATH].sort());
     expect(sent.every((s) => s.method === 'get' || s.path === REFRESH_PATH)).toBe(true);
     expect(container.textContent).not.toMatch(/case|footprint|report|owner|assigned/i);
   });
