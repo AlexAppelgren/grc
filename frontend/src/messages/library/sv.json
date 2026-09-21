@@ -19,5 +19,11 @@
   "version.inForceUntil": "I kraft till och med {to}",
   "version.inForceRange": "I kraft {from} till {to}",
   "legal.sectionSign": "§",
-  "legal.machineTranslation": "Maskinöversättning från {language}. Originalet gäller."
+  "legal.machineTranslation": "Maskinöversättning från {language}. Originalet gäller.",
+  "library.languageOriginal": "{language}, original",
+  "library.noTextTitle": "Ingen text på {language} ännu",
+  "library.noTextBody": "Välj ett av språken ovan för att läsa det biblioteket har.",
+  "library.showOriginal": "Visa originalet",
+  "library.lastVerifiedBy": "{date} av {name}",
+  "library.notVerifiedYet": "Inte verifierad ännu"
 }

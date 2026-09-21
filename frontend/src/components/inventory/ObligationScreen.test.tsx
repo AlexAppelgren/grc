@@ -1,0 +1,236 @@
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { createT } from '@/shared/i18n';
+import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
+import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
+import { tokenStore } from '@/shared/utils/api-client';
+
+import { ObligationScreen, languageChoices, originalLanguage, textIn } from './ObligationScreen';
+import type { LocalizedText, ObligationDetail } from '@/features/library/types';
+
+// The obligation card (design/screens/tenant-obligation.html): the header
+// slots in order, the summary in one language with the machine label, the
+// scope and duty panels, provenance with "Last verified", and every state the
+// card names. Nothing here writes, and nothing claims the duty applies here.
+
+const t = createT('en');
+
+const sv: LocalizedText = { text: 'Investeringsanalys från tredje part får tas emot endast…', language: 'sv', isOriginal: true, isMachine: false };
+const en: LocalizedText = { text: 'Research from third parties may be received only if…', language: 'en', isOriginal: false, isMachine: true };
+
+const research: ObligationDetail = {
+  id: 'ob-1',
+  stableKey: 'obl-research-payments',
+  refLabel: 'Third-party payments',
+  title: { text: 'Pay for third-party research only under the permitted models', language: 'en', isOriginal: true, isMachine: false },
+  instrument: {
+    key: 'fffs-2017-2',
+    shortName: 'FFFS 2017:2',
+    officialRef: 'FFFS 2017:2',
+    name: { text: 'FFFS 2017:2 om värdepappersrörelse', language: 'sv', isOriginal: true, isMachine: false },
+    implementsNote: 'MiFID II delegated directive (EU) 2017/593',
+  },
+  regime: { key: 'securities', kind: null, label: 'Securities' },
+  bindingLevel: { key: 'authority_regulation', kind: null, label: 'FI regulation' },
+  binding: true,
+  dutyType: { key: 'governance', kind: null, label: 'Governance' },
+  productScope: 'Third-party research',
+  triggerFrequency: 'Annual assessment from 1 October 2026',
+  retention: '5 years',
+  sanctionExposure: 'FI remark, warning or sanction fee',
+  tags: [{ key: 'research', kind: null, label: 'Research' }],
+  scope: [
+    { dimension: { key: 'service_type', kind: null, label: 'Service' }, terms: [{ key: 'advice', kind: null, label: 'Advice' }], allSelected: false },
+    { dimension: { key: 'client_category', kind: null, label: 'Client category' }, terms: [], allSelected: false },
+  ],
+  inFootprint: true,
+  outsideReason: [],
+  summary: en,
+  translations: [sv, en],
+  version: { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null },
+  versions: [
+    { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null },
+    { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' }, effectiveTo: null, approvedAt: '2026-09-17T14:02:11Z' },
+  ],
+  related: [
+    {
+      id: 'ob-2',
+      title: { text: 'Disclose all costs and charges', language: 'en', isOriginal: true, isMachine: false },
+      instrument: { key: 'fffs-2017-2', shortName: 'FFFS 2017:2' },
+      relation: { key: 'related', kind: null, label: 'Related' },
+      binding: true,
+    },
+  ],
+  provenance: {
+    sourceUrl: 'https://www.fi.se/',
+    sourceLabel: 'FFFS 2017:2, 9 kap. 6 §',
+    lastVerifiedAt: '2026-06-30T07:12:44Z',
+    verifiedBy: null,
+    createdAt: '2026-03-12T08:45:03Z',
+    createdOrigin: 'agent',
+    createdModel: 'agent pipeline 0.3',
+  },
+};
+
+const ME = {
+  user: { id: 'u1', name: 'Sara', locale: 'en' },
+  tenant: { timezone: 'Europe/Stockholm' },
+  permissions: ['library.read', 'problems.report'],
+  enrolmentPending: false,
+};
+
+function renderIn(node: ReactNode) {
+  const { wrapper } = queryWrapper();
+  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
+  return render(<Wrapper>{<LocaleProvider locale="en">{node}</LocaleProvider>}</Wrapper>);
+}
+
+function serve(answer: ObligationDetail | number) {
+  return installAdapter((sent) => {
+    if (sent.path === '/api/v1/me') return { status: 200, data: ME };
+    if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
+    return { status: 200, data: answer };
+  });
+}
+
+describe('the language chips', () => {
+  it('labels the original as the original and offers the reader a language the version does not hold', () => {
+    expect(languageChoices([sv, en], 'en', 'en', t)).toEqual([
+      { language: 'sv', label: 'Swedish, original', selected: false, hasText: true },
+      { language: 'en', label: 'English', selected: true, hasText: true },
+    ]);
+    // A Swedish reader of a record with no Swedish text still gets a chip, and
+    // it holds none. The names are in the reader's own language, not the text's.
+    expect(languageChoices([en], 'en', 'sv', createT('sv'))).toEqual([
+      { language: 'en', label: 'engelska', selected: true, hasText: true },
+      { language: 'sv', label: 'svenska', selected: false, hasText: false },
+    ]);
+    expect(languageChoices([], 'en', 'en', t)).toEqual([{ language: 'en', label: 'English', selected: true, hasText: false }]);
+  });
+
+  it('finds the text of a language, and the original to go back to', () => {
+    expect(textIn([sv, en], 'sv')).toEqual(sv);
+    expect(textIn([sv, en], 'fi')).toBeNull();
+    expect(originalLanguage([en, sv])).toBe('sv');
+    // No row says it is the original: the first one stands in for it.
+    expect(originalLanguage([en])).toBe('en');
+    expect(originalLanguage([])).toBeNull();
+  });
+});
+
+describe('ObligationScreen', () => {
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+  });
+
+  it('shows the header slots in order, the duty, its scope and where it comes from', async () => {
+    serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+
+    // Instrument, regime, binding level: brand, information, information (INV-S3).
+    const header = document.querySelectorAll('[data-header-pills] [data-pill]');
+    expect([...header].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
+      ['FFFS 2017:2', 'brand'],
+      ['Securities', 'information'],
+      ['Binding', 'information'],
+    ]);
+
+    // Scope: a brand pill per term, and plain words where the record restricts nothing.
+    const scope = document.querySelector('[data-scope-panel]') as HTMLElement;
+    expect(within(scope).getByText('Advice')).toHaveAttribute('data-pill', 'brand');
+    expect(within(scope).getByText('Not client-specific')).toBeInTheDocument();
+    expect(within(scope).getByText('Third-party research')).toBeInTheDocument();
+    expect(within(scope).getByText('Research')).toHaveAttribute('data-pill', 'brand');
+
+    const duty = document.querySelector('[data-duty-panel]') as HTMLElement;
+    expect(within(duty).getByText('Governance')).toBeInTheDocument();
+    expect(within(duty).getByText('5 years')).toBeInTheDocument();
+
+    // Provenance: the source link, the verified date with no name, the draft's origin.
+    const source = screen.getByRole('link', { name: 'FFFS 2017:2, 9 kap. 6 §' });
+    expect(source).toHaveAttribute('href', 'https://www.fi.se/');
+    expect(source).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(document.querySelector('[data-last-verified]')?.textContent).toBe('30 Jun 2026');
+    expect(screen.getByText(/agent pipeline 0\.3, through proposal review/)).toBeInTheDocument();
+
+    // Versions and the duties filed beside it.
+    expect(document.querySelectorAll('[data-version-row]')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: 'Disclose all costs and charges' })).toHaveAttribute('href', '/inventory/obligations/ob-2');
+
+    // Nothing on the card claims the duty applies here, or that the bank complies.
+    expect(document.querySelectorAll('[data-pending-panel]')).toHaveLength(2);
+  });
+
+  it('labels the machine translation and puts the original back behind a chip', async () => {
+    serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+
+    expect(screen.getByText('Machine translation from Swedish. The original is authoritative.')).toBeInTheDocument();
+    expect(document.querySelectorAll('[data-language-chips] button')).toHaveLength(2);
+    expect(document.querySelector('[data-legal-text] [lang="en"]')?.textContent).toBe(en.text);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Swedish, original' }));
+    await waitFor(() => expect(document.querySelector('[data-legal-text] [lang="sv"]')?.textContent).toBe(sv.text));
+    // The original carries no label of its own.
+    expect(screen.queryByText(/Machine translation from/)).not.toBeInTheDocument();
+  });
+
+  it('says so when the version holds no text in the reader\'s language, and offers the original', async () => {
+    serve({ ...research, summary: sv, translations: [sv] });
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'English' }));
+    expect(await screen.findByText('No English text yet')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'Show the original' }));
+    await waitFor(() => expect(document.querySelector('[data-legal-text] [lang="sv"]')?.textContent).toBe(sv.text));
+  });
+
+  it('reads a record with no title, no regime, no lineage and nobody named as verifier', async () => {
+    serve({
+      ...research,
+      title: null,
+      regime: null,
+      productScope: '',
+      triggerFrequency: '',
+      retention: '',
+      sanctionExposure: '',
+      tags: [],
+      related: [],
+      versions: [],
+      instrument: { ...research.instrument, name: null, implementsNote: '' },
+      provenance: { ...research.provenance, lastVerifiedAt: null, createdOrigin: 'user', createdModel: '' },
+    });
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Third-party payments' });
+    expect(screen.queryByText('Securities')).not.toBeInTheDocument();
+    expect(screen.getByText('Not verified yet')).toBeInTheDocument();
+    expect(screen.getByText('The library files no other duty beside this one.')).toBeInTheDocument();
+    expect(screen.getByText(/^12 Mar 2026.*through proposal review$/)).toBeInTheDocument();
+  });
+
+  it('renders Not found for an id this bank cannot read, and the error state otherwise', async () => {
+    serve(404);
+    const gone = renderIn(<ObligationScreen obligationId="ob-1" />);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Not found' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Inventory' })).toHaveAttribute('href', '/inventory');
+    gone.unmount();
+
+    resetApiForTests();
+    tokenStore.set('tok');
+    serve(500);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    expect(await screen.findByText('Could not load this obligation')).toBeInTheDocument();
+  });
+
+  it('shows the loading state while the card is on its way', () => {
+    serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    expect(document.querySelector('[data-loading-state]')).toBeInTheDocument();
+  });
+});

@@ -343,9 +343,15 @@ test.describe('taxonomy journeys', () => {
       await adviceChip(page).click();
       const draft = page.locator('[data-draft-preview]');
       await expect(draft.getByText('Your change: Switch off Advice')).toBeVisible();
-      await expect(draft.locator('[data-preview-side="hides"]').getByText('Hides')).toBeVisible();
+      const hides = draft.locator('[data-preview-side="hides"]');
+      await expect(hides.getByText('Hides')).toBeVisible();
       await expect(draft.locator('[data-preview-side="reveals"]').getByText('Reveals')).toBeVisible();
       await expect(draft.getByText('Loading…')).toHaveCount(0);
+      // J-6: the preview counts what the change would take away, and the count
+      // is not zero — one seeded obligation reaches this bank through Advice
+      // alone. Counts only: the preview never names the records.
+      await expect(hides.getByText(/^[1-9]\d* obligations?$/)).toBeVisible();
+      await expect(hides.getByText('Nothing.')).toHaveCount(0);
       await draft.getByRole('button', { name: 'Send for approval' }).click();
       await expect(page.getByText('Sent for approval.')).toBeVisible();
       const banner = page.locator('[data-pending-request]');

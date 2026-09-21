@@ -19,5 +19,11 @@
   "version.inForceUntil": "In force until {to}",
   "version.inForceRange": "In force {from} to {to}",
   "legal.sectionSign": "§",
-  "legal.machineTranslation": "Machine translation from {language}. The original is authoritative."
+  "legal.machineTranslation": "Machine translation from {language}. The original is authoritative.",
+  "library.languageOriginal": "{language}, original",
+  "library.noTextTitle": "No {language} text yet",
+  "library.noTextBody": "Choose one of the languages above to read what the library holds.",
+  "library.showOriginal": "Show the original",
+  "library.lastVerifiedBy": "{date} by {name}",
+  "library.notVerifiedYet": "Not verified yet"
 }
