@@ -64,11 +64,15 @@ class SearchContractTests(SearchApiTestCase):
     """Every search operation says not_built behind its own gate (plan rule 3)."""
 
     # -- the reader's three routes ------------------------------------------------------
-    def test_search_answers_not_built_for_a_reader(self) -> None:
+    def test_search_is_built_and_runs_behind_the_readers_gate(self) -> None:
+        # `POST /search` answers for real since `c7-hybrid-search-core`; what it finds is
+        # proved in tests_hybrid.py and in SRC-S1 to SRC-S3. What belongs here is that the
+        # gate passed and the logic ran: this principal's company does not exist, and a
+        # tenant read answers a company it cannot find with 404, never 403.
         with stub_session(user_principal(permissions={perms.SEARCH_USE}, tenant_id=uuid.uuid4())):
             response = self.post(SEARCH, SEARCH_BODY, SESSION_HEADERS)
-        self.assertEqual(response.status_code, 501)
-        self.assertEqual(response.json()["code"], "not_built")
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["code"], "not_found")
 
     def test_answer_feedback_answers_not_built_for_a_reader(self) -> None:
         with stub_session(user_principal(permissions={perms.SEARCH_USE}, tenant_id=uuid.uuid4())):
@@ -191,8 +195,10 @@ class SearchRequestValidationTests(SearchApiTestCase):
                 {"q": "custody", "filters": {"jurisdiction": "se", "dutyType": "reporting"}},
                 SESSION_HEADERS,
             )
-        self.assertEqual(response.status_code, 501)
-        self.assertEqual(response.json()["code"], "not_built")
+        # Past validation and into the logic, which then cannot find this principal's
+        # company; a filter the contract did not name would have been refused at 422.
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["code"], "not_found")
 
 
 class SearchOperationsAreRegisteredTests(TestCase):

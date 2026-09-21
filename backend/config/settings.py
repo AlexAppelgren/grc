@@ -379,6 +379,36 @@ CELERY_BEAT_SCHEDULE["search-embed-backlog"] = {
 }
 
 # ---------------------------------------------------------------------------------------
+# ===== SRC-01, SRC-02 the fused hybrid query (apps/search/hybrid.py) =====================
+# How the keyword leg and the vector leg are weighed against each other, how far down each
+# of them a row still counts as found, and how much text a hit shows. Each is a lever on
+# retrieval quality, so each is a setting the evaluation gate can be re-run against
+# (backend/scripts/search_eval.py) rather than a number in the query.
+#
+# The rerank window is not here: `RERANKER_TOP_K` above is already "how many fused hits the
+# reranker is given", and a second name for the same number is a way for the two to drift.
+# ---------------------------------------------------------------------------------------
+# Reciprocal rank fusion adds 1/(k + rank) per leg. k is how much a lower rank still counts:
+# 60 is the constant the method was published with, and it means the difference between
+# ranks 1 and 2 is worth more than the whole tail.
+SEARCH_RRF_K = env_int("SEARCH_RRF_K", 60)
+# How deep each leg reaches. A row ranked below this by a leg was not found by that leg, so
+# it neither scores nor says it matched that way. Raising it widens the answer and slows the
+# fusion; lowering it makes a long tail unreachable.
+SEARCH_RETRIEVAL_DEPTH = env_int("SEARCH_RETRIEVAL_DEPTH", 50)
+# The least cosine similarity that counts as a concept match. The vector leg always has a
+# nearest neighbour, however far away, so without a floor every query would report every
+# embedded chunk as a concept hit and "matched by meaning" would mean nothing. Half is
+# where the mock embedder separates the two things it measures: a text that shares a
+# concept with the question scores well above it, and one that merely repeats a few of its
+# characters — an identifier and a reference number are the common case — scores below.
+# It is re-tuned against the model D-09 chooses, whose similarities are on its own scale.
+SEARCH_CONCEPT_SCORE_FLOOR = float(env_str("SEARCH_CONCEPT_SCORE_FLOOR", "0.5"))
+# The most of a hit's text a snippet shows, cut around what matched. Long enough to judge a
+# hit, short enough that a page of twenty is a page and not the library.
+SEARCH_SNIPPET_CHARS = env_int("SEARCH_SNIPPET_CHARS", 240)
+
+# ---------------------------------------------------------------------------------------
 # ===== INV-04 "show what changed" (apps/library/logic.py sentence_diff) ==================
 # Aligning two versions costs up to the cube of their sentence count when sentences repeat,
 # and the texts come from fetched sources. Above this many sentences on either side the
