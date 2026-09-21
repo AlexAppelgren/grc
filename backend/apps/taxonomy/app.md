@@ -261,11 +261,21 @@ And the database check constraint refuses the row on its own
 ### FP-S4 — Every surface respects the regulatory scope and offers a way to look outside it `@integration` `@e2e` (FP-03)
 ```gherkin
 Given a regulatory scope without "Advice"
-When a user opens the feed, the inventory, the roadmap, the briefing and the reports
+When a user opens the feed, the inventory, the roadmap and the briefing
 Then advice-only records are absent from each
 When they choose "Show outside our scope" on the inventory
 Then the advice-only records appear marked as outside our scope
 ```
+Reports are the note below.
+
+> **Note — the reports.** The designed scenario named the reports as a fifth surface. Every
+> report reads the obligation register (`GET /reports/gaps`, `/reports/overdue-actions`,
+> `/reports/summary`), and R1 has no register, so there is no report to open and nothing the
+> scope could hide there yet. Chunk 12 builds the reports and proves the scope on them with
+> its own scenario. The four surfaces above are every one that exists, and the way to look
+> outside the scope is the inventory's, which chunk 3 built: the feed, the roadmap and the
+> briefing carry no such switch on purpose, because a person planning work should see the
+> work that is theirs (chunk 6 defaults).
 
 ### FP-S5 — J-6: regulatory scope change with preview and second-person approval `@e2e` (FP-01, FP-02, FP-03, AC-FP1, J-6)
 ```gherkin

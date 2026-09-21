@@ -115,13 +115,19 @@ def _scope_term_ids() -> ArraySubquery:
     )
 
 
-def _urgency_refs(ids: Collection[uuid.UUID], order: list[str]) -> dict[uuid.UUID, LibraryRef]:
+def urgency_refs(ids: Collection[uuid.UUID], order: list[str]) -> dict[uuid.UUID, LibraryRef]:
     """`{key, kind, label}` per urgency row named by a page, from two queries.
 
     `kind` is null on purpose. An urgency row's own `kind` column is its pill tone, and a
     tone is nobody's to send (NFR-03): the screen takes the tone from the key's fixed
     severity order. This is why the urgency reference is built here rather than through
     `vocabulary_refs()`, which answers the row's stored kind.
+
+    Public because it is the one rule, and every surface that shows an urgency has to obey
+    it: the feed and the change page here, the roadmap and Today's "Coming up" through
+    `apps/home/roadmap.py`, and the public list of dates through `apps/home/calendar.py`.
+    Reaching for `vocabulary_refs()` instead is how a pill tone leaves the API, which it did
+    on the roadmap until 2026-09-21.
     """
     rows = list(Urgency.objects.filter(id__in=ids))
     labels = Labels.for_rows(UrgencyLabel, rows)
@@ -332,6 +338,24 @@ def _decisions_by_case(case_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, list[
     return by_case
 
 
+def change_rows(tenant: Tenant, order: list[str], change_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, WatchChangeRow]:
+    """The feed's own row for each of `change_ids`, keyed by change id so the caller keeps
+    its own order (WAT-02, HOM-01, HOM-02).
+
+    Today's lead card and the weekly briefing show a change as the feed shows it, and one
+    shape has one owner (API_DOCUMENTATION §4b): they choose *which* changes by their own
+    rule and ask here for the rows, rather than building a second feed row that could drift
+    from this one. A change the caller cannot see is simply absent from the answer, which is
+    row-level security doing its job rather than a filter in Python.
+
+    The same fixed number of queries whatever is asked for, exactly as a page of the feed
+    costs (NFR-02).
+    """
+    page = list(_with_own_case(tenant).select_related("change_type").filter(id__in=change_ids))
+    rows = _feed_rows(page, order, matching.footprint_of(tenant.id), matching.restricting_dimensions())
+    return {row.id: row for row in rows}
+
+
 def list_changes(tenant: Tenant, order: list[str], query: WatchChangeQuery) -> WatchChangePage:
     """`GET /changes`: the reforms that reach this bank, with its own case beside each one
     (WAT-02, WAT-03, CAS-01, FP-03). The same number of queries whatever the page size."""
@@ -353,7 +377,7 @@ def _feed_rows(
     classification = _Classification(ids, order)
     cases = [_case_columns(change) for change in page]
     case_ids = [case["id"] for case in cases if case["id"] is not None]
-    urgencies = _urgency_refs(
+    urgencies = urgency_refs(
         {change.suggested_urgency_id for change in page if change.suggested_urgency_id is not None}
         | {case["urgency"] for case in cases if case["urgency"] is not None},
         order,
@@ -462,7 +486,7 @@ def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID) -> WatchC
 
     classification = _Classification([change.id], order)
     case = _case_columns(change)
-    urgencies = _urgency_refs(
+    urgencies = urgency_refs(
         {value for value in (change.suggested_urgency_id, case["urgency"]) if value is not None}, order
     )
     type_refs = vocabulary_refs(ChangeTypeLabel, [change.change_type], order)

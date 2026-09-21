@@ -548,7 +548,15 @@ export interface paths {
          *     A read: it changes nothing, writes no audit row and stores no snapshot. The running week
          *     is computed live every time it is asked for, so it moves as the week does; the snapshot
          *     that a person can reopen is written once, by the weekly job, in the transaction that sends
-         *     the mail. `emailSentAt` is therefore null here until that job has run.
+         *     the mail. `emailSentAt` is therefore null here and stays null while the week is running:
+         *     the mail for a week goes out once the week has ended.
+         *
+         *     The week is the ISO week, Monday to Sunday, in the bank's own time zone, and a change
+         *     belongs to it by when it was first sighted. `items` are the week's changes the bank has
+         *     open work on inside its regulatory scope, most urgent first and then by key date, capped
+         *     at the `BRIEFING_MAX_ITEMS` setting; what is left out stays on the watch feed. `lead` is
+         *     the first of them, chosen by the same rule as the lead card on Today, so the two never
+         *     disagree.
          *
          *     A person's session holding `watch.read` in their own bank. Everything outside the library
          *     facts is this bank's own and is invisible to bleqq, to every other bank and to every model
@@ -557,9 +565,6 @@ export interface paths {
          *
          *     A quiet week is a 200 with an empty `items` and a null `lead`, never a 404. Errors:
          *     `permission_denied` without `watch.read`, `unauthenticated` without a session.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         get: operations["getCurrentBriefing"];
         put?: never;
@@ -589,13 +594,15 @@ export interface paths {
          *     person was told last Monday is what this call answers, which is the whole point of storing
          *     it rather than recomputing it.
          *
+         *     What the snapshot fixes is which changes that week's mail named and in which order. Each
+         *     one is then resolved as it stands now, so a case somebody has since triaged shows its new
+         *     urgency and its new status — the briefing records what a bank was told about, not a
+         *     photograph of a case file. A change sighted after the mail went out never joins it.
+         *
          *     Errors: `not_found` when no briefing was stored for that week, or when the date is not a
          *     Monday, or when the caller may not see it — answered the same way on purpose, so no week
          *     can be probed; `permission_denied` without `watch.read`; `unauthenticated` without a
          *     session; `validation_error` when the path segment is not a calendar date.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         get: operations["getBriefing"];
         put?: never;
@@ -1400,11 +1407,15 @@ export interface paths {
          *     arrives with the obligation register in a later chunk, because "0 gaps" before a register
          *     exists is a false statement about the bank.
          *
+         *     `comingUp` is the first rows of `GET /roadmap` with no filter and `roadmapCount` is how
+         *     many that read holds in all, both from the one roadmap query, so the panel can never name
+         *     a date the roadmap page does not. `lead` is the running ISO week's most urgent open,
+         *     in-scope change, the same one the week's briefing leads with. A week with nothing in scope
+         *     answers a null `lead`, and a bank with nothing dated ahead an empty `comingUp`; neither is
+         *     an error.
+         *
          *     Errors: `permission_denied` when the session lacks `roadmap.read`, and `unauthenticated`
          *     when there is no session.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         get: operations["getHome"];
         put?: never;
@@ -2710,6 +2721,13 @@ export interface paths {
          *     it receive identical answers and nothing here may be read as any bank's judgement or
          *     compliance position.
          *
+         *     A change is here while all three are true: the shared library holds it as active (a
+         *     withdrawn or superseded reform has left, whatever its date still says), it carries a key
+         *     date, and that date is today or later. A change registered before anybody published its
+         *     date is absent rather than listed with an empty one. The window's floor is the server's
+         *     own calendar day and not any bank's, so the list really is one list: a newsletter run
+         *     belongs to no bank, and two banks an hour apart must not read two "public" answers.
+         *
          *     Pages with `limit` and `offset`, 20 rows by default and 100 at most; there is no total, so
          *     a page shorter than `limit` is the end of the list. Nothing dated ahead is a 200 with an
          *     empty array.
@@ -2718,9 +2736,6 @@ export interface paths {
          *     `upcoming:read`, `unauthenticated` when there is neither, and `validation_error` for a
          *     `limit` above the maximum or below 1. A query parameter other than `limit` and `offset`
          *     is ignored rather than refused.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         get: operations["listUpcoming"];
         put?: never;

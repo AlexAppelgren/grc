@@ -70,15 +70,26 @@ Integration scenarios live in `tests_scenarios.py`; E2E scenarios in
 Stubs stay skipped until the feature lands; never delete a scenario without
 updating this file.
 
-### HOM-S1 — Today shows the next dates, the lead item, decisions, standing and source health `@integration` `@e2e` (HOM-01)
+### HOM-S1 — Today shows the next dates, the lead item, what needs a decision and source health `@integration` `@e2e` (HOM-01)
 ```gherkin
-Given the seeded tenant with open changes, cases and deadlines
+Given the seeded tenant with open changes and cases
 When a user opens Today
 Then the "Coming up" list shows the next dates in order with urgency pills
 And the lead change carries the brand pill "Lead"
-And "Where we stand" shows the compliance standing counts and "Source coverage" shows source health
+And "Decide now" shows the queue counts the reader's own permissions unlock
+And "Source coverage" shows how many sources were checked and which ones failed
+And a reader without watch.read gets the page with no lead and no source panel, never a 403
 And the API answered from one fan-out of independent calls, none chained
 ```
+Where the bank stands is the note below.
+
+> **Note — where we stand on Today.** The standing panel counts obligations that apply, that
+> the bank complies with and that it has gaps against. All three are read from the obligation
+> register, and `tenant_obligation` does not exist in R1, so a panel built now could only show
+> zeros — and "0 gaps" before a register exists is a false statement about a bank's compliance,
+> shown on the first screen a compliance officer opens. `c8-home-register-feeds` adds the panel
+> with the register it reads (parallel plan ruling 20). What needs a decision does exist: it is
+> the `counts` object on `GET /me` (D-23), which `f03-T48` builds, so one number has one source.
 
 ### HOM-S2 — The same short list appears on a phone `@e2e` (HOM-01)
 ```gherkin

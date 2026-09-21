@@ -94,7 +94,15 @@ TENANT_ONLY_ROUTES = [
 # proved here like every other route's; what they answer behind the gate is proved by the
 # module that built them. One line per task, deleted from nowhere: the list only grows
 # until it holds all nine and the stub half of this file goes with the last one.
-BUILT_OPERATIONS = frozenset({"getRoadmap"})  # c6-roadmap-backend; behaviour in tests_roadmap.py
+BUILT_OPERATIONS = frozenset(
+    {
+        "getRoadmap",  # c6-roadmap-backend; behaviour in tests_roadmap.py
+        "getHome",  # c6-home-backend; behaviour in tests_home.py
+        "listUpcoming",  # c6-upcoming-calendar-backend; behaviour in tests_calendar.py
+        "getCurrentBriefing",  # c6-briefing-backend; behaviour in tests_briefing.py
+        "getBriefing",  # c6-briefing-backend; behaviour in tests_briefing.py
+    }
+)
 DECLARED_OPERATIONS = {
     ("GET", "/home"): "getHome",
     ("GET", "/briefings/current"): "getCurrentBriefing",
@@ -205,7 +213,7 @@ class HomeRouteGates(TestCase):
         self.assertEqual((settings.API_PAGE_SIZE_DEFAULT, settings.API_PAGE_SIZE_MAX), (20, 100))
         with stub_session(user_principal(permissions={perms.ROADMAP_READ}, tenant_id=uuid.uuid4())):
             at_the_cap = self.client.get(f"{UPCOMING}?limit=100", **AS_SESSION)
-        self.assertEqual(at_the_cap.status_code, 501, "the maximum itself is accepted and reaches the stub")
+        self.assertEqual(at_the_cap.status_code, 200, "the maximum itself is accepted rather than refused")
 
     def test_current_is_matched_as_itself_and_not_parsed_as_a_week(self) -> None:
         """`/briefings/current` is registered before `/briefings/{weekStart}`, so the word is
@@ -214,9 +222,15 @@ class HomeRouteGates(TestCase):
         snapshot read starts answering 404 for a week nobody was sent."""
         with stub_session(user_principal(permissions={perms.WATCH_READ}, tenant_id=uuid.uuid4())):
             current = self.client.get(CURRENT_BRIEFING, **AS_SESSION)
-            week = self.client.get(BRIEFING, **AS_SESSION)
-        self.assertEqual((current.status_code, week.status_code), (501, 501))
-        self.assertNotEqual(current.json()["detail"], week.json()["detail"])
+            not_a_week = self.client.get("/api/v1/briefings/this-week", **AS_SESSION)
+        # A path segment the date parser refuses answers 422; `current` never does, because
+        # it is matched by the route registered before the dated one and is never parsed.
+        self.assertEqual(not_a_week.status_code, 422)
+        self.assertNotEqual(current.status_code, 422)
+        # Both stop at the caller's bank here, which is the gate in front of either read;
+        # that the two reach different functions is proved in `tests_briefing.py`, where a
+        # real bank gets a running week from one and a 404 for an unsent week from the other.
+        self.assertEqual(current.status_code, 404)
 
 
 class HomeRouteStubs(TestCase):
@@ -236,9 +250,11 @@ class HomeRouteStubs(TestCase):
                 with self.subTest(operation=name):
                     self.assert_not_built(_call(self.client, method, url, body, AS_SESSION))
 
-    def test_a_key_with_upcoming_read_reaches_the_stub(self) -> None:
+    def test_a_key_with_upcoming_read_reaches_the_list(self) -> None:
+        """The scope is the whole of the gate: a key holding it reads the public list, and
+        what it gets back is proved in `tests_calendar.py`."""
         with stub_api_key(agent_principal(scopes={perms.SCOPE_UPCOMING_READ})):
-            self.assert_not_built(self.client.get(UPCOMING, **AS_KEY))
+            self.assertEqual(self.client.get(UPCOMING, **AS_KEY).status_code, 200)
 
     def test_the_ics_route_answers_the_same_501_for_every_token_and_reads_none(self) -> None:
         """The token is the credential, so the route must say nothing about any token while

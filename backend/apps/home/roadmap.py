@@ -45,11 +45,12 @@ from apps.home.schemas import (
     RoadmapItemType,
 )
 from apps.library.models import ObligationTitle
-from apps.library.reading import localized, today_for, vocabulary_refs
+from apps.library.reading import localized, today_for
 from apps.library.schemas import LibraryRef
 from apps.shared.models import Tenant
-from apps.taxonomy.models import CaseStatusCategory, UrgencyLabel
+from apps.taxonomy.models import CaseStatusCategory
 from apps.watch.models import ChangeObligation
+from apps.watch.reading import urgency_refs
 from apps.watch.schemas import CaseCategory, Origin, WatchObligationLink
 
 # What this release puts on the roadmap: a regulatory change's own key date. Both are
@@ -121,9 +122,14 @@ def _item(case: ChangeCase, urgency: LibraryRef, obligations: list[WatchObligati
 
 
 def _items(cases: Sequence[ChangeCase], order: list[str]) -> list[HomeRoadmapItem]:
-    """The rows as the screen reads them. Two queries however many items there are: one
-    for every urgency label on the page, one for the confirmed obligation links."""
-    urgencies = vocabulary_refs(UrgencyLabel, (case.urgency for case in cases), order)
+    """The rows as the screen reads them. Four queries however many items there are: the
+    urgency rows named by the page and their labels, the confirmed obligation links, and
+    those obligations' titles."""
+    # Through the watch app's own rule, never `vocabulary_refs()`: an urgency row's `kind`
+    # column is its pill tone, and a tone is nobody's to send (NFR-03). Reading it the other
+    # way put the tone on every roadmap item until 2026-09-21, against this module's own
+    # documented example.
+    urgencies = urgency_refs({case.urgency_id for case in cases}, order)
     links = _obligation_links([case.change_id for case in cases], order)
     return [_item(case, urgencies[case.urgency_id], links.get(case.change_id, [])) for case in cases]
 

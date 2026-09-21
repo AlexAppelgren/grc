@@ -3,10 +3,17 @@ lists the action, no business logic (playbook 4.1).
 
 Nine operations, all nine declared here at once, each calling a named function in the module
 that owns it and answering 501 `not_built` from that function until the task which builds it
-lands (chunk 6 plan rule 3). `GET /roadmap` is built; the rest still answer 501. Declaring
-the whole contract first is deliberate: the four screens and the newsletter agent are built
-against it, and a screen that calls a stub is better than a screen built against a shape
-nobody committed to.
+lands (chunk 6 plan rule 3). Declaring the whole contract first is deliberate: the four
+screens and the newsletter agent are built against it, and a screen that calls a stub is
+better than a screen built against a shape nobody committed to.
+
+Five are built: Today, the roadmap, the public list of upcoming dates and the two briefing
+reads. The four calendar-feed operations still answer 501, and not because nobody has got to
+them: `getCalendarIcs` was declared with the token in the path, and D-52 with ADR 0045
+decided the address is `/api/v1/calendar/feed.ics?token=<prefix>.<secret>` and that the path
+form is not built. The contract has to carry the decided shape — a prefix beside the hash, a
+per-person cap, a recent sign-in or step-up on creation, an idle expiry and automatic
+revocation — before the logic behind it can be written.
 
 Two gates here serve more than one principal or no principal at all, so they are logic
 gates listed in `UNGATED_BY_DESIGN` and still answer the structured 403 with
@@ -156,13 +163,23 @@ def get_home(request: HttpRequest) -> Any:
     arrives with the obligation register in a later chunk, because "0 gaps" before a register
     exists is a false statement about the bank.
 
+    `comingUp` is the first rows of `GET /roadmap` with no filter and `roadmapCount` is how
+    many that read holds in all, both from the one roadmap query, so the panel can never name
+    a date the roadmap page does not. `lead` is the running ISO week's most urgent open,
+    in-scope change, the same one the week's briefing leads with. A week with nothing in scope
+    answers a null `lead`, and a bank with nothing dated ahead an empty `comingUp`; neither is
+    an error.
+
     Errors: `permission_denied` when the session lacks `roadmap.read`, and `unauthenticated`
     when there is no session.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return logic.home_today()
+    tenant = caller_tenant(request)
+    who = principal(request)
+    return logic.home_today(
+        tenant,
+        language_order(request, tenant=tenant),
+        watch_reader=who.has_permission(perms.WATCH_READ),
+    )
 
 
 # ---------------------------------------------------------------------------------------
@@ -188,7 +205,15 @@ def get_current_briefing(request: HttpRequest) -> Any:
     A read: it changes nothing, writes no audit row and stores no snapshot. The running week
     is computed live every time it is asked for, so it moves as the week does; the snapshot
     that a person can reopen is written once, by the weekly job, in the transaction that sends
-    the mail. `emailSentAt` is therefore null here until that job has run.
+    the mail. `emailSentAt` is therefore null here and stays null while the week is running:
+    the mail for a week goes out once the week has ended.
+
+    The week is the ISO week, Monday to Sunday, in the bank's own time zone, and a change
+    belongs to it by when it was first sighted. `items` are the week's changes the bank has
+    open work on inside its regulatory scope, most urgent first and then by key date, capped
+    at the `BRIEFING_MAX_ITEMS` setting; what is left out stays on the watch feed. `lead` is
+    the first of them, chosen by the same rule as the lead card on Today, so the two never
+    disagree.
 
     A person's session holding `watch.read` in their own bank. Everything outside the library
     facts is this bank's own and is invisible to bleqq, to every other bank and to every model
@@ -197,11 +222,9 @@ def get_current_briefing(request: HttpRequest) -> Any:
 
     A quiet week is a 200 with an empty `items` and a null `lead`, never a 404. Errors:
     `permission_denied` without `watch.read`, `unauthenticated` without a session.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return briefing_reads.current_briefing()
+    tenant = caller_tenant(request)
+    return briefing_reads.current_briefing(tenant, language_order(request, tenant=tenant))
 
 
 @router.get(
@@ -225,15 +248,18 @@ def get_briefing(request: HttpRequest, week_start: datetime.date = Path(..., des
     person was told last Monday is what this call answers, which is the whole point of storing
     it rather than recomputing it.
 
+    What the snapshot fixes is which changes that week's mail named and in which order. Each
+    one is then resolved as it stands now, so a case somebody has since triaged shows its new
+    urgency and its new status — the briefing records what a bank was told about, not a
+    photograph of a case file. A change sighted after the mail went out never joins it.
+
     Errors: `not_found` when no briefing was stored for that week, or when the date is not a
     Monday, or when the caller may not see it — answered the same way on purpose, so no week
     can be probed; `permission_denied` without `watch.read`; `unauthenticated` without a
     session; `validation_error` when the path segment is not a calendar date.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return briefing_reads.briefing_for_week()
+    tenant = caller_tenant(request)
+    return briefing_reads.briefing_for_week(tenant, language_order(request, tenant=tenant), week_start)
 
 
 # ---------------------------------------------------------------------------------------
@@ -310,6 +336,13 @@ def list_upcoming(request: HttpRequest, page: Query[HomeUpcomingQuery]) -> Any:
     it receive identical answers and nothing here may be read as any bank's judgement or
     compliance position.
 
+    A change is here while all three are true: the shared library holds it as active (a
+    withdrawn or superseded reform has left, whatever its date still says), it carries a key
+    date, and that date is today or later. A change registered before anybody published its
+    date is absent rather than listed with an empty one. The window's floor is the server's
+    own calendar day and not any bank's, so the list really is one list: a newsletter run
+    belongs to no bank, and two banks an hour apart must not read two "public" answers.
+
     Pages with `limit` and `offset`, 20 rows by default and 100 at most; there is no total, so
     a page shorter than `limit` is the end of the list. Nothing dated ahead is a 200 with an
     empty array.
@@ -318,13 +351,10 @@ def list_upcoming(request: HttpRequest, page: Query[HomeUpcomingQuery]) -> Any:
     `upcoming:read`, `unauthenticated` when there is neither, and `validation_error` for a
     `limit` above the maximum or below 1. A query parameter other than `limit` and `offset`
     is ignored rather than refused.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: logic-gate (roadmap.read in a tenant, or a key with upcoming:read).
     require_upcoming_reader(request)
-    return calendar_reads.list_upcoming()
+    return calendar_reads.list_upcoming(language_order(request), page)
 
 
 @router.get(

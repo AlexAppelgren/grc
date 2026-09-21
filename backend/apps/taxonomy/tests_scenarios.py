@@ -27,6 +27,9 @@ from django.db import IntegrityError, connection, transaction
 from django.test import Client
 from django.db.models import ForeignKey
 
+import datetime
+
+from apps.cases import testing as cases_build
 from apps.identity.models import TenantRole, User
 from apps.library.models import Jurisdiction, Language, Obligation, ObligationTerm
 from apps.library.seeds import seed_jurisdictions, seed_languages
@@ -39,6 +42,7 @@ from apps.shared.routes import iter_operations
 from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.shared.vocabulary import LibraryVocabulary, TenantVocabulary
+from apps.watch import testing as watch_build
 from apps.taxonomy import tenant_lists_logic
 from apps.taxonomy.models import (
     ApprovalStatus,
@@ -57,6 +61,13 @@ from config.api import api
 APPS_DIR = Path(__file__).resolve().parent.parent
 V1 = "/api/v1"
 INPUT_DELTAS = APPS_DIR.parent.parent / "docs" / "inputs" / "INPUT_DELTAS.md"
+
+# FP-S4's two chunk 6 surfaces are dated, so they need a clock that does not move with the
+# suite (playbook 8.3). At this instant the bank's own day is 1 October 2026, the ISO week
+# it falls in began on Monday 28 September, and both changes were sighted inside it.
+FP_S4_INSTANT = datetime.datetime(2026, 9, 30, 22, 30, tzinfo=datetime.UTC)
+FP_S4_SIGHTED = datetime.datetime(2026, 9, 29, 9, 0, tzinfo=datetime.UTC)
+FP_S4_KEY_DATE = datetime.date(2026, 10, 15)
 
 # Queries per read, measured 2026-09-19 and pinned so an N+1 shows up as a number (playbook
 # 10). Every scenario request starts with the same ten: the scenario client's audit count
@@ -731,11 +742,18 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         """FP-S4
 
         Every surface respects the footprint and offers a way to look outside it (FP-03).
+
+        Two halves. First the rule itself, which every surface calls rather than restating.
+        Then the two surfaces chunk 6 added — the roadmap and the briefing — proved to leave
+        an advice-only record out. The feed and the inventory are proved where they were
+        built, and the "Show outside our scope" switch is the inventory's; the reports are
+        the note under this scenario in app.md, because every one of them reads the
+        obligation register and R1 has none.
         """
         # The backend rule the surfaces apply from chunk 3 on: one function, one SQL mirror,
         # and the dimension flag that says which dimensions restrict. The feed, inventory,
-        # roadmap, briefing and reports call these; the "show outside footprint" switch is the
-        # same query without the predicate.
+        # roadmap and briefing call these; the "show outside footprint" switch is the same
+        # query without the predicate.
         from apps.taxonomy import matching
 
         self._set_footprint(["service_type:custody", "regime:securities"])
@@ -747,6 +765,37 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         outside = set(records) - inside
         self.assertEqual(outside, {"advice-only"})
         self.assertEqual(matching.restricting_dimensions(), {"regime", "account_type", "legal_entity", "service_type", "client_category", "jurisdiction", "licensed_activity", "product_type"})
+
+        # The roadmap and the briefing: one dated change inside the scope and one outside it,
+        # both sighted this week and both still open, so the only thing separating them is
+        # the footprint verdict the case carries.
+        watch_build.seed_watch_reference()
+        ours = watch_build.change(
+            title="FI adopts amended rules on paying for investment research",
+            key_date=FP_S4_KEY_DATE,
+            key_date_label="In force",
+            first_seen_at=FP_S4_SIGHTED,
+        )
+        theirs = watch_build.change(
+            title="Advice-only guidance on suitability",
+            key_date=FP_S4_KEY_DATE,
+            key_date_label="In force",
+            first_seen_at=FP_S4_SIGHTED,
+        )
+        cases_build.case(self.tenant, ours)
+        cases_build.case(self.tenant, theirs, footprint_match=False)
+        # The session is minted at the frozen instant too: one created at the real clock
+        # would be days old to the request and answer 401 (playbook 8.3).
+        with mock.patch("django.utils.timezone.now", return_value=FP_S4_INSTANT):
+            headers = sign_in(self.reader, tenant=self.tenant)
+            roadmap = self._get("/roadmap", headers)
+            briefing = self._get("/briefings/current", headers)
+        for name, response in (("roadmap", roadmap), ("briefing", briefing)):
+            with self.subTest(surface=name):
+                self.assertEqual(response.status_code, 200, response.content)
+                titles = [item["title"] for item in response.json()["items"]]
+                self.assertIn(ours.title, titles)
+                self.assertNotIn(theirs.title, titles)
 
     def test_fp_s6(self) -> None:
         """FP-S6

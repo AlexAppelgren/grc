@@ -60,12 +60,13 @@ THIS_QUARTER = D(2026, 10, 15)  # 2026-Q4
 NEXT_QUARTER = D(2027, 1, 20)  # 2027-Q1
 GONE = D(2026, 9, 29)  # yesterday in both zones
 
-# Four queries, measured 2026-09-21 and pinned so an N+1 shows up as a number (playbook 10):
-# the cases with their change and urgency (1); one label query for every urgency on the page
-# (1); the confirmed obligation links of every change on the page with their obligation and
+# Five queries, measured 2026-09-21 and pinned so an N+1 shows up as a number (playbook 10):
+# the cases with their change and urgency (1); the urgency rows on the page and their labels
+# (2, through the watch app's own rule, which is what keeps the pill tone out of the answer);
+# the confirmed obligation links of every change on the page with their obligation and
 # instrument (1); the titles of those obligations (1). None of them grows with the number of
 # items, which is what the test below demands.
-ROADMAP_QUERIES = 4
+ROADMAP_QUERIES = 5
 
 
 def a_change(*, key_date: datetime.date | None, title: str = "A reform", urgency: str = "act_now") -> RegulatoryChange:
@@ -144,6 +145,11 @@ class RoadmapContents(TestCase):
         )
         self.assertEqual((item.status, item.change_id), ("new", self.soon.change_id))
         self.assertEqual((item.urgency.key, item.urgency.label), ("act_now", "Act now"))
+        # NFR-03: an urgency row's own `kind` column is its pill tone, and a tone is nobody's
+        # to send — the screen takes it from the key's fixed severity order. Reading the
+        # vocabulary the ordinary way answers that column, which put `"kind": "negative"` on
+        # every roadmap item until 2026-09-21, against this module's own documented example.
+        self.assertIsNone(item.urgency.kind)
         self.assertEqual((item.label, item.source_label), ("In force", "Finansinspektionen"))
 
     def test_the_quarter_roster_holds_each_quarter_once_in_date_order(self) -> None:

@@ -195,6 +195,10 @@ CACHES = {
     }
 }
 CELERY_BROKER_URL = REDIS_URL
+# `crontab` is pure Celery and pulls in no Django app, so a beat entry further down this
+# file can name a time of day rather than only an interval in seconds.
+from celery.schedules import crontab  # noqa: E402 settings is read top to bottom, not imported as a package
+
 CELERY_RESULT_BACKEND = None
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_ACKS_LATE = True
@@ -476,6 +480,35 @@ CASE_CREATION_BATCH = env_int("CASE_CREATION_BATCH", 100)
 # ---------------------------------------------------------------------------------------
 SOURCE_STALE_AFTER_CHECKS = env_int("SOURCE_STALE_AFTER_CHECKS", 1)
 SOURCE_STALE_GRACE_HOURS = env_int("SOURCE_STALE_GRACE_HOURS", 24)
+
+# ---------------------------------------------------------------------------------------
+# ===== HOM-01 how long Today's "Coming up" list is (apps/home/logic.py, c6-home-backend) =
+# Today shows the same short list on a 375 px phone and on a desktop, so its length is one
+# number rather than a breakpoint: the screen never decides how much of the roadmap it is
+# allowed to show. Five is what the designed screen holds above the fold on a phone, and
+# the count beside the list says how many more the roadmap has, so nothing is hidden by it.
+# ---------------------------------------------------------------------------------------
+HOME_COMING_UP_ITEMS = env_int("HOME_COMING_UP_ITEMS", 5)
+
+# ---------------------------------------------------------------------------------------
+# ===== HOM-02 the weekly briefing and its mail (apps/home/tasks.py, c6-briefing-backend) =
+# The mail goes out on the bank's own Monday morning and covers the week that has just
+# ended, which is the only moment a week can be summed up; the designed screen says the
+# same ("the weekly email on Monday 07:00"). Both are settings rather than literals because
+# a bank may want its briefing on a Friday afternoon instead, and neither number is a rule.
+# The weekday is Python's: Monday is 0. The hour is the bank's own local hour, which is why
+# the beat entry below runs every hour and the task picks the banks whose clock has just
+# struck it — one schedule serving banks in several time zones.
+# The cap is what one mail and one page can carry without becoming a list nobody reads; the
+# rest of the week stays on the feed, which the briefing links to.
+# ---------------------------------------------------------------------------------------
+BRIEFING_SEND_WEEKDAY = env_int("BRIEFING_SEND_WEEKDAY", 0)
+BRIEFING_SEND_HOUR = env_int("BRIEFING_SEND_HOUR", 7)
+BRIEFING_MAX_ITEMS = env_int("BRIEFING_MAX_ITEMS", 10)
+CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
+    "task": "apps.home.tasks.send_weekly_briefings",
+    "schedule": crontab(minute="0"),
+}
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
