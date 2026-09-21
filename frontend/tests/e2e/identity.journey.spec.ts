@@ -413,6 +413,18 @@ test.describe('identity journeys', () => {
     }
   });
 
+  test.fixme("ID-S20: An agent key is shown once in the console and is bound to its agent", async () => {
+    // pending: the platform agent key routes answer 501 `not_built`.
+    // `c5-platform-agent-keys` (chunk 5) serves GET /agent-keys,
+    // POST /agent-keys and POST /agent-keys/{keyId}/revoke; until it lands
+    // nothing on /console/agent-keys can be driven against the real stack, so
+    // the screen's own half of ID-S20 is proved in
+    // src/components/console/AgentKeysScreen.test.tsx instead. The journey
+    // then reads: a platform admin creates a key bound to Watch sweeper v1,
+    // passes the passkey step-up, sees the plain key once, finds it gone after
+    // a reload, and revokes it.
+  });
+
   test("ID-S26: A denied request answers a structured 403 the UI renders as is", async ({ page, apiGuard }) => {
     // pending: ID-S26 (ID-09) -> built in chunk 1
     allowFreshContext(apiGuard);

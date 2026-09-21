@@ -13,9 +13,9 @@
   "console.sources.filter.anySource": "Alla källor",
   "console.sources.filter.result": "Resultat",
   "console.sources.filter.anyResult": "Alla resultat",
-  "console.sources.cadence.daily": "Dagligen {time}",
-  "console.sources.cadence.weekly": "Veckovis, {day}",
-  "console.sources.cadence.monthly": "Månadsvis, den {day}",
+  "console.sources.cadence.daily": "Kontrolleras dagligen",
+  "console.sources.cadence.weekly": "Kontrolleras varje vecka",
+  "console.sources.cadence.monthly": "Kontrolleras varje månad",
   "console.sources.lastChecked": "Kontrollerad {date}",
   "console.sources.lastFailed": "Hämtning misslyckades {date}",
   "console.sources.paused": "Pausad",
@@ -35,5 +35,9 @@
   "console.sources.coverageEmptyTitle": "Inget kontrollerat ännu",
   "console.sources.coverageEmptyBody": "Varje kontroll en agent gör visas här, med sitt resultat och den körning den hör till.",
   "console.sources.errorTitle": "Kunde inte hämta källorna",
-  "console.sources.coverageErrorTitle": "Kunde inte hämta täckningsloggen"
+  "console.sources.coverageErrorTitle": "Kunde inte hämta täckningsloggen",
+  "console.sources.check.never": "Inte kontrollerad",
+  "console.sources.stale": "Inaktuell",
+  "console.sources.neverChecked": "Ingen kontroll loggad ännu",
+  "console.sources.registryCount": "{count, plural, one {# källa} other {# källor}}"
 }

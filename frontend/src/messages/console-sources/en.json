@@ -13,9 +13,9 @@
   "console.sources.filter.anySource": "Any source",
   "console.sources.filter.result": "Result",
   "console.sources.filter.anyResult": "Any result",
-  "console.sources.cadence.daily": "Daily at {time}",
-  "console.sources.cadence.weekly": "Weekly, {day}",
-  "console.sources.cadence.monthly": "Monthly, the {day}",
+  "console.sources.cadence.daily": "Checked daily",
+  "console.sources.cadence.weekly": "Checked weekly",
+  "console.sources.cadence.monthly": "Checked monthly",
   "console.sources.lastChecked": "Checked {date}",
   "console.sources.lastFailed": "Fetch failed {date}",
   "console.sources.paused": "Paused",
@@ -35,5 +35,9 @@
   "console.sources.coverageEmptyTitle": "Nothing checked yet",
   "console.sources.coverageEmptyBody": "Every check an agent makes appears here, with its result and the run it belongs to.",
   "console.sources.errorTitle": "Could not load the sources",
-  "console.sources.coverageErrorTitle": "Could not load the coverage log"
+  "console.sources.coverageErrorTitle": "Could not load the coverage log",
+  "console.sources.check.never": "Not checked",
+  "console.sources.stale": "Stale",
+  "console.sources.neverChecked": "No check logged yet",
+  "console.sources.registryCount": "{count, plural, one {# source} other {# sources}}"
 }

@@ -1,20 +1,15 @@
 'use client';
 
 import { AdminGate } from '@/components/admin/AdminGate';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { PageHead } from '@/components/ui/PageHead';
-import { useT } from '@/shared/i18n/LocaleProvider';
+import { ChangeFactsScreen } from '@/components/console/ChangeFactsScreen';
 
-// Change facts (ADM-02, WAT-03): the head and the empty state, so the rail
-// entry has somewhere to land. The list that reads GET /console/changes is
-// c5-fe-console-change-facts and the confirmation view follows it; both
-// replace this file.
+// Change facts (ADM-02, WAT-03): the queue a library editor works. The gate is
+// the registry's own entry; the server's 403 on `GET /console/changes`, with
+// `proposals.review` named, stays the enforcer.
 export default function ConsoleChangeFactsPage() {
-  const t = useT();
   return (
     <AdminGate id="console-change-facts">
-      <PageHead title={t('console.changeFacts.title')} lede={t('console.changeFacts.lede')} />
-      <EmptyState title={t('console.changeFacts.emptyTitle')} body={t('console.changeFacts.emptyBody')} />
+      <ChangeFactsScreen />
     </AdminGate>
   );
 }

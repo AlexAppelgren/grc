@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 import { destinations, type Destination } from '@/shared/navigation/registry';
 
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, inviteLinkFrom, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
+import { allowFreshContext, BACKEND_URL, inviteLinkFrom, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
 // governance: the @e2e scenarios from backend/apps/governance/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -142,17 +142,31 @@ test.describe('governance journeys', () => {
     // pending: AUD-S5 (AUD-03)
   });
 
-  test("ADM-S4: The platform console offers each surface to the platform role that owns it", async ({ page, apiGuard }) => {
+  test("ADM-S4: The platform console offers each surface to the platform role that owns it", async ({ page, request, apiGuard }) => {
     // The two platform roles, each walking the whole console. No destination is
     // named here: the registry is the list, and the closing assertion is that it
     // divides cleanly between the two roles with nothing left over.
     allowFreshContext(apiGuard);
+    // Agent keys is the one chunk 5 console screen whose reads are not served
+    // yet: `c5-platform-agent-keys` builds them and each answers 501 until it
+    // does. The screen itself is walked like every other destination.
+    apiGuard.allow(/\/agent-keys$/, 501, 'the agent key reads are not built yet (c5-platform-agent-keys)');
     const editor = await consoleDestinationsOf(page, LOGINS.editor);
     await signOut(page);
     const platform = await consoleDestinationsOf(page, LOGINS.platform);
 
     expect(editor.filter((id) => platform.includes(id))).toEqual([]);
     expect([...editor, ...platform].sort()).toEqual(CONSOLE_DESTINATIONS.map((d) => d.id).sort());
+
+    // A bank's report that a library record looks wrong stays inside that bank
+    // (Alex, 2026-09-20, item 3): the console offers no surface for one, and no
+    // console route serves one. Asserted directly against the API, so it cannot
+    // come back unnoticed. The request fixture is used on purpose — the guard
+    // watches the page, and these 404s are the point of the assertion.
+    expect(CONSOLE_DESTINATIONS.map((d) => d.id)).not.toContain('console-problem-reports');
+    for (const path of ['/api/v1/console/problem-reports', '/api/v1/console/reports']) {
+      expect((await request.get(`${BACKEND_URL}${path}`)).status(), `${path} must not exist`).toBe(404);
+    }
   });
 
   test.fixme("ADM-S5: System health names what is wrong", async () => {

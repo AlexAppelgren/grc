@@ -172,11 +172,25 @@ And creating a proposal, whose caller a logic gate decides, 403s the platform ad
 And each console destination the other role holds is absent from that role's navigation
 ```
 
-The surfaces this scenario does not yet reach, each with what builds it: sources
-(chunk 5), evaluation sets (chunk 7), agent definitions (chunk 11), system health
-(chunk 14), support access (TEN-S6), plans (NFR-S17 to S19), and language and
-jurisdiction edits (their card; jurisdictions are read-only on the vocabularies
-screen).
+The console the two platform roles now divide between them: a library editor reaches
+the proposal queue, the library vocabularies, Change facts and Sources; a platform
+admin reaches tenants and Agent keys. Each of the five is walked by both roles, so a
+destination one role holds is proved absent from the other's navigation and its
+endpoints are proved to answer 403 with `requiredPermission` named.
+
+**A problem report is not a console surface** (Alex, 2026-09-20, item 3). A bank's
+report that a library record looks wrong stays inside that bank: no bleqq editor, no
+other bank, no agent and no model endpoint reads it, and no console route serves one.
+What closes the loop to the agents instead is the library re-check
+(`c5-library-recheck`): every watch run compares the library records its sources cover
+against those sources and files a correction through the proposal door, which is
+AUD-03's chunk 5 answer. AUD-03's own status cell and AUD-S5 are chunk 4's replan and
+are untouched here.
+
+The surfaces this scenario does not yet reach, each with what builds it: evaluation
+sets (chunk 7), agent definitions and platform runs (chunk 11), system health
+(chunk 14), support access (TEN-S6), plans (NFR-S17 to S19), and languages and
+jurisdictions (R2; jurisdictions are read-only on the vocabularies screen).
 
 ### ADM-S5 — System health names what is wrong `@integration` `@e2e` (ADM-02)
 ```gherkin
