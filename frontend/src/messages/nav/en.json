@@ -23,6 +23,7 @@
   "nav.admin.auditLog": "Audit log",
   "nav.me.passkeys": "My passkeys",
   "nav.me.sessions": "My sessions",
+  "nav.me.calendarFeeds": "My calendar feeds",
   "shell.skipToContent": "Skip to content",
   "shell.signedInAs": "Signed in as",
   "shell.signOut": "Sign out",

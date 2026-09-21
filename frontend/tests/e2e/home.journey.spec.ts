@@ -158,10 +158,51 @@ test.describe('home journeys', () => {
     await expect(page).toHaveURL(/\/watch\//);
   });
 
-  test.fixme("HOM-S5: Upcoming changes are public facts and the calendar feed is revocable", async () => {
-    // pending: HOM-S5 (HOM-04). The calendar feed's contract is being
-    // corrected to a query-token form (q-feed-token); c6-calendar-feeds-screen
-    // builds this journey once it lands.
+  test('HOM-S5: Upcoming changes are public facts and the calendar feed is revocable', async ({ page, apiGuard }) => {
+    // The agent-key half — a key with `upcoming:read` reads `/upcoming` and
+    // finds library facts, no case and no footprint of any bank's — is proved
+    // at the backend (apps/home/tests_scenarios.py::test_hom_s5): an E2E
+    // journey has no way to mint an agent key, and the scenario's own docstring
+    // says what each half rests on. This journey drives the half a person
+    // does: mint an address, prove it serves the roadmap as a calendar, revoke
+    // it, and prove the same address is refused from the next fetch on.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto('/me/calendar-feeds');
+
+    await expect(page.getByRole('heading', { level: 1, name: 'My calendar feeds' })).toBeVisible();
+    await page.getByRole('button', { name: 'Subscribe to calendar feed' }).click();
+
+    const address = await page.locator('[data-feed-address]').innerText();
+    expect(address).toContain('/api/v1/calendar/feed.ics?token=');
+
+    // A calendar client's own fetch: no session, no key, the address alone.
+    const first = await page.evaluate(async (url) => {
+      const response = await fetch(url);
+      return { status: response.status, contentType: response.headers.get('content-type'), body: await response.text() };
+    }, address);
+    expect(first.status).toBe(200);
+    expect(first.contentType ?? '').toContain('text/calendar');
+    expect(first.body).toContain('BEGIN:VCALENDAR');
+    expect(first.body).toContain('BEGIN:VEVENT');
+
+    await page.getByRole('button', { name: 'Done' }).click();
+
+    const row = page.locator('[data-feed-id]').filter({ has: page.getByRole('button', { name: 'Revoke' }) });
+    await expect(row).toHaveCount(1);
+    await row.getByRole('button', { name: 'Revoke' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Revoke this calendar feed?' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Revoke the feed' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(row.getByText('Revoked', { exact: true })).toBeVisible();
+
+    apiGuard.allow(/\/calendar\/feed\.ics/, 404, 'the address was revoked and must be refused from the next fetch on (HOM-S5)');
+    const second = await page.evaluate(async (url) => {
+      const response = await fetch(url);
+      return { status: response.status };
+    }, address);
+    expect(second.status).toBe(404);
   });
 
   test('HOM-S6: A regulatory date on the roadmap wears its urgency as a pill', async ({ page, apiGuard }) => {

@@ -78,6 +78,10 @@ export const destinations: readonly Destination[] = [
   // Account: any signed-in person, from the who panel.
   { id: 'me-passkeys', href: '/me/passkeys', labelKey: 'nav.me.passkeys', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
   { id: 'me-sessions', href: '/me/sessions', labelKey: 'nav.me.sessions', surface: 'tenant', anyOfPermissions: [], group: 'account', parent: ACCOUNT_PARENT },
+  // Any signed-in person who can read the roadmap has feeds (HOM-04): the
+  // same grant `/roadmap` itself needs, so a reader without it never sees an
+  // account page for a feature the server would refuse.
+  { id: 'me-calendar-feeds', href: '/me/calendar-feeds', labelKey: 'nav.me.calendarFeeds', surface: 'tenant', anyOfPermissions: ['roadmap.read'], group: 'account', parent: ACCOUNT_PARENT },
   // The platform console (ADM-02): a destination joins with its page, so none
   // renders "coming soon". The queue takes rank 1 with its page (chunk 4),
   // sources with theirs (chunk 5).

@@ -117,7 +117,7 @@ describe('navigation registry (playbook 6.2)', () => {
 
   it('knows when the current page lives in More, account pages included', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
-    for (const path of ['/roadmap', '/admin/members', '/me/sessions']) {
+    for (const path of ['/roadmap', '/admin/members', '/me/sessions', '/me/calendar-feeds']) {
       expect(isInMore('tenant', all, path)).toBe(true);
     }
     for (const path of ['/', '/watch', '/watch/42']) {
@@ -153,6 +153,9 @@ describe('navigation registry (playbook 6.2)', () => {
     // An approver who holds nothing else still reaches /admin to find it.
     expect(visibleDestinations('tenant', ['footprint.approve']).map((d) => d.id)).toEqual(['today', 'admin']);
     expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions']);
+    // Calendar feeds needs roadmap.read, the same grant the roadmap itself
+    // needs, so it joins the account children only for a reader who holds it.
+    expect(childDestinations(ACCOUNT_PARENT, ['roadmap.read']).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions', '/me/calendar-feeds']);
     // Children never reach the rail or the dock.
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(visibleDestinations('tenant', all).every((d) => d.parent === undefined)).toBe(true);
