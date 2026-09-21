@@ -10,44 +10,40 @@ Prefixes hosted: SRC.
 """
 
 import uuid
+from typing import Any, ClassVar
 from unittest import mock, skip
 
 from django.contrib.postgres.search import SearchQuery
-from django.test import TestCase
+from django.db import connection
+from django.test import Client, TestCase
+from django.test.utils import CaptureQueriesContext
 
+from apps.identity.models import User
 from apps.library.models import ProblemReport, SubjectType
 from apps.library.seeds import seed_languages
 from apps.search.indexing import index_write
 from apps.search.models import SearchChunk, SearchSource
+from apps.search.tests_hybrid import (
+    COSTS_TITLE_FI,
+    COSTS_TITLE_SV,
+    EU_REPORTING_TITLE,
+    FFFS,
+    REPORTING_TITLE,
+    WARNINGS_TITLE,
+    CorpusMixin,
+)
 from apps.shared import factories, tenancy
+from apps.shared.adapters import reranker
+from apps.shared.models import AuditEvent
+from apps.shared.testing import sign_in
+from apps.taxonomy.models import DutyType
+from apps.shared.tenancy import library_write
+
+SEARCH = "/api/v1/search"
 
 
 class SearchScenarioTests(TestCase):
     """Scenario tests for apps.search, one method per @integration scenario."""
-
-    @skip("pending: SRC-S1")
-    def test_src_s1(self) -> None:
-        """SRC-S1
-
-        An identifier is won by keyword and a concept by vector in one query (SRC-01, AC-SRC1).
-
-        Operations: `search`, and `findSimilar`, which ranks the same chunks for an
-        agent's key. Both answer 501 not_built until the hybrid query lands.
-        """
-
-    @skip("pending: SRC-S2")
-    def test_src_s2(self) -> None:
-        """SRC-S2
-
-        Chunks are indexed per language with the matching text search configuration (SRC-01).
-        """
-
-    @skip("pending: SRC-S3")
-    def test_src_s3(self) -> None:
-        """SRC-S3
-
-        Filters come from vocabularies, "as of" picks the version, and each hit states its match kind (SRC-02).
-        """
 
     @skip("pending: SRC-S4")
     def test_src_s4(self) -> None:
@@ -158,3 +154,142 @@ class SearchScenarioTests(TestCase):
 
         Nothing a tenant writes under a standard reaches the index or a model (REG-08, SRC-01).
         """
+
+
+class HybridSearchScenarioTests(CorpusMixin, TestCase):
+    """SRC-S1, SRC-S2 and SRC-S3, through `POST /search` against the indexed corpus.
+
+    `search` is a read that needs a body, so it answers 200 and writes nothing, not even an
+    audit row (AUD-01 audits changes, and nothing changed). The scenario client fails any
+    2xx POST without an audit row, so these calls go through a plain client and assert the
+    audit count is unchanged, exactly as the chunk 2 dry-run previews do.
+    """
+
+    reader: ClassVar[User]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.build_corpus()
+        cls.reader = factories.member_user(cls.tenant, roles=("reader",))
+
+    def setUp(self) -> None:
+        # Signing in is itself an audited act, so the session is opened before the count
+        # each search is measured against.
+        self.headers = sign_in(self.reader, tenant=self.tenant)
+
+    def search(self, body: dict[str, Any]) -> Any:
+        """One search by the seeded reader, through the real route and its real gate."""
+        before = AuditEvent.objects.count()
+        response = Client().post(SEARCH, data=body, content_type="application/json", **self.headers)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(AuditEvent.objects.count(), before, "a search changes nothing, so it writes no audit row")
+        return response.json()
+
+    def test_src_s1(self) -> None:
+        """SRC-S1
+
+        An identifier is won by keyword and a concept by vector in one query (SRC-01, AC-SRC1).
+
+        Given the corpus is indexed with the mock embedder, when a reader searches
+        "FFFS 2017:2" the first hit is that instrument's, matched by its words; when they
+        search "nudging in onboarding" the conduct obligation comes back matched by its
+        meaning, because not one of those words is in its text. Both answers are one
+        statement over the chunk table, with the reranker given the fused window.
+
+        Operations: `search`. `findSimilar` ranks these same chunks for an agent's key and
+        answers 501 not_built until `c7-search-similar-limits` builds it.
+        """
+        with mock.patch.object(
+            reranker.MockReranker, "rerank", autospec=True, side_effect=reranker.MockReranker.rerank
+        ) as judged:
+            with CaptureQueriesContext(connection) as queries:
+                identifier = self.search({"q": FFFS, "lang": "sv"})
+
+        first = identifier["items"][0]
+        self.assertEqual(first["matchKind"], "keyword")
+        self.assertEqual(first["instrumentShortName"], FFFS)
+        self.assertEqual(
+            len([query for query in queries.captured_queries if 'FROM "search_chunk"' in query["sql"]]),
+            1,
+            "both legs, every filter and everything a hit shows are one statement",
+        )
+        judged.assert_called_once()
+        self.assertLessEqual(
+            len(judged.call_args.kwargs["documents"]),
+            reranker.get_reranker().top_k,
+            "the reranker judges the fused window, not the corpus",
+        )
+
+        concept = self.search({"q": "nudging in onboarding"})
+
+        self.assertEqual(concept["items"][0]["title"], WARNINGS_TITLE)
+        self.assertEqual(concept["items"][0]["matchKind"], "concept")
+
+    def test_src_s2(self) -> None:
+        """SRC-S2
+
+        Chunks are indexed per language with the matching text search configuration (SRC-01).
+
+        Given the same duty summarised in Swedish and in Finnish, each chunk's tsvector is
+        built in its own language's configuration. The Finnish text quotes the Swedish term
+        word for word, and a Swedish query still does not reach it: it was stemmed as
+        Finnish. So the Swedish chunk is the one that wins a Swedish reader's search, and
+        the Finnish chunk the one that wins the same search read as Finnish. The reader
+        gets one hit for the duty either way, in the language that read them best.
+        """
+        self.assertEqual(
+            {
+                chunk.language_id
+                for chunk in SearchChunk.objects.filter(tsv=SearchQuery("kostnader", config="swedish"))
+                if chunk.source_type == SearchSource.OBLIGATION_VERSION.value
+            },
+            {"sv"},
+            "the Finnish chunk holds the word and is not reachable by a Swedish query",
+        )
+
+        as_swedish = self.search({"q": "kostnader", "lang": "sv"})
+        as_finnish = self.search({"q": "kostnader", "lang": "fi"})
+        swedish_titles = [hit["title"] for hit in as_swedish["items"]]
+        finnish_titles = [hit["title"] for hit in as_finnish["items"]]
+
+        self.assertIn(COSTS_TITLE_SV, swedish_titles)
+        self.assertNotIn(COSTS_TITLE_FI, swedish_titles)
+        self.assertIn(COSTS_TITLE_FI, finnish_titles)
+        self.assertNotIn(COSTS_TITLE_SV, finnish_titles)
+        self.assertEqual(
+            {hit["title"]: hit["matchKind"] for hit in as_swedish["items"]}[COSTS_TITLE_SV],
+            "both",
+            "the Swedish chunk is reached by the words and by the meaning",
+        )
+
+    def test_src_s3(self) -> None:
+        """SRC-S3
+
+        Filters come from vocabularies, "as of" picks the version, and each hit states its match kind (SRC-02).
+
+        Filtering by jurisdiction "se" and duty type "reporting" as of 30 June 2026 returns
+        only the chunks valid on that date carrying those keys: the second version had not
+        taken effect, and the EU guidance is another jurisdiction. Every hit says how it
+        matched, and renaming the duty type's label afterwards changes nothing, because what
+        travelled was the key.
+        """
+        body = {
+            "q": "report capital adequacy",
+            "asOf": "2026-06-30",
+            "filters": {"jurisdiction": "se", "dutyType": "reporting"},
+        }
+
+        answer = self.search(body)
+
+        self.assertEqual([hit["title"] for hit in answer["items"]], [REPORTING_TITLE])
+        self.assertEqual(answer["asOf"], "2026-06-30")
+        self.assertEqual(answer["items"][0]["versionNo"], 1)
+        self.assertEqual(answer["items"][0]["validTo"], "2026-08-31", "the version in force on that date")
+        self.assertIn("quarter", answer["items"][0]["snippet"])
+        self.assertTrue(all(hit["matchKind"] for hit in answer["items"]), "every hit states its match kind")
+        self.assertNotIn(EU_REPORTING_TITLE, [hit["title"] for hit in answer["items"]])
+
+        with library_write("SRC-S3: an administrator relabels a vocabulary row"):
+            DutyType.objects.get(key="reporting").labels.filter(language="en").update(text="Supervisory returns")
+
+        self.assertEqual(self.search(body), answer, "the filter carried a key, so a new label changes nothing")

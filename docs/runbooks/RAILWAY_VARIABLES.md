@@ -57,6 +57,10 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `SEARCH_EMBED_SWEEP_INTERVAL_S` | worker | `60` | `60` | `60` | How often the sweep drains the embeddings the index still owes: the rest of a full rebuild, a rebuild whose outbox row spent its attempts, and the corpus of a deployment that ran with no model contracted |
 | `RERANKER_PROVIDER` | api, worker | `mock` | `mock` | `none` until D-09 names one | `mock` is refused when deployed except in `test`; `none` leaves the fused order as the answer |
 | `RERANKER_TOP_K` | api, worker | `50` | `50` | `50` | How many fused hits the reranker is given (SRC-01) |
+| `SEARCH_RRF_K` | api | `60` | `60` | `60` | The reciprocal rank fusion constant: each leg adds `1/(k + rank)`, so the gap between ranks 1 and 2 is worth more than the whole tail (SRC-01) |
+| `SEARCH_RETRIEVAL_DEPTH` | api | `50` | `50` | `50` | How deep each leg reaches. A row ranked below this by a leg was not found by it, so it neither scores nor claims that match kind (SRC-01) |
+| `SEARCH_CONCEPT_SCORE_FLOOR` | api | `0.5` | `0.5` | `0.5` | The least cosine similarity that counts as a concept match. The vector leg always has a nearest neighbour, so without a floor every query would call every embedded chunk a concept hit. Re-tune it with the model D-09 chooses (SRC-01) |
+| `SEARCH_SNIPPET_CHARS` | api | `240` | `240` | `240` | The most of a hit's text a snippet shows, cut around what matched (SRC-02) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
 
 ## Testing, observability, budgets
