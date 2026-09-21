@@ -48,5 +48,11 @@
   "library.updates.report.description": "What looks wrong?",
   "library.updates.report.descriptionPlaceholder": "e.g. The retention line does not match the source",
   "library.updates.report.submit": "Send report",
-  "library.updates.report.sent": "Thank you. Your report was sent."
+  "library.updates.report.sent": "Thank you. Your report was sent.",
+  "library.languageOriginal": "{language}, original",
+  "library.noTextTitle": "No {language} text yet",
+  "library.noTextBody": "Choose one of the languages above to read what the library holds.",
+  "library.showOriginal": "Show the original",
+  "library.lastVerifiedBy": "{date} by {name}",
+  "library.notVerifiedYet": "Not verified yet"
 }

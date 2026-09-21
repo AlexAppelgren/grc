@@ -48,5 +48,11 @@
   "library.updates.report.description": "Vad ser fel ut?",
   "library.updates.report.descriptionPlaceholder": "t.ex. Lagringstiden stämmer inte med källan",
   "library.updates.report.submit": "Skicka anmälan",
-  "library.updates.report.sent": "Tack. Din anmälan har skickats."
+  "library.updates.report.sent": "Tack. Din anmälan har skickats.",
+  "library.languageOriginal": "{language}, original",
+  "library.noTextTitle": "Ingen text på {language} ännu",
+  "library.noTextBody": "Välj ett av språken ovan för att läsa det biblioteket har.",
+  "library.showOriginal": "Visa originalet",
+  "library.lastVerifiedBy": "{date} av {name}",
+  "library.notVerifiedYet": "Inte verifierad ännu"
 }

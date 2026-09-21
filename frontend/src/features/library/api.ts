@@ -4,7 +4,26 @@ import { api } from '@/shared/utils/api-client';
 import type { DatePrecision } from '@/shared/utils/format';
 import type { components } from '@/types/api.generated';
 
-import type { LibraryRef, LocalizedText, Obligation, ObligationQuery, ObligationVersion, OutsideReason, Page, PageQuery, ScopeDimension } from './types';
+import type {
+  DiffSegment,
+  InstrumentSummary,
+  LibraryRef,
+  LocalizedText,
+  Obligation,
+  ObligationDetail,
+  ObligationProvenance,
+  ObligationQuery,
+  ObligationVersion,
+  ObligationVersionRow,
+  OutsideReason,
+  Page,
+  PageQuery,
+  ProblemReportBody,
+  ProblemReportCreated,
+  RelatedObligation,
+  ScopeDimension,
+  VersionDiff,
+} from './types';
 
 // Thin typed wrappers returning `.data` (playbook 6.1). The library reads sit
 // under /api/v1; nothing here writes, because proposals are the only door
@@ -23,7 +42,7 @@ export function refOf(raw: Schemas['LibraryRef']): LibraryRef {
   return { key: raw.key, kind: raw.kind ?? null, label: raw.label };
 }
 
-function textOf(raw: Schemas['LocalizedText'] | null | undefined): LocalizedText | null {
+export function textOf(raw: Schemas['LocalizedText'] | null | undefined): LocalizedText | null {
   if (raw === null || raw === undefined) return null;
   return { text: raw.text, language: raw.language, isOriginal: raw.isOriginal, isMachine: raw.isMachine };
 }
@@ -101,4 +120,111 @@ export function serializeQuery(params: Record<string, unknown>): string {
 export async function listObligations(query: ObligationQuery & PageQuery = {}): Promise<Page<Obligation>> {
   const data = (await api.get<Schemas['ObligationPage']>(OBLIGATIONS, { params: query, paramsSerializer: { serialize: serializeQuery } })).data;
   return { items: data.items.map(obligationOf), total: data.total };
+}
+
+function versionRowOf(raw: Schemas['ObligationVersionRow']): ObligationVersionRow {
+  return {
+    versionNumber: raw.versionNumber,
+    effectiveFrom: partialDateOf(raw.effectiveFrom),
+    effectiveTo: partialDateOf(raw.effectiveTo),
+    approvedAt: raw.approvedAt,
+  };
+}
+
+function instrumentSummaryOf(raw: Schemas['ObligationInstrumentSummary']): InstrumentSummary {
+  return { key: raw.key, shortName: raw.shortName, officialRef: raw.officialRef, name: textOf(raw.name), implementsNote: raw.implementsNote };
+}
+
+function provenanceOf(raw: Schemas['ObligationProvenance']): ObligationProvenance {
+  return {
+    sourceUrl: raw.sourceUrl,
+    sourceLabel: raw.sourceLabel,
+    lastVerifiedAt: raw.lastVerifiedAt,
+    verifiedBy: raw.verifiedBy === null || raw.verifiedBy === undefined ? null : { id: raw.verifiedBy.id, name: raw.verifiedBy.name },
+    createdAt: raw.createdAt,
+    createdOrigin: raw.createdOrigin,
+    createdModel: raw.createdModel,
+  };
+}
+
+function relatedOf(raw: Schemas['RelatedObligation']): RelatedObligation {
+  return {
+    id: raw.id,
+    title: textOf(raw.title),
+    instrument: { key: raw.instrument.key, shortName: raw.instrument.shortName },
+    relation: refOf(raw.relation),
+    binding: raw.binding,
+  };
+}
+
+export function detailOf(raw: Schemas['ObligationDetail']): ObligationDetail {
+  return {
+    id: raw.id,
+    stableKey: raw.stableKey,
+    refLabel: raw.refLabel,
+    title: textOf(raw.title),
+    instrument: instrumentSummaryOf(raw.instrument),
+    regime: raw.regime === null || raw.regime === undefined ? null : refOf(raw.regime),
+    bindingLevel: refOf(raw.bindingLevel),
+    binding: raw.binding,
+    dutyType: refOf(raw.dutyType),
+    productScope: raw.productScope,
+    triggerFrequency: raw.triggerFrequency,
+    retention: raw.retention,
+    sanctionExposure: raw.sanctionExposure,
+    tags: (raw.tags ?? []).map(refOf),
+    scope: (raw.scope ?? []).map(scopeOf),
+    inFootprint: raw.inFootprint,
+    outsideReason: (raw.outsideReason ?? []).map(reasonOf),
+    summary: textOf(raw.summary),
+    translations: (raw.translations ?? []).map(textOf).filter((text): text is LocalizedText => text !== null),
+    version: raw.version === null || raw.version === undefined ? null : versionRowOf(raw.version),
+    versions: (raw.versions ?? []).map(versionRowOf),
+    related: (raw.related ?? []).map(relatedOf),
+    provenance: provenanceOf(raw.provenance),
+  };
+}
+
+// A sentence the server marks with an operation the screen has no colour for
+// is shown as it stands: a diff a reader cannot read is worse than one
+// sentence rendered plain.
+const DIFF_OPS: readonly DiffSegment['op'][] = ['equal', 'insert', 'delete'];
+
+export function segmentOf(raw: Schemas['DiffSegment']): DiffSegment {
+  const op = (DIFF_OPS as readonly string[]).includes(raw.op) ? (raw.op as DiffSegment['op']) : 'equal';
+  return { op, text: raw.text };
+}
+
+export function diffOf(raw: Schemas['VersionDiff']): VersionDiff {
+  return {
+    fromVersion: raw.fromVersion,
+    toVersion: raw.toVersion,
+    fromEffective: partialDateOf(raw.fromEffective),
+    toEffective: partialDateOf(raw.toEffective),
+    language: raw.language,
+    isMachine: raw.isMachine,
+    segments: (raw.segments ?? []).map(segmentOf),
+  };
+}
+
+/** One duty as it stood on `asOf`, which defaults to today in the bank's own time zone. */
+export async function getObligation(obligationId: string, asOf?: string): Promise<ObligationDetail> {
+  const params = asOf === undefined || asOf === '' ? {} : { asOf };
+  return detailOf((await api.get<Schemas['ObligationDetail']>(`${OBLIGATIONS}/${obligationId}`, { params })).data);
+}
+
+/** What changed between the latest version and the one before it, in the language on screen where both hold it. */
+export async function getObligationDiff(obligationId: string, lang?: string): Promise<VersionDiff> {
+  const params = lang === undefined || lang === '' ? {} : { lang };
+  return diffOf((await api.get<Schemas['VersionDiff']>(`${OBLIGATIONS}/${obligationId}/diff`, { params })).data);
+}
+
+/**
+ * "This looks wrong": the reader's own words about a library record. The body
+ * stays inside the bank that filed it, so nothing here logs it and nothing
+ * sends it anywhere else.
+ */
+export async function reportObligationProblem(obligationId: string, body: ProblemReportBody): Promise<ProblemReportCreated> {
+  const data = (await api.post<Schemas['ProblemReportCreated']>(`${OBLIGATIONS}/${obligationId}/problem-reports`, body)).data;
+  return { id: data.id, status: data.status, createdAt: data.createdAt };
 }

@@ -88,3 +88,110 @@ export interface ObligationQuery {
   asOf?: string;
   outsideFootprint?: boolean;
 }
+
+/** A person the library names, by id and name; never a member of a bank (INV-06). */
+export interface PersonRef {
+  id: string;
+  name: string;
+}
+
+/** One version of a summary with the dates it runs between; `effectiveTo` is derived, never stored (INV-04). */
+export interface ObligationVersionRow {
+  versionNumber: number;
+  effectiveFrom: PartialDate | null;
+  effectiveTo: PartialDate | null;
+  approvedAt: string | null;
+}
+
+/** The instrument the duty was broken out of, as the detail read summarises it. */
+export interface InstrumentSummary {
+  key: string;
+  shortName: string;
+  officialRef: string;
+  name: LocalizedText | null;
+  implementsNote: string;
+}
+
+/** Where the record came from and when a person last held it against its source (INV-06). */
+export interface ObligationProvenance {
+  sourceUrl: string;
+  sourceLabel: string;
+  lastVerifiedAt: string | null;
+  verifiedBy: PersonRef | null;
+  createdAt: string;
+  createdOrigin: string;
+  createdModel: string;
+}
+
+/** A duty the library files beside this one; `relation` is a vocabulary row. */
+export interface RelatedObligation {
+  id: string;
+  title: LocalizedText | null;
+  instrument: InstrumentRef;
+  relation: LibraryRef;
+  binding: boolean;
+}
+
+/**
+ * GET /obligations/{id} (INV-03..INV-06). Being here is not the judgement
+ * that the duty applies to this bank, and not the claim that the bank
+ * complies with it: both are tenant facts the register holds from chunk 8.
+ */
+export interface ObligationDetail {
+  id: string;
+  stableKey: string;
+  refLabel: string;
+  title: LocalizedText | null;
+  instrument: InstrumentSummary;
+  regime: LibraryRef | null;
+  bindingLevel: LibraryRef;
+  binding: boolean;
+  dutyType: LibraryRef;
+  productScope: string;
+  triggerFrequency: string;
+  retention: string;
+  sanctionExposure: string;
+  tags: LibraryRef[];
+  scope: ScopeDimension[];
+  inFootprint: boolean;
+  outsideReason: OutsideReason[];
+  /** The summary in the best language for this reader, of the version in force on the read's date. */
+  summary: LocalizedText | null;
+  /** Every language that version holds its summary in, which is what the language chips offer. */
+  translations: LocalizedText[];
+  version: ObligationVersionRow | null;
+  versions: ObligationVersionRow[];
+  related: RelatedObligation[];
+  provenance: ObligationProvenance;
+}
+
+/** One sentence of a diff and what became of it between the two versions (INV-04). */
+export interface DiffSegment {
+  op: 'equal' | 'insert' | 'delete';
+  text: string;
+}
+
+/** GET /obligations/{id}/diff: two versions of one duty compared sentence by sentence. */
+export interface VersionDiff {
+  fromVersion: number;
+  toVersion: number;
+  fromEffective: PartialDate | null;
+  toEffective: PartialDate | null;
+  language: string;
+  /** True when either side is a machine translation nobody has confirmed (INV-05). */
+  isMachine: boolean;
+  segments: DiffSegment[];
+}
+
+/** POST /obligations/{id}/problem-reports: what the reader was looking at, in their own words. */
+export interface ProblemReportBody {
+  description: string;
+  versionNumber?: number;
+  language?: string;
+}
+
+export interface ProblemReportCreated {
+  id: string;
+  status: string;
+  createdAt: string;
+}
