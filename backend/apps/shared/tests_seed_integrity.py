@@ -7,7 +7,10 @@ that the one user awaiting enrolment holds an open invitation whose token is the
 literal under E2E_MODE; that every login a journey spends (`reserved_for`, playbook 8.3
 rule 4) is reserved for one journey, starts active with its fixed passkey and never holds
 a role another journey needs it for; that two library editors hold the console, so a
-proposal can be decided by someone other than its author; that the seed is idempotent (a second run changes nothing and adds
+proposal can be decided by someone other than its author; that one proposal waits in the
+console queue for every journey that decides one, each on a target of its own and each with
+a source for every field it changes, and that one open problem report waits inside tenant A
+for the journey that answers it; that the seed is idempotent (a second run changes nothing and adds
 no audit row), writes its audit rows through record(), and refuses to run on a deployed
 environment. A journey cannot be hollowed out by a seed change without failing here.
 
@@ -38,13 +41,18 @@ from apps.shared.e2e_logins import (
     TENANT_B_SLUG,
 )
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
-from apps.library.models import Instrument, Obligation, ObligationVersion, Verification
+from apps.library.models import Instrument, Obligation, ObligationVersion, ProblemReport, ReportStatus, Verification
+from apps.proposals.logic import parsed_payload, sourced_fields
+from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
 from apps.shared.e2e_seed import (
     EXPECTED_FOOTPRINTS,
     EXPECTED_HOME,
     EXPECTED_LIBRARY,
     EXPECTED_PENDING_REQUEST,
+    EXPECTED_PROBLEM_REPORT,
+    EXPECTED_PROPOSALS,
     EXPECTED_TENANTS,
+    SeedProposal,
     SeedRefused,
     _quarter_safe_offsets,
     seed_e2e,
@@ -66,6 +74,24 @@ def _scope(obligation: Obligation) -> dict[str, set[str]]:
     if regime is not None:
         scope.setdefault(regime.dimension.key, set()).add(regime.key)
     return scope
+
+
+def _waiting_for(expected: SeedProposal) -> list[Proposal]:
+    """The open proposals of this journey's kind on this journey's target: an obligation by
+    its stable key, a vocabulary row by the list and key its payload names."""
+    open_of_kind = Proposal.objects.filter(
+        kind=expected.kind,
+        status=ProposalStatus.OPEN.value,
+    )
+    if ":" in expected.target:
+        list_name, key = expected.target.split(":")
+        return list(open_of_kind.filter(
+            payload__list=list_name,
+            payload__key=key,
+        ))
+    return list(open_of_kind.filter(
+        target_id=Obligation.objects.get(stable_key=expected.target).id,
+    ))
 
 
 @override_settings(E2E_MODE=True)
@@ -285,6 +311,83 @@ class SeedIntegrityGuard(TestCase):
             members |= set(Membership.objects.filter(tenant=tenant).values_list("user_id", flat=True))
         self.assertTrue(members, "the pin needs the seeded members to compare against")
         self.assertEqual(verifiers & members, set())
+
+    def test_each_journey_that_decides_a_proposal_finds_one_waiting_for_it(self) -> None:
+        """chunk4-T8 (PRO-01, PRO-02, PRO-03): one open proposal per journey that spends one,
+        each on a target of its own, each carrying a source for every field it changes, and
+        none of them made inside a bank — a seeded proposal is the platform's, so the console
+        can show it whole."""
+        counts = seed_e2e()
+        self.assertEqual(counts["proposals"], len(EXPECTED_PROPOSALS))
+        journeys = [expected.journey for expected in EXPECTED_PROPOSALS]
+        self.assertEqual(len(journeys), len(set(journeys)), "no two journeys share one seeded proposal")
+        targets = [expected.target for expected in EXPECTED_PROPOSALS]
+        self.assertEqual(len(targets), len(set(targets)), "no two seeded proposals sit on one target")
+        for expected in EXPECTED_PROPOSALS:
+            with self.subTest(journey=expected.journey):
+                waiting = _waiting_for(expected)
+                self.assertEqual(len(waiting), 1, "exactly one proposal of that kind waits on that target")
+                proposal = waiting[0]
+                self.assertFalse(proposal.proposed_in_tenant)
+                self.assertEqual(ProposalTenant.objects.filter(proposal=proposal).count(), 0)
+                self.assertIsNone(proposal.reviewed_at)
+                # A source per changed field and none besides (PRO-01): the obligation kinds
+                # carry one per summary language, one for the date and one for the scope they
+                # change; a vocabulary label is a person's wording and carries none.
+                self.assertEqual(sorted(proposal.field_sources), sorted(sourced_fields(parsed_payload(proposal.kind, proposal.payload))))
+                if expected.proposed_by_email:
+                    assert proposal.proposed_by_user is not None
+                    self.assertEqual(proposal.proposed_by_user.email, expected.proposed_by_email)
+                else:
+                    self.assertIsNone(proposal.proposed_by_user, "an agent's proposal names no person, so any editor may decide it")
+                    self.assertEqual(proposal.agent_run_id, expected.agent_run)
+
+    def test_no_proposal_waits_on_the_research_payment_obligation(self) -> None:
+        """Its own version 2 is already filed from the fixture (apps/library/seeds/library.py),
+        so a proposal here would apply a redundant version 3 over the one PRO-S3's design card
+        and the inventory journeys expect. It carries the seeded problem report instead."""
+        seed_e2e()
+        self.assertFalse(Proposal.objects.filter(
+            target_id=Obligation.objects.get(stable_key=EXPECTED_LIBRARY.research_obligation).id,
+            status=ProposalStatus.OPEN.value,
+        ).exists())
+
+    def test_the_bank_holds_one_open_problem_report_of_its_own(self) -> None:
+        """AUD-S5 (AUD-03): a reader of tenant A said a library record looks wrong. The row
+        carries their bank, so no other bank and no platform session reads it, and it stays
+        open for the journey that answers it."""
+        counts = seed_e2e()
+        self.assertEqual(counts["problem_reports"], 1)
+        expected = EXPECTED_PROBLEM_REPORT
+        tenant_a = Tenant.objects.get(slug=expected.tenant_slug)
+        tenancy.activate(tenant_a.id)
+        report = ProblemReport.objects.get(tenant=tenant_a)
+        self.assertEqual(report.status, ReportStatus.OPEN.value)
+        self.assertEqual(report.reporter.email, expected.reporter_email)
+        self.assertEqual(report.subject_id, Obligation.objects.get(stable_key=expected.obligation).id)
+        self.assertEqual((report.version_number, report.language_id), (expected.version_number, expected.language))
+        self.assertTrue(report.text.strip(), "a report says what looks wrong")
+        # The words the reader wrote stay in the row: the audit trail carries the record and
+        # the report's id, never the text (playbook 4.7).
+        audited = AuditEvent.objects.get(action="library.problem_reported", tenant=tenant_a)
+        self.assertEqual(audited.after["reportId"], str(report.id))
+        self.assertNotIn(report.text, audited.summary)
+        # Tenant B is another bank: row-level security shows it nothing of this.
+        tenancy.activate(Tenant.objects.get(slug=TENANT_B_SLUG).id)
+        self.assertEqual(ProblemReport.objects.count(), 0)
+
+    def test_a_reseed_leaves_the_same_waiting_proposals_and_the_same_report(self) -> None:
+        seed_e2e()
+        tenant_a = Tenant.objects.get(slug=EXPECTED_PROBLEM_REPORT.tenant_slug)
+        tenancy.activate(tenant_a.id)
+        proposals = sorted(str(row) for row in Proposal.objects.values_list("id", flat=True))
+        reports = sorted(str(row) for row in ProblemReport.objects.values_list("id", flat=True))
+
+        seed_e2e()
+
+        tenancy.activate(tenant_a.id)
+        self.assertEqual(sorted(str(row) for row in Proposal.objects.values_list("id", flat=True)), proposals)
+        self.assertEqual(sorted(str(row) for row in ProblemReport.objects.values_list("id", flat=True)), reports)
 
     def test_the_command_prints_counts(self) -> None:
         out = StringIO()
