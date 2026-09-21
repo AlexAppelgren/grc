@@ -34,6 +34,45 @@ export function presentFootprintDimension(dimension: FootprintDimension, t: Tran
   return presentScope(dimension.dimension, dimension.terms, dimension.allSelected, t);
 }
 
+export interface ScopeGroupRow {
+  term: TermRef;
+  held: boolean;
+}
+
+export interface ScopeGroup {
+  dimension: TermRef;
+  rows: ScopeGroupRow[];
+}
+
+/** The read-state groups (REGULATORY_SCOPE.md 4.2): a dimension appears only when it
+ * restricts the footprint and currently holds at least one term — an unrestricting
+ * dimension (channel, lifecycle stage, theme) and a termless one both stay off the page,
+ * because neither ever narrows what a member sees. Each kept dimension lists every term
+ * the picker offers, held or not, in dimension order. */
+export function scopeGroups(dimensions: readonly FootprintDimension[], terms: readonly TaxonomyTerm[]): ScopeGroup[] {
+  return dimensions
+    .filter((d) => d.restrictsFootprint && d.terms.length > 0)
+    .map((d) => {
+      const held = new Set(d.terms.map((term) => term.key));
+      return {
+        dimension: d.dimension,
+        rows: terms.filter((term) => term.dimension === d.dimension.key && term.active !== false).map((term) => ({ term, held: held.has(term.key) })),
+      };
+    });
+}
+
+/** The groups a draft would start restricting (REGULATORY_SCOPE.md 4.3): empty in the
+ * stored footprint, so today it narrows nothing, and non-empty in the draft — ticking the
+ * first term in an empty group is the dangerous direction, because it can hide records for
+ * every member that no preview line ever showed as "revealed". */
+export function narrowedGroups(dimensions: readonly FootprintDimension[], draft: FootprintDraft): FootprintDimension[] {
+  return dimensions.filter((d) => d.terms.length === 0 && (draft[d.dimension.key]?.size ?? 0) > 0);
+}
+
+export function pendingTermPill(kind: 'add' | 'remove', t: Translate): PresentedPill {
+  return { key: `pending:${kind}`, label: kind === 'add' ? t('footprint.pending.add') : t('footprint.pending.remove'), tone: slotTone.waitingForApproval, order: 0 };
+}
+
 // Request status is a kind: pending needs attention, approved is good, the
 // other two are facts.
 export const requestStatusTone: Record<FootprintRequestStatus, PillTone> = {
