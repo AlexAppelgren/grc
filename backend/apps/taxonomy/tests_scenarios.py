@@ -80,8 +80,10 @@ FP_S4_KEY_DATE = datetime.date(2026, 10, 15)
 # - a vocabulary list: the rows with their usage count (1) and their labels (1);
 URGENCY_READ_QUERIES = 10 + 1 + 2
 # - the footprint: the selected terms (1) and their labels (1), the dimensions with their
-#   term counts (1) and their labels (1), the pending request (1).
-FOOTPRINT_READ_QUERIES = 10 + 1 + 5
+#   term counts (1) and their labels (1), the pending request (1); the markets (FP-04),
+#   four more however many countries there are: the footprint read again for the operating
+#   check (1), the watch rows (1), the countries (1) and their labels (1).
+FOOTPRINT_READ_QUERIES = 10 + 1 + 5 + 4
 
 
 def _seed_library() -> None:
@@ -922,12 +924,47 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         A record's jurisdiction comes from its instrument, and EU rules reach the member countries and Norway (FP-04, AC-FP2).
         """
 
-    @skip("pending: FP-S10 (FP-04, R1)")
     def test_fp_s10(self) -> None:
         """FP-S10
 
         Watching a market is one audited write that hides nothing (FP-04, AC-FP2).
         """
+        self._set_footprint(["regime:securities", "jurisdiction:se"])
+        admin = sign_in(self.admin, tenant=self.tenant)
+        before = self._footprint(admin)
+        events_before = AuditEvent.objects.filter(action="markets.watch_added").count()
+
+        watched = self._post("/tenant/footprint/watching", {"jurisdiction": "no"}, admin)
+        self.assertEqual(watched.status_code, 200, watched.content)
+        self.assertEqual(watched.json(), {"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "operating": False, "watching": True})
+        self.activate(self.tenant)
+        self.assertTrue(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction__key="no").exists())
+        event = AuditEvent.objects.get(action="markets.watch_added")
+        self.assertEqual(event.after, {"jurisdiction": "no"})
+        self.assertIsNone(event.step_up_assertion_id)
+        self.assertEqual(AuditEvent.objects.filter(action="markets.watch_added").count(), events_before + 1)
+        # Watching hides nothing: the footprint and its default view are unchanged.
+        after = self._footprint(admin)
+        self.assertEqual(after["dimensions"], before["dimensions"])
+
+        again = self._post("/tenant/footprint/watching", {"jurisdiction": "no"}, admin)
+        self.assertEqual(again.status_code, 409, again.content)
+        self.assertEqual(again.json()["code"], "already_watching")
+
+        stopped = self._post("/tenant/footprint/watching/remove", {"jurisdiction": "no"}, admin)
+        self.assertEqual(stopped.status_code, 200, stopped.content)
+        self.assertEqual(stopped.json()["watching"], False)
+        self.activate(self.tenant)
+        self.assertFalse(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction__key="no").exists())
+        self.assertTrue(AuditEvent.objects.filter(action="markets.watch_removed").exists())
+
+        reader = sign_in(self.reader, tenant=self.tenant)
+        seen = self._footprint(reader)
+        self.assertIn("markets", seen)
+        self.assertIn("se", [m["jurisdiction"]["key"] for m in seen["markets"] if m["operating"]])
+        denied = self._post("/tenant/footprint/watching", {"jurisdiction": "no"}, reader)
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(denied.json()["requiredPermission"], "footprint.request")
 
     def test_fp_s11(self) -> None:
         """FP-S11

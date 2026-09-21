@@ -23,7 +23,7 @@ from apps.proposals.schemas import ProposalAccepted
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
-from apps.taxonomy import footprint_logic, library_lists_logic, reading, terms_logic
+from apps.taxonomy import footprint_logic, library_lists_logic, markets_logic, reading, terms_logic
 from apps.taxonomy import tenant_lists_logic as lists
 from apps.taxonomy.http import (
     actor_for,
@@ -49,6 +49,8 @@ from apps.taxonomy.schemas import (
     FootprintRequestRow,
     FootprintView,
     JurisdictionRow,
+    MarketRow,
+    MarketWatchBody,
     TaxonomyDimensionPage,
     TaxonomyTermCreateBody,
     TaxonomyTermPage,
@@ -538,6 +540,69 @@ def withdraw_footprint_request(request: HttpRequest, request_id: str) -> Footpri
         tenant=tenant, request=found, requester=user, actor=actor_for(request, user), expected_version=if_match(request)
     )
     return footprint_logic.request_row(withdrawn, reading.language_order(request, tenant=tenant))
+
+
+_MARKET_WATCH_EXAMPLE = {
+    "requestBody": {"content": {"application/json": {"example": {"jurisdiction": "no"}}}},
+    "responses": {200: {"content": {"application/json": {"example": {"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "operating": False, "watching": True}}}}},
+}
+
+
+@router.post(
+    "/tenant/footprint/watching",
+    response=MarketRow,
+    auth=SESSION,
+    operation_id="watchMarket",
+    by_alias=True,
+    summary="Start watching a market we do not operate in",
+    openapi_extra=_MARKET_WATCH_EXAMPLE,
+)
+@requires_permission(perms.FOOTPRINT_REQUEST)
+@answers_problems
+def watch_market(request: HttpRequest, body: MarketWatchBody) -> MarketRow:
+    """Add a country to the "Markets we watch" list (FP-04): a direct, audited write, not a
+    footprint change request, because watching hides nothing from anyone and needs no
+    preview, no second person and no step-up. Watching an already-watched country answers
+    409 `already_watching`; an unknown, inactive or non-country key answers 422
+    `unknown_key` or `not_a_country`. Watching an operating market is allowed and changes
+    nothing visible until operating stops, when the market reads as watched again.
+
+    Requires `footprint.request` in the caller's tenant, the same permission that starts a
+    footprint change. Errors: `permission_denied` without it, `unauthenticated` without a
+    session, `validation_error` for a body the schema rejects.
+    """
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    jurisdiction = markets_logic.watch(tenant=tenant, actor=actor_for(request, user), key=body.jurisdiction, added_by=user)
+    return markets_logic.row_for(tenant.id, jurisdiction, reading.language_order(request, tenant=tenant))
+
+
+@router.post(
+    "/tenant/footprint/watching/remove",
+    response=MarketRow,
+    auth=SESSION,
+    operation_id="unwatchMarket",
+    by_alias=True,
+    summary="Stop watching a market",
+    openapi_extra=_MARKET_WATCH_EXAMPLE,
+)
+@requires_permission(perms.FOOTPRINT_REQUEST)
+@answers_problems
+def unwatch_market(request: HttpRequest, body: MarketWatchBody) -> MarketRow:
+    """Remove a country from the "Markets we watch" list (FP-04): the same direct, audited
+    write as watching, with no preview, no second person and no step-up. A country that is
+    operating is untouched by this even when it once had a watch row, because the level is
+    computed, not stored. A country with no watch row answers 404 `not_found`; an unknown,
+    inactive or non-country key answers 422 `unknown_key` or `not_a_country`.
+
+    Requires `footprint.request` in the caller's tenant. Errors: `permission_denied`
+    without it, `unauthenticated` without a session, `not_found` for a market not
+    currently watched.
+    """
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    jurisdiction = markets_logic.unwatch(tenant=tenant, actor=actor_for(request, user), key=body.jurisdiction)
+    return markets_logic.row_for(tenant.id, jurisdiction, reading.language_order(request, tenant=tenant))
 
 
 # ---------------------------------------------------------------------------------------

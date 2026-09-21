@@ -41,6 +41,7 @@ CHUNK_STATUS_BY_CODE: dict[str, int] = {
     "request_pending": 409,
     "invalid_transition": 409,
     "idempotency_conflict": 409,
+    "already_watching": 409,
     "forbidden": 403,
 }
 

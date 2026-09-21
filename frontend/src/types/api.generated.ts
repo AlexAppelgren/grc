@@ -2567,6 +2567,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenant/footprint/watching": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start watching a market we do not operate in
+         * @description Add a country to the "Markets we watch" list (FP-04): a direct, audited write, not a
+         *     footprint change request, because watching hides nothing from anyone and needs no
+         *     preview, no second person and no step-up. Watching an already-watched country answers
+         *     409 `already_watching`; an unknown, inactive or non-country key answers 422
+         *     `unknown_key` or `not_a_country`. Watching an operating market is allowed and changes
+         *     nothing visible until operating stops, when the market reads as watched again.
+         *
+         *     Requires `footprint.request` in the caller's tenant, the same permission that starts a
+         *     footprint change. Errors: `permission_denied` without it, `unauthenticated` without a
+         *     session, `validation_error` for a body the schema rejects.
+         */
+        post: operations["watchMarket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/footprint/watching/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop watching a market
+         * @description Remove a country from the "Markets we watch" list (FP-04): the same direct, audited
+         *     write as watching, with no preview, no second person and no step-up. A country that is
+         *     operating is untouched by this even when it once had a watch row, because the level is
+         *     computed, not stored. A country with no watch row answers 404 `not_found`; an unknown,
+         *     inactive or non-country key answers 422 `unknown_key` or `not_a_country`.
+         *
+         *     Requires `footprint.request` in the caller's tenant. Errors: `permission_denied`
+         *     without it, `unauthenticated` without a session, `not_found` for a market not
+         *     currently watched.
+         */
+        post: operations["unwatchMarket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tenant/invitations": {
         parameters: {
             query?: never;
@@ -4301,6 +4358,11 @@ export interface components {
         FootprintView: {
             /** Dimensions */
             dimensions: components["schemas"]["FootprintDimension"][];
+            /**
+             * Markets
+             * @description Every active country's operating and watching level, one row per country, in jurisdiction sort order (FP-04).
+             */
+            markets?: components["schemas"]["MarketRow"][];
             pendingRequest?: components["schemas"]["FootprintRequestRow"] | null;
         };
         /**
@@ -5433,6 +5495,45 @@ export interface components {
             subject: string;
             /** To */
             to: string;
+        };
+        /**
+         * MarketRow
+         * @description One active country's market level (FP-04), computed fresh on every read and never
+         *     stored: operating when the jurisdiction's mirrored term sits in the tenant's footprint,
+         *     set only through a footprint change request (FP-02); watching when a `watched_market`
+         *     row names it, a direct write that hides nothing. Both false reads as not followed.
+         */
+        MarketRow: {
+            /** @description The country: its key, kind (always `country`) and label in the caller's language. A row of the jurisdiction vocabulary; an admin may add more without a deploy, and `GET /reference/jurisdictions` lists the live set. */
+            jurisdiction: components["schemas"]["TermRef"];
+            /**
+             * Operating
+             * @description True when this country's mirrored jurisdiction term is in the tenant's footprint. Changes only through a footprint change request with its preview, second person and step-up.
+             */
+            operating: boolean;
+            /**
+             * Watching
+             * @description True when the tenant has a `watched_market` row naming this country. Set directly with `POST /tenant/footprint/watching`, with no preview, no second person and no step-up, because watching hides nothing.
+             */
+            watching: boolean;
+        };
+        /**
+         * MarketWatchBody
+         * @description `POST /tenant/footprint/watching` and `POST /tenant/footprint/watching/remove`
+         *     (FP-04): the jurisdiction key rides in the body on both routes, never in the path or a
+         *     query string, because the tenant's watch list is sensitive and does not belong on an
+         *     access log line.
+         * @example {
+         *       "jurisdiction": "no"
+         *     }
+         */
+        MarketWatchBody: {
+            /**
+             * Jurisdiction
+             * @description The key of a row of the jurisdiction vocabulary naming a country, at most 80 characters, such as `no` for Norway (`GET /reference/jurisdictions` lists the live rows; an admin may add more without a deploy). The union itself, an unknown or inactive key, or a supranational key answers 422 `unknown_key` or `not_a_country`.
+             * @example no
+             */
+            jurisdiction: string;
         };
         /** Me */
         Me: {
@@ -13285,6 +13386,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FootprintRequestRow"];
+                };
+            };
+        };
+    };
+    watchMarket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "jurisdiction": "no"
+                 *     }
+                 */
+                "application/json": components["schemas"]["MarketWatchBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "jurisdiction": {
+                     *         "key": "no",
+                     *         "kind": "country",
+                     *         "label": "Norway"
+                     *       },
+                     *       "operating": false,
+                     *       "watching": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["MarketRow"];
+                };
+            };
+        };
+    };
+    unwatchMarket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "jurisdiction": "no"
+                 *     }
+                 */
+                "application/json": components["schemas"]["MarketWatchBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "jurisdiction": {
+                     *         "key": "no",
+                     *         "kind": "country",
+                     *         "label": "Norway"
+                     *       },
+                     *       "operating": false,
+                     *       "watching": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["MarketRow"];
                 };
             };
         };
