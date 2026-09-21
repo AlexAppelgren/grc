@@ -50,16 +50,23 @@ def resolve_api_key(plain: str) -> Principal | None:
         scopes=frozenset(key.scopes),
         agent_id=key.agent_id,
         agent_label=key.agent.key if key.agent is not None else "",
+        agent_version=key.agent.current_version if key.agent is not None else None,
     )
 
 
 def _validate_scopes(values: Iterable[str]) -> list[str]:
+    """A bank's key takes the scopes a bank may hold. The review scope is not one of them:
+    it is refused like a scope that does not exist, so a bank's key screen never learns of a
+    way into deciding the shared library (D-62)."""
     wanted = sorted(dict.fromkeys(values))
     if not wanted:
         raise ValidationError("Pick at least one scope.", code="scopes_required")
-    unknown = [value for value in wanted if value not in perms.ALL_SCOPES]
+    unknown = [value for value in wanted if value not in perms.TENANT_KEY_SCOPES]
     if unknown:
-        raise ValidationError(f"Unknown scope: {', '.join(unknown)}.", code="unknown_key")
+        raise ValidationError(
+            f"Unknown scope: {', '.join(unknown)}. Valid scopes: {', '.join(sorted(perms.TENANT_KEY_SCOPES))}.",
+            code="unknown_key",
+        )
     return wanted
 
 

@@ -51,7 +51,8 @@ class Principal:
     `session_created_at` is when the session was opened (a refresh does not move it);
     adding or removing a passkey accepts a session younger than the window (F9).
     `agent_id` and `agent_label` name the agent the key is bound to (ID-10, AGT-01), so
-    `record()` writes the agent as the actor rather than the key's id.
+    `record()` writes the agent as the actor rather than the key's id; `agent_version` is the
+    definition version that agent runs, which an agent reviewer's audit row names (D-62).
     """
 
     kind: PrincipalKind
@@ -66,6 +67,7 @@ class Principal:
     session_created_at: datetime | None = None
     agent_id: uuid.UUID | None = None
     agent_label: str = ""
+    agent_version: int | None = None
 
     def has_permission(self, permission: str) -> bool:
         return self.kind is PrincipalKind.USER and permission in self.permissions

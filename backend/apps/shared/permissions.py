@@ -216,18 +216,28 @@ SCOPE_SEARCH_READ = "search:read"
 SCOPE_LIBRARY_READ = "library:read"
 SCOPE_UPCOMING_READ = "upcoming:read"
 SCOPE_TENANT_READ = "tenant:read"
+# The second pair of eyes on the shared library (D-62, D-74, ADR 0054): a platform key bound
+# to an agent definition reads the review queue and the curation queue, approves, corrects
+# or rejects a proposal and confirms a change's curation. It reaches no library row of its
+# own: an approval writes only through `proposals/apply.py` and a confirmation only through
+# the watch door (apps/shared/tests_library_fence.py proves both). No bank's key holds it.
+SCOPE_PROPOSALS_REVIEW = "proposals:review"
 ALL_SCOPES: frozenset[str] = frozenset(
     {
         SCOPE_AGENT_RUNS_WRITE,
         SCOPE_SOURCES_WRITE,
         SCOPE_CHANGES_WRITE,
         SCOPE_PROPOSALS_WRITE,
+        SCOPE_PROPOSALS_REVIEW,
         SCOPE_SEARCH_READ,
         SCOPE_LIBRARY_READ,
         SCOPE_UPCOMING_READ,
         SCOPE_TENANT_READ,
     }
 )
+# What a bank's own key may be given (ID-10). The review scope is the platform's alone: a
+# bank reviewing the shared library would decide a fact every other bank reads (D-62).
+TENANT_KEY_SCOPES: frozenset[str] = ALL_SCOPES - {SCOPE_PROPOSALS_REVIEW}
 
 # ---------------------------------------------------------------------------------------
 # The permission catalogue for the role editor (`GET /reference/permissions`, ID-09):
@@ -312,6 +322,8 @@ _LOGIC_RUN_LOG = "agents.manage in a tenant reads the library's runs and its own
 _LOGIC_WATCH_READER = "watch.read in the caller's tenant, an agent's key with library:read, because a run must know which sources to check, or sources.manage in the console, which has no tenant and so no watch.read, for the read-only Sources page (WAT-01, AGT-02, ruling 3). The gate is apps/watch/api.py:require_watch_reader, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_CHANGE_FACTS = "An agent's key with changes:write, or a library editor with proposals.review; a change's facts are library facts and no tenant role holds that (WAT-02, WAT-03, PRO-01). The gate is apps/watch/api.py:require_change_writer, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_LIBRARY_RECORDS = "library.read in the caller's tenant, or an agent's key holding library:read; one read serves the inventory and the agents (INV-03, AGT-02)."
+_LOGIC_REVIEWER = "A library editor's console session with proposals.review, or a platform key holding proposals:review that is bound to an agent definition, because the second pair of eyes may be an independent agent working the same queue (PRO-01, PRO-02, D-62, D-74). A bank's key never holds the scope and a key bound to no agent is refused with agent_not_bound. The gate is apps/taxonomy/http.py:require_reviewer, which names the scope it wanted to a key and the permission it wanted to a person."
+_LOGIC_APPROVER = "The same two principals as the review queue, and a person must also step up with a fresh passkey assertion; a key cannot step up, so for an agent the scope and the proposal_four_eyes constraint are the whole gate (PRO-02, AC-PRO2, D-62). The gate is apps/taxonomy/http.py:require_approver, which is require_reviewer plus enforce_step_up for a person."
 _LOGIC_UPCOMING_READER = "roadmap.read in the caller's tenant, or an agent's key with upcoming:read, because the newsletter run has to know which dates are already public (HOM-04, AGT-02). The list holds library facts only — no case, no footprint verdict, no owner, no 'So what?' — which is what makes a key safe on it, and it is the one route of the home app a key reaches. The gate is apps/home/api.py:require_upcoming_reader, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the whole grant: a calendar client sends no header, follows no sign-in and cannot be asked for a passkey, so the URL is the only credential it can carry (HOM-04, D-52, ADR 0045). The mitigations are the ones that decision weighed. The token is `<prefix>.<secret>` with 256 bits of secret, kept as a lookup prefix beside the secret's SHA-256, shown once and never again. It rides in the query string, not the path, because our own access log prints the route and drops the query while a hosting edge writes whole request lines, which makes this the one named exception to CONVENTIONS 3.6 and is pinned by a guard test that no other route reads a token from the query string. A person may hold only CALENDAR_FEEDS_PER_USER addresses and mints one only from a recent sign-in or a step-up, so a stolen access token cannot leave a lasting one behind. Every fetch re-checks that the owner is still a member holding roadmap.read and has not been enrolled again, revoking the subscription when a check fails; an idle one expires after CALENDAR_FEED_IDLE_DAYS; unknown, revoked and expired answer one 404. What is left is the residual risk the decision accepted and the dialog states: whoever holds the address can see which public regulatory dates the bank has open work on, and nothing else - no internal deadline, owner, urgency or 'So what?' reaches a calendar. The behaviour is `c6-upcoming-calendar-backend`'s; until it lands the route answers 501 without reading a token."  # noqa: S105 a reviewer's note, not a credential
 
@@ -447,6 +459,16 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # query string, so the exception stays one route wide.
     ("GET", "/upcoming"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_UPCOMING_READER),
     ("GET", "/calendar/feed.ics"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
+
+    # The agent reviewer (D-62, D-74). One queue with two kinds of reviewer: each of these
+    # served `proposals.review` alone until an independent agent's key could work the same
+    # queue, and one decorator cannot say "this permission or that scope". The approval's
+    # gate adds the person's step-up; the fence guard (apps/shared/tests_library_fence.py)
+    # reads both gates out of the source and proves what they name.
+    ("GET", "/proposals"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_REVIEWER),
+    ("GET", "/proposals/{proposal_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_REVIEWER),
+    ("POST", "/proposals/{proposal_id}/approve"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_APPROVER),
+    ("POST", "/proposals/{proposal_id}/reject"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_REVIEWER),
 }
 
 

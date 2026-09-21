@@ -43,6 +43,10 @@ CHUNK_STATUS_BY_CODE: dict[str, int] = {
     "idempotency_conflict": 409,
     "already_watching": 409,
     "forbidden": 403,
+    # An agent confirming what it, or another key of its own definition, suggested (D-74):
+    # a conflict with who filed the fact, not a field the caller can fix.
+    "own_suggestion": 409,
+    "same_agent": 409,
 }
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -131,9 +135,29 @@ def proposer_for(request: HttpRequest) -> Any:
 
     who = principal(request)
     if who.kind is PrincipalKind.AGENT:
-        return Proposer(actor=actor_for(request), api_key_id=who.subject_id)
+        # The agent is copied from the key, never taken from the body, so the proposal's
+        # four-eyes constraint compares definitions a caller cannot choose (D-62).
+        return Proposer(actor=actor_for(request), api_key_id=who.subject_id, agent_id=who.agent_id)
     user = caller_user(request)
     return Proposer(actor=actor_for(request, user), user=user)
+
+
+def reviewer_for(request: HttpRequest) -> Any:
+    """Who decides from the review queue: the signed-in person, or the independent agent
+    behind the key, with the agent and its version copied from the key (D-62). Called after
+    `require_reviewer`, which has already refused a key bound to no agent."""
+    from apps.proposals.logic import Reviewer
+
+    who = principal(request)
+    if who.kind is PrincipalKind.AGENT:
+        return Reviewer(
+            actor=actor_for(request),
+            api_key_id=who.subject_id,
+            agent_id=who.agent_id,
+            agent_version=who.agent_version,
+        )
+    user = caller_user(request)
+    return Reviewer(actor=actor_for(request, user), user=user)
 
 
 def if_match(request: HttpRequest) -> int | None:
@@ -202,6 +226,41 @@ def require_proposer(request: HttpRequest) -> Principal:
             raise deny(perms.SCOPE_PROPOSALS_WRITE)
         return who
     return require_any(request, perms.PROPOSALS_CREATE, perms.LIBRARY_VOCAB_MANAGE)
+
+
+def require_reviewer(request: HttpRequest) -> Principal:
+    """The second pair of eyes on the shared library (PRO-01, PRO-02, D-62, D-74): a library
+    editor's session holding `proposals.review`, or a platform key holding
+    `proposals:review` that is bound to an agent definition.
+
+    A key bound to no agent is refused with its own code rather than let through: what an
+    agent decides is compared with what the proposer did by agent definition, and a key with
+    no definition would be compared on a null, which proves nothing (ADR 0054). A bank's key
+    never holds the scope (`TENANT_KEY_SCOPES`), and one that somehow did is refused here
+    too, because a bank deciding the shared library decides it for every other bank."""
+    who = principal(request)
+    if who.kind is PrincipalKind.AGENT:
+        if not who.has_scope(perms.SCOPE_PROPOSALS_REVIEW) or who.tenant_id is not None:
+            raise deny(perms.SCOPE_PROPOSALS_REVIEW)
+        if who.agent_id is None:
+            raise ProblemError(
+                status=403,
+                code="agent_not_bound",
+                detail="This key is bound to no agent definition, so nothing it confirmed could be told apart from what it proposed.",
+            )
+        return who
+    return require_any(request, perms.PROPOSALS_REVIEW)
+
+
+def require_approver(request: HttpRequest) -> Principal:
+    """`require_reviewer`, and a person must also have stepped up with a fresh passkey
+    assertion, as every approval does (ID-06, AC-PRO2). A key cannot step up and never will,
+    so for an agent the scope and the `proposal_four_eyes` constraint are the whole gate
+    (D-62); the assertion id left on the audit row is then null."""
+    who = require_reviewer(request)
+    if who.kind is PrincipalKind.USER:
+        perms.enforce_step_up(request)
+    return who
 
 
 def uuid_or_404(value: str) -> uuid.UUID:

@@ -9,8 +9,11 @@ cites are looked up through apps/library/reading.py, which is where every librar
 lives.
 
 Four eyes (AC-PRO2) is checked here and by the `proposal_four_eyes` check constraint; the
-API answers 409 `four_eyes_violation`. An agent's proposal has no proposing user, so any
-reviewer may decide it.
+API answers 409 `four_eyes_violation`. The second principal may be a person or an
+independent agent (D-62, ADR 0054): a platform key bound to an agent definition. Neither may
+decide what they filed themselves, and for an agent "themselves" means the same key or any
+key of the same agent definition, so two keys of one agent cannot confirm each other. The
+agent on either side is copied from the key (`apps/taxonomy/http.py`), never from a body.
 
 A proposal made inside a tenant (a bank's own person or its agent key) is linked to that
 tenant through `ProposalTenant`, a tenant table under forced row-level security, and its
@@ -53,6 +56,7 @@ from apps.proposals.schemas import (
 )
 from apps.shared import tenancy
 from apps.shared.audit import Actor, record
+from apps.shared.authentication import Principal, PrincipalKind
 
 SUBJECT_TYPE = "proposal"
 # What an obligation proposal points at (schema v0.3 `subject_type`).
@@ -94,16 +98,32 @@ NAMED_PAYLOADS = (
 
 @dataclass(frozen=True)
 class Proposer:
-    """Who proposes: a person (session) or an agent (API key). Exactly one is set."""
+    """Who proposes: a person (session) or an agent (API key). Exactly one is set, and an
+    agent's key brings the agent definition it is bound to, or none."""
 
     actor: Actor
     user: Any = None
     api_key_id: uuid.UUID | None = None
     agent_run_id: uuid.UUID | None = None
+    agent_id: uuid.UUID | None = None
 
     @property
     def origin(self) -> OriginType:
         return OriginType.USER if self.user is not None else OriginType.AGENT
+
+
+@dataclass(frozen=True)
+class Reviewer:
+    """Who decides a proposal (PRO-02, D-62): a person holding `proposals.review`, or an
+    independent agent — a platform key holding `proposals:review` and bound to an agent
+    definition. Exactly one of `user` and `api_key_id` is set; `agent_id` and
+    `agent_version` are the key's own."""
+
+    actor: Actor
+    user: Any = None
+    api_key_id: uuid.UUID | None = None
+    agent_id: uuid.UUID | None = None
+    agent_version: int | None = None
 
 
 # ---------------------------------------------------------------------------------------
@@ -402,6 +422,7 @@ def create(
         agent_run_id=agent_run_id or proposer.agent_run_id,
         proposed_by_user=proposer.user,
         proposed_by_api_key_id=proposer.api_key_id,
+        proposed_by_agent_id=proposer.agent_id,
         idempotency_key=idempotency_key or None,
         status=ProposalStatus.OPEN.value,
         proposed_in_tenant=tenant_id is not None,
@@ -424,6 +445,10 @@ def create(
 # ---------------------------------------------------------------------------------------
 # Reading
 # ---------------------------------------------------------------------------------------
+# Who a row names on either side, joined with the row rather than read per row (playbook 10).
+PEOPLE_AND_AGENTS = ("proposed_by_user", "reviewed_by", "proposed_by_agent", "reviewed_by_agent")
+
+
 def _csv(value: str | None) -> list[str]:
     return [part.strip() for part in (value or "").split(",") if part.strip()]
 
@@ -434,7 +459,7 @@ def filtered(queryset: Any, *, status: str | None = None, kind: str | None = Non
     (`payload.list`) or the dimension a term proposal changes (`payload.dimension`). The
     vocabulary screen's "Suggested" tab asks for
     `?status=open&kind=vocabulary_create,term_create&targetList=flag`."""
-    queryset = queryset.select_related("proposed_by_user", "reviewed_by").order_by("created_at", "id")
+    queryset = queryset.select_related(*PEOPLE_AND_AGENTS).order_by("created_at", "id")
     statuses = _csv(status)
     if statuses:
         queryset = queryset.filter(status__in=statuses)
@@ -457,30 +482,54 @@ def validated_origin(origin: str | None) -> str | None:
     return origin
 
 
+def _filed_by(reader: Principal) -> Q:
+    """The proposals `reader` filed, which are the ones four eyes will not let them decide:
+    a person's own, or for an agent's key the key's own and any other key's of the same
+    agent definition (D-62). A proposal made inside a bank is never a platform reader's."""
+    if reader.kind is PrincipalKind.AGENT:
+        mine = Q(proposed_by_api_key_id=reader.subject_id)
+        if reader.agent_id is not None:
+            mine |= Q(proposed_by_agent_id=reader.agent_id)
+    else:
+        mine = Q(proposed_by_user_id=reader.subject_id)
+    return mine & Q(proposed_in_tenant=False)
+
+
+def is_mine(proposal: Proposal, reader: Principal) -> bool:
+    """The same question as `_filed_by`, asked of one row the reader is looking at."""
+    if proposal.proposed_in_tenant:
+        return False
+    if reader.kind is PrincipalKind.AGENT:
+        return proposal.proposed_by_api_key_id == reader.subject_id or (
+            reader.agent_id is not None and proposal.proposed_by_agent_id == reader.agent_id
+        )
+    return proposal.proposed_by_user_id == reader.subject_id
+
+
 def queue(
     *,
+    reader: Principal,
     status: str | None = None,
     kind: str | None = None,
     target_list: str | None = None,
     origin: str | None = None,
     not_mine: bool = False,
-    reviewer_id: uuid.UUID | None = None,
 ) -> Any:
-    """The console review queue. `origin` keeps an agent's proposals or a person's;
-    `not_mine` drops the ones this reviewer filed, which are the ones four eyes will not let
-    them decide."""
+    """The console review queue, read by a person or by an agent reviewer alike (D-62).
+    `origin` keeps an agent's proposals or a person's; `not_mine` drops the ones this reader
+    filed, which are the ones four eyes will not let them decide."""
     queryset = filtered(Proposal.objects.all(), status=status, kind=kind, target_list=target_list)
     origin = validated_origin(origin)
     if origin is not None:
         queryset = queryset.filter(origin=origin)
-    if not_mine and reviewer_id is not None:
-        queryset = queryset.exclude(proposed_by_user_id=reviewer_id)
+    if not_mine:
+        queryset = queryset.exclude(_filed_by(reader))
     return queryset
 
 
 def by_id(proposal_id: uuid.UUID) -> Proposal:
     proposal = (
-        Proposal.objects.select_related("proposed_by_user", "reviewed_by").filter(pk=proposal_id).first()  # ordering: pk lookup, at most one row
+        Proposal.objects.select_related(*PEOPLE_AND_AGENTS).filter(pk=proposal_id).first()  # ordering: pk lookup, at most one row
     )
     if proposal is None:
         raise ValidationError("That proposal is not here.", code="not_found")
@@ -489,6 +538,12 @@ def by_id(proposal_id: uuid.UUID) -> Proposal:
 
 def _actor_ref(user: Any) -> ProposalActorRef | None:
     return None if user is None else ProposalActorRef(id=user.id, name=user.name)
+
+
+def _agent_key(agent: Any) -> str | None:
+    """An agent definition as a reader names it: its immutable key, the id of its folder
+    under `backend/agents/`."""
+    return None if agent is None else str(agent.key)
 
 
 def row(proposal: Proposal) -> ProposalRow:
@@ -512,8 +567,10 @@ def row(proposal: Proposal) -> ProposalRow:
         agent_run_id=proposal.agent_run_id,
         model=proposal.model,
         proposed_by=None if proposal.proposed_in_tenant else _actor_ref(proposal.proposed_by_user),
+        proposed_by_agent=None if proposal.proposed_in_tenant else _agent_key(proposal.proposed_by_agent),
         from_organisation=proposal.proposed_in_tenant,
         reviewed_by=_actor_ref(proposal.reviewed_by),
+        reviewed_by_agent=_agent_key(proposal.reviewed_by_agent),
         reviewed_at=proposal.reviewed_at,
         rejection_code=proposal.rejection_code,
         review_note=proposal.review_note,
@@ -525,17 +582,44 @@ def row(proposal: Proposal) -> ProposalRow:
 # ---------------------------------------------------------------------------------------
 # Deciding
 # ---------------------------------------------------------------------------------------
-def _decidable(proposal: Proposal, reviewer: Any) -> None:
+def _decidable(proposal: Proposal, reviewer: Reviewer) -> None:
+    """Open, and not the reviewer's own (AC-PRO2, D-62). The same person, the same key and
+    another key of the same agent definition are each refused, as the check constraint
+    refuses them; the refusal here says so in words before the database has to."""
     if proposal.status != ProposalStatus.OPEN.value:
         raise ValidationError("This proposal has already been decided.", code="invalid_transition")
-    if proposal.proposed_by_user_id is not None and proposal.proposed_by_user_id == reviewer.id:
+    own = (
+        (reviewer.user is not None and proposal.proposed_by_user_id == reviewer.user.id)
+        or (reviewer.api_key_id is not None and proposal.proposed_by_api_key_id == reviewer.api_key_id)
+        or (reviewer.agent_id is not None and proposal.proposed_by_agent_id == reviewer.agent_id)
+    )
+    if own:
         raise ValidationError(
-            "A proposal is decided by someone other than the person who made it.",
+            "A proposal is decided by someone other than whoever made it: another person, or an "
+            "agent of a different definition and key.",
             code="four_eyes_violation",
         )
 
 
-def corrected(proposal: Proposal, reviewer: Any, overrides: dict[str, Any]) -> dict[str, Any]:
+def _decided_by(proposal: Proposal, reviewer: Reviewer) -> list[str]:
+    """Write who decided onto the row: a person, or the key and the agent it is bound to.
+    Returns the columns moved, for `save(update_fields=...)`."""
+    proposal.reviewed_by = reviewer.user
+    proposal.reviewed_by_api_key_id = reviewer.api_key_id
+    proposal.reviewed_by_agent_id = reviewer.agent_id
+    return ["reviewed_by", "reviewed_by_api_key", "reviewed_by_agent"]
+
+
+def _reviewer_values(reviewer: Reviewer) -> dict[str, Any]:
+    """What the audit row of a decision says about an agent reviewer beyond the actor: the
+    definition version it ran and the key it called with (PRO-S13, AUD-02). A person's
+    decision carries a step-up assertion instead, on the row itself."""
+    if reviewer.api_key_id is None:
+        return {}
+    return {"agentVersion": reviewer.agent_version, "apiKeyId": str(reviewer.api_key_id)}
+
+
+def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any]) -> dict[str, Any]:
     """The payload as the reviewer corrected it, checked as firmly as the one that arrived
     (PRO-02, AC-PRO1).
 
@@ -559,7 +643,9 @@ def corrected(proposal: Proposal, reviewer: Any, overrides: dict[str, Any]) -> d
     parsed = validated_payload(proposal.kind, merged)
     check_field_sources(parsed, proposal.field_sources)
     proposal.corrected_payload = payload_dict(parsed)
-    proposal.corrected_by = reviewer
+    # A person's correction names them; an agent's is named by the decision it rode in on,
+    # whose key and agent the row already carries.
+    proposal.corrected_by = reviewer.user
     proposal.corrected_at = timezone.now()
     # The row's own date follows the correction, because a queue row that showed one date
     # while the version carried another would be a proposal nobody could read straight
@@ -571,11 +657,10 @@ def corrected(proposal: Proposal, reviewer: Any, overrides: dict[str, Any]) -> d
 def approve(
     *,
     proposal: Proposal,
-    reviewer: Any,
-    actor: Actor,
+    reviewer: Reviewer,
     note: str,
     payload_overrides: dict[str, Any] | None = None,
-    step_up_assertion_id: uuid.UUID,
+    step_up_assertion_id: uuid.UUID | None,
 ) -> Proposal:
     """Apply the payload and approve, in one transaction (PRO-02): the library row, its
     audit row and the proposal's own audit row commit together or not at all.
@@ -583,38 +668,48 @@ def approve(
     A reviewer may correct the payload on the way through (`payload_overrides`). What they
     approved is stored beside what was proposed, as their own correction, so the queue and
     the audit trail keep both.
+
+    A person arrives with a fresh passkey assertion, whose id goes on every audit row the
+    approval writes. An agent reviewer arrives with none, because a key cannot step up
+    (D-62): its approval is exactly a person's in every other respect, and what it applied
+    carries machine-confirmed provenance rather than a person's verification (INV-05).
     """
     from apps.proposals import apply
 
     _decidable(proposal, reviewer)
-    decided = ["status", "reviewed_by", "reviewed_at", "applied_at", "review_note"]
+    decided = ["status", "reviewed_at", "applied_at", "review_note"]
     if payload_overrides:
         corrected(proposal, reviewer, payload_overrides)
         decided += ["corrected_payload", "corrected_by", "corrected_at", "effective_from"]
-    apply.apply(proposal, actor=actor, reviewer=reviewer, step_up=step_up_assertion_id)
+    apply.apply(proposal, actor=reviewer.actor, reviewer=reviewer, step_up=step_up_assertion_id)
     now = timezone.now()
     proposal.status = ProposalStatus.APPROVED.value
-    proposal.reviewed_by = reviewer
+    decided += _decided_by(proposal, reviewer)
     proposal.reviewed_at = now
     proposal.applied_at = now
     proposal.review_note = note.strip()
     proposal.save(update_fields=decided)
     record(
         action="proposal.approved",
-        actor=actor,
+        actor=reviewer.actor,
         subject_type=SUBJECT_TYPE,
         subject_id=proposal.id,
         subject_title=proposal.title,
         summary=f"Approved: {proposal.title}",
         tenant_id=None,
         before={"status": ProposalStatus.OPEN.value},
-        after={"status": proposal.status, "note": proposal.review_note, "corrected": proposal.corrected_payload is not None},
+        after={
+            "status": proposal.status,
+            "note": proposal.review_note,
+            "corrected": proposal.corrected_payload is not None,
+            **_reviewer_values(reviewer),
+        },
         step_up_assertion_id=step_up_assertion_id,
     )
     return proposal
 
 
-def reject(*, proposal: Proposal, reviewer: Any, actor: Actor, rejection_code: str, note: str) -> Proposal:
+def reject(*, proposal: Proposal, reviewer: Reviewer, rejection_code: str, note: str) -> Proposal:
     """A rejection needs a reason (PRO-01): a code the proposer's screen can branch on and a
     sentence they can read. The code is a live row of the `rejection_reason` library list, an
     admin's to extend and retire, so a code from an older screen or a retired row is refused
@@ -644,21 +739,21 @@ def reject(*, proposal: Proposal, reviewer: Any, actor: Actor, rejection_code: s
         )
     _decidable(proposal, reviewer)
     proposal.status = ProposalStatus.REJECTED.value
-    proposal.reviewed_by = reviewer
+    decided = _decided_by(proposal, reviewer)
     proposal.reviewed_at = timezone.now()
     proposal.rejection_code = code
     proposal.review_note = text
-    proposal.save(update_fields=["status", "reviewed_by", "reviewed_at", "rejection_code", "review_note"])
+    proposal.save(update_fields=["status", "reviewed_at", "rejection_code", "review_note", *decided])
     record(
         action="proposal.rejected",
-        actor=actor,
+        actor=reviewer.actor,
         subject_type=SUBJECT_TYPE,
         subject_id=proposal.id,
         subject_title=proposal.title,
         summary=f"Rejected: {proposal.title}",
         tenant_id=None,
         before={"status": ProposalStatus.OPEN.value},
-        after={"status": proposal.status, "rejectionCode": code, "note": text},
+        after={"status": proposal.status, "rejectionCode": code, "note": text, **_reviewer_values(reviewer)},
         topic="proposal.rejected",
     )
     return proposal
