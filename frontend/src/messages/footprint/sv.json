@@ -1,5 +1,5 @@
 {
-  "footprint.title": "Regelverksomfattning",
+  "footprint.title": "Regulatorisk omfattning",
   "footprint.lede": "Vad flödet, inventariet och färdplanen visar er",
   "footprint.notRestricted": "Ingen begränsning",
   "footprint.allSelected": "Alla: {dimension}",
@@ -28,7 +28,7 @@
   "footprint.preview.secondPerson": "En andra person godkänner med en nyckel",
   "footprint.sent": "Skickat för godkännande.",
   "footprint.banner.requestedBy": "Begärd av {name}, {date}.",
-  "footprint.banner.youRequested": "Du begärde detta {date}. En andra person med behörighet att godkänna regelverksomfattningen måste godkänna det.",
+  "footprint.banner.youRequested": "Du begärde detta {date}.",
   "footprint.banner.waiting": "En andra person med behörighet att godkänna regelverksomfattningen måste godkänna det.",
   "footprint.banner.seePreview": "Se förhandsvisningen",
   "footprint.banner.reject": "Avvisa",
@@ -37,8 +37,8 @@
   "footprint.approve.title": "Godkänn \"{title}\"?",
   "footprint.approve.body": "Det som döljs lämnar flödet, inventariet, färdplanen och sammanfattningen. En revisionspost per term. Din nyckel kommer att efterfrågas.",
   "footprint.approve.button": "Godkänn med nyckel",
-  "footprint.approvedDone": "Godkänt. Regelverksomfattningen har ändrats.",
-  "footprint.fourEyes": "Du begärde denna ändring. En andra person med behörighet att godkänna regelverksomfattningen måste godkänna den.",
+  "footprint.approvedDone": "Godkänt. Den regulatoriska omfattningen har ändrats.",
+  "footprint.fourEyes": "Du begärde ändringen, så någon annan måste godkänna den.",
   "footprint.reject.title": "Avvisa denna ändring",
   "footprint.reject.reason": "Skäl",
   "footprint.reject.reasonPlaceholder": "t.ex. Vi ger fortfarande rådgivning inom private banking",
@@ -55,5 +55,5 @@
   "footprint.history.pending": "begärde \"{title}\".",
   "footprint.readOnly": "Du kan se regelverksomfattningen. Att ändra den kräver behörighet att begära en ändring; fråga en compliance officer eller en administratör.",
   "footprint.pendingReadOnly": "Medan en begäran väntar på godkännande kan termerna inte ändras.",
-  "footprint.errorTitle": "Kunde inte läsa in regelverksomfattningen"
+  "footprint.errorTitle": "Kunde inte läsa in den regulatoriska omfattningen"
 }
