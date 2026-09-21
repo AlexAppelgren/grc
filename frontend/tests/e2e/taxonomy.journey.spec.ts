@@ -462,7 +462,7 @@ test.describe('taxonomy journeys', () => {
       await dialog.getByRole('button', { name: 'Approve with passkey' }).click();
       // Step-up: settle on the prompt or the outcome, since a sign-in moments ago may still count.
       const prompt = approver.getByRole('dialog', { name: 'Confirm with your passkey' });
-      const done = approver.getByText('Approved. The footprint has changed.');
+      const done = approver.getByText('Approved. The regulatory scope has changed.');
       await expect(prompt.or(done).first()).toBeVisible();
       if (await prompt.isVisible()) await prompt.getByRole('button', { name: 'Use passkey' }).click();
       await expect(done).toBeVisible();
@@ -476,7 +476,7 @@ test.describe('taxonomy journeys', () => {
       allowFreshContext(apiGuard);
       await signInAs(page, LOGINS.complianceOfficer);
       await officerStartsClean(page);
-      await expect(page.getByRole('heading', { level: 1, name: 'Footprint' })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1, name: 'Regulatory scope' })).toBeVisible();
 
       await officerSwitchesOffAdvice(page);
       // The stored request shows its counted preview on demand.
@@ -549,7 +549,7 @@ test.describe('taxonomy journeys', () => {
 
         await page.getByRole('button', { name: 'Show outside our scope' }).click();
         await expect(adviceOnlyRow(page)).toHaveAttribute('data-outside-footprint', '');
-        await expect(adviceOnlyRow(page).getByText('Outside your footprint: Advice')).toBeVisible();
+        await expect(adviceOnlyRow(page).getByText('Outside your scope: Advice')).toBeVisible();
       } finally {
         // Put Advice back through the same door, so the footprint reads as seeded.
         await page.goto('/admin/footprint');

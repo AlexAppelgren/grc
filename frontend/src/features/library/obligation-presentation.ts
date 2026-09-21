@@ -175,7 +175,7 @@ export function presentScope(scope: ScopeFacts, t: Translate): PresentedScope {
   return { pills: scope.terms.map((term, i) => ({ key: `scope:${term.key}`, label: term.label, tone: slotTone.scopeTerm, order: i })) };
 }
 
-// "Outside your footprint: Advice" in the meta line of a row that only shows
+// "Outside your scope: Advice" in the meta line of a row that only shows
 // with "Show outside footprint": the terms that put it outside.
 export function outsideFootprintLabel(terms: readonly VocabularyRef[], t: Translate): string {
   return t('library.outsideFootprint', { terms: terms.map((term) => term.label).join(', ') });

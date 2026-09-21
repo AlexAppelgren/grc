@@ -29,7 +29,7 @@ from django.utils import timezone
 from apps.library import reading
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
-from apps.taxonomy import matching, terms_logic
+from apps.taxonomy import markets_logic, matching, terms_logic
 from apps.taxonomy.models import (
     ApprovalStatus,
     FootprintAction,
@@ -59,9 +59,10 @@ REQUEST_SUBJECT_TYPE = "footprint_change_request"
 # ---------------------------------------------------------------------------------------
 def view(tenant_id: uuid.UUID, order: list[str]) -> FootprintView:
     """The footprint screen's data (FP-01): every dimension, the terms this company carries
-    in it, whether it restricts the footprint at all, and the pending request if one waits.
-    A dimension with no terms is not an error and not an omission: it means "no
-    restriction", which the screen says in words (playbook 4.5)."""
+    in it, whether it restricts the footprint at all, the pending request if one waits, and
+    every active country's market level (FP-04). A dimension with no terms is not an error
+    and not an omission: it means "no restriction", which the screen says in words
+    (playbook 4.5)."""
     selected = terms_logic.selected_terms_by_dimension(tenant_id, order)
     dimensions: list[FootprintDimension] = []
     for ref, restricts, term_count in terms_logic.dimensions_for_footprint(order):
@@ -74,7 +75,11 @@ def view(tenant_id: uuid.UUID, order: list[str]) -> FootprintView:
                 all_selected=bool(term_count) and len(terms) == term_count,
             )
         )
-    return FootprintView(dimensions=dimensions, pending_request=pending_row(tenant_id, order))
+    return FootprintView(
+        dimensions=dimensions,
+        pending_request=pending_row(tenant_id, order),
+        markets=markets_logic.markets_of(tenant_id, order),
+    )
 
 
 def pending(tenant_id: uuid.UUID) -> FootprintChangeRequest | None:

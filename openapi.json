@@ -2587,6 +2587,14 @@
             "title": "Dimensions",
             "type": "array"
           },
+          "markets": {
+            "description": "Every active country's operating and watching level, one row per country, in jurisdiction sort order (FP-04).",
+            "items": {
+              "$ref": "#/components/schemas/MarketRow"
+            },
+            "title": "Markets",
+            "type": "array"
+          },
           "pendingRequest": {
             "anyOf": [
               {
@@ -4216,6 +4224,58 @@
           "body"
         ],
         "title": "MailOutboxMessage",
+        "type": "object"
+      },
+      "MarketRow": {
+        "description": "One active country's market level (FP-04), computed fresh on every read and never\nstored: operating when the jurisdiction's mirrored term sits in the tenant's footprint,\nset only through a footprint change request (FP-02); watching when a `watched_market`\nrow names it, a direct write that hides nothing. Both false reads as not followed.",
+        "properties": {
+          "jurisdiction": {
+            "$ref": "#/components/schemas/TermRef",
+            "description": "The country: its key, kind (always `country`) and label in the caller's language. A row of the jurisdiction vocabulary; an admin may add more without a deploy, and `GET /reference/jurisdictions` lists the live set."
+          },
+          "operating": {
+            "description": "True when this country's mirrored jurisdiction term is in the tenant's footprint. Changes only through a footprint change request with its preview, second person and step-up.",
+            "title": "Operating",
+            "type": "boolean"
+          },
+          "watching": {
+            "description": "True when the tenant has a `watched_market` row naming this country. Set directly with `POST /tenant/footprint/watching`, with no preview, no second person and no step-up, because watching hides nothing.",
+            "title": "Watching",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "jurisdiction",
+          "operating",
+          "watching"
+        ],
+        "title": "MarketRow",
+        "type": "object"
+      },
+      "MarketWatchBody": {
+        "additionalProperties": false,
+        "description": "`POST /tenant/footprint/watching` and `POST /tenant/footprint/watching/remove`\n(FP-04): the jurisdiction key rides in the body on both routes, never in the path or a\nquery string, because the tenant's watch list is sensitive and does not belong on an\naccess log line.",
+        "examples": [
+          {
+            "jurisdiction": "no"
+          }
+        ],
+        "properties": {
+          "jurisdiction": {
+            "description": "The key of a row of the jurisdiction vocabulary naming a country, at most 80 characters, such as `no` for Norway (`GET /reference/jurisdictions` lists the live rows; an admin may add more without a deploy). The union itself, an unknown or inactive key, or a supranational key answers 422 `unknown_key` or `not_a_country`.",
+            "examples": [
+              "no"
+            ],
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Jurisdiction",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jurisdiction"
+        ],
+        "title": "MarketWatchBody",
         "type": "object"
       },
       "Me": {
@@ -18799,6 +18859,106 @@
           }
         ],
         "summary": "Withdraw Footprint Request",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/tenant/footprint/watching": {
+      "post": {
+        "description": "Add a country to the \"Markets we watch\" list (FP-04): a direct, audited write, not a\nfootprint change request, because watching hides nothing from anyone and needs no\npreview, no second person and no step-up. Watching an already-watched country answers\n409 `already_watching`; an unknown, inactive or non-country key answers 422\n`unknown_key` or `not_a_country`. Watching an operating market is allowed and changes\nnothing visible until operating stops, when the market reads as watched again.\n\nRequires `footprint.request` in the caller's tenant, the same permission that starts a\nfootprint change. Errors: `permission_denied` without it, `unauthenticated` without a\nsession, `validation_error` for a body the schema rejects.",
+        "operationId": "watchMarket",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "jurisdiction": "no"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/MarketWatchBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "jurisdiction": {
+                    "key": "no",
+                    "kind": "country",
+                    "label": "Norway"
+                  },
+                  "operating": false,
+                  "watching": true
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MarketRow"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Start watching a market we do not operate in",
+        "tags": [
+          "Taxonomy"
+        ]
+      }
+    },
+    "/api/v1/tenant/footprint/watching/remove": {
+      "post": {
+        "description": "Remove a country from the \"Markets we watch\" list (FP-04): the same direct, audited\nwrite as watching, with no preview, no second person and no step-up. A country that is\noperating is untouched by this even when it once had a watch row, because the level is\ncomputed, not stored. A country with no watch row answers 404 `not_found`; an unknown,\ninactive or non-country key answers 422 `unknown_key` or `not_a_country`.\n\nRequires `footprint.request` in the caller's tenant. Errors: `permission_denied`\nwithout it, `unauthenticated` without a session, `not_found` for a market not\ncurrently watched.",
+        "operationId": "unwatchMarket",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "jurisdiction": "no"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/MarketWatchBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "jurisdiction": {
+                    "key": "no",
+                    "kind": "country",
+                    "label": "Norway"
+                  },
+                  "operating": false,
+                  "watching": true
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MarketRow"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Stop watching a market",
         "tags": [
           "Taxonomy"
         ]

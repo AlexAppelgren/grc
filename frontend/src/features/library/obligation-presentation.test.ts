@@ -150,9 +150,9 @@ describe('presentScope', () => {
 
 describe('outsideFootprintLabel', () => {
   it('names the terms that put the row outside the footprint', () => {
-    expect(outsideFootprintLabel([{ key: 'advice', label: 'Advice' }], t)).toBe('Outside your footprint: Advice');
-    expect(outsideFootprintLabel([{ key: 'advice', label: 'Advice' }, { key: 'custody', label: 'Custody' }], t)).toBe('Outside your footprint: Advice, Custody');
-    expect(outsideFootprintLabel([{ key: 'advice', label: 'Rådgivning' }], sv)).toBe('Utanför ert avtryck: Rådgivning');
+    expect(outsideFootprintLabel([{ key: 'advice', label: 'Advice' }], t)).toBe('Outside your scope: Advice');
+    expect(outsideFootprintLabel([{ key: 'advice', label: 'Advice' }, { key: 'custody', label: 'Custody' }], t)).toBe('Outside your scope: Advice, Custody');
+    expect(outsideFootprintLabel([{ key: 'advice', label: 'Rådgivning' }], sv)).toBe('Utanför er omfattning: Rådgivning');
   });
 });
 

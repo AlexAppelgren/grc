@@ -10,14 +10,17 @@ import {
   draftOf,
   historyLine,
   isRequester,
+  narrowedGroups,
   pendingAdditions,
   pendingRemovals,
+  pendingTermPill,
   presentFootprintDimension,
   presentRequestStatus,
   presentScope,
   previewLines,
   previewSummary,
   requestTitle,
+  scopeGroups,
   termsOutside,
   toggleTerm,
 } from './footprint-presentation';
@@ -153,6 +156,50 @@ describe('draft and diff', () => {
     ];
     expect(termsOutside(all, service).map((term) => term.key)).toEqual(['execution_only']);
     expect(termsOutside(all, client).map((term) => term.key)).toEqual(['retail']);
+  });
+});
+
+describe('scopeGroups, narrowedGroups and pendingTermPill', () => {
+  const channel: FootprintDimension = { dimension: { key: 'channel', kind: 'classification', label: 'Channel' }, restrictsFootprint: false, terms: [{ key: 'digital', kind: null, label: 'Digital' }], allSelected: false };
+  const lifecycleStage: FootprintDimension = {
+    dimension: { key: 'lifecycle_stage', kind: 'classification', label: 'Lifecycle stage' },
+    restrictsFootprint: false,
+    terms: [{ key: 'pre_trade', kind: null, label: 'Pre-trade' }],
+    allSelected: false,
+  };
+  const theme: FootprintDimension = { dimension: { key: 'theme', kind: 'classification', label: 'Theme' }, restrictsFootprint: false, terms: [{ key: 'aml', kind: null, label: 'AML' }], allSelected: false };
+  const termless: FootprintDimension = { dimension: { key: 'jurisdiction', kind: 'scope', label: 'Jurisdiction' }, restrictsFootprint: true, terms: [], allSelected: false };
+  const allTerms: TaxonomyTerm[] = [
+    { key: 'advice', kind: null, label: 'Advice', dimension: 'service_type' },
+    { key: 'custody', kind: null, label: 'Custody', dimension: 'service_type' },
+    { key: 'execution_only', kind: null, label: 'Execution only', dimension: 'service_type', active: true },
+    { key: 'digital', kind: null, label: 'Digital', dimension: 'channel' },
+    { key: 'retail', kind: null, label: 'Retail', dimension: 'client_category', active: false },
+  ];
+
+  it('keeps only dimensions that restrict the footprint and hold at least one term', () => {
+    const groups = scopeGroups([service, client, channel, lifecycleStage, theme, termless], allTerms);
+    expect(groups.map((g) => g.dimension.key)).toEqual(['service_type']);
+    expect(groups[0]!.rows).toEqual([
+      { term: allTerms[0], held: true },
+      { term: allTerms[1], held: true },
+      { term: allTerms[2], held: false },
+    ]);
+  });
+
+  it('detects narrowing (empty in the stored scope, non-empty in the draft) and not widening', () => {
+    const draft = draftOf([service, client]);
+    // Widening: adding to an already-restricting group is not a new narrowing.
+    expect(narrowedGroups([service, client], toggleTerm(draft, 'service_type', 'execution_only'))).toEqual([]);
+    // Narrowing: the first term ticked in an empty group.
+    expect(narrowedGroups([service, client], toggleTerm(draft, 'client_category', 'retail')).map((d) => d.dimension.key)).toEqual(['client_category']);
+    // A group already restricting, even if the draft empties it, was not narrowed by this draft.
+    expect(narrowedGroups([service], {})).toEqual([]);
+  });
+
+  it('pends a term with the warning tone and the added/removed labels', () => {
+    expect(pendingTermPill('add', t)).toEqual({ key: 'pending:add', label: 'Added when approved', tone: 'warning', order: 0 });
+    expect(pendingTermPill('remove', t)).toEqual({ key: 'pending:remove', label: 'Removed when approved', tone: 'warning', order: 0 });
   });
 });
 
