@@ -188,6 +188,47 @@ CONSOLE_ROW_EXAMPLE: JsonDict = {
     "unconfirmedCount": 2,
     "firstSeenAt": "2026-09-16T06:02:00Z",
 }
+# The library record a write answers, and the change page built from it. Named here rather
+# than written out twice, so the page and the record it extends cannot drift apart: the page
+# differs in exactly the four members below and a reader can see which.
+CHANGE_EXAMPLE: JsonDict = {
+    "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+    "stableKey": "chg-fi-2026-research-payments",
+    "title": "FI adopts amended rules on paying for investment research",
+    "changeType": {"key": "adopted", "kind": "adopted", "label": "Adopted"},
+    "authorityLabel": "Finansinspektionen",
+    "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+    "publishedOn": "2026-09-15",
+    "publishedPrecision": "day",
+    "summary": "FI's board decided on 15 September 2026 to amend three regulations in the securities area.",
+    "soWhatDraft": "Teams that pay for external research should confirm that documented criteria exist.",
+    "suggestedUrgency": {"key": "act_now", "kind": None, "label": "Act now"},
+    "keyDate": "2026-10-01",
+    "keyDatePrecision": "day",
+    "keyDateLabel": "In force",
+    "recurrenceRule": None,
+    "flags": [{"key": "advice_perimeter", "kind": None, "label": "Advice perimeter"}],
+    "sourceLabel": "Finansinspektionen",
+    "sourceUrl": "https://www.fi.se/",
+    "status": "active",
+    "terms": [{"key": "securities", "kind": None, "label": "Securities"}],
+    "events": [EVENT_EXAMPLE],
+    "documents": [DOCUMENT_EXAMPLE],
+    "duplicateCount": 1,
+    "obligations": [OBLIGATION_LINK_EXAMPLE],
+    "origin": "agent",
+    "model": "agent pipeline 0.4",
+    "agentRunId": "5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21",
+    "firstSeenAt": "2026-09-16T06:02:00Z",
+}
+CHANGE_DETAIL_EXAMPLE: JsonDict = CHANGE_EXAMPLE | {
+    # The change page answers a flag and a scope term as facts, exactly as a feed row does:
+    # a person judges a change here, so an agent's suggestion has to be visible as one.
+    "flags": [FACT_EXAMPLE],
+    "terms": [TERM_FACT_EXAMPLE],
+    "inFootprint": True,
+    "case": CASE_EXAMPLE,
+}
 
 
 # ---------------------------------------------------------------------------------------
@@ -1155,42 +1196,7 @@ class WatchChange(CamelSchema):
     """A library record: sourced facts, shared by every tenant. No tenant judgement, no
     case and no "So what?" confirmation is here; those sit on the tenant's own case."""
 
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {
-                    "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
-                    "stableKey": "chg-fi-2026-research-payments",
-                    "title": "FI adopts amended rules on paying for investment research",
-                    "changeType": {"key": "adopted", "kind": "adopted", "label": "Adopted"},
-                    "authorityLabel": "Finansinspektionen",
-                    "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
-                    "publishedOn": "2026-09-15",
-                    "publishedPrecision": "day",
-                    "summary": "FI's board decided on 15 September 2026 to amend three regulations in the securities area.",
-                    "soWhatDraft": "Teams that pay for external research should confirm that documented criteria exist.",
-                    "suggestedUrgency": {"key": "act_now", "kind": None, "label": "Act now"},
-                    "keyDate": "2026-10-01",
-                    "keyDatePrecision": "day",
-                    "keyDateLabel": "In force",
-                    "recurrenceRule": None,
-                    "flags": [{"key": "advice_perimeter", "kind": None, "label": "Advice perimeter"}],
-                    "sourceLabel": "Finansinspektionen",
-                    "sourceUrl": "https://www.fi.se/",
-                    "status": "active",
-                    "terms": [{"key": "securities", "kind": None, "label": "Securities"}],
-                    "events": [EVENT_EXAMPLE],
-                    "documents": [DOCUMENT_EXAMPLE],
-                    "duplicateCount": 1,
-                    "obligations": [OBLIGATION_LINK_EXAMPLE],
-                    "origin": "agent",
-                    "model": "agent pipeline 0.4",
-                    "agentRunId": "5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21",
-                    "firstSeenAt": "2026-09-16T06:02:00Z",
-                }
-            ]
-        }
-    )
+    model_config = ConfigDict(json_schema_extra={"examples": [CHANGE_EXAMPLE]})
 
     id: uuid.UUID = Field(description="The change's identifier in the shared library.", examples=["c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19"])
     stable_key: str = Field(
@@ -1545,10 +1551,56 @@ class WatchChangeRow(LibraryResponse):
 
 
 class WatchChangeDetail(WatchChange):
-    """`GET /changes/{changeId}`: the whole change page. The library record exactly as
-    `WatchChange` answers it, plus the two facts that are the reader's own — whether it is
-    in their footprint and their bank's case."""
+    """`GET /changes/{changeId}`: the whole change page. The library record as `WatchChange`
+    answers it, plus the two facts that are the reader's own — whether it is in their
+    footprint and their bank's case — and with the classification answered the way the feed
+    answers it.
 
+    `flags` and `terms` are `WatchFact` here and `LibraryRef` on `WatchChange`, because the
+    write shapes answer the record as stored and this is the page a person judges a change
+    on: an agent's suggestion has to be visible as a suggestion where the decision is taken
+    (WAT-03). The change page used to flatten each fact to its `ref` and lose the
+    provenance the feed row carries (2026-09-21).
+
+    `changeType` stays a `LibraryRef` here, where a feed row answers a fact. It is not the
+    same gap: the library stores no confidence and no confirmation for the type itself, so
+    the row's fact derives `suggested` from the change's own `origin` — and this response
+    already carries `origin`, `model` and `agentRunId` at the top level. An individual flag
+    or scope term has no such field to be read off, which is why those two had to carry
+    their own.
+    """
+
+    model_config = ConfigDict(json_schema_extra={"examples": [CHANGE_DETAIL_EXAMPLE]})
+
+    flags: list[WatchFact] = Field(  # type: ignore[assignment]  # narrower than WatchChange's: see the docstring
+        description=(
+            "What the change is about across subject areas, each as a fact rather than a bare "
+            "reference. `ref` is the row of the `flag` library vocabulary itself, as "
+            "`{key, kind, label}` — `ai` and `advice_perimeter` on day one. `confidence` is how "
+            "sure the agent that put the flag there was, 0 to 1, or null when a library editor "
+            "set it by hand; it orders nothing on this screen and says nothing about whether "
+            "the flag is right. `suggested` is true while no library editor has confirmed the "
+            "flag, and the change page marks such a flag as the agent's reading rather than a "
+            "checked fact — a reader deciding from this page must not treat it as checked. A "
+            "library editor confirms a flag in the console queue and never here, and a bank "
+            "never confirms one at all: it is a library fact behind `proposals.review` "
+            f"(WAT-03, PRO-01). An empty list means no flag applies, not that nobody looked. {_VOCABULARY}"
+        )
+    )
+    terms: list[WatchFact] = Field(  # type: ignore[assignment]  # narrower than WatchChange's: see the docstring
+        description=(
+            "The taxonomy terms that scope the change — regime, market, product, service — each "
+            "as a fact rather than a bare reference. `ref` is the taxonomy row itself, as "
+            "`{key, kind, label}` with `securities`, `banking`, `payments`, `insurance`, `aml`, "
+            "`tax`, `data_protection` and `ai_ict` among the regimes seeded on day one; a term's "
+            "`kind` is null because its dimension is its kind. `confidence` is the agent's own "
+            "number, 0 to 1, or null when a person set the term. `suggested` is true until a "
+            "library editor confirms it, and the change page shows such a term as a suggestion. "
+            "This is what the footprint is matched against, and `inFootprint` is computed from "
+            "every term whether or not it is still suggested; it is not this bank's footprint "
+            f"and it never says the bank complies (REG-01, REG-02). {_VOCABULARY}"
+        )
+    )
     in_footprint: bool = Field(
         description="Whether the change's scope matches the reader's footprint, computed by the server (FP-03).", examples=[True]
     )

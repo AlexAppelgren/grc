@@ -774,7 +774,15 @@ Chunk 6 (home, the briefing, the roadmap and the calendar feed), 2026-09-21:
   `case`. The case block carries the category, the urgency and whether a person confirmed
   it, the footprint match, the "So what?" and its confirmation, the bank's own
   obligation-link decisions, and `allowedTransitions`, which is an empty list in R1
-  because the workflow that would move a case is chunk 9.
+  because the workflow that would move a case is chunk 9. Its `flags` and `terms` are
+  facts, `{ref: {key, kind, label}, confidence, suggested}`, exactly as a feed row answers
+  them, and not the bare references a write response carries (2026-09-21): this is the
+  page a person judges a change on, and an agent's suggestion has to read as a suggestion
+  where the decision is taken (WAT-03). `changeType` stays a bare reference here, because
+  the library stores no confidence and no confirmation for the type itself and this
+  response already carries `origin`, `model` and `agentRunId` at the top level for it to
+  be read off; an individual flag or scope term has no such field, which is why those two
+  had to carry their own.
 - `GET /console/changes` (`listConsoleChanges`) is **new**: the console's queue of
   changes carrying a fact nobody has confirmed, under `proposals.review`, with a
   `confirmed=false|all` filter and an authority filter. It joins no case, because a

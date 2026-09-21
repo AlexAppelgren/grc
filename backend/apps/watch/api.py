@@ -454,9 +454,11 @@ def get_change(request: HttpRequest, change_id: uuid.UUID = Path(..., descriptio
     `case` is this bank's own and is invisible to bleqq, to every other bank and to every
     model endpoint. An obligation link says on itself whether a library editor confirmed it;
     `confirmed: false` is a suggestion an agent made and must not be read as checked, nor as
-    a statement that the change does not touch that duty. The change's type, flags and scope
-    terms are the rows an agent put forward too, and a library editor confirms them in the
-    console rather than here.
+    a statement that the change does not touch that duty. Each flag and each scope term says
+    the same on itself, as `{ref, confidence, suggested}` exactly as a feed row answers it:
+    `suggested: true` is the agent's reading and not a checked fact, `confidence` is the
+    agent's own number and orders nothing here. A library editor confirms them in the console
+    queue rather than here, and a bank never confirms one at all.
 
     Errors: `not_found` when no change has that id, when the caller may not see it, or when
     the session belongs to no bank — all answered the same way on purpose, so no id can be

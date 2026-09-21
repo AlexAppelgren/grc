@@ -848,9 +848,11 @@ export interface paths {
          *     `case` is this bank's own and is invisible to bleqq, to every other bank and to every
          *     model endpoint. An obligation link says on itself whether a library editor confirmed it;
          *     `confirmed: false` is a suggestion an agent made and must not be read as checked, nor as
-         *     a statement that the change does not touch that duty. The change's type, flags and scope
-         *     terms are the rows an agent put forward too, and a library editor confirms them in the
-         *     console rather than here.
+         *     a statement that the change does not touch that duty. Each flag and each scope term says
+         *     the same on itself, as `{ref, confidence, suggested}` exactly as a feed row answers it:
+         *     `suggested: true` is the agent's reading and not a checked fact, `confidence` is the
+         *     agent's own number and orders nothing here. A library editor confirms them in the console
+         *     queue rather than here, and a bank never confirms one at all.
          *
          *     Errors: `not_found` when no change has that id, when the caller may not see it, or when
          *     the session belongs to no bank — all answered the same way on purpose, so no id can be
@@ -8573,13 +8575,44 @@ export interface components {
         };
         /**
          * WatchChangeDetail
-         * @description `GET /changes/{changeId}`: the whole change page. The library record exactly as
-         *     `WatchChange` answers it, plus the two facts that are the reader's own — whether it is
-         *     in their footprint and their bank's case.
+         * @description `GET /changes/{changeId}`: the whole change page. The library record as `WatchChange`
+         *     answers it, plus the two facts that are the reader's own — whether it is in their
+         *     footprint and their bank's case — and with the classification answered the way the feed
+         *     answers it.
+         *
+         *     `flags` and `terms` are `WatchFact` here and `LibraryRef` on `WatchChange`, because the
+         *     write shapes answer the record as stored and this is the page a person judges a change
+         *     on: an agent's suggestion has to be visible as a suggestion where the decision is taken
+         *     (WAT-03). The change page used to flatten each fact to its `ref` and lose the
+         *     provenance the feed row carries (2026-09-21).
+         *
+         *     `changeType` stays a `LibraryRef` here, where a feed row answers a fact. It is not the
+         *     same gap: the library stores no confidence and no confirmation for the type itself, so
+         *     the row's fact derives `suggested` from the change's own `origin` — and this response
+         *     already carries `origin`, `model` and `agentRunId` at the top level. An individual flag
+         *     or scope term has no such field to be read off, which is why those two had to carry
+         *     their own.
          * @example {
          *       "agentRunId": "5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21",
          *       "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
          *       "authorityLabel": "Finansinspektionen",
+         *       "case": {
+         *         "allowedTransitions": [],
+         *         "category": "new",
+         *         "footprintMatch": true,
+         *         "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
+         *         "obligationDecisions": [],
+         *         "ownerId": null,
+         *         "soWhatConfirmed": false,
+         *         "soWhatConfirmedAt": null,
+         *         "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
+         *         "urgency": {
+         *           "key": "act_now",
+         *           "kind": null,
+         *           "label": "Act now"
+         *         },
+         *         "urgencyConfirmed": false
+         *       },
          *       "changeType": {
          *         "key": "adopted",
          *         "kind": "adopted",
@@ -8612,12 +8645,17 @@ export interface components {
          *       "firstSeenAt": "2026-09-16T06:02:00Z",
          *       "flags": [
          *         {
-         *           "key": "advice_perimeter",
-         *           "kind": null,
-         *           "label": "Advice perimeter"
+         *           "confidence": 0.74,
+         *           "ref": {
+         *             "key": "advice_perimeter",
+         *             "kind": null,
+         *             "label": "Advice perimeter"
+         *           },
+         *           "suggested": true
          *         }
          *       ],
          *       "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *       "inFootprint": true,
          *       "keyDate": "2026-10-01",
          *       "keyDateLabel": "In force",
          *       "keyDatePrecision": "day",
@@ -8650,9 +8688,13 @@ export interface components {
          *       "summary": "FI's board decided on 15 September 2026 to amend three regulations in the securities area.",
          *       "terms": [
          *         {
-         *           "key": "securities",
-         *           "kind": null,
-         *           "label": "Securities"
+         *           "confidence": null,
+         *           "ref": {
+         *             "key": "securities",
+         *             "kind": null,
+         *             "label": "Securities"
+         *           },
+         *           "suggested": false
          *         }
          *       ],
          *       "title": "FI adopts amended rules on paying for investment research"
@@ -8706,9 +8748,9 @@ export interface components {
             firstSeenAt: string;
             /**
              * Flags
-             * @description What the change is about across subject areas, as `{key, kind, label}` rows of the `flag` library vocabulary, `ai` and `advice_perimeter` on day one. An empty list means no flag applies, not that nobody looked. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             * @description What the change is about across subject areas, each as a fact rather than a bare reference. `ref` is the row of the `flag` library vocabulary itself, as `{key, kind, label}` — `ai` and `advice_perimeter` on day one. `confidence` is how sure the agent that put the flag there was, 0 to 1, or null when a library editor set it by hand; it orders nothing on this screen and says nothing about whether the flag is right. `suggested` is true while no library editor has confirmed the flag, and the change page marks such a flag as the agent's reading rather than a checked fact — a reader deciding from this page must not treat it as checked. A library editor confirms a flag in the console queue and never here, and a bank never confirms one at all: it is a library fact behind `proposals.review` (WAT-03, PRO-01). An empty list means no flag applies, not that nobody looked. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
              */
-            flags: components["schemas"]["LibraryRef"][];
+            flags: components["schemas"]["WatchFact"][];
             /**
              * Id
              * Format: uuid
@@ -8817,9 +8859,9 @@ export interface components {
             summary: string;
             /**
              * Terms
-             * @description The taxonomy terms that scope the change — regime, market, product, service — as `{key, kind, label}` rows of the taxonomy vocabulary, `securities`, `banking`, `payments`, `insurance`, `aml`, `tax`, `data_protection` and `ai_ict` among the regimes seeded on day one. A term's `kind` is null: its dimension is its kind. This is what the footprint is matched against; it is not a bank's footprint. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             * @description The taxonomy terms that scope the change — regime, market, product, service — each as a fact rather than a bare reference. `ref` is the taxonomy row itself, as `{key, kind, label}` with `securities`, `banking`, `payments`, `insurance`, `aml`, `tax`, `data_protection` and `ai_ict` among the regimes seeded on day one; a term's `kind` is null because its dimension is its kind. `confidence` is the agent's own number, 0 to 1, or null when a person set the term. `suggested` is true until a library editor confirms it, and the change page shows such a term as a suggestion. This is what the footprint is matched against, and `inFootprint` is computed from every term whether or not it is still suggested; it is not this bank's footprint and it never says the bank complies (REG-01, REG-02). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
              */
-            terms: components["schemas"]["LibraryRef"][];
+            terms: components["schemas"]["WatchFact"][];
             /**
              * Title
              * @description What the reform is called, in the source's words.

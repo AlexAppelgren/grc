@@ -508,14 +508,14 @@ def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID) -> WatchC
         key_date_precision=change.key_date_precision,
         key_date_label=change.key_date_label or None,
         recurrence_rule=change.recurrence_rule or None,
-        # The detail answers the vocabulary rows themselves. Whether an editor has
-        # confirmed one is a fact the queue that confirms them carries, row by row
-        # (`GET /console/changes`); the change page shows what the change is about.
-        flags=[fact.ref for fact in classification.flags.get(change.id, [])],
+        # The same facts the feed row carries, provenance and all. The change page is where
+        # a person judges the change, so an individual flag or scope term an agent
+        # suggested has to read as a suggestion here too (WAT-03).
+        flags=classification.flags.get(change.id, []),
         source_label=change.source_label,
         source_url=change.source_url,
         status=cast(ChangeStatus, change.status),
-        terms=[fact.ref for fact in classification.terms.get(change.id, [])],
+        terms=classification.terms.get(change.id, []),
         events=[
             WatchChangeEvent(
                 id=event.id,

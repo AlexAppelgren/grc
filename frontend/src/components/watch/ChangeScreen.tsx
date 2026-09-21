@@ -35,19 +35,24 @@ import { hasProblemCode } from '@/shared/utils/problem';
  * The facts the header's pills are made of, in the card's slot order.
  *
  * The urgency is this bank's own where it has a case and the library's
- * suggestion otherwise, exactly as a feed row reads it. `suggested` is the
- * one thing this read can support: a change a run registered carries a type
- * no person has stood behind (`origin` is `agent`), which is the rule the
- * feed read applies to the type too. The read drops the per-fact `suggested`
- * a feed row carries on each flag and scope term, so no single flag or term
- * is claimed here to be confirmed.
+ * suggestion otherwise, exactly as a feed row reads it. `suggested` marks the
+ * record: a change a run registered carries a type no person has stood behind
+ * (`origin` is `agent`), which is the rule the feed read applies to the type
+ * too.
+ *
+ * Each flag and each scope term now arrives with its own `confidence` and
+ * `suggested` beside the vocabulary row, as a feed row has always carried
+ * them. The header still shows one marker for the record, because the pill
+ * card gives the slot one pill; marking an individual flag or term as a
+ * suggestion is a change to that card and to the classification block, not to
+ * this mapping.
  */
 export function detailFacts(change: ChangeDetail, t: Translate): ChangeFacts {
   const urgency = urgencyOf(change.case === null ? change.suggestedUrgency : (change.case.urgency ?? change.suggestedUrgency));
   return {
     type: { key: change.changeType.key, label: change.changeType.label },
     ...(urgency === null ? {} : { urgency }),
-    flags: change.flags.map((flag) => ({ key: flag.key, label: flag.label })),
+    flags: change.flags.map((flag) => ({ key: flag.ref.key, label: flag.ref.label })),
     suggested: change.origin === 'agent',
     ...(change.case === null ? {} : { workflowStatus: { key: change.case.category, label: caseStatusLabel(change.case.category, t) } }),
   };
@@ -60,8 +65,8 @@ export function presentChangeDetail(change: ChangeDetail, t: Translate): Present
 /** The scope block: one pill per term, tone by the slot. An empty list means no restriction. */
 export function presentScopeTerms(change: ChangeDetail): PresentedPill[] {
   return change.terms.map((term, index) => ({
-    key: `term:${term.key}`,
-    label: term.label,
+    key: `term:${term.ref.key}`,
+    label: term.ref.label,
     tone: slotTone.scopeTerm,
     order: CHANGE_SLOT_ORDER.libraryTags + index,
   }));

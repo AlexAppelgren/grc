@@ -40,7 +40,7 @@ from apps.shared.models import Tenant
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
 from apps.taxonomy.models import CaseStatusCategory
 from apps.watch import testing as build
-from apps.watch.models import ChangeObligation, RegulatoryChange
+from apps.watch.models import ChangeObligation, ChangeTerm, RegulatoryChange
 from apps.watch.tests_reading import set_status
 from apps.watch.write import watch_write
 
@@ -76,6 +76,17 @@ def confirm_link(change: RegulatoryChange, obligation: Obligation, editor: User)
         ChangeObligation.objects.filter(change=change, obligation=obligation).update(
             confirmed_by=editor, confirmed_at=build.ANCHOR
         )
+
+
+def confirm_flag(change: RegulatoryChange, flag_key: str, editor: User) -> None:
+    """A library editor confirms one flag of a change for the shared library. `suggested`
+    and the two confirmation columns move together because `change_term`'s check constraint
+    refuses any other combination (WAT-03)."""
+    with watch_write("test fixture"):
+        ChangeTerm.objects.filter(
+            change=change,
+            flag__key=flag_key,
+        ).update(suggested=False, confirmed_by=editor, confirmed_at=build.ANCHOR)
 
 
 class ChangeReadFixture(TestCase):
@@ -131,6 +142,11 @@ class ChangeReadFixture(TestCase):
             f"{CHANGES}/{change.id}", **(headers if headers is not None else sign_in(self.reader, tenant=self.inside))
         )
 
+    def feed(self, headers: Any = None) -> Any:
+        """The same bank's watch feed, so a detail read can be held against the row a
+        reader saw before opening it."""
+        return self.client.get(CHANGES, **(headers if headers is not None else sign_in(self.reader, tenant=self.inside)))
+
     def related(self, obligation: Obligation, params: Any = None, headers: Any = None) -> Any:
         return self.client.get(
             f"{OBLIGATIONS}/{obligation.id}/changes",
@@ -154,11 +170,36 @@ class ChangeDetailTests(ChangeReadFixture):
         self.assertEqual(body["status"], "active")
         self.assertEqual(body["origin"], "agent")
         self.assertEqual(body["model"], "agent pipeline 0.4")
-        self.assertEqual([ref["key"] for ref in body["flags"]], ["advice_perimeter"])
-        self.assertEqual([ref["key"] for ref in body["terms"]], ["securities"])
+        self.assertEqual([fact["ref"]["key"] for fact in body["flags"]], ["advice_perimeter"])
+        self.assertEqual([fact["ref"]["key"] for fact in body["terms"]], ["securities"])
         self.assertEqual(body["suggestedUrgency"], {"key": "act_now", "kind": None, "label": "Act now"})
         self.assertIsNone(body["soWhatDraft"], "nothing has drafted one yet")
         self.assertTrue(body["inFootprint"])
+
+    def test_the_detail_answers_the_same_provenance_for_a_fact_as_the_feed_row(self) -> None:
+        """A flag an agent suggested and a flag a library editor confirmed read the same on
+        the change page as in the feed.
+
+        The regression this pins: the change page built the same facts and then kept only
+        each one's vocabulary reference, so on the one screen where a person judges a
+        change an individual flag or scope term could not be shown as the agent's reading
+        (WAT-03, 2026-09-21).
+        """
+        confirm_flag(self.lead, "advice_perimeter", self.editor)
+        detail = self.read(self.lead).json()
+        row = next(item for item in self.feed().json()["items"] if item["id"] == str(self.lead.id))
+        # Keyed by the vocabulary key rather than by position: what a page happens to order
+        # first must never decide what a provenance assertion compares.
+        facts = {fact["ref"]["key"]: fact for fact in detail["flags"] + detail["terms"]}
+        self.assertEqual(facts, {fact["ref"]["key"]: fact for fact in row["flags"] + row["terms"]})
+        self.assertEqual(
+            facts["advice_perimeter"],
+            {"ref": {"key": "advice_perimeter", "kind": None, "label": "Advice perimeter"}, "confidence": 0.74, "suggested": False},
+        )
+        self.assertEqual(
+            facts["securities"],
+            {"ref": {"key": "securities", "kind": None, "label": "Securities"}, "confidence": 0.74, "suggested": True},
+        )
 
     def test_the_timeline_is_in_sort_order_with_each_date_precision(self) -> None:
         events = self.read(self.lead).json()["events"]
