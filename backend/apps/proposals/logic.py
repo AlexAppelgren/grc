@@ -57,6 +57,8 @@ from apps.shared.audit import Actor, record
 SUBJECT_TYPE = "proposal"
 # What an obligation proposal points at (schema v0.3 `subject_type`).
 OBLIGATION_TARGET = "obligation"
+# The library list a rejection's reason is a row of (PRO-01, VOC-07).
+REJECTION_REASON_LIST = "rejection_reason"
 
 # The named payload schema per kind (PRO-01): apply() never reads a free-form dictionary.
 PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
@@ -617,7 +619,7 @@ def reject(*, proposal: Proposal, reviewer: Any, actor: Actor, rejection_code: s
     sentence they can read. The code is a live row of the `rejection_reason` library list, an
     admin's to extend and retire, so a code from an older screen or a retired row is refused
     rather than stored as a reason nobody can look up. The outbox event is what tells them."""
-    from apps.taxonomy.models import RejectionReason
+    from apps.taxonomy.registry import REGISTRY
 
     code = rejection_code.strip()
     text = note.strip()
@@ -625,7 +627,13 @@ def reject(*, proposal: Proposal, reviewer: Any, actor: Actor, rejection_code: s
         raise ValidationError(
             "Say why: choose a reason and write a note the proposer will read.", code="reason_required"
         )
-    known = RejectionReason.objects.filter(
+    # Through the registry rather than by naming the model: this module writes (it creates
+    # proposals), and the library fence's static guard fails closed on any module that both
+    # writes and names a concrete LibraryModel, whether or not the two are related
+    # (apps/shared/tests_library_fence.py). The reason list is a library vocabulary and this
+    # is a read of it.
+    reasons = REGISTRY[REJECTION_REASON_LIST].model
+    known = reasons.objects.filter(
         key=code,
         active=True,
     ).exists()

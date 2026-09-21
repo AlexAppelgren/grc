@@ -20,6 +20,7 @@ from unittest import mock, skip
 
 from apps.library.models import (
     Instrument,
+    ProblemReport,
     Jurisdiction,
     Obligation,
     ObligationSummary,
@@ -477,12 +478,56 @@ class ProposalsScenarioTests(ScenarioTestCase):
         with self.assertNumQueries(PROPOSAL_QUEUE_QUERIES):
             self.client.get(f"{V1}/proposals", **editor)
 
-    @skip("pending: PRO-S7 (PRO-03, chunk 4: library updates and problem reports)")
     def test_pro_s7(self) -> None:
         """PRO-S7
 
         The queue is in the console and tenants see updates and report problems (PRO-03).
         """
+        obligation = self._obligation()
+        self._version_one(obligation)
+        proposal = self._version_proposal(obligation)
+        officer = sign_in(self.officer, tenant=self.tenant)
+
+        # The queue is the console's: a bank's compliance officer has no route into it.
+        self.assertEqual(self.client.get(f"{V1}/proposals", **officer).status_code, 403)
+        self.assertEqual(self.client.get(f"{V1}/proposals/{proposal['id']}", **officer).status_code, 403)
+
+        # The editor opens it and sees the source beside the diff.
+        editor = sign_in(self.editor)
+        waiting = self.client.get(f"{V1}/proposals?status=open", **editor)
+        self.assertEqual(waiting.status_code, 200, waiting.content)
+        self.assertIn(proposal["id"], [row["id"] for row in waiting.json()["items"]])
+        detail = self.client.get(f"{V1}/proposals/{proposal['id']}", **editor).json()
+        self.assertEqual(detail["target"]["referenceLabel"], "9 kap. 6 §")
+        self.assertEqual([source["field"] for source in detail["sources"]], ["effectiveFrom", "summaries.en", "summaries.sv", "terms"])
+        self.assertEqual([segment["op"] for segment in detail["diff"]], ["delete", "insert"])
+
+        approved = self._post(f"/proposals/{proposal['id']}/approve", {}, sign_in(self.second_editor, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+        # The bank reads it as a library update, under the record's own title.
+        updates = self.client.get(f"{V1}/library-updates", **officer)
+        self.assertEqual(updates.status_code, 200, updates.content)
+        listed = [item for day in updates.json()["days"] for item in day["items"]]
+        self.assertEqual([item["id"] for item in listed], [proposal["id"]])
+        self.assertEqual(listed[0]["target"]["id"], str(obligation.id))
+        self.assertEqual(listed[0]["versionNumber"], 2)
+        self.assertNotIn(proposal["title"], repr(listed[0]), "an update is titled by the library record, never by the request")
+
+        # "This looks wrong" files a report, and it stays inside the bank: no console
+        # surface reads one, and nothing in the platform's own zone carries it.
+        reported = self._post(
+            f"/obligations/{obligation.id}/problem-reports",
+            {"description": "The new wording drops the annual review the decision keeps."},
+            officer,
+        )
+        self.assertEqual(reported.status_code, 201, reported.content)
+        self.activate(self.tenant)
+        report = ProblemReport.objects.get(subject_id=obligation.id)
+        self.assertEqual(report.tenant_id, self.tenant.id)
+        self.assertEqual(report.reporter_id, self.officer.id)
+        reads = {(op.method, op.path) for op in iter_operations(api) if "problem-report" in op.path}
+        self.assertEqual({method for method, _ in reads}, {"POST"}, "filing one is the only problem-report operation the console could reach")
 
     @skip("pending: PRO-S8 (PRO-04, R2)")
     def test_pro_s8(self) -> None:

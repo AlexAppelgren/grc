@@ -88,6 +88,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `LIBRARY_TEXT_MAX_CHARS` | api | `20000` | `20000` | `20000` | A version text longer than this is never split into sentences: "show what changed" shows the whole old text deleted and the whole new one inserted. Splitting is linear in the length of a text a source published, about 57 ms per 200 KB, and a text under the sentence cap above is a few thousand characters |
 | `PROPOSAL_SOURCE_MAX_CHARS` | api | `2000` | `2000` | `2000` | The longest source a proposal may give for one changed field (PRO-01). An agent writes these and a reviewer reads them, so each one is an https link or the stable key of a provision the library holds; 2000 is what the library's own `source_url` column takes. Above it the proposal answers 422 |
 | `PROPOSAL_SCOPE_MAX_TERMS` | api | `20` | `20` | `20` | The most scope terms one obligation proposal may carry. They are resolved in one query and stored in the payload and its audit row, so the bound keeps a proposal from an agent small; above it the proposal answers 422 |
+| `LIBRARY_UPDATES_DEFAULT_DAYS` | api | `30` | `30` | `30` | How far back `GET /library-updates` looks for a reader who has never marked the library as seen (PRO-03). Once they have, their own bookmark is the start and this is not used. Raise it and a first visit reads further back; lower it and a reader returning from leave sees less than they were away |
 
 ## Web app
 

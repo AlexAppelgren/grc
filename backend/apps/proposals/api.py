@@ -14,8 +14,10 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.proposals import logic, reading
+from apps.proposals import logic, reading, updates
 from apps.proposals.schemas import (
+    LibraryUpdatesPage,
+    LibraryUpdatesQuery,
     ProposalApproveBody,
     ProposalCreateBody,
     ProposalDetail,
@@ -34,6 +36,7 @@ from apps.taxonomy.reading import language_order
 from apps.taxonomy.http import (
     actor_for,
     answers_problems,
+    caller_tenant,
     caller_user,
     idempotency_key,
     principal,
@@ -123,6 +126,60 @@ def list_tenant_proposals(request: HttpRequest, query: Query[TenantProposalQuery
     total = queryset.count()
     rows = reading.tenant_rows(list(queryset[page.offset : page.offset + page.limit]))
     return TenantProposalPage(items=rows, total=total)
+
+
+@router.get(
+    "/library-updates",
+    response=LibraryUpdatesPage,
+    auth=SESSION,
+    operation_id="listLibraryUpdates",
+    by_alias=True,
+    summary="See what changed in the shared library since you last looked",
+)
+@requires_permission(perms.LIBRARY_READ)
+@answers_problems
+def list_library_updates(request: HttpRequest, query: Query[LibraryUpdatesQuery], page: Query[PageQuery]) -> LibraryUpdatesPage:
+    """Every change that reached the shared library since this reader last marked it as seen
+    with `POST /me/visit`, grouped by the day it arrived in the organisation's own time zone,
+    the most recent day first. Call it for the "what changed" screen a reader opens when they
+    come back from leave; `since` in the answer says what the list is measured from, and for
+    a reader who has never marked the library as seen it is the start of the default window
+    instead of an empty list.
+
+    Each change is titled by the library record it touched, never by the request that carried
+    it, and nobody's name appears: a change another organisation asked for reads exactly like
+    any other. Duties outside this organisation's footprint are left out unless
+    `outsideFootprint` asks for them, by the same rule the inventory applies, and each of
+    those says in `outsideReason` which facets would have hidden it. A change to a shared
+    list is never cut, because a list belongs to every organisation.
+
+    What comes back are facts about the shared library. Whether a duty applies here, and
+    whether this organisation complies with it, are its own judgements and are recorded
+    elsewhere; a change appearing here decides neither and is not a task.
+
+    Paginated: 20 changes by default and 100 at most, with a larger limit refused rather than
+    quietly trimmed, and `total` counting every change since that moment. Nothing since then
+    is a 200 with an empty days list and a total of 0, never a 404.
+
+    Needs `library.read`, which every member holds, and a session in an organisation: an API
+    key has no bookmark of its own, so this list is a person's.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
+    without `library.read`; `not_found` (404) for a principal in no organisation;
+    `validation_error` (422) when the page size or offset is out of range.
+    """
+    tenant = caller_tenant(request)
+    membership = reading.membership_of(tenant, principal(request).subject_id)
+    return updates.page(
+        tenant,
+        language_order(request, tenant=tenant),
+        membership,
+        kind=query.kind,
+        outside_footprint=query.outside_footprint,
+        limit=page.limit,
+        offset=page.offset,
+    )
+
 
 
 @router.post(

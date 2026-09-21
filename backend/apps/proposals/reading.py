@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+from typing import Any
 
 from django.db.models import QuerySet
 from django.utils import timezone
@@ -44,8 +45,8 @@ from apps.proposals.schemas import (
     ProposalTarget,
     TenantProposalRow,
 )
-from apps.taxonomy.models import RejectionReason, RejectionReasonLabel
 from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.registry import REGISTRY
 
 
 def _is_mine(proposal: Proposal, me_id: uuid.UUID) -> bool:
@@ -115,7 +116,7 @@ def _applied_version(proposal: Proposal) -> ProposalAppliedVersion | None:
     rather than stored twice on the proposal."""
     if proposal.status != ProposalStatus.APPROVED.value:
         return None
-    version = ObligationVersion.objects.filter(applied_by_proposal=proposal).first()
+    version = ObligationVersion.objects.filter(applied_by_proposal=proposal).first()  # ordering: one approval writes one version
     if version is None:
         return None
     return ProposalAppliedVersion(id=version.id, version_number=version.version_number, effective_from=version.effective_from)
@@ -127,10 +128,11 @@ def _rejection_reason(proposal: Proposal, order: list[str]) -> LibraryRef | None
     than inventing a label."""
     if not proposal.rejection_code:
         return None
-    row = RejectionReason.objects.filter(key=proposal.rejection_code).first()
+    entry = REGISTRY[logic.REJECTION_REASON_LIST]
+    row = entry.model.objects.filter(key=proposal.rejection_code).first()  # ordering: a list holds one row per key
     if row is None:
         return None
-    labels = Labels.for_rows(RejectionReasonLabel, [row])
+    labels = Labels.for_rows(entry.label_model, [row])
     return LibraryRef(key=row.key, kind=None, label=label_of(labels.texts(row.id), order, original=labels.original(row.id), key=row.key))
 
 
@@ -158,6 +160,15 @@ def detail(proposal: Proposal, order: list[str], *, me_id: uuid.UUID) -> Proposa
         rejection_reason=_rejection_reason(proposal, order),
         applied_version=_applied_version(proposal),
     )
+
+
+def membership_of(tenant: Any, user_id: uuid.UUID) -> Any:
+    """The reader's membership of this bank, which carries their own bookmark of when they
+    last marked the library as seen. Read under row-level security, so it is theirs and
+    their bank's; a session always has one, and None means a member who has since left."""
+    from apps.identity.models import Membership
+
+    return Membership.objects.filter(tenant=tenant, user_id=user_id).first()  # ordering: one membership per person per bank
 
 
 def tenant_queue(*, status: str | None, kind: str | None, target_list: str | None) -> QuerySet[Proposal]:
