@@ -654,6 +654,7 @@ class AnswerStatement(CamelSchema):
                     "citationIndexes": [1],
                     "pendingChangeId": "a41d0f36-2c88-4e7b-b5a9-13d6c4f80e27",
                     "pendingChangeLabel": "FI adopts amended rules on paying for investment research",
+                    "pendingChangeInForceOn": "2026-10-01",
                 }
             ]
         }
@@ -692,6 +693,18 @@ class AnswerStatement(CamelSchema):
             "effect on the bank: what it means here is the bank's own assessment."
         ),
     )
+    pending_change_in_force_on: date | None = Field(
+        default=None,
+        description=(
+            "The day that change takes effect, as a plain date such as `2026-10-01`, so the "
+            "screen can warn \"Change pending: in force 1 Oct\" and the reader knows how long "
+            "the sentence stays true. Only an adopted change, or one already in force from a "
+            "later day, is flagged: a consultation or a supervisory statement moves no law on "
+            "a date. Empty exactly when `pendingChangeId` is. Source: the key date the shared "
+            "library's watch feed holds for the change. Do not read it as the bank's own "
+            "deadline, which lives on its case, nor as a promise: a date can still move."
+        ),
+    )
 
 
 class Answer(CamelSchema):
@@ -716,6 +729,7 @@ class Answer(CamelSchema):
                             "citationIndexes": [1],
                             "pendingChangeId": None,
                             "pendingChangeLabel": None,
+                            "pendingChangeInForceOn": None,
                         }
                     ],
                     "citations": [
@@ -851,6 +865,7 @@ class AskStatementEvent(CamelSchema):
                         "citationIndexes": [1],
                         "pendingChangeId": None,
                         "pendingChangeLabel": None,
+                        "pendingChangeInForceOn": None,
                     },
                 }
             ]
@@ -896,6 +911,7 @@ class AskAnswerEvent(CamelSchema):
                                 "citationIndexes": [1],
                                 "pendingChangeId": None,
                                 "pendingChangeLabel": None,
+                                "pendingChangeInForceOn": None,
                             }
                         ],
                         "citations": [
@@ -943,7 +959,11 @@ class AskProblemEvent(CamelSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
-                {"event": "problem", "code": "not_built", "detail": "Ask is not switched on yet."}
+                {
+                    "event": "problem",
+                    "code": "model_unavailable",
+                    "detail": "The answer could not be finished. Ask again in a moment.",
+                }
             ]
         }
     )
@@ -959,11 +979,15 @@ class AskProblemEvent(CamelSchema):
     code: str = Field(
         description=(
             "The machine-readable reason the answer stopped, the same `code` an RFC 9457 "
-            "problem body would carry; today the one code this stream ends on is "
-            "`not_built`, while the answering logic is being built. Branch on this, never "
-            "on `detail`. Source: the server. Do not read a code as a verdict on the "
-            "question: it says why this stream stopped, not that the library holds no "
-            "answer, which is `noAnswer` on a stream that finished."
+            "problem body would carry. The one code a stream ends on is "
+            "`model_unavailable`: the model could not be reached, declined, or did not "
+            "finish before its deadline, nothing was logged and asking again may succeed. "
+            "Everything that can refuse a question before it is answered (no session, no "
+            "permission, the rate limit, the bank's AI switch) is a status with a problem "
+            "body instead, and no stream opens. Branch on this, never on `detail`. Source: "
+            "the server. Do not read a code as a verdict on the question: it says why this "
+            "stream stopped, not that the library holds no answer, which is `noAnswer` on a "
+            "stream that finished."
         )
     )
     detail: str = Field(
