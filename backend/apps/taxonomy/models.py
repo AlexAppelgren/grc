@@ -80,6 +80,16 @@ class ProvisionStructuralKind(enum.StrEnum):
     ANNEX = "annex"
 
 
+class InstrumentLevelKind(enum.StrEnum):
+    """Tier-one kind (INV-01, INV-08, D-37): the one optional sub-kind an instrument level
+    may carry. The five seeded levels (`eu_regulation`, `eu_directive`, `eu_guidance`,
+    `act`, `authority_regulation`) keep a null kind and are read by `binding`; `standard`
+    is the only value, and it is what tells a pill to read "Standard" instead of "Binding"
+    or "Guidance, comply or explain"."""
+
+    STANDARD = "standard"
+
+
 class ComplianceCategory(enum.StrEnum):
     COMPLIANT = "compliant"
     PARTLY = "partly"

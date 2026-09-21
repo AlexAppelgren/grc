@@ -47,10 +47,16 @@ class Language(models.Model):
 
 
 class JurisdictionKind(enum.StrEnum):
-    """Tier-one kind (apps/shared/kinds.py): supranational (EU) or country."""
+    """Tier-one kind (apps/shared/kinds.py): supranational (EU), country, or international
+    (INV-01, INV-08, D-38) for a standards body such as ISO/IEC, which issues from no
+    market a bank operates in. `international` is deliberately left out of
+    `MIRRORED_JURISDICTION_KINDS` (apps/taxonomy/seeds/__init__.py): mirroring it into the
+    footprint's jurisdiction dimension would offer "International" as an operating market,
+    which a standards body is not."""
 
     SUPRANATIONAL = "supranational"
     COUNTRY = "country"
+    INTERNATIONAL = "international"
 
 
 class Jurisdiction(Vocabulary):

@@ -133,6 +133,12 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "verification_outcome",
         "INV-06: a re-verification found no change, found a change (a proposal follows) or could not reach the source; the re-verify queue branches on it",
     ),
+    "InstrumentLevelKind": (
+        "instrument_level_kind",
+        "INV-01, INV-08, D-37: the one optional value, standard, is what tells a pill to "
+        "read Standard rather than Binding or Guidance, comply or explain; the five other "
+        "levels stay kindless and no admin may add a second value",
+    ),
     # Chunk 5 (watch). `check_status`, `change_status` and `feed_filter` were already
     # allowlisted above; these two are the build's own, recorded in INPUT_DELTAS §1.
     "SourceCheckKind": (
