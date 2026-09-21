@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
+import { allowFreshContext, LOGINS, signInAs, signOut } from './support/passkeys';
+import { CHUNK5_WATCH, consoleSourceRow, openChangeByStableKey, openWatchFeed, signInAsSv } from './support/watch-coverage';
 
 // watch: the @e2e scenarios from backend/apps/watch/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -9,32 +10,115 @@ import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
 // stub: un-fixme it when the journey is real.
 
 test.describe('watch journeys', () => {
-  test.fixme("WAT-S1: The source registry and coverage log show what was checked and with what result", async () => {
-    // pending: WAT-S1 (WAT-01)
+  test('WAT-S1: The source registry and coverage log show what was checked and with what result', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto('/watch?tab=coverage');
+    const coverage = page.locator('[data-source-coverage]');
+    await expect(coverage).toBeVisible();
+
+    const healthy = coverage.locator(`[data-source="${CHUNK5_WATCH.healthySource}"]`);
+    await expect(healthy).toBeVisible();
+    await expect(healthy).not.toHaveAttribute('data-stale', '');
+    await expect(healthy.getByText('Checked', { exact: true })).toBeVisible();
+
+    // The later, failing check is what the console's "Source coverage" shows
+    // as stale, with the failing check itself named beside it.
+    const failing = coverage.locator(`[data-source="${CHUNK5_WATCH.failingSource}"]`);
+    await expect(failing).toHaveAttribute('data-stale', '');
+    await expect(failing.getByText('Fetch failed', { exact: true })).toBeVisible();
+    await expect(failing.locator('[data-last-error]')).toHaveText(CHUNK5_WATCH.failingSourceError);
+
+    await signOut(page);
+    await signInAs(page, LOGINS.editor);
+    await page.goto('/console/sources');
+    await expect(page.getByRole('heading', { level: 1, name: 'Sources' })).toBeVisible();
+    const failingRow = consoleSourceRow(page, CHUNK5_WATCH.failingSource);
+    await expect(failingRow.getByText('Stale', { exact: true })).toBeVisible();
+    await expect(failingRow.getByText(CHUNK5_WATCH.failingSourceError)).toBeVisible();
   });
 
-  test.fixme("WAT-S2: One record per reform carries a timeline with partial dates", async () => {
-    // pending: WAT-S2 (WAT-02)
+  test('WAT-S2: One record per reform carries a timeline with partial dates', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openChangeByStableKey(page, CHUNK5_WATCH.timelineChange);
+
+    const timeline = page.locator('[data-change-timeline]');
+    await expect(timeline.getByText('March 2026', { exact: true })).toBeVisible();
+    await expect(timeline.getByText('15 Jun 2026', { exact: true })).toBeVisible();
+    await expect(timeline.getByText('Q1 2027', { exact: true })).toBeVisible();
+    await signOut(page);
+
+    // Again in sv: the same three dates, at the precision the source stated,
+    // in the reader's own language (LOGINS.readerSv is the one seeded login
+    // whose own `locale` is Swedish).
+    await signInAsSv(page, LOGINS.readerSv);
+    await openChangeByStableKey(page, CHUNK5_WATCH.timelineChange);
+    const timelineSv = page.locator('[data-change-timeline]');
+    await expect(timelineSv.getByText('mars 2026', { exact: true })).toBeVisible();
+    await expect(timelineSv.getByText('15 juni 2026', { exact: true })).toBeVisible();
+    await expect(timelineSv.getByText('Kv1 2027', { exact: true })).toBeVisible();
   });
 
   test.fixme("WAT-S4: Types, flags and scope come from vocabularies and stay suggestions until confirmed", async () => {
-    // pending: WAT-S4 (WAT-03)
+    // pending: WAT-S4 (WAT-03). The library-editor confirmation this scenario needs is
+    // `c5-watch-curation-confirm`, held for Alex's answer to `q-editor-confirm`
+    // (docs/plans/briefs/CHUNK5_TASKS.md, "The one question left for Alex"): until then a
+    // library editor's session gets `not_built` from `PATCH /changes/{changeId}`, so there
+    // is no confirm control on Change facts to drive. c5-e2e-watch-journeys-b owns this
+    // scenario and leaves it fixme, naming the held task.
   });
 
   test.fixme("WAT-S6: Links to affected obligations carry a confidence and are confirmed by a person", async () => {
-    // pending: WAT-S6 (WAT-04)
+    // pending: WAT-S6 (WAT-04). Blocked two ways: the library editor's half needs the same
+    // held `c5-watch-curation-confirm` as WAT-S4, and the compliance officer's half needs
+    // `c5-cases-so-what-and-links`, which is not on `main` yet — `POST
+    // /changes/{changeId}/case/obligation-links` and its `DELETE` still answer `not_built`
+    // (backend/apps/cases/links.py), and the change page's "Obligations affected" panel
+    // (frontend/src/components/watch/ChangeObligations.tsx) has no accept or remove
+    // control yet. c5-e2e-watch-journeys-b owns this scenario and leaves it fixme, naming
+    // both blocking tasks.
   });
 
   test.fixme("WAT-S7: The \"So what?\" is AI-drafted until a person confirms or rewrites it per tenant", async () => {
-    // pending: WAT-S7 (WAT-05)
+    // pending: WAT-S7 (WAT-05). `c5-cases-so-what-and-links` is not on `main` yet: `PUT
+    // /changes/{changeId}/so-what` and `POST /changes/{changeId}/so-what/confirm` still
+    // answer `not_built` (backend/apps/cases/so_what.py), and the panel
+    // (frontend/src/components/watch/SoWhatPanel.tsx) shows the draft read-only, with no
+    // "Confirm wording" or "Rewrite" control. c5-e2e-watch-journeys-b owns this scenario
+    // and leaves it fixme, naming the blocking task.
   });
 
   test.fixme("WAT-S8: A tenant requests a source and private sources stay private", async () => {
     // pending: WAT-S8 (WAT-06)
   });
 
-  test.fixme("WAT-S9: The change row renders its pills in the fixed slot order", async () => {
-    // pending: WAT-S9 (WAT-03, NFR-03)
+  test('WAT-S9: The change row renders its pills in the fixed slot order', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openWatchFeed(page);
+
+    // Seeded with urgency "within_3_months" rather than the card's own "Act
+    // now" example: the same rule is proven either way, because the tone
+    // comes from the ordinal and never from a string the row carries
+    // (NFR-S10). The type and the flag are unconditionally suggestions here
+    // (the change's own origin is an agent's), which is the fourth pill.
+    const row = page.locator(`[data-change="${CHUNK5_WATCH.timelineChange}"]`);
+    await expect(row).toBeVisible();
+    const pills = row.locator('[data-pill]');
+    await expect(pills).toHaveCount(4);
+    await expect(pills.nth(0)).toHaveAttribute('data-pill', 'notice');
+    await expect(pills.nth(1)).toHaveAttribute('data-pill', 'warning');
+    await expect(pills.nth(2)).toHaveAttribute('data-pill', 'brand');
+    await expect(pills.nth(3)).toHaveAttribute('data-pill', 'information');
+
+    // The header adds the workflow status; the row never repeats it as a
+    // pill, and the authority and date are plain meta text beside the pills.
+    await expect(row.getByText('Needs triage', { exact: true })).toBeVisible();
+    await expect(row.locator('[data-pill]').filter({ hasText: 'Needs triage' })).toHaveCount(0);
+    // The authority's name is seeded data, not catalog copy, so it is matched
+    // by pattern rather than a quoted literal (copy-drift-check.mjs).
+    await expect(row.getByText(/Finansinspektionen/)).toBeVisible();
   });
 });
 
@@ -229,21 +313,52 @@ test.describe('the change page', () => {
   });
 
   test.fixme('a change page carries its header, timeline, documents and obligations', async () => {
-    // pending: the seed has no watch rows, so there is no change to open.
-    // `c5-seed-watch` adds the sources, runs, changes and cases every chunk 5
-    // journey rests on; `c5-e2e-watch-journeys-a` and `-b` own WAT-S2, WAT-S4
-    // and WAT-S6, the scenarios this page serves. The panels, the partial
-    // dates, the screening warning and the link confidences are pinned by
-    // ChangeScreen.test.tsx until then.
+    // pending: `c5-seed-watch` has landed and the header, the timeline and
+    // the documents are now driven directly by WAT-S2 above; the obligations
+    // panel is WAT-S6, which stays fixme in this file's "watch journeys"
+    // describe (blocked on `c5-watch-curation-confirm` and
+    // `c5-cases-so-what-and-links`, neither on `main`). This broader,
+    // non-scenario check is left fixme rather than duplicating WAT-S2's
+    // assertions, and is retired once WAT-S6 makes it whole.
   });
 
   test.fixme('the So what reads as a draft until this bank confirms it', async () => {
-    // pending: the seed has no cases, so there is no drafted "So what?" to
-    // open. `c5-seed-watch` seeds one confirmed and one unconfirmed, and
-    // `c5-e2e-watch-journeys-b` owns WAT-S7 itself. The draft label, the
-    // agent that wrote it and the confirmed state are pinned by
-    // SoWhatPanel.test.tsx until then. The panel carries no confirm or
-    // rewrite control: who may confirm a drafted fact is open for the owner,
-    // and `PUT /changes/{changeId}/so-what` still answers 501 not_built.
+    // pending: `c5-seed-watch` seeds one case with its So what confirmed and
+    // one left as the library's draft, so the data this test needs exists.
+    // What is still missing is `c5-cases-so-what-and-links` (WAT-S7, not on
+    // `main`): the panel (SoWhatPanel.tsx) reads both states correctly
+    // already, pinned by SoWhatPanel.test.tsx, but carries no confirm or
+    // rewrite control yet, and `PUT /changes/{changeId}/so-what` still
+    // answers `not_built`. `c5-e2e-watch-journeys-b` owns WAT-S7 itself and
+    // leaves it fixme naming the same blocking task.
+  });
+});
+
+// ---------------------------------------------------------------------------
+// J-5's footprint half (chunk 5, c5-e2e-vocab-footprint-feed): an approved
+// footprint change recomputing a case's cached `footprint_match`. VOC-S15's
+// vocabulary half lives in taxonomy.journey.spec.ts; this block is the
+// separate, non-scenario check the task brief names.
+// ---------------------------------------------------------------------------
+
+test.describe('the footprint recompute', () => {
+  test.fixme('an approved footprint change flips a case, and the feed reflects it without a notification or a triage', async () => {
+    // pending: `c5-cases-footprint-hooks` is not on `main`. `schema.sql` says
+    // `change_case.footprint_match` is "recomputed when the footprint or the
+    // change scope moves", but nothing recomputes it yet: there is no
+    // `backend/apps/cases/matching.py`, and grepping the tree for a second
+    // writer of the column finds only the one write at creation
+    // (`apps/cases/creation.py`), exactly as `taxonomy.journey.spec.ts`'s own
+    // FP-S4 already found and left fixme for the same reason. Approving a
+    // footprint change today (J-6's own mechanism, already proved by
+    // FP-S5) moves nothing on an existing case, so this journey has nothing
+    // real to drive yet. Once the hook lands: sign in as the compliance
+    // officer, switch a regime this bank's chunk 5 cases are scoped to off
+    // through /admin/footprint, have the approver decide it
+    // (`secondPerson`, as FP-S5 does), then read /watch: the default `in`
+    // view drops the case by id, `footprint=all` still shows it with the
+    // outside-scope marker, and no urgency, notification or triage moved
+    // for it (asserted directly against the case, never inferred from the
+    // screen alone).
   });
 });

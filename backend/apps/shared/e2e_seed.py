@@ -27,10 +27,14 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 
+from apps.agents.models import AgentRun, RunStatus
+from apps.agents.seeds import seed_agent_definitions
+from apps.cases.creation import CHANGE_REGISTERED
 from apps.cases.models import ChangeCase
 from apps.home import tasks as home_tasks
 from apps.identity import invitation_logic, roles_logic, tokens
 from apps.identity.models import (
+    ApiKey,
     Invitation,
     InvitationKind,
     Membership,
@@ -42,19 +46,19 @@ from apps.identity.models import (
     UserStatus,
     WebAuthnCredential,
 )
-from apps.library.models import Language
+from apps.library.models import DatePrecision, Language
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import RESEARCH_OBLIGATION, load_library, seed_authorities
 from apps.proposals.logic import Proposer
 from apps.proposals.logic import create as create_proposal
 from apps.proposals.models import ProposalKind
-from apps.shared import tenancy
+from apps.shared import outbox, tenancy
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
 from apps.taxonomy.models import CaseStatusCategory
 from apps.watch import e2e_seed as watch_e2e_seed
-from apps.watch.models import CheckStatus
+from apps.watch.models import CheckFrequency, CheckStatus
 from apps.shared.models import Tenant
 from apps.taxonomy import footprint_logic, terms_logic
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintTerm
@@ -397,6 +401,24 @@ def _obligation_id(stable_key: str) -> uuid.UUID:
     return model.objects.get(stable_key=stable_key).id
 
 
+def _obligation(stable_key: str) -> Any:
+    """The obligation itself, read the same way `_obligation_id` reads its id: chunk 5's
+    fixtures need the row, not only its id, to link and re-check against (`c5-seed-watch`)."""
+    return django_apps.get_model("library", "Obligation").objects.get(stable_key=stable_key)
+
+
+def _agent(key: str) -> Any:
+    """A platform agent definition, read the same way: `Agent` is a `LibraryModel` too."""
+    return django_apps.get_model("agents", "Agent").objects.get(key=key)
+
+
+def _regulatory_change_exists(stable_key: str) -> bool:
+    """Whether a chunk 5 reform is already in the library, read the same way:
+    `RegulatoryChange` is a `LibraryModel`, so this keeps its name out of this module's AST
+    as anything but a string, exactly as `_obligation_id` does for `Obligation`."""
+    return django_apps.get_model("watch", "RegulatoryChange").objects.filter(stable_key=stable_key).exists()
+
+
 def seed_proposals() -> int:
     """Idempotent by Idempotency-Key (playbook 4.3): a reseed that finds one already decided
     (a journey approved or rejected it on an earlier run) leaves it exactly as it is, so a
@@ -691,6 +713,268 @@ def seed_search_index() -> dict[str, int]:
     return {"search_chunks": chunk_model.objects.count()}
 
 
+@dataclass(frozen=True)
+class SeedChunk5Watch:
+    """Chunk 5's own watch fixtures (c5-seed-watch), beyond chunk 6's four changes: the
+    natural keys `watch.journey.spec.ts`, `taxonomy.journey.spec.ts` and the seed-integrity
+    guard read back by."""
+
+    timeline_change: str
+    obligations_change: str
+    payments_change: str
+    healthy_source: str
+    failing_source: str
+    inactive_source: str
+    unswept_source: str
+
+
+EXPECTED_CHUNK5_WATCH = SeedChunk5Watch(
+    # WAT-S2's own example dates (consultation 2026-03, adopted 2026-06-15, in force
+    # "Q1 2027"), so the journey that renders them needs no dates of its own.
+    timeline_change="chg-e2e-c5-timeline",
+    # Carries the two `change_obligation` links WAT-S6 reads (one confirmed, one a
+    # suggestion) and the two documents WAT-01's coverage and AGT-07's screening need.
+    obligations_change="chg-e2e-c5-obligations",
+    # A third reform so the feed and the console queue are not both single-row lists;
+    # "Markets we watch" stays empty until `f03-T41` derives a jurisdiction (D-29).
+    payments_change="chg-e2e-c5-payments",
+    healthy_source="EUR-Lex legal database (E2E)",
+    failing_source="Open web sweep, payments (E2E)",
+    inactive_source="ISO standards register (E2E, inactive)",
+    unswept_source="ESMA register (E2E)",
+)
+
+# The one obligation a `recheck` source check names (AGT-01, item 3): not used by any other
+# journey, so a re-check row here never collides with a proposal or an assertion elsewhere.
+RECHECK_OBLIGATION = "obl-priips-kid"
+
+# The two obligations WAT-S6's links carry (`c3-seed-provisions`'s own fixture), neither used
+# by the proposals seed above or by taxonomy.journey.spec.ts's ADVICE_ONLY_OBLIGATION.
+CONFIRMED_LINK_OBLIGATION = "obl-dora-ict-register"
+SUGGESTED_LINK_OBLIGATION = "obl-client-assets"
+
+# The one library editor whose confirmations this seed stands behind: the same account
+# `proposals.journey.spec.ts` signs in as, so a journey that confirms something here and
+# something in the console queue is confirming as one person.
+CONFIRMING_EDITOR_EMAIL = "editor@bleqq.test"
+
+
+def seed_platform_agent_runs() -> tuple[AgentRun, AgentRun]:
+    """One closed and one open platform run of the watch sweeper (AGT-01, item 14): the
+    provenance every chunk 5 source check and change below points at. `Agent` is the library
+    row `seed_agent_definitions()` loads from `backend/agents/watch-sweeper/v1/`; `ApiKey`
+    and `AgentRun` are plain tables outside the library fence, so this module writes them
+    directly, exactly as `apps/agents/testing.py` does for the backend suite.
+
+    Idempotent on the key's own name and each run's `idempotency_key`: a reseed finds the
+    same three rows rather than opening a second key or a second pair of runs.
+
+    `api_key` and `agent_run` are mixed tables (playbook 14): their RLS policy accepts a
+    `tenant_id` NULL row only from a session with no tenant active, exactly as a library
+    row does, so the writes below run inside `tenancy.platform_zone()` regardless of which
+    tenant the caller last activated (proven to fail 2026-09-21: `ProgrammingError: new row
+    violates row-level security policy for table "api_key"`, from a session `seed_home_cases`
+    had left on tenant B).
+    """
+    seed_agent_definitions()
+    agent = _agent("watch-sweeper")
+    # Nothing in this seed authenticates as the key; it exists for the runs' FK alone, so
+    # its plain value is generated and immediately dropped rather than kept anywhere.
+    _plain, prefix, key_hash = tokens.new_api_key()
+    with tenancy.platform_zone():
+        key, _created = ApiKey.objects.get_or_create(
+            name="Watch sweeper (E2E)",
+            defaults={"tenant": None, "agent": agent, "key_prefix": prefix, "key_hash": key_hash, "scopes": list(_WATCH_SCOPES)},
+        )
+        closed, _ = AgentRun.objects.update_or_create(
+            api_key=key,
+            idempotency_key="e2e-seed-run-closed",
+            defaults={
+                "agent": agent,
+                "model": "agent pipeline 0.4",
+                "pipeline_version": "0.4",
+                "status": RunStatus.SUCCEEDED.value,
+                "finished_at": timezone_now_this_week(TENANT_A.timezone),
+                "stats": {"itemsChecked": 6, "changesFound": 3, "proposalsFiled": 0},
+            },
+        )
+        opened, _ = AgentRun.objects.update_or_create(
+            api_key=key,
+            idempotency_key="e2e-seed-run-open",
+            defaults={"agent": agent, "model": "agent pipeline 0.4", "pipeline_version": "0.4", "status": RunStatus.RUNNING.value},
+        )
+    return closed, opened
+
+
+# The scopes a platform watch key holds in R1 (ID-10, PARALLEL_PLAN 7.2), mirroring
+# `apps/agents/testing.py`'s own list rather than a second literal.
+_WATCH_SCOPES: tuple[str, ...] = ("agent-runs:write", "sources:write", "changes:write", "library:read")
+
+
+def seed_chunk5_sources(closed_run: AgentRun) -> None:
+    """The registry's own variety (WAT-01), four sources across three of its four kinds
+    (`tenant_private` is WAT-06, R3, and fits no shared row): a healthy one, one that has
+    just started failing, one registered but not yet swept, and one registered inactive —
+    standing in for WAT-07's standards-body kind, which the vocabulary does not carry until
+    `f03-T43` seeds it (D-45). Both checks below are the sweeper's closed run's own work."""
+    healthy = watch_e2e_seed.seed_source(
+        name=EXPECTED_CHUNK5_WATCH.healthy_source, kind="legal_database", authority=None, url="https://eur-lex.europa.eu/",
+    )
+    watch_e2e_seed.seed_source_check(healthy, status=CheckStatus.OK, run=closed_run)
+    failing = watch_e2e_seed.seed_source(
+        name=EXPECTED_CHUNK5_WATCH.failing_source, kind="open_web_sweep", authority=None, check_frequency=CheckFrequency.DAILY,
+    )
+    watch_e2e_seed.seed_source_check(
+        failing, status=CheckStatus.FAILED, error="502 from the publisher after three retries", run=closed_run
+    )
+    watch_e2e_seed.seed_source(
+        name=EXPECTED_CHUNK5_WATCH.unswept_source, kind="authority_site", authority="esma", url="https://www.esma.europa.eu/",
+    )
+    watch_e2e_seed.seed_source(
+        name=EXPECTED_CHUNK5_WATCH.inactive_source, kind="authority_site", authority=None, active=False,
+        check_frequency=CheckFrequency.MONTHLY,
+    )
+    watch_e2e_seed.seed_recheck(healthy, _obligation(RECHECK_OBLIGATION), run=closed_run)
+
+
+def _register_and_fan_out(change: Any) -> None:
+    """Deliver `change.registered` exactly as a real registration would (CAS-01): the outbox
+    event `record()` writes in the library's zone, drained until every active bank has its
+    case. Called only for a change this run just created, so a reseed never re-fires the
+    fan-out for one that already has its cases. `change` arrives untyped, by the app
+    registry's own reads above, for the reason each of them gives: `RegulatoryChange` is a
+    `LibraryModel`, and this module already calls `.update_or_create()` for other rows."""
+    with transaction.atomic():
+        tenancy.clear_tenant()
+        record(
+            action=CHANGE_REGISTERED,
+            actor=SEED_ACTOR,
+            subject_type="regulatory_change",
+            subject_id=change.id,
+            subject_title=change.title,
+            summary="Seeded for E2E journeys.",
+            tenant_id=None,
+        )
+    while outbox.deliver_batch().delivered:
+        pass
+
+
+def seed_chunk5_changes(closed_run: AgentRun) -> SeedChunk5Watch:
+    """The three reforms beyond chunk 6's four (WAT-01 to WAT-05): each with a regime term,
+    a change type and a flag as suggestions, and their real cases fanned out through the
+    outbox cursor exactly as a registration would open them (CAS-01). Runs after
+    `seed_logins()`, because a confirmed classification names a library editor who must
+    already exist, and it clears the tenant it is called with left active.
+    """
+    editor = User.objects.get(email=CONFIRMING_EDITOR_EMAIL)
+    tenancy.clear_tenant()
+    week = timezone_now_this_week(TENANT_A.timezone)
+    today = week.date()
+
+    # WAT-S2's own dates: a three-entry timeline of mixed precision. The regime term is the
+    # one classification this seed confirms, so both suggested and confirmed states render.
+    is_new = not _regulatory_change_exists(EXPECTED_CHUNK5_WATCH.timeline_change)
+    timeline = watch_e2e_seed.seed_change(
+        stable_key=EXPECTED_CHUNK5_WATCH.timeline_change,
+        title="FI clarifies the appropriateness assessment for complex instruments",
+        change_type="adopted",
+        published_on=datetime.date(2026, 6, 15),
+        key_date=datetime.date(2027, 1, 1),
+        key_date_precision=DatePrecision.QUARTER,
+        key_date_label="In force",
+        urgency="within_3_months",
+        first_seen_at=week,
+        so_what_draft="Update the appropriateness assessment template before the rules take effect.",
+    )
+    watch_e2e_seed.seed_event(timeline, label="Consultation opened", event_date=datetime.date(2026, 3, 1), precision=DatePrecision.MONTH, sort_order=1)
+    watch_e2e_seed.seed_event(timeline, label="Adopted", event_date=datetime.date(2026, 6, 15), precision=DatePrecision.DAY, sort_order=2)
+    watch_e2e_seed.seed_event(timeline, label="In force", event_date=datetime.date(2027, 1, 1), precision=DatePrecision.QUARTER, occurred=False, sort_order=3)
+    watch_e2e_seed.seed_document(timeline, url="https://www.fi.se/en/published/news/2026/appropriateness/", title="FI clarifies the appropriateness assessment", is_primary=True)
+    watch_e2e_seed.seed_flag_link(timeline, flag_key="advice_perimeter")
+    watch_e2e_seed.seed_scope_term_link(timeline, term_ref="regime:securities", confirmed_by_id=editor.id, confirmed_at=week)
+    if is_new:
+        _register_and_fan_out(timeline)
+
+    # WAT-S6's own change: two documents (one a merged duplicate, one carrying a screened
+    # hit) and two obligation links, one confirmed for the shared library and one still a
+    # suggestion, so a bank's own decision has something to decide.
+    is_new = not _regulatory_change_exists(EXPECTED_CHUNK5_WATCH.obligations_change)
+    obligations_change = watch_e2e_seed.seed_change(
+        stable_key=EXPECTED_CHUNK5_WATCH.obligations_change,
+        title="ESMA finalises technical standards on ICT third-party risk reporting",
+        change_type="guidance",
+        authority="esma",
+        authority_label="European Securities and Markets Authority",
+        published_on=today,
+        key_date=today + datetime.timedelta(days=45),
+        key_date_label="Applies",
+        urgency="within_3_months",
+        first_seen_at=week + datetime.timedelta(hours=2),
+        so_what_draft="Confirm the ICT register covers every third-party arrangement in scope.",
+        source_url="https://www.esma.europa.eu/",
+    )
+    watch_e2e_seed.seed_document(obligations_change, url="https://www.esma.europa.eu/press-news/ict-rts", title="ESMA finalises ICT reporting standards", is_primary=True)
+    watch_e2e_seed.seed_document(
+        obligations_change, url="https://www.esma.europa.eu/press-news/ict-rts-annex", title="Annex: reporting template", is_duplicate=True, risk_flags=["embedded_instructions"],
+    )
+    watch_e2e_seed.seed_flag_link(obligations_change, flag_key="ai", confidence=0.61)
+    watch_e2e_seed.seed_scope_term_link(obligations_change, term_ref="regime:ai_ict", confidence=0.88)
+    watch_e2e_seed.seed_obligation_link(
+        obligations_change, _obligation(CONFIRMED_LINK_OBLIGATION), confidence=0.92, confirmed_by_id=editor.id, confirmed_at=week,
+    )
+    watch_e2e_seed.seed_obligation_link(
+        obligations_change, _obligation(SUGGESTED_LINK_OBLIGATION), confidence=0.55,
+    )
+    if is_new:
+        _register_and_fan_out(obligations_change)
+
+    # A third, simpler reform, so the feed and the console queue are not both one row.
+    is_new = not _regulatory_change_exists(EXPECTED_CHUNK5_WATCH.payments_change)
+    payments = watch_e2e_seed.seed_change(
+        stable_key=EXPECTED_CHUNK5_WATCH.payments_change,
+        title="FI consults on instant payment infrastructure resilience",
+        change_type="consultation",
+        key_date=today + datetime.timedelta(days=200),
+        key_date_label="Consultation closes",
+        urgency="monitor",
+        first_seen_at=week + datetime.timedelta(hours=4),
+    )
+    watch_e2e_seed.seed_document(payments, url="https://www.fi.se/en/published/news/2026/instant-payments/", is_primary=True)
+    watch_e2e_seed.seed_scope_term_link(payments, term_ref="regime:payments", confidence=0.7)
+    if is_new:
+        _register_and_fan_out(payments)
+
+    return EXPECTED_CHUNK5_WATCH
+
+
+def seed_chunk5_cases(tenants: list[Tenant]) -> int:
+    """This bank's own work on chunk 5's three changes (c5-seed-watch, WAT-05): one So
+    what confirmed in tenant A, left as the library's draft in tenant B, so both states
+    render on a screen that reads one bank's own case. Runs after the real creation path has
+    given every active tenant a case for each change (`seed_chunk5_changes`)."""
+    tenant_a = next(t for t in tenants if t.slug == TENANT_A_SLUG)
+    officer = User.objects.get(email="compliance_officer@example-bank.test")
+    tenancy.activate(tenant_a.id)
+    case = ChangeCase.objects.get(tenant=tenant_a, change__stable_key=EXPECTED_CHUNK5_WATCH.timeline_change)
+    if not case.so_what_confirmed:
+        case.so_what_confirmed = True
+        case.so_what_confirmed_by = officer
+        case.so_what_confirmed_at = timezone_now_this_week(TENANT_A.timezone)
+        case.save(update_fields=["so_what_confirmed", "so_what_confirmed_by", "so_what_confirmed_at"])
+        record(
+            action="case.so_what_confirmed",
+            actor=SEED_ACTOR,
+            subject_type="change_case",
+            subject_id=case.id,
+            subject_title=case.change.title,
+            summary="Seeded for E2E journeys.",
+            tenant_id=tenant_a.id,
+            after={"soWhatConfirmed": True},
+        )
+    tenancy.clear_tenant()
+    return 1
+
+
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
@@ -715,12 +999,21 @@ def seed_e2e() -> dict[str, int]:
         seed_pending_footprint_request(tenants)
         proposals = seed_proposals()
         home_cases = seed_home_cases(tenants, home)
+        # Chunk 5's own watch fixtures (c5-seed-watch): after the logins above, because a
+        # confirmed classification names a library editor who must already exist, and after
+        # the footprints above, because a case's footprint verdict is computed against the
+        # bank's footprint as it stands when the case is created.
+        closed_run, _open_run = seed_platform_agent_runs()
+        seed_chunk5_sources(closed_run)
+        seed_chunk5_changes(closed_run)
+        chunk5_cases = seed_chunk5_cases(tenants)
     return {
         "tenants": len(tenants),
         "logins": logins,
         "footprint_terms": footprint_terms,
         "proposals": proposals,
         "home_cases": home_cases,
+        "chunk5_cases": chunk5_cases,
         **library,
         **search_index,
     }

@@ -74,6 +74,37 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
     # The second library editor. Four eyes holds in the console too (PRO-02, AC-PRO2): the
     # editor who files a proposal never decides it, so the queue journeys need a second one.
     SeedLogin(_id(13), "editor2@bleqq.test", "Kari Nygaard", None, (), platform_roles=("library_editor",)),
+    # c5-seed-watch's own entry: J-4's platform admin, who creates a platform agent key
+    # through the console (`c5-platform-agent-keys`) under `agent_definitions.manage` with a
+    # step-up. Not reserved: the key it creates is revocable, so nothing about a run leaves
+    # this login unable to be reused (unlike ADM-S2's re-issue, which retires a passkey for
+    # good — the guard's `reserved_for` check also assumes a tenant membership, which this
+    # platform-staff login has none of).
+    SeedLogin(
+        _id(14),
+        "agent-keys@bleqq.test",
+        "Sigrid Moen",
+        None,
+        (),
+        platform_roles=("platform_admin",),
+    ),
+    # c5-e2e-watch-journeys-a's own entry: the one deliberate exception to "one pinned
+    # language" above, so WAT-S2's "and again in sv" has a session whose own `locale` is
+    # Swedish to read the change page as. Not reserved: it only ever reads a page, so
+    # nothing about a run leaves it unable to be reused (unlike a login that spends itself
+    # on an irreversible UI action, playbook 8.3 rule 4). Its role is the same "reader" the
+    # shared English login stands for; the guard that keeps a *reserved* login's roles off
+    # the shared set (`test_logins_spent_by_a_journey_are_dedicated_to_it`) does not apply
+    # here for exactly that reason.
+    SeedLogin(
+        _id(15),
+        "reader-sv@example-bank.test",
+        "Astrid Sundqvist",
+        TENANT_A_SLUG,
+        ("reader",),
+        title="Legal counsel",
+        locale="sv",
+    ),
 )
 
 # The login ADM-S2 spends (above). Named here so the guard and the journey read one value.

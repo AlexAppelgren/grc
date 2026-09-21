@@ -2,6 +2,7 @@ import type { Browser, Page, TestInfo } from '@playwright/test';
 
 import { expect, test, type ApiGuard } from './support/api-guard';
 import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
+import { approveQueueProposal } from './support/watch';
 
 // taxonomy: the @e2e scenarios from backend/apps/taxonomy/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -278,14 +279,17 @@ test.describe('taxonomy journeys', () => {
     // pending: VOC-S12 (VOC-08)
   });
 
-  test("VOC-S15 J-5 @smoke: a flag is added, used, rendered as brand, renamed and merged", async ({ page, apiGuard }) => {
+  test("VOC-S15 J-5 @smoke: a flag is added, used, rendered as brand, renamed and merged", async ({ page, browser, apiGuard }, testInfo) => {
     // pending: VOC-S15 (VOC-01, VOC-02, VOC-07, AC-VOC1, AC-VOC2, J-5) -> built
     // in chunk 2 up to the library door. Flags are a library list, so adding
     // and renaming are proposals (VOC-07); every flag renders brand in both
     // themes. Using the new flag on a change, the feed filter and merging it
     // wait for the console's approval and the watch screens (chunk 4). The
     // proposer is the seeded compliance officer: a library change is a
-    // proposal, and proposing needs proposals.create.
+    // proposal, and proposing needs proposals.create. c5-e2e-vocab-footprint-feed's own
+    // watch steps add a second person and roughly a dozen more page loads to the same
+    // journey rather than a second smoke test, so the default 30 s budget is tripled.
+    test.slow();
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.complianceOfficer);
     await openList(page, FLAGS);
@@ -313,6 +317,90 @@ test.describe('taxonomy journeys', () => {
     await form.getByLabel('Label in Swedish').fill('Nytt namn för granskning');
     await form.getByRole('button', { name: 'Send for review' }).click();
     await expect(page.locator('[data-rename-proposed]').getByText(/is waiting for a library editor\.$/)).toBeVisible();
+
+    // The watch steps (c5-e2e-vocab-footprint-feed): "Client money" approved,
+    // put on a change through the console, and it renders as a brand pill on
+    // that bank's feed and change page. A second, independent person decides
+    // (four eyes, PRO-02): the editor never proposed either of these. The first
+    // approve attempt on each always answers 403 step_up_required, which is what opens
+    // the passkey prompt (playbook 4.2); `approveQueueProposal()` confirms it.
+    apiGuard.allow(/\/proposals\/.+\/approve$/, 403, 'approving asks for a fresh passkey assertion first, which opens the step-up prompt');
+    const editor = await secondPerson(browser, apiGuard, testInfo, LOGINS.editor);
+    await approveQueueProposal(editor, /Add Client money to flag/);
+
+    // The rename and the merge below are proposed as editor2 and approved as editor:
+    // one editor proposing and then approving its own change would be the four-eyes
+    // violation PRO-02 refuses (409), and the console shows no Approve control on a
+    // reviewer's own proposal at all (ProposalDetailScreen.tsx's "You proposed this.").
+    const editor2 = await secondPerson(browser, apiGuard, testInfo, LOGINS.editor2);
+
+    // The third seeded reform (`chg-e2e-c5-payments`, backend/apps/shared/e2e_seed.py):
+    // untouched by any other journey's exact pill or timeline count, so a
+    // correction here can never make WAT-S2 or WAT-S9 read a change that has
+    // moved under them. Every agent-registered change is unconfirmed on at
+    // least its own type, so the default "Only unconfirmed" filter already
+    // lists it.
+    await editor.goto('/console/change-facts');
+    await expect(editor.locator('[data-change-facts-list]').or(editor.locator('[data-empty-state]')).first()).toBeVisible();
+    await editor.getByRole('link', { name: /instant payment infrastructure resilience/ }).click();
+    const flagsFact = editor.locator('[data-fact="Flags"]');
+    await flagsFact.getByRole('button', { name: 'Correct' }).click();
+    await editor.getByLabel('Client money', { exact: true }).check();
+    await editor.locator('[data-correct-flags]').getByRole('button', { name: 'Save the flags' }).click();
+    await expect(flagsFact.getByText('Client money')).toBeVisible();
+
+    // The same fact, read on the bank's own feed row and change page: a
+    // brand pill, still marked as the agent's own suggestion (a library
+    // editor's correction is not a confirmation).
+    await page.goto('/watch?tab=all');
+    await expect(page.locator('[data-change-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+    const row = page.locator('[data-change="chg-e2e-c5-payments"]');
+    await expect(row).toBeVisible();
+    await expect(row.locator('[data-pill="brand"]').filter({ hasText: 'Client money' })).toBeVisible();
+    await row.click();
+    await expect(page).toHaveURL(/\/watch\/[0-9a-f-]+$/);
+    const classification = page.locator('[data-change-classification]');
+    await expect(classification.locator('[data-pill="brand"]').filter({ hasText: 'Client money' })).toBeVisible();
+    const changeUrl = page.url();
+
+    // Renamed, and the change still shows the new label with no change row
+    // written: the link is a foreign key to the flag's own row, so the label
+    // a reader sees follows the row it points at rather than a copy this
+    // change carries, and the change keeps the same address throughout.
+    await editor2.goto('/console/vocabularies');
+    await editor2.locator('[data-vocabulary-list="flag"]').click();
+    const clientMoney = editor2.locator('[data-value-key="client_money"]');
+    await clientMoney.getByRole('button', { name: 'Rename' }).click();
+    const renameForm = editor2.locator('[data-rename-form="client_money"]');
+    await renameForm.getByLabel('New label', { exact: true }).fill('Segregated client money');
+    await renameForm.getByRole('button', { name: 'Send for review' }).click();
+    await expect(editor2.locator('[data-rename-proposed]').getByText(/is waiting for a library editor\.$/)).toBeVisible();
+    await approveQueueProposal(editor, /Change client_money on flag/);
+
+    await page.goto(changeUrl);
+    await expect(page).toHaveURL(changeUrl);
+    await expect(classification.locator('[data-pill="brand"]').filter({ hasText: 'Segregated client money' })).toBeVisible();
+    await expect(classification.locator('[data-pill="brand"]').filter({ hasText: /^Client money$/ })).toHaveCount(0);
+
+    // Merged into an existing flag, and the change still reads: nothing
+    // breaks and the address is unchanged, whether or not the merge
+    // re-points this change's own link (a later task's work;
+    // `entry.repoint()` on `flag` is still `repoint.nothing_to_repoint`,
+    // apps/taxonomy/registry.py).
+    await editor2.goto('/console/vocabularies');
+    await editor2.locator('[data-vocabulary-list="flag"]').click();
+    await editor2.locator('[data-value-key="client_money"]').getByRole('button', { name: /^Merge into/ }).click();
+    const mergeDialog = editor2.getByRole('dialog', { name: /^Merge "Segregated client money" into/ });
+    await mergeDialog.locator('#merge-into').selectOption({ label: 'Advice perimeter' });
+    await expect(mergeDialog.getByText('What happens')).toBeVisible();
+    await mergeDialog.getByRole('button', { name: /^Merge/ }).click();
+    await expect(mergeDialog.getByText(/is waiting for a library editor\.$/)).toBeVisible();
+    await mergeDialog.getByRole('button', { name: 'Done' }).click();
+    await approveQueueProposal(editor, /Merge client_money into advice_perimeter on flag/);
+
+    await page.goto(changeUrl);
+    await expect(page).toHaveURL(changeUrl);
+    await expect(classification).toBeVisible();
   });
 
   test.describe('footprint', () => {

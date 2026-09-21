@@ -59,6 +59,10 @@ export const LOGINS = {
   platform: 'platform@bleqq.test',
   /** Reserved for ADM-S2: it re-issues this member's enrolment, which retires their passkeys. */
   reissue: 'reissue@example-bank.test',
+  /** AGT-S10 (J-4): creates a platform agent key through the console. Not reserved: the key is revocable. */
+  agentKeys: 'agent-keys@bleqq.test',
+  /** The one login whose own `locale` is Swedish (WAT-S2); read-only, so not reserved. */
+  readerSv: 'reader-sv@example-bank.test',
 } as const;
 
 export const ANNA_INVITE_TOKEN = 'e2e-invite-anna';

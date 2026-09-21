@@ -81,6 +81,7 @@ When an agent run logs a check with status ok and zero new items, and a later ch
 Then the coverage log lists both with time, result and the run
 And the console's "Source coverage" shows the source as stale after the failure with the failing check named
 ```
+`@e2e` built by `c5-e2e-watch-journeys-a`, against `c5-seed-watch`'s own four sources.
 
 ### WAT-S2 — One record per reform carries a timeline with partial dates `@integration` `@e2e` (WAT-02)
 ```gherkin
@@ -88,6 +89,10 @@ Given a change registered with a consultation date of 2026-03, an adoption date 
 Then one regulatory change row exists with three timeline entries, each with its precision
 And the change screen renders "March 2026", "15 June 2026" and "Q1 2027" in the user's language
 ```
+`@e2e` built by `c5-e2e-watch-journeys-a`, in English and once more in Swedish (the one
+seeded login whose own `locale` is Swedish, `frontend/tests/e2e/support/passkeys.ts`
+`LOGINS.readerSv`). Read as rendered: a day-precision date is `formatDate()`'s own short
+month (`15 Jun 2026`), not the long form this scenario's own prose uses.
 
 ### WAT-S3 — A known stableKey merges duplicates and returns the existing change `@integration` (WAT-02, AC-WAT1)
 ```gherkin
@@ -107,6 +112,8 @@ When a library editor confirms them
 Then suggested becomes false and the audit event records who confirmed
 And a bank's own compliance officer cannot confirm them, because a change's type, flag and scope are library facts behind proposals.review
 ```
+`@e2e` stays `test.fixme()`, owned and named by `c5-e2e-watch-journeys-b`: the confirming
+half needs the held `c5-watch-curation-confirm` (`q-editor-confirm`, `docs/TODO_FOR_alex.md`).
 
 ### WAT-S5 — An unknown key answers unknown_key with the valid keys `@integration` (WAT-03, AC-WAT2)
 ```gherkin
@@ -126,6 +133,10 @@ When a compliance officer accepts the first and removes the second on their own 
 Then both decisions are stored on that bank's case and audited, the second is hidden from that bank's change page, and the obligation shows "1 open change"
 And no library row changed: the second link is still there, still a suggestion, and another bank still sees both
 ```
+`@e2e` stays `test.fixme()`, owned and named by `c5-e2e-watch-journeys-b`: blocked on both
+`c5-watch-curation-confirm` (the library editor's half) and `c5-cases-so-what-and-links`
+(the compliance officer's own accept and remove, `POST`/`DELETE
+/changes/{changeId}/case/obligation-links`, still `not_built` — neither is on `main`).
 
 > **Note — the library editor's confirmation.** The step "a library editor confirms the
 > first for the shared library" is the held half of this feature and is asserted in WAT-S4,
@@ -146,6 +157,9 @@ When the compliance officer chooses "Confirm wording" or rewrites and chooses "S
 Then the tenant's copy is marked confirmed with the person and time
 And another tenant's copy is still the draft
 ```
+`@e2e` stays `test.fixme()`, owned and named by `c5-e2e-watch-journeys-b`: `c5-cases-so-what-and-links`
+is not on `main`, so `PUT`/`POST /changes/{changeId}/so-what` still answer `not_built` and
+the panel carries no confirm or rewrite control yet.
 
 ### WAT-S8 — A tenant requests a source and private sources stay private `@integration` `@e2e` (WAT-06)
 ```gherkin
@@ -165,6 +179,9 @@ When the feed renders it
 Then the pills read, in order: the type as notice, "Act now" as negative, the flag as brand
 And the header adds "Needs triage" as information, then the authority and date as plain text
 ```
+`@e2e` built by `c5-e2e-watch-journeys-a`, against a seeded change of urgency
+"within_3_months" (`warning`) rather than this scenario's own "Act now" example: the same
+tone-by-ordinal rule holds for either.
 
 ### WAT-S10 — A new edition of a standard is one change, and only tenants that follow it see it `@integration` `@e2e` (WAT-02, WAT-07, CAS-01, AC-FP3)
 ```gherkin

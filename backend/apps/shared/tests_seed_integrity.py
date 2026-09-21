@@ -23,11 +23,12 @@ from io import StringIO
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 
+from apps.agents.models import AgentRun
 from apps.cases.models import ChangeCase
 from apps.home.models import Briefing, BriefingItem
 from apps.home.roadmap import quarter_of
 from apps.identity import tokens
-from apps.identity.models import Invitation, Membership, PlatformRoleAssignment, User, UserStatus, WebAuthnCredential
+from apps.identity.models import ApiKey, Invitation, Membership, PlatformRoleAssignment, User, UserStatus, WebAuthnCredential
 from apps.shared import tenancy
 from apps.shared.e2e_logins import (
     E2E_INVITATION_TOKEN_ANNA,
@@ -41,17 +42,21 @@ from apps.shared.e2e_passkeys import E2E_PASSKEYS
 from apps.library.models import Instrument, Obligation, ObligationVersion, Verification
 from apps.search.models import SearchChunk, SearchSource
 from apps.shared.e2e_seed import (
+    CONFIRMED_LINK_OBLIGATION,
+    EXPECTED_CHUNK5_WATCH,
     EXPECTED_FOOTPRINTS,
     EXPECTED_HOME,
     EXPECTED_LIBRARY,
     EXPECTED_PENDING_REQUEST,
     EXPECTED_TENANTS,
+    RECHECK_OBLIGATION,
+    SUGGESTED_LINK_OBLIGATION,
     SeedRefused,
     _quarter_safe_offsets,
     seed_e2e,
 )
 from apps.shared.models import AuditEvent, Tenant
-from apps.watch.models import CheckStatus, RegulatoryChange, SourceCheck
+from apps.watch.models import ChangeDocument, ChangeEvent, ChangeObligation, ChangeTerm, CheckStatus, RegulatoryChange, Source, SourceCheck, SourceCheckKind
 from apps.taxonomy.matching import footprint_of, in_footprint, restricting_dimensions
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm
 from apps.taxonomy.registry import REGISTRY
@@ -354,17 +359,31 @@ class SeedIntegrityGuard(TestCase):
         )
 
         # Tenant B's own two dates (J-8): present under its own tenant, and never reachable
-        # once tenant A is the one activated.
+        # once tenant A is the one activated. Filtered to chunk 6's own two stable keys,
+        # not a bare count: chunk 5's own changes (c5-seed-watch) fan out to every active
+        # tenant too, so tenant B's total case count is no longer just these two.
         second_bank = Tenant.objects.get(slug=TENANT_B_SLUG)
         tenancy.activate(second_bank.id)
-        self.assertEqual(ChangeCase.objects.count(), 2)
+        self.assertEqual(ChangeCase.objects.filter(change__stable_key__startswith="chg-e2e-tenant-b").count(), 2)
         tenancy.activate(tenant.id)
         self.assertEqual(ChangeCase.objects.filter(change__stable_key__startswith="chg-e2e-tenant-b").count(), 0)
+
+    def _all_tenants_case_count(self) -> int:
+        """`ChangeCase` is a `TenantModel` under forced row-level security, so a bare
+        `.count()` with no tenant activated reads zero rows in every zone rather than the
+        whole table: this sums each seeded tenant's own count instead (proven to fail
+        2026-09-21: `assertGreater(cases, 0)` read 0 not greater than 0 with no tenant
+        active)."""
+        total = 0
+        for tenant in Tenant.objects.all():
+            tenancy.activate(tenant.id)
+            total += ChangeCase.objects.count()
+        return total
 
     def test_chunk_6_seed_is_idempotent(self) -> None:
         seed_e2e()
         cases, checks, changes, briefings = (
-            ChangeCase.objects.count(),
+            self._all_tenants_case_count(),
             SourceCheck.objects.count(),
             RegulatoryChange.objects.filter(stable_key__startswith="chg-e2e-").count(),
             Briefing.objects.count(),
@@ -373,7 +392,7 @@ class SeedIntegrityGuard(TestCase):
 
         seed_e2e()
 
-        self.assertEqual(ChangeCase.objects.count(), cases)
+        self.assertEqual(self._all_tenants_case_count(), cases)
         self.assertEqual(SourceCheck.objects.count(), checks)
         self.assertEqual(RegulatoryChange.objects.filter(stable_key__startswith="chg-e2e-").count(), changes)
         self.assertEqual(Briefing.objects.count(), briefings, "re-running the job for a sent week sends nothing and writes nothing")
@@ -391,3 +410,112 @@ class SeedIntegrityGuard(TestCase):
         ):
             with self.subTest(anchor=anchor):
                 self.assertNotEqual(quarter_of(anchor + datetime.timedelta(days=near)), quarter_of(anchor + datetime.timedelta(days=far)))
+
+    def test_chunk5_seeds_the_timeline_change_with_its_mixed_precision_dates_and_one_confirmed_term(self) -> None:
+        """c5-seed-watch (WAT-S2): named here so a later change to the seed cannot quietly
+        hollow out `c5-e2e-watch-journeys-a`'s WAT-S2 and WAT-S9 journeys without failing
+        this guard."""
+        seed_e2e()
+        change = RegulatoryChange.objects.get(stable_key=EXPECTED_CHUNK5_WATCH.timeline_change)
+        events = {event.label: event for event in ChangeEvent.objects.filter(change=change)}
+        self.assertEqual(events["Consultation opened"].event_date, datetime.date(2026, 3, 1))
+        self.assertEqual(events["Consultation opened"].date_precision, "month")
+        self.assertEqual(events["Adopted"].event_date, datetime.date(2026, 6, 15))
+        self.assertEqual(events["Adopted"].date_precision, "day")
+        self.assertEqual(events["In force"].event_date, datetime.date(2027, 1, 1))
+        self.assertEqual(events["In force"].date_precision, "quarter")
+
+        # The one confirmed classification, so both suggested and confirmed states render
+        # (WAT-S4's confirming half is the held `c5-watch-curation-confirm`, but a seed may
+        # write the confirmation columns directly, exactly as `_seed_case`'s So what does).
+        term_link = ChangeTerm.objects.get(change=change, term__isnull=False)
+        self.assertFalse(term_link.suggested)
+        self.assertIsNotNone(term_link.confirmed_by_id)
+        self.assertIsNotNone(term_link.confirmed_at)
+        flag_link = ChangeTerm.objects.get(change=change, flag__isnull=False)
+        self.assertTrue(flag_link.suggested, "the flag is left a suggestion so a suggested pill has something to render too")
+
+    def test_chunk5_seeds_the_obligations_change_with_its_documents_and_links(self) -> None:
+        """c5-seed-watch (WAT-S6, AGT-07): named here so a later change to the seed cannot
+        quietly hollow out `c5-e2e-watch-journeys-b`'s WAT-S6 journey without failing this
+        guard, whether or not it is un-fixme'd yet."""
+        seed_e2e()
+        change = RegulatoryChange.objects.get(stable_key=EXPECTED_CHUNK5_WATCH.obligations_change)
+        documents = ChangeDocument.objects.filter(change=change)
+        self.assertEqual(documents.count(), 2)
+        self.assertTrue(documents.filter(is_duplicate=True, risk_flags__len__gt=0).exists())
+
+        confirmed = ChangeObligation.objects.get(change=change, obligation__stable_key=CONFIRMED_LINK_OBLIGATION)
+        self.assertIsNotNone(confirmed.confirmed_by_id)
+        suggested = ChangeObligation.objects.get(change=change, obligation__stable_key=SUGGESTED_LINK_OBLIGATION)
+        self.assertIsNone(suggested.confirmed_by_id)
+
+    def test_chunk5_seeds_two_platform_agent_runs_and_a_recheck(self) -> None:
+        """c5-seed-watch (AGT-01, item 3): a closed and an open platform run with no tenant,
+        and a `recheck` line beside the sweep lines so the coverage log can tell the two
+        apart."""
+        seed_e2e()
+        key = ApiKey.objects.get(name="Watch sweeper (E2E)")
+        self.assertIsNone(key.tenant_id)
+        assert key.agent is not None
+        self.assertEqual(key.agent.key, "watch-sweeper")
+        runs = {run.status: run for run in AgentRun.objects.filter(api_key=key)}
+        self.assertEqual(set(runs), {"succeeded", "running"})
+        self.assertIsNone(runs["succeeded"].tenant_id)
+        self.assertIsNone(runs["running"].tenant_id)
+
+        recheck = SourceCheck.objects.get(kind=SourceCheckKind.RECHECK.value, source__name=EXPECTED_CHUNK5_WATCH.healthy_source)
+        self.assertEqual(recheck.subject_id, Obligation.objects.get(stable_key=RECHECK_OBLIGATION).id)
+
+    def test_chunk5_seeds_both_tenants_cases_with_one_so_what_confirmed_and_one_not(self) -> None:
+        """c5-seed-watch (WAT-S7, CAS-01): every active bank gets a case for chunk 5's own
+        changes through the real creation path, and tenant A's So what is confirmed while
+        tenant B's is still the library's draft, so `c5-e2e-watch-journeys-b`'s WAT-S7
+        journey has both states to read."""
+        seed_e2e()
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenant_b = Tenant.objects.get(slug=TENANT_B_SLUG)
+        for stable_key in (
+            EXPECTED_CHUNK5_WATCH.timeline_change,
+            EXPECTED_CHUNK5_WATCH.obligations_change,
+            EXPECTED_CHUNK5_WATCH.payments_change,
+        ):
+            with self.subTest(change=stable_key):
+                tenancy.activate(tenant_a.id)
+                self.assertTrue(ChangeCase.objects.filter(tenant=tenant_a, change__stable_key=stable_key).exists())
+                tenancy.activate(tenant_b.id)
+                self.assertTrue(ChangeCase.objects.filter(tenant=tenant_b, change__stable_key=stable_key).exists())
+
+        tenancy.activate(tenant_a.id)
+        case_a = ChangeCase.objects.get(tenant=tenant_a, change__stable_key=EXPECTED_CHUNK5_WATCH.timeline_change)
+        self.assertTrue(case_a.so_what_confirmed)
+        tenancy.activate(tenant_b.id)
+        case_b = ChangeCase.objects.get(tenant=tenant_b, change__stable_key=EXPECTED_CHUNK5_WATCH.timeline_change)
+        self.assertFalse(case_b.so_what_confirmed)
+
+    def test_chunk5_seed_is_idempotent(self) -> None:
+        seed_e2e()
+        changes = RegulatoryChange.objects.filter(stable_key__startswith="chg-e2e-c5-").count()
+        events = ChangeEvent.objects.count()
+        documents = ChangeDocument.objects.count()
+        term_links = ChangeTerm.objects.count()
+        obligation_links = ChangeObligation.objects.count()
+        sources = Source.objects.count()
+        runs = AgentRun.objects.count()
+        keys = ApiKey.objects.count()
+        tenancy.activate(Tenant.objects.get(slug=TENANT_A_SLUG).id)
+        cases = ChangeCase.objects.count()
+        self.assertGreater(changes, 0)
+
+        seed_e2e()
+
+        self.assertEqual(RegulatoryChange.objects.filter(stable_key__startswith="chg-e2e-c5-").count(), changes)
+        self.assertEqual(ChangeEvent.objects.count(), events)
+        self.assertEqual(ChangeDocument.objects.count(), documents)
+        self.assertEqual(ChangeTerm.objects.count(), term_links)
+        self.assertEqual(ChangeObligation.objects.count(), obligation_links)
+        self.assertEqual(Source.objects.count(), sources)
+        self.assertEqual(AgentRun.objects.count(), runs)
+        self.assertEqual(ApiKey.objects.count(), keys)
+        tenancy.activate(Tenant.objects.get(slug=TENANT_A_SLUG).id)
+        self.assertEqual(ChangeCase.objects.count(), cases)
