@@ -305,6 +305,19 @@ or plain date plus precision in, user language and tenant timezone out).
 `logger` from `shared/utils/logger`, never `console.log`. No tokens, PII or
 tenant content in URLs, storage or logs.
 
+**One named exception, and it stays one.** `GET /api/v1/calendar/feed.ics`
+carries its token in the query string, because a calendar client sends no
+header, follows no sign-in and subscribes by web address alone (D-52, ADR
+0045). A token in the path would land in a hosting edge's request line, which
+is the finding that moved invitation tokens out of paths; our own access log
+prints the route and drops the query, proved by
+`apps/shared/tests_no_query_in_logs.py` and, for this route, by a test in
+`apps/home/tests_calendar.py` that captures the log handler. The address is
+shown once, kept as a lookup prefix beside the secret's hash, revocable with
+immediate effect, and it is never put in a screen's URL, in browser storage or
+in a log line. `apps/home/tests_contract.py` reads the published contract and
+fails if any second operation takes a credential in a query string.
+
 ### 3.7 Pills and labels
 
 `design/system/pills-and-labels.md` is the source. Six tones named as Green

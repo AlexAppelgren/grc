@@ -1,9 +1,16 @@
-"""Upcoming public facts and the revocable calendar feed (HOM-04).
+"""The public list of upcoming dates (HOM-04).
 
-Two different things live here because they answer the same question to two audiences.
 `GET /upcoming` is the library's dated changes with nothing of any bank in them, which is
-why an agent's key may read it. The calendar feed is one person's subscription in one bank,
-whose address carries the only credential a calendar client can send.
+why an agent's key may read it. The calendar subscription answers the same question to the
+other audience — one person, in one bank, through an address whose token is the only
+credential a calendar client can send — and lives in `apps/home/feed.py`.
+
+**Why two modules for one requirement.** This one reads library records and writes
+nothing. That one writes a bank's own rows and reads no library record. Keeping them apart
+is what `apps/shared/tests_library_fence.py` asks for: a module that names a library model
+and also calls a write is exactly the shape a library write outside the fence takes, and
+the guard cannot tell the two apart by reading one file (PRO-01). So the fence decides the
+file boundary here, and the two halves meet only in `api.py`.
 
 **`GET /upcoming` is a library read and nothing else.** No case, no footprint verdict, no
 owner and no "So what?" — not filtered out at the end, but never joined in the first place,
@@ -16,24 +23,15 @@ day is the right floor for the roadmap, where the reader is one bank; here it wo
 the "public" list answer two things at once, and a newsletter agent belongs to no bank at
 all.
 
-**The calendar feed is not built here yet.** The route was first declared with the token in
-the path; D-52 and ADR 0045 answered q-feed-token the other way, and `c6-feed-contract`
-has since put the decided shape into the contract and the table: the address is
-`GET /api/v1/calendar/feed.ics?token=<prefix>.<secret>`, a lookup prefix beside the
-secret's SHA-256, a per-person cap, a recent sign-in or step-up on creation, an idle expiry,
-automatic revocation, and `calendar_feed` as the fifth table of the identity-lookup clause.
-`c6-upcoming-calendar-backend` builds the behaviour against that; the four functions below
-answer 501 until it does, reading no token and touching no row while they do.
 """
 
 from __future__ import annotations
 
 import datetime
-from typing import NoReturn, cast
+from typing import cast
 
 from django.utils import timezone
 
-from apps.home.logic import not_built
 from apps.home.schemas import HomeUpcomingItem, HomeUpcomingQuery
 from apps.library.reading import vocabulary_refs
 from apps.taxonomy.models import ChangeTypeLabel
@@ -84,27 +82,3 @@ def list_upcoming(order: list[str], page: HomeUpcomingQuery) -> list[HomeUpcomin
         )
         for row in rows
     ]
-
-
-def list_feeds() -> NoReturn:
-    """`GET /calendar-feeds`. Built by `c6-upcoming-calendar-backend`."""
-    not_built("Calendar subscriptions are not built yet.")
-
-
-def create_feed() -> NoReturn:
-    """`POST /calendar-feeds`. Built by `c6-upcoming-calendar-backend`; the route's own
-    gate already demands a recent sign-in or a step-up, so nothing reaches here on a stale
-    session."""
-    not_built("Calendar subscriptions are not built yet.")
-
-
-def revoke_feed() -> NoReturn:
-    """`DELETE /calendar-feeds/{feedId}`. Built by `c6-upcoming-calendar-backend`."""
-    not_built("Calendar subscriptions are not built yet.")
-
-
-def calendar_ics() -> NoReturn:
-    """`GET /calendar/feed.ics`. Built by `c6-upcoming-calendar-backend`; it reads no token
-    and touches no row while it answers 501, so nothing about a token can be learned from
-    it."""
-    not_built("The calendar feed is not built yet.")

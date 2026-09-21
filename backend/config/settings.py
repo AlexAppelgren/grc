@@ -584,6 +584,14 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
 # ---------------------------------------------------------------------------------------
 CALENDAR_FEEDS_PER_USER = env_int("CALENDAR_FEEDS_PER_USER", 5)
 CALENDAR_FEED_IDLE_DAYS = env_int("CALENDAR_FEED_IDLE_DAYS", 30)
+# How often one address may be fetched. A calendar client polls every few hours, so this
+# is generous for every real client and still bounds what someone who found an address
+# can pull from it. It is per token, so a flood on one address leaves the others answering.
+CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
+# How often a fetch moves `last_used_at` and writes its `feed_used` security-log row, as
+# an API key's stamp is throttled (ID-10). Without it a polling client would turn a read
+# into a write every time and fill the security log with one bank's polling.
+CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
