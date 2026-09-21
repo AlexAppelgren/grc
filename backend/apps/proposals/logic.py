@@ -57,6 +57,8 @@ from apps.shared.audit import Actor, record
 SUBJECT_TYPE = "proposal"
 # What an obligation proposal points at (schema v0.3 `subject_type`).
 OBLIGATION_TARGET = "obligation"
+# The library list a rejection's reason is a row of (PRO-01, VOC-07).
+REJECTION_REASON_LIST = "rejection_reason"
 
 # The named payload schema per kind (PRO-01): apply() never reads a free-form dictionary.
 PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
@@ -426,12 +428,13 @@ def _csv(value: str | None) -> list[str]:
     return [part.strip() for part in (value or "").split(",") if part.strip()]
 
 
-def queue(*, status: str | None = None, kind: str | None = None, target_list: str | None = None) -> Any:
-    """The review queue, newest last, filtered by comma-separated `status` and `kind` and by
-    `target_list`: the vocabulary list a vocabulary proposal changes (`payload.list`) or the
-    dimension a term proposal changes (`payload.dimension`). The vocabulary screen's
-    "Suggested" tab asks for `?status=open&kind=vocabulary_create,term_create&targetList=flag`."""
-    queryset = Proposal.objects.select_related("proposed_by_user", "reviewed_by").order_by("created_at", "id")
+def filtered(queryset: Any, *, status: str | None = None, kind: str | None = None, target_list: str | None = None) -> Any:
+    """The filters every list of proposals shares, oldest first: comma-separated `status`
+    and `kind`, and `target_list`, the vocabulary list a vocabulary proposal changes
+    (`payload.list`) or the dimension a term proposal changes (`payload.dimension`). The
+    vocabulary screen's "Suggested" tab asks for
+    `?status=open&kind=vocabulary_create,term_create&targetList=flag`."""
+    queryset = queryset.select_related("proposed_by_user", "reviewed_by").order_by("created_at", "id")
     statuses = _csv(status)
     if statuses:
         queryset = queryset.filter(status__in=statuses)
@@ -440,6 +443,38 @@ def queue(*, status: str | None = None, kind: str | None = None, target_list: st
         queryset = queryset.filter(kind__in=kinds)
     if target_list:
         queryset = queryset.filter(Q(payload__list=target_list) | Q(payload__dimension=target_list))
+    return queryset
+
+
+def validated_origin(origin: str | None) -> str | None:
+    """`origin` names who filed a proposal, and there are two kinds of proposer. A value
+    that is neither is refused rather than answering an empty queue that looks like a fact."""
+    if origin is None or origin == "":
+        return None
+    valid = [member.value for member in OriginType]
+    if origin not in valid:
+        raise ValidationError(f"{origin!r} is not an origin. Valid values: {', '.join(valid)}.", code="unknown_key")
+    return origin
+
+
+def queue(
+    *,
+    status: str | None = None,
+    kind: str | None = None,
+    target_list: str | None = None,
+    origin: str | None = None,
+    not_mine: bool = False,
+    reviewer_id: uuid.UUID | None = None,
+) -> Any:
+    """The console review queue. `origin` keeps an agent's proposals or a person's;
+    `not_mine` drops the ones this reviewer filed, which are the ones four eyes will not let
+    them decide."""
+    queryset = filtered(Proposal.objects.all(), status=status, kind=kind, target_list=target_list)
+    origin = validated_origin(origin)
+    if origin is not None:
+        queryset = queryset.filter(origin=origin)
+    if not_mine and reviewer_id is not None:
+        queryset = queryset.exclude(proposed_by_user_id=reviewer_id)
     return queryset
 
 
@@ -457,6 +492,9 @@ def _actor_ref(user: Any) -> ProposalActorRef | None:
 
 
 def row(proposal: Proposal) -> ProposalRow:
+    """One proposal as every answer carrying one returns it. A proposal made inside a bank
+    names no proposer (PRO-03): the console is told `from_organisation` and nothing more, so
+    a bank member's name and id reach no platform reader, whichever route answers."""
     return ProposalRow(
         id=proposal.id,
         kind=proposal.kind,
@@ -473,7 +511,8 @@ def row(proposal: Proposal) -> ProposalRow:
         origin=proposal.origin,
         agent_run_id=proposal.agent_run_id,
         model=proposal.model,
-        proposed_by=_actor_ref(proposal.proposed_by_user),
+        proposed_by=None if proposal.proposed_in_tenant else _actor_ref(proposal.proposed_by_user),
+        from_organisation=proposal.proposed_in_tenant,
         reviewed_by=_actor_ref(proposal.reviewed_by),
         reviewed_at=proposal.reviewed_at,
         rejection_code=proposal.rejection_code,
@@ -577,12 +616,31 @@ def approve(
 
 def reject(*, proposal: Proposal, reviewer: Any, actor: Actor, rejection_code: str, note: str) -> Proposal:
     """A rejection needs a reason (PRO-01): a code the proposer's screen can branch on and a
-    sentence they can read. The outbox event is what tells them."""
+    sentence they can read. The code is a live row of the `rejection_reason` library list, an
+    admin's to extend and retire, so a code from an older screen or a retired row is refused
+    rather than stored as a reason nobody can look up. The outbox event is what tells them."""
+    from apps.taxonomy.registry import REGISTRY
+
     code = rejection_code.strip()
     text = note.strip()
     if not code or not text:
         raise ValidationError(
             "Say why: choose a reason and write a note the proposer will read.", code="reason_required"
+        )
+    # Through the registry rather than by naming the model: this module writes (it creates
+    # proposals), and the library fence's static guard fails closed on any module that both
+    # writes and names a concrete LibraryModel, whether or not the two are related
+    # (apps/shared/tests_library_fence.py). The reason list is a library vocabulary and this
+    # is a read of it.
+    reasons = REGISTRY[REJECTION_REASON_LIST].model
+    known = reasons.objects.filter(
+        key=code,
+        active=True,
+    ).exists()
+    if not known:
+        raise ValidationError(
+            f"{code!r} is not a reason the rejection reason list offers. Choose one of its live rows.",
+            code="reason_required",
         )
     _decidable(proposal, reviewer)
     proposal.status = ProposalStatus.REJECTED.value

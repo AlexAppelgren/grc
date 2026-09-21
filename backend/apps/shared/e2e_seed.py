@@ -10,6 +10,10 @@ nobody sees (the seed still runs locally for a dev database). It also seeds one 
 journey that spends a person in a way the UI cannot undo (`reserved_for` in the roster):
 the member ADM-S2 re-issues, so the shared approver survives a full run.
 
+Chunk 4 seeds what the console queue and the bank's own screens decide: one waiting
+proposal per journey that spends one (`EXPECTED_PROPOSALS`), and the one open problem
+report a reader of tenant A left on a library record (`EXPECTED_PROBLEM_REPORT`).
+
 `EXPECTED_TENANTS` and `SEED_LOGINS` are what the seed-integrity guard
 (apps/shared/tests_seed_integrity.py) demands, so a seed change cannot quietly hollow
 out a journey. Fixed ids keep audit rows and URLs stable across reseeds."""
@@ -46,12 +50,13 @@ from apps.identity.models import (
     UserStatus,
     WebAuthnCredential,
 )
-from apps.library.models import DatePrecision, Language
+from apps.library import reports
+from apps.library.models import DatePrecision, Language, ProblemReport, ReportStatus, SubjectType
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import RESEARCH_OBLIGATION, load_library, seed_authorities
 from apps.proposals.logic import Proposer
 from apps.proposals.logic import create as create_proposal
-from apps.proposals.models import ProposalKind
+from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
 from apps.shared import outbox, tenancy
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
@@ -365,28 +370,84 @@ def seed_pending_footprint_request(tenants: list[Tenant]) -> int:
     return 1
 
 
-# Two proposals waiting in the console queue, for chunk 4's PRO-S3 (plain approval) and
-# PRO-S4 (correcting scope and wording before approving). chunk4-T8 ("Seed each journey's
-# proposal and a problem report", docs/plans/briefs/CHUNK4_TASKS.md) owns this rather than
-# the read-only screens of chunk4-T14/T17/T19/T20, but T8 has not landed on `main` yet and
-# there is no UI path in R1 for a person to create a `new_obligation_version` proposal (only
-# an agent, or a library editor through the API, can), so those journeys have nothing to
-# approve or correct without it. Seeded directly through apps.proposals.logic.create(), the
-# same function POST /proposals calls, so it is checked exactly as a real submission is.
+# What waits in the console queue when a journey starts, and the journey each one is there
+# for. There is no UI path in R1 for a person to file a `new_obligation_version` proposal
+# (only an agent, or a library editor through the API, can), so a journey that approves,
+# corrects or rejects one has nothing to work on without this. Every one is filed through
+# apps.proposals.logic.create(), the same function POST /proposals calls, so it is checked
+# exactly as a real submission is; the seed never approves one, so it writes no library row.
 #
-# Neither target is obl-research-payments: apps/library/seeds/library.py already files that
-# obligation's own version 2 straight from the fixture's "proposals" entry
+# No obligation target is obl-research-payments: apps/library/seeds/library.py already files
+# that obligation's own version 2 straight from the fixture's "proposals" entry
 # (prop-research-payments-v2), so approving a fresh proposal against it here would file a
-# redundant version 3 instead of the version 2 the design card and PRO-S3 both expect.
-# Nor is either obl-suitability-statement: frontend/tests/e2e/taxonomy.journey.spec.ts (J-6)
-# already owns it as ADVICE_ONLY_OBLIGATION, whose only service is Advice, to prove that
-# switching Advice off hides it; a correction here that replaces its scope terms (PRO-S4
-# rewrites the whole array, never adds to it) would rewrite the fact that journey depends
-# on. obl-appropriateness and obl-costs-charges carry only version 1 and are not named by
-# any other spec, so approving a proposal against either files a clean version 2 that
-# nothing else is watching.
-RESEARCH_AGENT_RUN = uuid.UUID("00000000-0000-4000-9000-000000000001")
-COSTS_CHARGES_AGENT_RUN = uuid.UUID("00000000-0000-4000-9000-000000000002")
+# redundant version 3 instead of the version 2 the design card and PRO-S3 both expect. It is
+# the subject of the seeded problem report instead. Nor is any of them
+# obl-suitability-statement: frontend/tests/e2e/taxonomy.journey.spec.ts (J-6) already owns
+# it as ADVICE_ONLY_OBLIGATION, whose only service is Advice, to prove that switching Advice
+# off hides it; a correction here that replaces its scope terms (PRO-S4 rewrites the whole
+# array, never adds to it) would rewrite the fact that journey depends on. The four targets
+# below carry version 1 only, sit inside tenant A's footprint, are not advice-only and are
+# named by no other spec, so a decision on any of them is a clean version 2 nothing else is
+# watching, and the four journeys never race each other.
+AGENT_LABEL = "Research agent 0.4"
+AGENT_MODEL = "agent pipeline 0.4"
+# The library editor who files PRO-S5's proposal; the second editor decides everything else.
+LIBRARY_EDITOR_EMAIL = "editor@bleqq.test"
+# The agent run behind each obligation proposal, fixed so a reseed leaves the same ids.
+APPROPRIATENESS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000001")
+COSTS_CHARGES_RUN = uuid.UUID("00000000-0000-4000-9000-000000000002")
+CLIENT_ASSETS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000003")
+ISK_STATEMENTS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000004")
+
+
+@dataclass(frozen=True)
+class SeedProposal:
+    """One proposal the seed leaves waiting, and the journey that spends it. `target` is the
+    obligation's stable key for an obligation kind and `<list>:<key>` for a vocabulary kind;
+    `proposed_by_email` is empty when an agent's run filed it."""
+
+    journey: str
+    kind: str
+    target: str
+    agent_run: uuid.UUID | None = None
+    proposed_by_email: str = ""
+
+
+# PRO-S5 needs a proposal a library editor made themselves, so that the same editor's
+# approval is refused by four eyes; the other four are an agent's, which any editor decides.
+EXPECTED_PROPOSALS: tuple[SeedProposal, ...] = (
+    SeedProposal("PRO-S3", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-appropriateness", APPROPRIATENESS_RUN),
+    SeedProposal("PRO-S4", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-costs-charges", COSTS_CHARGES_RUN),
+    SeedProposal("PRO-S9", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-client-assets", CLIENT_ASSETS_RUN),
+    SeedProposal("PRO-S7", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-isk-control-statements", ISK_STATEMENTS_RUN),
+    SeedProposal("PRO-S5", ProposalKind.VOCABULARY_RELABEL.value, "flag:ai", proposed_by_email=LIBRARY_EDITOR_EMAIL),
+)
+
+
+@dataclass(frozen=True)
+class SeedProblemReport:
+    """The one open "this looks wrong" report a bank's reader left on a library record
+    (AUD-03, AUD-S5), and what they had on screen when they wrote it."""
+
+    journey: str
+    tenant_slug: str
+    reporter_email: str
+    obligation: str
+    version_number: int
+    language: str
+
+
+# AUD-S5: the reader who files it holds `problems.report` like every member, and the report
+# stays inside tenant A. Version 1 in Swedish is what the reader had on screen: version 2 of
+# the research payment obligation is still ahead of the fixture's anchor date.
+EXPECTED_PROBLEM_REPORT = SeedProblemReport(
+    journey="AUD-S5",
+    tenant_slug=TENANT_A_SLUG,
+    reporter_email="reader@example-bank.test",
+    obligation=RESEARCH_OBLIGATION,
+    version_number=1,
+    language="sv",
+)
 
 
 def _obligation_id(stable_key: str) -> uuid.UUID:
@@ -419,100 +480,221 @@ def _regulatory_change_exists(stable_key: str) -> bool:
     return django_apps.get_model("watch", "RegulatoryChange").objects.filter(stable_key=stable_key).exists()
 
 
-def seed_proposals() -> int:
-    """Idempotent by Idempotency-Key (playbook 4.3): a reseed that finds one already decided
-    (a journey approved or rejected it on an earlier run) leaves it exactly as it is, so a
-    retried journey finds its proposal "waiting or already applied" rather than duplicated
-    or reset. Runs with no tenant active, as a library editor's or an agent's own call would
-    (PRO-03): `proposed_in_tenant` is false on both rows."""
-    tenancy.clear_tenant()
+def _waiting(kind: str, **target: Any) -> bool:  # compliance: allow-kwargs one ORM filter per proposal kind
+    """Is a proposal of this kind already waiting on this target? A seeded proposal is filed
+    again only when none is, so a journey that decided one on an earlier run finds a fresh
+    one rather than a decided row it cannot use, and a reseed of an untouched database
+    changes nothing."""
+    return Proposal.objects.filter(
+        kind=kind,
+        status=ProposalStatus.OPEN.value,
+        **target,
+    ).exists()
 
-    appropriateness_id = _obligation_id("obl-appropriateness")
+
+def _propose_obligation_version(
+    *,
+    obligation: str,
+    agent_run: uuid.UUID,
+    title: str,
+    summaries: dict[str, str],
+    effective_from: str,
+    source_label: str,
+    source_url: str,
+    terms: list[str] | None = None,
+) -> None:
+    """One agent's proposal for a new version of `obligation`, with a source per changed
+    field (PRO-01): the summary in each language, the date, and the scope when it changes
+    one. All four cite the authority's own page, as a real run would."""
+    target_id = _obligation_id(obligation)
+    if _waiting(ProposalKind.NEW_OBLIGATION_VERSION.value, target_id=target_id):
+        return
+    payload: dict[str, Any] = {
+        "summaries": summaries,
+        "original_language": "sv",
+        "is_machine": True,
+        "effective_from": effective_from,
+        "effective_from_precision": "day",
+    }
+    sources = {f"summaries.{language}": source_url for language in summaries}
+    sources["effectiveFrom"] = source_url
+    if terms is not None:
+        payload["terms"] = terms
+        sources["terms"] = source_url
     create_proposal(
         kind=ProposalKind.NEW_OBLIGATION_VERSION.value,
-        title="Add version 2 of the appropriateness assessment obligation, in force 15 October 2026",
+        title=title,
+        payload=payload,
+        proposer=Proposer(
+            actor=Actor(kind=ActorType.AGENT, id=agent_run, label=AGENT_LABEL),
+            agent_run_id=agent_run,
+        ),
+        target_type="obligation",
+        target_id=target_id,
+        model=AGENT_MODEL,
+        field_sources=sources,
+        source_label=source_label,
+        source_url=source_url,
+    )
+
+
+def _propose_flag_relabel() -> None:
+    """PRO-S5: the proposal a library editor made themselves, so that their own approval is
+    refused by four eyes. A vocabulary label is wording a person writes rather than a fact
+    from an authority, so it carries no field source, as the queue's other vocabulary
+    proposals do not."""
+    if _waiting(
+        ProposalKind.VOCABULARY_RELABEL.value,
+        payload__list="flag",
+        payload__key="ai",
+    ):
+        return
+    editor = User.objects.get(email=LIBRARY_EDITOR_EMAIL)
+    create_proposal(
+        kind=ProposalKind.VOCABULARY_RELABEL.value,
+        title="Rename the AI flag so it says what it marks",
         payload={
-            "summaries": {
-                "sv": (
-                    "Innan en tjänst utan rådgivning tillhandahålls i ett komplicerat finansiellt "
-                    "instrument ska institutet begära uppgifter om kundens kunskap och erfarenhet och "
-                    "bedöma om tjänsten eller produkten passar kunden. Om den inte passar, eller om "
-                    "uppgifter saknas, ska kunden varnas. Institutet ska dokumentera bedömningen och "
-                    "varningen samt se över sina kriterier för lämplighetsprövning minst en gång om året."
-                ),
-                "en": (
-                    "Before providing a non-advised service in a complex financial instrument, the "
-                    "institution asks about the client's knowledge and experience and assesses whether "
-                    "the service or product is appropriate. If it is not appropriate, or information is "
-                    "missing, the client is warned. The institution keeps a record of the assessment and "
-                    "the warning given, and reviews its appropriateness criteria at least once a year."
-                ),
-            },
-            "original_language": "sv",
-            "is_machine": True,
-            "effective_from": "2026-10-15",
-            "effective_from_precision": "day",
+            "list": "flag",
+            "key": "ai",
+            "labels": {"en": "AI and automated decisions", "sv": "AI och automatiserade beslut"},
         },
         proposer=Proposer(
-            actor=Actor(kind=ActorType.AGENT, id=RESEARCH_AGENT_RUN, label="Research agent 0.4"),
-            agent_run_id=RESEARCH_AGENT_RUN,
+            actor=Actor(kind=ActorType.USER, id=editor.id, label=editor.name),
+            user=editor,
         ),
-        idempotency_key="e2e-seed-prop-appropriateness-v2",
-        target_type="obligation",
-        target_id=appropriateness_id,
-        model="agent pipeline 0.4",
-        field_sources={
-            "summaries.sv": "https://www.fi.se/",
-            "summaries.en": "https://www.fi.se/",
-            "effectiveFrom": "https://www.fi.se/",
+    )
+
+
+def seed_proposals() -> int:
+    """One proposal waiting per journey that spends one (EXPECTED_PROPOSALS). Runs with no
+    tenant active, as a library editor's or an agent's own call would (PRO-03), so
+    `proposed_in_tenant` is false on every row and none of them reaches a bank's own list.
+    Returns how many wait, which is the same number on every run."""
+    tenancy.clear_tenant()
+
+    _propose_obligation_version(
+        obligation="obl-appropriateness",
+        agent_run=APPROPRIATENESS_RUN,
+        title="Add version 2 of the appropriateness assessment obligation, in force 15 October 2026",
+        summaries={
+            "sv": (
+                "Innan en tjänst utan rådgivning tillhandahålls i ett komplicerat finansiellt "
+                "instrument ska institutet begära uppgifter om kundens kunskap och erfarenhet och "
+                "bedöma om tjänsten eller produkten passar kunden. Om den inte passar, eller om "
+                "uppgifter saknas, ska kunden varnas. Institutet ska dokumentera bedömningen och "
+                "varningen samt se över sina kriterier för lämplighetsprövning minst en gång om året."
+            ),
+            "en": (
+                "Before providing a non-advised service in a complex financial instrument, the "
+                "institution asks about the client's knowledge and experience and assesses whether "
+                "the service or product is appropriate. If it is not appropriate, or information is "
+                "missing, the client is warned. The institution keeps a record of the assessment and "
+                "the warning given, and reviews its appropriateness criteria at least once a year."
+            ),
         },
+        effective_from="2026-10-15",
         source_label="Finansinspektionen, board decision 15 September 2026",
         source_url="https://www.fi.se/",
     )
-
-    costs_charges_id = _obligation_id("obl-costs-charges")
-    create_proposal(
-        kind=ProposalKind.NEW_OBLIGATION_VERSION.value,
+    _propose_obligation_version(
+        obligation="obl-costs-charges",
+        agent_run=COSTS_CHARGES_RUN,
         title="Add version 2 of the costs and charges obligation, extending it to professional clients",
-        payload={
-            "summaries": {
-                "sv": (
-                    "Kunder ska i god tid få sammanställd information om alla kostnader och avgifter för "
-                    "tjänsten och instrumentet, och därefter minst årligen, med kostnadernas effekt på "
-                    "avkastningen. Sammanställningen lämnas på ett varaktigt medium."
-                ),
-                "en": (
-                    "Clients receive aggregated information on all costs and charges of the service and "
-                    "the instrument in good time before the service, and at least annually afterwards, "
-                    "with the effect of costs on return. The statement is provided in a durable medium."
-                ),
-            },
-            "original_language": "sv",
-            "is_machine": True,
-            "effective_from": "2026-11-01",
-            "effective_from_precision": "day",
-            # A scope the reviewer is meant to disagree with (PRO-S4): the correction form
-            # removes client_category:professional before approving.
-            "terms": ["service_type:advice", "service_type:execution_only", "client_category:retail", "client_category:professional"],
+        summaries={
+            "sv": (
+                "Kunder ska i god tid få sammanställd information om alla kostnader och avgifter för "
+                "tjänsten och instrumentet, och därefter minst årligen, med kostnadernas effekt på "
+                "avkastningen. Sammanställningen lämnas på ett varaktigt medium."
+            ),
+            "en": (
+                "Clients receive aggregated information on all costs and charges of the service and "
+                "the instrument in good time before the service, and at least annually afterwards, "
+                "with the effect of costs on return. The statement is provided in a durable medium."
+            ),
         },
-        proposer=Proposer(
-            actor=Actor(kind=ActorType.AGENT, id=COSTS_CHARGES_AGENT_RUN, label="Research agent 0.4"),
-            agent_run_id=COSTS_CHARGES_AGENT_RUN,
-        ),
-        idempotency_key="e2e-seed-prop-costs-charges-v2",
-        target_type="obligation",
-        target_id=costs_charges_id,
-        model="agent pipeline 0.4",
-        field_sources={
-            "summaries.sv": "https://www.riksdagen.se/",
-            "summaries.en": "https://www.riksdagen.se/",
-            "effectiveFrom": "https://www.riksdagen.se/",
-            "terms": "https://www.riksdagen.se/",
-        },
+        effective_from="2026-11-01",
+        # A scope the reviewer is meant to disagree with (PRO-S4): the correction form
+        # removes client_category:professional before approving.
+        terms=["service_type:advice", "service_type:execution_only", "client_category:retail", "client_category:professional"],
         source_label="Riksdagen, consolidated text",
         source_url="https://www.riksdagen.se/",
     )
-    return 2
+    _propose_obligation_version(
+        obligation="obl-client-assets",
+        agent_run=CLIENT_ASSETS_RUN,
+        title="Add version 2 of the client assets obligation, with a monthly reconciliation",
+        summaries={
+            "sv": (
+                "Institutet ska hålla kundernas finansiella instrument och medel åtskilda från sina "
+                "egna och stämma av innehaven mot depåförvaltarens uppgifter varje månad. Avvikelser "
+                "ska rättas utan dröjsmål och dokumenteras."
+            ),
+            "en": (
+                "The institution keeps clients' financial instruments and funds separate from its own "
+                "and reconciles the holdings against the custodian's records every month. Differences "
+                "are corrected without delay and recorded."
+            ),
+        },
+        effective_from="2026-12-01",
+        source_label="Finansinspektionen, consultation memorandum 2026:14",
+        source_url="https://www.fi.se/",
+    )
+    _propose_obligation_version(
+        obligation="obl-isk-control-statements",
+        agent_run=ISK_STATEMENTS_RUN,
+        title="Add version 2 of the ISK control statement obligation, moving the deadline to 31 January",
+        summaries={
+            "sv": (
+                "Kontrolluppgift för ett investeringssparkonto ska lämnas till Skatteverket senast den "
+                "31 januari året efter beskattningsåret, med kapitalunderlaget per kvartal och de "
+                "insättningar som räknas in i underlaget."
+            ),
+            "en": (
+                "The control statement for an investment savings account is filed with the Swedish Tax "
+                "Agency by 31 January of the year after the tax year, with the capital base per quarter "
+                "and the deposits counted into it."
+            ),
+        },
+        effective_from="2027-01-01",
+        source_label="Skatteverket, statement of practice 2026-09-10",
+        source_url="https://www.skatteverket.se/",
+    )
+    _propose_flag_relabel()
+    return len(EXPECTED_PROPOSALS)
+
+
+def seed_problem_report(tenants: list[Tenant]) -> int:
+    """AUD-S5: one open problem report a reader of tenant A left on a library record, filed
+    with that tenant activated so the row carries it and no other bank can read it. Filed
+    again only when none of this reader's is open on the record, so a journey that closed it
+    finds a fresh one and a reseed of an untouched database changes nothing."""
+    expected = EXPECTED_PROBLEM_REPORT
+    tenant = next(row for row in tenants if row.slug == expected.tenant_slug)
+    tenancy.activate(tenant.id)
+    reporter = User.objects.get(email=expected.reporter_email)
+    open_already = ProblemReport.objects.filter(
+        tenant=tenant,
+        reporter=reporter,
+        subject_id=_obligation_id(expected.obligation),
+        status=ReportStatus.OPEN.value,
+    ).exists()
+    if open_already:
+        return 0
+    reports.create_report(
+        subject_type=SubjectType.OBLIGATION,
+        subject_id=_obligation_id(expected.obligation),
+        subject_title=expected.obligation,
+        tenant_id=tenant.id,
+        reporter=reporter,
+        actor=Actor(kind=ActorType.USER, id=reporter.id, label=reporter.name),
+        description=(
+            "The summary still says research may be paid from the institution's own resources only. "
+            "The new wording we were sent names a research payment account as well."
+        ),
+        version_number=expected.version_number,
+        language=expected.language,
+    )
+    return 1
 
 
 def _quarter_safe_offsets() -> tuple[int, int]:
@@ -998,6 +1180,7 @@ def seed_e2e() -> dict[str, int]:
         footprint_terms = seed_footprints(tenants)
         seed_pending_footprint_request(tenants)
         proposals = seed_proposals()
+        problem_reports = seed_problem_report(tenants)
         home_cases = seed_home_cases(tenants, home)
         # Chunk 5's own watch fixtures (c5-seed-watch): after the logins above, because a
         # confirmed classification names a library editor who must already exist, and after
@@ -1012,6 +1195,7 @@ def seed_e2e() -> dict[str, int]:
         "logins": logins,
         "footprint_terms": footprint_terms,
         "proposals": proposals,
+        "problem_reports": problem_reports,
         "home_cases": home_cases,
         "chunk5_cases": chunk5_cases,
         **library,

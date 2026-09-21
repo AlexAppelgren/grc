@@ -15,6 +15,7 @@ from uuid import UUID
 from django.conf import settings
 from pydantic import ConfigDict, Field, RootModel
 
+from apps.library.schemas import DiffSegment, LibraryRef, LocalizedText, OutsideReason, PartialDate
 from apps.shared.schemas import CamelSchema, WriteBody
 
 __all__ = ["CamelSchema"]
@@ -23,6 +24,9 @@ __all__ = ["CamelSchema"]
 # Scope terms as `dimension:key`. Spelled here because `ProposalPayload` has a field named
 # `list`, which shadows the builtin inside that class body.
 TermRefs = list[str]
+# A plain date, under a second name, because `LibraryUpdateDay` has a field called `date`,
+# which shadows the type inside that class body exactly as `list` does above.
+DayDate = date
 
 
 class ProposalActorRef(CamelSchema):
@@ -217,6 +221,17 @@ class ProposalRow(CamelSchema):
             "read null as \"nobody\"."
         ),
     )
+    from_organisation: bool = Field(
+        default=False,
+        description=(
+            "True when the proposal was made inside a bank, by one of its people or by an agent "
+            "of theirs, in which case `proposedBy` is null however the reader is signed in: a bank "
+            "member's name and id never reach the platform console, and which bank it was is not "
+            "told either. False means it was made by platform staff or by a platform agent, and "
+            "`proposedBy` is then the person, or null for an agent."
+        ),
+        examples=[False],
+    )
     reviewed_by: ProposalActorRef | None = Field(default=None, description="The platform reviewer who decided it. Always a different person from the proposer, which the database enforces. Null while the proposal is open.")
     reviewed_at: datetime | None = Field(default=None, description="When the decision was made: a UTC timestamp, date and time together. Null while the proposal is open.")
     rejection_code: str = Field(
@@ -278,9 +293,525 @@ class ProposalRow(CamelSchema):
     )
 
 
+class ProposalTarget(CamelSchema):
+    """The library record a proposal changes, as the queue names it in a row: the record's
+    own title and reference, never the proposal's wording. Null on a proposal that changes a
+    vocabulary list rather than a record; `payload.list` and `payload.key` name that row."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+                    "title": "Pay for third-party research only under the permitted models",
+                    "referenceLabel": "Third-party payments",
+                    "instrumentShortName": "FFFS 2017:2",
+                }
+            ]
+        }
+    )
+
+    id: UUID = Field(description="The library record this proposal changes, as a UUID, which is the id `GET /obligations/{obligationId}` takes.")
+    title: str = Field(
+        description=(
+            "The record's own title, in the best language this reader has (the original where "
+            "there is no translation). It is the library's wording and not the proposal's, so a "
+            "reader sees which duty is being changed rather than how the proposer described it."
+        )
+    )
+    reference_label: str = Field(
+        description=(
+            "How the record is cited inside its instrument, for example \"Third-party payments\": "
+            "the short reference a person uses to find the duty in the text. Empty when the record "
+            "carries none."
+        )
+    )
+    instrument_short_name: str = Field(
+        description="The short name of the law, regulation or guideline the duty was broken out of, for example \"FFFS 2017:2\", so a row says which text is changing."
+    )
+
+
+class ProposalSource(CamelSchema):
+    """Where one changed field's value came from (PRO-01): a source a reviewer opens before
+    they approve. It is the proposer's claim about provenance, checked by a person, and never
+    a guarantee that the source says what the proposal says."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "field": "summaries.sv",
+                    "label": "Finansinspektionen, board decision 15 September 2026",
+                    "url": "https://www.fi.se/",
+                }
+            ]
+        }
+    )
+
+    field: str = Field(
+        description=(
+            "The field of the payload this source belongs to, spelled as the payload spells it: "
+            "`summaries.<language>` for the text in one content language, `effectiveFrom` for the "
+            "date the change binds from, and `terms` for the scope facets."
+        )
+    )
+    label: str = Field(
+        description=(
+            "The source in a sentence a reviewer can read, which is the proposal's own "
+            "`sourceLabel` for a link, or the stable key of the provision when the source is one "
+            "the library already holds. Written by the proposer, so it is a claim to check."
+        )
+    )
+    url: str = Field(
+        description=(
+            "The page to open, when the source is a link. Empty when the source is a provision of "
+            "the library instead, which `label` then names by its stable key."
+        ),
+        examples=["https://www.fi.se/"],
+    )
+
+
+class ProposalAppliedVersion(CamelSchema):
+    """The library version an approved proposal wrote (PRO-02, INV-04). Null until the
+    proposal is approved; a rejected proposal never has one."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"id": "1f0b3e7c-4a1b-4f9e-8a21-6d4b2c0a9e17", "versionNumber": 2, "effectiveFrom": "2026-10-01"}]}
+    )
+
+    id: UUID = Field(description="The version row this approval created, as a UUID the obligation's own read returns beside its number.")
+    version_number: int = Field(
+        description="Which version of the record it is, counting from 1 upwards in the order the versions were filed, so version 2 is the first change after the record entered the library.",
+        examples=[2],
+    )
+    effective_from: date | None = Field(
+        default=None,
+        description="The legal date this version starts binding the bank, as a plain date and never a timestamp. Null when it has been in force since the record entered the library.",
+        examples=["2026-10-01"],
+    )
+
+
+class ProposalQueueRow(ProposalRow):
+    """One row of the console queue: the proposal, plus what a reviewer needs to tell the
+    rows apart without opening each one. Platform data throughout; a bank reads its own
+    proposals through `GET /tenant/proposals`, which answers a narrower row."""
+
+    target: ProposalTarget | None = Field(
+        default=None,
+        description=(
+            "The library record being changed, by its own title and reference. Null when the "
+            "proposal changes a vocabulary list rather than a record, and null when the record "
+            "was withdrawn from the library after the proposal was filed."
+        ),
+    )
+    is_mine: bool = Field(
+        default=False,
+        description=(
+            "True when the person reading this row is the one who filed the proposal, worked out "
+            "by the server from the signed-in session. Four eyes means they may not decide it: "
+            "their own approval answers 409 `four_eyes_violation`, so a screen hides the control "
+            "rather than offering a refusal. Always false for a proposal filed by an agent or "
+            "inside a bank, neither of which is a platform person."
+        ),
+        examples=[False],
+    )
+
+
+class ProposalDetail(ProposalQueueRow):
+    """One proposal opened for a decision (PRO-02): everything the row carries, plus what the
+    library says today, what the proposal would make it say, and where each changed value came
+    from. Read it before approving; approving is the only door into the shared library."""
+
+    language: str = Field(
+        default="",
+        description=(
+            "The content language the texts and the diff below are written in: the language the "
+            "proposal was drafted in, which is the one a reviewer judges the wording in. A "
+            "two-letter code from the content languages (`GET /reference/languages`). Empty on a "
+            "proposal that changes no text, such as a vocabulary change."
+        ),
+        examples=["sv"],
+    )
+    current_summary: LocalizedText | None = Field(
+        default=None,
+        description=(
+            "What the library says today, in the language above: the summary of the version in "
+            "force now. Null when the record has no text in that language, and null on a proposal "
+            "that changes no record text."
+        ),
+    )
+    proposed_text: str = Field(
+        default="",
+        description=(
+            "The wording that would replace it, which is the reviewer's own correction where one "
+            "has been made and the proposal's text otherwise. Empty on a proposal that changes no "
+            "record text. It is a request, not the library: until the proposal is approved the "
+            "library still says what `currentSummary` says."
+        ),
+    )
+    diff: list[DiffSegment] = Field(
+        default_factory=list,
+        description=(
+            "The two texts sentence by sentence, the same comparison \"Show what changed\" makes "
+            "between two versions of a record: what stands, what would go and what would arrive. "
+            "Empty when there is nothing to compare, which is the case for a vocabulary change and "
+            "for a record with no text in this language."
+        ),
+    )
+    sources: list[ProposalSource] = Field(
+        default_factory=list,
+        description=(
+            "One source per field the proposal changes, so a reviewer can follow every value to "
+            "where it came from. Empty on the vocabulary kinds, whose wording a person writes "
+            "rather than drawing it from an authority."
+        ),
+    )
+    scope_before: list[str] = Field(
+        default_factory=list,
+        description=(
+            "The record's scope facets as the library holds them now, each written "
+            "`dimension:key`, for example `client_category:retail`. Both parts are keys of rows an "
+            "admin manages rather than fixed values, so read the term lists for the labels. Empty "
+            "when the record carries no facets, and empty on a proposal that changes no record."
+        ),
+        examples=[["service_type:advice", "client_category:retail"]],
+    )
+    scope_after: list[str] | None = Field(
+        default=None,
+        description=(
+            "The scope the proposal would leave, in the same spelling, which replaces the list "
+            "above whole rather than adding to it. Null means the proposal leaves the scope alone, "
+            "which is not the same as an empty list: an empty list would clear it."
+        ),
+    )
+    rejection_reason: LibraryRef | None = Field(
+        default=None,
+        description=(
+            "Why it was refused, as the key and the label of the row chosen from the "
+            "`rejection_reason` vocabulary, a library list. Its rows are data an admin may extend, relabel, "
+            "reorder or retire without a deploy, never a closed set, and "
+            "`GET /vocab/rejection_reason` returns the live one, so a key you have not seen "
+            "before is new data and not an error; the kinds are those of that list, which today "
+            "gives its rows none. Null unless the status is `rejected`, and null when the code "
+            "stored on the proposal names a row the list no longer holds."
+        ),
+    )
+    applied_version: ProposalAppliedVersion | None = Field(
+        default=None,
+        description="The library version this approval wrote, by id, number and effective date. Null unless the status is `approved`.",
+    )
+
+
+class TenantProposalRow(CamelSchema):
+    """One proposal this bank made to a shared library list (PRO-03, VOC-07), as the bank's
+    own vocabulary screen lists it. A bank sees the proposals its own people and agents
+    filed and never another bank's, and never a platform reviewer's name."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+                    "kind": "vocabulary_create",
+                    "status": "open",
+                    "title": "Add the flag \"Client money\"",
+                    "createdAt": "2026-09-16T07:12:00Z",
+                }
+            ]
+        }
+    )
+
+    id: UUID = Field(description="The proposal, as a UUID the server assigned when it was filed and never changes.")
+    kind: str = Field(
+        description=(
+            "What this bank asked to change. A fixed kind, not a vocabulary row: `vocabulary_create` "
+            "adds a row to a shared list, `vocabulary_relabel` rewords one, `vocabulary_retire` and "
+            "`vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users "
+            "at another row and retires it, and `term_create` and `term_update` do the same for a "
+            "taxonomy term. `new_obligation_version` adds a version to a duty."
+        )
+    )
+    status: str = Field(
+        description=(
+            "Where the request stands. A fixed kind: `open` is waiting for a library editor, "
+            "`approved` means every bank's library now carries it, `rejected` means it was refused "
+            "with a reason and changed nothing, and `superseded` means a later proposal overtook it."
+        )
+    )
+    title: str = Field(description="The one-line request as the person here who filed it wrote it, which is what the screen lists it under.")
+    created_at: datetime = Field(description="When this bank filed it: a UTC timestamp, date and time together, so a screen can order and date the list.")
+
+
+class TenantProposalPage(CamelSchema):
+    """A page of what this bank has proposed to the shared library lists."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "items": [
+                        {
+                            "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+                            "kind": "vocabulary_create",
+                            "status": "open",
+                            "title": "Add the flag \"Client money\"",
+                            "createdAt": "2026-09-16T07:12:00Z",
+                        }
+                    ],
+                    "total": 1,
+                }
+            ]
+        }
+    )
+
+    items: list[TenantProposalRow] = Field(description="This page of proposals, oldest first, so a list reads in the order the bank filed them.")
+    total: int = Field(description="How many proposals match the filters in all, across every page, so a screen can show a count without reading them.", examples=[3])
+
+
+class TenantProposalQuery(CamelSchema):
+    """Filters of a bank's own proposals, each optional and each narrowing the list."""
+
+    status: str | None = Field(
+        default=None,
+        description=(
+            "Keep only these statuses: one value, or several separated by commas. The values are "
+            "`open`, `approved`, `rejected` and `superseded`. Left out, every status is returned."
+        ),
+        examples=["open"],
+    )
+    kind: str | None = Field(
+        default=None,
+        description=(
+            "Keep only these kinds: one value, or several separated by commas, from the kinds "
+            "`kind` names above. Left out, every kind is returned."
+        ),
+        examples=["vocabulary_create,vocabulary_relabel"],
+    )
+    target_list: str | None = Field(
+        default=None,
+        description=(
+            "Keep only the proposals that change this vocabulary list, or this taxonomy dimension, "
+            "by its key, for example `flag`. The keys are rows an admin manages; "
+            "`GET /vocabularies` returns the live set. Left out, every list is returned."
+        ),
+        examples=["flag"],
+    )
+
+
+
 class ProposalPage(CamelSchema):
-    items: list[ProposalRow]
-    total: int
+    """A page of the console review queue."""
+
+    items: list[ProposalQueueRow] = Field(description="The proposals matching the filters, oldest first, so the queue reads in the order they arrived.")
+    total: int = Field(description="How many proposals match the filters in all, which is what a tab's count shows.", examples=[4])
+
+
+# ---------------------------------------------------------------------------------------
+# What changed in the shared library since a reader last looked (PRO-03, INV-04, FP-03)
+# ---------------------------------------------------------------------------------------
+class LibraryUpdateTarget(CamelSchema):
+    """The library record an update touched, named by the record itself. A proposal's own
+    wording never appears here: one bank's request must not reach another bank as a title."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+                    "title": "Pay for third-party research only under the permitted models",
+                    "referenceLabel": "Third-party payments",
+                    "instrumentShortName": "FFFS 2017:2",
+                }
+            ]
+        }
+    )
+
+    id: UUID = Field(description="The duty that changed, as a UUID: the id its own card is read at, so a row can link straight to it.")
+    title: str = Field(description="The duty's own title, in the best language this reader has, as the library holds it after the change.")
+    reference_label: str = Field(description="How the duty is cited inside its instrument, for example \"Third-party payments\". Empty when the record carries no reference of its own.")
+    instrument_short_name: str = Field(description="The short name of the law, regulation or guideline the duty sits in, for example \"FFFS 2017:2\".")
+
+
+class LibraryUpdateRow(CamelSchema):
+    """One change that reached the shared library while this reader was away (PRO-03,
+    INV-04): what changed, when it was applied, when it starts binding, and whether it
+    reaches this bank. It is a fact about the library and never a task: whether the duty
+    applies here, and whether this bank complies with it, are the bank's own judgements
+    recorded elsewhere. Nobody's name appears: who proposed a change is not a bank's
+    business, and a change another bank asked for reads exactly like any other."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+                    "kind": "new_obligation_version",
+                    "appliedAt": "2026-09-18T09:20:00Z",
+                    "effectiveFrom": {"date": "2026-10-01", "precision": "day"},
+                    "versionNumber": 2,
+                    "target": {
+                        "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+                        "title": "Pay for third-party research only under the permitted models",
+                        "referenceLabel": "Third-party payments",
+                        "instrumentShortName": "FFFS 2017:2",
+                    },
+                    "vocabularyList": None,
+                    "vocabulary": None,
+                    "inFootprint": True,
+                    "outsideReason": [],
+                }
+            ]
+        }
+    )
+
+    id: UUID = Field(description="A stable id for this row, as a UUID: it is the id of the approved change behind it. Use it as a list key; there is no call that takes it.")
+    kind: str = Field(
+        description=(
+            "What kind of change it was, and therefore which of the fields below are filled. A "
+            "fixed kind: `new_obligation_version` is a new wording of a duty, and "
+            "`vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore`, "
+            "`vocabulary_merge`, `term_create` and `term_update` are changes to a shared list or "
+            "to the taxonomy every bank reads."
+        )
+    )
+    applied_at: datetime = Field(
+        description="When the change reached the library: a UTC timestamp, date and time together. The day a screen files it under is this moment in the bank's own time zone.",
+        examples=["2026-09-18T09:20:00Z"],
+    )
+    effective_from: PartialDate | None = Field(
+        default=None,
+        description=(
+            "The legal date the new wording starts binding the bank, with how exactly that date "
+            "is known. Null on a change to a shared list, which has no legal date, and null when "
+            "the new version has been in force since the duty entered the library."
+        ),
+    )
+    version_number: int | None = Field(
+        default=None,
+        description="Which version of the duty this change created, counting from 1 upwards, so a reader can ask for what changed between it and the one before. Null on a change to a shared list.",
+        examples=[2],
+    )
+    target: LibraryUpdateTarget | None = Field(
+        default=None,
+        description="The duty that changed, named by the library's own wording. Null on a change to a shared list, which names no single record; `vocabularyList` then says which list it was.",
+    )
+    vocabulary_list: str | None = Field(
+        default=None,
+        description=(
+            "Which shared list or taxonomy dimension changed, by its key, for example `flag`. The "
+            "lists are themselves rows an admin may extend or retire, and `GET /vocabularies` "
+            "returns the live set. Null on a change to a duty."
+        ),
+        examples=["flag"],
+    )
+    vocabulary: LibraryRef | None = Field(
+        default=None,
+        description=(
+            "The row of that list which changed, by key and label, as the list labels it today. "
+            "The rows are vocabulary data an admin may extend, relabel, reorder or retire without "
+            "a deploy, so store the key and show the label; `GET /vocabularies` returns the live "
+            "set. The label is the library's own and never the wording of the request that "
+            "changed it. Null on a change to a duty, and null when the row has since been deleted."
+        ),
+    )
+    in_footprint: bool = Field(
+        default=True,
+        description=(
+            "True when the duty that changed is inside this bank's footprint, which is the only "
+            "kind of change the list carries unless `outsideFootprint` asked for the rest. A change "
+            "to a shared list is always true: a list is shared by every bank and belongs to no "
+            "footprint. It says the duty reaches this bank's business, never that the bank complies."
+        ),
+        examples=[True],
+    )
+    outside_reason: list[OutsideReason] = Field(
+        default_factory=list,
+        description=(
+            "Why the footprint would have hidden it, one entry per facet in which the duty's terms "
+            "and this bank's footprint have nothing in common. Empty when the change is inside the "
+            "footprint, which is the usual case, and empty on a change to a shared list."
+        ),
+    )
+
+
+class LibraryUpdateDay(CamelSchema):
+    """One day's changes, as the list groups them."""
+
+    date: DayDate = Field(description="The day these changes were applied, in the bank's own time zone, as a plain date: a change applied late in the evening is filed under the bank's day, not London's.", examples=["2026-09-18"])
+    items: list[LibraryUpdateRow] = Field(description="What changed that day, the most recent first.")
+
+
+class LibraryUpdatesPage(CamelSchema):
+    """What changed in the shared library since this reader last marked it as seen."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "since": "2026-09-16T07:12:00Z",
+                    "days": [
+                        {
+                            "date": "2026-09-18",
+                            "items": [
+                                {
+                                    "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+                                    "kind": "new_obligation_version",
+                                    "appliedAt": "2026-09-18T09:20:00Z",
+                                    "effectiveFrom": {"date": "2026-10-01", "precision": "day"},
+                                    "versionNumber": 2,
+                                    "target": {
+                                        "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+                                        "title": "Pay for third-party research only under the permitted models",
+                                        "referenceLabel": "Third-party payments",
+                                        "instrumentShortName": "FFFS 2017:2",
+                                    },
+                                    "vocabularyList": None,
+                                    "vocabulary": None,
+                                    "inFootprint": True,
+                                    "outsideReason": [],
+                                }
+                            ],
+                        }
+                    ],
+                    "total": 1,
+                }
+            ]
+        }
+    )
+
+    since: datetime = Field(
+        description=(
+            "The moment this list starts from: when this reader last marked the library as seen "
+            "(`POST /me/visit`), as a UTC timestamp. For a reader who never has, it is the start "
+            "of the default window instead, so a first visit is not empty."
+        ),
+        examples=["2026-09-16T07:12:00Z"],
+    )
+    days: list[LibraryUpdateDay] = Field(description="The changes on this page, grouped by the day they were applied in the bank's time zone, the most recent day first.")
+    total: int = Field(description="How many changes there are in all since that moment, across every page, so a screen can say how much arrived while the reader was away.", examples=[1])
+
+
+class LibraryUpdatesQuery(CamelSchema):
+    """Filters of "what changed in the library", each optional."""
+
+    kind: str | None = Field(
+        default=None,
+        description=(
+            "Keep only these kinds of change: one value, or several separated by commas, from the "
+            "kinds `LibraryUpdateRow.kind` names. Left out, every kind is returned."
+        ),
+        examples=["new_obligation_version"],
+    )
+    outside_footprint: bool = Field(
+        default=False,
+        description=(
+            "True also lists the changes to duties the bank's footprint hides, each saying in "
+            "`outsideReason` why it would have been hidden. False, the default, lists only what "
+            "reaches this bank. Changes to a shared list are listed either way."
+        ),
+        examples=[True],
+    )
+
 
 
 class ProposalAccepted(CamelSchema):
@@ -375,10 +906,50 @@ class ProposalRejectBody(CamelSchema):
 
 
 class ProposalQuery(CamelSchema):
-    """Filters of the review queue, each optional: `status` and `kind` take one value or a
-    comma-separated list; `targetList` is a vocabulary list name or a taxonomy dimension
-    key and matches the proposals that change it (`payload.list` or `payload.dimension`)."""
+    """Filters of the console review queue, each optional and each narrowing the queue."""
 
-    status: str | None = None
-    kind: str | None = None
-    target_list: str | None = None
+    status: str | None = Field(
+        default=None,
+        description=(
+            "Keep only these statuses: one value, or several separated by commas. The values are "
+            "`open` (waiting for a reviewer), `approved`, `rejected` and `superseded`. Left out, "
+            "every status is returned, which is why each tab of the queue sends its own."
+        ),
+        examples=["open"],
+    )
+    kind: str | None = Field(
+        default=None,
+        description=(
+            "Keep only these kinds: one value, or several separated by commas, from the kinds "
+            "`ProposalRow.kind` names. Left out, every kind is returned."
+        ),
+        examples=["vocabulary_create,term_create"],
+    )
+    target_list: str | None = Field(
+        default=None,
+        description=(
+            "Keep only the proposals that change this vocabulary list, or this taxonomy dimension, "
+            "by its key, for example `flag`: the lists are rows an admin manages and "
+            "`GET /vocabularies` returns the live set. Left out, every list is returned."
+        ),
+        examples=["flag"],
+    )
+    origin: str | None = Field(
+        default=None,
+        description=(
+            "Keep only the proposals filed by one sort of proposer: `agent` for a watch or research "
+            "agent's, `user` for a person's. Those are the only two values; anything else is refused "
+            "with 422 `unknown_key` rather than answered with an empty queue. Left out, both are "
+            "returned."
+        ),
+        examples=["agent"],
+    )
+    not_mine: bool = Field(
+        default=False,
+        description=(
+            "True drops the proposals this reviewer filed themselves, which are exactly the ones "
+            "four eyes will not let them decide, so the queue shows only work they can actually do. "
+            "False, the default, returns theirs alongside the rest."
+        ),
+        examples=[True],
+    )
