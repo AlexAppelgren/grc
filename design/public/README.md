@@ -26,7 +26,7 @@ structure, set in Caslon, on a bank's colours.
 
 | Decision | What it is |
 |---|---|
-| Green as a field, not an accent | The page opens and closes on a solid `#0a3a2a` field with sand text, and everything between is white paper. The green is spent on two surfaces, never on a button, which keeps `foundations.md`'s rule that a primary action stays neutral |
+| Green as a ribbon and one field | A slim green ribbon carries the masthead, the page itself is paper, and the green returns once at the end as the field behind "Access is by invitation". Two appearances, neither of them large, and never on a button, which keeps `foundations.md`'s rule that a primary action stays neutral |
 | Sand where the product uses sand | The marginal column, the legal text block and the AI-drafted callout. Nowhere else, so the page is not a cream page |
 | Brass as the only accent on paper | Section references, the paragraph sign, the kickers, the rules under headings. In dark it takes over from green, as `brand.css` says the product accent does |
 | A marginal column | Every section carries `§ n` and a one-line marginal note in Noto Sans Mono, in the left margin, the way a statute carries marginal headings. Below 880 px it folds to one line above the heading |
@@ -54,12 +54,12 @@ links Google Fonts as the prototype does; a build self-hosts all four.
 
 | | Section | What it carries |
 |---|---|---|
-| | Masthead | Wordmark, five section links, theme toggle, Sign in, Request access |
-| | Plate | The headline, the deck, both actions, "a passkey is the only way in", and the sample change record with its diff, its AI-drafted callout and its audit chain |
+| | Masthead | On the green ribbon: wordmark, five section links, theme toggle, Sign in, Request access |
+| | Plate | On paper: the headline, the deck, both actions, and the sample change record with its diff, its AI-drafted callout and its chain |
 | | Facts strip | Jurisdictions, content languages, the two zones, audit from the first write |
 | § 1 | The case | Why a spreadsheet and an inbox cannot answer what a review asks |
 | § 2 | What it does | Inventory, Watch, Ask, Evidence, one paragraph each |
-| § 3 | The method | The seven typed steps from sighting to sign-off, with the actor at each |
+| § 3 | The method | The six steps from sighting to sign-off, with the actor at each one |
 | § 4 | Two zones | The shared library, the one-way proposal door, the tenant zone under forced row-level security |
 | § 5 | Coverage | Five jurisdictions against their authorities and publication languages |
 | § 6 | Assurance | Access, four eyes, isolation, model use, the ledger, retention, leaving, the pack |
@@ -68,8 +68,19 @@ links Google Fonts as the prototype does; a build self-hosts all four.
 | | Footer | Wordmark, the pronunciation, product, company and trust columns, the colophon |
 
 Nothing on the page is a customer name, a logo, a testimonial or a number we
-cannot stand behind. The claims are the PRD's invariants, in the words a bank
-would use.
+cannot stand behind. The claims are the PRD's invariants in the words a bank
+would use, and the page says what happens rather than how it is built: the
+mechanism appears only where a vendor review asks for it, in § 6.
+
+Three claims rest on decisions and would be wrong without them. The second
+pair of eyes on a library proposal is a second agent of a different definition
+and key, not a bleqq editor, and what it confirms carries machine-confirmed
+provenance naming both agents (D-62, D-14, ADR 0054), which is why § 3 and the
+record's chain read as they do. A problem report stays inside the bank that
+filed it and nobody outside reads it; the correction comes from the agents'
+re-check of each record against its source, through the ordinary proposal door
+(D-50, ADR 0043, AUD-03), which is what § 7 says. Sign-off inside the bank is a
+person, and that is the one place the page claims a person decides.
 
 ## Behaviour
 
