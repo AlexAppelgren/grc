@@ -37,7 +37,7 @@ NOT_FOLLOWED = "not_followed"
 def _country(key: str) -> Jurisdiction:
     """Only a country can be watched: the union itself is not a market a bank watches, and
     an unknown or retired key is refused rather than silently ignored."""
-    jurisdiction = Jurisdiction.objects.filter(key=key).first()
+    jurisdiction = Jurisdiction.objects.filter(key=key).first()  # ordering: key is unique, so there is at most one row
     if jurisdiction is None or not jurisdiction.active:
         raise ValidationError(f"{key!r} is not a known, active jurisdiction.", code="unknown_key")
     if jurisdiction.kind != JurisdictionKind.COUNTRY.value:
@@ -131,7 +131,7 @@ def unwatch(*, tenant: Tenant, actor: Actor, key: str) -> Jurisdiction:
     """Stop watching. Operating markets are untouched by this: a market's level survives an
     unwatch exactly because it is computed, never stored (FP-S11)."""
     jurisdiction = _country(key)
-    row = WatchedMarket.objects.filter(tenant=tenant, jurisdiction=jurisdiction).first()
+    row = WatchedMarket.objects.filter(tenant=tenant, jurisdiction=jurisdiction).first()  # ordering: watched_market_unique, at most one row
     if row is None:
         raise ValidationError(f"{key!r} is not watched.", code="not_found")
     row_id = row.id

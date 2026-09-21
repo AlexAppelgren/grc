@@ -681,9 +681,6 @@ export interface paths {
          *
          *     A person with no subscriptions gets a 200 with an empty array, never a 404. Errors:
          *     `permission_denied` without `roadmap.read`, `unauthenticated` without a session.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         get: operations["listCalendarFeeds"];
         put?: never;
@@ -713,13 +710,11 @@ export interface paths {
          *     whole address as a secret. Losing it means revoking the subscription and creating another.
          *
          *     Errors: `permission_denied` without `roadmap.read`, `unauthenticated` without a session,
-         *     `step_up_required` when the session is neither recent nor freshly confirmed, and
-         *     `validation_error` for a field the body does not know — including the `filter` the
-         *     designed contract once offered, which is gone.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships. The session check above is already in force, so a stale session is refused before
-         *     the stub is reached.
+         *     `step_up_required` when the session is neither recent nor freshly confirmed,
+         *     `feed_limit_reached` when the caller already holds `CALENDAR_FEEDS_PER_USER`
+         *     subscriptions that still work — revoke one and ask again — and `validation_error` for a
+         *     field the body does not know, including the `filter` the designed contract once offered,
+         *     which is gone.
          */
         post: operations["createCalendarFeed"];
         delete?: never;
@@ -761,9 +756,6 @@ export interface paths {
          *     Errors: `not_found` when no subscription of the caller's has that id — including one
          *     belonging to another person or another bank, answered the same way so no id can be probed;
          *     `permission_denied` without `roadmap.read`; `unauthenticated` without a session.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         delete: operations["revokeCalendarFeed"];
         options?: never;
@@ -807,9 +799,6 @@ export interface paths {
          *     all of them answered identically, so the address never says whether it ever existed;
          *     `validation_error` when `token` is missing or longer than the limit above; `rate_limited`
          *     when one address is fetched far more often than a calendar client would.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships. It reads no token while it does, so nothing about a token can be learned from it.
          */
         get: operations["getCalendarIcs"];
         put?: never;
@@ -1550,6 +1539,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/library-updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what changed in the shared library since you last looked
+         * @description Every change that reached the shared library since this reader last marked it as seen
+         *     with `POST /me/visit`, grouped by the day it arrived in the organisation's own time zone,
+         *     the most recent day first. Call it for the "what changed" screen a reader opens when they
+         *     come back from leave; `since` in the answer says what the list is measured from, and for
+         *     a reader who has never marked the library as seen it is the start of the default window
+         *     instead of an empty list.
+         *
+         *     Each change is titled by the library record it touched, never by the request that carried
+         *     it, and nobody's name appears: a change another organisation asked for reads exactly like
+         *     any other. Duties outside this organisation's footprint are left out unless
+         *     `outsideFootprint` asks for them, by the same rule the inventory applies, and each of
+         *     those says in `outsideReason` which facets would have hidden it. A change to a shared
+         *     list is never cut, because a list belongs to every organisation.
+         *
+         *     What comes back are facts about the shared library. Whether a duty applies here, and
+         *     whether this organisation complies with it, are its own judgements and are recorded
+         *     elsewhere; a change appearing here decides neither and is not a task.
+         *
+         *     Paginated: 20 changes by default and 100 at most, with a larger limit refused rather than
+         *     quietly trimmed, and `total` counting every change since that moment. Nothing since then
+         *     is a 200 with an empty days list and a total of 0, never a 404.
+         *
+         *     Needs `library.read`, which every member holds, and a session in an organisation: an API
+         *     key has no bookmark of its own, so this list is a person's.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
+         *     without `library.read`; `not_found` (404) for a principal in no organisation;
+         *     `validation_error` (422) when the page size or offset is out of range.
+         */
+        get: operations["listLibraryUpdates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -1945,7 +1981,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Proposals */
+        /**
+         * Read the queue of changes waiting to enter the shared library
+         * @description Every change an agent or a person has asked for, with the library record each one
+         *     would change named by its own title and reference, so a reviewer can work the queue
+         *     without opening each proposal. Call it for the console's Waiting, Approved and Rejected
+         *     tabs, each of which is this call with its own `status`.
+         *
+         *     The answer is every proposal matching the filters in one page, oldest first. Nothing is
+         *     hidden by them: `total` counts the same rows the list carries. A proposal filed inside a
+         *     bank arrives without its proposer and says `fromOrganisation` instead, and `isMine` says
+         *     whether the reader filed it, which four eyes will not let them decide.
+         *
+         *     Needs the platform permission `proposals.review`. No bank role reaches it, whatever the
+         *     member holds inside their own organisation, and no API key scope reaches it either.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without `proposals.review`; `unknown_key` (422) when `origin` is a value that is
+         *     neither `agent` nor `user`.
+         */
         get: operations["listProposals"];
         put?: never;
         /** Create Proposal */
@@ -1963,7 +2017,24 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Proposal */
+        /**
+         * Open one proposal and read it against what the library says today
+         * @description One proposal as a reviewer decides it: the record it would change, what that record
+         *     says today against what this would make it say, the two compared sentence by sentence,
+         *     the source behind every changed value, and the scope before and after. Read it, open the
+         *     sources, and only then approve.
+         *
+         *     What comes back is a request and not the library: until the proposal is approved the
+         *     library still says what `currentSummary` says. A proposal filed inside a bank arrives
+         *     without its proposer, as in the list.
+         *
+         *     Needs the platform permission `proposals.review`; no bank role and no API key scope
+         *     reaches it.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without `proposals.review`; `not_found` (404) for a proposal that does not exist
+         *     and for anything that is not a UUID.
+         */
         get: operations["getProposal"];
         put?: never;
         post?: never;
@@ -2798,6 +2869,44 @@ export interface paths {
         post?: never;
         /** Revoke Member Sessions */
         delete: operations["revokeMemberSessions"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what your organisation has asked to change in the shared library
+         * @description The proposals this organisation filed against the shared library lists, and how far
+         *     each has got. Call it for the pending list beside a shared vocabulary, so somebody who
+         *     suggested a value can see it is still waiting rather than suggesting it again.
+         *
+         *     It answers this organisation's own proposals and no others: the link between a proposal
+         *     and the organisation that filed it is a row in this organisation's zone, and row-level
+         *     security is what limits the read. Another bank's proposals are not filtered out of the
+         *     answer; they are never in it. What comes back is the request and its status, never the
+         *     platform reviewer who decided it and never another organisation's wording.
+         *
+         *     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
+         *     quietly trimmed, oldest first so paging is repeatable. Nothing matching the filters is a
+         *     200 with an empty items list and a total of 0, never a 404.
+         *
+         *     Needs `vocab.manage`, the permission that manages this organisation's vocabularies.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without `vocab.manage`; `not_found` (404) for a principal in no organisation;
+         *     `validation_error` (422) when the page size or offset is out of range.
+         */
+        get: operations["listTenantProposals"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5707,6 +5816,211 @@ export interface components {
             label: string;
         };
         /**
+         * LibraryUpdateDay
+         * @description One day's changes, as the list groups them.
+         */
+        LibraryUpdateDay: {
+            /**
+             * Date
+             * Format: date
+             * @description The day these changes were applied, in the bank's own time zone, as a plain date: a change applied late in the evening is filed under the bank's day, not London's.
+             * @example 2026-09-18
+             */
+            date: string;
+            /**
+             * Items
+             * @description What changed that day, the most recent first.
+             */
+            items: components["schemas"]["LibraryUpdateRow"][];
+        };
+        /**
+         * LibraryUpdateRow
+         * @description One change that reached the shared library while this reader was away (PRO-03,
+         *     INV-04): what changed, when it was applied, when it starts binding, and whether it
+         *     reaches this bank. It is a fact about the library and never a task: whether the duty
+         *     applies here, and whether this bank complies with it, are the bank's own judgements
+         *     recorded elsewhere. Nobody's name appears: who proposed a change is not a bank's
+         *     business, and a change another bank asked for reads exactly like any other.
+         * @example {
+         *       "appliedAt": "2026-09-18T09:20:00Z",
+         *       "effectiveFrom": {
+         *         "date": "2026-10-01",
+         *         "precision": "day"
+         *       },
+         *       "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+         *       "inFootprint": true,
+         *       "kind": "new_obligation_version",
+         *       "outsideReason": [],
+         *       "target": {
+         *         "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *         "instrumentShortName": "FFFS 2017:2",
+         *         "referenceLabel": "Third-party payments",
+         *         "title": "Pay for third-party research only under the permitted models"
+         *       },
+         *       "versionNumber": 2,
+         *       "vocabulary": null,
+         *       "vocabularyList": null
+         *     }
+         */
+        LibraryUpdateRow: {
+            /**
+             * Appliedat
+             * Format: date-time
+             * @description When the change reached the library: a UTC timestamp, date and time together. The day a screen files it under is this moment in the bank's own time zone.
+             * @example 2026-09-18T09:20:00Z
+             */
+            appliedAt: string;
+            /** @description The legal date the new wording starts binding the bank, with how exactly that date is known. Null on a change to a shared list, which has no legal date, and null when the new version has been in force since the duty entered the library. */
+            effectiveFrom?: components["schemas"]["PartialDate"] | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description A stable id for this row, as a UUID: it is the id of the approved change behind it. Use it as a list key; there is no call that takes it.
+             */
+            id: string;
+            /**
+             * Infootprint
+             * @description True when the duty that changed is inside this bank's footprint, which is the only kind of change the list carries unless `outsideFootprint` asked for the rest. A change to a shared list is always true: a list is shared by every bank and belongs to no footprint. It says the duty reaches this bank's business, never that the bank complies.
+             * @default true
+             * @example true
+             */
+            inFootprint: boolean;
+            /**
+             * Kind
+             * @description What kind of change it was, and therefore which of the fields below are filled. A fixed kind: `new_obligation_version` is a new wording of a duty, and `vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore`, `vocabulary_merge`, `term_create` and `term_update` are changes to a shared list or to the taxonomy every bank reads.
+             */
+            kind: string;
+            /**
+             * Outsidereason
+             * @description Why the footprint would have hidden it, one entry per facet in which the duty's terms and this bank's footprint have nothing in common. Empty when the change is inside the footprint, which is the usual case, and empty on a change to a shared list.
+             */
+            outsideReason?: components["schemas"]["OutsideReason"][];
+            /** @description The duty that changed, named by the library's own wording. Null on a change to a shared list, which names no single record; `vocabularyList` then says which list it was. */
+            target?: components["schemas"]["LibraryUpdateTarget"] | null;
+            /**
+             * Versionnumber
+             * @description Which version of the duty this change created, counting from 1 upwards, so a reader can ask for what changed between it and the one before. Null on a change to a shared list.
+             * @example 2
+             */
+            versionNumber?: number | null;
+            /** @description The row of that list which changed, by key and label, as the list labels it today. The rows are vocabulary data an admin may extend, relabel, reorder or retire without a deploy, so store the key and show the label; `GET /vocabularies` returns the live set. The label is the library's own and never the wording of the request that changed it. Null on a change to a duty, and null when the row has since been deleted. */
+            vocabulary?: components["schemas"]["LibraryRef"] | null;
+            /**
+             * Vocabularylist
+             * @description Which shared list or taxonomy dimension changed, by its key, for example `flag`. The lists are themselves rows an admin may extend or retire, and `GET /vocabularies` returns the live set. Null on a change to a duty.
+             * @example flag
+             */
+            vocabularyList?: string | null;
+        };
+        /**
+         * LibraryUpdateTarget
+         * @description The library record an update touched, named by the record itself. A proposal's own
+         *     wording never appears here: one bank's request must not reach another bank as a title.
+         * @example {
+         *       "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *       "instrumentShortName": "FFFS 2017:2",
+         *       "referenceLabel": "Third-party payments",
+         *       "title": "Pay for third-party research only under the permitted models"
+         *     }
+         */
+        LibraryUpdateTarget: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The duty that changed, as a UUID: the id its own card is read at, so a row can link straight to it.
+             */
+            id: string;
+            /**
+             * Instrumentshortname
+             * @description The short name of the law, regulation or guideline the duty sits in, for example "FFFS 2017:2".
+             */
+            instrumentShortName: string;
+            /**
+             * Referencelabel
+             * @description How the duty is cited inside its instrument, for example "Third-party payments". Empty when the record carries no reference of its own.
+             */
+            referenceLabel: string;
+            /**
+             * Title
+             * @description The duty's own title, in the best language this reader has, as the library holds it after the change.
+             */
+            title: string;
+        };
+        /**
+         * LibraryUpdatesPage
+         * @description What changed in the shared library since this reader last marked it as seen.
+         * @example {
+         *       "days": [
+         *         {
+         *           "date": "2026-09-18",
+         *           "items": [
+         *             {
+         *               "appliedAt": "2026-09-18T09:20:00Z",
+         *               "effectiveFrom": {
+         *                 "date": "2026-10-01",
+         *                 "precision": "day"
+         *               },
+         *               "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+         *               "inFootprint": true,
+         *               "kind": "new_obligation_version",
+         *               "outsideReason": [],
+         *               "target": {
+         *                 "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *                 "instrumentShortName": "FFFS 2017:2",
+         *                 "referenceLabel": "Third-party payments",
+         *                 "title": "Pay for third-party research only under the permitted models"
+         *               },
+         *               "versionNumber": 2,
+         *               "vocabulary": null,
+         *               "vocabularyList": null
+         *             }
+         *           ]
+         *         }
+         *       ],
+         *       "since": "2026-09-16T07:12:00Z",
+         *       "total": 1
+         *     }
+         */
+        LibraryUpdatesPage: {
+            /**
+             * Days
+             * @description The changes on this page, grouped by the day they were applied in the bank's time zone, the most recent day first.
+             */
+            days: components["schemas"]["LibraryUpdateDay"][];
+            /**
+             * Since
+             * Format: date-time
+             * @description The moment this list starts from: when this reader last marked the library as seen (`POST /me/visit`), as a UTC timestamp. For a reader who never has, it is the start of the default window instead, so a first visit is not empty.
+             * @example 2026-09-16T07:12:00Z
+             */
+            since: string;
+            /**
+             * Total
+             * @description How many changes there are in all since that moment, across every page, so a screen can say how much arrived while the reader was away.
+             * @example 1
+             */
+            total: number;
+        };
+        /**
+         * LibraryUpdatesQuery
+         * @description Filters of "what changed in the library", each optional.
+         */
+        LibraryUpdatesQuery: {
+            /**
+             * Kind
+             * @description Keep only these kinds of change: one value, or several separated by commas, from the kinds `LibraryUpdateRow.kind` names. Left out, every kind is returned.
+             * @example new_obligation_version
+             */
+            kind?: string | null;
+            /**
+             * Outsidefootprint
+             * @description True also lists the changes to duties the bank's footprint hides, each saying in `outsideReason` why it would have been hidden. False, the default, lists only what reaches this bank. Changes to a shared list are listed either way.
+             * @default false
+             * @example true
+             */
+            outsideFootprint: boolean;
+        };
+        /**
          * LocalizedText
          * @description One text in one language (INV-05, D-12): which language it is in, whether it is the
          *     original and whether a machine translated it, so the screen can label it.
@@ -7169,6 +7483,36 @@ export interface components {
             name: string;
         };
         /**
+         * ProposalAppliedVersion
+         * @description The library version an approved proposal wrote (PRO-02, INV-04). Null until the
+         *     proposal is approved; a rejected proposal never has one.
+         * @example {
+         *       "effectiveFrom": "2026-10-01",
+         *       "id": "1f0b3e7c-4a1b-4f9e-8a21-6d4b2c0a9e17",
+         *       "versionNumber": 2
+         *     }
+         */
+        ProposalAppliedVersion: {
+            /**
+             * Effectivefrom
+             * @description The legal date this version starts binding the bank, as a plain date and never a timestamp. Null when it has been in force since the record entered the library.
+             * @example 2026-10-01
+             */
+            effectiveFrom?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The version row this approval created, as a UUID the obligation's own read returns beside its number.
+             */
+            id: string;
+            /**
+             * Versionnumber
+             * @description Which version of the record it is, counting from 1 upwards in the order the versions were filed, so version 2 is the first change after the record entered the library.
+             * @example 2
+             */
+            versionNumber: number;
+        };
+        /**
          * ProposalApproveBody
          * @description The body of `POST /proposals/{proposalId}/approve`: the reviewer's word that this
          *     change may enter the shared library, and the corrections they made first.
@@ -7254,26 +7598,472 @@ export interface components {
             /** Title */
             title: string;
         };
-        /** ProposalPage */
+        /**
+         * ProposalDetail
+         * @description One proposal opened for a decision (PRO-02): everything the row carries, plus what the
+         *     library says today, what the proposal would make it say, and where each changed value came
+         *     from. Read it before approving; approving is the only door into the shared library.
+         * @example {
+         *       "agentRunId": "5a2b9c7d-1e3f-4a8b-9c0d-2e4f6a8b0c12",
+         *       "appliedAt": null,
+         *       "changeId": "b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33",
+         *       "createdAt": "2026-09-16T07:12:00Z",
+         *       "effectiveFrom": "2026-10-01",
+         *       "fieldSources": {
+         *         "effectiveFrom": "https://www.fi.se/",
+         *         "summaries.en": "https://www.fi.se/",
+         *         "summaries.sv": "https://www.fi.se/"
+         *       },
+         *       "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+         *       "kind": "new_obligation_version",
+         *       "model": "agent pipeline 0.4",
+         *       "origin": "agent",
+         *       "payload": {
+         *         "effectiveFrom": "2026-10-01",
+         *         "effectiveFromPrecision": "day",
+         *         "isMachine": true,
+         *         "originalLanguage": "sv",
+         *         "summaries": {
+         *           "en": "Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules.",
+         *           "sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor som anges i reglerna."
+         *         }
+         *       },
+         *       "proposedBy": null,
+         *       "rejectionCode": "",
+         *       "reviewNote": "",
+         *       "reviewedAt": null,
+         *       "reviewedBy": null,
+         *       "scopeSuggestion": [],
+         *       "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
+         *       "sourceUrl": "https://www.fi.se/",
+         *       "status": "open",
+         *       "targetId": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *       "targetType": "obligation",
+         *       "title": "Add version 2 of the research payment obligation, in force 1 October 2026"
+         *     }
+         */
+        ProposalDetail: {
+            /**
+             * Agentrunid
+             * @description The agent run that produced the proposal, as a UUID the run log addresses. Null for a person's proposal.
+             */
+            agentRunId?: string | null;
+            /**
+             * Appliedat
+             * @description When the change reached the library: a UTC timestamp, date and time together, which is the moment of approval. Null unless the status is `approved`.
+             */
+            appliedAt?: string | null;
+            /** @description The library version this approval wrote, by id, number and effective date. Null unless the status is `approved`. */
+            appliedVersion?: components["schemas"]["ProposalAppliedVersion"] | null;
+            /**
+             * Changeid
+             * @description The regulatory change that prompted this, as a UUID, when an agent's watch run found one. Null means nobody linked one, not that no change exists.
+             */
+            changeId?: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the proposal was filed: a UTC timestamp, date and time together. Not the legal date of the change, which is `effectiveFrom`.
+             */
+            createdAt: string;
+            /** @description What the library says today, in the language above: the summary of the version in force now. Null when the record has no text in that language, and null on a proposal that changes no record text. */
+            currentSummary?: components["schemas"]["LocalizedText"] | null;
+            /**
+             * Diff
+             * @description The two texts sentence by sentence, the same comparison "Show what changed" makes between two versions of a record: what stands, what would go and what would arrive. Empty when there is nothing to compare, which is the case for a vocabulary change and for a record with no text in this language.
+             */
+            diff?: components["schemas"]["DiffSegment"][];
+            /**
+             * Effectivefrom
+             * @description The legal date the proposed change comes into force, as the proposal states it. A plain date, never a timestamp, and null when the proposal names none. Read the library record for the dates actually in force.
+             */
+            effectiveFrom?: string | null;
+            /**
+             * Fieldsources
+             * @description Per changed field, where its value came from: an https link or the stable key of a provision the library holds, at most 2000 characters. An obligation proposal carries one for every field it changes or it is refused; the vocabulary kinds, whose wording a person writes, carry none. A source is the authority's page, not our reading of it.
+             */
+            fieldSources?: {
+                [key: string]: string;
+            };
+            /**
+             * Fromorganisation
+             * @description True when the proposal was made inside a bank, by one of its people or by an agent of theirs, in which case `proposedBy` is null however the reader is signed in: a bank member's name and id never reach the platform console, and which bank it was is not told either. False means it was made by platform staff or by a platform agent, and `proposedBy` is then the person, or null for an agent.
+             * @default false
+             * @example false
+             */
+            fromOrganisation: boolean;
+            /**
+             * Id
+             * Format: uuid
+             * @description The proposal, as the console addresses it: a UUID the server assigns once and never changes.
+             */
+            id: string;
+            /**
+             * Ismine
+             * @description True when the person reading this row is the one who filed the proposal, worked out by the server from the signed-in session. Four eyes means they may not decide it: their own approval answers 409 `four_eyes_violation`, so a screen hides the control rather than offering a refusal. Always false for a proposal filed by an agent or inside a bank, neither of which is a platform person.
+             * @default false
+             * @example false
+             */
+            isMine: boolean;
+            /**
+             * Kind
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             */
+            kind: string;
+            /**
+             * Language
+             * @description The content language the texts and the diff below are written in: the language the proposal was drafted in, which is the one a reviewer judges the wording in. A two-letter code from the content languages (`GET /reference/languages`). Empty on a proposal that changes no text, such as a vocabulary change.
+             * @default
+             * @example sv
+             */
+            language: string;
+            /**
+             * Model
+             * @description The model that drafted the text, recorded because AI output is labelled until a person confirms it (AUD-02). Empty means no model was named, not that no model was used.
+             * @default
+             */
+            model: string;
+            /**
+             * Origin
+             * @description Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI output and stays labelled until a person confirms it by approving; `user` means a person typed it. Neither tells a reader whether the facts are right.
+             */
+            origin: string;
+            /**
+             * Payload
+             * @description What was proposed, in the shape its `kind` names (`ProposalPayload`). This is the request as it arrived, kept unchanged for the audit trail even when a reviewer corrected it before approving: it is not necessarily what the library now holds.
+             */
+            payload?: {
+                [key: string]: unknown;
+            };
+            /** @description The platform person who made the proposal. Null for an agent's proposal, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
+            proposedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /**
+             * Proposedtext
+             * @description The wording that would replace it, which is the reviewer's own correction where one has been made and the proposal's text otherwise. Empty on a proposal that changes no record text. It is a request, not the library: until the proposal is approved the library still says what `currentSummary` says.
+             * @default
+             */
+            proposedText: string;
+            /**
+             * Rejectioncode
+             * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `poor_wording` and `other`. Empty unless the status is `rejected`.
+             * @default
+             */
+            rejectionCode: string;
+            /** @description Why it was refused, as the key and the label of the row chosen from the `rejection_reason` vocabulary, a library list. Its rows are data an admin may extend, relabel, reorder or retire without a deploy, never a closed set, and `GET /vocab/rejection_reason` returns the live one, so a key you have not seen before is new data and not an error; the kinds are those of that list, which today gives its rows none. Null unless the status is `rejected`, and null when the code stored on the proposal names a row the list no longer holds. */
+            rejectionReason?: components["schemas"]["LibraryRef"] | null;
+            /**
+             * Reviewnote
+             * @description The reviewer's own sentence to the proposer, on an approval or a rejection. A platform person's words; it is not part of the library record.
+             * @default
+             */
+            reviewNote: string;
+            /**
+             * Reviewedat
+             * @description When the decision was made: a UTC timestamp, date and time together. Null while the proposal is open.
+             */
+            reviewedAt?: string | null;
+            /** @description The platform reviewer who decided it. Always a different person from the proposer, which the database enforces. Null while the proposal is open. */
+            reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /**
+             * Scopeafter
+             * @description The scope the proposal would leave, in the same spelling, which replaces the list above whole rather than adding to it. Null means the proposal leaves the scope alone, which is not the same as an empty list: an empty list would clear it.
+             */
+            scopeAfter?: string[] | null;
+            /**
+             * Scopebefore
+             * @description The record's scope facets as the library holds them now, each written `dimension:key`, for example `client_category:retail`. Both parts are keys of rows an admin manages rather than fixed values, so read the term lists for the labels. Empty when the record carries no facets, and empty on a proposal that changes no record.
+             * @example [
+             *       "service_type:advice",
+             *       "client_category:retail"
+             *     ]
+             */
+            scopeBefore?: string[];
+            /**
+             * Scopesuggestion
+             * @description Scope terms an agent suggests for a record it is creating. Always empty today, since the kinds that would carry one are not built: an empty list is not a claim that a record has no scope.
+             */
+            scopeSuggestion?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Sourcelabel
+             * @description How the proposal names its source in a sentence a reviewer can read, for example "Finansinspektionen, board decision 15 September 2026". Written by the proposer, so it is a claim to check against `sourceUrl`, not a verified fact.
+             * @default
+             */
+            sourceLabel: string;
+            /**
+             * Sourceurl
+             * @description The page the proposal was drawn from, for a reviewer to open. An agent wrote it; that the link resolves says nothing about whether it supports the change.
+             * @default
+             */
+            sourceUrl: string;
+            /**
+             * Sources
+             * @description One source per field the proposal changes, so a reviewer can follow every value to where it came from. Empty on the vocabulary kinds, whose wording a person writes rather than drawing it from an authority.
+             */
+            sources?: components["schemas"]["ProposalSource"][];
+            /**
+             * Status
+             * @description Where the request stands. A fixed kind: `open` is waiting for a reviewer, `approved` means the library carries it and `appliedAt` says when, `rejected` means it was refused with a reason and changed nothing, and `superseded` means a later proposal overtook it. Only `approved` says anything about what the library holds.
+             */
+            status: string;
+            /** @description The library record being changed, by its own title and reference. Null when the proposal changes a vocabulary list rather than a record, and null when the record was withdrawn from the library after the proposal was filed. */
+            target?: components["schemas"]["ProposalTarget"] | null;
+            /**
+             * Targetid
+             * @description The library record the proposal changes, as a UUID, or null when it creates one. Read the record itself for what it currently says.
+             */
+            targetId?: string | null;
+            /**
+             * Targettype
+             * @description What the proposal changes, when it changes a record that already exists: `obligation` today, empty for a proposal that creates something.
+             * @default
+             */
+            targetType: string;
+            /**
+             * Title
+             * @description The one-line request as its author wrote it: an agent's own wording, or a platform editor's. It is never a bank member's words, because a proposal made inside a bank reaches the console without its proposer, and it is not the library record's title.
+             */
+            title: string;
+        };
+        /**
+         * ProposalPage
+         * @description A page of the console review queue.
+         */
         ProposalPage: {
-            /** Items */
-            items: components["schemas"]["ProposalRow"][];
-            /** Total */
+            /**
+             * Items
+             * @description The proposals matching the filters, oldest first, so the queue reads in the order they arrived.
+             */
+            items: components["schemas"]["ProposalQueueRow"][];
+            /**
+             * Total
+             * @description How many proposals match the filters in all, which is what a tab's count shows.
+             * @example 4
+             */
             total: number;
         };
         /**
          * ProposalQuery
-         * @description Filters of the review queue, each optional: `status` and `kind` take one value or a
-         *     comma-separated list; `targetList` is a vocabulary list name or a taxonomy dimension
-         *     key and matches the proposals that change it (`payload.list` or `payload.dimension`).
+         * @description Filters of the console review queue, each optional and each narrowing the queue.
          */
         ProposalQuery: {
-            /** Kind */
+            /**
+             * Kind
+             * @description Keep only these kinds: one value, or several separated by commas, from the kinds `ProposalRow.kind` names. Left out, every kind is returned.
+             * @example vocabulary_create,term_create
+             */
             kind?: string | null;
-            /** Status */
+            /**
+             * Notmine
+             * @description True drops the proposals this reviewer filed themselves, which are exactly the ones four eyes will not let them decide, so the queue shows only work they can actually do. False, the default, returns theirs alongside the rest.
+             * @default false
+             * @example true
+             */
+            notMine: boolean;
+            /**
+             * Origin
+             * @description Keep only the proposals filed by one sort of proposer: `agent` for a watch or research agent's, `user` for a person's. Those are the only two values; anything else is refused with 422 `unknown_key` rather than answered with an empty queue. Left out, both are returned.
+             * @example agent
+             */
+            origin?: string | null;
+            /**
+             * Status
+             * @description Keep only these statuses: one value, or several separated by commas. The values are `open` (waiting for a reviewer), `approved`, `rejected` and `superseded`. Left out, every status is returned, which is why each tab of the queue sends its own.
+             * @example open
+             */
             status?: string | null;
-            /** Targetlist */
+            /**
+             * Targetlist
+             * @description Keep only the proposals that change this vocabulary list, or this taxonomy dimension, by its key, for example `flag`: the lists are rows an admin manages and `GET /vocabularies` returns the live set. Left out, every list is returned.
+             * @example flag
+             */
             targetList?: string | null;
+        };
+        /**
+         * ProposalQueueRow
+         * @description One row of the console queue: the proposal, plus what a reviewer needs to tell the
+         *     rows apart without opening each one. Platform data throughout; a bank reads its own
+         *     proposals through `GET /tenant/proposals`, which answers a narrower row.
+         * @example {
+         *       "agentRunId": "5a2b9c7d-1e3f-4a8b-9c0d-2e4f6a8b0c12",
+         *       "appliedAt": null,
+         *       "changeId": "b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33",
+         *       "createdAt": "2026-09-16T07:12:00Z",
+         *       "effectiveFrom": "2026-10-01",
+         *       "fieldSources": {
+         *         "effectiveFrom": "https://www.fi.se/",
+         *         "summaries.en": "https://www.fi.se/",
+         *         "summaries.sv": "https://www.fi.se/"
+         *       },
+         *       "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+         *       "kind": "new_obligation_version",
+         *       "model": "agent pipeline 0.4",
+         *       "origin": "agent",
+         *       "payload": {
+         *         "effectiveFrom": "2026-10-01",
+         *         "effectiveFromPrecision": "day",
+         *         "isMachine": true,
+         *         "originalLanguage": "sv",
+         *         "summaries": {
+         *           "en": "Research from third parties may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in the rules.",
+         *           "sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor som anges i reglerna."
+         *         }
+         *       },
+         *       "proposedBy": null,
+         *       "rejectionCode": "",
+         *       "reviewNote": "",
+         *       "reviewedAt": null,
+         *       "reviewedBy": null,
+         *       "scopeSuggestion": [],
+         *       "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
+         *       "sourceUrl": "https://www.fi.se/",
+         *       "status": "open",
+         *       "targetId": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *       "targetType": "obligation",
+         *       "title": "Add version 2 of the research payment obligation, in force 1 October 2026"
+         *     }
+         */
+        ProposalQueueRow: {
+            /**
+             * Agentrunid
+             * @description The agent run that produced the proposal, as a UUID the run log addresses. Null for a person's proposal.
+             */
+            agentRunId?: string | null;
+            /**
+             * Appliedat
+             * @description When the change reached the library: a UTC timestamp, date and time together, which is the moment of approval. Null unless the status is `approved`.
+             */
+            appliedAt?: string | null;
+            /**
+             * Changeid
+             * @description The regulatory change that prompted this, as a UUID, when an agent's watch run found one. Null means nobody linked one, not that no change exists.
+             */
+            changeId?: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the proposal was filed: a UTC timestamp, date and time together. Not the legal date of the change, which is `effectiveFrom`.
+             */
+            createdAt: string;
+            /**
+             * Effectivefrom
+             * @description The legal date the proposed change comes into force, as the proposal states it. A plain date, never a timestamp, and null when the proposal names none. Read the library record for the dates actually in force.
+             */
+            effectiveFrom?: string | null;
+            /**
+             * Fieldsources
+             * @description Per changed field, where its value came from: an https link or the stable key of a provision the library holds, at most 2000 characters. An obligation proposal carries one for every field it changes or it is refused; the vocabulary kinds, whose wording a person writes, carry none. A source is the authority's page, not our reading of it.
+             */
+            fieldSources?: {
+                [key: string]: string;
+            };
+            /**
+             * Fromorganisation
+             * @description True when the proposal was made inside a bank, by one of its people or by an agent of theirs, in which case `proposedBy` is null however the reader is signed in: a bank member's name and id never reach the platform console, and which bank it was is not told either. False means it was made by platform staff or by a platform agent, and `proposedBy` is then the person, or null for an agent.
+             * @default false
+             * @example false
+             */
+            fromOrganisation: boolean;
+            /**
+             * Id
+             * Format: uuid
+             * @description The proposal, as the console addresses it: a UUID the server assigns once and never changes.
+             */
+            id: string;
+            /**
+             * Ismine
+             * @description True when the person reading this row is the one who filed the proposal, worked out by the server from the signed-in session. Four eyes means they may not decide it: their own approval answers 409 `four_eyes_violation`, so a screen hides the control rather than offering a refusal. Always false for a proposal filed by an agent or inside a bank, neither of which is a platform person.
+             * @default false
+             * @example false
+             */
+            isMine: boolean;
+            /**
+             * Kind
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             */
+            kind: string;
+            /**
+             * Model
+             * @description The model that drafted the text, recorded because AI output is labelled until a person confirms it (AUD-02). Empty means no model was named, not that no model was used.
+             * @default
+             */
+            model: string;
+            /**
+             * Origin
+             * @description Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI output and stays labelled until a person confirms it by approving; `user` means a person typed it. Neither tells a reader whether the facts are right.
+             */
+            origin: string;
+            /**
+             * Payload
+             * @description What was proposed, in the shape its `kind` names (`ProposalPayload`). This is the request as it arrived, kept unchanged for the audit trail even when a reviewer corrected it before approving: it is not necessarily what the library now holds.
+             */
+            payload?: {
+                [key: string]: unknown;
+            };
+            /** @description The platform person who made the proposal. Null for an agent's proposal, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
+            proposedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /**
+             * Rejectioncode
+             * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `poor_wording` and `other`. Empty unless the status is `rejected`.
+             * @default
+             */
+            rejectionCode: string;
+            /**
+             * Reviewnote
+             * @description The reviewer's own sentence to the proposer, on an approval or a rejection. A platform person's words; it is not part of the library record.
+             * @default
+             */
+            reviewNote: string;
+            /**
+             * Reviewedat
+             * @description When the decision was made: a UTC timestamp, date and time together. Null while the proposal is open.
+             */
+            reviewedAt?: string | null;
+            /** @description The platform reviewer who decided it. Always a different person from the proposer, which the database enforces. Null while the proposal is open. */
+            reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /**
+             * Scopesuggestion
+             * @description Scope terms an agent suggests for a record it is creating. Always empty today, since the kinds that would carry one are not built: an empty list is not a claim that a record has no scope.
+             */
+            scopeSuggestion?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Sourcelabel
+             * @description How the proposal names its source in a sentence a reviewer can read, for example "Finansinspektionen, board decision 15 September 2026". Written by the proposer, so it is a claim to check against `sourceUrl`, not a verified fact.
+             * @default
+             */
+            sourceLabel: string;
+            /**
+             * Sourceurl
+             * @description The page the proposal was drawn from, for a reviewer to open. An agent wrote it; that the link resolves says nothing about whether it supports the change.
+             * @default
+             */
+            sourceUrl: string;
+            /**
+             * Status
+             * @description Where the request stands. A fixed kind: `open` is waiting for a reviewer, `approved` means the library carries it and `appliedAt` says when, `rejected` means it was refused with a reason and changed nothing, and `superseded` means a later proposal overtook it. Only `approved` says anything about what the library holds.
+             */
+            status: string;
+            /** @description The library record being changed, by its own title and reference. Null when the proposal changes a vocabulary list rather than a record, and null when the record was withdrawn from the library after the proposal was filed. */
+            target?: components["schemas"]["ProposalTarget"] | null;
+            /**
+             * Targetid
+             * @description The library record the proposal changes, as a UUID, or null when it creates one. Read the record itself for what it currently says.
+             */
+            targetId?: string | null;
+            /**
+             * Targettype
+             * @description What the proposal changes, when it changes a record that already exists: `obligation` today, empty for a proposal that creates something.
+             * @default
+             */
+            targetType: string;
+            /**
+             * Title
+             * @description The one-line request as its author wrote it: an agent's own wording, or a platform editor's. It is never a bank member's words, because a proposal made inside a bank reaches the console without its proposer, and it is not the library record's title.
+             */
+            title: string;
         };
         /** ProposalRejectBody */
         ProposalRejectBody: {
@@ -7372,6 +8162,13 @@ export interface components {
                 [key: string]: string;
             };
             /**
+             * Fromorganisation
+             * @description True when the proposal was made inside a bank, by one of its people or by an agent of theirs, in which case `proposedBy` is null however the reader is signed in: a bank member's name and id never reach the platform console, and which bank it was is not told either. False means it was made by platform staff or by a platform agent, and `proposedBy` is then the person, or null for an agent.
+             * @default false
+             * @example false
+             */
+            fromOrganisation: boolean;
+            /**
              * Id
              * Format: uuid
              * @description The proposal, as the console addresses it: a UUID the server assigns once and never changes.
@@ -7459,6 +8256,70 @@ export interface components {
             /**
              * Title
              * @description The one-line request as its author wrote it: an agent's own wording, or a platform editor's. It is never a bank member's words, because a proposal made inside a bank reaches the console without its proposer, and it is not the library record's title.
+             */
+            title: string;
+        };
+        /**
+         * ProposalSource
+         * @description Where one changed field's value came from (PRO-01): a source a reviewer opens before
+         *     they approve. It is the proposer's claim about provenance, checked by a person, and never
+         *     a guarantee that the source says what the proposal says.
+         * @example {
+         *       "field": "summaries.sv",
+         *       "label": "Finansinspektionen, board decision 15 September 2026",
+         *       "url": "https://www.fi.se/"
+         *     }
+         */
+        ProposalSource: {
+            /**
+             * Field
+             * @description The field of the payload this source belongs to, spelled as the payload spells it: `summaries.<language>` for the text in one content language, `effectiveFrom` for the date the change binds from, and `terms` for the scope facets.
+             */
+            field: string;
+            /**
+             * Label
+             * @description The source in a sentence a reviewer can read, which is the proposal's own `sourceLabel` for a link, or the stable key of the provision when the source is one the library already holds. Written by the proposer, so it is a claim to check.
+             */
+            label: string;
+            /**
+             * Url
+             * @description The page to open, when the source is a link. Empty when the source is a provision of the library instead, which `label` then names by its stable key.
+             * @example https://www.fi.se/
+             */
+            url: string;
+        };
+        /**
+         * ProposalTarget
+         * @description The library record a proposal changes, as the queue names it in a row: the record's
+         *     own title and reference, never the proposal's wording. Null on a proposal that changes a
+         *     vocabulary list rather than a record; `payload.list` and `payload.key` name that row.
+         * @example {
+         *       "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *       "instrumentShortName": "FFFS 2017:2",
+         *       "referenceLabel": "Third-party payments",
+         *       "title": "Pay for third-party research only under the permitted models"
+         *     }
+         */
+        ProposalTarget: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The library record this proposal changes, as a UUID, which is the id `GET /obligations/{obligationId}` takes.
+             */
+            id: string;
+            /**
+             * Instrumentshortname
+             * @description The short name of the law, regulation or guideline the duty was broken out of, for example "FFFS 2017:2", so a row says which text is changing.
+             */
+            instrumentShortName: string;
+            /**
+             * Referencelabel
+             * @description How the record is cited inside its instrument, for example "Third-party payments": the short reference a person uses to find the duty in the text. Empty when the record carries none.
+             */
+            referenceLabel: string;
+            /**
+             * Title
+             * @description The record's own title, in the best language this reader has (the original where there is no translation). It is the library's wording and not the proposal's, so a reader sees which duty is being changed rather than how the proposer described it.
              */
             title: string;
         };
@@ -8215,6 +9076,101 @@ export interface components {
              * @description A new IANA timezone for the organisation, such as `Europe/Copenhagen`, at most 64 characters. Omit the field to leave it alone. The name is checked against the IANA database the server runs on and an unknown one is refused with `unknown_key`. Changing it moves the local day every deadline is counted in, so dates already on screen are re-read in the new zone; the stored instants themselves do not move.
              */
             timezone?: string | null;
+        };
+        /**
+         * TenantProposalPage
+         * @description A page of what this bank has proposed to the shared library lists.
+         * @example {
+         *       "items": [
+         *         {
+         *           "createdAt": "2026-09-16T07:12:00Z",
+         *           "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+         *           "kind": "vocabulary_create",
+         *           "status": "open",
+         *           "title": "Add the flag \"Client money\""
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        TenantProposalPage: {
+            /**
+             * Items
+             * @description This page of proposals, oldest first, so a list reads in the order the bank filed them.
+             */
+            items: components["schemas"]["TenantProposalRow"][];
+            /**
+             * Total
+             * @description How many proposals match the filters in all, across every page, so a screen can show a count without reading them.
+             * @example 3
+             */
+            total: number;
+        };
+        /**
+         * TenantProposalQuery
+         * @description Filters of a bank's own proposals, each optional and each narrowing the list.
+         */
+        TenantProposalQuery: {
+            /**
+             * Kind
+             * @description Keep only these kinds: one value, or several separated by commas, from the kinds `kind` names above. Left out, every kind is returned.
+             * @example vocabulary_create,vocabulary_relabel
+             */
+            kind?: string | null;
+            /**
+             * Status
+             * @description Keep only these statuses: one value, or several separated by commas. The values are `open`, `approved`, `rejected` and `superseded`. Left out, every status is returned.
+             * @example open
+             */
+            status?: string | null;
+            /**
+             * Targetlist
+             * @description Keep only the proposals that change this vocabulary list, or this taxonomy dimension, by its key, for example `flag`. The keys are rows an admin manages; `GET /vocabularies` returns the live set. Left out, every list is returned.
+             * @example flag
+             */
+            targetList?: string | null;
+        };
+        /**
+         * TenantProposalRow
+         * @description One proposal this bank made to a shared library list (PRO-03, VOC-07), as the bank's
+         *     own vocabulary screen lists it. A bank sees the proposals its own people and agents
+         *     filed and never another bank's, and never a platform reviewer's name.
+         * @example {
+         *       "createdAt": "2026-09-16T07:12:00Z",
+         *       "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+         *       "kind": "vocabulary_create",
+         *       "status": "open",
+         *       "title": "Add the flag \"Client money\""
+         *     }
+         */
+        TenantProposalRow: {
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When this bank filed it: a UTC timestamp, date and time together, so a screen can order and date the list.
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The proposal, as a UUID the server assigned when it was filed and never changes.
+             */
+            id: string;
+            /**
+             * Kind
+             * @description What this bank asked to change. A fixed kind, not a vocabulary row: `vocabulary_create` adds a row to a shared list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. `new_obligation_version` adds a version to a duty.
+             */
+            kind: string;
+            /**
+             * Status
+             * @description Where the request stands. A fixed kind: `open` is waiting for a library editor, `approved` means every bank's library now carries it, `rejected` means it was refused with a reason and changed nothing, and `superseded` means a later proposal overtook it.
+             */
+            status: string;
+            /**
+             * Title
+             * @description The one-line request as the person here who filed it wrote it, which is what the screen lists it under.
+             */
+            title: string;
         };
         /** TermRef */
         TermRef: {
@@ -12532,6 +13488,47 @@ export interface operations {
             };
         };
     };
+    listLibraryUpdates: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Keep only these kinds of change: one value, or several separated by commas, from the kinds `LibraryUpdateRow.kind` names. Left out, every kind is returned.
+                 * @example new_obligation_version
+                 */
+                kind?: string | null;
+                /**
+                 * @description True also lists the changes to duties the bank's footprint hides, each saying in `outsideReason` why it would have been hidden. False, the default, lists only what reaches this bank. Changes to a shared list are listed either way.
+                 * @example true
+                 */
+                outsideFootprint?: boolean;
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryUpdatesPage"];
+                };
+            };
+        };
+    };
     getMe: {
         parameters: {
             query?: never;
@@ -12946,9 +13943,31 @@ export interface operations {
     listProposals: {
         parameters: {
             query?: {
+                /**
+                 * @description Keep only these statuses: one value, or several separated by commas. The values are `open` (waiting for a reviewer), `approved`, `rejected` and `superseded`. Left out, every status is returned, which is why each tab of the queue sends its own.
+                 * @example open
+                 */
                 status?: string | null;
+                /**
+                 * @description Keep only these kinds: one value, or several separated by commas, from the kinds `ProposalRow.kind` names. Left out, every kind is returned.
+                 * @example vocabulary_create,term_create
+                 */
                 kind?: string | null;
+                /**
+                 * @description Keep only the proposals that change this vocabulary list, or this taxonomy dimension, by its key, for example `flag`: the lists are rows an admin manages and `GET /vocabularies` returns the live set. Left out, every list is returned.
+                 * @example flag
+                 */
                 targetList?: string | null;
+                /**
+                 * @description Keep only the proposals filed by one sort of proposer: `agent` for a watch or research agent's, `user` for a person's. Those are the only two values; anything else is refused with 422 `unknown_key` rather than answered with an empty queue. Left out, both are returned.
+                 * @example agent
+                 */
+                origin?: string | null;
+                /**
+                 * @description True drops the proposals this reviewer filed themselves, which are exactly the ones four eyes will not let them decide, so the queue shows only work they can actually do. False, the default, returns theirs alongside the rest.
+                 * @example true
+                 */
+                notMine?: boolean;
             };
             header?: never;
             path?: never;
@@ -13017,7 +14036,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProposalRow"];
+                    "application/json": components["schemas"]["ProposalDetail"];
                 };
             };
         };
@@ -14075,6 +15094,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listTenantProposals: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Keep only these statuses: one value, or several separated by commas. The values are `open`, `approved`, `rejected` and `superseded`. Left out, every status is returned.
+                 * @example open
+                 */
+                status?: string | null;
+                /**
+                 * @description Keep only these kinds: one value, or several separated by commas, from the kinds `kind` names above. Left out, every kind is returned.
+                 * @example vocabulary_create,vocabulary_relabel
+                 */
+                kind?: string | null;
+                /**
+                 * @description Keep only the proposals that change this vocabulary list, or this taxonomy dimension, by its key, for example `flag`. The keys are rows an admin manages; `GET /vocabularies` returns the live set. Left out, every list is returned.
+                 * @example flag
+                 */
+                targetList?: string | null;
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantProposalPage"];
+                };
             };
         };
     };

@@ -966,6 +966,9 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         """FP-S10
 
         Watching a market is one audited write that hides nothing (FP-04, AC-FP2).
+
+        Exercises the two mutating operations `watchMarket` and `unwatchMarket`, which
+        `apps/shared/tests_audit_on_write.py` reads this file for by name.
         """
         self._set_footprint(["regime:securities", "jurisdiction:se"])
         admin = sign_in(self.admin, tenant=self.tenant)
