@@ -1,19 +1,16 @@
 'use client';
 
 import { AdminGate } from '@/components/admin/AdminGate';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { PageHead } from '@/components/ui/PageHead';
-import { useT } from '@/shared/i18n/LocaleProvider';
+import { AgentKeysScreen } from '@/components/console/AgentKeysScreen';
 
-// Agent keys (ADM-02, ID-10): the head and the empty state, so the rail
-// entry has somewhere to land. The list, the passkey step-up and the
-// shown-once secret are c5-fe-console-agent-keys, which replaces this file.
+// Agent keys (ADM-02, ID-10, AGT-01): the keys bleqq's own agents run on. The
+// gate is the registry's own entry; the server's 403, with
+// `agent_definitions.manage` named, and its step-up on creation stay the
+// enforcers.
 export default function ConsoleAgentKeysPage() {
-  const t = useT();
   return (
     <AdminGate id="console-agent-keys">
-      <PageHead title={t('console.agentKeys.title')} lede={t('console.agentKeys.lede')} />
-      <EmptyState title={t('console.agentKeys.emptyTitle')} body={t('console.agentKeys.emptyBody')} />
+      <AgentKeysScreen />
     </AdminGate>
   );
 }
