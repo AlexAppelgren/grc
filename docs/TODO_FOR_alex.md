@@ -397,3 +397,28 @@ change what four eyes means and are marked as such.
       should weigh: raise the per-boot timeout (a hang then takes longer to report), or prove
       the rules in-process by reloading settings instead of booting (cheaper and far faster,
       but it stops proving that a real process refuses to start, which is the whole point).
+
+## The public page needs two brand decisions (2026-09-21)
+
+The public page is designed and sits in `design/public/` (`index.html` opens in
+a browser, `README.md` is the design note). Two of its choices are yours,
+because they add to the brand rather than apply it. Defaults taken so the
+design could be finished; say the word and the file changes in one block.
+
+- [ ] **A display serif.** `design/brand/README.md` names Hanken Grotesk and
+      Noto Sans Mono and nothing else. The page sets its headlines in Libre
+      Caslon Display, with Libre Caslon Text for the lede and record titles,
+      because the brief asked for a page that feels like an old legal
+      instrument and a grotesque cannot carry that. Both are SIL OFL, checked
+      in `google/fonts` (`ofl/librecaslondisplay`, `ofl/librecaslontext`), so
+      they self-host on the same terms as the other two. Default if you say
+      nothing: Libre Caslon stays, on public pages only, and never behind
+      auth. Decline and the page runs on Hanken Grotesk at the same scale.
+- [ ] **The plate headline size.** `design/system/foundations.md` sets `hero`
+      at 36 / 40 and marks it "public pages only". That size was set for a
+      grotesque; the same optical size in a serif reads a step smaller, so the
+      page's headline runs from 36 px to 60 px with the viewport. Default if
+      you say nothing: the clamp stays. Say so and it caps at 36 px, which
+      makes the top of the page much quieter.
+- [ ] The footer carries `org. no. [to be set]`, and Terms, Privacy and
+      Sub-processors link to the assurance section until those pages exist.
