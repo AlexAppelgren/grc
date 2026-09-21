@@ -36,12 +36,17 @@ function headerPills(page: Page) {
 }
 
 test.describe('library journeys', () => {
+  // The instrument card and the provision tree (chunk 3, chunk3-rest-T17 and
+  // T18) need reads that are not built: GET /instruments, GET /instruments/{id},
+  // GET /instruments/{id}/provisions and GET /provisions/{id}/diff are still
+  // listed as undelivered in backend/scripts/contract_drift_pending.txt, and
+  // no route answers them. They un-fixme with chunk3-rest-T13 and T16.
   test.fixme("INV-S1: An instrument carries its identity, dates and lineage", async () => {
-    // pending: INV-S1 (INV-01)
+    // pending: INV-S1 (INV-01); needs GET /instruments and GET /instruments/{id}
   });
 
   test.fixme("INV-S2: The provision tree holds verbatim text versions", async () => {
-    // pending: INV-S2 (INV-02)
+    // pending: INV-S2 (INV-02); needs GET /instruments/{id}/provisions and GET /provisions/{id}/diff
   });
 
   test("INV-S3: An obligation states the duty and its facets", async ({ page, apiGuard }) => {
