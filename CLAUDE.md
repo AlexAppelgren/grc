@@ -143,7 +143,14 @@ by what changed since `origin/main` like CI, downloads its scanners once into
 `<main checkout>/.tools/`, and stops at the first red gate with the command
 that reproduces it. The items it runs (playbook Appendix D, verbatim):
 
-Every item is enforced by CI and blocks. Run what the diff touched. All
+Every item is enforced by CI and blocks. Run what the diff touched. **Tests are
+grouped per batch, not per task (D-67):** an agent building one task runs the
+static gates and the suites of the apps it touched and stops there; the whole
+suite, the coverage floors and the E2E journeys run once over a merged batch
+before the ship that carries it, and again in CI on `candidate`, which stays
+the authority. Nothing is skipped and no threshold moves — the same gates run,
+once per batch instead of once per task, because fourteen worktrees sharing one
+database were re-running tests no change of theirs could affect. All
 commands assume Postgres with pgvector is running (`docker compose up -d db
 redis`, or a local PostgreSQL 16 with the `vector` extension installed).
 

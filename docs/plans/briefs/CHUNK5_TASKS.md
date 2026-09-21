@@ -1893,9 +1893,28 @@ here reads a problem report, and no console surface is added.
 **Scenarios:** none of its own; it makes WAT-S7 buildable  
 **Depends on:** c5-watch-registration, c5-cases-creation, c5-ai-log-contract
 
+**Changed by Alex, 2026-09-21 (D-66): the So what comes from the agent that read the
+change, not from a handler of ours that reads it again.** An agent that sights a change has
+just read the source; asking our own backend to call a model a second time over the same
+facts is a second moving part, a second cost and a second thing to keep in step. The agent
+files the So what with the change, through the door it already writes through, and reports
+the model, the model version and the citations it used so the AI log holds what AUD-02
+needs. Everything below still holds: one draft per change from library facts only, labelled
+machine output until a person confirms it, copied unconfirmed into each bank's case.
+
 Draft the So what once per change, from library facts only (q-so-what-scope Option A, the documented default):
 
-- On `change.registered`, a handler on the outbox cursor calls `shared/ai.py:generate` with purpose `so_what`, a prompt built from the change's title, summary, type, timeline, terms and confirmed obligation links, and nothing else. No footprint term, tenant name, entity, product or tenant-written text is in the prompt.
+- The agent that registers or curates a change sends the So what with it, and the write
+  records an `AiGeneration` row from what the agent reported: purpose `so_what`, model,
+  model version, prompt hash, input reference, output, citations, review state `pending`.
+  The prompt is the agent's, over the change's own facts — no footprint term, tenant name,
+  entity, product or tenant-written text may appear in it, and the log row is refused if the
+  agent reports none of the model, version or citations.
+- **A note for whoever builds it:** the model metadata is now self-reported by the agent
+  rather than observed by our wrapper. In R1 every agent is bleqq's own, so that is a
+  reporting boundary rather than a trust boundary — but it stops being true the moment a
+  bank runs its own agent against this route, which is exactly the ACC work in R2. Say so in
+  the route's description rather than leaving a reader to assume the platform measured it.
 - The result is stored in `regulatory_change.so_what_draft` through `watch_write()`, and an `AiGeneration` row is written by the wrapper with the purpose, model, model version, prompt hash, input reference, output, citations and review state `pending`.
 - `c5-cases-creation` copies the draft into each tenant's case with `so_what_confirmed = false`. If the draft arrives after the cases exist, the handler backfills only cases whose So what is still unconfirmed and untouched; it never overwrites a tenant's own wording.
 - A model failure or timeout leaves `so_what_draft` empty, records the failure on the run and in the log without any prompt or output text, and does not block registration or case creation.
