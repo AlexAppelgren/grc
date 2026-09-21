@@ -6,6 +6,7 @@
 | `system/foundations.md` | Type roles, radius, spacing, the component specs and the Green token behind every colour |
 | `system/navigation.md` | The rail and the tab bar: which width gets what, the More sheet, and the reason and source for each rule |
 | `system/pills-and-labels.md` and `.html` | The pill and label contract, and a rendered card |
+| `public/` | The public page: `index.html` is the whole page as one standalone file, `README.md` is the design note |
 | `brand/` | The phonetic wordmark `[blɛkː]`, the favicon, and the brand layer placeholders |
 | `screens/` | Empty. Cut one card per screen from the prototype as each chunk starts (playbook Section 7) |
 
