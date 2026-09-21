@@ -41,11 +41,15 @@ from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from config.api import api
 
 V1 = "/api/v1"
-# Queries per queue read, measured 2026-09-19 and pinned so an N+1 shows up as a number
+# Queries per queue read, measured 2026-09-21 and pinned so an N+1 shows up as a number
 # (playbook 10): the scenario client's audit count (1), the request's savepoint pair (2), the
 # auth layer for a platform session with no tenant (identity flag on, the session row, flag
-# off, platform roles, latest step-up: 5) and the page with its proposer and reviewer (1).
-PROPOSAL_QUEUE_QUERIES = 1 + 2 + 5 + 1
+# off, platform roles, latest step-up: 5), the reader's own locale for the language the rows
+# are titled in (1) and the page with its proposer and reviewer (1). The library records the
+# rows name cost two more, for the whole page at once rather than per row, and this queue
+# holds a vocabulary proposal, which names none (apps/proposals/tests_reading.py pins that
+# the cost does not grow with the row count).
+PROPOSAL_QUEUE_QUERIES = 1 + 2 + 5 + 1 + 1
 # The change an agent's watch run linked the proposal to (chunk 5 makes these rows; the
 # column is a plain id until then), and the summary version 1 carries, so a scenario can
 # prove that applying version 2 leaves version 1 exactly as it was written.
@@ -500,6 +504,11 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(without.json()["code"], "reason_required")
         no_code = self._post(f"/proposals/{proposal['id']}/reject", {"rejectionCode": "", "note": "We have this already."}, editor)
         self.assertEqual(no_code.status_code, 422)
+        # The reason is a key of the `rejection_reason` library list, not a word of the
+        # reviewer's own: a code that list does not hold is refused the same way.
+        invented = self._post(f"/proposals/{proposal['id']}/reject", {"rejectionCode": "just_because", "note": "We have this already."}, editor)
+        self.assertEqual(invented.status_code, 422, invented.content)
+        self.assertEqual(invented.json()["code"], "reason_required")
         rejected = self._post(f"/proposals/{proposal['id']}/reject", {"rejectionCode": "duplicate", "note": "We have this already."}, editor)
         self.assertEqual(rejected.status_code, 200, rejected.content)
         self.assertEqual(rejected.json()["status"], "rejected")
