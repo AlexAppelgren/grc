@@ -39,6 +39,7 @@ from apps.shared.e2e_logins import (
 )
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
 from apps.library.models import Instrument, Obligation, ObligationVersion, Verification
+from apps.search.models import SearchChunk, SearchSource
 from apps.shared.e2e_seed import (
     EXPECTED_FOOTPRINTS,
     EXPECTED_HOME,
@@ -237,6 +238,31 @@ class SeedIntegrityGuard(TestCase):
         seed_e2e()
         self.assertEqual((Instrument.objects.count(), Obligation.objects.count()), (EXPECTED_LIBRARY.instruments, EXPECTED_LIBRARY.obligations))
         self.assertEqual(ObligationVersion.objects.filter(obligation__stable_key=EXPECTED_LIBRARY.research_obligation).count(), 2)
+
+    def test_the_search_index_is_built_and_fully_embedded_from_the_seeded_library(self) -> None:
+        """SRC-01, J-7 (c7-e2e-seed): `seed_search_index()` runs `reindex_all()` and
+        `embed_backlog()` inside the seed's own transaction, so a journey that searches the
+        moment the seed finishes never races the outbox worker for a vector that has not
+        arrived: SRC-S1's concept leg ("nudging in onboarding") only ever hits because every
+        seeded chunk already carries its mock vector. The fixture's two provisions carry no
+        version of their own (`prototype_data.json` has no `provision_versions`), so only the
+        obligation source type is indexed; every chunk is shared library data (D-10, H7):
+        `owner_tenant_id` is NULL, never a bank's."""
+        counts = seed_e2e()
+        self.assertGreater(counts["search_chunks"], 0)
+        self.assertEqual(SearchChunk.objects.count(), counts["search_chunks"])
+        self.assertGreater(SearchChunk.objects.filter(source_type=SearchSource.OBLIGATION_VERSION.value).count(), 0)
+        self.assertFalse(
+            SearchChunk.objects.filter(embedding__isnull=True).exists(),
+            "a journey must never race an embedding that has not arrived yet",
+        )
+        self.assertFalse(
+            SearchChunk.objects.exclude(owner_tenant__isnull=True).exists(),
+            "only the shared library is indexed in R1 (D-10)",
+        )
+        # Idempotent: a second run leaves the same chunks, not a duplicate set.
+        seed_e2e()
+        self.assertEqual(SearchChunk.objects.count(), counts["search_chunks"])
 
     def test_switching_off_advice_hides_an_obligation_of_tenant_a(self) -> None:
         """J-6, FP-01, FP-03, AC-FP1: the pending request switches Advice off. With Advice in

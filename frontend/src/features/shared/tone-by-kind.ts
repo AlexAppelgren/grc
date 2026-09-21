@@ -104,6 +104,9 @@ export const slotTone = {
   bindingLevel: 'information',
   guidanceComplyOrExplain: 'warning',
   guidance: 'information',
+  // SRC-02: how a search hit was won, keyword, concept or both — a neutral
+  // fact about the query, never a person's choice (design/system/pills-and-labels.md).
+  matchKind: 'information',
   tenantTag: 'information',
   source: 'information',
   waitingForApproval: 'warning',

@@ -88,7 +88,7 @@ test.describe('navigation on a phone, 375 × 812', () => {
     for (const [name, path, heading] of [
       ['Watch', '/watch', 'Watch'],
       ['Inventory', '/inventory', 'Inventory'],
-      ['Search', '/search', 'Not found'],
+      ['Search', '/search', 'Search and ask'],
     ] as const) {
       await mainNav(page).getByRole('link', { name, exact: true }).tap();
       await expect(page).toHaveURL(new RegExp(`${path}$`));

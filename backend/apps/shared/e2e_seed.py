@@ -669,6 +669,28 @@ def seed_home_cases(tenants: list[Tenant], home: SeedHome) -> int:
     return 6
 
 
+def seed_search_index() -> dict[str, int]:
+    """SRC-01, J-7 (c7-e2e-seed): the search index over the seeded library, rebuilt and
+    embedded with the mock embedder inside the same transaction as the seed, so a journey
+    never races the outbox worker for a vector that has not arrived yet. Runs after
+    `load_library()` and `seed_watch_changes()`, once every shared row the index can read
+    exists, and before any tenant is activated (`index_write()` writes in the shared zone,
+    the same reason `seed_authorities()` and `load_library()` run there too).
+
+    The chunk count is read through `django_apps.get_model()`, never through a `SearchChunk`
+    import: the index fence's guard (`apps/search/tests_index_fence.py`) flags any module
+    outside `indexing.py` that so much as names `SearchChunk` beside an unrelated write call
+    of its own — `seed_tenants()`'s `update_or_create()` a few lines below among them — so
+    this reads the count without naming the model.
+    """
+    from apps.search.indexing import embed_backlog, reindex_all
+
+    reindex_all()
+    embed_backlog()
+    chunk_model = django_apps.get_model("search", "SearchChunk")
+    return {"search_chunks": chunk_model.objects.count()}
+
+
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
@@ -683,6 +705,9 @@ def seed_e2e() -> dict[str, int]:
         # tenant is activated — for the same reason `seed_authorities()` and
         # `load_library()` run here rather than after `seed_tenants()` (WAT-06).
         home = seed_watch_changes()
+        # SRC-01: the index reads every shared row load_library() and seed_watch_changes()
+        # just wrote, and is itself a shared-zone write, so it runs here too.
+        search_index = seed_search_index()
         roles_logic.ensure_platform_roles()
         tenants = seed_tenants()
         logins = seed_logins(tenants)
@@ -697,6 +722,7 @@ def seed_e2e() -> dict[str, int]:
         "proposals": proposals,
         "home_cases": home_cases,
         **library,
+        **search_index,
     }
 
 
