@@ -129,10 +129,32 @@ class WatchBuilderTests(TestCase):
         """Nothing is derived from `now()`: two runs of the suite see the same dates."""
         row = watch_build.change_with_timeline()
         self.assertEqual(row.published_on, datetime.date(2026, 9, 15))
-        self.assertEqual(row.first_seen_at, watch_build.ANCHOR)
         self.assertEqual(
             [entry.event_date for entry in row.events.all()],
             [datetime.date(2026, 6, 1), datetime.date(2026, 10, 1)],
+        )
+
+    def test_a_sighting_time_belongs_to_its_key_and_never_follows_the_anchor(self) -> None:
+        """Two changes built in one test must not share a sighting time.
+
+        The feed orders by sighting time and then by id, and an id is a random uuid, so
+        changes sighted at the same instant landed on page one in a different order on
+        every machine — which is how a query-count test came to pass here and fail in CI
+        (2026-09-21). The time is derived from the stable key, so it is the same in every
+        run and different for different changes."""
+        first = watch_build.change(stable_key="chg-alpha")
+        second = watch_build.change(stable_key="chg-beta")
+        again = watch_build.change(stable_key="chg-alpha-again")
+        self.assertNotEqual(first.first_seen_at, second.first_seen_at)
+        self.assertEqual(first.first_seen_at, watch_build._sighted_at("chg-alpha"))
+        self.assertEqual(again.first_seen_at, watch_build._sighted_at("chg-alpha-again"))
+        for row in (first, second, again):
+            self.assertLessEqual(row.first_seen_at, watch_build.ANCHOR, "never later than the anchor")
+            self.assertGreater(row.first_seen_at, watch_build.ANCHOR - datetime.timedelta(hours=1))
+        self.assertEqual(
+            watch_build.change(stable_key="chg-named", first_seen_at=watch_build.ANCHOR).first_seen_at,
+            watch_build.ANCHOR,
+            "a fixture that needs a particular order still names its own time",
         )
 
     def test_a_change_with_a_timeline_carries_its_pages_terms_and_flags(self) -> None:
