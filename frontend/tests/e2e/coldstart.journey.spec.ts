@@ -161,7 +161,7 @@ test.describe('cold start', () => {
     await approver.locator('[data-pending-request]').getByRole('button', { name: 'Approve' }).click();
     await approver.getByRole('dialog', { name: /^Approve ".+"\?$/ }).getByRole('button', { name: 'Approve with passkey' }).click();
     const prompt = approver.getByRole('dialog', { name: 'Confirm with your passkey' });
-    const approved = approver.getByText('Approved. The footprint has changed.');
+    const approved = approver.getByText('Approved. The regulatory scope has changed.');
     await expect(prompt.or(approved).first()).toBeVisible();
     if (await prompt.isVisible()) await prompt.getByRole('button', { name: 'Use passkey' }).click();
     await expect(approved).toBeVisible();
