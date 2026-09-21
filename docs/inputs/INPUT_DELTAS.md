@@ -831,3 +831,20 @@ All three tables carry `tenant_id` under enabled and forced row-level security w
 three reforms for another, because the footprint and the cases behind it are that bank's
 own. `apps/shared/tests_rls.py` names them in its tenant-only list.
 
+
+## 10. A source check says what kind of check it was (2026-09-21)
+
+`POST /agent-runs/{runId}/source-checks` is designed to carry `sourceName`, `status`,
+`checkedAt`, `itemsFound` and `error`. The build adds three fields: `kind`, and the pair
+`subjectType` and `subjectId`.
+
+A sweep of a source and a re-check of one record are both checks, and the route validates
+the pairing between them — a sweep names a source and no subject, a re-check names the
+record it re-read. Without `kind` a re-check cannot be sent at all, and the rule the route
+exists to enforce (a re-check never freshens a source's coverage, because asking the same
+page again is not the same as the page having been read) has nothing to read. The fields
+are additive: a caller that sends only the designed five is a sweep, exactly as before.
+
+Reported rather than decided quietly: the task that found it judged an additive field the
+brief itself names too small to stop on, and said so in its commit body. Recorded here so
+the drift gate and the next reader agree.
