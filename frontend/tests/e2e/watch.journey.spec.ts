@@ -204,3 +204,46 @@ test.describe('the watch feed', () => {
     // above do; the row itself is pinned by WatchFeedScreen.test.tsx.
   });
 });
+
+// ---------------------------------------------------------------------------
+// The change page (chunk 5, /watch/[changeId]). What can be driven against the
+// real stack today is the address itself and the read behind it: the seed has
+// no watch rows, so there is no change to open. `c5-seed-watch` adds them.
+// ---------------------------------------------------------------------------
+
+test.describe('the change page', () => {
+  test('an address with no change behind it says so, and offers the way back', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    // The read really answers 404: a change nobody registered and a change
+    // another bank owns are the same answer, so no id can be probed for.
+    apiGuard.allow(/\/api\/v1\/changes\//, 404, 'no change has this id, which is what this journey drives');
+    await signInAs(page, LOGINS.complianceOfficer);
+
+    await page.goto('/watch/00000000-0000-4000-8000-000000000000');
+    await expect(page.getByRole('heading', { level: 1, name: 'Not found' })).toBeVisible();
+    await expect(page.getByText('There is nothing at this address in your organisation.')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Back to Watch' }).click();
+    await expect(page).toHaveURL(/\/watch$/);
+    await expect(page.locator('[data-change-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+  });
+
+  test.fixme('a change page carries its header, timeline, documents and obligations', async () => {
+    // pending: the seed has no watch rows, so there is no change to open.
+    // `c5-seed-watch` adds the sources, runs, changes and cases every chunk 5
+    // journey rests on; `c5-e2e-watch-journeys-a` and `-b` own WAT-S2, WAT-S4
+    // and WAT-S6, the scenarios this page serves. The panels, the partial
+    // dates, the screening warning and the link confidences are pinned by
+    // ChangeScreen.test.tsx until then.
+  });
+
+  test.fixme('the So what reads as a draft until this bank confirms it', async () => {
+    // pending: the seed has no cases, so there is no drafted "So what?" to
+    // open. `c5-seed-watch` seeds one confirmed and one unconfirmed, and
+    // `c5-e2e-watch-journeys-b` owns WAT-S7 itself. The draft label, the
+    // agent that wrote it and the confirmed state are pinned by
+    // SoWhatPanel.test.tsx until then. The panel carries no confirm or
+    // rewrite control: who may confirm a drafted fact is open for the owner,
+    // and `PUT /changes/{changeId}/so-what` still answers 501 not_built.
+  });
+});

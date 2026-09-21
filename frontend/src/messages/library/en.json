@@ -19,5 +19,10 @@
   "version.inForceUntil": "In force until {to}",
   "version.inForceRange": "In force {from} to {to}",
   "legal.sectionSign": "§",
-  "legal.machineTranslation": "Machine translation from {language}. The original is authoritative."
+  "legal.machineTranslation": "Machine translation from {language}. The original is authoritative.",
+  "library.relatedChanges.title": "Related changes",
+  "library.relatedChanges.openCount": "{count, plural, one {# open change} other {# open changes}}",
+  "library.relatedChanges.emptyTitle": "No change affects this obligation",
+  "library.relatedChanges.emptyBody": "A change appears here once an agent links it to this duty.",
+  "library.relatedChanges.errorTitle": "Could not load the related changes"
 }

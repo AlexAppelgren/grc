@@ -53,7 +53,7 @@
   "watch.change.foundBy": "Found by {agent}, {date}",
   "watch.change.whatHappened": "What happened",
   "watch.change.classification": "Classification",
-  "watch.change.classificationHint": "Triage confirms it for us; a library editor confirms it for everyone. If a type or flag is wrong, report it.",
+  "watch.change.classificationHint": "Triage confirms it for us; a library editor confirms it for everyone.",
   "watch.change.suggested": "suggested",
   "watch.change.changeType": "Change type",
   "watch.change.urgency": "Urgency",
@@ -115,5 +115,14 @@
   "watch.coverage.cadence.weekly": "Checked weekly",
   "watch.coverage.cadence.monthly": "Checked monthly",
   "watch.coverage.lastChecked": "Last checked {date}",
-  "watch.coverage.neverChecked": "No check logged yet"
+  "watch.coverage.neverChecked": "No check logged yet",
+  "watch.change.registered": "Registered",
+  "watch.change.linkConfirmed": "Confirmed by a library editor",
+  "watch.change.noObligations": "No obligation is linked yet",
+  "watch.change.noTimeline": "No dates yet",
+  "watch.change.noDocuments": "No source page yet",
+  "watch.change.screened": "Flagged when screened. Open the publisher’s page with care.",
+  "watch.soWhat.draftedBy": "Drafted by {agent}, which read this change",
+  "watch.soWhat.draftedByAgent": "Drafted by the agent that read this change",
+  "watch.soWhat.confirmedAt": "Confirmed {date}"
 }

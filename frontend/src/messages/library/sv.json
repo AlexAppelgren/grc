@@ -19,5 +19,10 @@
   "version.inForceUntil": "I kraft till och med {to}",
   "version.inForceRange": "I kraft {from} till {to}",
   "legal.sectionSign": "§",
-  "legal.machineTranslation": "Maskinöversättning från {language}. Originalet gäller."
+  "legal.machineTranslation": "Maskinöversättning från {language}. Originalet gäller.",
+  "library.relatedChanges.title": "Relaterade ändringar",
+  "library.relatedChanges.openCount": "{count, plural, one {# öppen ändring} other {# öppna ändringar}}",
+  "library.relatedChanges.emptyTitle": "Ingen ändring berör den här skyldigheten",
+  "library.relatedChanges.emptyBody": "En ändring visas här när en agent kopplar den till skyldigheten.",
+  "library.relatedChanges.errorTitle": "Kunde inte hämta de relaterade ändringarna"
 }

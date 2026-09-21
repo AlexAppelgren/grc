@@ -53,7 +53,7 @@
   "watch.change.foundBy": "Hittad av {agent}, {date}",
   "watch.change.whatHappened": "Vad som hände",
   "watch.change.classification": "Klassificering",
-  "watch.change.classificationHint": "Triagen bekräftar den för oss; en biblioteksredaktör bekräftar den för alla. Rapportera om en typ eller flagga är fel.",
+  "watch.change.classificationHint": "Triagen bekräftar den för oss; en biblioteksredaktör bekräftar den för alla.",
   "watch.change.suggested": "föreslagen",
   "watch.change.changeType": "Ändringstyp",
   "watch.change.urgency": "Brådska",
@@ -115,5 +115,14 @@
   "watch.coverage.cadence.weekly": "Kontrolleras varje vecka",
   "watch.coverage.cadence.monthly": "Kontrolleras varje månad",
   "watch.coverage.lastChecked": "Senast kontrollerad {date}",
-  "watch.coverage.neverChecked": "Ingen kontroll loggad ännu"
+  "watch.coverage.neverChecked": "Ingen kontroll loggad ännu",
+  "watch.change.registered": "Registrerad",
+  "watch.change.linkConfirmed": "Bekräftad av en biblioteksredaktör",
+  "watch.change.noObligations": "Ingen skyldighet är kopplad ännu",
+  "watch.change.noTimeline": "Inga datum ännu",
+  "watch.change.noDocuments": "Ingen källsida ännu",
+  "watch.change.screened": "Flaggad vid granskningen. Öppna utgivarens sida med försiktighet.",
+  "watch.soWhat.draftedBy": "Utkast av {agent}, som läste ändringen",
+  "watch.soWhat.draftedByAgent": "Utkast av agenten som läste ändringen",
+  "watch.soWhat.confirmedAt": "Bekräftad {date}"
 }
