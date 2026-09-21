@@ -17,14 +17,18 @@ out a journey. Fixed ids keep audit rows and URLs stable across reseeds."""
 from __future__ import annotations
 
 import datetime
+from typing import Any
 import uuid
 from dataclasses import dataclass
+from zoneinfo import ZoneInfo
 
 from django.apps import apps as django_apps
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 
+from apps.cases.models import ChangeCase
+from apps.home import tasks as home_tasks
 from apps.identity import invitation_logic, roles_logic, tokens
 from apps.identity.models import (
     Invitation,
@@ -48,6 +52,9 @@ from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
+from apps.taxonomy.models import CaseStatusCategory
+from apps.watch import e2e_seed as watch_e2e_seed
+from apps.watch.models import CheckStatus
 from apps.shared.models import Tenant
 from apps.taxonomy import footprint_logic, terms_logic
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintTerm
@@ -162,6 +169,32 @@ EXPECTED_LIBRARY = SeedLibrary(
     research_obligation=RESEARCH_OBLIGATION,
     advice_only_obligation="obl-suitability-statement",
     anchor_date=datetime.date(2026, 9, 16),
+)
+
+
+@dataclass(frozen=True)
+class SeedHome:
+    """Chunk 6's own dates (c6-e2e-seed, HOM-01, HOM-03, ruling 17): the natural keys
+    `home.journey.spec.ts` and the seed-integrity guard read back by, so a change to this
+    seed cannot quietly hollow out HOM-S1 to HOM-S6 without failing there."""
+
+    lead_change: str
+    later_change: str
+    outside_scope_change: str
+    last_week_change: str
+    failed_source: str
+    healthy_source: str
+
+
+EXPECTED_HOME = SeedHome(
+    lead_change="chg-e2e-research-payments",
+    later_change="chg-e2e-sft-reporting",
+    outside_scope_change="chg-e2e-outside-scope",
+    last_week_change="chg-e2e-ai-mapping",
+    healthy_source="fi.se sweep (E2E)",
+    # The design card's own example (design/screens/tenant-today.html): "EBA news feed
+    # failed 18 Sep."
+    failed_source="EBA news feed (E2E)",
 )
 
 
@@ -460,6 +493,182 @@ def seed_proposals() -> int:
     return 2
 
 
+def _quarter_safe_offsets() -> tuple[int, int]:
+    """Two day-offsets from "today" that always land in two different quarters, whatever
+    the real calendar day this seed runs on (HOM-S4, HOM-S6). A quarter is 90 to 92 days
+    long, so moving forward by more than the longest quarter always crosses at least one
+    quarter boundary: the near date (`+20` days) is always "this side" of it and the far
+    date (`+120` days, 100 days later) is always on the other side, never the same
+    quarter — proved for four anchors a quarter apart in `tests_seed_integrity.py`."""
+    return 20, 120
+
+
+def seed_watch_changes() -> SeedHome:
+    """The library-zone rows chunk 6's screens read (c6-e2e-seed, HOM-01, HOM-03, HOM-S1,
+    HOM-S2, HOM-S4, HOM-S6): two sources with their coverage (one healthy, one failed) and
+    four regulatory changes. Runs before `seed_tenants()`, while no tenant is active yet,
+    because `source` is written with no tenant activated (WAT-06) — the same reason
+    `seed_authorities()` and `load_library()` run there too.
+
+    Anchored to the tenant-local date (`Europe/Stockholm`, `TENANT_A.timezone`) plus fixed
+    day offsets, never to a literal date or `date.today()`: `_quarter_safe_offsets()` keeps
+    the near and far dates in two different quarters whatever day this runs on, and every
+    date below is that anchor plus a fixed number of days, so a quarter boundary never
+    changes what a journey sees (CLAUDE.md §11, chunk 6 plan rule 10).
+    """
+    healthy = watch_e2e_seed.seed_source(name=EXPECTED_HOME.healthy_source)
+    watch_e2e_seed.seed_source_check(healthy, status=CheckStatus.OK)
+    failed = watch_e2e_seed.seed_source(name=EXPECTED_HOME.failed_source)
+    watch_e2e_seed.seed_source_check(failed, status=CheckStatus.FAILED, error="502 from the publisher after three retries")
+
+    today = datetime.datetime.now(ZoneInfo(TENANT_A.timezone)).date()
+    near, far = _quarter_safe_offsets()
+    watch_e2e_seed.seed_change(
+        stable_key=EXPECTED_HOME.lead_change,
+        title="FI adopts amended rules on paying for investment research",
+        key_date=today + datetime.timedelta(days=near),
+        key_date_label="In force",
+        urgency="act_now",
+        first_seen_at=timezone_now_this_week(TENANT_A.timezone),
+        so_what_draft="Confirm the annual assessment criteria before the rules take effect.",
+    )
+    watch_e2e_seed.seed_change(
+        stable_key=EXPECTED_HOME.later_change,
+        title="Amended reporting of securities financing transactions",
+        key_date=today + datetime.timedelta(days=far),
+        key_date_label="Applies",
+        urgency="six_months_plus",
+        first_seen_at=timezone_now_this_week(TENANT_A.timezone),
+    )
+    watch_e2e_seed.seed_change(
+        stable_key=EXPECTED_HOME.outside_scope_change,
+        title="Insurance distribution guidance outside our scope",
+        key_date=today + datetime.timedelta(days=near + 5),
+        key_date_label="Applies",
+        urgency="within_3_months",
+        first_seen_at=timezone_now_this_week(TENANT_A.timezone),
+    )
+    watch_e2e_seed.seed_change(
+        stable_key=EXPECTED_HOME.last_week_change,
+        title="FI starts mapping how financial firms use AI",
+        key_date=today + datetime.timedelta(days=far + 30),
+        key_date_label="Consultation",
+        urgency="monitor",
+        first_seen_at=timezone_now_last_week(TENANT_A.timezone),
+        so_what_draft="No obligation changes yet. Keep the AI tooling register current.",
+    )
+    return EXPECTED_HOME
+
+
+def timezone_now_this_week(tz: str) -> datetime.datetime:
+    """A moment safely inside the bank's current ISO week (Tuesday, mid-morning, its own
+    zone), for a change that should lead the running week's briefing (HOM-S1, HOM-S3)."""
+    today = datetime.datetime.now(ZoneInfo(tz))
+    monday = today - datetime.timedelta(days=today.weekday())
+    return monday.replace(hour=9, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
+
+
+def timezone_now_last_week(tz: str) -> datetime.datetime:
+    """The same moment, one ISO week earlier, for the change the seeded briefing snapshot
+    already carries (HOM-S3, ruling 17)."""
+    return timezone_now_this_week(tz) - datetime.timedelta(days=7)
+
+
+def _seed_case(
+    tenant: Tenant,
+    change: Any,
+    *,
+    urgency: str,
+    footprint_match: bool,
+    so_what_confirmed_by: User | None = None,
+) -> ChangeCase:
+    """One bank's case for one seeded change, idempotent on `UNIQUE (tenant, change)`
+    exactly as a registered change's own fan-out would create it (`apps/cases/creation.py`),
+    with the one audit row AUD-01 asks of every write. `so_what_confirmed_by` given names
+    who confirmed the wording (the check constraint demands a person, never a bare flag);
+    left out, the case keeps the library's draft, unconfirmed, exactly as creation leaves
+    one (WAT-05)."""
+    tenancy.activate(tenant.id)
+    existed = ChangeCase.objects.filter(tenant=tenant, change=change).exists()
+    case, _ = ChangeCase.objects.update_or_create(
+        tenant=tenant,
+        change=change,
+        defaults={
+            "status": CaseStatusCategory.NEW.value,
+            "urgency": django_apps.get_model("taxonomy", "Urgency").objects.get(key=urgency),
+            "footprint_match": footprint_match,
+            "so_what_text": change.so_what_draft,
+            "so_what_confirmed": so_what_confirmed_by is not None,
+            "so_what_confirmed_by": so_what_confirmed_by,
+            "so_what_confirmed_at": timezone_now_this_week(TENANT_A.timezone) if so_what_confirmed_by is not None else None,
+        },
+    )
+    if not existed:
+        record(
+            action="case.created",
+            actor=SEED_ACTOR,
+            subject_type="change_case",
+            subject_id=case.id,
+            subject_title=change.title,
+            summary="Seeded for E2E journeys.",
+            tenant_id=tenant.id,
+            after={"status": case.status, "footprintMatch": footprint_match},
+        )
+    return case
+
+
+def seed_home_cases(tenants: list[Tenant], home: SeedHome) -> int:
+    """This bank's own work on chunk 6's seeded changes (c6-e2e-seed, HOM-01, HOM-03),
+    plus last week's briefing, sent and snapshotted once so `c6-briefing-screen`'s journey
+    can open a past week without waiting for the beat (ruling 17). Runs after `seed_tenants()`
+    and `seed_footprints()`, because a case is a tenant row under row-level security."""
+    tenant_a = next(t for t in tenants if t.slug == TENANT_A_SLUG)
+    tenant_b = next(t for t in tenants if t.slug == TENANT_B_SLUG)
+    by_key = {row.stable_key: row for row in django_apps.get_model("watch", "RegulatoryChange").objects.filter(
+        stable_key__in=[home.lead_change, home.later_change, home.outside_scope_change, home.last_week_change]
+    )}
+    # A person's own words, not the library draft: the compliance officer of tenant A
+    # confirmed these, which is what lets the lead card and the briefing show a "So what?"
+    # with no AI label (WAT-05).
+    officer = User.objects.get(email="compliance_officer@example-bank.test")
+
+    _seed_case(tenant_a, by_key[home.lead_change], urgency="act_now", footprint_match=True, so_what_confirmed_by=officer)
+    _seed_case(tenant_a, by_key[home.later_change], urgency="six_months_plus", footprint_match=True)
+    # Outside the bank's regulatory scope (HOM-S4, FP-S4): a case FP-03's own matching
+    # would have computed false too, set directly here as the backend's own HOM-S4 test
+    # does, so this seed needs no extra scope terms to prove the same absence.
+    _seed_case(tenant_a, by_key[home.outside_scope_change], urgency="within_3_months", footprint_match=False)
+    _seed_case(tenant_a, by_key[home.last_week_change], urgency="monitor", footprint_match=True, so_what_confirmed_by=officer)
+
+    # Last week's briefing: sent for real, from the real production job, so the snapshot
+    # it writes is exactly what a bank was mailed (c6-briefing-screen, HOM-S3).
+    home_tasks.send_weekly_briefing(tenant_a.id)
+
+    # Tenant B's own two dates (J-8): different keys, different titles, so an isolation
+    # journey has something of tenant B's that must never reach tenant A's screens.
+    today_b = datetime.datetime.now(ZoneInfo(TENANT_B.timezone)).date()
+    near, far = _quarter_safe_offsets()
+    change_b1 = watch_e2e_seed.seed_change(
+        stable_key="chg-e2e-tenant-b-1",
+        title="Finanstilsynet consults on AML reporting thresholds",
+        key_date=today_b + datetime.timedelta(days=near + 3),
+        key_date_label="Consultation closes",
+        urgency="within_3_months",
+        first_seen_at=timezone_now_this_week(TENANT_B.timezone),
+    )
+    change_b2 = watch_e2e_seed.seed_change(
+        stable_key="chg-e2e-tenant-b-2",
+        title="Second Bank A/S's own reform, seeded for isolation",
+        key_date=today_b + datetime.timedelta(days=far + 3),
+        key_date_label="Applies",
+        urgency="six_months_plus",
+        first_seen_at=timezone_now_this_week(TENANT_B.timezone),
+    )
+    _seed_case(tenant_b, change_b1, urgency="within_3_months", footprint_match=True)
+    _seed_case(tenant_b, change_b2, urgency="six_months_plus", footprint_match=True)
+    return 6
+
+
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
@@ -470,13 +679,25 @@ def seed_e2e() -> dict[str, int]:
         seed_taxonomy_terms()
         seed_authorities()
         library = load_library()
+        # Chunk 6's sources and changes: library-zone rows, written here — before any
+        # tenant is activated — for the same reason `seed_authorities()` and
+        # `load_library()` run here rather than after `seed_tenants()` (WAT-06).
+        home = seed_watch_changes()
         roles_logic.ensure_platform_roles()
         tenants = seed_tenants()
         logins = seed_logins(tenants)
         footprint_terms = seed_footprints(tenants)
         seed_pending_footprint_request(tenants)
         proposals = seed_proposals()
-    return {"tenants": len(tenants), "logins": logins, "footprint_terms": footprint_terms, "proposals": proposals, **library}
+        home_cases = seed_home_cases(tenants, home)
+    return {
+        "tenants": len(tenants),
+        "logins": logins,
+        "footprint_terms": footprint_terms,
+        "proposals": proposals,
+        "home_cases": home_cases,
+        **library,
+    }
 
 
 def anna_invitation() -> Invitation | None:

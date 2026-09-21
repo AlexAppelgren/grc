@@ -43,6 +43,8 @@ vi.mock('next/link', () => ({
 
 const ME_PATH = '/api/v1/me';
 const VOCAB_PATH = '/api/v1/vocab';
+const HOME_PATH = '/api/v1/home';
+const EMPTY_HOME = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
 /** What the library editor holds (PRD section 6). */
 const EDITOR_PERMISSIONS = ['proposals.review', 'library_vocab.manage', 'sources.manage', 'eval.manage'];
 /** What every tenant system role holds, plus an admin's grants. */
@@ -57,6 +59,8 @@ const editor: Me = {
   enrolmentPending: false,
   passkeyCount: 1,
   stepUpValidUntil: null,
+  counts: null,
+  lastVisitAt: null,
 };
 
 const member: Me = {
@@ -231,7 +235,7 @@ describe('the surface follows the principal', () => {
 
   it('shows a tenant member Today at / and sends them nowhere', async () => {
     nav.pathname = '/';
-    server(member);
+    server(member, (sent) => (sent.path === HOME_PATH ? { status: 200, data: EMPTY_HOME } : undefined));
     renderIn(
       <TenantLayout>
         <TodayPage />

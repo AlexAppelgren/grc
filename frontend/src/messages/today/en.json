@@ -2,5 +2,19 @@
   "today.title": "What is coming, and where we stand",
   "today.empty.title": "Nothing to show yet",
   "today.empty.body": "Upcoming dates and the weekly briefing appear here once your footprint is set and the first sources have been checked.",
-  "today.empty.action": "Set the footprint under Admin"
+  "today.empty.action": "Set the footprint under Admin",
+  "today.errorTitle": "Could not load Today",
+  "today.comingUp.title": "Coming up",
+  "today.comingUp.empty": "Nothing dated ahead inside your regulatory scope.",
+  "today.comingUp.roadmapLink": "Open the roadmap",
+  "today.comingUp.count": "{count, plural, one {# dated item ahead} other {# dated items ahead}}",
+  "today.lead.moreThisWeek": "{count, plural, one {# more item this week} other {# more items this week}}",
+  "today.lead.readBriefing": "Read the briefing",
+  "today.decideNow.title": "Decide now",
+  "today.decideNow.triage": "{count, plural, one {# change needs triage.} other {# changes need triage.}}",
+  "today.decideNow.assignedToMe": "{count, plural, one {# case assigned to you.} other {# cases assigned to you.}}",
+  "today.decideNow.proposals": "{count, plural, one {# of your proposals pending review.} other {# of your proposals pending review.}}",
+  "today.sources.summary": "Sources: {checked} of {total} checked.",
+  "today.sources.failed": "{name} failed.",
+  "today.sources.coverageLink": "See coverage log"
 }

@@ -179,6 +179,16 @@ class IdentityLookupMode(TestCase):
             "apps/shared/audit.py",
             "apps/identity/security_log.py",
             "apps/search/indexing.py",
+            # The watch door's own generic upsert (c6-e2e-seed): `source` is the one watch
+            # table with a zone column (WAT-06), and `write.upsert()` must not depend on
+            # whichever tenant a shared connection happens to have active.
+            "apps/watch/write.py",
+            # The E2E seed writes both zones on purpose: it creates the banks, activates
+            # each to write its own rows, and must stand outside all of them again to file
+            # a library proposal as an agent would (PRO-03). It is not production code —
+            # `manage.py seed_e2e` refuses to run on a deployed environment — and a seed
+            # that could not leave a bank's zone could not seed the shared library at all.
+            "apps/shared/e2e_seed.py",
         }
         offenders = [
             caller

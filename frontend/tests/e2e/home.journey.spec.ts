@@ -1,33 +1,173 @@
-import { test } from './support/api-guard';
+import { expect, test } from './support/api-guard';
+import { LOGINS, allowFreshContext, signInAs } from './support/passkeys';
 
 // home: the @e2e scenarios from backend/apps/home/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
 // the title is what scripts/requirements_coverage.py looks for. Never delete a
 // stub: un-fixme it when the journey is real.
 
+// c6-e2e-seed anchors its dates to the tenant-local today (Europe/Stockholm)
+// plus fixed day offsets, never a literal date (CLAUDE.md §11): the "near"
+// item (the lead) is +20 days and the "far" one (the later date) is +120.
+// This journey derives the same days the same way, so it passes whatever
+// real day it runs on.
+function seededDay(offsetDays: number): Date {
+  const todayInStockholm = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const [year, month, day] = todayInStockholm.split('-').map(Number);
+  return new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, (day ?? 1) + offsetDays));
+}
+
+/** As the screen's own `formatDate` renders a plain date: "D MMM YYYY", UTC. */
+function seededDateText(offsetDays: number): string {
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(seededDay(offsetDays));
+}
+
+/** As the roadmap's own `quarter_of()` computes it: "Qn YYYY". */
+function seededQuarterText(offsetDays: number): string {
+  const day = seededDay(offsetDays);
+  return `Q${Math.floor(day.getUTCMonth() / 3) + 1} ${day.getUTCFullYear()}`;
+}
+
+const NEAR_OFFSET = 20;
+const FAR_OFFSET = 120;
+
 test.describe('home journeys', () => {
-  test.fixme("HOM-S1: Today shows the next dates, the lead item, decisions, standing and source health", async () => {
-    // pending: HOM-S1 (HOM-01)
+  test("HOM-S1: Today shows the next dates, the lead item, what needs a decision and source health", async ({ page, apiGuard }) => {
+    // The reworded scenario (chunk 6 ruling 2): standing is chunk 8's, so it is
+    // not asserted here. "A reader without watch.read gets no lead and no
+    // source panel" is proved at the backend (apps/home/tests_home.py): every
+    // seeded system role holds watch.read, so no E2E login can drive that step.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+
+    await expect(page.getByRole('heading', { level: 1, name: 'What is coming, and where we stand' })).toBeVisible();
+
+    // Three roadmap-eligible cases: the lead, the later date and last week's
+    // already-briefed change (all footprint_match=true); the out-of-scope
+    // case is the one excluded (HOM-S4's own case, seeded beside this one).
+    const comingUp = page.locator('[data-coming-up]');
+    const items = comingUp.locator('[data-roadmap-item]');
+    await expect(items).toHaveCount(3);
+    await expect(items.nth(0)).toContainText('FI adopts amended rules on paying for investment research');
+    await expect(items.nth(1)).toContainText('Amended reporting of securities financing transactions');
+    await expect(comingUp.getByText('Insurance distribution guidance outside our scope')).toHaveCount(0);
+    await expect(comingUp.getByText('3 dated items ahead')).toBeVisible();
+
+    const lead = page.locator('[data-lead-card]');
+    await expect(lead.getByText('Lead', { exact: true })).toBeVisible();
+    await expect(lead.getByRole('heading', { name: 'FI adopts amended rules on paying for investment research' })).toBeVisible();
+    await expect(lead.getByText('Confirm the annual assessment criteria before the rules take effect.')).toBeVisible();
+    // Seeded with a confirmed "So what?" (c6-e2e-seed): no AI-draft label.
+    await expect(lead.getByText('Drafted by AI, not yet confirmed by a person')).toHaveCount(0);
+
+    // Every case the seed writes starts in `new` (needs triage): the lead, the
+    // later date, the out-of-scope case and last week's already-briefed one.
+    const decide = page.locator('[data-decide-now]');
+    await expect(decide.getByText('4 changes need triage.')).toBeVisible();
+    await expect(decide.getByText(/proposal.*pending review/)).toBeVisible();
+
+    const sources = page.locator('[data-source-health]');
+    await expect(sources).toContainText('Sources: 1 of 2 checked.');
+    await expect(sources).toContainText('EBA news feed (E2E) failed.');
   });
 
-  test.fixme("HOM-S2: The same short list appears on a phone", async () => {
-    // pending: HOM-S2 (HOM-01)
+  test('HOM-S2: The same short list appears on a phone', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    const idsAt = async (width: number, height: number): Promise<(string | null)[]> => {
+      await page.setViewportSize({ width, height });
+      await page.reload();
+      await expect(page.locator('[data-coming-up]')).toBeVisible();
+      return page.locator('[data-coming-up] [data-roadmap-item]').evaluateAll((rows) => rows.map((row) => row.getAttribute('data-roadmap-item')));
+    };
+
+    const desktop = await idsAt(1280, 900);
+    const phone = await idsAt(375, 812);
+
+    expect(phone.length).toBeGreaterThan(0);
+    expect(phone).toEqual(desktop);
+
+    // Two action buttons share one row on a phone, the primary on the right
+    // (playbook 6.8): the "Open the roadmap" link is Coming up's only action here.
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
-  test.fixme("HOM-S3: The weekly briefing is reachable from home and snapshotted when emailed", async () => {
-    // pending: HOM-S3 (HOM-02)
+  test('HOM-S3: The weekly briefing is reachable from home and snapshotted when emailed', async ({ page, apiGuard }) => {
+    // The weekly job already ran for last week when the seed was written
+    // (c6-e2e-seed, ruling 17: it calls the real production task), so this
+    // journey opens a snapshot without waiting for the beat. "A later change
+    // does not alter the snapshot" is proved at the backend
+    // (apps/home/tests_scenarios.py::test_hom_s3), which an E2E journey has
+    // no way to drive: nothing here can register a new change mid-run.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+
+    const lead = page.locator('[data-lead-card]');
+    await expect(lead.getByRole('link', { name: 'Read the briefing' })).toBeVisible();
+    await expect(lead.getByText('1 more item this week')).toBeVisible();
+    await lead.getByRole('link', { name: 'Read the briefing' }).click();
+
+    await expect(page).toHaveURL(/\/briefing$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'This week in brief' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'FI adopts amended rules on paying for investment research' })).toBeVisible();
+    // Last week's change is not this running week's: it is absent from the
+    // lead and from "Also this week", even though it may still be dated
+    // ahead on "Coming up" (the same roadmap every week shares).
+    await expect(page.locator('[data-lead-card]').getByText('FI starts mapping how financial firms use AI')).toHaveCount(0);
+    await expect(page.locator('[data-also-this-week]').getByText('FI starts mapping how financial firms use AI')).toHaveCount(0);
+    await expect(page.getByText(/^Sent /)).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Previous week' }).click();
+    await expect(page).toHaveURL(/\/briefing\/\d{4}-\d{2}-\d{2}$/);
+    await expect(page.getByText(/^Sent /)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'FI starts mapping how financial firms use AI' })).toBeVisible();
+
+    await page.getByRole('link', { name: 'See this week' }).click();
+    await expect(page).toHaveURL(/\/briefing$/);
   });
 
-  test.fixme("HOM-S4: The roadmap shows quarters with regulatory dates and our own deadlines", async () => {
-    // pending: HOM-S4 (HOM-03)
+  test('HOM-S4: The roadmap shows the quarters ahead with their regulatory dates', async ({ page, apiGuard }) => {
+    // Reworded (chunk 6 ruling 3): the internal branches ("Our deadline") have
+    // no R1 producer, so only the regulatory branch is proved here.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto('/roadmap');
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Roadmap' })).toBeVisible();
+    const roster = page.locator('[data-roadmap-roster]');
+    await expect(roster.getByText(seededQuarterText(NEAR_OFFSET))).toBeVisible();
+    await expect(roster.getByText(seededQuarterText(FAR_OFFSET))).toBeVisible();
+    await expect(roster.getByText('FI adopts amended rules on paying for investment research')).toBeVisible();
+    await expect(roster.getByText('Amended reporting of securities financing transactions')).toBeVisible();
+    // Outside the regulatory scope: absent from the roadmap entirely.
+    await expect(page.getByText('Insurance distribution guidance outside our scope')).toHaveCount(0);
+
+    // Tapping a card expands it in place, without navigating.
+    await page.getByRole('button', { name: /FI adopts amended rules/ }).click();
+    await expect(page).toHaveURL(/\/roadmap$/);
+    const detail = page.locator('[data-roadmap-detail]');
+    await expect(detail.getByRole('heading', { name: 'FI adopts amended rules on paying for investment research' })).toBeVisible();
+
+    await detail.getByRole('link', { name: 'Open change' }).click();
+    await expect(page).toHaveURL(/\/watch\//);
   });
 
   test.fixme("HOM-S5: Upcoming changes are public facts and the calendar feed is revocable", async () => {
-    // pending: HOM-S5 (HOM-04)
+    // pending: HOM-S5 (HOM-04). The calendar feed's contract is being
+    // corrected to a query-token form (q-feed-token); c6-calendar-feeds-screen
+    // builds this journey once it lands.
   });
 
-  test.fixme("HOM-S6: A roadmap item's pill is the urgency or \"Our deadline\"", async () => {
-    // pending: HOM-S6 (HOM-03)
+  test('HOM-S6: A regulatory date on the roadmap wears its urgency as a pill', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto('/roadmap');
+
+    await page.getByRole('button', { name: /Amended reporting of securities financing transactions/ }).click();
+    const detail = page.locator('[data-roadmap-detail]');
+    await expect(detail.getByText('6+ months', { exact: true })).toBeVisible();
+    // The date and the days left follow the pill as plain text, not a second pill.
+    await expect(detail).toContainText(seededDateText(FAR_OFFSET));
   });
 });
 

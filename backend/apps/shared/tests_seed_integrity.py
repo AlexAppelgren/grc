@@ -17,11 +17,15 @@ the test named the tenant and the property.
 
 from __future__ import annotations
 
+import datetime
 from io import StringIO
 
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 
+from apps.cases.models import ChangeCase
+from apps.home.models import Briefing, BriefingItem
+from apps.home.roadmap import quarter_of
 from apps.identity import tokens
 from apps.identity.models import Invitation, Membership, PlatformRoleAssignment, User, UserStatus, WebAuthnCredential
 from apps.shared import tenancy
@@ -35,8 +39,18 @@ from apps.shared.e2e_logins import (
 )
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
 from apps.library.models import Instrument, Obligation, ObligationVersion, Verification
-from apps.shared.e2e_seed import EXPECTED_FOOTPRINTS, EXPECTED_LIBRARY, EXPECTED_PENDING_REQUEST, EXPECTED_TENANTS, SeedRefused, seed_e2e
+from apps.shared.e2e_seed import (
+    EXPECTED_FOOTPRINTS,
+    EXPECTED_HOME,
+    EXPECTED_LIBRARY,
+    EXPECTED_PENDING_REQUEST,
+    EXPECTED_TENANTS,
+    SeedRefused,
+    _quarter_safe_offsets,
+    seed_e2e,
+)
 from apps.shared.models import AuditEvent, Tenant
+from apps.watch.models import CheckStatus, RegulatoryChange, SourceCheck
 from apps.taxonomy.matching import footprint_of, in_footprint, restricting_dimensions
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm
 from apps.taxonomy.registry import REGISTRY
@@ -283,3 +297,71 @@ class SeedIntegrityGuard(TestCase):
         with self.assertRaises(SeedRefused):
             seed_e2e()
         self.assertEqual(Tenant.objects.count(), 0)
+
+    def test_chunk_6_seeds_the_lead_case_the_out_of_scope_case_and_the_failed_source_check(self) -> None:
+        """c6-e2e-seed (HOM-01, HOM-03): named here so a later change to the seed cannot
+        quietly hollow HOM-S1, HOM-S2, HOM-S4 and HOM-S6 out without failing this guard."""
+        seed_e2e()
+        tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant.id)
+
+        lead = ChangeCase.objects.select_related("change").get(change__stable_key=EXPECTED_HOME.lead_change)
+        self.assertTrue(lead.footprint_match)
+        self.assertTrue(lead.so_what_confirmed, "the lead card and the briefing need a person's own words, not an AI draft")
+
+        outside = ChangeCase.objects.get(change__stable_key=EXPECTED_HOME.outside_scope_change)
+        self.assertFalse(outside.footprint_match, "the roadmap and Today's 'Coming up' must have something that must not appear")
+
+        failed = SourceCheck.objects.select_related("source").get(source__name=EXPECTED_HOME.failed_source)
+        self.assertEqual(failed.status, CheckStatus.FAILED.value)
+        healthy = SourceCheck.objects.select_related("source").get(source__name=EXPECTED_HOME.healthy_source)
+        self.assertEqual(healthy.status, CheckStatus.OK.value)
+
+        # The weekly briefing for last week is already sent and snapshotted (ruling 17),
+        # so `c6-briefing-screen`'s journey can open a past week without waiting for the beat.
+        self.assertEqual(Briefing.objects.count(), 1)
+        briefing = Briefing.objects.get()
+        self.assertIsNotNone(briefing.email_sent_at)
+        self.assertEqual(
+            [item.case.change.stable_key for item in BriefingItem.objects.filter(briefing=briefing).select_related("case__change")],
+            [EXPECTED_HOME.last_week_change],
+        )
+
+        # Tenant B's own two dates (J-8): present under its own tenant, and never reachable
+        # once tenant A is the one activated.
+        second_bank = Tenant.objects.get(slug=TENANT_B_SLUG)
+        tenancy.activate(second_bank.id)
+        self.assertEqual(ChangeCase.objects.count(), 2)
+        tenancy.activate(tenant.id)
+        self.assertEqual(ChangeCase.objects.filter(change__stable_key__startswith="chg-e2e-tenant-b").count(), 0)
+
+    def test_chunk_6_seed_is_idempotent(self) -> None:
+        seed_e2e()
+        cases, checks, changes, briefings = (
+            ChangeCase.objects.count(),
+            SourceCheck.objects.count(),
+            RegulatoryChange.objects.filter(stable_key__startswith="chg-e2e-").count(),
+            Briefing.objects.count(),
+        )
+        self.assertGreater(cases, 0)
+
+        seed_e2e()
+
+        self.assertEqual(ChangeCase.objects.count(), cases)
+        self.assertEqual(SourceCheck.objects.count(), checks)
+        self.assertEqual(RegulatoryChange.objects.filter(stable_key__startswith="chg-e2e-").count(), changes)
+        self.assertEqual(Briefing.objects.count(), briefings, "re-running the job for a sent week sends nothing and writes nothing")
+
+    def test_the_seeded_dates_land_in_two_quarters_whatever_day_this_runs_on(self) -> None:
+        """The near and far offsets `_quarter_safe_offsets()` derives stay in two different
+        quarters on four anchors a quarter apart (CLAUDE.md §11): the seed never depends on
+        which real day it happens to run on."""
+        near, far = _quarter_safe_offsets()
+        for anchor in (
+            datetime.date(2026, 1, 1),
+            datetime.date(2026, 4, 15),
+            datetime.date(2026, 7, 31),
+            datetime.date(2026, 10, 1),
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertNotEqual(quarter_of(anchor + datetime.timedelta(days=near)), quarter_of(anchor + datetime.timedelta(days=far)))

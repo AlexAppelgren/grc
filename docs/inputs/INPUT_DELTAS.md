@@ -280,10 +280,15 @@ here names it with its backticked `METHOD /path`.
 - `GET /me` exists from Phase 0 with the principal only (`SessionAuth` and
   `EnrolmentAuth`, AC-ID2). Chunk 1 gives it the shape the chunk 1 brief specifies:
   `{user, tenant|null, roles[{key,kind,label}], permissions[], platformRoles[],
-  enrolmentPending, passkeyCount, stepUpValidUntil}`. The designed `counts` and
-  `lastVisitAt` wait for the home chunk (6), when there is a queue to count. Chunk 6 is
-  where they land: `f03-T48` adds them, and the home contract deliberately keeps
-  `decideNow` off `Home`, so Today reads one source for the number (D-23, ruling 1).
+  enrolmentPending, passkeyCount, stepUpValidUntil}`. `f03-T48` (chunk 6) adds
+  `counts{triage, proposals, assignedToMe}` and `lastVisitAt`: null for a platform session,
+  each count 0 rather than refused when the caller's own permission does not unlock it
+  (`triage` needs `cases.triage`, `proposals` needs `proposals.create`, `assignedToMe`
+  needs none). The home contract deliberately keeps `decideNow` off `Home`, so Today reads
+  one source for the number (D-23, ruling 1). The designed `signoffs` and
+  `unreadNotifications` are cut for now: sign-off is chunk 9's and notifications chunk
+  10's, and a field that always reads 0 before either exists is a false statement about
+  the bank's queue; the chunk that builds each adds its own count.
 - `PATCH /me` takes `{name?, locale?}` (chunk 1 brief); the designed
   `notificationPrefs` move to the membership row and land with collaboration (chunk 10).
 - `GET /tenant` and `PATCH /tenant` (TEN-01, chunk 1 brief): explicit columns instead of

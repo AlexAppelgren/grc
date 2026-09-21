@@ -57,6 +57,12 @@ export const destinations: readonly Destination[] = [
   { id: 'watch', href: '/watch', labelKey: 'nav.watch', surface: 'tenant', anyOfPermissions: ['watch.read'], dockRank: 2, group: 'primary' },
   { id: 'inventory', href: '/inventory', labelKey: 'nav.inventory', surface: 'tenant', anyOfPermissions: ['library.read'], dockRank: 3, group: 'primary' },
   { id: 'roadmap', href: '/roadmap', labelKey: 'nav.roadmap', surface: 'tenant', anyOfPermissions: ['roadmap.read'], group: 'secondary' },
+  // The briefing (HOM-02): reached from Today's lead card and the mailed
+  // link, never the rail or the More sheet. `parent` names a destination
+  // nothing renders children for (only 'admin' and the account parent do),
+  // which is what keeps this out of every list while still giving the two
+  // /briefing pages one typed permission to gate on, instead of a literal.
+  { id: 'briefing', href: '/briefing', labelKey: 'nav.briefing', surface: 'tenant', anyOfPermissions: ['watch.read'], group: 'secondary', parent: 'today' },
   { id: 'search', href: '/search', labelKey: 'nav.search', shortLabelKey: 'nav.search.short', surface: 'tenant', anyOfPermissions: ['search.use'], dockRank: 4, group: 'primary' },
   { id: 'admin', href: '/admin', labelKey: 'nav.admin', surface: 'tenant', anyOfPermissions: TENANT_ADMIN_PERMISSIONS, group: 'admin' },
   // Admin sections (ADM-03): each gated by its own permission. The

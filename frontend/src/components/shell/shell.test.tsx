@@ -59,6 +59,8 @@ function me(overrides: Partial<Me> = {}): Me {
     enrolmentPending: false,
     passkeyCount: 2,
     stepUpValidUntil: null,
+    counts: { triage: 0, proposals: 0, assignedToMe: 0 },
+    lastVisitAt: null,
     ...overrides,
   };
 }

@@ -34,6 +34,7 @@ from typing import Any
 from django.apps import apps as django_apps
 from django.db import DEFAULT_DB_ALIAS, connections
 
+from apps.shared import tenancy
 from apps.shared.tenancy import LibraryModel, library_write
 from apps.watch.models import WATCH_MODELS
 
@@ -104,3 +105,25 @@ def watch_write(reason: str) -> Iterator[None]:
         _refuse_writes_outside_the_watch_zone
     ):
         yield
+
+
+def upsert(model: type[Any], reason: str, *, lookup: dict[str, Any], defaults: dict[str, Any]) -> Any:
+    """A natural-key `update_or_create` through the door, for a caller with nothing more
+    than a fixture to write (`seed_e2e`, c6-e2e-seed): idempotent by the lookup it is given,
+    so a second run of the seed finds the same row rather than a duplicate.
+
+    `model` arrives as a parameter rather than an import, which is what lets this live in
+    `write.py` beside the door's own definition without naming a watch model: the split
+    `apps/shared/tests_library_fence.py` demands of every other door step (`apps/watch/
+    keys.py` resolves what a caller named; the step that writes never names the record) is
+    the same one this generic helper keeps, the other way round — the caller names the
+    model, this function never does.
+
+    Runs inside `tenancy.platform_zone()`: `source` is the one watch table with a zone
+    column (WAT-06), written only by a session with no tenant active, and a seed script may
+    share one connection across several calls whose ambient tenant this function must never
+    depend on (proven to fail 2026-09-21: a second `seed_e2e()` call on the same connection
+    left a tenant active from the first, and the shared source it seeds refused the write)."""
+    with tenancy.platform_zone(), watch_write(reason):
+        row, _ = model.objects.update_or_create(**lookup, defaults=defaults)
+        return row

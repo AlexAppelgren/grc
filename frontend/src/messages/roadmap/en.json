@@ -1,0 +1,15 @@
+{
+  "roadmap.title": "Roadmap",
+  "roadmap.lede": "Every dated change and every deadline of our own, by quarter.",
+  "roadmap.chip.all": "Everything",
+  "roadmap.chip.regulatory": "Regulatory dates",
+  "roadmap.chip.internal": "Our deadlines",
+  "roadmap.itemsShown": "{count, plural, one {# item shown} other {# items shown}}",
+  "roadmap.regulatoryDate": "Regulatory date",
+  "roadmap.openChange": "Open change",
+  "roadmap.errorTitle": "Could not load the roadmap",
+  "roadmap.empty.title": "No dated items ahead",
+  "roadmap.empty.body": "Dates appear when a change has an effective date or one of our own deadlines is set.",
+  "roadmap.empty.internal.title": "No deadlines of our own yet",
+  "roadmap.empty.internal.body": "Review dates, gap targets, assessment deadlines and action due dates appear here once the register and the case workflow are built."
+}

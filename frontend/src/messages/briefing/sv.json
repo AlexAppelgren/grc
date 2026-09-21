@@ -1,0 +1,14 @@
+{
+  "briefing.title": "Veckans briefing",
+  "briefing.weekKicker": "Vecka {week}, {from} till {to}",
+  "briefing.runningWeekNote": "Samma poster skickas i veckomejlet när veckan är slut.",
+  "briefing.snapshot.banner": "Skickat {date}. Poster kan ha ändrats sedan dess.",
+  "briefing.snapshot.seeCurrent": "Se denna vecka",
+  "briefing.previousWeek": "Föregående vecka",
+  "briefing.also.title": "Även denna vecka",
+  "briefing.openChange": "Öppna denna ändring",
+  "briefing.errorTitle": "Kunde inte läsa in briefingen",
+  "briefing.empty.title": "Inget nytt matchar vårt omfång denna vecka",
+  "briefing.empty.body": "Äldre poster finns under Bevakning.",
+  "briefing.notFound.body": "Banken fick aldrig en briefing för den veckan."
+}

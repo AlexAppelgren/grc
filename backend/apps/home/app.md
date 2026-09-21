@@ -34,8 +34,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| HOM-01 | Timeline home: next dates as a short list on every screen size, the lead item, what needs a decision, compliance standing, source health | M | R1 | pending |
-| HOM-02 | Weekly briefing, reachable from home with part of it shown there, snapshotted when emailed | M | R1 | pending |
+| HOM-01 | Timeline home: next dates as a short list on every screen size, the lead item, what needs a decision, compliance standing, source health | M | R1 | in_progress |
+| HOM-02 | Weekly briefing, reachable from home with part of it shown there, snapshotted when emailed | M | R1 | built |
 | HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed | M | R1 | in_progress |
 | HOM-04 | Upcoming changes as public facts for agents and newsletters, and a revocable calendar feed | S | R1 | pending |
 | HOM-05 | My work: what a person or their teams are responsible for or take part in, as overdue, due soon, changes on those items and the rest, with next reviews and a department head's view; permission-filtered rows and counts; the footprint never hides a person's own items | M | R2 | pending |

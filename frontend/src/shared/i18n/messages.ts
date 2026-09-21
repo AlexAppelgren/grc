@@ -1,5 +1,7 @@
 import enAuth from '@/messages/auth/en.json';
 import svAuth from '@/messages/auth/sv.json';
+import enBriefing from '@/messages/briefing/en.json';
+import svBriefing from '@/messages/briefing/sv.json';
 import enCommon from '@/messages/common/en.json';
 import svCommon from '@/messages/common/sv.json';
 import enConsole from '@/messages/console/en.json';
@@ -22,6 +24,8 @@ import enMe from '@/messages/me/en.json';
 import svMe from '@/messages/me/sv.json';
 import enNav from '@/messages/nav/en.json';
 import svNav from '@/messages/nav/sv.json';
+import enRoadmap from '@/messages/roadmap/en.json';
+import svRoadmap from '@/messages/roadmap/sv.json';
 import enTenantAdmin from '@/messages/tenant-admin/en.json';
 import svTenantAdmin from '@/messages/tenant-admin/sv.json';
 import enToday from '@/messages/today/en.json';
@@ -39,6 +43,7 @@ import svWatch from '@/messages/watch/sv.json';
 // missing in one language fails `tsc` as well as the check.
 const en = {
   ...enAuth,
+  ...enBriefing,
   ...enCommon,
   ...enConsole,
   ...enConsoleAgentKeys,
@@ -50,6 +55,7 @@ const en = {
   ...enLibrary,
   ...enMe,
   ...enNav,
+  ...enRoadmap,
   ...enTenantAdmin,
   ...enToday,
   ...enVocabularies,
@@ -58,6 +64,7 @@ const en = {
 
 const sv = {
   ...svAuth,
+  ...svBriefing,
   ...svCommon,
   ...svConsole,
   ...svConsoleAgentKeys,
@@ -69,6 +76,7 @@ const sv = {
   ...svLibrary,
   ...svMe,
   ...svNav,
+  ...svRoadmap,
   ...svTenantAdmin,
   ...svToday,
   ...svVocabularies,

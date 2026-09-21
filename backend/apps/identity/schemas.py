@@ -238,6 +238,39 @@ class MeTenant(CamelSchema):
     timezone: str
 
 
+class MeCounts(CamelSchema):
+    """The queue counts behind Today's "Decide now" panel (HOM-01, D-23): three
+    independent reads, each filtered by the caller's own permissions rather than
+    refused, so a reader without a permission sees a true zero and not a 403 that
+    would take the whole panel away."""
+
+    triage: int = Field(
+        ge=0,
+        description=(
+            "How many of this bank's cases are waiting for triage (status `new`), never "
+            "negative and 0 without `cases.triage` — a permission the caller lacks reads as "
+            "nothing waiting, never as a refusal."
+        ),
+        examples=[3],
+    )
+    proposals: int = Field(
+        ge=0,
+        description=(
+            "How many of this bank's own library proposals are still open, never negative "
+            "and 0 without `proposals.create`."
+        ),
+        examples=[2],
+    )
+    assigned_to_me: int = Field(
+        ge=0,
+        description=(
+            "How many open cases (not `closed` or `dismissed`) this caller owns, never "
+            "negative. Every member sees their own, so this is 0 only when they own none."
+        ),
+        examples=[1],
+    )
+
+
 class Me(CamelSchema):
     user: MeUser
     tenant: MeTenant | None
@@ -247,6 +280,22 @@ class Me(CamelSchema):
     enrolment_pending: bool
     passkey_count: int
     step_up_valid_until: datetime | None
+    counts: MeCounts | None = Field(
+        description=(
+            "The caller's own queue counts for 'Decide now' (D-23), or null for a platform "
+            "session, which has no tenant to count against. Each of the three counts is 0 "
+            "rather than refused when the caller's permissions do not unlock it (f03-T48)."
+        )
+    )
+    last_visit_at: datetime | None = Field(
+        description=(
+            "When this member last marked the library as seen (`POST /me/visit`), as an "
+            "RFC 3339 timestamp in UTC, or null before their first visit. Null for a platform "
+            "session. It is a reading habit, this bank's own, and never a judgement about a "
+            "regulation."
+        ),
+        examples=["2026-09-18T07:00:00Z"],
+    )
 
 
 class MePatch(CamelSchema):

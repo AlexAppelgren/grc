@@ -410,10 +410,18 @@ test.describe('taxonomy journeys', () => {
     });
 
     test.fixme("FP-S4: Every surface respects the footprint and offers a way to look outside it", async () => {
-      // pending: FP-S4 (FP-03). The footprint rule is built and tested in the
-      // backend in chunk 2 (apps/taxonomy/matching.py and its SQL twin); the
-      // surfaces it names (feed, inventory, roadmap, briefing, reports) and
-      // "Show outside footprint" arrive from chunk 3 on, per CHUNK2_BRIEF.md.
+      // pending: FP-S4 (FP-03). The feed and the inventory read their own
+      // in-footprint fact fresh on every request (WatchChangeRow.inFootprint,
+      // apps/library/reading.py's rule), so switching Advice off through
+      // FP-S5's own mechanism (already proved) would hide an advice-only
+      // record on those two surfaces today. The roadmap and the briefing
+      // cannot be proved the same way: both filter on `change_case.
+      // footprint_match`, a column `apps/cases/creation.py` writes once, at
+      // triage-time, and nothing recomputes when the footprint itself
+      // changes afterwards (`c5-cases-footprint-hooks`, named but not built —
+      // grep finds no second writer of the column). Seeding a case with the
+      // column already false would prove the query, not the scope change;
+      // this scenario stays fixme until the hook that keeps it live lands.
     });
 
     test("FP-S5 J-6 @smoke: footprint change with preview and second-person approval", async ({ page, browser, apiGuard }, testInfo) => {

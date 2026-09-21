@@ -5415,8 +5415,16 @@ export interface components {
         };
         /** Me */
         Me: {
+            /** @description The caller's own queue counts for 'Decide now' (D-23), or null for a platform session, which has no tenant to count against. Each of the three counts is 0 rather than refused when the caller's permissions do not unlock it (f03-T48). */
+            counts: components["schemas"]["MeCounts"] | null;
             /** Enrolmentpending */
             enrolmentPending: boolean;
+            /**
+             * Lastvisitat
+             * @description When this member last marked the library as seen (`POST /me/visit`), as an RFC 3339 timestamp in UTC, or null before their first visit. Null for a platform session. It is a reading habit, this bank's own, and never a judgement about a regulation.
+             * @example 2026-09-18T07:00:00Z
+             */
+            lastVisitAt: string | null;
             /** Passkeycount */
             passkeyCount: number;
             /** Permissions */
@@ -5429,6 +5437,33 @@ export interface components {
             stepUpValidUntil: string | null;
             tenant: components["schemas"]["MeTenant"] | null;
             user: components["schemas"]["MeUser"];
+        };
+        /**
+         * MeCounts
+         * @description The queue counts behind Today's "Decide now" panel (HOM-01, D-23): three
+         *     independent reads, each filtered by the caller's own permissions rather than
+         *     refused, so a reader without a permission sees a true zero and not a 403 that
+         *     would take the whole panel away.
+         */
+        MeCounts: {
+            /**
+             * Assignedtome
+             * @description How many open cases (not `closed` or `dismissed`) this caller owns, never negative. Every member sees their own, so this is 0 only when they own none.
+             * @example 1
+             */
+            assignedToMe: number;
+            /**
+             * Proposals
+             * @description How many of this bank's own library proposals are still open, never negative and 0 without `proposals.create`.
+             * @example 2
+             */
+            proposals: number;
+            /**
+             * Triage
+             * @description How many of this bank's cases are waiting for triage (status `new`), never negative and 0 without `cases.triage` — a permission the caller lacks reads as nothing waiting, never as a refusal.
+             * @example 3
+             */
+            triage: number;
         };
         /** MePatch */
         MePatch: {
