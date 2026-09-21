@@ -513,11 +513,6 @@ class TheEmbeddingRelay(LibraryFixtureMixin, TestCase):
     """Embedding happens out of band, through the one cursor, with no tenant active."""
 
     def setUp(self) -> None:
-        # `SearchConfig.ready()` registered the handler when the process started, but
-        # `apps/shared/tests_outbox.py` empties the registry after each of its own tests
-        # and puts nothing back. Registering again is idempotent and makes these tests say
-        # what they mean whatever ran before them.
-        tasks.register()
         self.build_library()
         flush_outbox()
         with transaction.atomic():

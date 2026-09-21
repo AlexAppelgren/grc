@@ -285,9 +285,19 @@ jobs:
         if: needs.changes.outputs.backend == 'true'
         run: bash ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings
 
+      # One worker per vCPU of the ubuntu-24.04 runner (4), each with its own clone of the
+      # test database. scripts/prepush.sh runs the same command with a count that suits the
+      # laptop it is on. tblib is in the locked dev dependencies so a worker's failure
+      # arrives here with its traceback.
       - name: Tests under coverage
         if: needs.changes.outputs.backend == 'true'
-        run: bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput
+        run: bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput --parallel 4
+
+      # Each worker writes coverage data of its own; the merge is what the report and the
+      # floors read (backend/pyproject.toml, [tool.coverage.run]).
+      - name: Combine the workers' coverage data
+        if: needs.changes.outputs.backend == 'true'
+        run: bash ./run.sh run coverage combine
 
       - name: Coverage report
         if: needs.changes.outputs.backend == 'true'

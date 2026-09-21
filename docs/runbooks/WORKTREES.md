@@ -22,10 +22,18 @@ The main checkout is slot 0 and keeps the defaults.
 | Resource | Slot N |
 |---|---|
 | Database | `compliance_watch_wtN` (test runner uses `test_compliance_watch_wtN`) |
+| Worker clones | `test_compliance_watch_wtN_1` … one per `--parallel` worker |
 | Scratch database | `compliance_watch_wtN_scratch` (`migrate_from_zero` derives it) |
 | E2E database | `compliance_watch_wtN_e2e` |
 | Redis | index N+1 |
 | API and web ports | `8000 + 10N` and `3000 + 10N` |
+
+The backend suite runs in parallel worker processes, four by default, each with a clone of
+the slot's own test database (`scripts/prepush.sh`; `BACKEND_TEST_PARALLEL` overrides the
+count). Four workers on an eight-core laptop is a deliberate under-commit, because several
+worktrees run their suites at the same time: raising it makes one agent finish sooner and
+every other agent wait. `remove` drops the clones along with the rest of the slot; a run
+that was killed leaves them behind until then.
 
 Dependencies are shared with the main checkout through a junction (Windows) or a symlink:
 `backend/.venv` and `frontend/node_modules`. **Never change dependencies through a shared

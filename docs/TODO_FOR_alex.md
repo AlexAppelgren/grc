@@ -358,3 +358,20 @@ change what four eyes means and are marked as such.
       from the source (every `code=` argument under `apps/`), or add the proven ones to the
       list by hand as each sweep meets them. Eight sweeps remain, and every one of them will
       hit this.
+
+## The boot guard costs thirty interpreter starts, and a busy laptop trips it (2026-09-21)
+
+- [ ] **`apps/shared/tests_production_guard.py` is the one test whose cost is process startup,
+      and it is the suite's most load-sensitive.** It proves each rule of the production-safety
+      block by booting Django in a subprocess with a particular environment — about thirty of
+      them, three at a time, each with a 120-second timeout. One boot costs 1.7 s on an idle
+      machine. On 2026-09-21, with roughly ten agents and a four-worker test run on the same
+      laptop, the same single test took 70 s once and 252 s the next time, failing once on the
+      120-second timeout and once on a transient `ImportError` inside a boot. Running it
+      entirely alone reproduced both, so this is the machine and not the parallel runner, and
+      the test's own comment already records a similar incident on 2026-09-19 at six concurrent
+      boots. Default if you say nothing: it stays as it is and an occasional red run on a
+      saturated laptop is reread rather than chased. The alternatives each cost something you
+      should weigh: raise the per-boot timeout (a hang then takes longer to report), or prove
+      the rules in-process by reloading settings instead of booting (cheaper and far faster,
+      but it stops proving that a real process refuses to start, which is the whole point).

@@ -13,6 +13,7 @@ role-prefix rule (the Swedish genitive "AI:s" in clean text was flagged); both r
 from __future__ import annotations
 
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -208,11 +209,30 @@ class ContentScreenPathologicalInputTests(SimpleTestCase):
     SIZE = 200_000
 
     def screen_within_budget(self, text: str) -> list[str]:
+        """The flags, and the proof that finding them cost no more than the budget.
+
+        CPU time on this thread, the best of five, because backtracking is what this
+        budget is about and backtracking burns CPU. Wall time also counts every moment the
+        process spent waiting for a core, which is not the screen's doing: three of these
+        cases failed at `--parallel 4` on 0.55 to 0.60 s of wall time against a 0.5 s
+        budget (2026-09-21). The first call stays traced so coverage still sees the screen;
+        the timed ones run with the tracer off, since coverage's own overhead is not what
+        is being measured — the same shape as the API budget tests in `apps/library` and
+        `apps/watch`.
+        """
         self.assertGreaterEqual(len(text), self.SIZE)
-        started = time.perf_counter()
         flags = screen(text)
-        elapsed = time.perf_counter() - started
-        self.assertLess(elapsed, self.BUDGET_SECONDS, f"screened in {elapsed:.3f}s")
+        spent = []
+        tracer = sys.gettrace()
+        sys.settrace(None)
+        try:
+            for _ in range(5):
+                started = time.thread_time()
+                screen(text)
+                spent.append(time.thread_time() - started)
+        finally:
+            sys.settrace(tracer)
+        self.assertLess(min(spent), self.BUDGET_SECONDS, f"screened in {min(spent):.3f}s")
         return flags
 
     def test_a_long_clean_page(self) -> None:

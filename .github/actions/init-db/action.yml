@@ -36,3 +36,27 @@ runs:
         docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d compliance_watch -tAc \
           "SELECT CASE WHEN rolbypassrls OR rolsuper THEN 'BYPASS' ELSE 'ok' END FROM pg_roles WHERE rolname = 'cw_app'" \
           | grep -qx ok
+
+    # Throwaway data, so the durability settings buy nothing and cost a great deal: a
+    # TransactionTestCase truncates its tables between tests and every truncate waits on
+    # the runner's disk. With these off a crash can leave the cluster CORRUPT — which
+    # costs nothing at all here, because this container is created and destroyed with the
+    # job and holds only what migrate_from_zero and seed_e2e put back. docker-compose.yml
+    # says the same for the local container; the deployed database is Railway's and is
+    # reached by neither. A service container takes no command, so these are set at
+    # runtime: all three are reloadable without a restart.
+    - name: Turn off durability for the throwaway test cluster
+      shell: bash
+      env:
+        DB_CONTAINER: ${{ inputs.container-id }}
+      run: |
+        set -euo pipefail
+        # One -c each: ALTER SYSTEM is refused inside a transaction block, and psql wraps
+        # several statements in one -c into a single transaction.
+        docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d compliance_watch \
+          -c "ALTER SYSTEM SET fsync = off" \
+          -c "ALTER SYSTEM SET synchronous_commit = off" \
+          -c "ALTER SYSTEM SET full_page_writes = off" \
+          -c "SELECT pg_reload_conf()"
+        docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d compliance_watch -tAc \
+          "SELECT current_setting('fsync')" | grep -qx off

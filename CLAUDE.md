@@ -164,10 +164,15 @@ redis`, or a local PostgreSQL 16 with the `vector` extension installed).
 2. **Backend tests + coverage floors** (any backend change):
    ```bash
    cd backend
-   ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput
+   ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput --parallel 4
+   ./run.sh run coverage combine
    ./run.sh run coverage report
    ./run.sh run python scripts/coverage_gate.py
    ```
+   `--parallel` splits the suite by TestCase across worker processes, each with its
+   own clone of the test database; each writes coverage data of its own, which
+   `coverage combine` merges before the report reads it. Leaving the combine out
+   fails with "No data to report".
 3. **Backend lint + types**: `./run.sh run ruff check . && ./run.sh run mypy`
 4. **Compliance lint**, full tree: `python backend/scripts/compliance_check.py --all`
 5. **Requirements coverage**: `python backend/scripts/requirements_coverage.py`

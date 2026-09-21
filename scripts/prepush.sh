@@ -180,8 +180,27 @@ done
 if [ "$be" = 1 ]; then  # ci.yml `backend`, the steps gated on the backend tier
   gate "Backend: migration drift" backend bash ./run.sh run python manage.py makemigrations --check --dry-run --settings=config.test_settings
   if [ "$quick" = 0 ]; then
+    # Test workers. Django's runner splits the suite by TestCase across processes, each with
+    # its own clone of the test database, so the wall time falls with the cores it is given.
+    # Four by default: this laptop has eight and often runs several worktrees at once
+    # (docs/runbooks/WORKTREES.md), and a worker fighting for a core costs more than it
+    # saves. BACKEND_TEST_PARALLEL overrides it; ci.yml sets its own for the runner it gets.
+    parallel="${BACKEND_TEST_PARALLEL:-4}"
+    # A worker sends a failing test's traceback to the parent by pickling it, which needs
+    # tblib (backend/pyproject.toml). Without it the first failure ends the run with "cannot
+    # pickle 'traceback' object" and names no test, so an environment whose virtualenv
+    # predates that dependency runs in one process and is told why, rather than being handed
+    # a fast gate nobody can read.
+    if ! (cd backend && bash ./run.sh run python -c "import tblib") >/dev/null 2>&1; then
+      echo "prepush: tblib is missing from the backend environment, so the suite runs in one"
+      echo "prepush: process. Run 'cd backend && ./run.sh install' to get the parallel runner."
+      parallel=1
+    fi
     gate "Backend: migration graph from zero" backend bash ./run.sh run python manage.py migrate_from_zero --settings=config.test_settings
-    gate "Backend: tests under coverage" backend bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput
+    gate "Backend: tests under coverage ($parallel workers)" backend bash ./run.sh run coverage run manage.py test apps --settings=config.test_settings --noinput --parallel "$parallel"
+    # Each worker writes coverage data of its own; the merge is what `coverage report` and
+    # the floors then read (backend/pyproject.toml, [tool.coverage.run]).
+    gate "Backend: combine the workers' coverage" backend bash ./run.sh run coverage combine
     gate "Backend: coverage report" backend bash ./run.sh run coverage report
     gate "Backend: coverage floors" backend bash ./run.sh run python scripts/coverage_gate.py
   fi

@@ -64,6 +64,24 @@ SECRET = "the bank's own assessment text"
 HALF_FINISHED = "probe-half-finished"
 
 
+def only_the_consumers_are_registered() -> None:
+    """Put the handler registry back the way a process starts: the two consumers their app
+    configs' `ready()` registered, and the probes of whichever test just ran gone.
+
+    `outbox._HANDLERS` is module state that outlives a test's transaction, so a test that
+    only emptied it handed every test after it a process where nothing is delivered. On
+    2026-09-21 that made `apps/search/tests_indexing.py` count no embeddings whenever this
+    module happened to run before it — green in the canonical app order, red in any order
+    that puts `shared` first. Registration is idempotent, so calling it again is free.
+    """
+    from apps.cases import creation
+    from apps.search import tasks as search
+
+    outbox._HANDLERS.clear()
+    creation.register()
+    search.register()
+
+
 def enter_zone(tenant_id: uuid.UUID | None, *, using: str = DEFAULT_DB_ALIAS) -> None:
     """Put the test's own connection in one zone, the way the cursor does: a tenant's rows
     are invisible and unwritable until the setting the policy reads holds its id."""
@@ -75,8 +93,9 @@ class OutboxCursorCase(TestCase):
     """Two tenants, an empty backlog and a handler registry restored after every test."""
 
     def setUp(self) -> None:
-        # The registry is module state; a test that registers a handler leaves none behind.
-        self.addCleanup(outbox._HANDLERS.clear)
+        # The registry is module state; a test that registers a probe leaves none behind,
+        # and leaves the two real consumers where `ready()` put them.
+        self.addCleanup(only_the_consumers_are_registered)
         self.tenant_a = factories.tenant(slug="outbox-a")
         self.tenant_b = factories.tenant(slug="outbox-b")
         # The factories record their own writes. Deliver them (no handler is registered
@@ -428,7 +447,7 @@ class TheCursorRowIsTheLock(TransactionTestCase):
 
     def test_a_second_worker_delivers_nothing_while_the_cursor_is_held(self) -> None:
         seen: list[uuid.UUID] = []
-        self.addCleanup(outbox._HANDLERS.clear)
+        self.addCleanup(only_the_consumers_are_registered)
         tenant = factories.tenant(slug="outbox-lock")
         outbox.deliver_batch()  # an empty backlog, and the cursor row the workers share
         outbox.register_handler(TOPIC, lambda event: seen.append(event.id))
@@ -492,11 +511,6 @@ class TheRegistryHoldsOnlyItsConsumers(TestCase):
         from apps.cases import creation
         from apps.search import tasks as search
 
-        # Order-independent: a test above empties the registry to isolate its own handlers
-        # and puts nothing back, so the apps' own registrations are made again here. They
-        # are idempotent, so this can never be what makes the assertion pass.
-        creation.register()
-        search.register()
         self.assertEqual(
             sorted(outbox._HANDLERS),
             sorted([creation.CHANGE_REGISTERED, *search.INDEX_TOPICS]),
@@ -536,15 +550,14 @@ class RegistrationHappensWhenTheAppIsReady(TestCase):
 
     def test_each_consumers_handler_comes_back_from_its_app_configs_ready(self) -> None:
         """The other half: `ready()` is what registers, proved on an empty registry, which
-        is the state a process starts in. The cleanups put both consumers back for the
+        is the state a process starts in. The cleanup puts both consumers back for the
         tests that follow."""
         from django.apps import apps as installed
 
         from apps.cases import creation
         from apps.search import tasks as search
 
-        self.addCleanup(search.register)
-        self.addCleanup(creation.register)
+        self.addCleanup(only_the_consumers_are_registered)
         outbox._HANDLERS.clear()
         for label, topics, handler in (
             ("cases", (creation.CHANGE_REGISTERED,), creation.create_cases),

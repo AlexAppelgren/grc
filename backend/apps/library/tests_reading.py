@@ -368,15 +368,22 @@ class ObligationListPerformance(TestCase):
         with self.assertNumQueries(LIST_QUERIES):
             response = self.client.get(URL, params, **headers)
         self.assertEqual(len(response.json()["items"]), settings.API_PAGE_SIZE_MAX)
-        # CPU time on the request thread, the best of five: what the read costs, without the
-        # waits a loaded machine adds, so the bound holds on a busy CI runner too. The suite
-        # runs under coverage, whose tracer is paused for the timed requests only; the one
-        # above stays traced, so coverage is unchanged.
+        # CPU time on the request thread, the best of fifteen: what the read costs, without
+        # the waits a loaded machine adds, so the bound holds on a busy CI runner too. The
+        # suite runs under coverage, whose tracer is paused for the timed requests only; the
+        # one above stays traced, so coverage is unchanged.
+        #
+        # Fifteen rather than five because the minimum of five is too noisy to read on this
+        # machine: measured 2026-09-21 over fifteen calls, the samples ran from 78 ms to
+        # 312 ms in steps of 15.6 ms — Windows reports thread CPU at the scheduler's tick —
+        # so a page that really costs 80 to 140 ms produced a best-of-five of 266 ms and
+        # failed the budget once in two parallel runs. More samples estimate the
+        # uncontended cost better; they cannot rescue a page that is genuinely over it.
         spent = []
         tracer = sys.gettrace()
         sys.settrace(None)
         try:
-            for _ in range(5):
+            for _ in range(15):
                 started = time.thread_time()
                 self.client.get(URL, params, **headers)
                 spent.append((time.thread_time() - started) * 1000)

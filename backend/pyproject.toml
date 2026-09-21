@@ -39,6 +39,12 @@ coverage = "7.16.1"
 # pin list; newest at resolve time, recorded in the Phase 0 report.
 pyyaml = "6.0.3"
 types-pyyaml = "6.0.12.20260906"
+# tblib makes a traceback picklable, which is what Django's parallel test runner needs to
+# carry a failure out of a worker process. Without it the first failing test ends the run
+# with "cannot pickle 'traceback' object" and no test name, so `--parallel` would trade a
+# readable gate for a fast one (measured 2026-09-21). Not in the brief's pin list; newest
+# at resolve time.
+tblib = "3.2.0"
 
 # ---------------------------------------------------------------------------------------
 # ruff: correctness classes only (playbook 9). Every excluded rule names its reason below.
@@ -113,6 +119,14 @@ django_settings_module = "config.test_settings"
 [tool.coverage.run]
 source = ["apps", "config"]
 branch = true
+# `manage.py test --parallel` runs the suite in worker processes, so coverage has to follow
+# them: `concurrency` starts measurement inside each worker, and each worker writes a data
+# file of its own. `coverage combine` merges them into `.coverage` and is therefore part of
+# the gate, between `coverage run` and `coverage report` (CLAUDE.md section 7, item 2).
+# `parallel` makes the parent write a suffixed file too, so nothing is left out of the
+# merge. Forgetting the combine fails loudly with "No data to report", never quietly.
+concurrency = ["multiprocessing"]
+parallel = true
 omit = [
     "apps/*/migrations/*",
     "apps/*/tests_*.py",

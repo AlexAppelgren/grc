@@ -10,6 +10,29 @@
 services:
   db:
     image: pgvector/pgvector:pg16
+    # Tuned for throwaway data, local only. With fsync, synchronous_commit and
+    # full_page_writes off, a crash or a power cut can leave this cluster CORRUPT and
+    # unrecoverable. That is acceptable here and nowhere else: every database in this
+    # container is recreated from scratch by `manage.py migrate_from_zero`, Django's test
+    # runner or `seed_e2e`, so the worst a crash costs is `docker compose down -v` and one
+    # rerun. The deployed database is Railway's and is configured there, not from this
+    # file (docs/runbooks/RAILWAY_DEPLOY.md); nothing here can reach it.
+    #
+    # Why it is worth the risk: a TransactionTestCase truncates its tables between tests,
+    # and a truncate waits on the disk. Up to fourteen worktrees share this one container
+    # (docs/runbooks/WORKTREES.md), so those waits queue behind each other and the disk,
+    # not the CPU, becomes the ceiling on how much work can run at once.
+    #
+    # shared_buffers and max_connections suit parallel workers: `manage.py test --parallel
+    # N` opens one connection per database alias per worker, and several worktrees run at
+    # once, so the stock ceiling of 100 is reached long before the laptop's memory is.
+    command: >
+      postgres
+      -c fsync=off
+      -c synchronous_commit=off
+      -c full_page_writes=off
+      -c shared_buffers=512MB
+      -c max_connections=300
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres-dev-only

@@ -165,11 +165,20 @@ drop_databases() {
   # Drop every database the slot created. As cw_migrator, which created and owns them.
   local base="$1" py="$2"
   "$py" - "$base" <<'PY'
-import sys, psycopg
+import re, sys, psycopg
 base = sys.argv[1]
 url = "postgres://cw_migrator:cw-migrator-dev-only@localhost:5432/postgres"
+names = [base, f"{base}_scratch", f"{base}_e2e", f"test_{base}"]
 with psycopg.connect(url, autocommit=True) as conn:
-    for name in (base, f"{base}_scratch", f"{base}_e2e", f"test_{base}"):
+    # `manage.py test --parallel N` clones the test database once per worker as
+    # test_<base>_1, _2, ... and drops them when it finishes. A run that was killed leaves
+    # them behind, and nothing else would ever remove them, so they are found rather than
+    # guessed: the worker count is not recorded anywhere.
+    clone = re.compile(rf"^test_{re.escape(base)}_\d+$")
+    names += sorted(
+        row[0] for row in conn.execute("SELECT datname FROM pg_database") if clone.match(row[0])
+    )
+    for name in names:
         conn.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
         print(f"worktree: dropped {name} (if it existed)")
 PY
