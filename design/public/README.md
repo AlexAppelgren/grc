@@ -31,6 +31,7 @@ structure, set in Caslon, on a bank's colours.
 | Brass as the only accent on paper | Section references, the paragraph sign, the kickers, the rules under headings. In dark it takes over from green, as `brand.css` says the product accent does |
 | A marginal column | Every section carries `§ n` and a one-line marginal note in Noto Sans Mono, in the left margin, the way a statute carries marginal headings. Below 880 px it folds to one line above the heading |
 | Thick-thin rules | Each section opens on a 3 px rule over a 1 px rule, the printed-document break. No cards around prose, no shadows anywhere |
+| One sentence where two would do | Every section was cut back after the first draft: a heading, a line, and the artefact or list that proves it. Nothing on the page explains twice |
 | Real records, not screenshots | The hero holds a change record built from the prototype's own sample data, with the real pill tones, a real diff and the audit chain under it, marked as a sample |
 
 ## Type
