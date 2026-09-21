@@ -2,13 +2,13 @@
 the public list of upcoming dates and the revocable calendar feed (HOM-01 to HOM-04;
 chunk 6 `c6-home-api-contract`).
 
-Each route was declared before the logic that serves it and answers 501 `not_built` from the
-named function in the module that will build it, until that module lands (`BUILT_OPERATIONS`
-below names the ones that have). What stands in front of the route is what this file proves,
-whether or not its logic is there: no credential is 401, the wrong permission or scope is 403
-naming what was needed, and a value the schema does not accept is 422 — so a client learns
-what to send long before there is anything to send it to. Written before the routes existed
-(2026-09-21): every case below answered 404 until `home/api.py` landed.
+Each route was declared before the logic that serves it, answering 501 `not_built` until the
+module that owns it landed; all nine are built now, so nothing here answers 501 any more.
+What stands in *front* of a route is what this file proves, which is why it outlived the
+stubs: no credential is 401, the wrong permission or scope is 403 naming what was needed,
+and a value the schema does not accept is 422 — so a client learns what to send without
+reaching a read at all. Written before the routes existed (2026-09-21): every case below
+answered 404 until `home/api.py` landed.
 
 Three separations are pinned here because they are the ones a later change could quietly
 lose:
@@ -17,16 +17,16 @@ lose:
   is what makes an agent's key safe on it. Every other route in this app joins a bank's own
   case, briefing or subscriptions, so a key holding every scope there is still gets no
   session on them.
-- **`GET /calendar/feed.ics` reads no token while it is a stub.** It answers 501 for a token
-  that looks real, for one that does not and for an empty-looking one alike, so nothing about
-  any token can be learned from it before the feature ships. Its token is in the query string
-  and in no path, which D-52 and ADR 0045 decided because a path reaches a hosting edge's
-  request log; that this route is the only one taking a token that way is pinned below, so
-  the exception to CONVENTIONS 3.6 stays one route wide.
+- **`GET /calendar/feed.ics` says nothing about any token.** A token that looks real, one
+  that does not and an empty-looking one all answer one 404 with one body, the route-level
+  half of the rule `tests_feed.py` proves for revoked and expired ones too. Its token is
+  in the query string and in no path, which D-52 and ADR 0045 decided because a path reaches
+  a hosting edge's request log; that this route is the only one taking a token that way is
+  pinned below, so the exception to CONVENTIONS 3.6 stays one route wide.
 - **Creating a subscription needs a recent session.** The address outlives the session that
   asked for it, so a session that is neither young nor freshly confirmed by a passkey is
-  refused with `step_up_required` — before the stub, because the rule is the route's and not
-  the logic's (D-52).
+  refused with `step_up_required` — before the logic, because the rule is the route's and
+  not the logic's (D-52).
 - **`GET /home` is not a page-level 403.** It carries `roadmap.read`, which every system role
   holds, rather than an entry in `UNGATED_BY_DESIGN`; the panels a reader may not see are
   answered as null by `c6-home-backend`, not refused here.
@@ -38,7 +38,6 @@ import uuid
 from typing import Any
 
 from django.test import TestCase
-from django.utils import timezone
 
 from apps.home.schemas import FEED_TOKEN_MAX
 from apps.shared import permissions as perms
@@ -103,19 +102,10 @@ TENANT_ONLY_ROUTES = [
     ("createCalendarFeed", "post", FEEDS, FEED_BODY),
     ("revokeCalendarFeed", "delete", ONE_FEED, None),
 ]
-# The operations whose logic has landed, so they no longer answer 501. Their gates are
-# proved here like every other route's; what they answer behind the gate is proved by the
-# module that built them. One line per task, deleted from nowhere: the list only grows
-# until it holds all nine and the stub half of this file goes with the last one.
-BUILT_OPERATIONS = frozenset(
-    {
-        "getRoadmap",  # c6-roadmap-backend; behaviour in tests_roadmap.py
-        "getHome",  # c6-home-backend; behaviour in tests_home.py
-        "listUpcoming",  # c6-upcoming-calendar-backend; behaviour in tests_calendar.py
-        "getCurrentBriefing",  # c6-briefing-backend; behaviour in tests_briefing.py
-        "getBriefing",  # c6-briefing-backend; behaviour in tests_briefing.py
-    }
-)
+# Where each operation's behaviour is proved, now that all nine are built: `tests_home.py`
+# (getHome), `tests_roadmap.py` (getRoadmap), `tests_briefing.py` (getCurrentBriefing and
+# getBriefing), `tests_calendar.py` (listUpcoming) and `tests_feed.py` (the four
+# calendar-feed operations). This file keeps only what stands in front of them.
 DECLARED_OPERATIONS = {
     ("GET", "/home"): "getHome",
     ("GET", "/briefings/current"): "getCurrentBriefing",
@@ -200,7 +190,7 @@ class HomeRouteGates(TestCase):
                     self.assertEqual(response.status_code, 403)
                     self.assertEqual(response.json()["requiredPermission"], permission)
 
-    def test_a_bad_filter_or_body_is_422_before_the_stub(self) -> None:
+    def test_a_bad_filter_or_body_is_422_before_the_read(self) -> None:
         cases = [
             ("getRoadmap", "get", f"{ROADMAP}?kind=ours", None),
             ("getRoadmap", "get", f"{ROADMAP}?from=last-week", None),
@@ -232,9 +222,8 @@ class HomeRouteGates(TestCase):
 
     def test_current_is_matched_as_itself_and_not_parsed_as_a_week(self) -> None:
         """`/briefings/current` is registered before `/briefings/{weekStart}`, so the word is
-        matched as itself. Each reaches a different function, which the two stubs' details
-        prove: routing them to one would make the running week unreachable the moment the
-        snapshot read starts answering 404 for a week nobody was sent."""
+        matched as itself: routing them to one function would make the running week
+        unreachable, because the snapshot read answers 404 for a week nobody was sent."""
         with stub_session(user_principal(permissions={perms.WATCH_READ}, tenant_id=uuid.uuid4())):
             current = self.client.get(CURRENT_BRIEFING, **AS_SESSION)
             not_a_week = self.client.get("/api/v1/briefings/this-week", **AS_SESSION)
@@ -248,25 +237,8 @@ class HomeRouteGates(TestCase):
         self.assertEqual(current.status_code, 404)
 
 
-class HomeRouteStubs(TestCase):
-    def assert_not_built(self, response: Any) -> None:
-        self.assertEqual(response.status_code, 501)
-        problem = response.json()
-        self.assertEqual(problem["code"], "not_built")
-        self.assertEqual(response.headers["Content-Type"], "application/problem+json")
-        self.assertNotIn("traceback", response.content.decode().lower())
-
-    def test_a_session_with_its_permission_reaches_the_stub(self) -> None:
-        permissions = {perms.ROADMAP_READ, perms.WATCH_READ}
-        # Freshly confirmed with a passkey, because minting a calendar address asks for
-        # that or a session minutes old; every other route here is a read and ignores it.
-        principal = user_principal(permissions=permissions, tenant_id=uuid.uuid4(), step_up_at=timezone.now())
-        with stub_session(principal):
-            for name, method, url, body, _ in SESSION_ROUTES:
-                if name in BUILT_OPERATIONS:
-                    continue
-                with self.subTest(operation=name):
-                    self.assert_not_built(_call(self.client, method, url, body, AS_SESSION))
+class CalendarFeedRouteGates(TestCase):
+    """What the calendar routes refuse before their logic is reached at all."""
 
     def test_an_old_session_cannot_mint_a_calendar_address(self) -> None:
         """D-52: the address outlives the session that asked for it, so a stolen access
@@ -281,11 +253,15 @@ class HomeRouteStubs(TestCase):
 
     def test_reading_and_revoking_never_ask_for_a_fresh_session(self) -> None:
         """Only the mint is held to it. A person whose address has leaked has to be able to
-        revoke it at once, and listing what they hold is a read."""
+        revoke it at once, and listing what they hold is a read. The session here names a
+        bank that does not exist, so both answer `not_found` — what matters is that neither
+        answers `step_up_required`, which is the gate this test is about."""
         stale = user_principal(permissions={perms.ROADMAP_READ}, tenant_id=uuid.uuid4())
         with stub_session(stale):
-            self.assert_not_built(self.client.get(FEEDS, **AS_SESSION))
-            self.assert_not_built(self.client.delete(ONE_FEED, **AS_SESSION))
+            answers = [self.client.get(FEEDS, **AS_SESSION), self.client.delete(ONE_FEED, **AS_SESSION)]
+        for answer in answers:
+            with self.subTest(status=answer.status_code):
+                self.assertNotEqual(answer.json()["code"], "step_up_required")
 
     def test_a_key_with_upcoming_read_reaches_the_list(self) -> None:
         """The scope is the whole of the gate: a key holding it reads the public list, and
@@ -293,15 +269,19 @@ class HomeRouteStubs(TestCase):
         with stub_api_key(agent_principal(scopes={perms.SCOPE_UPCOMING_READ})):
             self.assertEqual(self.client.get(UPCOMING, **AS_KEY).status_code, 200)
 
-    def test_the_ics_route_answers_the_same_501_for_every_token_and_reads_none(self) -> None:
-        """The token is the credential, so the route must say nothing about any token while
-        it is a stub: a well-formed one, a nonsense one and a repeated call all answer
-        identically, with no session and no key anywhere in the request."""
+    def test_the_ics_route_answers_one_404_for_every_token_that_matches_nothing(self) -> None:
+        """The token is the credential, so the route says nothing about any token: a
+        well-formed one, a nonsense one and a repeated call all answer identically, with no
+        session and no key anywhere in the request. `tests_feed.py` extends the same proof
+        to a revoked and an expired address, which are the ones that did exist."""
         bodies = set()
         for token in (TOKEN, "not-a-token", "x", TOKEN):
             with self.subTest(token=token[:8]):
                 response = self.client.get(ICS, {"token": token})
-                self.assert_not_built(response)
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json()["code"], "not_found")
+                self.assertEqual(response.headers["Content-Type"], "application/problem+json")
+                self.assertNotIn("traceback", response.content.decode().lower())
                 bodies.add(response.content)
         self.assertEqual(len(bodies), 1, "the ICS route answered two different bodies; a token could be probed")
 
@@ -359,7 +339,7 @@ class HomeRouteStubs(TestCase):
             list(inspect.signature(roadmap.coming_up).parameters), ["tenant", "order", "limit"]
         )
 
-    def test_a_token_longer_than_the_limit_is_422_before_the_stub(self) -> None:
+    def test_a_token_longer_than_the_limit_is_422_before_any_lookup(self) -> None:
         response = self.client.get(ICS, {"token": "a" * (FEED_TOKEN_MAX + 1)})
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["code"], "validation_error")

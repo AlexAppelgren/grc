@@ -375,3 +375,24 @@ change what four eyes means and are marked as such.
       should weigh: raise the per-boot timeout (a hang then takes longer to report), or prove
       the rules in-process by reloading settings instead of booting (cheaper and far faster,
       but it stops proving that a real process refuses to start, which is the whole point).
+
+## The calendar feed carries every roadmap date, whatever the date's precision (2026-09-21, HOM-04)
+
+- [ ] **ADR 0045 says the feed carries dates "with a day-precision key date today or later";
+      the built feed carries every date the roadmap carries.** The two are the same date for
+      almost every reform, because a change is registered with day precision unless somebody
+      records otherwise. They part when a reform is dated only to a month, a quarter or a
+      year: the roadmap shows it with its precision beside it, and a calendar client would
+      draw the same date as one all-day event and put a reminder on a day nobody published.
+      Filtering it out was built and then taken out again, for a reason worth your ruling: the
+      precision lives on `regulatory_change`, a library record, and reading it inside the
+      module that writes a bank's `calendar_feed` rows is the exact shape
+      `apps/shared/tests_library_fence.py` refuses (a module that names a library model and
+      calls a write). The alternatives are each somebody's decision: carry the precision on
+      `RoadmapItem` so the feed can read it from the roadmap it already asks (a contract
+      change in `c6-home-api-contract`'s shape), have the feed emit a vague date as an event
+      spanning the month or quarter (a calendar can say that, and it is arguably the truer
+      entry), or leave it as built and let a vague date show as one day, which is what the
+      roadmap page already shows. Default if you say nothing: it stays as built, and a feed
+      never disagrees with the roadmap page beside it, which is the rule chunk 6 ruling 5 set
+      for these two reads.
