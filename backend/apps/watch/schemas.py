@@ -56,6 +56,8 @@ __all__ = ["CamelSchema"]
 
 CheckFrequency = Literal["daily", "weekly", "monthly"]
 CheckStatus = Literal["ok", "failed"]
+SourceCheckKind = Literal["sweep", "recheck"]
+RecheckSubject = Literal["instrument", "provision", "obligation"]
 ChangeStatus = Literal["active", "superseded", "withdrawn"]
 DatePrecision = Literal["day", "month", "quarter", "year"]
 Origin = Literal["agent", "user"]
@@ -241,8 +243,9 @@ class WatchSourceOut(CamelSchema):
     )
     url: str | None = Field(
         description=(
-            "The page the agents fetch. Null for a source that is not one address — the open "
-            "web sweep has none. Never a page behind a login: every source is public."
+            "The page the agents fetch, as a URL of at most 2083 characters. Null for a "
+            "source that is not one address — the open web sweep has none. Never a page behind "
+            "a login: every source is public."
         ),
         examples=["https://www.fi.se/"],
     )
@@ -260,10 +263,10 @@ class WatchSourceOut(CamelSchema):
     )
     authority_id: uuid.UUID | None = Field(
         description=(
-            "The authority that publishes here, when the source is one authority's. Null for "
-            "a legal database or an open-web sweep, which carry no single publisher. A reader "
-            "must not infer a change's jurisdiction from this: a change takes its jurisdiction "
-            "from its own authority (FP-04)."
+            "The authority that publishes here, as a UUID, when the source is one "
+            "authority's. Null for a legal database or an open-web sweep, which carry no single "
+            "publisher. A reader must not infer a change's jurisdiction from this: a change "
+            "takes its jurisdiction from its own authority (FP-04)."
         ),
         examples=["3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11"],
     )
@@ -318,8 +321,9 @@ class WatchSourceInput(WriteBody):
     url: HttpUrl | None = Field(
         default=None,
         description=(
-            "The public page to fetch, http or https, validated as a URL before anything is "
-            "stored. Omit it for a source that is not one address, such as an open-web sweep."
+            "The public page to fetch, http or https, at most 2083 characters, validated as a "
+            "URL before anything is stored. Omit it for a source that is not one address, such "
+            "as an open-web sweep."
         ),
         examples=["https://www.fi.se/en/published/news/"],
     )
@@ -327,18 +331,20 @@ class WatchSourceInput(WriteBody):
         min_length=1,
         max_length=KEY_MAX,
         description=(
-            "The key of a row of the `source_kind` library vocabulary, never a label: "
-            "`authority_site`, `legal_database`, `open_web_sweep` or `tenant_private` are "
-            "seeded, and an admin may add more without a deploy. A key the list does not "
-            "hold answers 422 `unknown_key` with the valid keys listed (AC-WAT2)."
+            f"The key of a row of the `source_kind` library vocabulary, at most {KEY_MAX} "
+            "characters and never a label: `authority_site`, `legal_database`, `open_web_sweep` "
+            "or `tenant_private` are seeded, and an admin may add more without a deploy. A key "
+            "the list does not hold answers 422 `unknown_key` with the valid keys listed "
+            "(AC-WAT2)."
         ),
         examples=["authority_site"],
     )
     authority_id: uuid.UUID | None = Field(
         default=None,
         description=(
-            "The authority that publishes here, when there is exactly one. Null is the "
-            "normal answer for a legal database or a sweep and is not a gap to fill."
+            "The authority that publishes here, as a UUID, when there is exactly one. Null is "
+            "the normal answer for a legal database or a sweep and is not a gap to fill. An id "
+            "the authority list does not hold answers 422 `unknown_key`."
         ),
         examples=["3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11"],
     )
@@ -361,7 +367,10 @@ class WatchSourcePatch(WriteBody):
 
     url: HttpUrl | None = Field(
         default=None,
-        description="A new address for the same source, when the publisher moves the page. Omit to leave it alone.",
+        description=(
+            "A new address for the same source, as a URL of at most 2083 characters, when the "
+            "publisher moves the page. Omit to leave it alone."
+        ),
         examples=["https://www.fi.se/en/published/news/"],
     )
     check_frequency: CheckFrequency | None = Field(
@@ -380,30 +389,27 @@ class WatchSourcePatch(WriteBody):
     )
 
 
+COVERAGE_EXAMPLE: JsonDict = {
+    "source": SOURCE_EXAMPLE,
+    "lastCheckedAt": "2026-09-16T06:02:00Z",
+    "lastStatus": "ok",
+    "lastError": None,
+    "overdue": False,
+}
+
+
 class WatchSourceCoverage(CamelSchema):
     """One row of the coverage log per source: when it was last checked, with what result,
     and whether it is overdue against its cadence and `SOURCE_STALE_AFTER_CHECKS`. Library:
     the same answer for every bank, and the evidence behind "we missed nothing"."""
 
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {
-                    "source": SOURCE_EXAMPLE,
-                    "lastCheckedAt": "2026-09-16T06:02:00Z",
-                    "lastStatus": "ok",
-                    "lastError": None,
-                    "overdue": False,
-                }
-            ]
-        }
-    )
+    model_config = ConfigDict(json_schema_extra={"examples": [COVERAGE_EXAMPLE]})
 
     source: WatchSourceOut = Field(description="The source this row is about, as `GET /sources` answers it.")
     last_checked_at: datetime.datetime | None = Field(
         description=(
-            "When the most recent check of this source finished, in UTC. Null means no check "
-            "has ever been logged, which is not the same as a check that failed."
+            "When the most recent sweep of this source finished, as a UTC date-time. Null "
+            "means no sweep has ever been logged, which is not the same as one that failed."
         ),
         examples=["2026-09-16T06:02:00Z"],
     )
@@ -441,7 +447,7 @@ class WatchSourceCheckInput(WriteBody):
     """`POST /agent-runs/{runId}/source-checks` (WAT-01): one line of the coverage log,
     written by an agent's key holding `sources:write`. A failed check carries an error and
     no items, which `watch/sources.py:record_check` enforces. Send an `Idempotency-Key`:
-    an agent retries, and the same key returns the check already logged."""
+    an agent retries, and a line of a log is cheap to repeat."""
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -457,6 +463,13 @@ class WatchSourceCheckInput(WriteBody):
                     "status": "failed",
                     "error": "502 from the publisher after three retries",
                 },
+                {
+                    "sourceName": "fi.se",
+                    "status": "ok",
+                    "kind": "recheck",
+                    "subjectType": "obligation",
+                    "subjectId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+                },
             ]
         }
     )
@@ -465,9 +478,9 @@ class WatchSourceCheckInput(WriteBody):
         min_length=1,
         max_length=LABEL_MAX,
         description=(
-            "The registered source's `name`, which an agent reads from `GET /sources` at run "
-            "start. A name the registry does not hold answers 422: an agent never registers a "
-            "source, it only reports on one."
+            f"The registered source's `name`, at most {LABEL_MAX} characters, which an agent "
+            "reads from `GET /sources` at run start. A name the registry does not hold answers "
+            "422 `unknown_source`: an agent never registers a source, it only reports on one."
         ),
         examples=["fi.se"],
     )
@@ -484,10 +497,10 @@ class WatchSourceCheckInput(WriteBody):
         default=None,
         ge=0,
         description=(
-            "How many items the agent read on this check, its own count, zero or more. Zero "
-            "is a real and common answer. It is not a count of changes registered: several "
-            "items may describe one reform and one item may describe none. Leave it out on a "
-            "failed check."
+            "How many items the agent read on this check, its own count, a minimum of 0 and no "
+            "maximum. Zero is a real and common answer. It is not a count of changes "
+            "registered: several items may describe one reform and one item may describe none. "
+            "Leave it out on a failed check, which is stored as 0 whatever is sent."
         ),
         examples=[3],
     )
@@ -497,17 +510,50 @@ class WatchSourceCheckInput(WriteBody):
         description=(
             f"Why a failed check failed, at most {TEXT_MAX} characters. The agent's own "
             "message: never fetched page content, never a stack trace, never a credential. "
-            "Must be absent on a successful check."
+            "Required on a failed check and refused on one that succeeded, both with "
+            "`validation_error`."
         ),
         examples=["502 from the publisher after three retries"],
     )
     checked_at: datetime.datetime | None = Field(
         default=None,
         description=(
-            "When the check happened, in UTC. Defaults to the moment the server records it, "
-            "which is what an agent reporting as it goes should use."
+            "When the check happened, as a UTC date-time. Defaults to the moment the server "
+            "records it, which is what an agent reporting as it goes should use."
         ),
         examples=["2026-09-16T06:02:00Z"],
+    )
+    kind: SourceCheckKind = Field(
+        default="sweep",
+        description=(
+            "What the check was for, a fixed kind, defaulting to `sweep`: `sweep` is the look "
+            "for documents the source has published that bleqq has not seen, and `recheck` is "
+            "a second look at one library record this source already gave us, to see whether "
+            "it still matches (AGT-01). Only sweeps decide whether a source has gone stale, "
+            "because a re-check says nothing about whether the source has been read since — a "
+            "run full of re-checks never makes a source look fresh."
+        ),
+        examples=["sweep"],
+    )
+    subject_type: RecheckSubject | None = Field(
+        default=None,
+        description=(
+            "Which kind of library record a `recheck` looked at, a fixed kind: `instrument`, "
+            "`provision` or `obligation`. Required together with `subjectId` when `kind` is "
+            "`recheck`, and refused on a `sweep`, which looks at no one record; either pairing "
+            "answers 422 `validation_error`."
+        ),
+        examples=["obligation"],
+    )
+    subject_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Which library record a `recheck` looked at, as a UUID, alongside `subjectType`. "
+            "Logging the re-check changes no library record: where one has drifted from its "
+            "source the correction goes through the proposal door under four eyes (PRO-01), "
+            "and this line is only the evidence that the look happened."
+        ),
+        examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"],
     )
 
 
@@ -565,14 +611,18 @@ class WatchChangeEventInput(WriteBody):
     sort_order: int = Field(
         default=0,
         description=(
-            "Where the entry sits in the timeline, ascending. Entries share the order the "
-            "agent gave them; ties fall back to the row id so a page never repeats a row."
+            "Where the entry sits in the timeline, ascending, defaulting to 0. Entries share "
+            "the order the agent gave them; ties fall back to the row id so a page never "
+            "repeats a row."
         ),
         examples=[1],
     )
     source_url: HttpUrl | None = Field(
         default=None,
-        description="The public page that states this milestone, so a reviewer can open it. Null when it is the change's own source.",
+        description=(
+            "The public page that states this milestone, so a reviewer can open it, as a URL "
+            "of at most 2083 characters. Null when it is the change's own source."
+        ),
         examples=["https://www.fi.se/en/published/consultations/2026/"],
     )
 
@@ -622,8 +672,9 @@ class WatchChangeDocumentInput(WriteBody):
 
     url: HttpUrl = Field(
         description=(
-            "The page's public address, unique per change: posting the same url again is the "
-            "merge of AC-WAT1, not a second row. Must be http or https."
+            "The page's public address, a URL of at most 2083 characters, unique per change: "
+            "posting the same url again answers the page that is already there rather than "
+            "adding a second row. Must be http or https."
         ),
         examples=["https://www.fi.se/en/published/news/2026/reporting/"],
     )
@@ -636,11 +687,16 @@ class WatchChangeDocumentInput(WriteBody):
     publisher: str | None = Field(
         default=None,
         max_length=LABEL_MAX,
-        description="Who published the page, as the page says. A label for a reader, never matched against the authority list.",
+        description=(
+            f"Who published the page, as the page says, at most {LABEL_MAX} characters. A "
+            "label for a reader, never matched against the authority list."
+        ),
         examples=["Finansinspektionen"],
     )
     fetched_at: datetime.datetime | None = Field(
-        default=None, description="When the agent fetched it, in UTC.", examples=["2026-09-16T06:02:00Z"]
+        default=None,
+        description="When the agent fetched it, as a UTC date-time. Null when the run did not say.",
+        examples=["2026-09-16T06:02:00Z"],
     )
     content_hash: str | None = Field(
         default=None,
@@ -654,14 +710,19 @@ class WatchChangeDocumentInput(WriteBody):
     )
     is_primary: bool = Field(
         default=False,
-        description="Whether this is the page the change is chiefly about. At most one page of a change is primary.",
+        description=(
+            "Whether this is the page the change is chiefly about, false by default. At most "
+            "one page of a change is primary: a second one answers `validation_error`."
+        ),
         examples=[True],
     )
     is_duplicate: bool = Field(
         default=False,
         description=(
-            "Whether this page is a second sighting of a reform already registered. True is "
-            "how AC-WAT1's merge is recorded; it does not mean the page is worthless."
+            "Whether this page is a second sighting of a reform already registered, false by "
+            "default. True is how AC-WAT1's merge is recorded, and a page that arrives on a "
+            "known `stableKey` is stored as one whatever is sent here; it does not mean the "
+            "page is worthless."
         ),
         examples=[False],
     )
@@ -689,7 +750,10 @@ class WatchChangeDocument(CamelSchema):
     url: str = Field(description="The page's public address.", examples=["https://www.fi.se/en/published/news/2026/reporting/"])
     title: str | None = Field(description="The page's own headline, or null.", examples=["FI adopts amended rules on paying for investment research"])
     publisher: str | None = Field(description="Who published it, as the page says.", examples=["Finansinspektionen"])
-    fetched_at: datetime.datetime | None = Field(description="When it was fetched, in UTC.", examples=["2026-09-16T06:02:00Z"])
+    fetched_at: datetime.datetime | None = Field(
+        description="When it was fetched, as a UTC date-time, or null when the run did not say.",
+        examples=["2026-09-16T06:02:00Z"],
+    )
     is_primary: bool = Field(description="Whether this is the page the change is chiefly about.", examples=[True])
     is_duplicate: bool = Field(
         description="Whether it arrived as a second sighting of a reform already registered (AC-WAT1).", examples=[False]
@@ -715,9 +779,9 @@ class WatchObligationLinkInput(WriteBody):
 
     obligation_id: uuid.UUID = Field(
         description=(
-            "The library obligation this change touches. It must already exist: a link never "
-            "creates an obligation, and no key scope reaches the inventory (AC-PRO1). An "
-            "unknown id answers 422."
+            "The library obligation this change touches, as a UUID. It must already exist: a "
+            "link never creates an obligation, and no key scope reaches the inventory "
+            "(AC-PRO1). An unknown id answers 422 `unknown_key`."
         ),
         examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"],
     )
@@ -737,7 +801,8 @@ class WatchObligationLink(LibraryResponse):
     model_config = ConfigDict(json_schema_extra={"examples": [OBLIGATION_LINK_EXAMPLE]})
 
     obligation_id: uuid.UUID = Field(
-        description="The library obligation this change affects.", examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"]
+        description="The library obligation this change affects, as a UUID.",
+        examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"],
     )
     title: str = Field(
         description="The obligation's title in the reader's language, from the library.",
@@ -846,9 +911,9 @@ class WatchChangeInput(WriteBody):
         min_length=1,
         max_length=LABEL_MAX,
         description=(
-            "Who issued the change, as the source writes it. Always present, even when the "
-            "authority is not in the library's authority list yet, so a reader always sees who "
-            "is behind a change."
+            f"Who issued the change, as the source writes it, 1 to {LABEL_MAX} characters. "
+            "Always present, even when the authority is not in the library's authority list "
+            "yet, so a reader always sees who is behind a change."
         ),
         examples=["Finansinspektionen"],
     )
@@ -856,9 +921,10 @@ class WatchChangeInput(WriteBody):
         default=None,
         max_length=KEY_MAX,
         description=(
-            "The key of the library authority, when the agent recognised it. Null means the "
-            "authority is unknown to the library, and a change with no authority is not "
-            "restricted by jurisdiction — it reaches every bank's feed (FP-S15, D-29)."
+            f"The key of the library authority, at most {KEY_MAX} characters, when the agent "
+            "recognised it. Null means the authority is unknown to the library, and a change "
+            "with no authority is not restricted by jurisdiction — it reaches every bank's feed "
+            "(FP-S15, D-29). A key the authority list does not hold answers 422 `unknown_key`."
         ),
         examples=["fi"],
     )
@@ -921,13 +987,19 @@ class WatchChangeInput(WriteBody):
     key_date_label: str | None = Field(
         default=None,
         max_length=LABEL_MAX,
-        description="What that date is, in the source's words: 'In force', 'Applies', 'Transition ends'.",
+        description=(
+            f"What that date is, in the source's words, at most {LABEL_MAX} characters: "
+            "'In force', 'Applies', 'Transition ends'."
+        ),
         examples=["In force"],
     )
     recurrence_rule: str | None = Field(
         default=None,
         max_length=LABEL_MAX,
-        description="For a date that returns (a quarterly rate fixing), how it returns, in words. Null for a one-off reform.",
+        description=(
+            f"For a date that returns (a quarterly rate fixing), how it returns, in words, at "
+            f"most {LABEL_MAX} characters. Null for a one-off reform."
+        ),
         examples=["Every 30 November"],
     )
     flags: list[str] = Field(
@@ -947,19 +1019,23 @@ class WatchChangeInput(WriteBody):
     source_label: str = Field(
         min_length=1,
         max_length=LABEL_MAX,
-        description="Where the change was found, in words a reader recognises.",
+        description=f"Where the change was found, in words a reader recognises, 1 to {LABEL_MAX} characters.",
         examples=["Finansinspektionen"],
     )
     source_url: HttpUrl = Field(
-        description="The public page the change was found on, so a reviewer can open it. Required: a change always says where it came from.",
+        description=(
+            "The public page the change was found on, so a reviewer can open it: a URL of at "
+            "most 2083 characters. Required, because a change always says where it came from."
+        ),
         examples=["https://www.fi.se/"],
     )
     term_ids: list[uuid.UUID] = Field(
         default_factory=list,
         max_length=100,
         description=(
-            "Taxonomy terms that scope the change — its regime, market, product or service — at "
-            "most 100. Terms are library rows an admin may extend; the ids come from "
+            "Taxonomy terms that scope the change — its regime, market, product or service — "
+            "each a UUID, at most 100 of them. Terms are library rows an admin may extend; the "
+            "ids come from "
             "`GET /taxonomy/terms`, which an agent reads at run start. Every change needs at "
             "least one regime term or the call answers 422 `regime_required`, and a standard's "
             "term is accepted only when the authority's jurisdiction is international, else 422 "
@@ -990,7 +1066,10 @@ class WatchChangeInput(WriteBody):
     model: str | None = Field(
         default=None,
         max_length=120,
-        description="The model and pipeline version behind the agent's reading of the source, recorded so AI output stays labelled (WAT-03, AUD-02).",
+        description=(
+            "The model and pipeline version behind the agent's reading of the source, at most "
+            "120 characters, recorded so AI output stays labelled (WAT-03, AUD-02)."
+        ),
         examples=["agent pipeline 0.4"],
     )
 
@@ -1004,7 +1083,11 @@ class WatchChangePatch(WriteBody):
     model_config = ConfigDict(json_schema_extra={"examples": [{"keyDate": "2026-10-01", "keyDateLabel": "In force", "flags": ["advice_perimeter"]}]})
 
     title: str | None = Field(
-        default=None, min_length=1, max_length=LABEL_MAX, description="A corrected title, in the source's words.", examples=["FI adopts amended rules on paying for investment research"]
+        default=None,
+        min_length=1,
+        max_length=LABEL_MAX,
+        description=f"A corrected title, in the source's words, 1 to {LABEL_MAX} characters.",
+        examples=["FI adopts amended rules on paying for investment research"],
     )
     change_type: str | None = Field(
         default=None,
@@ -1026,7 +1109,12 @@ class WatchChangePatch(WriteBody):
     )
     key_date: datetime.date | None = Field(default=None, description="The date that drives 'coming up', once the source states it.", examples=["2026-10-01"])
     key_date_precision: DatePrecision | None = Field(default=None, description=_PRECISION, examples=["day"])
-    key_date_label: str | None = Field(default=None, max_length=LABEL_MAX, description="What that date is, in the source's words.", examples=["In force"])
+    key_date_label: str | None = Field(
+        default=None,
+        max_length=LABEL_MAX,
+        description=f"What that date is, in the source's words, at most {LABEL_MAX} characters.",
+        examples=["In force"],
+    )
     flags: list[str] | None = Field(
         default=None,
         max_length=50,
@@ -1045,13 +1133,20 @@ class WatchChangePatch(WriteBody):
     )
     superseded_by: uuid.UUID | None = Field(
         default=None,
-        description="The change that replaced this one. A change may not supersede itself; the database refuses it.",
+        description=(
+            "The change that replaced this one, as a UUID. A change may not supersede itself; "
+            "the database refuses it."
+        ),
         examples=["b41d7e08-3a5c-4e92-9f16-0d8c2b7a5e43"],
     )
     term_ids: list[uuid.UUID] | None = Field(
         default=None,
         max_length=100,
-        description="The whole set of taxonomy term ids for this change, replacing what is stored. The regime rule of AC-AGT1 applies to the new set.",
+        description=(
+            "The whole set of taxonomy term ids for this change, each a UUID and at most 100 "
+            "of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new "
+            "set."
+        ),
         examples=[["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"]],
     )
 

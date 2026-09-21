@@ -41,8 +41,10 @@ from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, deny,
 from apps.taxonomy.reading import language_order
 from apps.watch import curation, reading, registration, sources
 from apps.watch.schemas import (
+    COVERAGE_EXAMPLE,
     LINKS_MAX,
     OBLIGATION_LINK_EXAMPLE,
+    SOURCE_EXAMPLE,
     WatchChange,
     WatchChangeDetail,
     WatchChangeDocument,
@@ -103,8 +105,21 @@ _EVENT_ID = (
     "The timeline entry being corrected, as a UUID, the `id` the entry was added under. An "
     "entry belonging to another change answers 404 exactly as one that never existed does."
 )
-# The obligation links travel as a bare array in both directions, and an array carries no
-# schema of its own to hang an example on (apps/home/api.py does the same for its feeds).
+_SOURCE_ID = (
+    "The registered source being changed, as a UUID, the `id` `GET /sources` answers. The "
+    "registry is shared, so this is the same id for every bank. A source no longer "
+    "registered answers 404, never 403."
+)
+_RUN_ID = (
+    "The agent run this check is filed against, as a UUID, the `id` `POST /agent-runs` "
+    "answered. It must be a run this key opened and has not closed; another key's run "
+    "answers 404 exactly as one that never existed does."
+)
+# Three of these answer a bare array, and an array carries no schema of its own to hang an
+# example on, so each names one beside its media type (apps/home/api.py does the same for
+# its feeds). The obligation links travel as an array in both directions.
+_SOURCES_EXAMPLE = {"responses": {200: {"content": {"application/json": {"example": [SOURCE_EXAMPLE]}}}}}
+_COVERAGE_EXAMPLE = {"responses": {200: {"content": {"application/json": {"example": [COVERAGE_EXAMPLE]}}}}}
 _LINKS_EXAMPLE = {
     "requestBody": {
         "content": {
@@ -145,12 +160,36 @@ def require_change_writer(request: HttpRequest) -> None:
 # ---------------------------------------------------------------------------------------
 # The source registry and the coverage log (WAT-01)
 # ---------------------------------------------------------------------------------------
-@router.get("/sources", response=list[WatchSourceOut], auth=SESSION_OR_KEY, operation_id="listSources", by_alias=True)
+@router.get(
+    "/sources",
+    response=list[WatchSourceOut],
+    auth=SESSION_OR_KEY,
+    operation_id="listSources",
+    by_alias=True,
+    summary="See every place bleqq watches for new regulation",
+    openapi_extra=_SOURCES_EXAMPLE,
+)
 @answers_problems
 def list_sources(request: HttpRequest) -> Any:
+    """The registry of sources: what each one is, who publishes it, how often it is meant to
+    be checked and whether automated checks are on. Call it from the console's Sources page,
+    and from an agent at the start of a run, which is how a run knows what to check and
+    reports its checks against the right name.
+
+    A read: it changes nothing and writes no audit row. A person's session holding
+    `watch.read` in their own bank, a library editor's console session holding
+    `sources.manage`, or an agent's key holding `library:read`. The registry is a library
+    fact: the same list for every bank, and no bank's own source is in it (a bank's private
+    sources are WAT-06 and arrive later).
+
+    The whole registry comes back in one answer, ordered by name; it is tens of rows, not
+    thousands, so it does not page. An empty registry is a 200 with an empty list, never a
+    404. Errors: `permission_denied` without one of those three, `unauthenticated` without a
+    credential.
+    """
     # Ungated by design: logic-gate (watch.read in a tenant, or a key with library:read).
     require_watch_reader(request)
-    return sources.list_sources()
+    return sources.list_sources(language_order(request))
 
 
 @router.get(
@@ -159,28 +198,117 @@ def list_sources(request: HttpRequest) -> Any:
     auth=SESSION_OR_KEY,
     operation_id="getSourceCoverage",
     by_alias=True,
+    summary="Check that nothing we watch has gone unchecked",
+    openapi_extra=_COVERAGE_EXAMPLE,
 )
 @answers_problems
 def get_source_coverage(request: HttpRequest) -> Any:
+    """The coverage log's bottom line, one row per source: when it was last swept, how that
+    sweep ended, what went wrong if it failed, and whether the source has now gone stale.
+    Call it for the console's Source coverage page and whenever somebody asks how we know a
+    reform was not missed.
+
+    A read: it changes nothing and writes no audit row. The same three callers as
+    `GET /sources`, and the same library fact for every bank.
+
+    `overdue` is computed by the server, never stored: true when the last
+    `SOURCE_STALE_AFTER_CHECKS` sweeps of the source all failed, or when longer than the
+    source's own cadence plus `SOURCE_STALE_GRACE_HOURS` has passed since the last sweep
+    that succeeded. Both are settings. Two rows are never overdue and a reader should not
+    treat them alike: a source whose automated checks are switched off, which is meant not
+    to be checked, and a source with `lastStatus` `never`, which has no log to measure.
+    Re-checks are left out of all of this on purpose — a re-check looks again at a record
+    the source already gave us, so a run full of them never makes a source look fresh.
+
+    One row per registered source, ordered by name, and no paging. A registry with nothing
+    in it is a 200 with an empty list. Errors: `permission_denied` without `watch.read`,
+    `sources.manage` or the `library:read` scope; `unauthenticated` without a credential.
+    """
     # Ungated by design: logic-gate (watch.read in a tenant, or a key with library:read).
     require_watch_reader(request)
-    return sources.source_coverage()
+    return sources.source_coverage(language_order(request))
 
 
-@router.post("/sources", response={201: WatchSourceOut}, auth=SESSION, operation_id="createSource", by_alias=True)
-@requires_permission(perms.SOURCES_MANAGE)
-@answers_problems
-def create_source(request: HttpRequest, body: WatchSourceInput) -> Any:
-    return sources.create_source()
-
-
-@router.patch(
-    "/sources/{source_id}", response=WatchSourceOut, auth=SESSION, operation_id="updateSource", by_alias=True
+@router.post(
+    "/sources",
+    response={201: WatchSourceOut},
+    auth=SESSION,
+    operation_id="createSource",
+    by_alias=True,
+    summary="Add a place for the agents to watch",
 )
 @requires_permission(perms.SOURCES_MANAGE)
 @answers_problems
-def update_source(request: HttpRequest, source_id: uuid.UUID, body: WatchSourcePatch) -> Any:
-    return sources.update_source()
+def create_source(request: HttpRequest, body: WatchSourceInput) -> Any:
+    """Register a public page, a legal database or an open-web sweep for bleqq's agents to
+    check, with the cadence we promise for it. Call it when a supervisor opens a new
+    newsroom, when a register moves, or when a market we have started watching brings a
+    publisher we do not yet follow. The answer is the registry row as it now stands.
+
+    A library editor's session holding `sources.manage`, which is a platform permission and
+    which no bank's role holds: the registry is shared by every bank, so one bank never adds
+    to it. No API key scope reaches this route either — an agent reports on the registry and
+    never edits it. There is no passkey step-up and no `If-Match`: a registry row carries no
+    version, and adding a place to look at is not a decision about the law.
+
+    The source is registered with automated checks on. Nothing is checked in this call: the
+    first sweep is the next run's, and until one happens the coverage log says `never`. The
+    row and its audit row, which names who registered it, are written in one transaction,
+    and the keys are resolved first, so a refusal stores nothing.
+
+    Errors to branch on: `unknown_key` (422) when `kind` names no active row of the
+    source-kind vocabulary, with the valid keys listed, or when `authorityId` names no
+    authority the library holds; `duplicate_key` (409) when a source of that name is already
+    registered — names are unique across the library, so change the row that exists;
+    `validation_error` (422) for a body the schema refuses, including a `url` that is not
+    http or https; `permission_denied` (403) without `sources.manage`; `unauthenticated`
+    (401) without a session.
+    """
+    return 201, sources.create_source(
+        actor=actor_for(request), order=language_order(request), body=body
+    )
+
+
+@router.patch(
+    "/sources/{source_id}",
+    response=WatchSourceOut,
+    auth=SESSION,
+    operation_id="updateSource",
+    by_alias=True,
+    summary="Move a watched source, or stop checking it",
+)
+@requires_permission(perms.SOURCES_MANAGE)
+@answers_problems
+def update_source(
+    request: HttpRequest,
+    body: WatchSourcePatch,
+    source_id: uuid.UUID = Path(..., description=_SOURCE_ID),
+) -> Any:
+    """Point a registered source at the page the publisher has moved it to, change how often
+    we promise to check it, or switch its automated checks off. Call it when a fetch starts
+    failing because an address changed, and when a publisher's terms mean we must stop
+    checking automatically (WAT-07, D-45). The answer is the row as it now stands.
+
+    A library editor's session holding `sources.manage`, the same platform permission that
+    registers one, and no key. A field left out, and a field sent as null, both mean "leave
+    it alone"; the name and the kind are not on this shape and never move, because a
+    different place to watch is a different source and the name is what a run reports
+    against. No step-up and no `If-Match`: a registry row carries no version.
+
+    Switching `active` off stops the automated checks and keeps every check already logged:
+    the coverage log is never rewritten, and the source stops being reported stale, because
+    it is now meant not to be checked. The row and its audit row, which holds the row as it
+    was and as it now is, are written in one transaction.
+
+    Errors to branch on: `not_found` (404) when no source has that id, answered the same way
+    for a source that never existed so no id can be probed for; `validation_error` (422) for
+    a body the schema refuses, including a `url` that is not http or https and a
+    `checkFrequency` outside `daily`, `weekly` and `monthly`; `permission_denied` (403)
+    without `sources.manage`; `unauthenticated` (401) without a session.
+    """
+    return sources.update_source(
+        actor=actor_for(request), order=language_order(request), source_id=source_id, body=body
+    )
 
 
 @router.post(
@@ -189,13 +317,47 @@ def update_source(request: HttpRequest, source_id: uuid.UUID, body: WatchSourceP
     auth=KEY,
     operation_id="recordSourceCheck",
     by_alias=True,
+    summary="Log that a run checked a source, and how it went",
 )
 @requires_scope(perms.SCOPE_SOURCES_WRITE)
 @answers_problems
 def record_source_check(
-    request: HttpRequest, run_id: uuid.UUID, body: WatchSourceCheckInput, idempotency_key: str | None = IdempotencyKey
+    request: HttpRequest,
+    body: WatchSourceCheckInput,
+    run_id: uuid.UUID = Path(..., description=_RUN_ID),
+    idempotency_key: str | None = IdempotencyKey,
 ) -> Any:
-    return sources.record_check()
+    """Write one line of the coverage log: this run looked at this source at this time, and
+    this is how it went. Call it once per source a sweep visits, whether or not anything new
+    was found, and once per library record a re-check looks at (`kind` `recheck`). Finding
+    nothing is a result and must still be logged — an unlogged check is indistinguishable
+    from one that never happened, and the coverage log is the whole evidence that a reform
+    was not missed.
+
+    An agent's key holding the scope `sources:write`, on a run that key has open; no
+    person's session reaches it, and no scope here registers a source or touches the
+    obligations inventory. The line and its audit row, with the agent behind the key as the
+    actor, are written in one transaction, and every refusal comes before the write, so a
+    rejected call logs nothing.
+
+    Answers 204 with no body: a line of a log has nothing to read back. Repeating it is
+    safe in the sense that matters — a second identical line changes no conclusion the
+    coverage page draws, because it reads the most recent sweep — so send an
+    `Idempotency-Key` and retry a call that timed out rather than leaving a gap.
+
+    Errors to branch on: `run_not_open` (422) when the run named is closed, so nothing can
+    be filed against it any more; `unknown_source` (422) when `sourceName` names no
+    registered source — read `GET /sources` at run start and report against those names;
+    `validation_error` (422) when a failed check carries no `error`, when a successful one
+    carries an error, when a `recheck` names no `subjectType` and `subjectId`, or when a
+    `sweep` names one; `not_found` (404) when the run belongs to another key or to nobody,
+    answered alike so no run id can be probed for; `permission_denied` (403) without
+    `sources:write`; `unauthenticated` (401) without a key.
+    """
+    sources.record_check(
+        who=principal(request), actor=actor_for(request), run_id=run_id, body=body
+    )
+    return 204, None
 
 
 # ---------------------------------------------------------------------------------------
@@ -352,12 +514,56 @@ def list_obligation_changes(
     auth=SESSION_OR_KEY,
     operation_id="createChange",
     by_alias=True,
+    summary="File a reform the run has just sighted",
 )
 @answers_problems
 def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key: str | None = IdempotencyKey) -> Any:
+    """Put one reform into the shared library, with the timeline the source states, the
+    pages it was found on, what the run thinks it is about and the obligations it may touch.
+    Call it once per reform a sweep finds, and from the console when a library editor files
+    one by hand. This is the call that starts the work: every active bank gets a case for
+    the change, with its own footprint verdict, a moment later.
+
+    An agent's key needs the scope `changes:write` and a library editor's session the
+    permission `proposals.review`, which no bank's role holds. `agentRunId` must name a run
+    the calling key has open, so every library row an agent wrote can be traced to the night
+    that wrote it; a library editor filing one by hand names no run.
+
+    One reform is one record, and `stableKey` is what makes that true. Sending a key the
+    library already holds answers **200** with the change that exists: the pages the call
+    carries are attached to it as duplicates, a milestone it did not have is added, and not
+    one field of the stored change is changed. A new key answers **201**. That is what makes
+    the call safe to retry — send an `Idempotency-Key` as well, but the stable key is the
+    guarantee. Correcting a fact already stored is `PATCH /changes/{changeId}`, never a
+    second registration.
+
+    Everything the call files about what the reform is — its type, its flags, its scope
+    terms and its obligation links — is stored as a suggestion, with nobody named as having
+    confirmed it, whoever sent it. A reader must not treat any of it as checked.
+
+    Every page's text is screened for embedded instructions before it is stored (AGT-07) and
+    what the screen finds is recorded in that page's `riskFlags`. The text itself is kept
+    exactly as it arrived, because it is evidence: it is never executed, never rendered as
+    HTML and never followed. A flag is a warning about the page, not about the reform.
+
+    The change, its timeline, its pages, its classification, its audit row and the outbox
+    row that opens the cases all go in one transaction, and every key is resolved first, so
+    a refusal stores nothing at all.
+
+    Errors to branch on: `run_not_open` (422) when `agentRunId` names a run that is closed;
+    `unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an
+    `obligationId` or `authorityCode` names a row the library does not hold or has retired,
+    with the valid keys listed for a vocabulary; `validation_error` (422) for a body the
+    schema refuses, for the same obligation named twice, and for two pages both marked
+    primary; `not_found` (404) when `agentRunId` names a run belonging to another key;
+    `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
+    without a credential.
+    """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
     require_change_writer(request)
-    return registration.register_change()
+    return registration.register_change(
+        who=principal(request), actor=actor_for(request), order=language_order(request), body=body
+    )
 
 
 @router.post(
@@ -366,16 +572,42 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     auth=KEY,
     operation_id="addChangeDocument",
     by_alias=True,
+    summary="Attach a page a reform was found on",
 )
 @requires_scope(perms.SCOPE_CHANGES_WRITE)
 @answers_problems
 def add_change_document(
     request: HttpRequest,
-    change_id: uuid.UUID,
     body: WatchChangeDocumentInput,
+    change_id: uuid.UUID = Path(..., description=_CHANGE_ID_WRITE),
     idempotency_key: str | None = IdempotencyKey,
 ) -> Any:
-    return registration.add_document()
+    """Record one more public page behind a reform already registered: its address, its
+    headline, who published it, when it was fetched and a hash of what was fetched. Call it
+    when a later run finds the same reform somewhere else, and when the first call carried
+    only the page it started from. The answer is the page as it was stored.
+
+    An agent's key holding the scope `changes:write`, and no person's session: a page
+    arrives from the run that fetched and screened it (AGT-07), never from a screen. No
+    scope here reaches the obligations inventory.
+
+    The text of the page is never stored. What is kept is the address, the headline, the
+    publisher, the time and a hash — for a standards publisher that is all we may keep
+    (WAT-07, D-45) — plus what the injection screen found, in `riskFlags`. A page whose
+    address this change already carries answers the page that is already there instead of
+    doubling it, which is what makes this safe for a run to retry; send an
+    `Idempotency-Key` as well.
+
+    The page and its audit row are written in one transaction.
+
+    Errors to branch on: `validation_error` (422) when the change already has a primary page
+    and this one is marked primary too, and for a body the schema refuses, including a `url`
+    that is not http or https; `not_found` (404) when no change has that id;
+    `permission_denied` (403) without `changes:write`; `unauthenticated` (401) without a key.
+    """
+    return registration.add_document(
+        actor=actor_for(request), order=language_order(request), change_id=change_id, body=body
+    )
 
 
 # ---------------------------------------------------------------------------------------

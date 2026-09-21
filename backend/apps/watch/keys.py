@@ -4,8 +4,9 @@ back out (WAT-03, WAT-04, AC-WAT2).
 Nothing here writes, and that is the module's reason to exist. The library fence refuses
 any production module that both names a library record and calls a write
 (apps/shared/tests_library_fence.py), because that is how a library write gets smuggled in
-beside the proposal door. So `apps/watch/curation.py` writes and never names a library
-record, and every lookup and every response it hands back is built here — the same split
+beside the proposal door. So the three modules that write — `apps/watch/registration.py`,
+`curation.py` and `sources.py` — name no library record at all, and every lookup and every
+response each of them hands back is built here — the same split
 `apps/cases/reading.py` makes for case creation and `apps/library/reading.py` for the
 proposals app.
 
@@ -19,19 +20,37 @@ refusal stores nothing.
 
 from __future__ import annotations
 
+import dataclasses
+import datetime
 import uuid
 from collections.abc import Sequence
 from typing import Any, cast
 
 from django.core.exceptions import ValidationError
+from django.db.models import OuterRef, Subquery
 
-from apps.library.models import Obligation, RecordStatus
+from apps.library.models import Authority, Obligation, RecordStatus
 from apps.library.reading import localized, vocabulary_refs
 from apps.shared.errors import ProblemError
-from apps.taxonomy.models import ChangeTypeLabel, FlagLabel, TaxonomyTerm, TaxonomyTermLabel, UrgencyLabel
+from apps.taxonomy.models import (
+    ChangeTypeLabel,
+    FlagLabel,
+    SourceKindLabel,
+    TaxonomyTerm,
+    TaxonomyTermLabel,
+    UrgencyLabel,
+)
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_lists_logic import VocabularyProblem
-from apps.watch.models import ChangeDocument, ChangeEvent, RegulatoryChange
+from apps.watch.models import (
+    ChangeDocument,
+    ChangeEvent,
+    CheckStatus,
+    RegulatoryChange,
+    Source,
+    SourceCheck,
+    SourceCheckKind,
+)
 from apps.watch.schemas import (
     ChangeStatus,
     DatePrecision,
@@ -40,6 +59,7 @@ from apps.watch.schemas import (
     WatchChangeDocument,
     WatchChangeEvent,
     WatchObligationLink,
+    WatchSourceOut,
 )
 
 # The vocabulary lists a change's facts are drawn from (apps/taxonomy/registry.py). They
@@ -47,13 +67,18 @@ from apps.watch.schemas import (
 # the field, so a caller can neither reach another list nor learn which lists exist.
 CHANGE_TYPE_LIST = "change_type"
 FLAG_LIST = "flag"
+SOURCE_KIND_LIST = "source_kind"
+URGENCY_LIST = "urgency"
 
-# The names `apps/watch/curation.py` annotates its own helpers with. That module writes, so
-# the fence's AST rule refuses it the model's own name; the rows themselves still have to
-# travel between the two halves. The guarantee that a watch step writes no inventory table
-# is not this rule but `watch_write()`'s runtime refusal (apps/watch/write.py).
+# The names `apps/watch/curation.py`, `registration.py` and `sources.py` annotate their own
+# helpers with. Those modules write, so the fence's AST rule refuses them the model's own
+# name; the rows themselves still have to travel between the two halves. The guarantee that
+# a watch step writes no inventory table is not this rule but `watch_write()`'s runtime
+# refusal (apps/watch/write.py).
 ChangeRow = RegulatoryChange
 EventRow = ChangeEvent
+DocumentRow = ChangeDocument
+SourceRow = Source
 
 
 # ---------------------------------------------------------------------------------------
@@ -146,6 +171,44 @@ def obligations_for(obligation_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, Obli
     return found
 
 
+def authority_named(code: str) -> uuid.UUID | None:
+    """The library authority a caller named by key, or None when it named none.
+
+    422 `unknown_key` for a key the authority list does not hold. A change may carry no
+    authority at all — it is then not restricted by jurisdiction (FP-S15, D-29) — but a key
+    that was meant to name one and does not is a mistake worth a sentence rather than a
+    silently unrestricted change.
+    """
+    if not code:
+        return None
+    found = Authority.objects.filter(key=code).values_list(
+        "id", flat=True
+    ).first()  # ordering: `key` is unique, at most one row
+    if found is None:
+        raise ValidationError(
+            f"Not an authority of the library: {code}. GET /authorities lists the ones a change may name.",
+            code="unknown_key",
+        )
+    return found
+
+
+def authority_with_id(authority_id: uuid.UUID | None) -> uuid.UUID | None:
+    """The library authority a caller named by id, or None when it named none. 422
+    `unknown_key` for an id the authority list does not hold, so a registry row can never
+    point at an authority nobody can open."""
+    if authority_id is None:
+        return None
+    found = Authority.objects.filter(pk=authority_id).values_list(
+        "id", flat=True
+    ).first()  # ordering: pk lookup, at most one row
+    if found is None:
+        raise ValidationError(
+            f"Not an authority of the library: {authority_id}. GET /authorities lists them.",
+            code="unknown_key",
+        )
+    return found
+
+
 def change_named(change_id: uuid.UUID) -> uuid.UUID:
     """The id of a change a caller named inside a body — the reform that replaced this one.
 
@@ -184,6 +247,165 @@ def event_for_write(change: ChangeRow, event_id: uuid.UUID) -> EventRow:
     if event is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
     return event
+
+
+def change_with_stable_key(stable_key: str) -> ChangeRow | None:
+    """The reform already registered under this key, or None when it is new.
+
+    This is the merge of AC-WAT1: a stable key is a reform's permanent name, so a second
+    sighting of one the library already holds is the same reform and never a second row.
+    """
+    return (
+        RegulatoryChange.objects.select_related("change_type", "suggested_urgency")
+        .filter(stable_key=stable_key)
+        .first()  # ordering: `stable_key` is unique, at most one row
+    )
+
+
+def new_change(values: dict[str, Any]) -> ChangeRow:
+    """A change row built from values already resolved, not yet saved.
+
+    `apps/watch/registration.py` saves it inside `watch_write()`. The row is built here
+    because that module writes and so may not name a library record at all (the AST half of
+    the library fence); nothing in this function reaches the database.
+    """
+    return RegulatoryChange(**values)  # compliance: allow-kwargs the resolved column values
+
+
+def document_with_url(change: ChangeRow, url: str) -> DocumentRow | None:
+    """The page this change already carries under that address, or None when it is new.
+    `(change, url)` is unique, which is what makes attaching a page a safe retry."""
+    return change.documents.filter(url=url).first()  # ordering: (change, url) is unique, at most one row
+
+
+def event_with_label(change: ChangeRow, label: str) -> EventRow | None:
+    """The milestone this change already carries under that wording, or None when it is new.
+    A reform has one "Consultation closed", so the label is a timeline entry's key on its
+    change and a replayed registration adds no second one."""
+    return change.events.filter(label=label).first()  # ordering: Meta.ordering, (sort_order, id)
+
+
+# ---------------------------------------------------------------------------------------
+# The source registry and its coverage log (WAT-01)
+# ---------------------------------------------------------------------------------------
+@dataclasses.dataclass(frozen=True)
+class Coverage:
+    """One source and what its coverage log says, before the stale rule reads it.
+
+    The four timestamps are the whole input that rule needs, which is why they are read
+    here in one query and judged in `apps/watch/sources.py`: the numbers behind "stale" are
+    settings and belong beside the rule, not beside the query.
+    """
+
+    source: WatchSourceOut
+    last_checked_at: datetime.datetime | None
+    last_status: str | None
+    last_error: str
+    last_ok_at: datetime.datetime | None
+    # When the n-th most recent sweep ran, n being how many failures in a row make a source
+    # stale. Newer than `last_ok_at` (or set while `last_ok_at` is not) means every one of
+    # those n sweeps failed, because an `ok` sweep newer than the last ok one would be the
+    # last ok one. None means the log does not hold n sweeps yet.
+    nth_sweep_at: datetime.datetime | None
+
+
+def new_source(values: dict[str, Any]) -> SourceRow:
+    """A registry row built from values already resolved, not yet saved. Built here for the
+    same reason `new_change` is: `apps/watch/sources.py` writes and may not name a library
+    record."""
+    return Source(**values)  # compliance: allow-kwargs the resolved column values
+
+
+def source_for_write(source_id: uuid.UUID) -> SourceRow:
+    """The registry row this call addresses. One that is not there answers 404 and never
+    403, so no id can be probed for (playbook 4.4)."""
+    source = (
+        Source.objects.select_related("kind", "authority")
+        .filter(pk=source_id)
+        .first()  # ordering: pk lookup, at most one row
+    )
+    if source is None:
+        raise ProblemError(status=404, code="not_found", detail="Not found.")
+    return source
+
+
+def source_with_name(name: str) -> SourceRow | None:
+    """The registered source with that name, or None. `name` is unique across the library,
+    which is what lets an agent report on a source by the name it read at run start and
+    what makes a second registration under one name a conflict rather than a second row."""
+    return (
+        Source.objects.select_related("kind", "authority")
+        .filter(name=name)
+        .first()  # ordering: `name` is unique, at most one row
+    )
+
+
+def source_out(source: SourceRow, order: list[str]) -> WatchSourceOut:
+    """One registry row as every bank reads it, with its kind labelled in the reader's
+    language. A library fact: the same registry for everyone."""
+    return _sources_out([source], order)[0]
+
+
+def sources_out(order: list[str]) -> list[WatchSourceOut]:
+    """The whole registry, by name, in two queries however many sources there are: the rows,
+    then one pass over the labels of the distinct kinds they carry."""
+    return _sources_out(list(Source.objects.select_related("kind", "authority").all()), order)
+
+
+def coverage_rows(order: list[str], *, failures_to_stale: int) -> list[Coverage]:
+    """Every source with the last line of its coverage log, in two queries however many
+    sources and however many checks there are.
+
+    The log is read through correlated sub-selects rather than a query per source, so the
+    cost does not grow with either (NFR-02). Only sweeps count: a re-check looks at one
+    library record the source already gave us and says nothing about whether the source has
+    been read since, so a run full of re-checks must never make a source look fresh.
+    """
+    sweeps = SourceCheck.objects.filter(source=OuterRef("pk"), kind=SourceCheckKind.SWEEP.value)
+    latest = sweeps.order_by("-checked_at", "-id")
+    rows = list(
+        Source.objects.select_related("kind", "authority").annotate(
+            last_checked_at=Subquery(latest.values("checked_at")[:1]),
+            last_status=Subquery(latest.values("status")[:1]),
+            last_error=Subquery(latest.values("error")[:1]),
+            last_ok_at=Subquery(
+                latest.filter(status=CheckStatus.OK.value).values("checked_at")[:1]
+            ),
+            # The n-th most recent sweep, read by offset rather than counted: one more
+            # sub-select instead of an aggregate over every check ever logged.
+            nth_sweep_at=Subquery(latest.values("checked_at")[failures_to_stale - 1 : failures_to_stale]),
+        )
+    )
+    out = _sources_out(rows, order)
+    return [
+        Coverage(
+            source=out[index],
+            last_checked_at=row.last_checked_at,
+            last_status=row.last_status,
+            last_error=row.last_error or "",
+            last_ok_at=row.last_ok_at,
+            nth_sweep_at=row.nth_sweep_at,
+        )
+        for index, row in enumerate(rows)
+    ]
+
+
+def _sources_out(rows: Sequence[SourceRow], order: list[str]) -> list[WatchSourceOut]:
+    kinds = vocabulary_refs(SourceKindLabel, [row.kind for row in rows], order)
+    return [
+        WatchSourceOut(
+            id=row.id,
+            name=row.name,
+            url=row.url or None,
+            kind=kinds[row.kind_id],
+            authority_id=row.authority_id,
+            # The column's choices are the kind the schema publishes, so the cast states
+            # what the database already fixes.
+            check_frequency=cast(Any, row.check_frequency),
+            active=row.active,
+        )
+        for row in rows
+    ]
 
 
 # ---------------------------------------------------------------------------------------
@@ -230,7 +452,7 @@ def change_out(change: ChangeRow, order: list[str]) -> WatchChange:
         status=cast(ChangeStatus, change.status),
         terms=[term_refs[term.id] for term in terms],
         events=[event_out(event) for event in change.events.all()],
-        documents=[_document_out(document) for document in documents],
+        documents=[document_out(document) for document in documents],
         duplicate_count=sum(1 for document in documents if document.is_duplicate),
         obligations=links_out(change, order),
         origin=cast(Origin, change.origin),
@@ -276,7 +498,7 @@ def links_out(change: ChangeRow, order: list[str]) -> list[WatchObligationLink]:
     ]
 
 
-def _document_out(document: ChangeDocument) -> WatchChangeDocument:
+def document_out(document: DocumentRow) -> WatchChangeDocument:
     """A source page. The fetched text itself is never in a response: a reader gets the
     address and opens the publisher's own page (AGT-07, WAT-07)."""
     return WatchChangeDocument(

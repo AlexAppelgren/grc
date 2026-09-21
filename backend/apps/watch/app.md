@@ -44,8 +44,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| WAT-01 | Source registry and coverage log: what was checked, when, with what result. Every run also re-checks the library records of the sources it checked and proposes a correction where a record has drifted (D-50) | M | R1 | in_progress |
-| WAT-02 | One record per reform with a timeline from consultation to in force, partial dates, duplicates merged | M | R1 | in_progress |
+| WAT-01 | Source registry and coverage log: what was checked, when, with what result. Every run also re-checks the library records of the sources it checked and proposes a correction where a record has drifted (D-50) | M | R1 | built |
+| WAT-02 | One record per reform with a timeline from consultation to in force, partial dates, duplicates merged | M | R1 | built |
 | WAT-03 | Change types, flags and scope from vocabularies, with at least one regime on every change and a standard term only on a change from a standards body; agent classifications shown as suggestions until confirmed | M | R1 | in_progress |
 | WAT-04 | Links to affected obligations with confidence, confirmed by a person | M | R1 | in_progress |
 | WAT-05 | A drafted "So what?" per change, labelled AI-drafted until a person confirms or rewrites it per tenant | M | R1 | in_progress |

@@ -465,6 +465,19 @@ CELERY_BEAT_SCHEDULE["outbox-deliver"] = {
 CASE_CREATION_BATCH = env_int("CASE_CREATION_BATCH", 100)
 
 # ---------------------------------------------------------------------------------------
+# ===== WAT-01 when a watched source has gone stale (apps/watch/sources.py) ===============
+# The console's Source coverage says "we missed nothing" only as far as the coverage log
+# lets it. A source is stale when the last SOURCE_STALE_AFTER_CHECKS sweeps of it all
+# failed — one, by default, because a supervisor's page that will not answer is news the
+# moment it happens — or when longer than its own cadence plus SOURCE_STALE_GRACE_HOURS
+# has passed since the last sweep that succeeded. The grace exists because a run is
+# scheduled rather than instantaneous: a daily source checked a few hours late is late,
+# not unwatched, and a grace of a day keeps the page free of rows nobody can act on.
+# ---------------------------------------------------------------------------------------
+SOURCE_STALE_AFTER_CHECKS = env_int("SOURCE_STALE_AFTER_CHECKS", 1)
+SOURCE_STALE_GRACE_HOURS = env_int("SOURCE_STALE_GRACE_HOURS", 24)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------

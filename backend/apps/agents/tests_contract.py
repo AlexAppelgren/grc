@@ -9,8 +9,9 @@ in front of that stub is proved here, per route. Written before the routes exist
 
 The three run routes are no longer stubs — `c5-agent-runs` built them, and what they do
 behind these gates is proved in `tests_runs.py` — so they left the stub list below on
-2026-09-21 while keeping every gate assertion they had. `recordSourceCheck` and the three
-agent-key routes are still declared ahead of their logic.
+2026-09-21 while keeping every gate assertion they had. `recordSourceCheck` followed them
+the same day (`c5-watch-sources-coverage`, proved in `apps/watch/tests_sources.py`). The
+three agent-key routes are still declared ahead of their logic.
 
 The agent-key routes live in `identity/api.py` but are proved here, beside the runs they
 create keys for: `identity/tests_api_keys.py` belongs to the task that builds their logic.
@@ -61,8 +62,9 @@ SESSION_ROUTES = [
     ("revokeAgentKey", "post", f"{KEYS}/{KEY}/revoke", {}, perms.AGENT_DEFINITIONS_MANAGE),
 ]
 # What is still declared ahead of its logic. The three run routes left this list when
-# `c5-agent-runs` built them; the gates above still cover all of them.
-STUBBED_KEY_ROUTES = [route for route in KEY_ROUTES if route[0] == "recordSourceCheck"]
+# `c5-agent-runs` built them and `recordSourceCheck` when `c5-watch-sources-coverage` did;
+# the gates above still cover all of them, so nothing is left unproved by their leaving.
+STUBBED_KEY_ROUTES: list[tuple[str, str, str, Any, str]] = []
 STUBBED_SESSION_ROUTES = [route for route in SESSION_ROUTES if route[0] != "listAgentRuns"]
 
 
@@ -153,10 +155,20 @@ class AgentRouteStubs(TestCase):
         self.assertNotIn("traceback", response.content.decode().lower())
 
     def test_a_key_with_the_scope_reaches_the_stub(self) -> None:
+        self.assertEqual(STUBBED_KEY_ROUTES, [], "every key route of this chunk is built; nothing is left to stub")
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
             for name, method, url, body, _ in STUBBED_KEY_ROUTES:
                 with self.subTest(operation=name):
                     self.assert_not_built(_call(self.client, method, url, body, AS_KEY))
+
+    def test_the_built_source_check_route_answers_from_its_logic(self) -> None:
+        """`recordSourceCheck` no longer answers `not_built`. The run these constants name
+        does not exist, so the honest answer is 404 — which is also the proof that the gate
+        ran first and the lookup second."""
+        with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
+            response = _call(self.client, "post", f"{RUNS}/{RUN}/source-checks", CHECK_BODY, AS_KEY)
+        self.assertEqual(response.status_code, 404, response.content)
+        self.assertEqual(response.json()["code"], "not_found")
 
     def test_a_session_with_the_permission_reaches_the_stub(self) -> None:
         principal = user_principal(

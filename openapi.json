@@ -9973,7 +9973,7 @@
                 "type": "null"
               }
             ],
-            "description": "When it was fetched, in UTC.",
+            "description": "When it was fetched, as a UTC date-time, or null when the run did not say.",
             "examples": [
               "2026-09-16T06:02:00Z"
             ],
@@ -10106,7 +10106,7 @@
                 "type": "null"
               }
             ],
-            "description": "When the agent fetched it, in UTC.",
+            "description": "When the agent fetched it, as a UTC date-time. Null when the run did not say.",
             "examples": [
               "2026-09-16T06:02:00Z"
             ],
@@ -10114,7 +10114,7 @@
           },
           "isDuplicate": {
             "default": false,
-            "description": "Whether this page is a second sighting of a reform already registered. True is how AC-WAT1's merge is recorded; it does not mean the page is worthless.",
+            "description": "Whether this page is a second sighting of a reform already registered, false by default. True is how AC-WAT1's merge is recorded, and a page that arrives on a known `stableKey` is stored as one whatever is sent here; it does not mean the page is worthless.",
             "examples": [
               false
             ],
@@ -10123,7 +10123,7 @@
           },
           "isPrimary": {
             "default": false,
-            "description": "Whether this is the page the change is chiefly about. At most one page of a change is primary.",
+            "description": "Whether this is the page the change is chiefly about, false by default. At most one page of a change is primary: a second one answers `validation_error`.",
             "examples": [
               true
             ],
@@ -10140,7 +10140,7 @@
                 "type": "null"
               }
             ],
-            "description": "Who published the page, as the page says. A label for a reader, never matched against the authority list.",
+            "description": "Who published the page, as the page says, at most 300 characters. A label for a reader, never matched against the authority list.",
             "examples": [
               "Finansinspektionen"
             ],
@@ -10177,7 +10177,7 @@
             "title": "Title"
           },
           "url": {
-            "description": "The page's public address, unique per change: posting the same url again is the merge of AC-WAT1, not a second row. Must be http or https.",
+            "description": "The page's public address, a URL of at most 2083 characters, unique per change: posting the same url again answers the page that is already there rather than adding a second row. Must be http or https.",
             "examples": [
               "https://www.fi.se/en/published/news/2026/reporting/"
             ],
@@ -10375,7 +10375,7 @@
           },
           "sortOrder": {
             "default": 0,
-            "description": "Where the entry sits in the timeline, ascending. Entries share the order the agent gave them; ties fall back to the row id so a page never repeats a row.",
+            "description": "Where the entry sits in the timeline, ascending, defaulting to 0. Entries share the order the agent gave them; ties fall back to the row id so a page never repeats a row.",
             "examples": [
               1
             ],
@@ -10394,7 +10394,7 @@
                 "type": "null"
               }
             ],
-            "description": "The public page that states this milestone, so a reviewer can open it. Null when it is the change's own source.",
+            "description": "The public page that states this milestone, so a reviewer can open it, as a URL of at most 2083 characters. Null when it is the change's own source.",
             "examples": [
               "https://www.fi.se/en/published/consultations/2026/"
             ],
@@ -10481,14 +10481,14 @@
                 "type": "null"
               }
             ],
-            "description": "The key of the library authority, when the agent recognised it. Null means the authority is unknown to the library, and a change with no authority is not restricted by jurisdiction \u2014 it reaches every bank's feed (FP-S15, D-29).",
+            "description": "The key of the library authority, at most 80 characters, when the agent recognised it. Null means the authority is unknown to the library, and a change with no authority is not restricted by jurisdiction \u2014 it reaches every bank's feed (FP-S15, D-29). A key the authority list does not hold answers 422 `unknown_key`.",
             "examples": [
               "fi"
             ],
             "title": "Authoritycode"
           },
           "authorityLabel": {
-            "description": "Who issued the change, as the source writes it. Always present, even when the authority is not in the library's authority list yet, so a reader always sees who is behind a change.",
+            "description": "Who issued the change, as the source writes it, 1 to 300 characters. Always present, even when the authority is not in the library's authority list yet, so a reader always sees who is behind a change.",
             "examples": [
               "Finansinspektionen"
             ],
@@ -10565,7 +10565,7 @@
                 "type": "null"
               }
             ],
-            "description": "What that date is, in the source's words: 'In force', 'Applies', 'Transition ends'.",
+            "description": "What that date is, in the source's words, at most 300 characters: 'In force', 'Applies', 'Transition ends'.",
             "examples": [
               "In force"
             ],
@@ -10602,7 +10602,7 @@
                 "type": "null"
               }
             ],
-            "description": "The model and pipeline version behind the agent's reading of the source, recorded so AI output stays labelled (WAT-03, AUD-02).",
+            "description": "The model and pipeline version behind the agent's reading of the source, at most 120 characters, recorded so AI output stays labelled (WAT-03, AUD-02).",
             "examples": [
               "agent pipeline 0.4"
             ],
@@ -10664,7 +10664,7 @@
                 "type": "null"
               }
             ],
-            "description": "For a date that returns (a quarterly rate fixing), how it returns, in words. Null for a one-off reform.",
+            "description": "For a date that returns (a quarterly rate fixing), how it returns, in words, at most 300 characters. Null for a one-off reform.",
             "examples": [
               "Every 30 November"
             ],
@@ -10687,7 +10687,7 @@
             "title": "Sowhatdraft"
           },
           "sourceLabel": {
-            "description": "Where the change was found, in words a reader recognises.",
+            "description": "Where the change was found, in words a reader recognises, 1 to 300 characters.",
             "examples": [
               "Finansinspektionen"
             ],
@@ -10697,7 +10697,7 @@
             "type": "string"
           },
           "sourceUrl": {
-            "description": "The public page the change was found on, so a reviewer can open it. Required: a change always says where it came from.",
+            "description": "The public page the change was found on, so a reviewer can open it: a URL of at most 2083 characters. Required, because a change always says where it came from.",
             "examples": [
               "https://www.fi.se/"
             ],
@@ -10744,7 +10744,7 @@
             "type": "string"
           },
           "termIds": {
-            "description": "Taxonomy terms that scope the change \u2014 its regime, market, product or service \u2014 at most 100. Terms are library rows an admin may extend; the ids come from `GET /taxonomy/terms`, which an agent reads at run start. Every change needs at least one regime term or the call answers 422 `regime_required`, and a standard's term is accepted only when the authority's jurisdiction is international, else 422 `standard_term_only_on_standards` (AC-AGT1).",
+            "description": "Taxonomy terms that scope the change \u2014 its regime, market, product or service \u2014 each a UUID, at most 100 of them. Terms are library rows an admin may extend; the ids come from `GET /taxonomy/terms`, which an agent reads at run start. Every change needs at least one regime term or the call answers 422 `regime_required`, and a standard's term is accepted only when the authority's jurisdiction is international, else 422 `standard_term_only_on_standards` (AC-AGT1).",
             "examples": [
               [
                 "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
@@ -10960,7 +10960,7 @@
                 "type": "null"
               }
             ],
-            "description": "What that date is, in the source's words.",
+            "description": "What that date is, in the source's words, at most 300 characters.",
             "examples": [
               "In force"
             ],
@@ -11034,7 +11034,7 @@
                 "type": "null"
               }
             ],
-            "description": "The change that replaced this one. A change may not supersede itself; the database refuses it.",
+            "description": "The change that replaced this one, as a UUID. A change may not supersede itself; the database refuses it.",
             "examples": [
               "b41d7e08-3a5c-4e92-9f16-0d8c2b7a5e43"
             ],
@@ -11054,7 +11054,7 @@
                 "type": "null"
               }
             ],
-            "description": "The whole set of taxonomy term ids for this change, replacing what is stored. The regime rule of AC-AGT1 applies to the new set.",
+            "description": "The whole set of taxonomy term ids for this change, each a UUID and at most 100 of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new set.",
             "examples": [
               [
                 "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
@@ -11073,7 +11073,7 @@
                 "type": "null"
               }
             ],
-            "description": "A corrected title, in the source's words.",
+            "description": "A corrected title, in the source's words, 1 to 300 characters.",
             "examples": [
               "FI adopts amended rules on paying for investment research"
             ],
@@ -12182,7 +12182,7 @@
             "type": "string"
           },
           "obligationId": {
-            "description": "The library obligation this change affects.",
+            "description": "The library obligation this change affects, as a UUID.",
             "examples": [
               "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
             ],
@@ -12259,7 +12259,7 @@
             "title": "Confidence"
           },
           "obligationId": {
-            "description": "The library obligation this change touches. It must already exist: a link never creates an obligation, and no key scope reaches the inventory (AC-PRO1). An unknown id answers 422.",
+            "description": "The library obligation this change touches, as a UUID. It must already exist: a link never creates an obligation, and no key scope reaches the inventory (AC-PRO1). An unknown id answers 422 `unknown_key`.",
             "examples": [
               "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
             ],
@@ -12276,7 +12276,7 @@
       },
       "WatchSourceCheckInput": {
         "additionalProperties": false,
-        "description": "`POST /agent-runs/{runId}/source-checks` (WAT-01): one line of the coverage log,\nwritten by an agent's key holding `sources:write`. A failed check carries an error and\nno items, which `watch/sources.py:record_check` enforces. Send an `Idempotency-Key`:\nan agent retries, and the same key returns the check already logged.",
+        "description": "`POST /agent-runs/{runId}/source-checks` (WAT-01): one line of the coverage log,\nwritten by an agent's key holding `sources:write`. A failed check carries an error and\nno items, which `watch/sources.py:record_check` enforces. Send an `Idempotency-Key`:\nan agent retries, and a line of a log is cheap to repeat.",
         "examples": [
           {
             "checkedAt": "2026-09-16T06:02:00Z",
@@ -12288,6 +12288,13 @@
             "error": "502 from the publisher after three retries",
             "sourceName": "eur-lex.europa.eu",
             "status": "failed"
+          },
+          {
+            "kind": "recheck",
+            "sourceName": "fi.se",
+            "status": "ok",
+            "subjectId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+            "subjectType": "obligation"
           }
         ],
         "properties": {
@@ -12301,7 +12308,7 @@
                 "type": "null"
               }
             ],
-            "description": "When the check happened, in UTC. Defaults to the moment the server records it, which is what an agent reporting as it goes should use.",
+            "description": "When the check happened, as a UTC date-time. Defaults to the moment the server records it, which is what an agent reporting as it goes should use.",
             "examples": [
               "2026-09-16T06:02:00Z"
             ],
@@ -12317,7 +12324,7 @@
                 "type": "null"
               }
             ],
-            "description": "Why a failed check failed, at most 4000 characters. The agent's own message: never fetched page content, never a stack trace, never a credential. Must be absent on a successful check.",
+            "description": "Why a failed check failed, at most 4000 characters. The agent's own message: never fetched page content, never a stack trace, never a credential. Required on a failed check and refused on one that succeeded, both with `validation_error`.",
             "examples": [
               "502 from the publisher after three retries"
             ],
@@ -12333,14 +12340,27 @@
                 "type": "null"
               }
             ],
-            "description": "How many items the agent read on this check, its own count, zero or more. Zero is a real and common answer. It is not a count of changes registered: several items may describe one reform and one item may describe none. Leave it out on a failed check.",
+            "description": "How many items the agent read on this check, its own count, a minimum of 0 and no maximum. Zero is a real and common answer. It is not a count of changes registered: several items may describe one reform and one item may describe none. Leave it out on a failed check, which is stored as 0 whatever is sent.",
             "examples": [
               3
             ],
             "title": "Itemsfound"
           },
+          "kind": {
+            "default": "sweep",
+            "description": "What the check was for, a fixed kind, defaulting to `sweep`: `sweep` is the look for documents the source has published that bleqq has not seen, and `recheck` is a second look at one library record this source already gave us, to see whether it still matches (AGT-01). Only sweeps decide whether a source has gone stale, because a re-check says nothing about whether the source has been read since \u2014 a run full of re-checks never makes a source look fresh.",
+            "enum": [
+              "sweep",
+              "recheck"
+            ],
+            "examples": [
+              "sweep"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "sourceName": {
-            "description": "The registered source's `name`, which an agent reads from `GET /sources` at run start. A name the registry does not hold answers 422: an agent never registers a source, it only reports on one.",
+            "description": "The registered source's `name`, at most 300 characters, which an agent reads from `GET /sources` at run start. A name the registry does not hold answers 422 `unknown_source`: an agent never registers a source, it only reports on one.",
             "examples": [
               "fi.se"
             ],
@@ -12360,6 +12380,42 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "subjectId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Which library record a `recheck` looked at, as a UUID, alongside `subjectType`. Logging the re-check changes no library record: where one has drifted from its source the correction goes through the proposal door under four eyes (PRO-01), and this line is only the evidence that the look happened.",
+            "examples": [
+              "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
+            ],
+            "title": "Subjectid"
+          },
+          "subjectType": {
+            "anyOf": [
+              {
+                "enum": [
+                  "instrument",
+                  "provision",
+                  "obligation"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Which kind of library record a `recheck` looked at, a fixed kind: `instrument`, `provision` or `obligation`. Required together with `subjectId` when `kind` is `recheck`, and refused on a `sweep`, which looks at no one record; either pairing answers 422 `validation_error`.",
+            "examples": [
+              "obligation"
+            ],
+            "title": "Subjecttype"
           }
         },
         "required": [
@@ -12403,7 +12459,7 @@
                 "type": "null"
               }
             ],
-            "description": "When the most recent check of this source finished, in UTC. Null means no check has ever been logged, which is not the same as a check that failed.",
+            "description": "When the most recent sweep of this source finished, as a UTC date-time. Null means no sweep has ever been logged, which is not the same as one that failed.",
             "examples": [
               "2026-09-16T06:02:00Z"
             ],
@@ -12483,7 +12539,7 @@
                 "type": "null"
               }
             ],
-            "description": "The authority that publishes here, when there is exactly one. Null is the normal answer for a legal database or a sweep and is not a gap to fill.",
+            "description": "The authority that publishes here, as a UUID, when there is exactly one. Null is the normal answer for a legal database or a sweep and is not a gap to fill. An id the authority list does not hold answers 422 `unknown_key`.",
             "examples": [
               "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11"
             ],
@@ -12504,7 +12560,7 @@
             "type": "string"
           },
           "kind": {
-            "description": "The key of a row of the `source_kind` library vocabulary, never a label: `authority_site`, `legal_database`, `open_web_sweep` or `tenant_private` are seeded, and an admin may add more without a deploy. A key the list does not hold answers 422 `unknown_key` with the valid keys listed (AC-WAT2).",
+            "description": "The key of a row of the `source_kind` library vocabulary, at most 80 characters and never a label: `authority_site`, `legal_database`, `open_web_sweep` or `tenant_private` are seeded, and an admin may add more without a deploy. A key the list does not hold answers 422 `unknown_key` with the valid keys listed (AC-WAT2).",
             "examples": [
               "authority_site"
             ],
@@ -12535,7 +12591,7 @@
                 "type": "null"
               }
             ],
-            "description": "The public page to fetch, http or https, validated as a URL before anything is stored. Omit it for a source that is not one address, such as an open-web sweep.",
+            "description": "The public page to fetch, http or https, at most 2083 characters, validated as a URL before anything is stored. Omit it for a source that is not one address, such as an open-web sweep.",
             "examples": [
               "https://www.fi.se/en/published/news/"
             ],
@@ -12585,7 +12641,7 @@
                 "type": "null"
               }
             ],
-            "description": "The authority that publishes here, when the source is one authority's. Null for a legal database or an open-web sweep, which carry no single publisher. A reader must not infer a change's jurisdiction from this: a change takes its jurisdiction from its own authority (FP-04).",
+            "description": "The authority that publishes here, as a UUID, when the source is one authority's. Null for a legal database or an open-web sweep, which carry no single publisher. A reader must not infer a change's jurisdiction from this: a change takes its jurisdiction from its own authority (FP-04).",
             "examples": [
               "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11"
             ],
@@ -12635,7 +12691,7 @@
                 "type": "null"
               }
             ],
-            "description": "The page the agents fetch. Null for a source that is not one address \u2014 the open web sweep has none. Never a page behind a login: every source is public.",
+            "description": "The page the agents fetch, as a URL of at most 2083 characters. Null for a source that is not one address \u2014 the open web sweep has none. Never a page behind a login: every source is public.",
             "examples": [
               "https://www.fi.se/"
             ],
@@ -12711,7 +12767,7 @@
                 "type": "null"
               }
             ],
-            "description": "A new address for the same source, when the publisher moves the page. Omit to leave it alone.",
+            "description": "A new address for the same source, as a URL of at most 2083 characters, when the publisher moves the page. Omit to leave it alone.",
             "examples": [
               "https://www.fi.se/en/published/news/"
             ],
@@ -13445,13 +13501,16 @@
     },
     "/api/v1/agent-runs/{run_id}/source-checks": {
       "post": {
+        "description": "Write one line of the coverage log: this run looked at this source at this time, and\nthis is how it went. Call it once per source a sweep visits, whether or not anything new\nwas found, and once per library record a re-check looks at (`kind` `recheck`). Finding\nnothing is a result and must still be logged \u2014 an unlogged check is indistinguishable\nfrom one that never happened, and the coverage log is the whole evidence that a reform\nwas not missed.\n\nAn agent's key holding the scope `sources:write`, on a run that key has open; no\nperson's session reaches it, and no scope here registers a source or touches the\nobligations inventory. The line and its audit row, with the agent behind the key as the\nactor, are written in one transaction, and every refusal comes before the write, so a\nrejected call logs nothing.\n\nAnswers 204 with no body: a line of a log has nothing to read back. Repeating it is\nsafe in the sense that matters \u2014 a second identical line changes no conclusion the\ncoverage page draws, because it reads the most recent sweep \u2014 so send an\n`Idempotency-Key` and retry a call that timed out rather than leaving a gap.\n\nErrors to branch on: `run_not_open` (422) when the run named is closed, so nothing can\nbe filed against it any more; `unknown_source` (422) when `sourceName` names no\nregistered source \u2014 read `GET /sources` at run start and report against those names;\n`validation_error` (422) when a failed check carries no `error`, when a successful one\ncarries an error, when a `recheck` names no `subjectType` and `subjectId`, or when a\n`sweep` names one; `not_found` (404) when the run belongs to another key or to nobody,\nanswered alike so no run id can be probed for; `permission_denied` (403) without\n`sources:write`; `unauthenticated` (401) without a key.",
         "operationId": "recordSourceCheck",
         "parameters": [
           {
+            "description": "The agent run this check is filed against, as a UUID, the `id` `POST /agent-runs` answered. It must be a run this key opened and has not closed; another key's run answers 404 exactly as one that never existed does.",
             "in": "path",
             "name": "run_id",
             "required": true,
             "schema": {
+              "description": "The agent run this check is filed against, as a UUID, the `id` `POST /agent-runs` answered. It must be a run this key opened and has not closed; another key's run answers 404 exactly as one that never existed does.",
               "format": "uuid",
               "title": "Run Id",
               "type": "string"
@@ -13496,7 +13555,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Record Source Check",
+        "summary": "Log that a run checked a source, and how it went",
         "tags": [
           "Watch"
         ]
@@ -14727,6 +14786,7 @@
         ]
       },
       "post": {
+        "description": "Put one reform into the shared library, with the timeline the source states, the\npages it was found on, what the run thinks it is about and the obligations it may touch.\nCall it once per reform a sweep finds, and from the console when a library editor files\none by hand. This is the call that starts the work: every active bank gets a case for\nthe change, with its own footprint verdict, a moment later.\n\nAn agent's key needs the scope `changes:write` and a library editor's session the\npermission `proposals.review`, which no bank's role holds. `agentRunId` must name a run\nthe calling key has open, so every library row an agent wrote can be traced to the night\nthat wrote it; a library editor filing one by hand names no run.\n\nOne reform is one record, and `stableKey` is what makes that true. Sending a key the\nlibrary already holds answers **200** with the change that exists: the pages the call\ncarries are attached to it as duplicates, a milestone it did not have is added, and not\none field of the stored change is changed. A new key answers **201**. That is what makes\nthe call safe to retry \u2014 send an `Idempotency-Key` as well, but the stable key is the\nguarantee. Correcting a fact already stored is `PATCH /changes/{changeId}`, never a\nsecond registration.\n\nEverything the call files about what the reform is \u2014 its type, its flags, its scope\nterms and its obligation links \u2014 is stored as a suggestion, with nobody named as having\nconfirmed it, whoever sent it. A reader must not treat any of it as checked.\n\nEvery page's text is screened for embedded instructions before it is stored (AGT-07) and\nwhat the screen finds is recorded in that page's `riskFlags`. The text itself is kept\nexactly as it arrived, because it is evidence: it is never executed, never rendered as\nHTML and never followed. A flag is a warning about the page, not about the reform.\n\nThe change, its timeline, its pages, its classification, its audit row and the outbox\nrow that opens the cases all go in one transaction, and every key is resolved first, so\na refusal stores nothing at all.\n\nErrors to branch on: `run_not_open` (422) when `agentRunId` names a run that is closed;\n`unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an\n`obligationId` or `authorityCode` names a row the library does not hold or has retired,\nwith the valid keys listed for a vocabulary; `validation_error` (422) for a body the\nschema refuses, for the same obligation named twice, and for two pages both marked\nprimary; `not_found` (404) when `agentRunId` names a run belonging to another key;\n`permission_denied` (403) without the scope or the permission; `unauthenticated` (401)\nwithout a credential.",
         "operationId": "createChange",
         "parameters": [
           {
@@ -14788,7 +14848,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Create Change",
+        "summary": "File a reform the run has just sighted",
         "tags": [
           "Watch"
         ]
@@ -15011,13 +15071,16 @@
     },
     "/api/v1/changes/{change_id}/documents": {
       "post": {
+        "description": "Record one more public page behind a reform already registered: its address, its\nheadline, who published it, when it was fetched and a hash of what was fetched. Call it\nwhen a later run finds the same reform somewhere else, and when the first call carried\nonly the page it started from. The answer is the page as it was stored.\n\nAn agent's key holding the scope `changes:write`, and no person's session: a page\narrives from the run that fetched and screened it (AGT-07), never from a screen. No\nscope here reaches the obligations inventory.\n\nThe text of the page is never stored. What is kept is the address, the headline, the\npublisher, the time and a hash \u2014 for a standards publisher that is all we may keep\n(WAT-07, D-45) \u2014 plus what the injection screen found, in `riskFlags`. A page whose\naddress this change already carries answers the page that is already there instead of\ndoubling it, which is what makes this safe for a run to retry; send an\n`Idempotency-Key` as well.\n\nThe page and its audit row are written in one transaction.\n\nErrors to branch on: `validation_error` (422) when the change already has a primary page\nand this one is marked primary too, and for a body the schema refuses, including a `url`\nthat is not http or https; `not_found` (404) when no change has that id;\n`permission_denied` (403) without `changes:write`; `unauthenticated` (401) without a key.",
         "operationId": "addChangeDocument",
         "parameters": [
           {
+            "description": "The library change being corrected, as a UUID, the `id` the registration answered. It is the same change for every bank: what is written here every bank reads. A change no longer in the library answers 404, never 403, so no id can be probed for.",
             "in": "path",
             "name": "change_id",
             "required": true,
             "schema": {
+              "description": "The library change being corrected, as a UUID, the `id` the registration answered. It is the same change for every bank: what is written here every bank reads. A change no longer in the library answers 404, never 403, so no id can be probed for.",
               "format": "uuid",
               "title": "Change Id",
               "type": "string"
@@ -15069,7 +15132,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Add Change Document",
+        "summary": "Attach a page a reform was found on",
         "tags": [
           "Watch"
         ]
@@ -17308,12 +17371,28 @@
     },
     "/api/v1/sources": {
       "get": {
+        "description": "The registry of sources: what each one is, who publishes it, how often it is meant to\nbe checked and whether automated checks are on. Call it from the console's Sources page,\nand from an agent at the start of a run, which is how a run knows what to check and\nreports its checks against the right name.\n\nA read: it changes nothing and writes no audit row. A person's session holding\n`watch.read` in their own bank, a library editor's console session holding\n`sources.manage`, or an agent's key holding `library:read`. The registry is a library\nfact: the same list for every bank, and no bank's own source is in it (a bank's private\nsources are WAT-06 and arrive later).\n\nThe whole registry comes back in one answer, ordered by name; it is tens of rows, not\nthousands, so it does not page. An empty registry is a 200 with an empty list, never a\n404. Errors: `permission_denied` without one of those three, `unauthenticated` without a\ncredential.",
         "operationId": "listSources",
         "parameters": [],
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": [
+                  {
+                    "active": true,
+                    "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+                    "checkFrequency": "weekly",
+                    "id": "0f6d2f20-6d7a-4a7c-9a5e-4a2f8a0f1c31",
+                    "kind": {
+                      "key": "authority_site",
+                      "kind": null,
+                      "label": "Authority website"
+                    },
+                    "name": "fi.se",
+                    "url": "https://www.fi.se/"
+                  }
+                ],
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/WatchSourceOut"
@@ -17334,12 +17413,13 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "List Sources",
+        "summary": "See every place bleqq watches for new regulation",
         "tags": [
           "Watch"
         ]
       },
       "post": {
+        "description": "Register a public page, a legal database or an open-web sweep for bleqq's agents to\ncheck, with the cadence we promise for it. Call it when a supervisor opens a new\nnewsroom, when a register moves, or when a market we have started watching brings a\npublisher we do not yet follow. The answer is the registry row as it now stands.\n\nA library editor's session holding `sources.manage`, which is a platform permission and\nwhich no bank's role holds: the registry is shared by every bank, so one bank never adds\nto it. No API key scope reaches this route either \u2014 an agent reports on the registry and\nnever edits it. There is no passkey step-up and no `If-Match`: a registry row carries no\nversion, and adding a place to look at is not a decision about the law.\n\nThe source is registered with automated checks on. Nothing is checked in this call: the\nfirst sweep is the next run's, and until one happens the coverage log says `never`. The\nrow and its audit row, which names who registered it, are written in one transaction,\nand the keys are resolved first, so a refusal stores nothing.\n\nErrors to branch on: `unknown_key` (422) when `kind` names no active row of the\nsource-kind vocabulary, with the valid keys listed, or when `authorityId` names no\nauthority the library holds; `duplicate_key` (409) when a source of that name is already\nregistered \u2014 names are unique across the library, so change the row that exists;\n`validation_error` (422) for a body the schema refuses, including a `url` that is not\nhttp or https; `permission_denied` (403) without `sources.manage`; `unauthenticated`\n(401) without a session.",
         "operationId": "createSource",
         "parameters": [],
         "requestBody": {
@@ -17369,7 +17449,7 @@
             "SessionAuth": []
           }
         ],
-        "summary": "Create Source",
+        "summary": "Add a place for the agents to watch",
         "tags": [
           "Watch"
         ]
@@ -17377,12 +17457,34 @@
     },
     "/api/v1/sources/coverage": {
       "get": {
+        "description": "The coverage log's bottom line, one row per source: when it was last swept, how that\nsweep ended, what went wrong if it failed, and whether the source has now gone stale.\nCall it for the console's Source coverage page and whenever somebody asks how we know a\nreform was not missed.\n\nA read: it changes nothing and writes no audit row. The same three callers as\n`GET /sources`, and the same library fact for every bank.\n\n`overdue` is computed by the server, never stored: true when the last\n`SOURCE_STALE_AFTER_CHECKS` sweeps of the source all failed, or when longer than the\nsource's own cadence plus `SOURCE_STALE_GRACE_HOURS` has passed since the last sweep\nthat succeeded. Both are settings. Two rows are never overdue and a reader should not\ntreat them alike: a source whose automated checks are switched off, which is meant not\nto be checked, and a source with `lastStatus` `never`, which has no log to measure.\nRe-checks are left out of all of this on purpose \u2014 a re-check looks again at a record\nthe source already gave us, so a run full of them never makes a source look fresh.\n\nOne row per registered source, ordered by name, and no paging. A registry with nothing\nin it is a 200 with an empty list. Errors: `permission_denied` without `watch.read`,\n`sources.manage` or the `library:read` scope; `unauthenticated` without a credential.",
         "operationId": "getSourceCoverage",
         "parameters": [],
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": [
+                  {
+                    "lastCheckedAt": "2026-09-16T06:02:00Z",
+                    "lastError": null,
+                    "lastStatus": "ok",
+                    "overdue": false,
+                    "source": {
+                      "active": true,
+                      "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
+                      "checkFrequency": "weekly",
+                      "id": "0f6d2f20-6d7a-4a7c-9a5e-4a2f8a0f1c31",
+                      "kind": {
+                        "key": "authority_site",
+                        "kind": null,
+                        "label": "Authority website"
+                      },
+                      "name": "fi.se",
+                      "url": "https://www.fi.se/"
+                    }
+                  }
+                ],
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/WatchSourceCoverage"
@@ -17403,7 +17505,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Get Source Coverage",
+        "summary": "Check that nothing we watch has gone unchecked",
         "tags": [
           "Watch"
         ]
@@ -17411,13 +17513,16 @@
     },
     "/api/v1/sources/{source_id}": {
       "patch": {
+        "description": "Point a registered source at the page the publisher has moved it to, change how often\nwe promise to check it, or switch its automated checks off. Call it when a fetch starts\nfailing because an address changed, and when a publisher's terms mean we must stop\nchecking automatically (WAT-07, D-45). The answer is the row as it now stands.\n\nA library editor's session holding `sources.manage`, the same platform permission that\nregisters one, and no key. A field left out, and a field sent as null, both mean \"leave\nit alone\"; the name and the kind are not on this shape and never move, because a\ndifferent place to watch is a different source and the name is what a run reports\nagainst. No step-up and no `If-Match`: a registry row carries no version.\n\nSwitching `active` off stops the automated checks and keeps every check already logged:\nthe coverage log is never rewritten, and the source stops being reported stale, because\nit is now meant not to be checked. The row and its audit row, which holds the row as it\nwas and as it now is, are written in one transaction.\n\nErrors to branch on: `not_found` (404) when no source has that id, answered the same way\nfor a source that never existed so no id can be probed for; `validation_error` (422) for\na body the schema refuses, including a `url` that is not http or https and a\n`checkFrequency` outside `daily`, `weekly` and `monthly`; `permission_denied` (403)\nwithout `sources.manage`; `unauthenticated` (401) without a session.",
         "operationId": "updateSource",
         "parameters": [
           {
+            "description": "The registered source being changed, as a UUID, the `id` `GET /sources` answers. The registry is shared, so this is the same id for every bank. A source no longer registered answers 404, never 403.",
             "in": "path",
             "name": "source_id",
             "required": true,
             "schema": {
+              "description": "The registered source being changed, as a UUID, the `id` `GET /sources` answers. The registry is shared, so this is the same id for every bank. A source no longer registered answers 404, never 403.",
               "format": "uuid",
               "title": "Source Id",
               "type": "string"
@@ -17451,7 +17556,7 @@
             "SessionAuth": []
           }
         ],
-        "summary": "Update Source",
+        "summary": "Move a watched source, or stop checking it",
         "tags": [
           "Watch"
         ]

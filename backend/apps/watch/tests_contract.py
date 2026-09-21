@@ -18,14 +18,20 @@ tenant member reaching the console list, or an editor reaching the feed, is a le
 the zones, so each is proved refused.
 
 The four curation routes are no longer stubs — `c5-watch-curation` built them, and what
-they do behind these gates is proved in `tests_curation.py` — so they left the stub lists
-below on 2026-09-21 while keeping every gate assertion they had. Everything else here is
-still declared ahead of its logic.
+they do behind these gates is proved in `tests_curation.py`. The two registry reads and the
+two registry writes followed them on 2026-09-21 (`c5-watch-sources-coverage`, proved in
+`tests_sources.py`), and the two registration routes the same day
+(`c5-watch-registration`, proved in `tests_registration.py`). Nothing of this app is
+declared ahead of its logic any more, and every one of them kept the gate assertions it had
+on its way out of the stub lists, so nothing is left unproved by their leaving.
 
 The library fence is not weakened here: none of these routes writes an inventory row, and
-the write modules they name (`watch/sources.py`, `registration.py`, `curation.py`) hold
-nothing but their stubs until their own tasks land. `watch/reading.py` is built and writes
-nothing at all.
+each of the write modules they name (`watch/sources.py`, `registration.py`, `curation.py`)
+opens `watch_write()`, which reaches the seven watch tables and refuses every other library
+table at runtime. Which gate each of them may carry is `WATCH_ROUTE_GATES` in
+`apps/shared/tests_library_fence.py`, and the registry writes are the ones held to a
+person's `sources.manage` rather than to a key's scope. `watch/reading.py` is built and
+writes nothing at all.
 """
 
 from __future__ import annotations
@@ -35,7 +41,7 @@ from typing import Any
 
 from django.test import TestCase
 
-from apps.shared import permissions as perms
+from apps.shared import factories, permissions as perms
 from apps.shared.testing import (
     API_KEY_FOR_TESTS,
     SESSION_TOKEN_FOR_TESTS,
@@ -93,10 +99,23 @@ SESSION_ROUTES = [
     ("createSource", "post", "/api/v1/sources", SOURCE_BODY, perms.SOURCES_MANAGE),
     ("updateSource", "patch", f"/api/v1/sources/{SOURCE}", SOURCE_PATCH, perms.SOURCES_MANAGE),
 ]
-# What is still declared ahead of its logic. The four curation routes left this list when
-# `c5-watch-curation` built them; the gates above still cover all of them, and the ids
-# below are the ones that reach a real change, which none of these constants names.
-BUILT = frozenset({"updateChange", "addChangeEvent", "updateChangeEvent", "replaceChangeObligations"})
+# Every write route of this app is built: the four curation routes left this list when
+# `c5-watch-curation` built them, the two registry writes when `c5-watch-sources-coverage`
+# did, and the two registration routes when `c5-watch-registration` did. The gates above
+# still cover all of them, and the ids below are the ones that reach a real change or a
+# real source, which none of these constants names.
+BUILT = frozenset(
+    {
+        "createChange",
+        "addChangeDocument",
+        "updateChange",
+        "addChangeEvent",
+        "updateChangeEvent",
+        "replaceChangeObligations",
+        "createSource",
+        "updateSource",
+    }
+)
 STUBBED_BOTH_ROUTES = [route for route in BOTH_ROUTES if route[0] not in BUILT]
 
 
@@ -207,48 +226,65 @@ class WatchRouteGates(TestCase):
 
 
 class WatchRouteStubs(TestCase):
-    def assert_not_built(self, response: Any) -> None:
-        self.assertEqual(response.status_code, 501)
-        problem = response.json()
-        self.assertEqual(problem["code"], "not_built")
-        self.assertEqual(response.headers["Content-Type"], "application/problem+json")
-        self.assertNotIn("traceback", response.content.decode().lower())
+    def test_nothing_in_this_app_is_still_a_stub(self) -> None:
+        self.assertEqual(STUBBED_BOTH_ROUTES, [], "every write route of this app is built")
 
-    def test_a_key_with_its_scope_reaches_the_stub(self) -> None:
+    # What each built write answers once its gate has passed and these constants have
+    # reached its logic: 404 for an id nothing holds, 422 `unknown_key` for a body naming a
+    # vocabulary row this bare TestCase never seeded. Either way the gate ran first.
+    REACHED_THE_LOGIC = {
+        "createChange": (422, "unknown_key"),
+        "addChangeDocument": (404, "not_found"),
+        "updateChange": (404, "not_found"),
+        "addChangeEvent": (404, "not_found"),
+        "updateChangeEvent": (404, "not_found"),
+        "replaceChangeObligations": (404, "not_found"),
+        "createSource": (422, "unknown_key"),
+        "updateSource": (404, "not_found"),
+    }
+
+    def test_every_built_route_is_accounted_for(self) -> None:
+        self.assertEqual(sorted(BUILT), sorted(self.REACHED_THE_LOGIC))
+
+    def test_the_built_change_routes_answer_from_their_logic(self) -> None:
+        """A route its task has built no longer answers `not_built`. The change these
+        constants name does not exist and no vocabulary is seeded here, so the honest
+        answers are 404 and `unknown_key` — which is also the proof that the gate ran first
+        and the lookup second."""
+        cases = (
+            [(n, m, u, b) for n, m, u, b, _, _ in BOTH_ROUTES]
+            + [(n, m, u, b) for n, m, u, b, _ in KEY_ROUTES]
+        )
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            cases = (
-                [(n, m, u, b) for n, m, u, b, _, _ in STUBBED_BOTH_ROUTES]
-                + [(n, m, u, b) for n, m, u, b, _ in KEY_ROUTES]
-                + [(n, "get", u, None) for n, u, _, _ in READ_ROUTES]
-            )
             for name, method, url, body in cases:
-                with self.subTest(operation=name):
-                    self.assert_not_built(_call(self.client, method, url, body, AS_KEY))
-
-    def test_a_session_with_its_permission_reaches_the_stub(self) -> None:
-        permissions = {perms.PROPOSALS_REVIEW, perms.SOURCES_MANAGE, perms.WATCH_READ}
-        with stub_session(user_principal(permissions=permissions, tenant_id=uuid.uuid4())):
-            cases = (
-                [(n, m, u, b) for n, m, u, b, _, _ in STUBBED_BOTH_ROUTES]
-                + [(n, "get", u, None) for n, u, _, _ in READ_ROUTES]
-                + [(n, m, u, b) for n, m, u, b, _ in SESSION_ROUTES]
-            )
-            for name, method, url, body in cases:
-                with self.subTest(operation=name):
-                    self.assert_not_built(_call(self.client, method, url, body, AS_SESSION))
-
-    def test_the_built_curation_routes_answer_from_their_logic(self) -> None:
-        """The four routes `c5-watch-curation` built no longer answer `not_built`. The
-        change these constants name does not exist, so the honest answer is 404 — which is
-        also the proof that the gate ran first and the lookup second."""
-        with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            for name, method, url, body, _, _ in BOTH_ROUTES:
-                if name not in BUILT:
-                    continue
                 with self.subTest(operation=name):
                     response = _call(self.client, method, url, body, AS_KEY)
-                    self.assertEqual(response.status_code, 404, response.content)
-                    self.assertEqual(response.json()["code"], "not_found")
+                    status, code = self.REACHED_THE_LOGIC[name]
+                    self.assertEqual(response.status_code, status, response.content)
+                    self.assertEqual(response.json()["code"], code)
+
+    def test_the_built_registry_writes_answer_from_their_logic(self) -> None:
+        # A real person behind the console session: a registry write names who made it in
+        # the audit row, so a principal with no user row behind it is refused before the
+        # lookup and would prove nothing about the logic.
+        editor = factories.platform_user(email="library.editor@bleqq.example")
+        with stub_session(user_principal(permissions={perms.SOURCES_MANAGE}, subject_id=editor.id)):
+            for name, method, url, body, _ in SESSION_ROUTES:
+                with self.subTest(operation=name):
+                    response = _call(self.client, method, url, body, AS_SESSION)
+                    status, code = self.REACHED_THE_LOGIC[name]
+                    self.assertEqual(response.status_code, status, response.content)
+                    self.assertEqual(response.json()["code"], code)
+
+    def test_the_registry_reads_answer_an_empty_registry_with_200(self) -> None:
+        """An empty answer is a 200 (playbook 4.4): a registry nobody has filled yet is not
+        a missing resource."""
+        with stub_session(user_principal(permissions={perms.WATCH_READ}, tenant_id=uuid.uuid4())):
+            for name, url, _, _ in READ_ROUTES:
+                with self.subTest(operation=name):
+                    response = self.client.get(url, **AS_SESSION)
+                    self.assertEqual(response.status_code, 200, response.content)
+                    self.assertEqual(response.json(), [])
 
 
 # ---------------------------------------------------------------------------------------
@@ -320,7 +356,7 @@ class WatchReadGates(TestCase):
         with stub_session(user_principal(permissions={perms.SOURCES_MANAGE})):
             for name, url, _, _ in READ_ROUTES:
                 with self.subTest(operation=name):
-                    self.assertEqual(self.client.get(url, **AS_SESSION).status_code, 501)
+                    self.assertEqual(self.client.get(url, **AS_SESSION).status_code, 200)
 
     def test_a_bad_filter_is_422_before_the_stub(self) -> None:
         cases = [

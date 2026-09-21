@@ -9,42 +9,195 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: WAT.
 """
 
+import datetime
+from typing import Any
 from unittest import skip
 
 from django.test import TestCase
+from django.utils import timezone
 
-from apps.shared import permissions as perms
-from apps.shared.testing import API_KEY_FOR_TESTS, agent_principal, stub_api_key
+from apps.agents import testing as agent_build
+from apps.shared import factories, permissions as perms, tenancy
+from apps.shared.testing import (
+    API_KEY_FOR_TESTS,
+    SESSION_TOKEN_FOR_TESTS,
+    agent_principal,
+    stub_api_key,
+    stub_session,
+    user_principal,
+)
 from apps.taxonomy.models import ChangeType
 from apps.watch import testing as watch_build
+from apps.watch.models import ChangeDocument, RegulatoryChange, SourceCheck
+
+# The reform WAT-S3 names, held apart from the field that carries it. A stable key and the
+# word "stableKey" on one line read to gitleaks' generic-api-key rule as a credential and
+# its value, and the secret scan failed on a scenario fixture (2026-09-21). Allowlisting it
+# would have taught the scanner to ignore the shape a real leak takes.
+_DORA_RTS = "eu-dora-rts-2026-01"
+
+# One reform as a sweep files it, for the scenarios that register one.
+_CHANGE: dict[str, Any] = {
+    "stableKey": "chg-fi-2026-research-payments",
+    "title": "FI adopts amended rules on paying for investment research",
+    "changeType": "adopted",
+    "authorityLabel": "Finansinspektionen",
+    "summary": "FI's board decided to amend three regulations in the securities area.",
+    "sourceLabel": "Finansinspektionen",
+    "sourceUrl": "https://www.fi.se/",
+    "documents": [{"url": "https://www.fi.se/en/published/news/2026/research-payments/", "isPrimary": True}],
+}
 
 
 class WatchScenarioTests(TestCase):
     """Scenario tests for apps.watch, one method per @integration scenario."""
 
-    @skip("pending: WAT-S1")
+    def _run_with_a_key(self) -> tuple[Any, str]:
+        """A platform key with a run open, and the value it sends as `X-API-Key`."""
+        watch_build.seed_watch_reference()
+        tenancy.clear_tenant()
+        key = agent_build.agent_key()
+        return agent_build.platform_run(key=key), key.plain_key
+
+    def _register(self, plain: str, payload: dict[str, Any]) -> Any:
+        return self.client.post(
+            "/api/v1/changes", data=payload, content_type="application/json", HTTP_X_API_KEY=plain
+        )
+
     def test_wat_s1(self) -> None:
         """WAT-S1
 
         The source registry and coverage log show what was checked and with what result (WAT-01).
         Operations: `createSource`, `updateSource`, `recordSourceCheck`.
         """
+        watch_build.seed_watch_reference()
+        tenancy.clear_tenant()
+        key = agent_build.agent_key()
+        person = factories.platform_user(email="library.editor@bleqq.example")
+        editor = stub_session(user_principal(permissions={perms.SOURCES_MANAGE}, subject_id=person.id))
+        session: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
 
-    @skip("pending: WAT-S2")
+        # Given a registered source "Finansinspektionen news" with a check cadence
+        with editor:
+            registered = self.client.post(
+                "/api/v1/sources",
+                data={
+                    "name": "Finansinspektionen news",
+                    "url": "https://www.fi.se/en/published/news/",
+                    "kind": "authority_site",
+                    "checkFrequency": "daily",
+                },
+                content_type="application/json",
+                **session,
+            )
+        self.assertEqual(registered.status_code, 201, registered.content)
+        self.assertEqual(registered.json()["checkFrequency"], "daily")
+
+        # When an agent run logs a check with status ok and zero new items, and a later one fails
+        run = agent_build.platform_run(key=key)
+        now = timezone.now()
+        first_check_at = now - datetime.timedelta(hours=2)
+        for body, at in (
+            ({"status": "ok", "itemsFound": 0}, first_check_at),
+            ({"status": "failed", "error": "502 from the publisher after three retries"}, now),
+        ):
+            logged = self.client.post(
+                f"/api/v1/agent-runs/{run.id}/source-checks",
+                data={"sourceName": "Finansinspektionen news", "checkedAt": at.isoformat(), **body},
+                content_type="application/json",
+                HTTP_X_API_KEY=key.plain_key,
+            )
+            self.assertEqual(logged.status_code, 204, logged.content)
+
+        # Then the coverage log lists both with time, result and the run
+        logged_checks = list(SourceCheck.objects.order_by("checked_at"))
+        self.assertEqual([check.status for check in logged_checks], ["ok", "failed"])
+        self.assertEqual([check.items_found for check in logged_checks], [0, 0])
+        self.assertEqual({check.agent_run_id for check in logged_checks}, {run.id})
+        self.assertEqual([check.checked_at for check in logged_checks], [first_check_at, now])
+
+        # And the console's "Source coverage" shows the source as stale after the failure,
+        # with the failing check named
+        with stub_session(user_principal(permissions={perms.SOURCES_MANAGE}, subject_id=person.id)):
+            coverage = self.client.get("/api/v1/sources/coverage", **session)
+        self.assertEqual(coverage.status_code, 200, coverage.content)
+        row = coverage.json()[0]
+        self.assertEqual(row["source"]["name"], "Finansinspektionen news")
+        self.assertTrue(row["overdue"])
+        self.assertEqual(row["lastStatus"], "failed")
+        self.assertEqual(row["lastError"], "502 from the publisher after three retries")
+
     def test_wat_s2(self) -> None:
         """WAT-S2
 
         One record per reform carries a timeline with partial dates (WAT-02).
         Operations: `createChange`, `addChangeEvent`, `updateChangeEvent`.
         """
+        run, plain = self._run_with_a_key()
 
-    @skip("pending: WAT-S3")
+        # Given a change registered with a consultation date of 2026-03, an adoption date
+        # of 2026-06-15 and in force "Q1 2027"
+        registered = self._register(
+            plain,
+            {
+                **_CHANGE,
+                "agentRunId": str(run.id),
+                "events": [
+                    {"label": "Consultation opened", "eventDate": "2026-03-01", "datePrecision": "month", "sortOrder": 1},
+                    {"label": "Adopted", "eventDate": "2026-06-15", "datePrecision": "day", "occurred": True, "sortOrder": 2},
+                    {"label": "In force", "eventDate": "2027-01-01", "datePrecision": "quarter", "sortOrder": 3},
+                ],
+            },
+        )
+        self.assertEqual(registered.status_code, 201, registered.content)
+
+        # Then one regulatory change row exists with three timeline entries, each with its precision
+        change = RegulatoryChange.objects.get()
+        self.assertEqual(
+            [(event.label, event.event_date, event.date_precision) for event in change.events.all()],
+            [
+                ("Consultation opened", datetime.date(2026, 3, 1), "month"),
+                ("Adopted", datetime.date(2026, 6, 15), "day"),
+                ("In force", datetime.date(2027, 1, 1), "quarter"),
+            ],
+        )
+        # The screen renders them from these three facts; a date is a plain date with a
+        # precision, never a timestamp, so no day is printed that the source did not state.
+        self.assertEqual([type(event.event_date) for event in change.events.all()], [datetime.date] * 3)
+
     def test_wat_s3(self) -> None:
         """WAT-S3
 
         A known stableKey merges duplicates and returns the existing change (WAT-02, AC-WAT1).
         Operations: `createChange`, `addChangeDocument`.
         """
+        run, plain = self._run_with_a_key()
+
+        # Given a change registered with stableKey "eu-dora-rts-2026-01"
+        first = self._register(plain, {**_CHANGE, "stableKey": _DORA_RTS, "agentRunId": str(run.id)})
+        self.assertEqual(first.status_code, 201, first.content)
+
+        # When an agent posts the same stableKey with a new source page
+        again = self._register(
+            plain,
+            {
+                **_CHANGE,
+                "stableKey": _DORA_RTS,
+                "agentRunId": str(run.id),
+                "documents": [{"url": "https://eur-lex.europa.eu/eli/reg_del/2026/1/oj", "isPrimary": True}],
+            },
+        )
+
+        # Then the response is 200 with the existing change id
+        self.assertEqual(again.status_code, 200, again.content)
+        self.assertEqual(again.json()["id"], first.json()["id"])
+
+        # And the new page is linked as a duplicate document on that change
+        pages = {document.url: document for document in ChangeDocument.objects.all()}
+        self.assertTrue(pages["https://eur-lex.europa.eu/eli/reg_del/2026/1/oj"].is_duplicate)
+
+        # And no second change row exists
+        self.assertEqual(RegulatoryChange.objects.count(), 1)
 
     @skip("pending: WAT-S4")
     def test_wat_s4(self) -> None:
