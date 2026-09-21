@@ -83,6 +83,10 @@ class LoginEventKind(enum.StrEnum):
     REENROLMENT_ISSUED = "reenrolment_issued"
     KEY_USED = "key_used"
     KEY_REVOKED = "key_revoked"
+    # A calendar client fetched a subscribed feed with its token (HOM-04, D-52, ADR 0045).
+    # The only credential in the product that is not a passkey, a session or a key, so its
+    # use belongs in the same log; throttled like `key_used` and recording no address.
+    FEED_USED = "feed_used"
 
 
 # ---------------------------------------------------------------------------------------

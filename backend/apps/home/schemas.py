@@ -28,10 +28,13 @@ Three zones appear and they never mix:
 Limits, in words as well as in the keywords: `GET /upcoming` pages at 20 by default and 100
 at most through the shared `limit` and `offset`, and a larger `limit` answers 422 rather than
 being clamped (`apps/shared/schemas.py:PageQuery`). No record in this app is versioned, so no
-write here takes `If-Match` and none can answer `stale_write`. No route here approves, signs
-off or exports, so none takes a passkey step-up, and revoking a subscription is the safe
-direction (chunk 6 defaults). A briefing snapshot is append-only: once a week's briefing has
-been sent it is never rewritten, so what a bank was told is what a bank can reopen.
+write here takes `If-Match` and none can answer `stale_write`. Nothing here approves, signs
+off or exports, so no route takes the passkey step-up those actions need; creating a calendar
+subscription is the one write that asks how the caller's session was made, because the
+address it mints outlives the session (D-52). A person keeps at most
+`CALENDAR_FEEDS_PER_USER` subscriptions, and revoking one is the safe direction. A briefing
+snapshot is append-only: once a week's briefing has been sent it is never rewritten, so what
+a bank was told is what a bank can reopen.
 """
 
 from __future__ import annotations
@@ -65,8 +68,9 @@ __all__ = ["CamelSchema"]
 # to change when chunks 8 and 9 add the branches that fill the rest.
 RoadmapItemKind = Literal["regulatory", "internal"]
 RoadmapItemType = Literal["change_date", "internal_deadline", "action_due", "review_due"]
-# Which kinds a surface includes: the roadmap's filter and a calendar subscription's scope
-# are the same three-valued choice, so they are one kind and not two (`feed_filter`).
+# Which kinds of dated item the roadmap read includes (`feed_filter`). A calendar
+# subscription used to share this choice; D-52 took it away, because a feed carries the
+# dates the outside world set and never the bank's own, leaving it nothing to choose.
 FeedFilter = Literal["all", "regulatory", "internal"]
 
 # Lengths, not thresholds: they bound a column or a request body, not a decision. The
@@ -75,9 +79,10 @@ LABEL_MAX = 300
 # A quarter key is `YYYY-Qn`: seven characters, and the longest a caller could send is the
 # same seven.
 QUARTER_MAX = 7
-# The calendar address carries 32 random bytes encoded with `secrets.token_urlsafe`, which is
-# 43 characters. The bound is generous enough for a longer encoding and small enough that no
-# unbounded path segment is ever parsed.
+# The token in a calendar address is `<prefix>.<secret>`: a 16-character lookup prefix, a
+# dot, and 256 random bits encoded with `secrets.token_urlsafe` (43 characters), so 60 in
+# all. The bound is generous enough for a longer encoding and small enough that no
+# unbounded query value is ever parsed (D-52).
 FEED_TOKEN_MAX = 128
 
 # ---------------------------------------------------------------------------------------
@@ -151,13 +156,16 @@ UPCOMING_ITEM_EXAMPLE: JsonDict = {
 }
 CALENDAR_FEED_EXAMPLE: JsonDict = {
     "id": "5f1a7c92-0b34-4e86-9d27-3c6a8e1b4f05",
-    "filter": "regulatory",
     "createdAt": "2026-09-21T08:15:00Z",
+    "lastUsedAt": "2026-09-21T09:40:00Z",
     "revokedAt": None,
 }
+# The address with its token written as a placeholder rather than as a value of the right
+# shape. A realistic-looking one would be exactly what a secret scanner cannot tell from a
+# live credential, and an example allowlisted by hand teaches it to ignore that shape.
 CALENDAR_FEED_CREATED_EXAMPLE: JsonDict = {
     "feed": CALENDAR_FEED_EXAMPLE,
-    "url": "https://app.bleqq.com/api/v1/calendar/<the-43-character-token-shown-once>",
+    "url": "https://app.bleqq.com/api/v1/calendar/feed.ics?token=<prefix>.<secret-shown-once>",
 }
 
 # ---------------------------------------------------------------------------------------
@@ -651,8 +659,13 @@ class HomeUpcomingQuery(PageQuery, CamelSchema):
 class HomeCalendarFeed(CamelSchema):
     """One calendar subscription belonging to one person in one bank. The bank's own zone:
     a person sees their own subscriptions and nobody else's, and the address itself is never
-    in this shape — it is shown once, when the subscription is created, and stored only as a
-    hash afterwards."""
+    in this shape — it is shown once, when the subscription is created, and stored afterwards
+    only as a lookup prefix and the secret's hash.
+
+    Every subscription carries the same thing, so there is nothing to choose between: the
+    dates the outside world set on the changes this person's bank has open work on. The
+    bank's own deadlines never reach a calendar a provider outside the bank can read
+    (D-52, AC-TEN1)."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [CALENDAR_FEED_EXAMPLE]})
 
@@ -664,15 +677,6 @@ class HomeCalendarFeed(CamelSchema):
         ),
         examples=["5f1a7c92-0b34-4e86-9d27-3c6a8e1b4f05"],
     )
-    filter: FeedFilter = Field(
-        description=(
-            "What this subscription carries, a fixed kind with three members: `all` (both "
-            "kinds), `regulatory` (only dates the outside world set) and `internal` (only "
-            "deadlines this bank set for itself). A subscription set to `internal` is empty in "
-            "R1, because the branches that produce our own deadlines have not shipped yet."
-        ),
-        examples=["regulatory"],
-    )
     created_at: datetime.datetime = Field(
         description=(
             "When the person created the subscription, as an RFC 3339 timestamp in UTC "
@@ -680,13 +684,28 @@ class HomeCalendarFeed(CamelSchema):
         ),
         examples=["2026-09-21T08:15:00Z"],
     )
+    last_used_at: datetime.datetime | None = Field(
+        description=(
+            "When a calendar client last fetched this subscription, as an RFC 3339 timestamp "
+            "in UTC (`2026-09-21T09:40:00Z`), or null while nothing has fetched it yet. Set by "
+            "the server and stamped at most once every few minutes, so it says whether the "
+            "address is in use, never exactly how often. It is also what the idle expiry "
+            "reads: a subscription nobody fetches for `CALENDAR_FEED_IDLE_DAYS` days stops "
+            "working. Null on a subscription made minutes ago is normal; null on an old one "
+            "means the address was never pasted anywhere."
+        ),
+        examples=["2026-09-21T09:40:00Z"],
+    )
     revoked_at: datetime.datetime | None = Field(
         description=(
-            "When the subscription was revoked, as an RFC 3339 timestamp in UTC "
+            "When the subscription stopped working, as an RFC 3339 timestamp in UTC "
             "(`2026-09-22T09:00:00Z`), or null while it still works. Revoking is immediate and "
             "final: the address answers 404 from that moment, and a new subscription is the "
-            "only way back. The row is kept rather than deleted, so the bank can see that the "
-            "subscription existed and when it stopped."
+            "only way back. The person's own revoke is one way in; the server stamps this "
+            "itself when they leave the bank, lose `roadmap.read`, are enrolled again or let "
+            "the subscription go idle, so a date here that nobody set by hand is one of those. "
+            "The row is kept rather than deleted, so the bank can see that the subscription "
+            "existed and when it stopped."
         ),
         examples=[None],
     )
@@ -694,30 +713,27 @@ class HomeCalendarFeed(CamelSchema):
 
 class HomeCalendarFeedInput(WriteBody):
     """`POST /calendar-feeds` (HOM-04): a person subscribes their own calendar client to the
-    bank's roadmap. A field this shape does not name answers 422, so nothing rides along
-    unseen. No `If-Match` and no passkey step-up: the subscription carries no version and
-    creating one is not an approval."""
+    bank's roadmap.
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"filter": "regulatory"}]})
+    The body carries no fields, and that is the whole shape: every subscription carries the
+    same public dates, so there is nothing to ask for. It is still a declared body rather
+    than none, because a field this shape does not name answers 422 — a client written
+    against the designed contract, which offered a `filter` of `all`, `regulatory` or
+    `internal`, is told that the choice is gone instead of quietly subscribing to something
+    else (D-52).
 
-    filter: FeedFilter = Field(
-        default="all",
-        description=(
-            "What the subscription should carry, a fixed kind with three members and `all` by "
-            "default: `all` (both kinds), `regulatory` (only dates the outside world set) and "
-            "`internal` (only deadlines this bank set for itself). `internal` is accepted and "
-            "produces an empty calendar in R1. A value outside the three answers 422 "
-            "`validation_error`."
-        ),
-        examples=["regulatory"],
-    )
+    No `If-Match`: the subscription carries no version. No passkey step-up either, but the
+    caller's session must be young or have stepped up recently, because the address this
+    mints outlives the session that asked for it."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{}]})
 
 
 class HomeCalendarFeedCreated(CamelSchema):
     """`POST /calendar-feeds` answers this once and never again: the subscription and the
     address that carries its secret. The address is shown once, copied into a calendar client
-    and stored here only as a SHA-256 hash, exactly as an API key is (ID-10). Losing it means
-    revoking the subscription and creating another."""
+    and stored here only as a lookup prefix beside the secret's SHA-256, exactly as an API key
+    is (ID-10). Losing it means revoking the subscription and creating another."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [CALENDAR_FEED_CREATED_EXAMPLE]})
 
@@ -728,10 +744,13 @@ class HomeCalendarFeedCreated(CamelSchema):
         max_length=2000,
         description=(
             "The full address to paste into a calendar client, as a URL of at most 2000 "
-            "characters. The token inside it is the only credential the feed has, because a "
-            "calendar client sends no header and cannot be asked for a passkey; treat the whole "
-            "address as a secret, never post it anywhere and never log it. It appears in this "
-            "one response and in no other: the server keeps only a hash of it."
+            "characters, ending `/calendar/feed.ics?token=<prefix>.<secret>`. The token in the "
+            "query string is the only credential the feed has, because a calendar client sends "
+            "no header and cannot be asked for a passkey; treat the whole address as a secret, "
+            "never post it anywhere and never log it. Anyone holding it can see which "
+            "regulatory changes the bank has open work on, which is why revoking is one call "
+            "away. It appears in this one response and in no other: the server keeps only the "
+            "prefix and a hash of the secret."
         ),
-        examples=["https://app.bleqq.com/api/v1/calendar/<the-43-character-token-shown-once>"],
+        examples=["https://app.bleqq.com/api/v1/calendar/feed.ics?token=<prefix>.<secret-shown-once>"],
     )

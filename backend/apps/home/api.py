@@ -8,12 +8,12 @@ screens and the newsletter agent are built against it, and a screen that calls a
 better than a screen built against a shape nobody committed to.
 
 Five are built: Today, the roadmap, the public list of upcoming dates and the two briefing
-reads. The four calendar-feed operations still answer 501, and not because nobody has got to
-them: `getCalendarIcs` was declared with the token in the path, and D-52 with ADR 0045
-decided the address is `/api/v1/calendar/feed.ics?token=<prefix>.<secret>` and that the path
-form is not built. The contract has to carry the decided shape — a prefix beside the hash, a
-per-person cap, a recent sign-in or step-up on creation, an idle expiry and automatic
-revocation — before the logic behind it can be written.
+reads. The four calendar-feed operations answer 501 while `c6-upcoming-calendar-backend`
+builds them, against the contract D-52 and ADR 0045 decided: the address is
+`/api/v1/calendar/feed.ics?token=<prefix>.<secret>`, a person keeps at most
+`CALENDAR_FEEDS_PER_USER` subscriptions, creating one takes a recent sign-in or a step-up,
+and the server revokes one when the person leaves, loses `roadmap.read`, is enrolled again
+or lets it go idle.
 
 Two gates here serve more than one principal or no principal at all, so they are logic
 gates listed in `UNGATED_BY_DESIGN` and still answer the structured 403 with
@@ -23,18 +23,23 @@ gates listed in `UNGATED_BY_DESIGN` and still answer the structured 403 with
   `upcoming:read`. It is the one list in this app that holds no bank's judgement at all,
   which is why a key may read it; no other route here is reachable with a key, whatever
   scopes that key holds.
-- **`GET /calendar/{feedToken}`** has no session and no key. A calendar client sends no
+- **`GET /calendar/feed.ics`** has no session and no key. A calendar client sends no
   header, follows no sign-in and cannot be asked for a passkey, so the revocable token in
   the address is the whole credential — the `public-token` shape the invitation links
-  already use. While the route answers 501 it reads no token at all, so nothing about it
-  can be probed.
+  already use. It rides in the query string and not in the path, because our own access log
+  prints the route without the query while a hosting edge writes whole request lines
+  (D-52, ADR 0045; the one named exception to CONVENTIONS 3.6). While the route answers 501
+  it reads no token at all, so nothing about it can be probed.
 
 Everything else carries a single permission. `GET /home` takes `roadmap.read`, which every
 system role holds, rather than being left ungated: a panel a reader may not see is answered
 as null inside a 200, never as a 403 that would take the whole page away.
 
 No route here writes a library row, and no route here approves, signs off, exports or
-creates a key, so none takes a passkey step-up.
+creates a key, so none takes the passkey step-up those actions need. `POST /calendar-feeds`
+asks something narrower of the same mechanism: `enforce_recent_sign_in_or_step_up` accepts a
+session made minutes ago or one that has just confirmed a passkey, because the address it
+mints keeps working long after the session that asked for it has gone (D-52).
 """
 
 import datetime
@@ -86,10 +91,14 @@ _FEED_ID = (
     "id can be probed for what somebody else holds."
 )
 _FEED_TOKEN = (
-    "The secret in the calendar address, at most 128 characters. It is the whole credential: "  # noqa: S105 a parameter description, never a credential
-    "a calendar client sends no header and cannot be asked for a passkey. An unknown token, a "
-    "revoked one and another bank's all answer the same 404 with the same body, so the "
-    "address never says whether it ever existed."
+    "The token from the calendar address, as `<prefix>.<secret>` and at most 128 "  # noqa: S105 a parameter description, never a credential
+    "characters: a short lookup prefix, a dot, and 256 random bits. It is the whole "
+    "credential, because a calendar client sends no header and cannot be asked for a "
+    "passkey, so treat the address as a secret and never put it anywhere it will be read "
+    "back. It travels in the query string rather than the path so that request lines a "
+    "server writes down carry the route and not the token. A token that is unknown, "
+    "revoked, expired or no longer served all answer the same 404 with the same body, so "
+    "the address never says whether it ever existed."
 )
 
 # A short fixed list is answered as a plain array rather than a page, so its example lives on
@@ -369,15 +378,20 @@ def list_upcoming(request: HttpRequest, page: Query[HomeUpcomingQuery]) -> Any:
 @requires_permission(perms.ROADMAP_READ)
 @answers_problems
 def list_calendar_feeds(request: HttpRequest) -> Any:
-    """The calendar subscriptions the caller created, newest first, with what each one
-    carries and whether it still works. Call it for the account page where a person manages
-    their own subscriptions.
+    """The calendar subscriptions the caller created, newest first, with when each one was
+    last fetched and whether it still works. Call it for the account page where a person
+    manages their own subscriptions.
 
     A read: it changes nothing and writes no audit row. A person's session holding
     `roadmap.read`. The caller's own rows only — never another member's and never another
     bank's — and the address is **not** in this answer: it is shown once when the subscription
-    is created and stored afterwards only as a hash, so a reader must not expect to recover a
-    lost address here. Revoking and creating a new one is the way back.
+    is created and stored afterwards only as a lookup prefix and a hash, so a reader must not
+    expect to recover a lost address here. Revoking and creating a new one is the way back.
+
+    Revoked subscriptions stay in the list with the date they stopped, so a person can see
+    that an address they pasted somewhere no longer works, and the ones the server revoked
+    for them — after they lost `roadmap.read`, were enrolled again or let a subscription go
+    idle — read the same way as one they revoked themselves.
 
     A person with no subscriptions gets a 200 with an empty array, never a 404. Errors:
     `permission_denied` without `roadmap.read`, `unauthenticated` without a session.
@@ -404,21 +418,37 @@ def create_calendar_feed(request: HttpRequest, body: HomeCalendarFeedInput) -> A
     chooses to subscribe.
 
     It creates one row in the caller's own bank and writes one audit event through the same
-    transaction, recording who subscribed and what the subscription carries — never the
-    address itself. A person's session holding `roadmap.read`; no passkey step-up, because
-    subscribing approves nothing, and no API key reaches it.
+    transaction, recording who subscribed — never the address itself. A person's session
+    holding `roadmap.read`, and no API key reaches it. The body carries no fields: every
+    subscription carries the same public dates, so there is nothing to choose.
 
-    The address is returned **once**, in `url`, and never again: the server keeps only a
-    SHA-256 hash of the token inside it, exactly as it does for an API key. Treat the whole
-    address as a secret. Losing it means revoking the subscription and creating another.
+    The session has to be a recent one. A session made within the step-up window, or one that
+    has just confirmed a passkey, may subscribe; an older one is refused with
+    `step_up_required` and the screen asks for the passkey. The reason is that the address
+    outlives the session: a stolen access token expires in minutes, and without this it could
+    leave behind a calendar address that keeps answering for months.
+
+    A person keeps at most `CALENDAR_FEEDS_PER_USER` subscriptions at once, which is what a
+    phone, a laptop and a work calendar need; asking for one past the cap is refused, and
+    revoking one makes room.
+
+    The address is returned **once**, in `url`, and never again: the server keeps only the
+    lookup prefix and a SHA-256 of the secret, exactly as it does for an API key. Treat the
+    whole address as a secret. Losing it means revoking the subscription and creating another.
 
     Errors: `permission_denied` without `roadmap.read`, `unauthenticated` without a session,
-    and `validation_error` for a `filter` outside the three values it names or a field the
-    body does not know.
+    `step_up_required` when the session is neither recent nor freshly confirmed, and
+    `validation_error` for a field the body does not know — including the `filter` the
+    designed contract once offered, which is gone.
 
     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    ships. The session check above is already in force, so a stale session is refused before
+    the stub is reached.
     """
+    # Not `@requires_step_up`: D-52 asks for a recent sign-in *or* a fresh assertion, which is
+    # the same rule the passkey routes use (security review F9). It is a gate and not logic,
+    # so it belongs here beside the permission rather than in the module below.
+    perms.enforce_recent_sign_in_or_step_up(request)
     return calendar_reads.create_feed()
 
 
@@ -440,7 +470,13 @@ def revoke_calendar_feed(request: HttpRequest, feed_id: uuid.UUID = Path(..., de
     It stamps the row as revoked rather than deleting it, so the bank can still see that the
     subscription existed and when it stopped, and it writes one audit event in the same
     transaction. A person's session holding `roadmap.read`, acting on their own subscription;
-    no passkey step-up, because revoking is the safe direction.
+    no passkey step-up and no recent sign-in needed, because revoking is the safe direction
+    and a person whose address has leaked must be able to stop it at once.
+
+    The server revokes a subscription by itself on the same terms — when its owner leaves the
+    bank, loses `roadmap.read`, is enrolled again, or lets it go idle for
+    `CALENDAR_FEED_IDLE_DAYS` days — so a subscription this call finds already revoked may
+    never have been revoked by a person at all.
 
     Answers 204 with no body. Revoking a subscription that is already revoked answers 204 as
     well, so a retry is safe.
@@ -456,7 +492,7 @@ def revoke_calendar_feed(request: HttpRequest, feed_id: uuid.UUID = Path(..., de
 
 
 @router.get(
-    "/calendar/{feed_token}",
+    "/calendar/feed.ics",
     response={200: None},
     auth=None,
     operation_id="getCalendarIcs",
@@ -464,24 +500,36 @@ def revoke_calendar_feed(request: HttpRequest, feed_id: uuid.UUID = Path(..., de
     summary="Fetch a subscribed calendar as iCalendar",
     openapi_extra=_ICS_EXAMPLE,
 )
-def get_calendar_ics(request: HttpRequest, feed_token: str = Path(..., max_length=FEED_TOKEN_MAX, description=_FEED_TOKEN)) -> Any:
+def get_calendar_ics(request: HttpRequest, token: str = Query(..., max_length=FEED_TOKEN_MAX, description=_FEED_TOKEN)) -> Any:
     # Ungated by design: public-token. The revocable token in the address is the whole
     # credential, because a calendar client sends no header and cannot be asked for a passkey.
     """The subscribed roadmap as an iCalendar document, served as `text/calendar` for a
     calendar client to poll. Nobody calls this by hand: the address comes from
     `POST /calendar-feeds` and is pasted into a calendar application.
 
-    A read: it changes nothing and writes no audit row, and the response is marked `no-store`.
-    No session and no API key: the revocable token in the address is the credential, which is
-    why the address is shown once, kept only as a hash and revocable with immediate effect.
+    A read of public dates: it changes nothing a bank can see and writes no audit row, and the
+    response is marked `no-store`. No session and no API key: the token in the query string is
+    the credential, which is why the address is shown once, kept only as a lookup prefix and
+    the secret's hash, and revocable with immediate effect. It rides in the query string
+    rather than the path because our own logs print the route and drop the query, while a
+    hosting edge writes whole request lines (D-52).
 
     Each event carries the date, what the date is and the record's title, and nothing else. No
     "So what?", no case note, no owner, no bank name: a calendar entry travels to devices and
     mail clients outside the bank's control, so no judgement of the bank's ever goes into one.
+    Anyone holding the address can still see which regulatory changes the bank has open work
+    on, which is what makes it worth revoking rather than passing on.
 
-    Errors: `not_found` for a token that is unknown, revoked or belongs to a bank the address
-    no longer serves — all three answered identically, so the address never says whether it
-    ever existed; `validation_error` when the path segment is longer than the limit above.
+    Every fetch checks that the subscription still holds: its owner is still a member of the
+    bank, still holds `roadmap.read` and has not been enrolled again since they created it. A
+    check that fails revokes the subscription there and then, and one that nobody has fetched
+    for `CALENDAR_FEED_IDLE_DAYS` days expires. Fetches are rate limited per token and the
+    security log records that a feed was used, never which address was used.
+
+    Errors: `not_found` for a token that is unknown, revoked, expired or no longer served —
+    all of them answered identically, so the address never says whether it ever existed;
+    `validation_error` when `token` is missing or longer than the limit above; `rate_limited`
+    when one address is fetched far more often than a calendar client would.
 
     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
     ships. It reads no token while it does, so nothing about a token can be learned from it.

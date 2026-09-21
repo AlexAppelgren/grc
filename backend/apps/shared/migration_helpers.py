@@ -121,10 +121,11 @@ def rls_operations(
     may hold a tenant-private record (instrument, obligation; INPUT_DELTAS §5, INV-07), where
     `library_fence=True` leaves the write rule as the read rule for now.
 
-    `identity_lookup=True` adds the policy the auth layer needs on the four tables it reads
-    before a tenant is known (apps/shared/tenancy.py, `identity_lookup()`): invitation,
-    membership, user_session, api_key. It reads, and never writes, whatever tenant the row
-    belongs to. The RLS guard pins that list.
+    `identity_lookup=True` adds the policy needed on the five tables read before a tenant is
+    known (apps/shared/tenancy.py, `identity_lookup()`): invitation, membership,
+    user_session, api_key and calendar_feed, whose token arrives with no session and no key
+    at all (D-52). It reads, and never writes, whatever tenant the row belongs to. The RLS
+    guard pins that list.
     """
     return [
         migrations.RunSQL(

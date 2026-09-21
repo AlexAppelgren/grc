@@ -31,10 +31,12 @@ from typing import Any, TypeVar
 from django.db import DEFAULT_DB_ALIAS, connections, models, transaction
 
 TENANT_SETTING = "app.tenant_id"
-# The identity-lookup flag (chunk 1). Four tables are read by the auth layer before any
-# tenant is known: an invitation by its token or address, a membership at passkey sign-in
-# (to pick the session's tenant), a session by its refresh cookie, an API key by its
-# prefix. Their policies add `OR current_setting('app.identity_lookup', true) = 'on'`, and
+# The identity-lookup flag (chunk 1). Five tables are read before any tenant is known: an
+# invitation by its token or address, a membership at passkey sign-in (to pick the
+# session's tenant), a session by its refresh cookie, an API key by its prefix, and a
+# calendar subscription by the prefix in its address, which is the one credential that
+# arrives with no session and no key at all (D-52, ADR 0045).
+# Their policies add `OR current_setting('app.identity_lookup', true) = 'on'`, and
 # `identity_lookup()` below switches the flag on for the shortest possible block, then
 # clears it. The RLS guard lists exactly which tables carry the clause
 # (apps/shared/tests_rls.py, IDENTITY_LOOKUP_TABLES) and an AST guard restricts callers

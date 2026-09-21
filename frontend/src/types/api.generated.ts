@@ -622,15 +622,20 @@ export interface paths {
         };
         /**
          * See your own calendar subscriptions
-         * @description The calendar subscriptions the caller created, newest first, with what each one
-         *     carries and whether it still works. Call it for the account page where a person manages
-         *     their own subscriptions.
+         * @description The calendar subscriptions the caller created, newest first, with when each one was
+         *     last fetched and whether it still works. Call it for the account page where a person
+         *     manages their own subscriptions.
          *
          *     A read: it changes nothing and writes no audit row. A person's session holding
          *     `roadmap.read`. The caller's own rows only — never another member's and never another
          *     bank's — and the address is **not** in this answer: it is shown once when the subscription
-         *     is created and stored afterwards only as a hash, so a reader must not expect to recover a
-         *     lost address here. Revoking and creating a new one is the way back.
+         *     is created and stored afterwards only as a lookup prefix and a hash, so a reader must not
+         *     expect to recover a lost address here. Revoking and creating a new one is the way back.
+         *
+         *     Revoked subscriptions stay in the list with the date they stopped, so a person can see
+         *     that an address they pasted somewhere no longer works, and the ones the server revoked
+         *     for them — after they lost `roadmap.read`, were enrolled again or let a subscription go
+         *     idle — read the same way as one they revoked themselves.
          *
          *     A person with no subscriptions gets a 200 with an empty array, never a 404. Errors:
          *     `permission_denied` without `roadmap.read`, `unauthenticated` without a session.
@@ -647,20 +652,32 @@ export interface paths {
          *     chooses to subscribe.
          *
          *     It creates one row in the caller's own bank and writes one audit event through the same
-         *     transaction, recording who subscribed and what the subscription carries — never the
-         *     address itself. A person's session holding `roadmap.read`; no passkey step-up, because
-         *     subscribing approves nothing, and no API key reaches it.
+         *     transaction, recording who subscribed — never the address itself. A person's session
+         *     holding `roadmap.read`, and no API key reaches it. The body carries no fields: every
+         *     subscription carries the same public dates, so there is nothing to choose.
          *
-         *     The address is returned **once**, in `url`, and never again: the server keeps only a
-         *     SHA-256 hash of the token inside it, exactly as it does for an API key. Treat the whole
-         *     address as a secret. Losing it means revoking the subscription and creating another.
+         *     The session has to be a recent one. A session made within the step-up window, or one that
+         *     has just confirmed a passkey, may subscribe; an older one is refused with
+         *     `step_up_required` and the screen asks for the passkey. The reason is that the address
+         *     outlives the session: a stolen access token expires in minutes, and without this it could
+         *     leave behind a calendar address that keeps answering for months.
+         *
+         *     A person keeps at most `CALENDAR_FEEDS_PER_USER` subscriptions at once, which is what a
+         *     phone, a laptop and a work calendar need; asking for one past the cap is refused, and
+         *     revoking one makes room.
+         *
+         *     The address is returned **once**, in `url`, and never again: the server keeps only the
+         *     lookup prefix and a SHA-256 of the secret, exactly as it does for an API key. Treat the
+         *     whole address as a secret. Losing it means revoking the subscription and creating another.
          *
          *     Errors: `permission_denied` without `roadmap.read`, `unauthenticated` without a session,
-         *     and `validation_error` for a `filter` outside the three values it names or a field the
-         *     body does not know.
+         *     `step_up_required` when the session is neither recent nor freshly confirmed, and
+         *     `validation_error` for a field the body does not know — including the `filter` the
+         *     designed contract once offered, which is gone.
          *
          *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
+         *     ships. The session check above is already in force, so a stale session is refused before
+         *     the stub is reached.
          */
         post: operations["createCalendarFeed"];
         delete?: never;
@@ -688,7 +705,13 @@ export interface paths {
          *     It stamps the row as revoked rather than deleting it, so the bank can still see that the
          *     subscription existed and when it stopped, and it writes one audit event in the same
          *     transaction. A person's session holding `roadmap.read`, acting on their own subscription;
-         *     no passkey step-up, because revoking is the safe direction.
+         *     no passkey step-up and no recent sign-in needed, because revoking is the safe direction
+         *     and a person whose address has leaked must be able to stop it at once.
+         *
+         *     The server revokes a subscription by itself on the same terms — when its owner leaves the
+         *     bank, loses `roadmap.read`, is enrolled again, or lets it go idle for
+         *     `CALENDAR_FEED_IDLE_DAYS` days — so a subscription this call finds already revoked may
+         *     never have been revoked by a person at all.
          *
          *     Answers 204 with no body. Revoking a subscription that is already revoked answers 204 as
          *     well, so a retry is safe.
@@ -706,7 +729,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/calendar/{feed_token}": {
+    "/api/v1/calendar/feed.ics": {
         parameters: {
             query?: never;
             header?: never;
@@ -719,17 +742,29 @@ export interface paths {
          *     calendar client to poll. Nobody calls this by hand: the address comes from
          *     `POST /calendar-feeds` and is pasted into a calendar application.
          *
-         *     A read: it changes nothing and writes no audit row, and the response is marked `no-store`.
-         *     No session and no API key: the revocable token in the address is the credential, which is
-         *     why the address is shown once, kept only as a hash and revocable with immediate effect.
+         *     A read of public dates: it changes nothing a bank can see and writes no audit row, and the
+         *     response is marked `no-store`. No session and no API key: the token in the query string is
+         *     the credential, which is why the address is shown once, kept only as a lookup prefix and
+         *     the secret's hash, and revocable with immediate effect. It rides in the query string
+         *     rather than the path because our own logs print the route and drop the query, while a
+         *     hosting edge writes whole request lines (D-52).
          *
          *     Each event carries the date, what the date is and the record's title, and nothing else. No
          *     "So what?", no case note, no owner, no bank name: a calendar entry travels to devices and
          *     mail clients outside the bank's control, so no judgement of the bank's ever goes into one.
+         *     Anyone holding the address can still see which regulatory changes the bank has open work
+         *     on, which is what makes it worth revoking rather than passing on.
          *
-         *     Errors: `not_found` for a token that is unknown, revoked or belongs to a bank the address
-         *     no longer serves — all three answered identically, so the address never says whether it
-         *     ever existed; `validation_error` when the path segment is longer than the limit above.
+         *     Every fetch checks that the subscription still holds: its owner is still a member of the
+         *     bank, still holds `roadmap.read` and has not been enrolled again since they created it. A
+         *     check that fails revokes the subscription there and then, and one that nobody has fetched
+         *     for `CALENDAR_FEED_IDLE_DAYS` days expires. Fetches are rate limited per token and the
+         *     security log records that a feed was used, never which address was used.
+         *
+         *     Errors: `not_found` for a token that is unknown, revoked, expired or no longer served —
+         *     all of them answered identically, so the address never says whether it ever existed;
+         *     `validation_error` when `token` is missing or longer than the limit above; `rate_limited`
+         *     when one address is fetched far more often than a calendar client would.
          *
          *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
          *     ships. It reads no token while it does, so nothing about a token can be learned from it.
@@ -4633,12 +4668,17 @@ export interface components {
          * HomeCalendarFeed
          * @description One calendar subscription belonging to one person in one bank. The bank's own zone:
          *     a person sees their own subscriptions and nobody else's, and the address itself is never
-         *     in this shape — it is shown once, when the subscription is created, and stored only as a
-         *     hash afterwards.
+         *     in this shape — it is shown once, when the subscription is created, and stored afterwards
+         *     only as a lookup prefix and the secret's hash.
+         *
+         *     Every subscription carries the same thing, so there is nothing to choose between: the
+         *     dates the outside world set on the changes this person's bank has open work on. The
+         *     bank's own deadlines never reach a calendar a provider outside the bank can read
+         *     (D-52, AC-TEN1).
          * @example {
          *       "createdAt": "2026-09-21T08:15:00Z",
-         *       "filter": "regulatory",
          *       "id": "5f1a7c92-0b34-4e86-9d27-3c6a8e1b4f05",
+         *       "lastUsedAt": "2026-09-21T09:40:00Z",
          *       "revokedAt": null
          *     }
          */
@@ -4651,13 +4691,6 @@ export interface components {
              */
             createdAt: string;
             /**
-             * Filter
-             * @description What this subscription carries, a fixed kind with three members: `all` (both kinds), `regulatory` (only dates the outside world set) and `internal` (only deadlines this bank set for itself). A subscription set to `internal` is empty in R1, because the branches that produce our own deadlines have not shipped yet.
-             * @example regulatory
-             * @enum {string}
-             */
-            filter: "all" | "regulatory" | "internal";
-            /**
              * Id
              * Format: uuid
              * @description The subscription's identifier, as a uuid, which `DELETE /calendar-feeds/{feedId}` takes. It is not the secret in the address and reveals nothing: knowing it does not let anyone read the calendar.
@@ -4665,8 +4698,14 @@ export interface components {
              */
             id: string;
             /**
+             * Lastusedat
+             * @description When a calendar client last fetched this subscription, as an RFC 3339 timestamp in UTC (`2026-09-21T09:40:00Z`), or null while nothing has fetched it yet. Set by the server and stamped at most once every few minutes, so it says whether the address is in use, never exactly how often. It is also what the idle expiry reads: a subscription nobody fetches for `CALENDAR_FEED_IDLE_DAYS` days stops working. Null on a subscription made minutes ago is normal; null on an old one means the address was never pasted anywhere.
+             * @example 2026-09-21T09:40:00Z
+             */
+            lastUsedAt: string | null;
+            /**
              * Revokedat
-             * @description When the subscription was revoked, as an RFC 3339 timestamp in UTC (`2026-09-22T09:00:00Z`), or null while it still works. Revoking is immediate and final: the address answers 404 from that moment, and a new subscription is the only way back. The row is kept rather than deleted, so the bank can see that the subscription existed and when it stopped.
+             * @description When the subscription stopped working, as an RFC 3339 timestamp in UTC (`2026-09-22T09:00:00Z`), or null while it still works. Revoking is immediate and final: the address answers 404 from that moment, and a new subscription is the only way back. The person's own revoke is one way in; the server stamps this itself when they leave the bank, lose `roadmap.read`, are enrolled again or let the subscription go idle, so a date here that nobody set by hand is one of those. The row is kept rather than deleted, so the bank can see that the subscription existed and when it stopped.
              * @example null
              */
             revokedAt: string | null;
@@ -4675,16 +4714,16 @@ export interface components {
          * HomeCalendarFeedCreated
          * @description `POST /calendar-feeds` answers this once and never again: the subscription and the
          *     address that carries its secret. The address is shown once, copied into a calendar client
-         *     and stored here only as a SHA-256 hash, exactly as an API key is (ID-10). Losing it means
-         *     revoking the subscription and creating another.
+         *     and stored here only as a lookup prefix beside the secret's SHA-256, exactly as an API key
+         *     is (ID-10). Losing it means revoking the subscription and creating another.
          * @example {
          *       "feed": {
          *         "createdAt": "2026-09-21T08:15:00Z",
-         *         "filter": "regulatory",
          *         "id": "5f1a7c92-0b34-4e86-9d27-3c6a8e1b4f05",
+         *         "lastUsedAt": "2026-09-21T09:40:00Z",
          *         "revokedAt": null
          *       },
-         *       "url": "https://app.bleqq.com/api/v1/calendar/<the-43-character-token-shown-once>"
+         *       "url": "https://app.bleqq.com/api/v1/calendar/feed.ics?token=<prefix>.<secret-shown-once>"
          *     }
          */
         HomeCalendarFeedCreated: {
@@ -4692,31 +4731,29 @@ export interface components {
             feed: components["schemas"]["HomeCalendarFeed"];
             /**
              * Url
-             * @description The full address to paste into a calendar client, as a URL of at most 2000 characters. The token inside it is the only credential the feed has, because a calendar client sends no header and cannot be asked for a passkey; treat the whole address as a secret, never post it anywhere and never log it. It appears in this one response and in no other: the server keeps only a hash of it.
-             * @example https://app.bleqq.com/api/v1/calendar/<the-43-character-token-shown-once>
+             * @description The full address to paste into a calendar client, as a URL of at most 2000 characters, ending `/calendar/feed.ics?token=<prefix>.<secret>`. The token in the query string is the only credential the feed has, because a calendar client sends no header and cannot be asked for a passkey; treat the whole address as a secret, never post it anywhere and never log it. Anyone holding it can see which regulatory changes the bank has open work on, which is why revoking is one call away. It appears in this one response and in no other: the server keeps only the prefix and a hash of the secret.
+             * @example https://app.bleqq.com/api/v1/calendar/feed.ics?token=<prefix>.<secret-shown-once>
              */
             url: string;
         };
         /**
          * HomeCalendarFeedInput
          * @description `POST /calendar-feeds` (HOM-04): a person subscribes their own calendar client to the
-         *     bank's roadmap. A field this shape does not name answers 422, so nothing rides along
-         *     unseen. No `If-Match` and no passkey step-up: the subscription carries no version and
-         *     creating one is not an approval.
-         * @example {
-         *       "filter": "regulatory"
-         *     }
+         *     bank's roadmap.
+         *
+         *     The body carries no fields, and that is the whole shape: every subscription carries the
+         *     same public dates, so there is nothing to ask for. It is still a declared body rather
+         *     than none, because a field this shape does not name answers 422 — a client written
+         *     against the designed contract, which offered a `filter` of `all`, `regulatory` or
+         *     `internal`, is told that the choice is gone instead of quietly subscribing to something
+         *     else (D-52).
+         *
+         *     No `If-Match`: the subscription carries no version. No passkey step-up either, but the
+         *     caller's session must be young or have stepped up recently, because the address this
+         *     mints outlives the session that asked for it.
+         * @example {}
          */
-        HomeCalendarFeedInput: {
-            /**
-             * Filter
-             * @description What the subscription should carry, a fixed kind with three members and `all` by default: `all` (both kinds), `regulatory` (only dates the outside world set) and `internal` (only deadlines this bank set for itself). `internal` is accepted and produces an empty calendar in R1. A value outside the three answers 422 `validation_error`.
-             * @default all
-             * @example regulatory
-             * @enum {string}
-             */
-            filter: "all" | "regulatory" | "internal";
-        };
+        HomeCalendarFeedInput: Record<string, never>;
         /**
          * HomeRoadmap
          * @description `GET /roadmap`: the whole calendar the filters asked for, grouped by the screen from
@@ -11258,8 +11295,8 @@ export interface operations {
                      * @example [
                      *       {
                      *         "createdAt": "2026-09-21T08:15:00Z",
-                     *         "filter": "regulatory",
                      *         "id": "5f1a7c92-0b34-4e86-9d27-3c6a8e1b4f05",
+                     *         "lastUsedAt": "2026-09-21T09:40:00Z",
                      *         "revokedAt": null
                      *       }
                      *     ]
@@ -11316,12 +11353,12 @@ export interface operations {
     };
     getCalendarIcs: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The secret in the calendar address, at most 128 characters. It is the whole credential: a calendar client sends no header and cannot be asked for a passkey. An unknown token, a revoked one and another bank's all answer the same 404 with the same body, so the address never says whether it ever existed. */
-                feed_token: string;
+            query: {
+                /** @description The token from the calendar address, as `<prefix>.<secret>` and at most 128 characters: a short lookup prefix, a dot, and 256 random bits. It is the whole credential, because a calendar client sends no header and cannot be asked for a passkey, so treat the address as a secret and never put it anywhere it will be read back. It travels in the query string rather than the path so that request lines a server writes down carry the route and not the token. A token that is unknown, revoked, expired or no longer served all answer the same 404 with the same body, so the address never says whether it ever existed. */
+                token: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;

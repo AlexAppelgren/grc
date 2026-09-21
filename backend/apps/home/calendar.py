@@ -16,16 +16,14 @@ day is the right floor for the roadmap, where the reader is one bank; here it wo
 the "public" list answer two things at once, and a newsletter agent belongs to no bank at
 all.
 
-**The calendar feed is not built here.** The route was declared with a token in the path
-(`c6-home-api-contract`), and D-52 and ADR 0045 answered q-feed-token the other way: the
-address is `GET /api/v1/calendar/feed.ics?token=<prefix>.<secret>`, a prefix and a SHA-256
-rather than one hash, with a per-person cap, a recent sign-in or step-up on creation, an
-idle expiry and automatic revocation, and `calendar_feed` as the fifth table of the
-identity-lookup clause. The decision says in as many words that the path form is not built,
-and neither the declared route nor the `calendar_feed` model on main is in the decided
-shape. Building the path form would put on `main` the thing the ADR refuses, so the four
-feed functions below stay as they are and the contract goes back for the decided shape
-(chunk 6 plan rule 3: a logic task that finds the contract wrong stops and reports).
+**The calendar feed is not built here yet.** The route was first declared with the token in
+the path; D-52 and ADR 0045 answered q-feed-token the other way, and `c6-feed-contract`
+has since put the decided shape into the contract and the table: the address is
+`GET /api/v1/calendar/feed.ics?token=<prefix>.<secret>`, a lookup prefix beside the
+secret's SHA-256, a per-person cap, a recent sign-in or step-up on creation, an idle expiry,
+automatic revocation, and `calendar_feed` as the fifth table of the identity-lookup clause.
+`c6-upcoming-calendar-backend` builds the behaviour against that; the four functions below
+answer 501 until it does, reading no token and touching no row while they do.
 """
 
 from __future__ import annotations
@@ -89,22 +87,24 @@ def list_upcoming(order: list[str], page: HomeUpcomingQuery) -> list[HomeUpcomin
 
 
 def list_feeds() -> NoReturn:
-    """`GET /calendar-feeds`. Waits for the contract to carry D-52's shape."""
+    """`GET /calendar-feeds`. Built by `c6-upcoming-calendar-backend`."""
     not_built("Calendar subscriptions are not built yet.")
 
 
 def create_feed() -> NoReturn:
-    """`POST /calendar-feeds`. Waits for the contract to carry D-52's shape."""
+    """`POST /calendar-feeds`. Built by `c6-upcoming-calendar-backend`; the route's own
+    gate already demands a recent sign-in or a step-up, so nothing reaches here on a stale
+    session."""
     not_built("Calendar subscriptions are not built yet.")
 
 
 def revoke_feed() -> NoReturn:
-    """`DELETE /calendar-feeds/{feedId}`. Waits for the contract to carry D-52's shape."""
+    """`DELETE /calendar-feeds/{feedId}`. Built by `c6-upcoming-calendar-backend`."""
     not_built("Calendar subscriptions are not built yet.")
 
 
 def calendar_ics() -> NoReturn:
-    """`GET /calendar/{feedToken}`. The route as declared takes the token in the path, which
-    D-52 and ADR 0045 refuse; it reads no token and touches no row while it answers 501, so
-    nothing about a token can be learned from it."""
+    """`GET /calendar/feed.ics`. Built by `c6-upcoming-calendar-backend`; it reads no token
+    and touches no row while it answers 501, so nothing about a token can be learned from
+    it."""
     not_built("The calendar feed is not built yet.")

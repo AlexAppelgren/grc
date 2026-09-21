@@ -45,10 +45,12 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "ChangeStatus": ("change_status", "WAT-02: a reform's lifecycle stage"),
     "FeedFilter": (
         "feed_filter",
-        "HOM-03, HOM-04: which kinds of dated item a surface includes - all, regulatory or "
-        "internal. A calendar subscription's scope and the roadmap's kind filter are the same "
-        "choice and the ICS builder branches on it. Corrected 2026-09-21: it was recorded as "
-        "FP-03's inside-or-outside-the-footprint, which it never was (schema.sql line 61)",
+        "HOM-03: which kinds of dated item the roadmap read includes - all, regulatory or "
+        "internal - and the roadmap query branches on it. Corrected twice on 2026-09-21: it "
+        "was recorded as FP-03's inside-or-outside-the-footprint, which it never was "
+        "(schema.sql line 61), and then as the calendar subscription's scope as well, which "
+        "D-52 and ADR 0045 removed - a calendar feed carries the dates the outside world set "
+        "and never the bank's own, so it has nothing left to choose between",
     ),
     "TicketProvider": ("ticket_provider", "INT-02: the integration branches per provider"),
     "AgentKind": ("agent_kind", "AGT-03: what an agent definition does"),

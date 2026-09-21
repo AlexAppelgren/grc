@@ -17,9 +17,16 @@ lose:
   is what makes an agent's key safe on it. Every other route in this app joins a bank's own
   case, briefing or subscriptions, so a key holding every scope there is still gets no
   session on them.
-- **`GET /calendar/{feedToken}` reads no token while it is a stub.** It answers 501 for a
-  token that looks real, for one that does not and for an empty-looking one alike, so nothing
-  about any token can be learned from it before the feature ships.
+- **`GET /calendar/feed.ics` reads no token while it is a stub.** It answers 501 for a token
+  that looks real, for one that does not and for an empty-looking one alike, so nothing about
+  any token can be learned from it before the feature ships. Its token is in the query string
+  and in no path, which D-52 and ADR 0045 decided because a path reaches a hosting edge's
+  request log; that this route is the only one taking a token that way is pinned below, so
+  the exception to CONVENTIONS 3.6 stays one route wide.
+- **Creating a subscription needs a recent session.** The address outlives the session that
+  asked for it, so a session that is neither young nor freshly confirmed by a passkey is
+  refused with `step_up_required` — before the stub, because the rule is the route's and not
+  the logic's (D-52).
 - **`GET /home` is not a page-level 403.** It carries `roadmap.read`, which every system role
   holds, rather than an entry in `UNGATED_BY_DESIGN`; the panels a reader may not see are
   answered as null by `c6-home-backend`, not refused here.
@@ -31,7 +38,9 @@ import uuid
 from typing import Any
 
 from django.test import TestCase
+from django.utils import timezone
 
+from apps.home.schemas import FEED_TOKEN_MAX
 from apps.shared import permissions as perms
 from apps.shared.routes import iter_operations
 from apps.shared.testing import (
@@ -46,12 +55,13 @@ from config.api import api
 
 FEED = "11111111-1111-4111-8111-111111111111"
 WEEK = "2026-09-14"
-# The right length (43 characters, what `secrets.token_urlsafe(32)` produces) built from two
-# halves nobody could mistake for a credential. Written out as one literal it would be a
-# random-looking string of exactly the shape a real key takes, and the secret scanner cannot
-# tell those apart — a test that has to be allowlisted teaches the scanner to ignore the very
-# shape it exists to catch. No token exists yet either way: the route reads none.
-TOKEN = "feed-token-" + "x" * 32
+# The right shape (a prefix, a dot and a secret of the length `secrets.token_urlsafe(32)`
+# produces) built from halves nobody could mistake for a credential. Written out as one
+# literal it would be a random-looking string of exactly the shape a real token takes, and
+# the secret scanner cannot tell those apart — a test that has to be allowlisted teaches the
+# scanner to ignore the very shape it exists to catch. No token exists yet either way: the
+# route reads none.
+TOKEN = "feed-prefix-here." + "feed-secret-" + "x" * 31
 
 AS_KEY: dict[str, Any] = {"HTTP_X_API_KEY": API_KEY_FOR_TESTS}
 AS_SESSION: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
@@ -63,9 +73,12 @@ ROADMAP = "/api/v1/roadmap"
 UPCOMING = "/api/v1/upcoming"
 FEEDS = "/api/v1/calendar-feeds"
 ONE_FEED = f"/api/v1/calendar-feeds/{FEED}"
-ICS = f"/api/v1/calendar/{TOKEN}"
+ICS = "/api/v1/calendar/feed.ics"
 
-FEED_BODY = {"filter": "regulatory"}
+# Every subscription carries the same public dates (D-52), so the body names no field. It is
+# still a declared body: a client sending the `filter` the designed contract once offered is
+# told it is gone rather than subscribing to something else.
+FEED_BODY: dict[str, Any] = {}
 
 # Every operation this task declares: (operationId, method, url, body, the one permission a
 # person needs). The ICS route is not here: it has no permission at all and is proved on its
@@ -112,7 +125,7 @@ DECLARED_OPERATIONS = {
     ("GET", "/calendar-feeds"): "listCalendarFeeds",
     ("POST", "/calendar-feeds"): "createCalendarFeed",
     ("DELETE", "/calendar-feeds/{feed_id}"): "revokeCalendarFeed",
-    ("GET", "/calendar/{feed_token}"): "getCalendarIcs",
+    ("GET", "/calendar/feed.ics"): "getCalendarIcs",
 }
 
 
@@ -194,7 +207,9 @@ class HomeRouteGates(TestCase):
             ("getBriefing", "get", "/api/v1/briefings/this-week", None),
             ("listUpcoming", "get", f"{UPCOMING}?limit=101", None),
             ("listUpcoming", "get", f"{UPCOMING}?limit=0", None),
-            ("createCalendarFeed", "post", FEEDS, {"filter": "everything"}),
+            # The `filter` the designed contract offered is gone (D-52): a client still
+            # sending it is told so rather than subscribing to something else.
+            ("createCalendarFeed", "post", FEEDS, {"filter": "regulatory"}),
             ("createCalendarFeed", "post", FEEDS, {**FEED_BODY, "tone": "brand"}),
             ("revokeCalendarFeed", "delete", "/api/v1/calendar-feeds/not-a-uuid", None),
         ]
@@ -243,12 +258,34 @@ class HomeRouteStubs(TestCase):
 
     def test_a_session_with_its_permission_reaches_the_stub(self) -> None:
         permissions = {perms.ROADMAP_READ, perms.WATCH_READ}
-        with stub_session(user_principal(permissions=permissions, tenant_id=uuid.uuid4())):
+        # Freshly confirmed with a passkey, because minting a calendar address asks for
+        # that or a session minutes old; every other route here is a read and ignores it.
+        principal = user_principal(permissions=permissions, tenant_id=uuid.uuid4(), step_up_at=timezone.now())
+        with stub_session(principal):
             for name, method, url, body, _ in SESSION_ROUTES:
                 if name in BUILT_OPERATIONS:
                     continue
                 with self.subTest(operation=name):
                     self.assert_not_built(_call(self.client, method, url, body, AS_SESSION))
+
+    def test_an_old_session_cannot_mint_a_calendar_address(self) -> None:
+        """D-52: the address outlives the session that asked for it, so a stolen access
+        token must not be able to leave one behind. A session that neither began minutes ago
+        nor has just confirmed a passkey is refused before the stub, and the refusal names
+        what the screen has to ask for."""
+        stale = user_principal(permissions={perms.ROADMAP_READ}, tenant_id=uuid.uuid4())
+        with stub_session(stale):
+            response = self.client.post(FEEDS, data=FEED_BODY, content_type="application/json", **AS_SESSION)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["code"], "step_up_required")
+
+    def test_reading_and_revoking_never_ask_for_a_fresh_session(self) -> None:
+        """Only the mint is held to it. A person whose address has leaked has to be able to
+        revoke it at once, and listing what they hold is a read."""
+        stale = user_principal(permissions={perms.ROADMAP_READ}, tenant_id=uuid.uuid4())
+        with stub_session(stale):
+            self.assert_not_built(self.client.get(FEEDS, **AS_SESSION))
+            self.assert_not_built(self.client.delete(ONE_FEED, **AS_SESSION))
 
     def test_a_key_with_upcoming_read_reaches_the_list(self) -> None:
         """The scope is the whole of the gate: a key holding it reads the public list, and
@@ -263,10 +300,45 @@ class HomeRouteStubs(TestCase):
         bodies = set()
         for token in (TOKEN, "not-a-token", "x", TOKEN):
             with self.subTest(token=token[:8]):
-                response = self.client.get(f"/api/v1/calendar/{token}")
+                response = self.client.get(ICS, {"token": token})
                 self.assert_not_built(response)
                 bodies.add(response.content)
         self.assertEqual(len(bodies), 1, "the ICS route answered two different bodies; a token could be probed")
+
+    def test_the_ics_token_is_a_query_parameter_and_never_a_path_segment(self) -> None:
+        """D-52 and ADR 0045: a token in the path reaches a hosting edge's request log,
+        which is the invariant F29 fixed for invitation links. The old address must be gone
+        rather than kept working beside the new one, and the token must be a query
+        parameter, because that is the half our own logs drop."""
+        registered = {(op.method, op.path) for op in iter_operations(api)}
+        self.assertIn(("GET", "/calendar/feed.ics"), registered)
+        self.assertEqual(
+            [path for method, path in registered if path.startswith("/calendar/") and "{" in path],
+            [],
+            "a calendar route takes a token in its path again; D-52 put it in the query string",
+        )
+        self.assertEqual(self.client.get(f"/api/v1/calendar/{TOKEN}").status_code, 404)
+        self.assertEqual(self.client.get(ICS).status_code, 422, "the token is required, not optional")
+
+    def test_no_other_operation_reads_a_token_from_the_query_string(self) -> None:
+        """The guard ADR 0045 asks for: the calendar feed is the one named exception to
+        CONVENTIONS 3.6, and it stays one route wide. A second route taking a secret in a
+        query string would leave it in every log that writes request lines — and would do it
+        quietly, because nothing else looks at what query parameters are called. Read off the
+        published contract, which is what an integrator and a proxy both see."""
+        credential_names = {"token", "secret", "key", "password", "code", "assertion", "signature"}
+        taken: list[str] = []
+        for path, item in api.get_openapi_schema()["paths"].items():
+            for method, operation in item.items():
+                for parameter in operation.get("parameters", []):
+                    if parameter.get("in") != "query" or parameter.get("name") not in credential_names:
+                        continue
+                    taken.append(f"{method.upper()} {path} ?{parameter['name']}")
+        self.assertEqual(
+            taken,
+            ["GET /api/v1/calendar/feed.ics ?token"],
+            "a route other than the calendar feed takes a credential in its query string; ADR 0045 allows one",
+        )
 
     def test_coming_up_is_the_roadmaps_own_function_and_not_a_second_query(self) -> None:
         """Ruling 5: `c6-home-backend` builds Today's "Coming up" by calling the roadmap
@@ -288,8 +360,16 @@ class HomeRouteStubs(TestCase):
         )
 
     def test_a_token_longer_than_the_limit_is_422_before_the_stub(self) -> None:
-        from apps.home.schemas import FEED_TOKEN_MAX
-
-        response = self.client.get(f"/api/v1/calendar/{'a' * (FEED_TOKEN_MAX + 1)}")
+        response = self.client.get(ICS, {"token": "a" * (FEED_TOKEN_MAX + 1)})
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["code"], "validation_error")
+
+    def test_a_refused_token_is_never_echoed_back(self) -> None:
+        """A refusal is a response and a response can be stored: the body names the field
+        and what was wrong with it, never the value, so a token refused for its length does
+        not end up in whatever kept the answer (playbook 4.7)."""
+        too_long = "a" * (FEED_TOKEN_MAX + 1)
+        response = self.client.get(ICS, {"token": too_long})
+        body = response.content.decode()
+        self.assertNotIn(too_long, body)
+        self.assertNotIn(TOKEN, self.client.get(ICS, {"token": TOKEN}).content.decode())

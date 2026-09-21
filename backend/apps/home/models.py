@@ -16,9 +16,9 @@ Two rules are structural here rather than remembered:
   the snapshot is taken.
 - **A credential is stored hashed.** `calendar_feed` has no column for the plaintext token
   and no `__str__` that could print one: the address is returned once by
-  `POST /calendar-feeds` and only its SHA-256 hash is kept, exactly as an API key is
-  (ID-10). The unique index on the hash is what makes a lookup a single indexed read
-  rather than a scan.
+  `POST /calendar-feeds` and only a lookup prefix and the SHA-256 of the secret are kept,
+  exactly as an API key is (ID-10, D-52, ADR 0045). The unique index on the prefix is what
+  makes a fetch a single indexed read rather than a scan of every hash.
 
 Nothing here is a roadmap table. The roadmap is computed from the library's dated changes
 and this bank's own cases every time it is asked for, so there is nothing to keep in step.
@@ -26,34 +26,16 @@ and this bank's own cases every time it is asked for, so there is nothing to kee
 
 from __future__ import annotations
 
-import enum
-
 from django.db import models
 
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.tenancy import TenantModel
 
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
-
-
-class FeedFilter(enum.StrEnum):
-    """Tier-one kind (apps/shared/kinds.py): which kinds of dated item a surface includes.
-
-    A calendar subscription's scope and the roadmap's `kind` filter are the same
-    three-valued choice, and the code branches on it — the ICS builder skips what the
-    filter excludes — so it is a kind and not a list an admin curates. `INTERNAL` produces
-    an empty calendar in R1, because the branches that make the bank's own deadlines arrive
-    with the register (chunk 8) and the case workflow (chunk 9).
-
-    The API side of the same kind is the `FeedFilter` literal in `apps/home/schemas.py`;
-    the two are kept apart because a model may not import a schema (playbook 4.1).
-    """
-
-    ALL = "all"
-    REGULATORY = "regulatory"
-    INTERNAL = "internal"
+# The lookup half of a calendar address, in hex. Longer than the API key's eight characters
+# because every member of every bank may hold five subscriptions where a bank holds a
+# handful of keys, and a prefix collision costs a person a failed create; the secret beside
+# it is what the fetch actually verifies (D-52).
+TOKEN_PREFIX_LENGTH = 16
 
 
 class Briefing(TenantModel):
@@ -122,23 +104,43 @@ class BriefingItem(AppendOnlyModel, TenantModel):
 
 
 class CalendarFeed(TenantModel):
-    """One person's calendar subscription to their bank's roadmap (HOM-04).
+    """One person's calendar subscription to their bank's roadmap (HOM-04, D-52, ADR 0045).
 
-    The address a calendar client polls carries 32 random bytes; only their SHA-256 hash is
-    here, under a unique index, so the address is a credential the system cannot hand back
+    The address a calendar client polls is `…/calendar/feed.ics?token=<prefix>.<secret>`.
+    The prefix is the lookup and the secret is 256 random bits; only the prefix and the
+    secret's SHA-256 are here, so the address is a credential the system cannot hand back
     and cannot leak. Losing it means revoking the subscription and creating another.
+
+    The lookup runs before any tenant is known, because a calendar client presents no
+    session and no key, so this is the fifth table of the identity-lookup clause
+    (`apps/shared/tenancy.py`) and the prefix is unique across every bank rather than
+    within one.
 
     Revocation stamps `revoked_at` rather than deleting the row, so a bank can still see
     that a subscription existed and when it stopped, and so a revoked token and one that
-    never existed can be answered identically. Nothing else about the row ever changes.
+    never existed can be answered identically. `last_used_at` is the only other column a
+    later write touches: it is what the idle expiry reads, and a fetch stamps it.
+
+    There is no filter column. Every subscription carries the same thing — the dates the
+    outside world set on the changes this person's bank has open work on — because the
+    bank's own deadlines never reach a calendar a provider outside the bank can read
+    (ADR 0045, AC-TEN1), so a choice between `all`, `regulatory` and `internal` would have
+    had one meaning and two dead values.
     """
 
     user = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
-    # The SHA-256 of the token in the address, hex, 64 characters. No plaintext column
-    # exists, here or anywhere: the address is returned once and never again.
-    token_hash = models.CharField(max_length=64, unique=True)
-    filter = models.CharField(max_length=16, choices=_choices(FeedFilter), default=FeedFilter.ALL.value)
+    # The half of the address that finds the row, in hex. Unique across every bank: the
+    # fetch looks it up before it knows which bank the subscription belongs to.
+    token_prefix = models.CharField(max_length=TOKEN_PREFIX_LENGTH, unique=True)
+    # The SHA-256 of the secret half, hex, 64 characters, compared in constant time. No
+    # plaintext column exists, here or anywhere: the address is returned once and never
+    # again.
+    token_hash = models.CharField(max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
+    # When a calendar client last fetched this subscription, throttled as an API key's stamp
+    # is. Null until the first fetch, which is also how a subscription nobody ever used is
+    # told apart from one in daily use before it expires.
+    last_used_at = models.DateTimeField(null=True, blank=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -146,9 +148,12 @@ class CalendarFeed(TenantModel):
         # Newest first with the row id as a stable tiebreak, so the account screen lists the
         # subscription a person just made at the top.
         ordering = ["-created_at", "id"]
+        # The owner index carries three reads: a person's own list, the count behind the
+        # per-person cap, and the revocation of everything a leaver held.
         indexes = [models.Index(fields=["tenant", "user"], name="calendar_feed_owner_idx")]
 
     def __str__(self) -> str:
-        # The row's own id and nothing else. A hash is still a credential's shadow, and a
-        # model's repr reaches logs, shells and error pages (playbook 4.7).
+        # The row's own id and nothing else. A prefix is half an address and a hash is a
+        # credential's shadow, and a model's repr reaches logs, shells and error pages
+        # (playbook 4.7).
         return str(self.id)

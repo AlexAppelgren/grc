@@ -216,7 +216,7 @@ class HomeScenarioTests(TestCase):
         self.assertEqual([item["label"] for item in body["items"]], ["In force", "Applies"])
         self.assertNotIn(elsewhere.title, [item["title"] for item in body["items"]])
 
-    @skip("pending: HOM-S5 (the calendar feed half; the contract needs D-52's shape)")
+    @skip("pending: HOM-S5 (the calendar feed half; c6-upcoming-calendar-backend builds it)")
     def test_hom_s5(self) -> None:
         """HOM-S5
 
@@ -228,13 +228,13 @@ class HomeScenarioTests(TestCase):
         `/upcoming` and gets library facts with dates and keys and nothing of any bank,
         which two banks reading byte-identical bodies is the strongest form of.
 
-        The second half waits. `getCalendarIcs` was declared with the token in the path,
-        and D-52 with ADR 0045 answered q-feed-token the other way — the address is
-        `/api/v1/calendar/feed.ics?token=<prefix>.<secret>`, with a prefix beside the hash,
-        a per-person cap, a recent sign-in or step-up on creation, an idle expiry, automatic
-        revocation and `calendar_feed` in the identity-lookup clause. Neither the route nor
-        the model on main is in the decided shape, so the scenario stays skipped rather than
-        being met by building the form the decision refuses.
+        The second half waits on its behaviour and no longer on a decision. The contract and
+        the table now carry the shape D-52 and ADR 0045 decided — the address is
+        `/api/v1/calendar/feed.ics?token=<prefix>.<secret>`, with a lookup prefix beside the
+        secret's hash, a per-person cap, a recent sign-in or step-up on creation, an idle
+        expiry, automatic revocation and `calendar_feed` in the identity-lookup clause — and
+        `c6-upcoming-calendar-backend` builds the four operations against it. The four
+        answer 501 until then, which is why this scenario is skipped rather than failing.
         """
 
     @skip("pending: HOM-S7 (HOM-05, chunk 8)")

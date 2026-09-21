@@ -26,7 +26,7 @@ RULINGS WHERE THE SOURCES DISAGREE
 3. **The roadmap's own deadlines are chunks 8 and 9.** `v_roadmap_item` has four branches; three of them (assessment deadlines, actions, next reviews) read tables that R1 does not have, and `design/screens/tenant-roadmap.html` says so in its own header comment. Chunk 6 builds the regulatory branch. `c8-home-register-feeds` adds reviews and gap targets, chunk 9 adds assessment deadlines and actions, and `f03-T74` adds the certificate branches (D-43). HOM-S4 and HOM-S6 are reworded to the R1 branch, HOM-03's status cell stays `in_progress` at the close, and the "Our deadline" pill keeps its unit test in `roadmap-presentation.test.ts`.
 4. **Ruling 17 stands.** `c6-e2e-seed` seeds the dates and the lead item only; the seeded emailed snapshot moves into `c6-briefing-screen`, which needs the briefing builder to write one.
 5. **One roadmap query.** `c6-roadmap-backend` owns `home/roadmap.py`; `c6-home-backend` calls its function for "Coming up" and the count and writes no roadmap query of its own.
-6. **The ICS route is declared once, with the rest.** `c6-home-api-contract` declares all nine operations, `GET /calendar/{feedToken}` included, answering 501 `not_built` before any token is looked at. Only the behaviour behind it waits for q-feed-token.
+6. **The ICS route is declared once, with the rest.** `c6-home-api-contract` declares all nine operations, the ICS route included, answering 501 `not_built` before any token is looked at. Only the behaviour behind it waited for q-feed-token. **Corrected 2026-09-21 (`c6-feed-contract`, Alex's approval):** it was declared as `GET /calendar/{feedToken}`, and D-52 with ADR 0045 had already decided the address is `GET /api/v1/calendar/feed.ics?token=<prefix>.<secret>` and that the path form is not built. The contract, the `calendar_feed` table, the `UNGATED_BY_DESIGN` entry and the security-log kind now carry the decided shape; the path form answers 404 and nothing rebuilds it.
 
 DEFAULTS TAKEN (each stated in its commit body, and copied into `docs/TODO_FOR_alex.md` by `c6-chunk-close`)
 - `GET /home` is gated by `roadmap.read`, not left ungated. Every system role holds `roadmap.read` (PRD §6), so this is "any member" in practice, and it avoids an entry in `UNGATED_BY_DESIGN`, which is an allowlist and therefore a guard change reserved to the packages named in parallel-plan rule 8. The UI plan row is corrected by the close.
@@ -37,11 +37,13 @@ DEFAULTS TAKEN (each stated in its commit body, and copied into `docs/TODO_FOR_a
 - `GET /briefings/current` computes the current week live and stores nothing. A snapshot row is written only by the weekly job, in the transaction that sends the mail.
 - The roadmap and the briefing respect the regulatory scope and get **no** "Show outside our scope" toggle: the designed `/roadmap` takes `kind`, `from` and `to` only, and FP-S4 proves the toggle on the inventory, where chunk 3 built it.
 - Quarters are labelled `YYYY-Qn` as keys; the screen renders the phrase from its catalog.
-- The calendar feed token is 32 bytes from `secrets.token_urlsafe`, stored as a SHA-256 hash with a unique index, shown once in `CalendarFeedCreated.url`, and never listed again (the `admin-api-keys.html` pattern).
+- The calendar feed token is `<prefix>.<secret>` with 256 bits of secret, stored as a unique 16-character lookup prefix beside the secret's SHA-256, shown once in `CalendarFeedCreated.url`, and never listed again (the `admin-api-keys.html` pattern). **Superseded 2026-09-21** the earlier default here, which was 32 bytes stored as one hashed column: D-52 and ADR 0045 decided the prefix-and-hash form with the query-string address.
 - The ICS body carries the item's date, its label and the record's title, and no tenant judgement: no "So what?", no case note, no owner name.
-- A revoked or unknown token answers 404, never 401 or 403, so the URL says nothing about whether it ever existed.
+- A revoked or unknown token answers 404, never 401 or 403, so the URL says nothing about whether it ever existed. An expired one answers the same way.
 - `GET /upcoming` defaults to 20 items and caps at 100, like every other list.
-- Feed creation and revocation are audited through `record()` under the member's tenant; neither needs a step-up (playbook 4.2 does not list it, and revocation is the safe direction).
+- Feed creation and revocation are audited through `record()` under the member's tenant, and so is every automatic revocation, with a system actor. Revocation needs nothing of the caller: a person whose address has leaked stops it at once. Creation needs a recent sign-in or a step-up (`enforce_recent_sign_in_or_step_up`, already in force on the route), because the address outlives the session that minted it (D-52).
+- A person holds at most `CALENDAR_FEEDS_PER_USER` subscriptions (5) and one idle for `CALENDAR_FEED_IDLE_DAYS` (30) expires. Both are settings, already in `config/settings.py`, `.env.example` and the Railway runbook.
+- A calendar subscription has no filter: it carries the dates the outside world set and never the bank's own, so `CalendarFeedInput` names no field and `calendar_feed` has no `filter` column (D-52, ADR 0045, AC-TEN1). `feed_filter` stays the roadmap read's `kind` filter.
 - `RoadmapItemKind` (`regulatory`, `internal`) and `RoadmapItemType` (`change_date`, `internal_deadline`, `action_due`, `review_due`) are tier-one kinds: the screen and the ICS builder branch on them. Both are declared in full, and R1 produces only `regulatory` / `change_date`.
 
 CUT, WITH REASONS
@@ -104,21 +106,23 @@ Tasks in one wave have disjoint files and can run side by side.
 8. `c6-review-fixes`
 9. `c6-chunk-close`
 
-If q-feed-token is unanswered when wave 3 starts, `c6-upcoming-calendar-backend` builds `GET /upcoming` alone and stops at that green point (parallel plan rule 9); the feed half and `c6-calendar-feeds-screen` wait, HOM-S5 stays skipped, and `c6-chunk-close` cannot run. Everything else proceeds.
+If q-feed-token is unanswered when wave 3 starts, `c6-upcoming-calendar-backend` builds `GET /upcoming` alone and stops at that green point (parallel plan rule 9); the feed half and `c6-calendar-feeds-screen` wait, HOM-S5 stays skipped, and `c6-chunk-close` cannot run. **That happened, and it is over.** The feed half stopped because the contract carried the path form the answer refuses. `c6-feed-contract` put the decided shape into `apps/home/api.py`, `schemas.py`, `models.py` with home 0002, the `UNGATED_BY_DESIGN` entry and the security log on 2026-09-21, so **HOM-S5's feed half is unblocked**: `c6-upcoming-calendar-backend` builds the four operations against a committed contract, `c6-calendar-feeds-screen` follows it, HOM-S5 is un-skipped by the first of those, and `c6-chunk-close` is no longer held by this.
 
 ## Open questions
 
-- **q-feed-token (a product invariant is at stake, so stop and ask Alex).** The calendar feed's token sits in the URL a calendar client fetches, so every server that logs a request line — Django's request logger on a 4xx, gunicorn's access log, the hosting edge — writes the token down. That is the class of problem F29 fixed for invitation tokens (e604de7) and H10 fixed for search text, and it is the invariant "a secret never reaches a log".
+- **q-feed-token — ANSWERED (D-52, ADR 0045; Alex, 2026-09-19).** The address is `GET /api/v1/calendar/feed.ics?token=<prefix>.<secret>` and the path form below is not built. What follows is the question as it was asked, kept because the options a decision rejected are half of what it decided. The calendar feed's token sits in the URL a calendar client fetches, so every server that logs a request line — Django's request logger on a 4xx, gunicorn's access log, the hosting edge — writes the token down. That is the class of problem F29 fixed for invitation tokens (e604de7) and H10 fixed for search text, and it is the invariant "a secret never reaches a log".
 
   The design has no alternative that keeps the feature: a calendar client sends no header and no body, follows no sign-in and cannot be asked for a passkey, so the URL is the only credential it can carry.
 
-  Option A (recommended): accept the token in the path, with the mitigations that made F29 acceptable elsewhere — 32 bytes of entropy, stored only as a SHA-256 hash, never returned again after creation, revocable from the screen with immediate effect, the response marked `no-store`, the `/calendar/` path added to the access-log and Sentry scrub beside `?q=` (H10's mechanism), and the route excluded from `loggable_route`. Rotation is revoke-and-create, which the screen already offers.
+  Option A (recommended, **not taken**): accept the token in the path, with the mitigations that made F29 acceptable elsewhere — 32 bytes of entropy, stored only as a SHA-256 hash, never returned again after creation, revocable from the screen with immediate effect, the response marked `no-store`, the `/calendar/` path added to the access-log and Sentry scrub beside `?q=` (H10's mechanism), and the route excluded from `loggable_route`. Rotation is revoke-and-create, which the screen already offers.
 
   Option B: no calendar feed in R1. HOM-04 keeps `GET /upcoming` for agents and newsletters, and the subscription is cut to a later release once an alternative (a per-client secret in a header, which no calendar client sends) is found.
 
   Option C: a short-lived signed URL. It breaks the feature: a subscription is fetched for months without a person present to refresh it.
 
-  This gates the feed half of `c6-upcoming-calendar-backend`, all of `c6-calendar-feeds-screen`, HOM-S5 and `c6-chunk-close`. `GET /upcoming` is not gated by it.
+  **The answer was a fourth option this brief did not list:** the token moves out of the path and into the query string, where our own scrubbing already works and a hosting edge's request line does not reach. It carries 256 bits stored as a lookup prefix beside the secret's SHA-256, a person holds at most `CALENDAR_FEEDS_PER_USER`, minting one takes a recent sign-in or a step-up, a fetch re-checks membership and `roadmap.read` and revokes the subscription when a check fails, an idle one expires after `CALENDAR_FEED_IDLE_DAYS`, and `feed_used` joins the security log. The path form is not built, and the scrub work Option A described is not needed: `loggable_route` already prints the route without the query.
+
+  This gated the feed half of `c6-upcoming-calendar-backend`, all of `c6-calendar-feeds-screen`, HOM-S5 and `c6-chunk-close`. It gates none of them now.
 - Non-blocking, to confirm (defaults are taken and the build does not wait): who receives the weekly briefing mail before COL-02's preferences exist (default: every active member holding `watch.read`); that a confirmed "So what?" may travel in that mail while an unconfirmed draft may not; and that Today's standing panel and the roadmap's own deadlines arriving in chunk 8 is acceptable for the first test deploy. `c6-chunk-close` writes all three into `docs/TODO_FOR_alex.md`.
 - Rejected, from the parallelism critique: the suggestion that `c6-home-backend` and `c6-roadmap-backend` merge into one task because both read change cases. They own different modules and different scenarios, and together they exceed the 60-minute limit; ruling 5 removes the duplication without removing the split.
 - Rejected, from the coverage critique: the suggestion that `Home.standing` be served as zeros so HOM-S1 needs no rewording. A compliance figure that reads "0 gaps" before the register exists is a false statement about the bank, and the screen would have to show it on the first test deploy. The field is omitted and the panel named for chunk 8 instead.
@@ -145,16 +149,27 @@ Write `backend/apps/home/api.py` and `schemas.py` once, and mount the router in 
 | `listCalendarFeeds` | `GET /calendar-feeds` | SessionAuth, `roadmap.read` | `home/calendar.py` |
 | `createCalendarFeed` | `POST /calendar-feeds` | SessionAuth, `roadmap.read` | `home/calendar.py` |
 | `revokeCalendarFeed` | `DELETE /calendar-feeds/{feedId}` | SessionAuth, `roadmap.read` | `home/calendar.py` |
-| `getCalendarIcs` | `GET /calendar/{feedToken}` | none (the token is the credential) | `home/calendar.py` |
+| `getCalendarIcs` | `GET /calendar/feed.ics?token=<prefix>.<secret>` | none (the token is the credential) | `home/calendar.py` |
+
+> **Corrected 2026-09-21 by `c6-feed-contract` (Alex approved the correction).** This task
+> wrote `GET /calendar/{feedToken}` and a `calendar_feed` row to match. D-52 and ADR 0045
+> had decided the other shape and say in as many words that the path form is not built, so
+> `c6-upcoming-calendar-backend` stopped rather than build it. What is on `main` now, and
+> what the rest of the chunk builds against: the address is
+> `GET /api/v1/calendar/feed.ics?token=<prefix>.<secret>`; `createCalendarFeed` takes a body
+> with no fields and refuses a session that is neither recent nor freshly confirmed, with
+> `step_up_required`; `HomeCalendarFeed` carries `lastUsedAt` and no `filter`; and
+> `UNGATED_BY_DESIGN` holds `("GET", "/calendar/feed.ics")` with the mitigations ADR 0045
+> decided. Nobody rebuilds the path form.
 
 Schemas, camelCase through `CamelSchema`, reusing chunk 5's `ChangeListItem`, `Urgency` and `SourceCoverage` rather than restating them:
 - `Home` = `{date, comingUp[RoadmapItem], roadmapCount, lead|null, sources}`. No `decideNow` (ruling 1) and no `standing` (ruling 2).
 - `RoadmapItem` = the designed shape minus the fields no R1 branch fills: `{id, kind, itemType, date, quarter, label, title, status, urgency|null, sourceLabel, changeId|null, obligations[]}`. `soWhat`, `what` and `owner` arrive with the branches that have them (chunks 8 and 9).
-- `Roadmap` = `{items, quarters}`; `Briefing` = `{weekStart, weekEnd, lead|null, items, comingUp, emailSentAt|null}`; `UpcomingItem`, `CalendarFeed`, `CalendarFeedInput`, `CalendarFeedCreated` as designed.
+- `Roadmap` = `{items, quarters}`; `Briefing` = `{weekStart, weekEnd, lead|null, items, comingUp, emailSentAt|null}`; `UpcomingItem` as designed. The three calendar shapes are **not** as designed since the correction above: `CalendarFeed` = `{id, createdAt, lastUsedAt|null, revokedAt|null}`, `CalendarFeedInput` names no field, and `CalendarFeedCreated.url` ends `/calendar/feed.ics?token=<prefix>.<secret>` (INPUT_DELTAS §7, §9).
 - `RoadmapQuery` = `{kind?: RoadmapItemKind|'all', from?: date, to?: date}`; `UpcomingQuery` carries the shared `limit` (default 20, max 100).
 
 Also:
-- Add the nine routes to the route lists in `apps/shared/permissions.py`. Add no entry to `UNGATED_BY_DESIGN`: `getCalendarIcs` is authenticated by its token and declares that in its route entry, and `getHome` carries `roadmap.read`.
+- Add the nine routes to the route lists in `apps/shared/permissions.py`. Two of them did have to join `UNGATED_BY_DESIGN` after all, against this line's expectation: `GET /upcoming` (a person's permission or an agent's scope, which one decorator cannot say) and the ICS route, which presents no principal at all. `getHome` carries `roadmap.read` as planned. The ICS entry is keyed `("GET", "/calendar/feed.ics")` and its note carries the mitigations ADR 0045 decided.
 - Write the INPUT_DELTAS §1 and §7 rows for ruling 1 (no `decideNow`; `GET /me` gains `counts` and `lastVisitAt`), ruling 2 (no `standing` until chunk 8) and ruling 3 (the R1 roadmap branch), each naming the task that closes it.
 
 **Owned paths:**
@@ -170,7 +185,7 @@ Also:
 
 - The nine operations appear in `openapi.json` with the ids above and answer 501 `not_built` behind their real gate.
 - A session without the permission gets 403 with `requiredPermission`, and an anonymous request gets 401 — both before the 501, proved per route.
-- `GET /calendar/{feedToken}` answers 501 for any token and reads nothing.
+- `GET /calendar/feed.ics?token=…` answers 501 for any token and reads nothing, and the path form answers 404.
 - The route-permission guard is green and lists no ungated route.
 - `contract_drift.py` reports the nine operations as delivered-in-part, and no line is deleted yet.
 - `bash generate-types.sh` produces types for all nine without the task committing them.
@@ -201,13 +216,13 @@ Also:
 Add `backend/apps/home/models.py` and `migrations/0001_home.py`, from `docs/inputs/schema.sql` §9 and `data-model.md`:
 - `Briefing(TenantModel)`: `week_start` (date, Monday), `generated_at`, `email_sent_at` (nullable), unique `(tenant, week_start)`, `Meta.ordering = ["-week_start"]`.
 - `BriefingItem(TenantModel, AppendOnlyModel)`: `briefing`, `case`, `rank` (1 is the lead), unique `(briefing, case)`, `Meta.ordering = ["rank"]`. The append-only trigger comes from `migration_helpers.append_only_trigger_operations`, so a sent briefing cannot be rewritten by a later feed change — that is HOM-S3's last line, made structural instead of remembered.
-- `CalendarFeed(TenantModel)`: `user`, `token_hash` (unique), `filter` (`FeedFilter`), `created_at`, `revoked_at` (nullable), `Meta.ordering = ["-created_at"]`. No plaintext token column exists.
+- `CalendarFeed(TenantModel)`: `user`, `token_prefix` (unique, 16 characters), `token_hash` (the secret's SHA-256), `created_at`, `last_used_at` (nullable), `revoked_at` (nullable), `Meta.ordering = ["-created_at"]`. No plaintext token column exists and there is **no** `filter` column. **Corrected 2026-09-21 by `c6-feed-contract` (home 0002):** this task built `token_hash` unique with a `filter` column, from `schema.sql` §9; D-52 and ADR 0045 had decided the prefix-and-hash form, the idle stamp and a feed that carries the outside world's dates only, so the filter has two values that could never mean anything. Nobody puts it back.
 
-The migration applies `migration_helpers.rls_operations()` to all three tables and `migration_helpers.append_only_trigger_operations` to `briefing_item`.
+The migration applies `migration_helpers.rls_operations()` to all three tables and `migration_helpers.append_only_trigger_operations` to `briefing_item`. Home 0002 then replaces `calendar_feed`'s policies with `split_policy_operations(identity_lookup=True)`, because a calendar client presents no session and no key and the row has to be found before a tenant is known — `calendar_feed` is the fifth identity-lookup table.
 
 Also:
-- Add `RoadmapItemKind` and `RoadmapItemType` to `apps/shared/kinds.py` with their INPUT_DELTAS §1 names and reasons, and correct the existing `FeedFilter` line, which today says "FP-03: inside or outside the footprint": `feed_filter` is the calendar subscription's `all | regulatory | internal` (`schema.sql` line 61), and nothing branches on it for the footprint.
-- Add the three tables to the guarded-table list in `apps/shared/tests_rls.py`.
+- Add `RoadmapItemKind` and `RoadmapItemType` to `apps/shared/kinds.py` with their INPUT_DELTAS §1 names and reasons, and correct the existing `FeedFilter` line, which today says "FP-03: inside or outside the footprint": `feed_filter` is the roadmap read's `all | regulatory | internal` filter, and nothing branches on it for the footprint. (Corrected again on 2026-09-21: it is no longer a calendar subscription's scope either, because a subscription has nothing to choose between.)
+- Add the three tables to the guarded-table list in `apps/shared/tests_rls.py`, and `calendar_feed` to `IDENTITY_LOOKUP_TABLES` beside it.
 
 **Owned paths:**
 
@@ -223,8 +238,8 @@ Also:
 - `makemigrations --check` is clean and `migrate_from_zero` applies the whole graph.
 - The RLS guard lists `briefing`, `briefing_item` and `calendar_feed` as forced tenant-only, and a cross-tenant read returns nothing under `cw_app`.
 - As `cw_app`, UPDATE and DELETE on `briefing_item` are refused and INSERT works; a test proves it on the app alias.
-- `token_hash` is unique, and no model field, `__str__` or `__repr__` can return a plaintext token.
-- The kinds-only guard and the compliance lint are green, and `FeedFilter`'s reason names the calendar feed.
+- `token_prefix` is unique, and no model field, `__str__` or `__repr__` can return a plaintext token or either of its halves.
+- The kinds-only guard and the compliance lint are green, and `FeedFilter`'s reason names the surface that still reads it.
 - The task edits no file under `apps/home/` other than the three named, so it can share a wave with the contract task.
 
 **Gates:**
@@ -443,21 +458,24 @@ Rewording, in `home/app.md` (ruling 2), then un-skip HOM-S1:
 
 **Requirements:** HOM-04
 **Scenarios:** HOM-S5 (un-skipped)
-**Depends on:** `c6-home-models`, `c6-home-api-contract`, `c6-roadmap-backend`, `c5-contract-models-watch`, **q-feed-token**
+**Depends on:** `c6-home-models`, `c6-home-api-contract`, `c6-roadmap-backend`, `c5-contract-models-watch`, `c6-feed-contract`
 **Security review:** yes (an unauthenticated token route, a stored credential, an outbound log path)
 
-Build `backend/apps/home/calendar.py`.
+Build `backend/apps/home/calendar.py`. `GET /upcoming` is built and green; the feed half is what is left, and it is no longer held by an open question.
 
-`GET /upcoming` (not gated by q-feed-token, build it first):
+`GET /upcoming` (built 2026-09-21):
 - Active changes with a key date from today on, ordered by date, `limit` default 20 and max 100.
 - Each item is `UpcomingItem` and nothing else: change id, title, key date with its precision and label, change type, authority label, suggested urgency, source URL. No case, no tenant judgement, no footprint filter — these are public library facts, the same list the app, the newsletter agent and the feed read (`schema.sql` `v_upcoming`).
 - Readable by a member session with `roadmap.read` and by an API key with `upcoming:read`. A key without that scope gets 403; no key scope reaches anything else here.
 
-The calendar feed (held by q-feed-token; build under the answered option):
-- `POST /calendar-feeds` mints 32 bytes with `secrets.token_urlsafe`, stores only its SHA-256 hash, and returns the address once in `CalendarFeedCreated.url`. `GET /calendar-feeds` lists the caller's own feeds with no token and no other member's row. `DELETE /calendar-feeds/{feedId}` sets `revoked_at`; a second delete is idempotent.
-- `GET /calendar/{feedToken}` looks the hash up, refuses a revoked or unknown token with 404, activates the feed's tenant, and serves `text/calendar` built from the feed owner's roadmap under the feed's filter. The ICS carries date, label and record title only: no "So what?", no case note, no owner name, no tenant name.
-- The response is `no-store`. The `/calendar/` path joins the access-log and Sentry scrub beside `?q=` (the H10 mechanism) and is excluded from `loggable_route`, so no server writes the token down.
-- Create and revoke are audited through `record()` in the same transaction; reading the feed writes nothing and is rate-limited per token.
+The calendar feed, against the contract `c6-feed-contract` committed (D-52, ADR 0045; **do not reshape it, and do not rebuild the path form**):
+- `POST /calendar-feeds` mints a 16-character prefix and 256 bits of secret, stores the prefix and the secret's SHA-256 on `calendar_feed`, and returns the address once in `CalendarFeedCreated.url` as `…/calendar/feed.ics?token=<prefix>.<secret>`. The body names no field. The route already calls `enforce_recent_sign_in_or_step_up`, so the freshness rule is in force; what this task adds is the `CALENDAR_FEEDS_PER_USER` cap, which needs a 409 and a code of its own (`apps/shared/errors.py` has no fitting one, and the API documentation gate refuses a code no route raises, which is why the contract describes the refusal in words and names no code yet — add the code and the sentence together).
+- `GET /calendar-feeds` lists the caller's own feeds with no token and no other member's row; `DELETE /calendar-feeds/{feedId}` sets `revoked_at` and a second delete is idempotent.
+- `GET /calendar/feed.ics?token=…` reads the prefix, finds the row through `tenancy.identity_lookup()` (add `apps/home/calendar.py` to the AST allow-list of callers in `apps/shared/tests_tenancy.py`), compares the secret's hash in constant time, refuses an unknown, revoked or expired token with the same 404, activates the feed's tenant and serves `text/calendar` from the owner's roadmap. The ICS carries date, label and record title only: no "So what?", no case note, no owner name, no tenant name, and a guard test pins the emitted fields.
+- Each fetch checks that the membership is active, still holds `roadmap.read` and has not been re-enrolled since the feed was created, and revokes the feed when a check fails; a feed idle for `CALENDAR_FEED_IDLE_DAYS` expires. Every automatic revocation writes a `record()` row with a system actor in the same transaction. Each fetch writes a throttled `feed_used` row in the security log through `log_event()`, carrying no address and no IP, and stamps `last_used_at` on the same throttle.
+- The response is `no-store` with `Cache-Control: private`. No scrub work is needed: `loggable_route` already prints the route and never the query string, which is why D-52 put the token there; a test that captures the log handler proves it rather than assuming it.
+- Create and revoke are audited through `record()` in the same transaction; reading the feed writes no audit row and is rate limited per token.
+- Write the CONVENTIONS 3.6 exception with this package, as D-52 says: the one route that reads a credential from a query string, with the guard in `apps/home/tests_contract.py` that keeps it one route wide.
 
 Un-skip HOM-S5's integration, proving both halves: an agent key reads `/upcoming` and gets library facts only; a user subscribes, fetches the ICS, revokes and gets 404. Delete the four `contract_drift_pending.txt` lines this task delivers.
 
@@ -467,8 +485,9 @@ Un-skip HOM-S5's integration, proving both halves: an agent key reads `/upcoming
 - `backend/apps/home/tests_calendar.py`
 - `backend/apps/home/tests_scenarios.py` (the HOM-S5 skip line and body only)
 - `backend/apps/home/app.md` (its status cells only; it rewords nothing, so it can share wave 3 with `c6-home-backend`, which rewords HOM-S1)
-- `backend/apps/shared/middleware.py` or `sentry_scrub.py` (the `/calendar/` path only, as the answer to q-feed-token requires)
-- `backend/config/settings.py` (one labelled block: `CALENDAR_FEED_RATE_PER_MINUTE`, `UPCOMING_DEFAULT_LIMIT`)
+- `backend/apps/shared/tests_tenancy.py` (the `identity_lookup()` caller allow-list only)
+- `backend/apps/shared/errors.py` (the one new code for the per-person cap)
+- `backend/config/settings.py` (one labelled block: `CALENDAR_FEED_RATE_PER_MINUTE`, `UPCOMING_DEFAULT_LIMIT`; `CALENDAR_FEEDS_PER_USER` and `CALENDAR_FEED_IDLE_DAYS` are already there with their `.env.example` and runbook rows)
 - `backend/.env.example`, `docs/runbooks/RAILWAY_VARIABLES.md` (its own rows only)
 - `backend/scripts/contract_drift_pending.txt` (its own lines only)
 
@@ -477,8 +496,9 @@ Un-skip HOM-S5's integration, proving both halves: an agent key reads `/upcoming
 - HOM-S5 is un-skipped and green.
 - `/upcoming` returns no tenant column: a test asserts the response keys against `UpcomingItem` exactly, and a second proves two tenants' keys get identical bodies.
 - A key without `upcoming:read` is refused, and no key scope reaches `/home`, `/roadmap`, `/briefings` or `/calendar-feeds`.
-- A feed's plaintext token appears exactly once, in the create response; it is absent from the list read, the database, every log line and every Sentry event, proved by a test that captures the log handler and the scrub.
-- A revoked token, an unknown token and another tenant's token all answer 404 with the same body and the same timing path.
+- A feed's plaintext token appears exactly once, in the create response; neither it nor its prefix is in the list read, the database, an audit row, an error body, any log line or any Sentry event, proved by a test that captures the log handler.
+- A revoked token, an unknown token, an expired one and another tenant's all answer 404 with the same body and the same timing path.
+- A sixth subscription is refused with the cap's 409 and its code, and revoking one makes room; a stale session is already refused with `step_up_required` by the route.
 - The ICS body contains no tenant judgement, proved by asserting the rendered text against the seeded "So what?" string.
 - Create and revoke each write one audit row in the caller's tenant; the ICS read writes none.
 - The rate limit refuses a flood on one token without refusing another.
@@ -614,11 +634,12 @@ Un-fixme HOM-S4 and HOM-S6 in `frontend/tests/e2e/home.journey.spec.ts`, signing
 
 **Requirements:** HOM-04
 **Scenarios:** HOM-S5 (`@e2e`)
-**Depends on:** `c6-home-api-contract`, `c6-upcoming-calendar-backend`, `c6-e2e-seed`, **q-feed-token**
+**Depends on:** `c6-home-api-contract`, `c6-upcoming-calendar-backend`, `c6-e2e-seed`, `c6-feed-contract`
 
 Build `/me/calendar-feeds` from `design/screens/tenant-calendar-feeds.html`, in its own feature directory so it runs beside Today:
 - `frontend/src/features/calendar-feeds/{types,api,hooks,presentation}.ts`.
-- `frontend/src/components/account/CalendarFeedsScreen.tsx`: my subscriptions, create with what to include (`all`, `regulatory`, `internal`), the address shown once with a copy control and a warning that it will not be shown again, and revoke with a confirm dialog that says the address stops working.
+- `frontend/src/components/account/CalendarFeedsScreen.tsx`: my subscriptions, a create control with **no** "Include" choice (D-52 removed it: a feed carries the outside world's dates and never the bank's own, so the create body names no field), the address shown once with a copy control and a warning that it will not be shown again, and revoke with a confirm dialog that says the address stops working. The dialog also says what a leaked address shows — which regulatory changes the bank has open work on — because that is the residual risk ADR 0045 accepted on the bank's behalf.
+- The screen has to handle two refusals the contract makes plain: `step_up_required` on create, where it asks for the passkey and retries, and the per-person cap, where it tells the person to revoke one first. A row's `lastUsedAt` is what tells them which one to revoke.
 - A registry entry under the account parent, so the who panel lists it.
 - The `calendarFeeds` message namespace in en and sv.
 - Empty, loading, error and denied states.

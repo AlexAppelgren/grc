@@ -66,10 +66,13 @@ Every vocabulary row: immutable `key`, optional `kind`, labels per language,
   what produced the date. The calendar builder and the card branch on it. Declared in full
   although R1 produces `change_date` alone, so a client written against the contract now
   does not change when the register (chunk 8) and the case workflow (chunk 9) fill the rest.
-- `feed_filter` (`all`, `regulatory`, `internal`) is **corrected**. It was recorded as
+- `feed_filter` (`all`, `regulatory`, `internal`) is **corrected twice**. It was recorded as
   "FP-03: inside or outside the footprint", which it is not: `schema.sql` line 61 has it as
-  a calendar subscription's scope, nothing branches on it for the footprint, and the same
-  three values are the roadmap's `kind` filter. One kind, two places that read it.
+  a calendar subscription's scope and nothing branches on it for the footprint. It was then
+  recorded as that scope and the roadmap's `kind` filter at once, and D-52 left it with one
+  reader: a calendar feed carries the dates the outside world set and never the bank's own,
+  so the subscription has nothing to choose between and its column is not built (§9). The
+  kind is the roadmap read's filter, which does have internal branches coming.
 
 **Chunk 7 (2026-09-20).** Kinds the search and ask contract adds to tier 1:
 `search_hit_type` (a hit is an obligation, a provision or a change),
@@ -727,6 +730,38 @@ Chunk 6 (home, the briefing, the roadmap and the calendar feed), 2026-09-21:
   newsletter agent are built against a committed contract (`c6-home-api-contract`). There is
   no drift to record for them; what each one will do is in its own description in
   `openapi.json`.
+- The calendar feed's address is **not** the designed `GET /calendar/{feedToken}`.
+  `getCalendarIcs` is served at `GET /api/v1/calendar/feed.ics` with the token as the
+  required query parameter `token`, shaped `<prefix>.<secret>` and at most 128 characters
+  (D-52, ADR 0045, `c6-feed-contract`). A calendar client sends no header and cannot be
+  asked for a passkey, so the address is the whole credential either way; what the query
+  string changes is who writes it down. Our access log prints the route and drops the query
+  (playbook 4.7, finding H10), while a hosting edge records whole request lines, so a token
+  in the path is the invariant "a secret never reaches a log" broken by a third party we do
+  not control. This is the one named exception to CONVENTIONS 3.6 and
+  `apps/home/tests_contract.py` pins that no other operation takes a credential in its
+  query string. The designed path form answers 404 and is not built.
+- `createCalendarFeed` takes a body with **no fields**, where the designed
+  `CalendarFeedInput` offers `filter` of `all`, `regulatory` or `internal`. A feed carries
+  the dates the outside world set and never the bank's own — ADR 0045 lists our own
+  deadlines among the things deliberately not in it, and AC-TEN1 says a certificate's
+  expiry and next audit never reach the calendar feed — so `internal` would be empty
+  forever and `all` could never differ from `regulatory`. The body stays declared rather
+  than being dropped, so a client written against the designed contract is told with a 422
+  that the choice is gone instead of quietly subscribing to something else. `feed_filter`
+  itself survives as the roadmap read's `kind` filter, which does have internal branches
+  coming (chunks 8 and 9).
+- `HomeCalendarFeed` gains `lastUsedAt`, which the designed `CalendarFeed` does not carry:
+  a person needs to see whether an address is in use before revoking it, and it is what the
+  idle expiry reads. `revokedAt` is unchanged in shape and wider in meaning — the server
+  stamps it when a member leaves, loses `roadmap.read`, is enrolled again or lets a
+  subscription go idle, as well as when a person revokes one.
+- `createCalendarFeed` refuses a session that is neither recent nor freshly confirmed by a
+  passkey, with 403 `step_up_required` (`enforce_recent_sign_in_or_step_up`, the rule the
+  passkey routes already use). The designed contract names no such refusal. The address
+  outlives the session that asked for it, so without this a stolen access token would leave
+  behind a calendar address that answers for months. Revoking asks for nothing of the kind:
+  a person whose address has leaked must be able to stop it at once.
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
@@ -822,10 +857,6 @@ Chunk 6 (home, the briefing, the roadmap and the calendar feed), 2026-09-21:
 - `briefing_item` is keyed on a uuid `id` with `UNIQUE (briefing_id, case_id)` beside it,
   rather than the designed composite primary key `(briefing_id, case_id)`. Django addresses
   a row by one column, and the unique constraint says exactly what the composite key said.
-- `calendar_feed.filter` is a `text` column with choices rather than the designed
-  `feed_filter` Postgres enum. Kinds are CharFields with choices throughout this schema and
-  the kinds-only guard fails on a Postgres enum type (§1, playbook 15). The three values are
-  unchanged.
 - `calendar_feed.token_hash` is `varchar(64)` rather than `text`: a SHA-256 in hex is
   exactly 64 characters, and a column that cannot hold more cannot hold anything else.
 - **Added:** `briefing_item` carries the append-only trigger, which `schema.sql` does not
@@ -838,6 +869,34 @@ All three tables carry `tenant_id` under enabled and forced row-level security w
 `tenant_isolation` policy, and none is `mixed`: a week that holds nothing for one bank holds
 three reforms for another, because the footprint and the cases behind it are that bank's
 own. `apps/shared/tests_rls.py` names them in its tenant-only list.
+
+**`calendar_feed` again (`c6-feed-contract`, home 0002).** The table was built from
+`schema.sql` §9 while q-feed-token was still open. D-52 and ADR 0045 answered it, and the
+row now holds what that answer needs:
+
+- `token_prefix` is new, 16 characters and unique, and `token_hash` keeps the secret's
+  SHA-256 without its unique index. The address is `<prefix>.<secret>` with 256 bits of
+  secret: the prefix finds the row in one indexed read and the hash is what is verified, the
+  same shape `api_key` already uses. The prefix is unique across every bank rather than
+  within one, because the row is found before any bank is known.
+- `last_used_at` is new. The idle expiry reads it and a fetch stamps it, throttled the way
+  an API key's stamp is, so a subscription nobody has fetched for `CALENDAR_FEED_IDLE_DAYS`
+  can be told from one in daily use.
+- `filter` is **removed**, with the `feed_filter` enum the designed column named. A feed
+  carries the dates the outside world set and never the bank's own (ADR 0045's own list of
+  what it does not carry; AC-TEN1), so `internal` would be empty forever and `all` could
+  never differ from `regulatory`. The accepted recommendation behind D-52 says the filter
+  column is not built, in those words.
+- `calendar_feed` joins the identity-lookup clause as its fifth table, beside `invitation`,
+  `membership`, `user_session` and `api_key`. A calendar client presents no session and no
+  key at all, so the subscription has to be found before a tenant is known. The clause is
+  `FOR SELECT` only: since H15 the write rule is the session's own zone, so nothing can be
+  written through the opening, and `IDENTITY_LOOKUP_TABLES` in `apps/shared/tests_rls.py`
+  pins the list at five.
+- `login_event.event` gains `feed_used` (identity 0004). A fetch of a subscribed feed is
+  the use of a credential, so it belongs in the security log beside `key_used`; the row
+  records the subscription's owner and never the address, and the write is throttled
+  because a calendar client polls for years.
 
 
 ## 10. A source check says what kind of check it was (2026-09-21)

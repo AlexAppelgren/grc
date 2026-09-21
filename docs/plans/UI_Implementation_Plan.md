@@ -266,8 +266,8 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | `GET /briefings/current`, `GET /briefings/{weekStart}` | `tenant-briefing.html`; part on `tenant-today.html` | tenant | `watch.read` | no | All 7; lead button reads Triage for `cases.triage` | HOM-S3 | designed |
 | `GET /roadmap` | `tenant-roadmap.html`; Coming up on `tenant-today.html` and `tenant-briefing.html` | tenant | `roadmap.read` | no | All 7 | HOM-S4, HOM-S6, REG-S10 | designed |
 | `GET /upcoming` | none (public facts for agents and newsletters) | agent | `key:upcoming:read` | no | agents | HOM-S5 | agent only |
-| `GET/POST /calendar-feeds`, `DELETE /calendar-feeds/{id}` | `tenant-calendar-feeds.html` | tenant | `roadmap.read` | no | All 7; address shown once | HOM-S5 | designed |
-| `GET /calendar/{feedToken}` | none (the calendar client) | none | token in path | no | none | HOM-S5 | designed |
+| `GET/POST /calendar-feeds`, `DELETE /calendar-feeds/{id}` | `tenant-calendar-feeds.html` | tenant | `roadmap.read` | create needs a recent sign-in or a step-up (D-52) | All 7; address shown once, no "Include" choice, at most 5 per person | HOM-S5 | designed |
+| `GET /calendar/feed.ics?token=…` | none (the calendar client) | none | token in the query string | no | none | HOM-S5 | designed |
 
 ### Reports, exports, imports (chunk 12, R3)
 

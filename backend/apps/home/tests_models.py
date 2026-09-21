@@ -11,10 +11,13 @@ keeps: `briefing_item` refuses an update and a delete in Python and in PostgreSQ
 application role as well as from the runner's own. `c6-briefing-backend` may therefore write
 a snapshot and stop worrying about it.
 
-**A calendar address is a credential the system cannot hand back.** Only a SHA-256 hash is
-stored, under a unique index; no column, `__str__` or `__repr__` can produce the address a
-person pasted into their calendar. The test below reads the model's own field list rather
-than trusting the docstring, so a later column called `token` fails here.
+**A calendar address is a credential the system cannot hand back.** Only a lookup prefix
+and the secret's SHA-256 are stored; no column, `__str__` or `__repr__` can produce the
+address a person pasted into their calendar. The test below reads the model's own field
+list rather than trusting the docstring, so a later column called `token` fails here. The
+prefix carries the unique index, because it is what a fetch looks the row up by — before
+any tenant is known, which is why `calendar_feed` is the fifth identity-lookup table
+(D-52, ADR 0045).
 
 The briefing row itself is deliberately not a ledger: `email_sent_at` is stamped when the
 mail goes out, which is the one thing about a snapshot that is not known when the snapshot
@@ -33,7 +36,7 @@ from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
 from apps.cases import testing as case_build
-from apps.home.models import Briefing, BriefingItem, CalendarFeed, FeedFilter
+from apps.home.models import Briefing, BriefingItem, CalendarFeed
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
 from apps.shared import factories, tenancy
@@ -53,9 +56,12 @@ WEEK_BEFORE = datetime.date(2026, 9, 7)
 # to ignore that shape everywhere. Two of them, because one test needs a second subscription.
 TOKEN_HASH = "a" * 64
 OTHER_HASH = "b" * 64
+# The lookup half of two addresses, the same way: the right length and nothing random.
+TOKEN_PREFIX = "a" * 16
+OTHER_PREFIX = "b" * 16
 # What a column, a repr or a log line must never be able to produce. No builder puts it
 # anywhere: the tests assert its absence from everything the model can show.
-PLAINTEXT = "feed-token-" + "x" * 32
+PLAINTEXT = "feed-prefix-here." + "feed-secret-" + "x" * 31
 
 
 def seed_reference() -> None:
@@ -75,14 +81,16 @@ def briefing(tenant: Tenant, *, week_start: datetime.date = WEEK) -> Briefing:
         return Briefing.objects.create(tenant=tenant, week_start=week_start)
 
 
-def calendar_feed(tenant: Tenant, *, token_hash: str = TOKEN_HASH) -> CalendarFeed:
+def calendar_feed(
+    tenant: Tenant, *, token_prefix: str = TOKEN_PREFIX, token_hash: str = TOKEN_HASH
+) -> CalendarFeed:
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return CalendarFeed.objects.create(
             tenant=tenant,
             user=factories.member_user(tenant),
+            token_prefix=token_prefix,
             token_hash=token_hash,
-            filter=FeedFilter.REGULATORY.value,
         )
 
 
@@ -191,35 +199,42 @@ class BriefingItemRows(HomeZoneTestCase):
 
 
 class CalendarFeedRows(HomeZoneTestCase):
-    def test_one_subscription_per_stored_hash(self) -> None:
-        """The hash is what the ICS route looks a token up by, so two rows sharing one would
-        make a single address answer for two subscriptions. The index is global and not per
-        bank, so a collision across two banks is refused as well."""
+    def test_one_subscription_per_stored_prefix(self) -> None:
+        """The prefix is what the ICS route looks a token up by, so two rows sharing one
+        would make a single address answer for two subscriptions. The index is global and
+        not per bank, because the lookup happens before any tenant is known, so a collision
+        across two banks is refused as well."""
         calendar_feed(self.tenant_a)
         with transaction.atomic():
             tenancy.activate(self.tenant_b.id)
             with self.assertRaises(IntegrityError):
                 CalendarFeed.objects.create(
-                    tenant=self.tenant_b, user=factories.member_user(self.tenant_b), token_hash=TOKEN_HASH
+                    tenant=self.tenant_b,
+                    user=factories.member_user(self.tenant_b),
+                    token_prefix=TOKEN_PREFIX,
+                    token_hash=OTHER_HASH,
                 )
 
     def test_no_column_holds_a_plaintext_address(self) -> None:
         """Read off the model rather than off the docstring: a later column named `token`,
-        `secret` or `url` would fail here rather than in a log file."""
+        `secret` or `url` would fail here rather than in a log file. The two halves the row
+        does keep are the prefix, which is public, and a hash of the secret, which is not
+        reversible."""
         names = {field.name for field in CalendarFeed._meta.get_fields()}
-        self.assertIn("token_hash", names)
+        self.assertEqual(names & {"token_prefix", "token_hash"}, {"token_prefix", "token_hash"})
         self.assertEqual(names & {"token", "secret", "url", "address", "plain_key"}, set())
 
-    def test_nothing_the_model_can_print_carries_the_address_or_its_hash(self) -> None:
+    def test_nothing_the_model_can_print_carries_the_address_or_its_halves(self) -> None:
         feed = calendar_feed(self.tenant_a)
         for shown in (str(feed), repr(feed)):
             self.assertNotIn(PLAINTEXT, shown)
             self.assertNotIn(TOKEN_HASH, shown)
+            self.assertNotIn(TOKEN_PREFIX, shown)
         self.assertEqual(str(feed), str(feed.id))
 
     def test_the_newest_subscription_comes_first_and_revoking_keeps_the_row(self) -> None:
         calendar_feed(self.tenant_a)
-        newest = calendar_feed(self.tenant_a, token_hash=OTHER_HASH)
+        newest = calendar_feed(self.tenant_a, token_prefix=OTHER_PREFIX, token_hash=OTHER_HASH)
         with transaction.atomic():
             tenancy.activate(self.tenant_a.id)
             self.assertEqual(CalendarFeed.objects.first(), newest)
@@ -227,13 +242,11 @@ class CalendarFeedRows(HomeZoneTestCase):
             newest.save(update_fields=["revoked_at"])
             self.assertEqual(CalendarFeed.objects.count(), 2, "revoking stamps the row, it never deletes it")
 
-    def test_the_default_subscription_carries_everything(self) -> None:
-        with transaction.atomic():
-            tenancy.activate(self.tenant_a.id)
-            feed = CalendarFeed.objects.create(
-                tenant=self.tenant_a, user=factories.member_user(self.tenant_a), token_hash=OTHER_HASH
-            )
-        self.assertEqual(feed.filter, FeedFilter.ALL.value)
+    def test_a_new_subscription_has_never_been_fetched(self) -> None:
+        """`last_used_at` is null until a calendar client asks for the feed, which is what
+        the idle expiry reads. A row that arrived stamped would make every subscription look
+        alive for its first month whether or not anyone ever pasted the address."""
+        self.assertIsNone(calendar_feed(self.tenant_a).last_used_at)
 
 
 class HomeRowsUnderTheApplicationRole(TransactionTestCase):

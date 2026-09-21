@@ -511,6 +511,20 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
 }
 
 # ---------------------------------------------------------------------------------------
+# ===== HOM-04 the calendar subscription's limits (D-52, ADR 0045) ========================
+# The token in a calendar address is a credential nobody can be asked to confirm: a
+# calendar client sends no header, follows no sign-in and polls unattended for years. Two
+# numbers bound what that is worth to whoever finds one. A person keeps a handful of
+# subscriptions, not an inventory, so a compromised session cannot mint addresses without
+# anyone noticing; and a subscription nobody has fetched for a month is a calendar that was
+# removed or a device that was replaced, so it expires rather than working forever. Both
+# are settings because a bank's own guidance may be stricter and neither number is a rule.
+# `apps/home/calendar.py` reads them when the feed itself is built.
+# ---------------------------------------------------------------------------------------
+CALENDAR_FEEDS_PER_USER = env_int("CALENDAR_FEEDS_PER_USER", 5)
+CALENDAR_FEED_IDLE_DAYS = env_int("CALENDAR_FEED_IDLE_DAYS", 30)
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------

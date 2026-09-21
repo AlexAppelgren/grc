@@ -9,8 +9,9 @@ Since the split of 2026-09-20 (hardening H15) `tenant_isolation` is the write ru
 nothing else: one FOR ALL policy that matches only the session's own zone, its tenant's
 rows or, with no tenant active, the rows without one. Everything a table shows beyond that
 zone is a policy of its own, FOR SELECT: `library_rows_visible` on a mixed table and
-`identity_lookup_visible` on the four tables the auth layer reads before a tenant is
-known. Permissive policies OR together per command, so reads stay mixed while writes are
+`identity_lookup_visible` on the five tables read before a tenant is known — the four the
+auth layer reads, and the calendar subscription a client fetches with the token in its
+address. Permissive policies OR together per command, so reads stay mixed while writes are
 not, and a second policy can only ever widen a read.
 
 The second class proves the policy on the `app` alias (cw_app, no ownership): rows of
@@ -75,7 +76,10 @@ from apps.watch.write import watch_write
 
 # The only tables whose policy carries the identity-lookup clause (apps/shared/tenancy.py):
 # the auth layer reads them before a tenant is known. Adding one here is a review question.
-IDENTITY_LOOKUP_TABLES = frozenset({"invitation", "membership", "user_session", "api_key"})
+# `calendar_feed` is the fifth (D-52, ADR 0045): a calendar client presents no session and
+# no key, so the subscription has to be found by the token in its address before anything
+# knows which bank it belongs to.
+IDENTITY_LOOKUP_TABLES = frozenset({"invitation", "membership", "user_session", "api_key", "calendar_feed"})
 
 # Every table that holds both zones, and the column that says which zone a row is in: a row
 # without a tenant is the library's, visible to everyone, and a row with one belongs to that

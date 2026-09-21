@@ -313,7 +313,7 @@ _LOGIC_WATCH_READER = "watch.read in the caller's tenant, an agent's key with li
 _LOGIC_CHANGE_FACTS = "An agent's key with changes:write, or a library editor with proposals.review; a change's facts are library facts and no tenant role holds that (WAT-02, WAT-03, PRO-01). The gate is apps/watch/api.py:require_change_writer, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_LIBRARY_RECORDS = "library.read in the caller's tenant, or an agent's key holding library:read; one read serves the inventory and the agents (INV-03, AGT-02)."
 _LOGIC_UPCOMING_READER = "roadmap.read in the caller's tenant, or an agent's key with upcoming:read, because the newsletter run has to know which dates are already public (HOM-04, AGT-02). The list holds library facts only — no case, no footprint verdict, no owner, no 'So what?' — which is what makes a key safe on it, and it is the one route of the home app a key reaches. The gate is apps/home/api.py:require_upcoming_reader, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
-_PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the whole grant: a calendar client sends no header, follows no sign-in and cannot be asked for a passkey, so the URL is the only credential it can carry (HOM-04). Mitigated as the invitation link is: 32 bytes of entropy, stored only as a SHA-256 hash, shown once and never again, revocable with immediate effect, and answering the same 404 for an unknown token as for a revoked one. Declared with the route; the behaviour behind it waits for the open question q-feed-token, and the route answers 501 without reading a token until then."  # noqa: S105 a reviewer's note, not a credential
+_PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the whole grant: a calendar client sends no header, follows no sign-in and cannot be asked for a passkey, so the URL is the only credential it can carry (HOM-04, D-52, ADR 0045). The mitigations are the ones that decision weighed. The token is `<prefix>.<secret>` with 256 bits of secret, kept as a lookup prefix beside the secret's SHA-256, shown once and never again. It rides in the query string, not the path, because our own access log prints the route and drops the query while a hosting edge writes whole request lines, which makes this the one named exception to CONVENTIONS 3.6 and is pinned by a guard test that no other route reads a token from the query string. A person may hold only CALENDAR_FEEDS_PER_USER addresses and mints one only from a recent sign-in or a step-up, so a stolen access token cannot leave a lasting one behind. Every fetch re-checks that the owner is still a member holding roadmap.read and has not been enrolled again, revoking the subscription when a check fails; an idle one expires after CALENDAR_FEED_IDLE_DAYS; unknown, revoked and expired answer one 404. What is left is the residual risk the decision accepted and the dialog states: whoever holds the address can see which public regulatory dates the bank has open work on, and nothing else - no internal deadline, owner, urgency or 'So what?' reaches a calendar. The behaviour is `c6-upcoming-calendar-backend`'s; until it lands the route answers 501 without reading a token."  # noqa: S105 a reviewer's note, not a credential
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
 UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
@@ -439,8 +439,14 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # its eight dual-principal routes. `UngatedReason.PUBLIC_TOKEN` was written in chunk 1
     # naming this calendar feed, so the shape was expected; what changed is only where it is
     # written down. A reviewer disagreeing with either note should say so before the merge.
+    #
+    # The ICS route's path is `feed.ics` and its token is a query parameter, which D-52 and
+    # ADR 0045 decided after the contract first declared `/calendar/{feedToken}`: the token
+    # in a path reaches a hosting edge's request log, and the query string does not reach
+    # ours. `apps/home/tests_contract.py` pins that no other operation takes a token in its
+    # query string, so the exception stays one route wide.
     ("GET", "/upcoming"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_UPCOMING_READER),
-    ("GET", "/calendar/{feed_token}"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
+    ("GET", "/calendar/feed.ics"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
 }
 
 
