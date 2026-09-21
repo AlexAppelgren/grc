@@ -15,7 +15,7 @@
   "admin.organisation.progress": "{done} of {total} done",
   "admin.organisation.step.profile": "Set the profile",
   "admin.organisation.step.members": "Invite the first member",
-  "admin.organisation.step.footprint": "Set the footprint",
+  "admin.organisation.step.footprint": "Set the regulatory scope",
   "admin.organisation.step.vocabularies": "Review the vocabularies",
   "admin.organisation.step.passkey": "An administrator enrols a passkey",
   "admin.organisation.errorTitle": "Could not load the organisation",

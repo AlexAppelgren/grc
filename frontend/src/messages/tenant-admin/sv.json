@@ -15,7 +15,7 @@
   "admin.organisation.progress": "{done} av {total} klara",
   "admin.organisation.step.profile": "Sätt profilen",
   "admin.organisation.step.members": "Bjud in den första medlemmen",
-  "admin.organisation.step.footprint": "Sätt fotavtrycket",
+  "admin.organisation.step.footprint": "Sätt regelverksomfattningen",
   "admin.organisation.step.vocabularies": "Gå igenom vokabulärerna",
   "admin.organisation.step.passkey": "En administratör registrerar en nyckel",
   "admin.organisation.errorTitle": "Kunde inte hämta organisationen",

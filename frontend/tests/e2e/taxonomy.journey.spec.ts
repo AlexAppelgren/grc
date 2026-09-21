@@ -388,7 +388,7 @@ test.describe('taxonomy journeys', () => {
       allowFreshContext(apiGuard);
       await signInAs(page, LOGINS.complianceOfficer);
       await officerStartsClean(page);
-      await expect(page.getByRole('heading', { level: 1, name: 'Footprint' })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1, name: 'Regulatory scope' })).toBeVisible();
 
       await officerSwitchesOffAdvice(page);
       // The stored request shows its counted preview on demand.

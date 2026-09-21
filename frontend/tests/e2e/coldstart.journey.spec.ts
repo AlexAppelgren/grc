@@ -143,7 +143,7 @@ test.describe('cold start', () => {
 
     // ——— step 11: the footprint, requested by one person and approved by the other ———
     await admin.goto('/admin/footprint');
-    await expect(admin.getByRole('heading', { level: 1, name: 'Footprint' })).toBeVisible();
+    await expect(admin.getByRole('heading', { level: 1, name: 'Regulatory scope' })).toBeVisible();
     // A bank that has just been created holds no terms, so every chip is off and the first
     // footprint is a switch-on. Found by dimension key, never by a label: terms are rows.
     const chip = admin.locator('[data-dimension="licensed_activity"]').getByRole('button').first();
