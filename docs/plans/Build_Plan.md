@@ -18,9 +18,9 @@ stop between chunks unless a product invariant is at stake.
 | 8 | Register | Applicability with approval, compliance status per entity, gaps, history, internal links, entities, products, departments and teams, My work and participants, and the Statement of Applicability per entity | REG-01 to REG-03, REG-05, REG-08, HOM-05, COL-04, TEN-02, TEN-03, TEN-05, TEN-06, then the cuttable REG-04, REG-07, TEN-04, VOC-04 to VOC-06 | R2 |
 | 9 | Case workflow | Triage to sign-off with evidence and the case file, with participants on cases | CAS-02 to CAS-08, COL-04 (cases), J-2, J-3 | R2 |
 | 10 | Collaboration | Comments, mentions, notifications, reminders, escalation, digest, delegation, and comments and mentions on My work | COL-01, COL-02, HOM-05 (comments and mentions), VOC-03, VOC-08 | R2 |
-| 11 | Tenant-controlled agents | Definitions, tenant settings, schedules, requests, budgets, the runner adapter, re-tag batches, and a default scope from the markets | AGT-03 to AGT-06 (including AGT-04's default market scope), PRO-04, ID-07, ID-08 | R2 |
+| 11 | Tenant-controlled agents, and agent access | Definitions, tenant settings, schedules, requests, budgets, the runner adapter, re-tag batches, and a default scope from the markets. Then agent access: a bank registers the agents it runs itself, narrows each to the departments and products it serves, issues a service key or mints a personal access token, and reads what applies through an MCP server over the same API | AGT-03 to AGT-06 (including AGT-04's default market scope), PRO-04, ID-07, ID-08, then ACC-01 to ACC-09, J-11 | R2 |
 | 12 | Reports, exports, import, exit | Dashboard, committee pack, exports, spreadsheet import, full tenant export and deletion | REP-01 to REP-04, AUD-04, VOC-09 | R3 |
-| 13 | Integrations and enterprise access | Webhooks, tickets, SIEM stream, SSO and SCIM, IP allow-list, saved searches, attestations, waivers, private sources, remaining UI languages | INT-01 to INT-03, ID-12, ID-13, SRC-04, REG-06, WAT-06, INV-07, COL-03, I18N-02 | R3 |
+| 13 | Integrations and enterprise access | Webhooks, tickets, SIEM stream, SSO and SCIM, IP allow-list, saved searches, attestations, waivers, private sources, remaining UI languages, and agent access write-back: the map of which application touches which register entry | INT-01 to INT-03, ID-12, ID-13, SRC-04, REG-06, WAT-06, INV-07, COL-03, I18N-02, ACC-10 | R3 |
 | 14 | Hardening and assurance | OWASP review until findings converge, performance pass, `docs/assurance/`, runbooks, billing | NFR-02, NFR-04, NFR-05 | R3 |
 
 **Descope triggers.** If a chunk runs long, cut from the bottom of its
@@ -34,3 +34,11 @@ alone protects nothing (D-26). COL-01 stays first in chunk 10. The tasks that
 carry the new requirement IDs, with their dependencies and done-conditions,
 are in `docs/plans/briefs/FEATURES_0_3_TASKS.md`. Chunk 12 carries the amended
 REP-02 (a dated Statement of Applicability inside the inventory export).
+
+**PRD 0.5 (2026-09-20).** Chunk 11 gains module ACC, the agents a bank runs
+itself (`docs/plans/briefs/AGENT_ACCESS.md`, D-68 to D-73, ADRs 0055 to 0057).
+ACC sits **below** the AGT work in the chunk's list, so the descope rule cuts it
+first: it depends on chunk 8's departments, products, teams and register and on
+chunk 7's search, and it is the newest requirement in the release. If it is cut,
+it moves whole to chunk 13, where ACC-10 already sits, and nothing else in
+chunk 11 changes. ACC-10 is R3 either way.

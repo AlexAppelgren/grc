@@ -15,7 +15,7 @@ approveProposal, createConsoleTenant, createFootprintRequest. ADM-S4 also drives
 console routes other apps register — the source registry and the platform agent keys —
 by their gate alone; what each one then does is its own app's scenario.
 
-Prefixes hosted: ADM, AUD.
+Prefixes hosted: ACC, ADM, AUD.
 """
 
 from __future__ import annotations
@@ -374,4 +374,23 @@ class GovernanceScenarioTests(ScenarioTestCase):
         """AUD-S9
 
         An agent's approval is in the audit trail with the agent named (AUD-01, AUD-02).
+        """
+
+
+class GovernanceAgentAccessScenarioTests(ScenarioTestCase):
+    """Agent access scenarios for apps.governance (PRD 0.5 module ACC), one method per
+    @integration heading in app.md. Skipped until chunk 11 builds them."""
+
+    @skip("pending: ACC-S11")
+    def test_acc_s11(self) -> None:
+        """ACC-S11
+
+        Tenant reach needs two people, and off means off (ACC-08, AC-ACC2).
+        """
+
+    @skip("pending: ACC-S12")
+    def test_acc_s12(self) -> None:
+        """ACC-S12
+
+        The access log records the call and holds no content (ACC-08).
         """

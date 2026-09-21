@@ -6,7 +6,7 @@ that builds the scenario, and never delete one without updating app.md.
 The requirements coverage gate (scripts/requirements_coverage.py) fails
 when a scenario here and a heading in app.md drift apart.
 
-Prefixes hosted: INT.
+Prefixes hosted: ACC, INT.
 """
 
 from unittest import skip
@@ -50,4 +50,23 @@ class IntegrationsScenarioTests(TestCase):
         """INT-S5
 
         Subscriptions store keys so a rename changes nothing (INT-01).
+        """
+
+
+class IntegrationsAgentAccessScenarioTests(TestCase):
+    """Agent access scenarios for apps.integrations (PRD 0.5 module ACC), one method per
+    @integration heading in app.md. Skipped until chunk 11 builds them."""
+
+    @skip("pending: ACC-S7")
+    def test_acc_s7(self) -> None:
+        """ACC-S7
+
+        The MCP server is one router over the same gates, and every credential is read-only (ACC-05, AC-ACC4).
+        """
+
+    @skip("pending: ACC-S8")
+    def test_acc_s8(self) -> None:
+        """ACC-S8
+
+        Pagination, the rate limit, the budget cap and the AI off switch bound every call (ACC-09).
         """

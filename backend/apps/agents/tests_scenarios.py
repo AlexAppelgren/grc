@@ -6,7 +6,7 @@ that builds the scenario, and never delete one without updating app.md.
 The requirements coverage gate (scripts/requirements_coverage.py) fails
 when a scenario here and a heading in app.md drift apart.
 
-Prefixes hosted: AGT.
+Prefixes hosted: ACC, AGT.
 """
 
 from typing import Any
@@ -183,4 +183,32 @@ class AgentsScenarioTests(TestCase):
         """AGT-S15
 
         The confirming agent is independent of the proposing agent (AGT-01, AGT-03, PRO-02).
+        """
+
+    @skip("pending: ACC-S1")
+    def test_acc_s1(self) -> None:
+        """ACC-S1
+
+        An entry is registered, narrowed to a department, and revoking it stops its credentials (ACC-01, J-11).
+        """
+
+    @skip("pending: ACC-S5")
+    def test_acc_s5(self) -> None:
+        """ACC-S5
+
+        What applies returns a labelled summary above a full list the model never shortens (ACC-06).
+        """
+
+    @skip("pending: ACC-S6")
+    def test_acc_s6(self) -> None:
+        """ACC-S6
+
+        A narrowed entry never narrows silently (ACC-07, AC-ACC1).
+        """
+
+    @skip("pending: ACC-S10")
+    def test_acc_s10(self) -> None:
+        """ACC-S10
+
+        An entry records which application touches a register entry (ACC-10).
         """

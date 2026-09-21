@@ -11,7 +11,7 @@ suggestVocabularyRow, declineVocabularySuggestion, createTerm, updateTerm,
 createFootprintRequest, approveFootprintRequest, rejectFootprintRequest,
 withdrawFootprintRequest.
 
-Prefixes hosted: FP, I18N, VOC.
+Prefixes hosted: ACC, FP, I18N, VOC.
 """
 
 from __future__ import annotations
@@ -1106,4 +1106,16 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         """FP-S17
 
         The pure rule and the SQL function agree on opt-in dimensions (FP-01).
+        """
+
+
+class TaxonomyAgentAccessScenarioTests(ScenarioTestCase):
+    """Agent access scenarios for apps.taxonomy (PRD 0.5 module ACC), one method per
+    @integration heading in app.md. Skipped until chunk 11 builds them."""
+
+    @skip("pending: ACC-S2")
+    def test_acc_s2(self) -> None:
+        """ACC-S2
+
+        An entry's scope narrows the footprint and can never widen it (ACC-02, AC-ACC1).
         """

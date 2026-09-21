@@ -31,9 +31,9 @@ commit for the chunk is on `main`. `pending` means none.
 | 8 | Register | R2 | | | | pending | PRD 0.3 adds HOM-05, COL-04, REG-08 and the amended TEN-02, TEN-03 and REG-01. HOM-05, COL-04, TEN-02 and TEN-03 sit above the cuttable Should items in the Build plan's list (D-26) |
 | 9 | Case workflow | R2 | | | | pending | |
 | 10 | Collaboration | R2 | | | | pending | |
-| 11 | Tenant-controlled agents | R2 | | | | pending | |
+| 11 | Tenant-controlled agents, and agent access | R2 | | | | pending | PRD 0.5 adds ACC-01 to ACC-09, the agents a bank runs itself (`docs/plans/briefs/AGENT_ACCESS.md`). ACC sits below the AGT work in the chunk's list and is cut first under the descope rule, moving whole to chunk 13 |
 | 12 | Reports, exports, import, exit | R3 | | | | pending | |
-| 13 | Integrations and enterprise access | R3 | | | | pending | |
+| 13 | Integrations and enterprise access | R3 | | | | pending | PRD 0.5 adds ACC-10, the map of which application touches which register entry |
 | 14 | Hardening and assurance | R3 | | | | pending | |
 
 ## Chunk 0: Phase 0 checklist

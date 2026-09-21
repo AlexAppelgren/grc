@@ -6,7 +6,7 @@ that builds the scenario, and never delete one without updating app.md.
 The requirements coverage gate (scripts/requirements_coverage.py) fails
 when a scenario here and a heading in app.md drift apart.
 
-Prefixes hosted: REG.
+Prefixes hosted: ACC, REG.
 """
 
 from unittest import skip
@@ -120,4 +120,16 @@ class RegisterScenarioTests(TestCase):
         """REG-S15
 
         The register filtered by standard and entity is the Statement of Applicability (REG-08).
+        """
+
+
+class RegisterAgentAccessScenarioTests(TestCase):
+    """Agent access scenarios for apps.register (PRD 0.5 module ACC), one method per
+    @integration heading in app.md. Skipped until chunk 11 builds them."""
+
+    @skip("pending: ACC-S4")
+    def test_acc_s4(self) -> None:
+        """ACC-S4
+
+        With tenant reach on, an entry reads the register decisions in its scope and nothing else (ACC-04).
         """
