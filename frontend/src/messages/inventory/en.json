@@ -45,5 +45,20 @@
   "inventory.obligation.registerTitle": "Does it apply to us, where we stand, gaps",
   "inventory.obligation.registerBody": "Whether this duty reaches us, and how we stand on it, arrive in a later release. Being listed here says neither.",
   "inventory.obligation.changesTitle": "Related changes",
-  "inventory.obligation.changesBody": "The regulatory changes filed against this duty arrive in a later release."
+  "inventory.obligation.changesBody": "The regulatory changes filed against this duty arrive in a later release.",
+  "inventory.obligation.versionsLabel": "Versions",
+  "inventory.obligation.asOfBanner": "Showing version {number}, in force on {date}.",
+  "inventory.obligation.asOfNoVersion": "No version of this obligation was in force on {date}.",
+  "inventory.obligation.showWhatChanged": "Show what changed",
+  "inventory.obligation.diffBanner": "Comparing version {from} ({fromDate}) with version {to} ({toDate}).",
+  "inventory.obligation.diffInForceFrom": "in force from {date}",
+  "inventory.obligation.diffSinceAlways": "in force since it began",
+  "inventory.obligation.diffErrorTitle": "Could not load what changed",
+  "inventory.obligation.reportProblem": "This looks wrong",
+  "inventory.obligation.reportTitle": "What looks wrong?",
+  "inventory.obligation.reportField": "What you see",
+  "inventory.obligation.reportPlaceholder": "e.g. The English text says 'annually'; the Swedish original says 'at least annually'",
+  "inventory.obligation.reportHint": "Colleagues in your organisation read this and take it up. It reaches nobody outside your organisation.",
+  "inventory.obligation.reportSend": "Send report",
+  "inventory.obligation.reportSent": "Report sent. Thank you."
 }

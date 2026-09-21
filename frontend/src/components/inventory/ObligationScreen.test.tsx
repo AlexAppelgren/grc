@@ -4,11 +4,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
+import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
-import { ObligationScreen, languageChoices, originalLanguage, textIn } from './ObligationScreen';
-import type { LocalizedText, ObligationDetail } from '@/features/library/types';
+import { ObligationScreen, diffSentence, effectiveIn, languageChoices, originalLanguage, textIn } from './ObligationScreen';
+import type { LocalizedText, ObligationDetail, VersionDiff } from '@/features/library/types';
+import { defaultFormatContext } from '@/shared/utils/format';
 
 // The obligation card (design/screens/tenant-obligation.html): the header
 // slots in order, the summary in one language with the machine label, the
@@ -81,16 +83,45 @@ const ME = {
   enrolmentPending: false,
 };
 
-function renderIn(node: ReactNode) {
+function renderIn(node: ReactNode, permissions: string[] = ['library.read', 'problems.report']) {
   const { wrapper } = queryWrapper();
   const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(<Wrapper>{<LocaleProvider locale="en">{node}</LocaleProvider>}</Wrapper>);
+  return render(
+    <Wrapper>
+      {
+        <LocaleProvider locale="en">
+          <PermissionsProvider permissions={permissions}>{node}</PermissionsProvider>
+        </LocaleProvider>
+      }
+    </Wrapper>,
+  );
 }
 
+const versionDiff: VersionDiff = {
+  fromVersion: 1,
+  toVersion: 2,
+  fromEffective: null,
+  toEffective: { date: '2026-10-01', precision: 'day' },
+  language: 'en',
+  isMachine: true,
+  segments: [
+    { op: 'equal', text: 'Research from third parties may be received only if…' },
+    { op: 'insert', text: 'The institution sets criteria for an annual assessment.' },
+  ],
+};
+
+/** The server: /me for the format context and the permissions, then the card, the diff and the report. */
 function serve(answer: ObligationDetail | number) {
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/me') return { status: 200, data: ME };
+    if (sent.path.endsWith('/diff')) return { status: 200, data: versionDiff };
+    if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
+    // "As of" a date before version 2 is the same record read again; the
+    // version in force is what the server decides, so the test answers what
+    // the date asked for.
+    const asOf = (sent.params as { asOf?: string } | null)?.asOf;
+    if (asOf === '2026-10-01') return { status: 200, data: { ...answer, version: answer.versions[1] } };
     return { status: 200, data: answer };
   });
 }
@@ -232,5 +263,80 @@ describe('ObligationScreen', () => {
     serve(research);
     renderIn(<ObligationScreen obligationId="ob-1" />);
     expect(document.querySelector('[data-loading-state]')).toBeInTheDocument();
+  });
+
+  it('reads the record as of a typed date and offers the way back to today', async () => {
+    serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    expect(document.querySelector('[data-as-of]')).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('As of'), { target: { value: '2026-10-01' } });
+    await waitFor(() => expect(document.querySelector('[data-as-of]')).toHaveAttribute('data-as-of', '2026-10-01'));
+    expect(screen.getByText('Showing version 2, in force on 1 Oct 2026.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Version 2, from 1 Oct 2026' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to today' }));
+    await waitFor(() => expect(document.querySelector('[data-as-of]')).toBeNull());
+  });
+
+  it('says so when no version of the record was in force on the date asked for', async () => {
+    serve({ ...research, version: null, summary: null });
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    fireEvent.change(screen.getByLabelText('As of'), { target: { value: '2017-01-01' } });
+    expect(await screen.findByText('No version of this obligation was in force on 1 Jan 2017.')).toBeInTheDocument();
+  });
+
+  it('marks the sentences a version added and names both effective dates', async () => {
+    serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show what changed' }));
+    await waitFor(() => expect(document.querySelector('[data-diff-banner]')).toBeInTheDocument());
+    expect(document.querySelector('[data-diff-banner]')).toHaveTextContent(
+      'Comparing version 1 (in force since it began) with version 2 (in force from 1 Oct 2026).',
+    );
+    expect(document.querySelector('[data-legal-text] ins')?.textContent).toContain('The institution sets criteria for an annual assessment.');
+    // Either side machine translated labels the whole comparison (INV-05).
+    expect(screen.getByText('Machine translation from Swedish. The original is authoritative.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show what changed' }));
+    await waitFor(() => expect(document.querySelector('[data-diff-banner]')).toBeNull());
+  });
+
+  it('offers "This looks wrong" only to a reader who may report, and acknowledges the report', async () => {
+    serve(research);
+    const withoutReport = renderIn(<ObligationScreen obligationId="ob-1" />, ['library.read']);
+    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    expect(screen.queryByRole('button', { name: 'This looks wrong' })).not.toBeInTheDocument();
+    withoutReport.unmount();
+
+    resetApiForTests();
+    tokenStore.set('tok');
+    const sent = serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    fireEvent.click(screen.getByRole('button', { name: 'This looks wrong' }));
+    fireEvent.change(await screen.findByLabelText('What you see'), { target: { value: 'The English says annually.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText('Report sent. Thank you.')).toBeInTheDocument();
+    // What was on screen rides along: the version and the language being read.
+    expect(sent.filter((call) => call.path.endsWith('/problem-reports')).map((call) => call.body)).toEqual([
+      { description: 'The English says annually.', language: 'en', versionNumber: 1 },
+    ]);
+  });
+});
+
+describe('the diff sentence', () => {
+  it('names a version by the date it took effect, or says it has been in force since the record began', () => {
+    expect(effectiveIn(null, t, defaultFormatContext)).toBe('in force since it began');
+    expect(effectiveIn({ date: '2026-10-01', precision: 'day' }, t, defaultFormatContext)).toBe('in force from 1 Oct 2026');
+    // A legal date renders at its own precision, never as a day it does not claim.
+    expect(effectiveIn({ date: '2026-10-01', precision: 'quarter' }, t, defaultFormatContext)).toBe('in force from Q4 2026');
+    expect(diffSentence(versionDiff, t, defaultFormatContext)).toBe(
+      'Comparing version 1 (in force since it began) with version 2 (in force from 1 Oct 2026).',
+    );
   });
 });

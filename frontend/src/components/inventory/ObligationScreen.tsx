@@ -3,26 +3,39 @@
 import { useState } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
-import { DutyPanel, PendingPanels, ProvenancePanel, RelatedPanel, ScopePanel, VersionsPanel } from '@/components/inventory/ObligationPanels';
+import { DiffText } from '@/components/inventory/DiffText';
 import { LegalText } from '@/components/inventory/LegalText';
+import { DutyPanel, PendingPanels, ProvenancePanel, RelatedPanel, ScopePanel, VersionsPanel } from '@/components/inventory/ObligationPanels';
+import { ReportProblemModal, type ReportContext } from '@/components/inventory/ReportProblemModal';
+import { VersionBar } from '@/components/inventory/VersionBar';
+import { Button } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States';
-import { useObligation } from '@/features/library/hooks';
+import { useFormatContext } from '@/features/identity/hooks';
+import { useObligation, useObligationDiff, useReportObligationProblem } from '@/features/library/hooks';
 import { presentObligation } from '@/features/library/obligation-presentation';
-import type { LocalizedText, ObligationDetail } from '@/features/library/types';
+import type { LocalizedText, ObligationDetail, VersionDiff } from '@/features/library/types';
+import type { PartialDate } from '@/features/shared/presentation-types';
 import { languageName } from '@/features/library/version-presentation';
 import type { Locale, Translate } from '@/shared/i18n';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
+import { usePermissions } from '@/shared/navigation/require-permission';
+import { formatDate, formatPartialDate, type FormatContext } from '@/shared/utils/format';
 import { problemStatus } from '@/shared/utils/problem';
 
-// The obligation card (design/screens/tenant-obligation.html; INV-03, INV-05,
-// INV-06). It reads and never writes: the library changes only through an
-// approved proposal. Nothing on it says the duty applies to this bank or that
-// the bank complies with it — those are the register's separate facts, and
-// the panel that will hold them says so until chunk 8 fills it.
+// The obligation card (design/screens/tenant-obligation.html; INV-03..INV-06,
+// AC-INV1). It reads and never writes the library: the one thing a reader can
+// send from here is a problem report, which stays inside their own bank.
+// Nothing on it says the duty applies to this bank or that the bank complies
+// with it — those are the register's separate facts, and the panel that will
+// hold them says so until chunk 8 fills it.
+
+/** Reporting a problem with a library record is everyone's, but it is still a permission. */
+const REPORT_PERMISSION = 'problems.report';
 
 /** One language chip: a language the version holds its summary in, plus the reader's own when it holds none. */
 export interface LanguageChoice {
@@ -61,61 +74,54 @@ export function originalLanguage(translations: readonly LocalizedText[]): string
   return (translations.find((text) => text.isOriginal) ?? translations[0])?.language ?? null;
 }
 
-function SummaryBlock({ obligation }: { obligation: ObligationDetail }) {
-  const t = useT();
-  const locale = useLocale();
-  const [chosen, setChosen] = useState<string | null>(null);
-  const selected = chosen ?? obligation.summary?.language ?? locale;
-  const shown = textIn(obligation.translations, selected);
-  const original = originalLanguage(obligation.translations);
+/** A version's effective date in the diff's sentence; a version with none has been in force since the record began. */
+export function effectiveIn(date: PartialDate | null, t: Translate, ctx: FormatContext): string {
+  if (date === null) return t('inventory.obligation.diffSinceAlways');
+  return t('inventory.obligation.diffInForceFrom', { date: formatPartialDate(date.date, date.precision, ctx) });
+}
 
+/** "Comparing version 1 (in force since it began) with version 2 (in force from 1 Oct 2026)." */
+export function diffSentence(diff: VersionDiff, t: Translate, ctx: FormatContext): string {
+  return t('inventory.obligation.diffBanner', {
+    from: diff.fromVersion,
+    fromDate: effectiveIn(diff.fromEffective, t, ctx),
+    to: diff.toVersion,
+    toDate: effectiveIn(diff.toEffective, t, ctx),
+  });
+}
+
+function Reference({ obligation }: { obligation: ObligationDetail }) {
   return (
     <>
-      <div data-language-chips="">
-        <ChipRow className="mb-3">
-          {languageChoices(obligation.translations, selected, locale, t).map((choice) => (
-            <Chip key={choice.language} pressed={choice.selected} onClick={() => setChosen(choice.language)}>
-              {choice.label}
-            </Chip>
-          ))}
-        </ChipRow>
-      </div>
-      {shown === null ? (
-        <EmptyState
-          title={t('library.noTextTitle', { language: languageName(selected, locale) })}
-          body={t('library.noTextBody')}
-          action={original === null ? undefined : { label: t('library.showOriginal'), href: '#', onClick: () => setChosen(original) }}
-        />
-      ) : (
-        <LegalText
-          lang={shown.language}
-          translatedFrom={shown.isMachine && original !== null ? original : undefined}
-          reference={
-            <>
-              {obligation.instrument.officialRef}
-              <br />
-              {obligation.refLabel}
-            </>
-          }
-        >
-          {shown.text}
-        </LegalText>
-      )}
+      {obligation.instrument.officialRef}
+      <br />
+      {obligation.refLabel}
     </>
   );
 }
 
 export function ObligationScreen({ obligationId }: { obligationId: string }) {
   const t = useT();
-  const obligation = useObligation(obligationId);
+  const ctx = useFormatContext();
+  const locale = useLocale();
+  const permissions = usePermissions() ?? [];
+  const [asOf, setAsOf] = useState('');
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [showDiff, setShowDiff] = useState(false);
+  const [reporting, setReporting] = useState(false);
+
+  const obligation = useObligation(obligationId, asOf);
+  const record = obligation.data;
+  const selected = chosen ?? record?.summary?.language ?? locale;
+  const diff = useObligationDiff(obligationId, selected, showDiff);
+  const report = useReportObligationProblem(obligationId);
 
   if (obligation.isError) {
     if (problemStatus(obligation.error) === 404) return <NotFoundScreen backHref="/inventory" backLabel={t('inventory.obligation.back')} />;
     return <ErrorState title={t('inventory.obligation.errorTitle')} onRetry={() => void obligation.refetch()} />;
   }
-  if (obligation.data === undefined) return <LoadingState rows={3} />;
+  if (record === undefined) return <LoadingState rows={3} />;
 
-  const record = obligation.data;
   const header = presentObligation(
     {
       instrument: { key: record.instrument.key, label: record.instrument.shortName },
@@ -125,6 +131,9 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
     'header',
     t,
   );
+  const shown = textIn(record.translations, selected);
+  const original = originalLanguage(record.translations);
+  const context: ReportContext = { language: selected, ...(record.version === null ? {} : { versionNumber: record.version.versionNumber }) };
 
   return (
     <div data-obligation={record.stableKey}>
@@ -134,7 +143,57 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
       </div>
       <PageHead title={record.title === null ? record.refLabel : record.title.text} />
 
-      <SummaryBlock obligation={record} />
+      <div data-language-chips="">
+        <ChipRow className="mb-3">
+          {languageChoices(record.translations, selected, locale, t).map((choice) => (
+            <Chip key={choice.language} pressed={choice.selected} onClick={() => setChosen(choice.language)}>
+              {choice.label}
+            </Chip>
+          ))}
+        </ChipRow>
+      </div>
+
+      <VersionBar
+        versions={record.versions}
+        currentVersion={record.version?.versionNumber ?? null}
+        asOf={asOf}
+        onAsOf={setAsOf}
+        showDiff={showDiff}
+        onShowDiff={setShowDiff}
+      />
+
+      {asOf === '' ? null : (
+        <Notice className="flex flex-wrap items-center gap-2" data-as-of={asOf}>
+          <span>
+            {record.version === null
+              ? t('inventory.obligation.asOfNoVersion', { date: formatDate(asOf, ctx) })
+              : t('inventory.obligation.asOfBanner', { number: record.version.versionNumber, date: formatDate(asOf, ctx) })}
+          </span>
+          <Button variant="ghost" size="small" onClick={() => setAsOf('')}>
+            {t('inventory.backToToday')}
+          </Button>
+        </Notice>
+      )}
+
+      {showDiff && diff.isError ? <ErrorState title={t('inventory.obligation.diffErrorTitle')} onRetry={() => void diff.refetch()} /> : null}
+      {showDiff && diff.data !== undefined ? (
+        <>
+          <Notice data-diff-banner="">{diffSentence(diff.data, t, ctx)}</Notice>
+          <LegalText lang={diff.data.language} translatedFrom={diff.data.isMachine && original !== null ? original : undefined} reference={<Reference obligation={record} />}>
+            <DiffText segments={diff.data.segments} />
+          </LegalText>
+        </>
+      ) : shown === null ? (
+        <EmptyState
+          title={t('library.noTextTitle', { language: languageName(selected, locale) })}
+          body={t('library.noTextBody')}
+          action={original === null ? undefined : { label: t('library.showOriginal'), href: '#', onClick: () => setChosen(original) }}
+        />
+      ) : (
+        <LegalText lang={shown.language} translatedFrom={shown.isMachine && original !== null ? original : undefined} reference={<Reference obligation={record} />}>
+          {shown.text}
+        </LegalText>
+      )}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div>
@@ -144,10 +203,21 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
           <RelatedPanel related={record.related} />
         </div>
         <div>
-          <ProvenancePanel obligation={record} />
+          <ProvenancePanel
+            obligation={record}
+            actions={
+              permissions.includes(REPORT_PERMISSION) ? (
+                <Button variant="outline" size="small" className="mt-4" onClick={() => setReporting(true)}>
+                  {t('inventory.obligation.reportProblem')}
+                </Button>
+              ) : undefined
+            }
+          />
           <PendingPanels />
         </div>
       </div>
+
+      <ReportProblemModal open={reporting} onOpenChange={setReporting} context={context} report={report} />
     </div>
   );
 }

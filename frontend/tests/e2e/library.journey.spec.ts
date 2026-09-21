@@ -76,12 +76,52 @@ test.describe('library journeys', () => {
     await expect(headerPills(page).getByText('Guidance, comply or explain')).toHaveAttribute('data-pill', 'warning');
   });
 
-  test.fixme("INV-S4: \"As of\" returns the version in force on a date", async () => {
-    // pending: INV-S4 (INV-04, AC-INV1)
+  test("INV-S4: \"As of\" returns the version in force on a date", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openObligation(page, RESEARCH);
+
+    // Both dates are typed, never taken from today: version 2 of this duty
+    // takes effect on 1 October 2026, so a run either side of it would
+    // otherwise read a different card.
+    const asOf = page.getByLabel('As of');
+    await asOf.fill('2026-06-30');
+    await expect(page.locator('[data-as-of="2026-06-30"]')).toBeVisible();
+    await expect(page.getByText('Showing version 1, in force on 30 Jun 2026.')).toBeVisible();
+    await expect(page.locator('[data-version-bar]').getByRole('button', { name: 'Version 1' })).toHaveAttribute('aria-pressed', 'true');
+
+    await asOf.fill('2026-10-01');
+    await expect(page.locator('[data-as-of="2026-10-01"]')).toBeVisible();
+    await expect(page.getByText('Showing version 2, in force on 1 Oct 2026.')).toBeVisible();
+    await expect(page.locator('[data-version-bar]').getByRole('button', { name: 'Version 2, from 1 Oct 2026' })).toHaveAttribute('aria-pressed', 'true');
+
+    // Back to today, and the address stays the record's own.
+    await page.getByRole('button', { name: 'Back to today' }).click();
+    await expect(page.locator('[data-as-of]')).toHaveCount(0);
   });
 
-  test.fixme("INV-S5: The diff between two versions is at sentence level", async () => {
-    // pending: INV-S5 (INV-04, AC-INV1)
+  test("INV-S5: The diff between two versions is at sentence level", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openObligation(page, RESEARCH);
+
+    await page.getByRole('button', { name: 'Show what changed' }).click();
+    const banner = page.locator('[data-diff-banner]');
+    // Both effective dates are named: version 1 has been in force since the
+    // record began, version 2 takes effect on 1 October 2026.
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText('in force since it began');
+    await expect(banner).toContainText('in force from 1 Oct 2026');
+
+    // Sentence level: the sentences version 2 adds are marked, the ones that
+    // stand are not, and a reader hears where the addition starts and ends.
+    const text = page.locator('[data-legal-text]');
+    await expect(text.locator('ins')).toHaveCount(2);
+    await expect(text.locator('ins').first()).toContainText('annual assessment');
+    await expect(text.locator('ins').first().getByText('Added text:')).toBeAttached();
+
+    await page.getByRole('button', { name: 'Show what changed' }).click();
+    await expect(banner).toHaveCount(0);
   });
 
   test("INV-S6: Text exists in the original language with labelled translations", async ({ page, apiGuard }) => {
@@ -101,8 +141,31 @@ test.describe('library journeys', () => {
     await expect(text.locator('[data-machine-translation]')).toHaveCount(0);
   });
 
-  test.fixme("INV-S7: Every record has a source link, a last-verified date and a way to report it", async () => {
-    // pending: INV-S7 (INV-06)
+  test("INV-S7: Every record has a source link, a last-verified date and a way to report it", async ({ page, apiGuard }) => {
+    // The instrument and provision halves arrive with the instrument card
+    // (chunk3-rest-T17 and T18), which needs the instrument reads.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openObligation(page, RESEARCH);
+
+    // The public page the record was taken from, and when somebody last held
+    // it against that page. The seed leaves no verifier, so no name is claimed.
+    const provenance = page.locator('[data-provenance-panel]');
+    await expect(provenance.getByText('Source')).toBeVisible();
+    await expect(provenance.locator('[data-source-link]')).toHaveAttribute('href', /^https?:\/\//);
+    await expect(provenance.getByText('Last verified')).toBeVisible();
+    await expect(provenance.locator('[data-last-verified]')).toHaveText(/\d{4}$/);
+
+    // "This looks wrong": the reader's own words, filed inside their own bank.
+    await provenance.getByRole('button', { name: 'This looks wrong' }).click();
+    const dialog = page.getByRole('dialog', { name: 'What looks wrong?' });
+    await expect(dialog.getByText('Colleagues in your organisation read this and take it up. It reaches nobody outside your organisation.')).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Send report' })).toBeDisabled();
+    await dialog.getByLabel('What you see').fill('The English summary says annually; the Swedish original says at least annually.');
+    await dialog.getByRole('button', { name: 'Send report' }).click();
+    await expect(dialog.getByText('Report sent. Thank you.')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Done' }).click();
+    await expect(dialog).toBeHidden();
   });
 });
 
