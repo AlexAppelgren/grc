@@ -197,7 +197,7 @@ and never write, and what they may read is a credential and a scope, not a seat.
 
 | ID | Requirement | P | R |
 |---|---|---|---|
-| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason. It changes only through a request that a second person approves. Many pending requests can be decided in one call, with four eyes on every row | M | R2 |
+| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason. One compliance person holding `applicability.approve` sets it after confirming in a dialog, and an audit event records it; there is no second approver and no step-up (D-75). Many rows can be set in one confirmed call, one audit event per row | M | R2 |
 | REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 |
 | REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 |
 | REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 |
@@ -356,7 +356,7 @@ and never write, and what they may read is a credential and a scope, not a seat.
 | J-7 | Search by identifier and by concept, then Ask with citations and an "as of" date |
 | J-8 | Tenant B cannot see tenant A's case, evidence, comments, participants, watched markets or configuration |
 | J-9 | Monday morning: the owner opens My work and sees an overdue review and a change linked to an obligation they are responsible for; they add a contributor as participant on that obligation; the contributor sees it on their own My work; the department head's view shows it with the owner named; the contributor leaves, and both events are in the audit log |
-| J-10 | The officer adds ISO/IEC 27001 to the regulatory scope and an approver approves it with step-up. The officer records the certificate on an entity and requests "applies" for that entity with the reason "Certified", and the approver approves it. The officer pastes three units with applicability, and the approver decides them in one call. The register filtered by standard and entity shows the decisions, and the next audit is on the roadmap |
+| J-10 | The officer adds ISO/IEC 27001 to the regulatory scope and an approver approves it with step-up. The officer records the certificate on an entity and sets "applies" for that entity with the reason "Certified", confirming it. The officer pastes three units with applicability and confirms them in one call. The register filtered by standard and entity shows the decisions, and the next audit is on the roadmap |
 | J-11 | A tenant admin registers an agent access entry for the Trading team's coding agent, narrowed to that department's products, and issues it a key with a step-up. Two people holding `security.manage` switch tenant reach on, and the admin enables it on the entry. The agent asks what applies to a new order-routing service and receives the bank's approved applicability and reading with citations, the full list beneath a labelled summary, and a line naming card issuing as outside its scope. A card obligation's stable key answers 404, a write answers 403, and revoking the entry stops the next call |
 
 ## 6. Permissions and system roles

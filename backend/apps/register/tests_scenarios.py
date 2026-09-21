@@ -21,14 +21,14 @@ class RegisterScenarioTests(TestCase):
     def test_reg_s1(self) -> None:
         """REG-S1
 
-        Applicability changes through a request a second person approves (REG-01).
+        One compliance person sets applicability after confirming it (REG-01).
         """
 
     @skip("pending: REG-S2")
     def test_reg_s2(self) -> None:
         """REG-S2
 
-        The requester cannot approve their own applicability request (REG-01).
+        Only a holder of applicability.approve sets applicability (REG-01).
         """
 
     @skip("pending: REG-S3")
@@ -112,7 +112,7 @@ class RegisterScenarioTests(TestCase):
     def test_reg_s14(self) -> None:
         """REG-S14
 
-        Unit decisions are filed from the paste and decided in one call, with four eyes on every row (REG-01, REG-08).
+        Unit decisions are set from the paste in one confirmed call (REG-01, REG-08).
         """
 
     @skip("pending: REG-S15 (REG-08, chunk 8)")

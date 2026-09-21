@@ -15,8 +15,9 @@ system, where evidence lives, the next review, gaps with remediation, and the
 internal items (policy, procedure, control, process, system) it links to.
 
 "Applies" and "we comply" are separate facts, so a gap can never hide behind
-an applicability flag. Applicability changes through a request a second person
-approves. Risk acceptance is behind four eyes.
+an applicability flag. Applicability is set by one compliance person, confirmed
+in a dialog and audited, with no second approver and no step-up (D-75). Risk
+acceptance is behind four eyes.
 
 A legal entity follows a standard when its applicability on that standard's one
 conformance obligation is approved; that approval is the only record of it. For
@@ -50,7 +51,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, changed only through a request a second person approves; many pending requests decided in one call with four eyes on every row | M | R2 | pending |
+| REG-01 | Applicability per obligation, per legal entity where it spans several, and per unit of a standard, with a reason, set by one person holding `applicability.approve` after a confirmation dialog, with an audit event and no second approver or step-up (D-75); many rows set in one call, one audit event per row | M | R2 | pending |
 | REG-02 | Compliance status, status note, risk, owners, process, system, evidence location, next review, per legal entity where the obligation spans several | M | R2 | pending |
 | REG-03 | Gaps with owner, severity, target date, remediation, and risk acceptance behind four eyes | M | R2 | pending |
 | REG-04 | Assessment history and "how we read this rule" per obligation | S | R2 | pending |
@@ -72,9 +73,10 @@ the PRD rows and the playbook rules read as tests:
 - **AC-REG2** Nothing a tenant writes under a standard (units, notes, gaps,
   assessments, interpretations, links) appears in a search chunk, an embedding
   input or an AI-generation input, and tenant B receives 404 for it.
-- An applicability request stores the requested value and reason, shows as
-  "Waiting for approval", and applies only when a holder of
-  `applicability.approve` who is not the requester approves it with step-up.
+- Setting applicability stores the value and reason at once, after the person
+  confirms it in a dialog, and writes one audit event naming them, the value
+  before and after, and the reason. No request, no second approver, no step-up
+  (D-75).
 - The obligation row shows applicability ("Applies" or "Does not apply") and,
   only if it applies, the compliance status pill whose tone comes from the
   category (compliant `positive`, partly `warning`, gap `negative`, not assessed
@@ -91,21 +93,24 @@ Integration scenarios live in `tests_scenarios.py`; E2E scenarios in
 Stubs stay skipped until the feature lands; never delete a scenario without
 updating this file.
 
-### REG-S1 — Applicability changes through a request a second person approves `@integration` `@e2e` (REG-01)
+### REG-S1 — One compliance person sets applicability after confirming it `@integration` `@e2e` (REG-01)
 ```gherkin
-Given an obligation owner with applicability.request
-And an obligation that spans several legal entities, where a request names its entity's scope row
+Given a compliance officer with applicability.approve
+And an obligation that spans several legal entities, where the answer names its entity's scope row
 When they answer "Does it apply to us?" with "Does not apply" and a reason
-Then the obligation still shows "Applies" with "Waiting for approval" beside it
-When a compliance officer with applicability.approve and a fresh step-up approves
-Then the obligation shows "Does not apply" with the reason, and the audit event carries both people and the assertion
+Then a dialog asks them to confirm before anything is stored
+When they confirm
+Then the obligation shows "Does not apply" with the reason at once, with no "Waiting for approval" and no step-up
+And one audit event records the person, the value before and after, and the reason
+When they cancel the dialog instead
+Then nothing is stored and no audit event is written
 ```
 
-### REG-S2 — The requester cannot approve their own applicability request `@integration` (REG-01)
+### REG-S2 — Only a holder of applicability.approve sets applicability `@integration` (REG-01)
 ```gherkin
-Given an applicability request created by Anna
-When Anna approves it
-Then the request answers 409 with code "four_eyes_violation"
+Given a member without applicability.approve
+When they set applicability on an obligation
+Then the request answers 403 with requiredPermission "applicability.approve" and nothing is stored
 ```
 
 ### REG-S3 — Compliance status and its details are kept per legal entity `@integration` `@e2e` (REG-02)
@@ -193,10 +198,8 @@ Then the request answers 409 with code "stale_write" and nothing is merged
 ```gherkin
 Given tenant A follows a standard and has the entities "Example Bank AB", "Example Fonder AB" and "Example Liv Försäkring AB"
 Then the conformance obligation offers every legal entity, and reading it writes no scope row
-When an officer with applicability.request requests "Applies" for Bank AB with the reason "Certified" and "Does not apply" for Liv with a reason
-Then each request carries its entity's scope row, created in the same transaction, and no other row changes
-And a second pending request for Bank AB answers 409
-When an approver with applicability.approve and a fresh step-up approves both
+When an officer with applicability.approve sets "Applies" for Bank AB with the reason "Certified" and "Does not apply" for Liv with a reason, confirming each
+Then each answer carries its entity's scope row, created in the same transaction, and no other row changes
 Then Bank AB's row reads "Applies" with its reason and decision time, and Liv's reads "Does not apply"
 And the obligation row shows the worse of its entity statuses as its pill
 ```
@@ -218,14 +221,12 @@ Then the API answers 409 with code "unit_has_history" and the unit is unchanged
 And a unit with no history can be renamed with If-Match or removed, each audited
 ```
 
-### REG-S14 — Unit decisions are filed from the paste and decided in one call, with four eyes on every row `@integration` `@e2e` (REG-01, REG-08, AC-REG1)
+### REG-S14 — Unit decisions are set from the paste in one confirmed call `@integration` `@e2e` (REG-01, REG-08, AC-REG1)
 ```gherkin
-Given an officer with register.edit and applicability.request pastes 93 invented units for Bank AB, each with "applies" or "does not apply" and a reason
-Then 93 pending applicability requests exist, each naming its unit, and none can be edited
-When the officer, who also holds applicability.approve, decides them in one call
-Then the API answers 409 with code "four_eyes_violation" and nothing is decided
-When an approver with applicability.approve and a fresh step-up approves 90 and rejects 3 with a note in one call
-Then each unit carries its own decision, reason and time, and 93 audit events cite the assertion
+Given an officer with register.edit and applicability.approve pastes 93 invented units for Bank AB, each with "applies" or "does not apply" and a reason
+Then a dialog shows the 93 decisions and asks them to confirm before anything is stored
+When they confirm
+Then each unit carries its own decision, reason and time, and 93 audit events name the officer
 And a call with more requests than the configured cap is refused
 ```
 
