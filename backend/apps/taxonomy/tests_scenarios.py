@@ -29,13 +29,14 @@ from django.db.models import ForeignKey
 
 import datetime
 
-from apps.cases import testing as cases_build
+from apps.cases import matching as case_matching, testing as cases_build
+from apps.cases.models import ChangeCase
 from apps.identity.models import TenantRole, User
 from apps.library.models import Jurisdiction, Language, Obligation, ObligationTerm
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import load_library, seed_authorities
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
-from apps.shared import factories, permissions as perms
+from apps.shared import factories, outbox, permissions as perms, tenancy
 from apps.shared.audit import Actor
 from apps.shared.models import AuditEvent
 from apps.shared.routes import iter_operations
@@ -738,6 +739,27 @@ class TaxonomyScenarioTests(ScenarioTestCase):
                 cursor.execute("UPDATE footprint_change_request SET decided_by_id = requested_by_id WHERE id = %s", [request["id"]])
         self.assertIn("four_eyes", str(caught.exception))
 
+    def _drop_advice_from_the_footprint(self) -> None:
+        """A footprint change as FP-02 has it: one person asks, a second approves it with a
+        passkey step-up, and the recomputation runs off the event the approval recorded
+        (`apps/cases/matching.py`, on the one outbox cursor)."""
+        case_matching.register()
+        officer = sign_in(self.officer, tenant=self.tenant)
+        approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
+        request = self._post(
+            "/tenant/footprint/requests",
+            {"adds": [], "removes": [{"dimension": "service_type", "key": "advice"}]},
+            officer,
+        ).json()
+        approved = self._post(
+            f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH="1"
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+        with transaction.atomic():
+            tenancy.clear_tenant()
+        while outbox.deliver_batch().delivered:
+            pass
+
     def test_fp_s4(self) -> None:
         """FP-S4
 
@@ -769,7 +791,14 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         # The roadmap and the briefing: one dated change inside the scope and one outside it,
         # both sighted this week and both still open, so the only thing separating them is
         # the footprint verdict the case carries.
+        #
+        # The advice-only case is put outside the scope the way a bank really puts it there:
+        # the bank held Advice when both cases were opened, a second person approved dropping
+        # it, and the recomputation re-decided every open case (apps/cases/matching.py).
+        # Seeding the column false would have proved the roadmap's query and not the rule,
+        # which is exactly why FP-S4's journey could not be driven end to end.
         watch_build.seed_watch_reference()
+        self._set_footprint(["service_type:custody", "service_type:advice", "regime:securities"])
         ours = watch_build.change(
             title="FI adopts amended rules on paying for investment research",
             key_date=FP_S4_KEY_DATE,
@@ -782,8 +811,17 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             key_date_label="In force",
             first_seen_at=FP_S4_SIGHTED,
         )
+        watch_build.term_link(ours, term_ref="service_type:custody")
+        watch_build.term_link(theirs, term_ref="service_type:advice")
         cases_build.case(self.tenant, ours)
-        cases_build.case(self.tenant, theirs, footprint_match=False)
+        cases_build.case(self.tenant, theirs)
+        self._drop_advice_from_the_footprint()
+        self.activate(self.tenant)
+        self.assertEqual(
+            {case.change_id: case.footprint_match for case in ChangeCase.objects.all()},
+            {ours.id: True, theirs.id: False},
+            "dropping Advice re-decided the advice-only case and left the other alone",
+        )
         # The session is minted at the frozen instant too: one created at the real clock
         # would be days old to the request and answer 401 (playbook 8.3).
         with mock.patch("django.utils.timezone.now", return_value=FP_S4_INSTANT):

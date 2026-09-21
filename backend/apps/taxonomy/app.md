@@ -268,6 +268,13 @@ Then the advice-only records appear marked as outside our scope
 ```
 Reports are the note below.
 
+> **Note — the cached verdict.** Two of the four surfaces filter on `change_case.
+> footprint_match`, a cached answer written when the case was opened. `apps/cases/matching.py`
+> is what keeps it true afterwards: an approved footprint change re-decides that bank's open
+> cases, and a change whose scope terms move re-decides every bank's case for it, both on the
+> one outbox cursor and both one statement per bank. The scenario above drives that path
+> rather than seeding the column, which is what the journey was waiting for.
+
 > **Note — the reports.** The designed scenario named the reports as a fifth surface. Every
 > report reads the obligation register (`GET /reports/gaps`, `/reports/overdue-actions`,
 > `/reports/summary`), and R1 has no register, so there is no report to open and nothing the

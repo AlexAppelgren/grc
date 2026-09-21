@@ -20,8 +20,19 @@ Statuses live inside fixed categories (`new`, `assigned`, `assessing`,
 sub-statuses; the guards read only the category. Every response lists the
 transitions it allows, and concurrent edits are refused, never merged.
 
-Deliberately simplified: R1 ships case creation with the footprint match only
-(chunk 5). The workflow from triage to sign-off is R2 (chunk 9).
+Three things a case carries are kept true after it is opened, and none of them is
+a workflow step. `footprint_match` is a cached verdict, so `matching.py`
+re-decides every open case when the bank's footprint is approved and every
+bank's case for a change when that change's scope terms move — one statement
+per bank, on the one outbox cursor, changing a boolean and nothing else (D-30).
+The library's drafted "So what?" is copied in unconfirmed and brought up to a
+better draft by `so_what.py`, which stops at every copy a person has already
+confirmed or rewritten: a bank's words are its own. And a bank's decision about
+a suggested obligation link is its own row, never the library's link (WAT-04).
+
+Deliberately simplified: R1 ships case creation with the footprint match, the
+bank's own "So what?" and its own obligation-link decisions (chunk 5). The
+workflow from triage to sign-off is R2 (chunk 9).
 
 ## 2. Requirements
 

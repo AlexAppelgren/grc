@@ -28,7 +28,8 @@ from apps.cases.schemas import CasesObligationLink, CasesObligationLinkBody, Cas
 from apps.shared import permissions as perms
 from apps.shared.authentication import SessionAuth
 from apps.shared.permissions import requires_permission
-from apps.taxonomy.http import answers_problems
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user
+from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Cases"])
 
@@ -79,11 +80,11 @@ def save_so_what(
     until the case workflow lands. Errors: `not_found` when no change has that id or this
     bank has no case for it; `permission_denied` without `cases.work`; `unauthenticated`
     without a session; `validation_error` for empty text or text over the cap.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return so_what.save_so_what()
+    tenant = caller_tenant(request)
+    return so_what.save_so_what(
+        tenant=tenant, actor=actor_for(request), user=caller_user(request), change_id=change_id, text=body.text
+    )
 
 
 @router.post(
@@ -113,11 +114,11 @@ def confirm_so_what(
     No request body, no `If-Match` and no step-up. Errors: `not_found` when no change has
     that id, this bank has no case for it, or the case holds no draft to confirm;
     `permission_denied` without `cases.work`; `unauthenticated` without a session.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return so_what.confirm_so_what()
+    tenant = caller_tenant(request)
+    return so_what.confirm_so_what(
+        tenant=tenant, actor=actor_for(request), user=caller_user(request), change_id=change_id
+    )
 
 
 # ---------------------------------------------------------------------------------------
@@ -154,11 +155,16 @@ def accept_case_obligation_link(
     when no change has that id, this bank has no case for it, or the obligation is not one
     the caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a
     session; `validation_error` for a body the schema refuses.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return links.accept_obligation_link()
+    tenant = caller_tenant(request)
+    return links.accept_obligation_link(
+        tenant=tenant,
+        actor=actor_for(request),
+        user=caller_user(request),
+        order=language_order(request, tenant=tenant),
+        change_id=change_id,
+        obligation_id=body.obligation_id,
+    )
 
 
 @router.delete(
@@ -192,7 +198,13 @@ def remove_case_obligation_link(
     the caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a
     session.
 
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return links.remove_obligation_link()
+    tenant = caller_tenant(request)
+    return links.remove_obligation_link(
+        tenant=tenant,
+        actor=actor_for(request),
+        user=caller_user(request),
+        order=language_order(request, tenant=tenant),
+        change_id=change_id,
+        obligation_id=obligation_id,
+    )

@@ -46,6 +46,7 @@ from django.db.models import ForeignKey, Model
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
+from apps.governance.models import AiGeneration, AiPurpose
 from apps.identity.models import (
     ApiKey,
     Invitation,
@@ -88,6 +89,12 @@ IDENTITY_LOOKUP_TABLES = frozenset({"invitation", "membership", "user_session", 
 # that took the old single-policy shape whether or not it was added.
 MIXED_TABLES = {
     "agent_run": "tenant_id",
+    # The AI output log (AUD-02, chunk 5, governance 0001). A row with no tenant is the
+    # library's — the drafted "So what?" of a change, shared by every bank — and a row with
+    # a tenant is that bank's own. The split shape is what keeps a bank from confirming,
+    # rewriting or deleting the platform's row: its confirmation lives on its own case
+    # (ruling I).
+    "ai_generation": "tenant_id",
     "api_key": "tenant_id",
     "audit_event": "tenant_id",
     "invitation": "tenant_id",
@@ -434,6 +441,17 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
         token = uuid.uuid4().hex
         if table == "audit_event":
             return self._audit_event(tenant_id)
+        if table == "ai_generation":
+            # Written here rather than through `log_generation()`, which has no second
+            # connection to write on: the row this guard needs is a realistic one on the
+            # cw_app connection, and what is under test is the policy, not the writer.
+            return AiGeneration.objects.using("app").create(
+                tenant_id=tenant_id,
+                purpose=AiPurpose.SO_WHAT.value,
+                model="mock",
+                model_version="0",
+                output="A probe, not a draft.",
+            )
         if table == "outbox_event":
             return OutboxEvent.objects.using("app").create(
                 tenant_id=tenant_id, audit_event=self._audit_event(tenant_id), topic="rls.probe", payload={}

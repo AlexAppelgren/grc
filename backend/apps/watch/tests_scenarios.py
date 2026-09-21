@@ -13,22 +13,29 @@ import datetime
 from typing import Any
 from unittest import skip
 
+from django.db import transaction
 from django.test import TestCase
 from django.utils import timezone
 
 from apps.agents import testing as agent_build
-from apps.shared import factories, permissions as perms, tenancy
+from apps.cases import creation, testing as case_build
+from apps.cases.models import CaseObligationLink
+from apps.governance.models import AiGeneration
+from apps.library import testing as library_build
+from apps.shared import factories, outbox, permissions as perms, tenancy
+from apps.shared.models import AuditEvent
 from apps.shared.testing import (
     API_KEY_FOR_TESTS,
     SESSION_TOKEN_FOR_TESTS,
     agent_principal,
+    sign_in,
     stub_api_key,
     stub_session,
     user_principal,
 )
 from apps.taxonomy.models import ChangeType
 from apps.watch import testing as watch_build
-from apps.watch.models import ChangeDocument, RegulatoryChange, SourceCheck
+from apps.watch.models import ChangeDocument, ChangeObligation, RegulatoryChange, SourceCheck
 
 # The reform WAT-S3 names, held apart from the field that carries it. A stable key and the
 # word "stableKey" on one line read to gitleaks' generic-api-key rule as a credential and
@@ -49,6 +56,22 @@ _CHANGE: dict[str, Any] = {
 }
 
 
+# WAT-S6 and WAT-S7 drive two banks over the real routes, so they need the case the
+# registration opens and the words a bank writes over the draft.
+_SECURITIES = "regime:securities"
+_AML = "regime:aml"
+_DRAFT = "Teams that pay for external research should confirm that documented criteria exist."
+_OUR_WORDS = "Self-directed trading and Guided investing both pay for research; the desk documents the criteria."
+
+
+def _drain() -> None:
+    """Deliver the outbox until it is empty, so the cases the registration opened exist."""
+    with transaction.atomic():
+        tenancy.clear_tenant()
+    while outbox.deliver_batch().delivered:
+        pass
+
+
 class WatchScenarioTests(TestCase):
     """Scenario tests for apps.watch, one method per @integration scenario."""
 
@@ -58,6 +81,14 @@ class WatchScenarioTests(TestCase):
         tenancy.clear_tenant()
         key = agent_build.agent_key()
         return agent_build.platform_run(key=key), key.plain_key
+
+    def _two_banks(self) -> Any:
+        """Two banks with different footprints, their cases opened by the real handler."""
+        creation.register()
+        banks = case_build.two_tenants_with_different_footprints(inside=_SECURITIES, outside=_AML)
+        _drain()
+        tenancy.clear_tenant()
+        return banks
 
     def _register(self, plain: str, payload: dict[str, Any]) -> Any:
         return self.client.post(
@@ -237,7 +268,6 @@ class WatchScenarioTests(TestCase):
         self.assertEqual(change.change_type.key, "adopted", "nothing is stored on a refusal")
         self.assertNotIn("must not be stored", change.summary)
 
-    @skip("pending: WAT-S6")
     def test_wat_s6(self) -> None:
         """WAT-S6
 
@@ -245,15 +275,186 @@ class WatchScenarioTests(TestCase):
         decide separately (WAT-04).
         Operations: `replaceChangeObligations`, `acceptCaseObligationLink`,
         `removeCaseObligationLink`.
-        """
 
-    @skip("pending: WAT-S7")
+        The library editor's own confirmation is the held half of this feature and is
+        asserted in WAT-S4, whose `@integration` owner is `c5-watch-curation-confirm`:
+        until `q-editor-confirm` is answered no route moves
+        `change_obligation.confirmed_by`, and the note under WAT-S6 in app.md says so.
+        """
+        run, plain = self._run_with_a_key()
+        banks = self._two_banks()
+        officer = factories.member(
+            banks.inside, roles=("compliance_officer",), user_row=factories.user(name="Sara Lind")
+        ).user
+        other = factories.member(banks.outside, roles=("compliance_officer",)).user
+        instrument = library_build.instrument(key="fffs-2017-2", regime=_SECURITIES)
+        research = library_build.obligation(
+            instrument, key="fffs-2017-2-11-4", titles={"en": "Assess the quality of research paid for"}
+        )
+        reporting = library_build.obligation(
+            instrument, key="fffs-2017-2-12-1", titles={"en": "Report transactions by the next working day"}
+        )
+
+        # Given an agent linked a change to two obligations with confidence 0.9 and 0.4.
+        # The key is the platform's, so the connection must be out of a bank's zone: the
+        # member factories above each left one activated (playbook 14).
+        tenancy.clear_tenant()
+        registered = self._register(
+            plain,
+            {
+                **_CHANGE,
+                "agentRunId": str(run.id),
+                "termIds": [str(watch_build.term(_SECURITIES).id)],
+                "obligationLinks": [
+                    {"obligationId": str(research.id), "confidence": 0.9},
+                    {"obligationId": str(reporting.id), "confidence": 0.4},
+                ],
+            },
+        )
+        self.assertEqual(registered.status_code, 201, registered.content)
+        change_id = registered.json()["id"]
+        _drain()
+
+        # Then the change screen shows both with the confidence, as suggestions
+        read = self.client.get(f"/api/v1/changes/{change_id}", **sign_in(officer, tenant=banks.inside))
+        self.assertEqual(read.status_code, 200, read.content)
+        suggested = {link["obligationId"]: link for link in read.json()["obligations"]}
+        self.assertEqual(
+            {key: (value["confidence"], value["confirmed"]) for key, value in suggested.items()},
+            {str(research.id): (0.9, False), str(reporting.id): (0.4, False)},
+        )
+
+        # When a compliance officer accepts the first and removes the second on its own case
+        accepted = self.client.post(
+            f"/api/v1/changes/{change_id}/case/obligation-links",
+            data={"obligationId": str(research.id)},
+            content_type="application/json",
+            **sign_in(officer, tenant=banks.inside),
+        )
+        self.assertEqual(accepted.status_code, 201, accepted.content)
+        removed = self.client.delete(
+            f"/api/v1/changes/{change_id}/case/obligation-links/{reporting.id}",
+            **sign_in(officer, tenant=banks.inside),
+        )
+        self.assertEqual(removed.status_code, 200, removed.content)
+
+        # Then both decisions are stored on that bank's case and audited
+        with transaction.atomic():
+            tenancy.activate(banks.inside.id)
+            decisions = {row.obligation_id: row.decision for row in CaseObligationLink.objects.all()}
+            self.assertEqual(decisions, {research.id: "accepted", reporting.id: "removed"})
+            self.assertEqual(AuditEvent.objects.filter(action="case.obligation_link_decided").count(), 2)
+
+        # And the obligation shows "1 open change"
+        counted = self.client.get(
+            f"/api/v1/obligations/{research.id}/changes", **sign_in(officer, tenant=banks.inside)
+        )
+        self.assertEqual(counted.status_code, 200, counted.content)
+        self.assertEqual(counted.json()["openCount"], 1)
+
+        # And no library row changed: the second link is still a suggestion for everyone
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            links = {row.obligation_id: watch_build.is_a_suggestion(row) for row in ChangeObligation.objects.all()}
+            self.assertEqual(links, {research.id: True, reporting.id: True})
+        theirs = self.client.get(f"/api/v1/changes/{change_id}", **sign_in(other, tenant=banks.outside))
+        self.assertEqual(
+            {link["obligationId"]: link["confirmed"] for link in theirs.json()["obligations"]},
+            {str(research.id): False, str(reporting.id): False},
+            "another bank still sees both, undecided",
+        )
+        self.assertEqual(theirs.json()["case"]["obligationDecisions"], [])
+
     def test_wat_s7(self) -> None:
         """WAT-S7
 
         The "So what?" is AI-drafted until a person confirms or rewrites it per tenant (WAT-05).
         Operations: `saveSoWhat`, `confirmSoWhat`.
+
+        The draft is the agent's, filed with the change it read and recorded in the AI
+        output log from what that agent reported (D-66). Each bank confirms its own copy;
+        the library's log row is a platform fact and no bank moves it (ruling I).
         """
+        run, plain = self._run_with_a_key()
+        banks = self._two_banks()
+        officer = factories.member(
+            banks.inside, roles=("compliance_officer",), user_row=factories.user(name="Sara Lind")
+        ).user
+        other = factories.member(banks.outside, roles=("compliance_officer",)).user
+
+        # Given a change with a drafted "So what?" the run filed with it. The key is the
+        # platform's, so the connection must be out of a bank's zone first.
+        tenancy.clear_tenant()
+        registered = self._register(
+            plain,
+            {
+                **_CHANGE,
+                "agentRunId": str(run.id),
+                "termIds": [str(watch_build.term(_SECURITIES).id)],
+                "soWhat": {
+                    "text": _DRAFT,
+                    "model": "claude-opus-5",
+                    "modelVersion": "2026-05-01",
+                    "citations": [{"label": "Finansinspektionen", "url": "https://www.fi.se/"}],
+                },
+            },
+        )
+        self.assertEqual(registered.status_code, 201, registered.content)
+        change_id = registered.json()["id"]
+        _drain()
+
+        # Then an ai_generation row carries model, version and purpose
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            logged = AiGeneration.objects.get(subject_id=change_id)
+            self.assertEqual(
+                (logged.purpose, logged.model, logged.model_version, logged.status),
+                ("so_what", "claude-opus-5", "2026-05-01", "draft"),
+            )
+            self.assertTrue(
+                logged.model_metadata_reported_by_agent, "the agent reported it; bleqq did not measure it"
+            )
+            before = list(AiGeneration.objects.values())
+
+        # And each bank's copy is labelled an AI draft
+        for bank, person in ((banks.inside, officer), (banks.outside, other)):
+            with self.subTest(bank=bank.slug):
+                read = self.client.get(f"/api/v1/changes/{change_id}", **sign_in(person, tenant=bank))
+                self.assertEqual(read.json()["case"]["soWhatText"], _DRAFT)
+                self.assertFalse(read.json()["case"]["soWhatConfirmed"])
+
+        # When the officer rewrites it
+        saved = self.client.put(
+            f"/api/v1/changes/{change_id}/so-what",
+            data={"text": _OUR_WORDS},
+            content_type="application/json",
+            **sign_in(officer, tenant=banks.inside),
+        )
+        self.assertEqual(saved.status_code, 200, saved.content)
+
+        # Then this bank's copy is confirmed with the person and the time
+        body = saved.json()
+        self.assertEqual((body["text"], body["confirmed"], body["isAiDraft"]), (_OUR_WORDS, True, False))
+        self.assertEqual(body["confirmedByName"], "Sara Lind")
+        self.assertIsNotNone(body["confirmedAt"])
+
+        # And another tenant's copy is still the draft
+        theirs = self.client.get(f"/api/v1/changes/{change_id}", **sign_in(other, tenant=banks.outside))
+        self.assertEqual(theirs.json()["case"]["soWhatText"], _DRAFT)
+        self.assertFalse(theirs.json()["case"]["soWhatConfirmed"])
+
+        # Confirming as it stands works the same way, and neither act moves the library's row
+        confirmed = self.client.post(
+            f"/api/v1/changes/{change_id}/so-what/confirm",
+            data={},
+            content_type="application/json",
+            **sign_in(other, tenant=banks.outside),
+        )
+        self.assertEqual(confirmed.status_code, 200, confirmed.content)
+        self.assertEqual(confirmed.json()["text"], _DRAFT, "confirming keeps the model's words")
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.assertEqual(list(AiGeneration.objects.values()), before, "the shared log row is nobody's to move")
 
     @skip("pending: WAT-S8")
     def test_wat_s8(self) -> None:

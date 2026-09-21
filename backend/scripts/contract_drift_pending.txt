@@ -11,7 +11,6 @@ DELETE /evidence/{} chunk 9
 DELETE /internal-links/{} chunk 8
 DELETE /saved-searches/{} chunk 13
 DELETE /webhooks/{} chunk 13
-GET /ai-generations chunk 7
 GET /applicability-requests chunk 8
 GET /audit-events chunk 1
 GET /changes/{}/actions chunk 5

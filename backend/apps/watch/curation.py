@@ -47,7 +47,7 @@ from apps.proposals.models import OriginType
 from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.errors import ProblemError
-from apps.watch import keys
+from apps.watch import keys, so_what_draft
 from apps.watch.schemas import (
     WatchChange,
     WatchChangeEvent,
@@ -108,6 +108,11 @@ def update_change_facts(
             _replace_term_links(change, "flag", flags)
         if terms is not None:
             _replace_term_links(change, "term", terms)
+        if body.so_what is not None:
+            # A run that re-read the source can say what the change means; the words, the
+            # model behind them and the event that carries them to every bank's unedited
+            # copy are all `so_what_draft.store()`'s (D-66, WAT-05).
+            so_what_draft.store(change, body.so_what, actor=actor, agent_run_id=None)
         record(
             action=FACTS_UPDATED,
             actor=actor,

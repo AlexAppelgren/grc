@@ -329,6 +329,28 @@ change what four eyes means and are marked as such.
       one. The two ways out are to staff the role for curation only, or to let a confirming
       agent of another definition confirm and label the item machine-confirmed as a library
       record is labelled. The second changes what a confirmation is worth, so it is yours.
+
+      **Where it would attach, now that the case side is built** (2026-09-21). The bank's own
+      half of WAT-04 ships: a compliance officer accepts or removes a suggested obligation link
+      on its own case, and WAT-S6 is green over that path. What is still missing is one flag on
+      the shared row. The affordance is a single control on the console's Change facts detail —
+      "Confirm" beside a suggested type, flag, scope term or obligation link — and behind it a
+      route that sets `suggested`, `confirmed_by` and `confirmed_at` on `change_term`, or
+      `confirmed_by` and `confirmed_at` on `change_obligation`, and nothing else. It needs three
+      things from you and nothing from engineering: a principal who may press it (a person with
+      `proposals.review`, or an agent of another definition), whether it goes through the
+      proposal door or is a second named exception beside the re-verification stamp, and whether
+      it takes a passkey step-up. Until then `PUT /changes/{changeId}/obligations` answers 501
+      `not_built` to an editor whose call would unmake a confirmation and refuses a key outright,
+      WAT-S6 carries a note saying the step is WAT-S4's, and the reads already carry `confirmed`
+      per link so the control is the only thing left to add.
+
+      **A change's own type has no column to record a confirmation, and this work did not add
+      one.** `change_term` and `change_obligation` each carry `suggested`, `confirmed_by` and
+      `confirmed_at`; `regulatory_change.change_type` is a plain foreign key with none of the
+      three, so today the type reads as a suggestion for as long as the change exists and there
+      is nowhere to say a person settled it. Adding the pair is one migration on one table, and
+      it belongs with whichever way you answer above rather than ahead of it.
 - [ ] **Should any change still need a person?** (Would change what four eyes means.) Default:
       **no** — every proposal kind may be confirmed by an agent. A carve-out is defensible for a
       first-of-its-kind instrument, a retirement, or anything carrying a standard's term, and it

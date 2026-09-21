@@ -4,11 +4,17 @@
 A bank says what a change means for it and decides which suggested obligation links are
 real for it. Both are that bank's own judgement, so both take a person's session with
 `cases.work` and neither takes an agent's key: an agent writes the library, never a bank's
-case (AGT-01, rule 13). Each route answers 501 `not_built` from the named function in
-`cases/so_what.py` or `cases/links.py`, behind its real gate.
+case (AGT-01, rule 13).
+
+This file is the gate half and stays the gate half now that `cases/so_what.py` and
+`cases/links.py` are built: who is refused, with which code, and on what body — all decided
+before a case is ever read. What the routes then do with a case is
+`apps/cases/tests_so_what.py`, `tests_links.py` and WAT-S6 and WAT-S7.
 
 Written before the routes existed: every case below failed with 404 until `cases/api.py`
-landed and the router was mounted in `config/api.py`.
+landed and the router was mounted in `config/api.py`. The rows that once asserted 501
+`not_built` now assert 404: the caller passes every gate and the bank in the stubbed session
+has no case for that change, which is the same answer another bank's case gets.
 """
 
 from __future__ import annotations
@@ -118,17 +124,19 @@ class CaseRouteGates(TestCase):
             response = _call(
                 self.client, "put", f"/api/v1/changes/{CHANGE}/so-what", {"text": "x" * SO_WHAT_MAX}, AS_SESSION
             )
-        self.assertEqual(response.status_code, 501, "the cap itself is accepted and reaches the stub")
+        self.assertEqual(response.status_code, 404, "the cap itself is accepted and reaches the logic")
 
 
-class CaseRouteStubs(TestCase):
-    def test_a_session_with_cases_work_reaches_the_stub(self) -> None:
+class CaseRouteLogic(TestCase):
+    def test_a_session_with_cases_work_reaches_the_logic(self) -> None:
+        """Past every gate, into a bank that has no case for that change: 404, in the one
+        problem shape, with nothing of the server in it."""
         with stub_session(user_principal(permissions={perms.CASES_WORK}, tenant_id=uuid.uuid4())):
             for name, method, url, body in CASE_ROUTES:
                 with self.subTest(operation=name):
                     response = _call(self.client, method, url, body, AS_SESSION)
-                    self.assertEqual(response.status_code, 501)
+                    self.assertEqual(response.status_code, 404)
                     problem = response.json()
-                    self.assertEqual(problem["code"], "not_built")
+                    self.assertEqual(problem["code"], "not_found")
                     self.assertEqual(response.headers["Content-Type"], "application/problem+json")
                     self.assertNotIn("traceback", response.content.decode().lower())

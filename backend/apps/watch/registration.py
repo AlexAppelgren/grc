@@ -52,7 +52,7 @@ from apps.library.models import DatePrecision
 from apps.proposals.models import OriginType
 from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal, PrincipalKind
-from apps.watch import keys
+from apps.watch import keys, so_what_draft
 from apps.watch.schemas import (
     WatchChange,
     WatchChangeDocument,
@@ -118,7 +118,6 @@ def register_change(
             "published_on": body.published_on,
             "published_precision": body.published_precision or DatePrecision.DAY.value,
             "summary": body.summary,
-            "so_what_draft": body.so_what_draft or "",
             "suggested_urgency": urgency,
             "key_date": body.key_date,
             "key_date_precision": body.key_date_precision or DatePrecision.DAY.value,
@@ -143,6 +142,12 @@ def register_change(
             change.term_links.create(term=term, suggested=True)
         for obligation_id, link in links.items():
             change.obligation_links.create(obligation_id=obligation_id, origin=origin, confidence=link.confidence)
+        if body.so_what is not None:
+            # The one writer of the draft column, which also records the call that produced
+            # it, in this transaction, as the agent reported it (D-66, AUD-02, WAT-05).
+            so_what_draft.store(
+                change, body.so_what, actor=actor, agent_run_id=None if run is None else run.id
+            )
         record(
             action=REGISTERED,
             actor=actor,
@@ -162,10 +167,10 @@ def _merge(
     """A second sighting of a reform the library already holds (AC-WAT1).
 
     It adds and never replaces: a page the change does not carry is attached as a duplicate,
-    a milestone it does not carry is added, and every field of the change itself is left as
-    it was. Correcting a stored fact is `PATCH /changes/{changeId}`, which is a deliberate
-    act by a run that read the source again or by a library editor — not a side effect of a
-    retry.
+    a milestone it does not carry is added, a drafted “So what?” is filed only when the
+    change has none, and every field of the change itself is left as it was. Correcting a
+    stored fact is `PATCH /changes/{changeId}`, which is a deliberate act by a run that read
+    the source again or by a library editor — not a side effect of a retry.
     """
     added_documents: list[str] = []
     added_events: list[str] = []
@@ -179,6 +184,11 @@ def _merge(
             if keys.document_with_url(change, url) is None:
                 _add_document(change, page, risk_flags=risk_flags, duplicate=True)
                 added_documents.append(url)
+        if body.so_what is not None and not change.so_what_draft:
+            # The same rule as a page and a milestone: a reform the library already holds
+            # takes what it is missing and keeps what it has, so a retry cannot rewrite a
+            # draft and a run that has one to give is not silently ignored (D-66).
+            so_what_draft.store(change, body.so_what, actor=actor, agent_run_id=None)
         record(
             action=UPDATED,
             actor=actor,

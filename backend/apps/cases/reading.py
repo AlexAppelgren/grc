@@ -15,8 +15,14 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
+from django.contrib.postgres.expressions import ArraySubquery
+from django.contrib.postgres.fields import ArrayField
+from django.db.models import OuterRef, UUIDField
+
+from apps.library.models import Obligation, RecordStatus
+from apps.library.reading import localized
 from apps.taxonomy.models import Urgency
-from apps.watch.models import RegulatoryChange
+from apps.watch.models import ChangeTerm, RegulatoryChange
 
 # Dimension key -> the term keys the change carries in it, as the scope rule reads it.
 Scope = dict[str, set[str]]
@@ -78,3 +84,53 @@ def _urgency_for(change: RegulatoryChange) -> Urgency:
             "Run the reference seed (apps/shared/tests_vocabulary_integrity.py)."
         )
     return default
+
+
+@dataclass(frozen=True)
+class ObligationDetails:
+    """What a case's own link decision shows about the obligation it names: three library
+    facts and nothing more. A case never carries a copy of an obligation."""
+
+    title: str
+    instrument_short_name: str
+    ref_label: str
+
+
+def obligation_details(obligation_id: uuid.UUID, order: list[str]) -> ObligationDetails | None:
+    """The three facts `apps/cases/links.py` renders, or None when the library holds no
+    active obligation with that id.
+
+    It lives here for the same reason `change_facts` does: `links.py` writes, so it may not
+    name a library record at all (the AST half of the library fence). None rather than a
+    refusal, because the caller answers 404 and an unknown id must look exactly like an id
+    belonging to a record the reader may not see (playbook 4.4).
+    """
+    obligation = (
+        Obligation.objects.select_related("instrument")
+        .prefetch_related("titles")
+        .filter(pk=obligation_id, status=RecordStatus.ACTIVE.value)
+        .first()  # ordering: pk lookup, at most one row
+    )
+    if obligation is None:
+        return None
+    title = localized(obligation.titles.all(), order)
+    return ObligationDetails(
+        title=obligation.stable_key if title is None else title.text,
+        instrument_short_name=obligation.instrument.short_name,
+        ref_label=obligation.ref_label,
+    )
+
+
+def scope_term_ids_of_each_case() -> ArraySubquery:
+    """The scope term ids of each case's change as one `uuid[]`, for the database's own
+    footprint function, correlated on `change_id` so one statement decides a whole page of
+    cases (`apps/cases/matching.py`).
+
+    A flag is a `change_term` row too and never scopes a change: it says what the reform is
+    about, not who it reaches (WAT-03). It lives here rather than beside the statement that
+    uses it because that module writes, and a module that writes names no library record.
+    """
+    return ArraySubquery(
+        ChangeTerm.objects.filter(change=OuterRef("change_id"), term__isnull=False).order_by().values("term_id"),
+        output_field=ArrayField(UUIDField()),
+    )

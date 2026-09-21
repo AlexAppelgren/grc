@@ -45,10 +45,12 @@ import datetime
 import uuid
 from typing import Literal
 
+from django.conf import settings
 from ninja import Field
 from pydantic import ConfigDict, HttpUrl
 from pydantic.json_schema import JsonDict
 
+from apps.governance.schemas import AiCitation
 from apps.library.schemas import LibraryRef, LibraryResponse
 from apps.shared.schemas import CamelSchema, PageQuery, WriteBody
 
@@ -256,6 +258,121 @@ _CONFIDENCE = (
     "It is the model's own number and says nothing about whether the fact is right; it "
     "orders the list and nothing else."
 )
+# D-66: the agent that read the change writes the "So what?" and files it with the change,
+# so the model behind those words is that agent's account of itself. Said in the request
+# shape and in both routes' descriptions, so nobody reads it as bleqq's own measurement.
+_REPORTED_BY_THE_AGENT = (
+    "Reported by the agent that read the source, not measured by bleqq (D-66). In R1 every "
+    "agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the "
+    "day a bank runs its own agent against this route."
+)
+
+
+# ---------------------------------------------------------------------------------------
+# WAT-05, AUD-02, D-66: the "So what?" an agent files with the change it read
+# ---------------------------------------------------------------------------------------
+class WatchSoWhatInput(WriteBody):
+    """The drafted “So what?” of a change, with the model and the sources behind
+    it, sent on `POST /changes` or `PATCH /changes/{changeId}`.
+
+    One object rather than a bare string, because a draft is not filed without its
+    provenance: the agent that read the change writes these words and reports which model
+    wrote them and what they rest on, and the write turns that report into the
+    `ai_generation` row AUD-02 asks for (D-66). A call that sends words with no model, no
+    version or no citation is refused rather than logged as an unattributable draft.
+
+    Library facts only. No bank's term, name, footprint, entity, product or text may reach
+    the prompt behind these words (D-07, D-32): one draft is written per change and copied
+    into every bank's case, where that bank confirms or rewrites its own copy."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "text": (
+                        "Teams that pay for external research should confirm that documented "
+                        "quality criteria exist before the rules take effect."
+                    ),
+                    "model": "claude-opus-5",
+                    "modelVersion": "2026-05-01",
+                    "promptTemplate": "watch-sweeper/so-what/v1",
+                    "promptHash": "9f2a1c7d4b8e05f3",
+                    "citations": [
+                        {
+                            "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+                            "url": "https://www.fi.se/en/published/news/2026/reporting/",
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
+    text: str = Field(
+        min_length=1,
+        max_length=TEXT_MAX,
+        description=(
+            f"What the change means, 1 to {TEXT_MAX} characters, drawn from the change's own "
+            "public facts. It is stored on the library change, copied into every bank's case "
+            "and labelled AI output until a person in that bank confirms or rewrites it "
+            "(WAT-05). Write it for every bank at once: it must name no bank, no footprint "
+            "and no judgement of anybody's business."
+        ),
+        examples=["Teams that pay for external research should confirm that documented criteria exist."],
+    )
+    model: str = Field(
+        min_length=1,
+        max_length=120,
+        description=(
+            f"Which model wrote the text, as the provider names it, 1 to 120 characters. "
+            f"{_REPORTED_BY_THE_AGENT} Required: a draft nobody can attribute to a model is "
+            "not something AUD-02's log can record, so the call is refused rather than "
+            "stored."
+        ),
+        examples=["claude-opus-5"],
+    )
+    model_version: str = Field(
+        min_length=1,
+        max_length=120,
+        description=(
+            "Which version of that model, 1 to 120 characters, so two drafts months apart "
+            f"can be told apart. {_REPORTED_BY_THE_AGENT} Required, for the same reason as "
+            "`model`."
+        ),
+        examples=["2026-05-01"],
+    )
+    prompt_template: str | None = Field(
+        default=None,
+        max_length=200,
+        description=(
+            "Which prompt produced the text, by name and version, at most 200 characters, so "
+            "an odd draft can be traced to the instructions behind it. Optional. Send the "
+            "name, never the prompt: bleqq stores no prompt text at all."
+        ),
+        examples=["watch-sweeper/so-what/v1"],
+    )
+    prompt_hash: str | None = Field(
+        default=None,
+        max_length=128,
+        description=(
+            "A hash of the prompt actually sent, at most 128 characters, so two calls can be "
+            "compared without either prompt being kept. Optional, and the only thing about "
+            "the input that is stored."
+        ),
+        examples=["9f2a1c7d4b8e05f3"],
+    )
+    citations: list[AiCitation] = Field(
+        min_length=1,
+        max_length=settings.AI_GENERATION_CITATIONS_MAX,
+        description=(
+            "The public pages the text rests on, at least one and at most "
+            f"{settings.AI_GENERATION_CITATIONS_MAX}; more answers 422 naming the field. At "
+            "least one, because a draft a reader cannot check against a source is not "
+            "something to put in front of every bank. Every citation is a public page: no "
+            "bank's own record is ever cited, because nothing from a bank's zone reaches the "
+            "prompt (NFR-04, D-07)."
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------------------
@@ -910,6 +1027,19 @@ class WatchChangeInput(WriteBody):
                     "obligationLinks": [{"obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17", "confidence": 0.82}],
                     "agentRunId": "5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21",
                     "model": "agent pipeline 0.4",
+                    "soWhat": {
+                        "text": "Teams that pay for external research should confirm that documented criteria exist.",
+                        "model": "claude-opus-5",
+                        "modelVersion": "2026-05-01",
+                        "promptTemplate": "watch-sweeper/so-what/v1",
+                        "promptHash": "9f2a1c7d4b8e05f3",
+                        "citations": [
+                            {
+                                "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+                                "url": "https://www.fi.se/en/published/news/2026/reporting/",
+                            }
+                        ],
+                    },
                 }
             ]
         }
@@ -989,17 +1119,17 @@ class WatchChangeInput(WriteBody):
         ),
         examples=["FI's board decided on 15 September 2026 to amend three regulations in the securities area."],
     )
-    so_what_draft: str | None = Field(
+    so_what: WatchSoWhatInput | None = Field(
         default=None,
-        max_length=TEXT_MAX,
         description=(
-            "The drafted 'So what?' for the library, at most "
-            f"{TEXT_MAX} characters. Drafted once per change from library facts only and copied "
-            "into each bank's case, where that bank confirms or rewrites it (WAT-05, D-07, "
-            "D-32). No bank's term, name, footprint or text ever reaches the model that wrote "
-            "it, and this text is labelled AI-drafted until a person confirms it."
+            "The drafted “So what?” this run wrote for the change, with the model "
+            "and the sources behind it (WAT-05, AUD-02, D-66). Optional: a run that only "
+            "sighted the reform, and a library editor filing one by hand, send none and the "
+            "change carries no draft until a run files one through "
+            "`PATCH /changes/{changeId}`. Sending it stores the words on the shared change, "
+            "copies them unconfirmed into every bank's case and writes one row in the AI "
+            "output log. Words with no model, no version or no citation answer 422."
         ),
-        examples=["Teams that pay for external research should confirm that documented criteria exist before the rules take effect."],
     )
     suggested_urgency: str | None = Field(
         default=None,
@@ -1189,6 +1319,20 @@ class WatchChangePatch(WriteBody):
             "set."
         ),
         examples=[["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"]],
+    )
+    so_what: WatchSoWhatInput | None = Field(
+        default=None,
+        description=(
+            "A drafted “So what?” for this change, with the model and the sources "
+            "behind it, replacing whatever draft is stored (WAT-05, AUD-02, D-66). Send it "
+            "when the run that re-read the source can say what the change means and the "
+            "change carries no draft, or a worse one; leave it out to keep what is there. "
+            "Each send writes one more row in the AI output log, so the earlier draft stays "
+            "on the record. Every bank whose copy is still the unedited draft is brought up "
+            "to the new wording; a bank that confirmed or rewrote its own keeps it, because "
+            "a bank's words are its own. Words with no model, no version or no citation "
+            "answer 422."
+        ),
     )
 
 

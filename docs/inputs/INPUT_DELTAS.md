@@ -920,3 +920,54 @@ are additive: a caller that sends only the designed five is a sweep, exactly as 
 Reported rather than decided quietly: the task that found it judged an additive field the
 brief itself names too small to stop on, and said so in its commit body. Recorded here so
 the drift gate and the next reader agree.
+
+
+## 11. The AI output log, and who reports what a model was (2026-09-21)
+
+`ai_generation` (schema v0.3 line 794) is built as designed with four departures, all
+additive, in `apps/governance/models.py` and `governance/0001_ai_generation.py`:
+
+- `input jsonb` is not built. The designed column holds "question, as_of, ids of the chunks
+  given to the model", which is the prompt in pieces; the build stores `prompt_template`
+  and `prompt_hash` instead and nothing else of the input, so a bank's own question can
+  never be read back out of a table every bank reads (NFR-04, D-07). The record the call was
+  about is still named, by the designed `subject_type` and `subject_id`.
+- `prompt_template`, `input_tokens`, `output_tokens` and `cost_minor` are added: AUD-02 asks
+  which prompt produced an output, and billing reads the usage (money as an integer minor
+  unit, playbook 4.3). The designed table has none of the four.
+- `model_metadata_reported_by_agent` is added (D-66, Alex, 2026-09-21). The "So what?" is
+  written by the agent that read the change and filed with the change, so the model and the
+  model version on that row are the agent's account of itself rather than a measurement
+  bleqq took, while an Ask answer's are read off the provider's own response by
+  `apps/shared/ai.py`. One boolean is what lets a reader tell the two apart. In R1 every
+  agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the day
+  a bank runs its own agent against the write routes, which is R2's agent-access work. The
+  column is stored rather than derived from the purpose, because it is the boundary itself
+  and a purpose added later must not inherit somebody else's answer.
+- `citations` keeps its designed name and type, and its shape is `AiCitation`
+  (`{label, url}`) rather than the designed `{obligation_id, version_no, instrument, ref}`.
+  R1's only producer is the drafted "So what?", whose sources are public pages and never
+  library records; chunk 7's Ask adds what it needs to the same JSON column.
+
+`GET /ai-generations` (`listAiGenerations`) ships with the designed `purpose` and `status`
+filters and the shared `limit`/`offset` pagination. `subjectId` and the `feedback` fields
+are chunk 7's (`c7-ai-log-backend`), which is also the one that lets a platform reader move
+a library row's review state: a bank never does, because the library row has no tenant and
+the split write policy refuses it (chunk 5 ruling I).
+
+### The "So what?" arrives with the change, not from a second call (D-66)
+
+`POST /changes` (`createChange`) and `PATCH /changes/{changeId}` (`updateChange`) each gain
+one optional object, `soWhat`, which the designed contract has on neither. It carries the
+drafted answer, the model and the model version that wrote it, the prompt's name and hash,
+and at least one public citation.
+
+The design assumed bleqq would draft the "So what?" itself from a handler watching for new
+changes. Alex decided on 2026-09-21 (D-66) that the agent which read the source writes it
+and files it with the change, because that agent has just read the source and a second call
+of ours over the same facts is a second moving part, a second cost and a second thing to
+keep in step. There is nowhere else for the words to arrive, so the two write routes carry
+them. `POST /changes` also loses the bare `soWhatDraft` string the build had put on its
+body: words with no model, no model version and no citation cannot become the
+`ai_generation` row AUD-02 asks for, so the object is the shape and a bare string is a 422.
+`WatchChange.soWhatDraft`, the response field, is unchanged.

@@ -543,6 +543,20 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     terms and its obligation links — is stored as a suggestion, with nobody named as having
     confirmed it, whoever sent it. A reader must not treat any of it as checked.
 
+    **The drafted “So what?” comes from the run that read the source** (D-66). Send
+    it in `soWhat` with the model and the model version that wrote it and the public pages
+    it rests on; the words are stored on the shared change, copied unconfirmed into every
+    bank's case and recorded in the AI output log, where each bank's own person confirms or
+    rewrites its own copy. **The model and the version are the caller's own report about
+    itself, not something bleqq measured**, and the log row says so
+    (`modelMetadataReportedByAgent`). In R1 every agent is bleqq's own, so that is a
+    reporting boundary; it becomes a trust boundary the day a bank runs its own agent
+    against this route. Send no `soWhat` and the change simply carries no draft: nothing
+    else about the call changes, and a later `PATCH /changes/{changeId}` may still file one.
+    On a merge — a `stableKey` the library already holds — a `soWhat` is filed only when the
+    change has no draft yet, like a page and a milestone: the merge adds what is missing and
+    rewrites nothing.
+
     Every page's text is screened for embedded instructions before it is stored (AGT-07) and
     what the screen finds is recorded in that page's `riskFlags`. The text itself is kept
     exactly as it arrived, because it is evidence: it is never executed, never rendered as
@@ -556,8 +570,8 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     `unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an
     `obligationId` or `authorityCode` names a row the library does not hold or has retired,
     with the valid keys listed for a vocabulary; `validation_error` (422) for a body the
-    schema refuses, for the same obligation named twice, and for two pages both marked
-    primary; `not_found` (404) when `agentRunId` names a run belonging to another key;
+    schema refuses, for the same obligation named twice, for two pages both marked primary,
+    and for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;
     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
     without a credential.
     """
@@ -655,8 +669,20 @@ def update_change(
     transaction that writes an audit row naming who changed which facts, and the keys are
     resolved before anything is stored, so a refusal stores nothing.
 
+    **A drafted “So what?” may be filed here too** (D-66, WAT-05): send `soWhat`
+    with the words, the model and the model version that wrote them and the public pages
+    they rest on. The words replace the change's draft and reach every bank whose copy is
+    still that draft; a bank that has confirmed or rewritten its own keeps its wording,
+    because a bank's words are its own. One row is written in the AI output log per send, so
+    the earlier draft stays on the record. **The model and the version are the caller's own
+    report about itself, not something bleqq measured**, and the log row says so
+    (`modelMetadataReportedByAgent`): in R1 every agent is bleqq's own, so that is a
+    reporting boundary, and it becomes a trust boundary the day a bank runs its own agent
+    against this route.
+
     Sending it again with the same body simply writes the same facts, so `Idempotency-Key`
-    costs nothing here and no retry can duplicate anything.
+    costs nothing here and no retry can duplicate anything — except that each `soWhat` sent
+    is one more row in the AI output log, which is a ledger of calls and never deduplicated.
 
     Errors to branch on: `unknown_key` (422) when `changeType`, a flag key, a term id or
     `supersededBy` names a row the library does not hold or has retired, with the valid keys
@@ -664,7 +690,8 @@ def update_change(
     `supersededBy`; `confirmed_fact` (422) when a key's new set would drop a flag or a term
     a library editor confirmed; `not_built` (501) when an editor's call would do the same,
     which is the confirmation half of this feature; `validation_error` (422) for a field the
-    schema refuses, and for a change asked to supersede itself; `not_found` (404) when no
+    schema refuses, for a change asked to supersede itself, and for a `soWhat` whose words
+    carry no model, no model version or no citation; `not_found` (404) when no
     change has that id; `permission_denied` (403) without the scope or the permission;
     `unauthenticated` (401) without a credential.
     """

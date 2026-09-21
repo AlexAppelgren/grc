@@ -198,6 +198,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai-generations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what a model wrote, which model wrote it and whether anybody has stood behind it
+         * @description Every model call this bank can see, newest first: the drafted “So what?” of
+         *     each regulatory change, and this bank's own Ask answers once Ask ships. Call it to
+         *     answer “what has a machine written for us, about what, and has anybody checked
+         *     it” — the question an auditor asks and the one AUD-02 exists to answer.
+         *
+         *     A read: it changes nothing and writes no audit row. A person's session holding
+         *     `ai_log.read`, which the administrator, compliance officer, approver and auditor roles
+         *     carry. What a bank sees is its own rows plus the shared library's; another bank's rows
+         *     are kept out by row-level security in the database rather than by a filter here, so no
+         *     query written later can widen it.
+         *
+         *     **The model and the version are not always bleqq's own measurement.** For a
+         *     “So what?” the agent that read the change files the words together with the
+         *     change and reports which model and which version produced them, so those two fields are
+         *     that agent's account of itself rather than something bleqq observed (D-66).
+         *     `modelMetadataReportedByAgent` says which rows are which. In R1 every agent is bleqq's
+         *     own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs
+         *     its own agent against the write routes, which is the agent-access work in R2.
+         *
+         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no
+         *     rows, or a filter matching none, is a 200 with an empty `items` and a `total` of 0.
+         *     Errors: `permission_denied` without `ai_log.read`, with `requiredPermission` named;
+         *     `unauthenticated` without a session.
+         */
+        get: operations["listAiGenerations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/answers/{answer_id}/feedback": {
         parameters: {
             query?: never;
@@ -837,6 +879,20 @@ export interface paths {
          *     terms and its obligation links — is stored as a suggestion, with nobody named as having
          *     confirmed it, whoever sent it. A reader must not treat any of it as checked.
          *
+         *     **The drafted “So what?” comes from the run that read the source** (D-66). Send
+         *     it in `soWhat` with the model and the model version that wrote it and the public pages
+         *     it rests on; the words are stored on the shared change, copied unconfirmed into every
+         *     bank's case and recorded in the AI output log, where each bank's own person confirms or
+         *     rewrites its own copy. **The model and the version are the caller's own report about
+         *     itself, not something bleqq measured**, and the log row says so
+         *     (`modelMetadataReportedByAgent`). In R1 every agent is bleqq's own, so that is a
+         *     reporting boundary; it becomes a trust boundary the day a bank runs its own agent
+         *     against this route. Send no `soWhat` and the change simply carries no draft: nothing
+         *     else about the call changes, and a later `PATCH /changes/{changeId}` may still file one.
+         *     On a merge — a `stableKey` the library already holds — a `soWhat` is filed only when the
+         *     change has no draft yet, like a page and a milestone: the merge adds what is missing and
+         *     rewrites nothing.
+         *
          *     Every page's text is screened for embedded instructions before it is stored (AGT-07) and
          *     what the screen finds is recorded in that page's `riskFlags`. The text itself is kept
          *     exactly as it arrived, because it is evidence: it is never executed, never rendered as
@@ -850,8 +906,8 @@ export interface paths {
          *     `unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an
          *     `obligationId` or `authorityCode` names a row the library does not hold or has retired,
          *     with the valid keys listed for a vocabulary; `validation_error` (422) for a body the
-         *     schema refuses, for the same obligation named twice, and for two pages both marked
-         *     primary; `not_found` (404) when `agentRunId` names a run belonging to another key;
+         *     schema refuses, for the same obligation named twice, for two pages both marked primary,
+         *     and for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;
          *     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
          *     without a credential.
          */
@@ -926,8 +982,20 @@ export interface paths {
          *     transaction that writes an audit row naming who changed which facts, and the keys are
          *     resolved before anything is stored, so a refusal stores nothing.
          *
+         *     **A drafted “So what?” may be filed here too** (D-66, WAT-05): send `soWhat`
+         *     with the words, the model and the model version that wrote them and the public pages
+         *     they rest on. The words replace the change's draft and reach every bank whose copy is
+         *     still that draft; a bank that has confirmed or rewritten its own keeps its wording,
+         *     because a bank's words are its own. One row is written in the AI output log per send, so
+         *     the earlier draft stays on the record. **The model and the version are the caller's own
+         *     report about itself, not something bleqq measured**, and the log row says so
+         *     (`modelMetadataReportedByAgent`): in R1 every agent is bleqq's own, so that is a
+         *     reporting boundary, and it becomes a trust boundary the day a bank runs its own agent
+         *     against this route.
+         *
          *     Sending it again with the same body simply writes the same facts, so `Idempotency-Key`
-         *     costs nothing here and no retry can duplicate anything.
+         *     costs nothing here and no retry can duplicate anything — except that each `soWhat` sent
+         *     is one more row in the AI output log, which is a ledger of calls and never deduplicated.
          *
          *     Errors to branch on: `unknown_key` (422) when `changeType`, a flag key, a term id or
          *     `supersededBy` names a row the library does not hold or has retired, with the valid keys
@@ -935,7 +1003,8 @@ export interface paths {
          *     `supersededBy`; `confirmed_fact` (422) when a key's new set would drop a flag or a term
          *     a library editor confirmed; `not_built` (501) when an editor's call would do the same,
          *     which is the confirmation half of this feature; `validation_error` (422) for a field the
-         *     schema refuses, and for a change asked to supersede itself; `not_found` (404) when no
+         *     schema refuses, for a change asked to supersede itself, and for a `soWhat` whose words
+         *     carry no model, no model version or no citation; `not_found` (404) when no
          *     change has that id; `permission_denied` (403) without the scope or the permission;
          *     `unauthenticated` (401) without a credential.
          */
@@ -969,9 +1038,6 @@ export interface paths {
          *     when no change has that id, this bank has no case for it, or the obligation is not one
          *     the caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a
          *     session; `validation_error` for a body the schema refuses.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         post: operations["acceptCaseObligationLink"];
         delete?: never;
@@ -1007,9 +1073,6 @@ export interface paths {
          *     when no change has that id, this bank has no case for it, or the obligation is not one
          *     the caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a
          *     session.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         delete: operations["removeCaseObligationLink"];
         options?: never;
@@ -1219,9 +1282,6 @@ export interface paths {
          *     until the case workflow lands. Errors: `not_found` when no change has that id or this
          *     bank has no case for it; `permission_denied` without `cases.work`; `unauthenticated`
          *     without a session; `validation_error` for empty text or text over the cap.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         put: operations["saveSoWhat"];
         post?: never;
@@ -1256,9 +1316,6 @@ export interface paths {
          *     No request body, no `If-Match` and no step-up. Errors: `not_found` when no change has
          *     that id, this bank has no case for it, or the case holds no draft to confirm;
          *     `permission_denied` without `cases.work`; `unauthenticated` without a session.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         post: operations["confirmSoWhat"];
         delete?: never;
@@ -3280,6 +3337,202 @@ export interface components {
              * @default 0
              */
             sourcesChecked: number;
+        };
+        /**
+         * AiCitation
+         * @description One public page the model's output rests on, so a reader can check a sentence
+         *     against its source rather than trusting it. Stored on the generation row as JSON.
+         * @example {
+         *       "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+         *       "url": "https://www.fi.se/en/published/news/2026/reporting/"
+         *     }
+         */
+        AiCitation: {
+            /**
+             * Label
+             * @description How the cited source reads in a sentence, 1 to 500 characters, in the publisher's own words. Source: reported by whoever made the model call. Do not read it as a verified reference; it is checked by opening `url`.
+             * @example Finansinspektionen, decision memorandum FI Dnr 25-12345
+             */
+            label: string;
+            /**
+             * Url
+             * @description The public page the citation points at, 1 to 2000 characters, so the claim can be opened and read. Source: the public source the model was given. It is always a public page: no bank's own record is ever cited here, because nothing from a bank's zone reaches a prompt (NFR-04, D-07).
+             * @example https://www.fi.se/en/published/news/2026/reporting/
+             */
+            url: string;
+        };
+        /**
+         * AiGenerationPage
+         * @description One page of the AI output log, newest call first.
+         * @example {
+         *       "items": [],
+         *       "total": 0
+         *     }
+         */
+        AiGenerationPage: {
+            /**
+             * Items
+             * @description The rows of this page, newest call first. Empty when nothing matches, which is a 200 and never an error.
+             */
+            items: components["schemas"]["AiGenerationRow"][];
+            /**
+             * Total
+             * @description How many rows match the filters in total, counted at the moment of the call and not only on this page, so a screen can say “n of m”.
+             * @example 0
+             */
+            total: number;
+        };
+        /**
+         * AiGenerationQuery
+         * @description Filters of the AI output log, each optional and combined with AND. Leaving both out
+         *     lists everything the reader may see.
+         */
+        AiGenerationQuery: {
+            /**
+             * Purpose
+             * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+             * @example so_what
+             */
+            purpose?: string | null;
+            /**
+             * Status
+             * @description Show only rows in one review state, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. At most 16 characters. A value that is not one of them matches nothing and answers 200 with an empty page.
+             * @example draft
+             */
+            status?: string | null;
+        };
+        /**
+         * AiGenerationRow
+         * @description One model call and what it produced (AUD-02).
+         * @example {
+         *       "citations": [
+         *         {
+         *           "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+         *           "url": "https://www.fi.se/en/published/news/2026/reporting/"
+         *         }
+         *       ],
+         *       "createdAt": "2026-09-16T06:02:00Z",
+         *       "id": "1f6c3b70-2a48-4e91-9d05-7b2c8f4a1e63",
+         *       "inputTokens": 1840,
+         *       "model": "claude-opus-5",
+         *       "modelMetadataReportedByAgent": true,
+         *       "modelVersion": "2026-05-01",
+         *       "output": "Teams that pay for external research should confirm that documented criteria exist.",
+         *       "outputTokens": 96,
+         *       "promptHash": "9f2a1c7d4b8e05f3",
+         *       "promptTemplate": "watch-sweeper/so-what/v1",
+         *       "purpose": "so_what",
+         *       "reviewedAt": null,
+         *       "status": "draft",
+         *       "subjectId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *       "subjectType": "regulatory_change",
+         *       "tenantScoped": false
+         *     }
+         */
+        AiGenerationRow: {
+            /**
+             * Citations
+             * @description The public pages the output rests on, so a reader can check it. An empty list means the call cited nothing, not that its sources were withheld.
+             */
+            citations: components["schemas"]["AiCitation"][];
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the call was made, as an RFC 3339 timestamp in UTC (`2026-09-16T06:02:00Z`).
+             * @example 2026-09-16T06:02:00Z
+             */
+            createdAt: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The log row's identifier, as a UUID. Stable: a row is never rewritten in place.
+             * @example 1f6c3b70-2a48-4e91-9d05-7b2c8f4a1e63
+             */
+            id: string;
+            /**
+             * Inputtokens
+             * @description How many tokens went into the call, as the provider counted them. 0 when unknown.
+             * @example 1840
+             */
+            inputTokens: number;
+            /**
+             * Model
+             * @description Which model wrote it, as the provider names it, at most 200 characters. Read it beside `modelMetadataReportedByAgent`: for an agent's filing it is that agent's own word rather than a measurement bleqq took.
+             * @example claude-opus-5
+             */
+            model: string;
+            /**
+             * Modelmetadatareportedbyagent
+             * @description Whether `model` and `modelVersion` were reported by the agent that made the call rather than observed by bleqq's own wrapper around the model (D-66). True for anything an agent filed together with the record it had just read; false for a call bleqq made itself, such as an Ask answer. In R1 every agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs its own agent against the write routes, and this field is how a reader tells the two apart. Computed by the server, never sent by a caller.
+             * @example true
+             */
+            modelMetadataReportedByAgent: boolean;
+            /**
+             * Modelversion
+             * @description Which version of that model, at most 120 characters, so two answers months apart can be told apart. Empty only for a row written before a version was recorded.
+             * @example 2026-05-01
+             */
+            modelVersion: string;
+            /**
+             * Output
+             * @description What the model wrote, at most 20000 characters; a longer output is stored up to that length, because the log keeps the record and not the whole transcript. Do not quote it as anybody's position while `status` is `draft`: AI output stays labelled until a person confirms it.
+             * @example Teams that pay for external research should confirm that documented criteria exist.
+             */
+            output: string;
+            /**
+             * Outputtokens
+             * @description How many tokens came back, as the provider counted them. 0 when unknown.
+             * @example 96
+             */
+            outputTokens: number;
+            /**
+             * Prompthash
+             * @description A hash of the prompt actually sent, at most 128 characters, so two calls can be compared without the prompt being kept. This is the whole record of the input: no prompt text is stored anywhere, which is what keeps a bank's own words out of a log every bank can read (NFR-04).
+             * @example 9f2a1c7d4b8e05f3
+             */
+            promptHash: string;
+            /**
+             * Prompttemplate
+             * @description Which prompt was used, by name and version, at most 200 characters, so an output can be traced to the instructions behind it. Empty when the caller named none. The prompt's text is never stored and never returned.
+             * @example watch-sweeper/so-what/v1
+             */
+            promptTemplate: string;
+            /**
+             * Purpose
+             * @description What the call was for, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank).
+             * @example so_what
+             */
+            purpose: string;
+            /**
+             * Reviewedat
+             * @description When a person moved the row out of `draft`, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null while nobody has.
+             * @example null
+             */
+            reviewedAt: string | null;
+            /**
+             * Status
+             * @description How far a person has got with it, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently.
+             * @example draft
+             */
+            status: string;
+            /**
+             * Subjectid
+             * @description The record the call was about, as a UUID, or null when it was about no record.
+             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
+             */
+            subjectId: string | null;
+            /**
+             * Subjecttype
+             * @description What kind of record the call was about, such as `regulatory_change`, at most 32 characters. Empty for a call about no particular record. The record is named, never its text.
+             * @example regulatory_change
+             */
+            subjectType: string;
+            /**
+             * Tenantscoped
+             * @description Whether the row is the reading bank's own (true) or the shared library's (false). A library row — the drafted “So what?” of a change — is the same row every bank sees, and no bank may confirm, rewrite or delete it: a bank's own confirmation of a “So what?” lives on its case. Computed by the server.
+             * @example false
+             */
+            tenantScoped: boolean;
         };
         /**
          * Answer
@@ -9252,6 +9505,19 @@ export interface components {
          *       ],
          *       "publishedOn": "2026-09-15",
          *       "publishedPrecision": "day",
+         *       "soWhat": {
+         *         "citations": [
+         *           {
+         *             "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+         *             "url": "https://www.fi.se/en/published/news/2026/reporting/"
+         *           }
+         *         ],
+         *         "model": "claude-opus-5",
+         *         "modelVersion": "2026-05-01",
+         *         "promptHash": "9f2a1c7d4b8e05f3",
+         *         "promptTemplate": "watch-sweeper/so-what/v1",
+         *         "text": "Teams that pay for external research should confirm that documented criteria exist."
+         *       },
          *       "sourceLabel": "Finansinspektionen",
          *       "sourceUrl": "https://www.fi.se/",
          *       "stableKey": "chg-fi-2026-research-payments",
@@ -9350,12 +9616,8 @@ export interface components {
              * @example Every 30 November
              */
             recurrenceRule?: string | null;
-            /**
-             * Sowhatdraft
-             * @description The drafted 'So what?' for the library, at most 4000 characters. Drafted once per change from library facts only and copied into each bank's case, where that bank confirms or rewrites it (WAT-05, D-07, D-32). No bank's term, name, footprint or text ever reaches the model that wrote it, and this text is labelled AI-drafted until a person confirms it.
-             * @example Teams that pay for external research should confirm that documented criteria exist before the rules take effect.
-             */
-            soWhatDraft?: string | null;
+            /** @description The drafted “So what?” this run wrote for the change, with the model and the sources behind it (WAT-05, AUD-02, D-66). Optional: a run that only sighted the reform, and a library editor filing one by hand, send none and the change carries no draft until a run files one through `PATCH /changes/{changeId}`. Sending it stores the words on the shared change, copies them unconfirmed into every bank's case and writes one row in the AI output log. Words with no model, no version or no citation answer 422. */
+            soWhat?: components["schemas"]["WatchSoWhatInput"] | null;
             /**
              * Sourcelabel
              * @description Where the change was found, in words a reader recognises, 1 to 300 characters.
@@ -9539,6 +9801,8 @@ export interface components {
              * @example day
              */
             keyDatePrecision?: ("day" | "month" | "quarter" | "year") | null;
+            /** @description A drafted “So what?” for this change, with the model and the sources behind it, replacing whatever draft is stored (WAT-05, AUD-02, D-66). Send it when the run that re-read the source can say what the change means and the change carries no draft, or a worse one; leave it out to keep what is there. Each send writes one more row in the AI output log, so the earlier draft stays on the record. Every bank whose copy is still the unedited draft is brought up to the new wording; a bank that confirmed or rewrote its own keeps it, because a bank's words are its own. Words with no model, no version or no citation answer 422. */
+            soWhat?: components["schemas"]["WatchSoWhatInput"] | null;
             /**
              * Status
              * @description The reform's lifecycle stage in the library, a fixed kind: `active` (the feed shows it), `superseded` (another change replaced it, named by `supersededBy`) or `withdrawn` (the issuer took it back). A superseded or withdrawn change is never deleted and its cases stay.
@@ -10317,6 +10581,71 @@ export interface components {
             obligationId: string;
         };
         /**
+         * WatchSoWhatInput
+         * @description The drafted “So what?” of a change, with the model and the sources behind
+         *     it, sent on `POST /changes` or `PATCH /changes/{changeId}`.
+         *
+         *     One object rather than a bare string, because a draft is not filed without its
+         *     provenance: the agent that read the change writes these words and reports which model
+         *     wrote them and what they rest on, and the write turns that report into the
+         *     `ai_generation` row AUD-02 asks for (D-66). A call that sends words with no model, no
+         *     version or no citation is refused rather than logged as an unattributable draft.
+         *
+         *     Library facts only. No bank's term, name, footprint, entity, product or text may reach
+         *     the prompt behind these words (D-07, D-32): one draft is written per change and copied
+         *     into every bank's case, where that bank confirms or rewrites its own copy.
+         * @example {
+         *       "citations": [
+         *         {
+         *           "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+         *           "url": "https://www.fi.se/en/published/news/2026/reporting/"
+         *         }
+         *       ],
+         *       "model": "claude-opus-5",
+         *       "modelVersion": "2026-05-01",
+         *       "promptHash": "9f2a1c7d4b8e05f3",
+         *       "promptTemplate": "watch-sweeper/so-what/v1",
+         *       "text": "Teams that pay for external research should confirm that documented quality criteria exist before the rules take effect."
+         *     }
+         */
+        WatchSoWhatInput: {
+            /**
+             * Citations
+             * @description The public pages the text rests on, at least one and at most 20; more answers 422 naming the field. At least one, because a draft a reader cannot check against a source is not something to put in front of every bank. Every citation is a public page: no bank's own record is ever cited, because nothing from a bank's zone reaches the prompt (NFR-04, D-07).
+             */
+            citations: components["schemas"]["AiCitation"][];
+            /**
+             * Model
+             * @description Which model wrote the text, as the provider names it, 1 to 120 characters. Reported by the agent that read the source, not measured by bleqq (D-66). In R1 every agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs its own agent against this route. Required: a draft nobody can attribute to a model is not something AUD-02's log can record, so the call is refused rather than stored.
+             * @example claude-opus-5
+             */
+            model: string;
+            /**
+             * Modelversion
+             * @description Which version of that model, 1 to 120 characters, so two drafts months apart can be told apart. Reported by the agent that read the source, not measured by bleqq (D-66). In R1 every agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs its own agent against this route. Required, for the same reason as `model`.
+             * @example 2026-05-01
+             */
+            modelVersion: string;
+            /**
+             * Prompthash
+             * @description A hash of the prompt actually sent, at most 128 characters, so two calls can be compared without either prompt being kept. Optional, and the only thing about the input that is stored.
+             * @example 9f2a1c7d4b8e05f3
+             */
+            promptHash?: string | null;
+            /**
+             * Prompttemplate
+             * @description Which prompt produced the text, by name and version, at most 200 characters, so an odd draft can be traced to the instructions behind it. Optional. Send the name, never the prompt: bleqq stores no prompt text at all.
+             * @example watch-sweeper/so-what/v1
+             */
+            promptTemplate?: string | null;
+            /**
+             * Text
+             * @description What the change means, 1 to 4000 characters, drawn from the change's own public facts. It is stored on the library change, copied into every bank's case and labelled AI output until a person in that bank confirms or rewrites it (WAT-05). Write it for every bank at once: it must name no bank, no footprint and no judgement of anybody's business.
+             * @example Teams that pay for external research should confirm that documented criteria exist.
+             */
+            text: string;
+        };
+        /**
          * WatchSourceCheckInput
          * @description `POST /agent-runs/{runId}/source-checks` (WAT-01): one line of the coverage log,
          *     written by an agent's key holding `sources:write`. A failed check carries an error and
@@ -10885,6 +11214,47 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listAiGenerations: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+                 * @example so_what
+                 */
+                purpose?: string | null;
+                /**
+                 * @description Show only rows in one review state, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. At most 16 characters. A value that is not one of them matches nothing and answers 200 with an empty page.
+                 * @example draft
+                 */
+                status?: string | null;
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiGenerationPage"];
+                };
             };
         };
     };

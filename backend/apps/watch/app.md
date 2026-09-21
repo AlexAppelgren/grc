@@ -48,7 +48,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | WAT-02 | One record per reform with a timeline from consultation to in force, partial dates, duplicates merged | M | R1 | built |
 | WAT-03 | Change types, flags and scope from vocabularies, with at least one regime on every change and a standard term only on a change from a standards body; agent classifications shown as suggestions until confirmed | M | R1 | in_progress |
 | WAT-04 | Links to affected obligations with confidence, confirmed by a person | M | R1 | in_progress |
-| WAT-05 | A drafted "So what?" per change, labelled AI-drafted until a person confirms or rewrites it per tenant | M | R1 | in_progress |
+| WAT-05 | A drafted "So what?" per change, labelled AI-drafted until a person confirms or rewrites it per tenant | M | R1 | built |
 | WAT-06 | Tenants can request a source; private sources are visible to that tenant only, are public pages checked at the request and again at each run, and run only on an approved EU model endpoint (D-57) | S | R3 | pending |
 | WAT-07 | Standards watched from public metadata: one change per edition or amendment, a timeline from draft to publication, a key date for the end of the transition, no snapshot of a publisher's page, and automated checks only where the terms allow | S | R1 | in_progress |
 
@@ -127,9 +127,20 @@ Then both decisions are stored on that bank's case and audited, the second is hi
 And no library row changed: the second link is still there, still a suggestion, and another bank still sees both
 ```
 
+> **Note — the library editor's confirmation.** The step "a library editor confirms the
+> first for the shared library" is the held half of this feature and is asserted in WAT-S4,
+> not here: whether one person may settle a library fact with no proposal at all is
+> `q-editor-confirm`, which CLAUDE.md section 5 reserves to the owner, and
+> `c5-watch-curation-confirm` builds it the moment he answers. Until then no route moves
+> `change_obligation.confirmed_by` — `PUT /changes/{changeId}/obligations` answers 501
+> `not_built` to a library editor whose call would unmake a confirmation, and refuses a key
+> outright — so the scenario above covers what a bank does on its own case, which needs no
+> answer. The confirm control that would attach to the Change facts card
+> (`c5-fe-console-change-facts-detail`) is unbuilt for the same reason.
+
 ### WAT-S7 — The "So what?" is AI-drafted until a person confirms or rewrites it per tenant `@integration` `@e2e` (WAT-05)
 ```gherkin
-Given a change with a drafted "So what?" from the LLM adapter
+Given a change whose registering run filed a drafted "So what?" with it
 Then the tenant's copy shows "AI draft" beside it and an ai_generation row exists with model, version and purpose
 When the compliance officer chooses "Confirm wording" or rewrites and chooses "Save wording"
 Then the tenant's copy is marked confirmed with the person and time

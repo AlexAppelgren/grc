@@ -554,6 +554,321 @@
         "title": "AgentRunStats",
         "type": "object"
       },
+      "AiCitation": {
+        "description": "One public page the model's output rests on, so a reader can check a sentence\nagainst its source rather than trusting it. Stored on the generation row as JSON.",
+        "examples": [
+          {
+            "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+            "url": "https://www.fi.se/en/published/news/2026/reporting/"
+          }
+        ],
+        "properties": {
+          "label": {
+            "description": "How the cited source reads in a sentence, 1 to 500 characters, in the publisher's own words. Source: reported by whoever made the model call. Do not read it as a verified reference; it is checked by opening `url`.",
+            "examples": [
+              "Finansinspektionen, decision memorandum FI Dnr 25-12345"
+            ],
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "url": {
+            "description": "The public page the citation points at, 1 to 2000 characters, so the claim can be opened and read. Source: the public source the model was given. It is always a public page: no bank's own record is ever cited here, because nothing from a bank's zone reaches a prompt (NFR-04, D-07).",
+            "examples": [
+              "https://www.fi.se/en/published/news/2026/reporting/"
+            ],
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "url"
+        ],
+        "title": "AiCitation",
+        "type": "object"
+      },
+      "AiGenerationPage": {
+        "description": "One page of the AI output log, newest call first.",
+        "examples": [
+          {
+            "items": [],
+            "total": 0
+          }
+        ],
+        "properties": {
+          "items": {
+            "description": "The rows of this page, newest call first. Empty when nothing matches, which is a 200 and never an error.",
+            "items": {
+              "$ref": "#/components/schemas/AiGenerationRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "description": "How many rows match the filters in total, counted at the moment of the call and not only on this page, so a screen can say \u201cn of m\u201d.",
+            "examples": [
+              0
+            ],
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "AiGenerationPage",
+        "type": "object"
+      },
+      "AiGenerationQuery": {
+        "description": "Filters of the AI output log, each optional and combined with AND. Leaving both out\nlists everything the reader may see.",
+        "properties": {
+          "purpose": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
+            "examples": [
+              "so_what"
+            ],
+            "title": "Purpose"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "maxLength": 16,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Show only rows in one review state, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. At most 16 characters. A value that is not one of them matches nothing and answers 200 with an empty page.",
+            "examples": [
+              "draft"
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "AiGenerationQuery",
+        "type": "object"
+      },
+      "AiGenerationRow": {
+        "description": "One model call and what it produced (AUD-02).",
+        "examples": [
+          {
+            "citations": [
+              {
+                "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+                "url": "https://www.fi.se/en/published/news/2026/reporting/"
+              }
+            ],
+            "createdAt": "2026-09-16T06:02:00Z",
+            "id": "1f6c3b70-2a48-4e91-9d05-7b2c8f4a1e63",
+            "inputTokens": 1840,
+            "model": "claude-opus-5",
+            "modelMetadataReportedByAgent": true,
+            "modelVersion": "2026-05-01",
+            "output": "Teams that pay for external research should confirm that documented criteria exist.",
+            "outputTokens": 96,
+            "promptHash": "9f2a1c7d4b8e05f3",
+            "promptTemplate": "watch-sweeper/so-what/v1",
+            "purpose": "so_what",
+            "reviewedAt": null,
+            "status": "draft",
+            "subjectId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+            "subjectType": "regulatory_change",
+            "tenantScoped": false
+          }
+        ],
+        "properties": {
+          "citations": {
+            "description": "The public pages the output rests on, so a reader can check it. An empty list means the call cited nothing, not that its sources were withheld.",
+            "items": {
+              "$ref": "#/components/schemas/AiCitation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "createdAt": {
+            "description": "When the call was made, as an RFC 3339 timestamp in UTC (`2026-09-16T06:02:00Z`).",
+            "examples": [
+              "2026-09-16T06:02:00Z"
+            ],
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "description": "The log row's identifier, as a UUID. Stable: a row is never rewritten in place.",
+            "examples": [
+              "1f6c3b70-2a48-4e91-9d05-7b2c8f4a1e63"
+            ],
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "inputTokens": {
+            "description": "How many tokens went into the call, as the provider counted them. 0 when unknown.",
+            "examples": [
+              1840
+            ],
+            "title": "Inputtokens",
+            "type": "integer"
+          },
+          "model": {
+            "description": "Which model wrote it, as the provider names it, at most 200 characters. Read it beside `modelMetadataReportedByAgent`: for an agent's filing it is that agent's own word rather than a measurement bleqq took.",
+            "examples": [
+              "claude-opus-5"
+            ],
+            "title": "Model",
+            "type": "string"
+          },
+          "modelMetadataReportedByAgent": {
+            "description": "Whether `model` and `modelVersion` were reported by the agent that made the call rather than observed by bleqq's own wrapper around the model (D-66). True for anything an agent filed together with the record it had just read; false for a call bleqq made itself, such as an Ask answer. In R1 every agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs its own agent against the write routes, and this field is how a reader tells the two apart. Computed by the server, never sent by a caller.",
+            "examples": [
+              true
+            ],
+            "title": "Modelmetadatareportedbyagent",
+            "type": "boolean"
+          },
+          "modelVersion": {
+            "description": "Which version of that model, at most 120 characters, so two answers months apart can be told apart. Empty only for a row written before a version was recorded.",
+            "examples": [
+              "2026-05-01"
+            ],
+            "title": "Modelversion",
+            "type": "string"
+          },
+          "output": {
+            "description": "What the model wrote, at most 20000 characters; a longer output is stored up to that length, because the log keeps the record and not the whole transcript. Do not quote it as anybody's position while `status` is `draft`: AI output stays labelled until a person confirms it.",
+            "examples": [
+              "Teams that pay for external research should confirm that documented criteria exist."
+            ],
+            "title": "Output",
+            "type": "string"
+          },
+          "outputTokens": {
+            "description": "How many tokens came back, as the provider counted them. 0 when unknown.",
+            "examples": [
+              96
+            ],
+            "title": "Outputtokens",
+            "type": "integer"
+          },
+          "promptHash": {
+            "description": "A hash of the prompt actually sent, at most 128 characters, so two calls can be compared without the prompt being kept. This is the whole record of the input: no prompt text is stored anywhere, which is what keeps a bank's own words out of a log every bank can read (NFR-04).",
+            "examples": [
+              "9f2a1c7d4b8e05f3"
+            ],
+            "title": "Prompthash",
+            "type": "string"
+          },
+          "promptTemplate": {
+            "description": "Which prompt was used, by name and version, at most 200 characters, so an output can be traced to the instructions behind it. Empty when the caller named none. The prompt's text is never stored and never returned.",
+            "examples": [
+              "watch-sweeper/so-what/v1"
+            ],
+            "title": "Prompttemplate",
+            "type": "string"
+          },
+          "purpose": {
+            "description": "What the call was for, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank).",
+            "examples": [
+              "so_what"
+            ],
+            "title": "Purpose",
+            "type": "string"
+          },
+          "reviewedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When a person moved the row out of `draft`, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null while nobody has.",
+            "examples": [
+              null
+            ],
+            "title": "Reviewedat"
+          },
+          "status": {
+            "description": "How far a person has got with it, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently.",
+            "examples": [
+              "draft"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "subjectId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The record the call was about, as a UUID, or null when it was about no record.",
+            "examples": [
+              "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19"
+            ],
+            "title": "Subjectid"
+          },
+          "subjectType": {
+            "description": "What kind of record the call was about, such as `regulatory_change`, at most 32 characters. Empty for a call about no particular record. The record is named, never its text.",
+            "examples": [
+              "regulatory_change"
+            ],
+            "title": "Subjecttype",
+            "type": "string"
+          },
+          "tenantScoped": {
+            "description": "Whether the row is the reading bank's own (true) or the shared library's (false). A library row \u2014 the drafted \u201cSo what?\u201d of a change \u2014 is the same row every bank sees, and no bank may confirm, rewrite or delete it: a bank's own confirmation of a \u201cSo what?\u201d lives on its case. Computed by the server.",
+            "examples": [
+              false
+            ],
+            "title": "Tenantscoped",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "purpose",
+          "model",
+          "modelVersion",
+          "modelMetadataReportedByAgent",
+          "promptTemplate",
+          "promptHash",
+          "subjectType",
+          "subjectId",
+          "output",
+          "citations",
+          "status",
+          "reviewedAt",
+          "inputTokens",
+          "outputTokens",
+          "tenantScoped",
+          "createdAt"
+        ],
+        "title": "AiGenerationRow",
+        "type": "object"
+      },
       "Answer": {
         "description": "Grounded only in the inventory. `noAnswer` is true when nothing supported an\nanswer, and then `statements` is empty: the product says so rather than guessing\n(SRC-03, AC-SRC2). `aiGenerated` stays true until a person confirms it (D-04).",
         "examples": [
@@ -10526,6 +10841,19 @@
             ],
             "publishedOn": "2026-09-15",
             "publishedPrecision": "day",
+            "soWhat": {
+              "citations": [
+                {
+                  "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+                  "url": "https://www.fi.se/en/published/news/2026/reporting/"
+                }
+              ],
+              "model": "claude-opus-5",
+              "modelVersion": "2026-05-01",
+              "promptHash": "9f2a1c7d4b8e05f3",
+              "promptTemplate": "watch-sweeper/so-what/v1",
+              "text": "Teams that pay for external research should confirm that documented criteria exist."
+            },
             "sourceLabel": "Finansinspektionen",
             "sourceUrl": "https://www.fi.se/",
             "stableKey": "chg-fi-2026-research-payments",
@@ -10750,21 +11078,16 @@
             ],
             "title": "Recurrencerule"
           },
-          "soWhatDraft": {
+          "soWhat": {
             "anyOf": [
               {
-                "maxLength": 4000,
-                "type": "string"
+                "$ref": "#/components/schemas/WatchSoWhatInput"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "The drafted 'So what?' for the library, at most 4000 characters. Drafted once per change from library facts only and copied into each bank's case, where that bank confirms or rewrites it (WAT-05, D-07, D-32). No bank's term, name, footprint or text ever reaches the model that wrote it, and this text is labelled AI-drafted until a person confirms it.",
-            "examples": [
-              "Teams that pay for external research should confirm that documented criteria exist before the rules take effect."
-            ],
-            "title": "Sowhatdraft"
+            "description": "The drafted \u201cSo what?\u201d this run wrote for the change, with the model and the sources behind it (WAT-05, AUD-02, D-66). Optional: a run that only sighted the reform, and a library editor filing one by hand, send none and the change carries no draft until a run files one through `PATCH /changes/{changeId}`. Sending it stores the words on the shared change, copies them unconfirmed into every bank's case and writes one row in the AI output log. Words with no model, no version or no citation answer 422."
           },
           "sourceLabel": {
             "description": "Where the change was found, in words a reader recognises, 1 to 300 characters.",
@@ -11066,6 +11389,17 @@
               "day"
             ],
             "title": "Keydateprecision"
+          },
+          "soWhat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WatchSoWhatInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A drafted \u201cSo what?\u201d for this change, with the model and the sources behind it, replacing whatever draft is stored (WAT-05, AUD-02, D-66). Send it when the run that re-read the source can say what the change means and the change carries no draft, or a worse one; leave it out to keep what is there. Each send writes one more row in the AI output log, so the earlier draft stays on the record. Every bank whose copy is still the unedited draft is brought up to the new wording; a bank that confirmed or rewrote its own keeps it, because a bank's words are its own. Words with no model, no version or no citation answer 422."
           },
           "status": {
             "anyOf": [
@@ -12352,6 +12686,107 @@
           "obligationId"
         ],
         "title": "WatchObligationLinkInput",
+        "type": "object"
+      },
+      "WatchSoWhatInput": {
+        "additionalProperties": false,
+        "description": "The drafted \u201cSo what?\u201d of a change, with the model and the sources behind\nit, sent on `POST /changes` or `PATCH /changes/{changeId}`.\n\nOne object rather than a bare string, because a draft is not filed without its\nprovenance: the agent that read the change writes these words and reports which model\nwrote them and what they rest on, and the write turns that report into the\n`ai_generation` row AUD-02 asks for (D-66). A call that sends words with no model, no\nversion or no citation is refused rather than logged as an unattributable draft.\n\nLibrary facts only. No bank's term, name, footprint, entity, product or text may reach\nthe prompt behind these words (D-07, D-32): one draft is written per change and copied\ninto every bank's case, where that bank confirms or rewrites its own copy.",
+        "examples": [
+          {
+            "citations": [
+              {
+                "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+                "url": "https://www.fi.se/en/published/news/2026/reporting/"
+              }
+            ],
+            "model": "claude-opus-5",
+            "modelVersion": "2026-05-01",
+            "promptHash": "9f2a1c7d4b8e05f3",
+            "promptTemplate": "watch-sweeper/so-what/v1",
+            "text": "Teams that pay for external research should confirm that documented quality criteria exist before the rules take effect."
+          }
+        ],
+        "properties": {
+          "citations": {
+            "description": "The public pages the text rests on, at least one and at most 20; more answers 422 naming the field. At least one, because a draft a reader cannot check against a source is not something to put in front of every bank. Every citation is a public page: no bank's own record is ever cited, because nothing from a bank's zone reaches the prompt (NFR-04, D-07).",
+            "items": {
+              "$ref": "#/components/schemas/AiCitation"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Citations",
+            "type": "array"
+          },
+          "model": {
+            "description": "Which model wrote the text, as the provider names it, 1 to 120 characters. Reported by the agent that read the source, not measured by bleqq (D-66). In R1 every agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs its own agent against this route. Required: a draft nobody can attribute to a model is not something AUD-02's log can record, so the call is refused rather than stored.",
+            "examples": [
+              "claude-opus-5"
+            ],
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "modelVersion": {
+            "description": "Which version of that model, 1 to 120 characters, so two drafts months apart can be told apart. Reported by the agent that read the source, not measured by bleqq (D-66). In R1 every agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs its own agent against this route. Required, for the same reason as `model`.",
+            "examples": [
+              "2026-05-01"
+            ],
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Modelversion",
+            "type": "string"
+          },
+          "promptHash": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A hash of the prompt actually sent, at most 128 characters, so two calls can be compared without either prompt being kept. Optional, and the only thing about the input that is stored.",
+            "examples": [
+              "9f2a1c7d4b8e05f3"
+            ],
+            "title": "Prompthash"
+          },
+          "promptTemplate": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Which prompt produced the text, by name and version, at most 200 characters, so an odd draft can be traced to the instructions behind it. Optional. Send the name, never the prompt: bleqq stores no prompt text at all.",
+            "examples": [
+              "watch-sweeper/so-what/v1"
+            ],
+            "title": "Prompttemplate"
+          },
+          "text": {
+            "description": "What the change means, 1 to 4000 characters, drawn from the change's own public facts. It is stored on the library change, copied into every bank's case and labelled AI output until a person in that bank confirms or rewrites it (WAT-05). Write it for every bank at once: it must name no bank, no footprint and no judgement of anybody's business.",
+            "examples": [
+              "Teams that pay for external research should confirm that documented criteria exist."
+            ],
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "model",
+          "modelVersion",
+          "citations"
+        ],
+        "title": "WatchSoWhatInput",
         "type": "object"
       },
       "WatchSourceCheckInput": {
@@ -13641,6 +14076,125 @@
         ]
       }
     },
+    "/api/v1/ai-generations": {
+      "get": {
+        "description": "Every model call this bank can see, newest first: the drafted \u201cSo what?\u201d of\neach regulatory change, and this bank's own Ask answers once Ask ships. Call it to\nanswer \u201cwhat has a machine written for us, about what, and has anybody checked\nit\u201d \u2014 the question an auditor asks and the one AUD-02 exists to answer.\n\nA read: it changes nothing and writes no audit row. A person's session holding\n`ai_log.read`, which the administrator, compliance officer, approver and auditor roles\ncarry. What a bank sees is its own rows plus the shared library's; another bank's rows\nare kept out by row-level security in the database rather than by a filter here, so no\nquery written later can widen it.\n\n**The model and the version are not always bleqq's own measurement.** For a\n\u201cSo what?\u201d the agent that read the change files the words together with the\nchange and reports which model and which version produced them, so those two fields are\nthat agent's account of itself rather than something bleqq observed (D-66).\n`modelMetadataReportedByAgent` says which rows are which. In R1 every agent is bleqq's\nown, so this is a reporting boundary; it becomes a trust boundary the day a bank runs\nits own agent against the write routes, which is the agent-access work in R2.\n\nPages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no\nrows, or a filter matching none, is a 200 with an empty `items` and a `total` of 0.\nErrors: `permission_denied` without `ai_log.read`, with `requiredPermission` named;\n`unauthenticated` without a session.",
+        "operationId": "listAiGenerations",
+        "parameters": [
+          {
+            "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
+            "examples": [
+              "so_what"
+            ],
+            "in": "query",
+            "name": "purpose",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 32,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
+              "examples": [
+                "so_what"
+              ],
+              "title": "Purpose"
+            }
+          },
+          {
+            "description": "Show only rows in one review state, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. At most 16 characters. A value that is not one of them matches nothing and answers 200 with an empty page.",
+            "examples": [
+              "draft"
+            ],
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 16,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Show only rows in one review state, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. At most 16 characters. A value that is not one of them matches nothing and answers 200 with an empty page.",
+              "examples": [
+                "draft"
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "description": "How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.",
+            "examples": [
+              20
+            ],
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.",
+              "examples": [
+                20
+              ],
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.",
+            "examples": [
+              0
+            ],
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "description": "How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.",
+              "examples": [
+                0
+              ],
+              "maximum": 100000,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiGenerationPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "See what a model wrote, which model wrote it and whether anybody has stood behind it",
+        "tags": [
+          "Governance"
+        ]
+      }
+    },
     "/api/v1/answers/{answer_id}/feedback": {
       "post": {
         "description": "Record a reader's verdict on one answer \u2014 helpful or wrong, with an optional note\n\u2014 so the people who tune retrieval know where it fails (AUD-02, SRC-05).\n\nWho may call it: a person with `search.use`, on their own session, about an answer\nof their own bank. An answer of another bank answers 404.\n\nWhat comes back: 204 and no body.\n\nLimits and budgets: the note is at most 2000 characters\n(`SEARCH_FEEDBACK_NOTE_MAX_CHARS`); longer answers 422. The ordinary 250 ms API\nbudget applies.\n\nShape of the call: the one write in this contract. It goes through the audit trail\nlike any other write, and it needs no idempotency key because it is idempotent by\nnature: the same verdict on the same answer twice leaves one row. Neither the\nquestion nor the answer nor the note reaches the audit summary.",
@@ -14866,7 +15420,7 @@
         ]
       },
       "post": {
-        "description": "Put one reform into the shared library, with the timeline the source states, the\npages it was found on, what the run thinks it is about and the obligations it may touch.\nCall it once per reform a sweep finds, and from the console when a library editor files\none by hand. This is the call that starts the work: every active bank gets a case for\nthe change, with its own footprint verdict, a moment later.\n\nAn agent's key needs the scope `changes:write` and a library editor's session the\npermission `proposals.review`, which no bank's role holds. `agentRunId` must name a run\nthe calling key has open, so every library row an agent wrote can be traced to the night\nthat wrote it; a library editor filing one by hand names no run.\n\nOne reform is one record, and `stableKey` is what makes that true. Sending a key the\nlibrary already holds answers **200** with the change that exists: the pages the call\ncarries are attached to it as duplicates, a milestone it did not have is added, and not\none field of the stored change is changed. A new key answers **201**. That is what makes\nthe call safe to retry \u2014 send an `Idempotency-Key` as well, but the stable key is the\nguarantee. Correcting a fact already stored is `PATCH /changes/{changeId}`, never a\nsecond registration.\n\nEverything the call files about what the reform is \u2014 its type, its flags, its scope\nterms and its obligation links \u2014 is stored as a suggestion, with nobody named as having\nconfirmed it, whoever sent it. A reader must not treat any of it as checked.\n\nEvery page's text is screened for embedded instructions before it is stored (AGT-07) and\nwhat the screen finds is recorded in that page's `riskFlags`. The text itself is kept\nexactly as it arrived, because it is evidence: it is never executed, never rendered as\nHTML and never followed. A flag is a warning about the page, not about the reform.\n\nThe change, its timeline, its pages, its classification, its audit row and the outbox\nrow that opens the cases all go in one transaction, and every key is resolved first, so\na refusal stores nothing at all.\n\nErrors to branch on: `run_not_open` (422) when `agentRunId` names a run that is closed;\n`unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an\n`obligationId` or `authorityCode` names a row the library does not hold or has retired,\nwith the valid keys listed for a vocabulary; `validation_error` (422) for a body the\nschema refuses, for the same obligation named twice, and for two pages both marked\nprimary; `not_found` (404) when `agentRunId` names a run belonging to another key;\n`permission_denied` (403) without the scope or the permission; `unauthenticated` (401)\nwithout a credential.",
+        "description": "Put one reform into the shared library, with the timeline the source states, the\npages it was found on, what the run thinks it is about and the obligations it may touch.\nCall it once per reform a sweep finds, and from the console when a library editor files\none by hand. This is the call that starts the work: every active bank gets a case for\nthe change, with its own footprint verdict, a moment later.\n\nAn agent's key needs the scope `changes:write` and a library editor's session the\npermission `proposals.review`, which no bank's role holds. `agentRunId` must name a run\nthe calling key has open, so every library row an agent wrote can be traced to the night\nthat wrote it; a library editor filing one by hand names no run.\n\nOne reform is one record, and `stableKey` is what makes that true. Sending a key the\nlibrary already holds answers **200** with the change that exists: the pages the call\ncarries are attached to it as duplicates, a milestone it did not have is added, and not\none field of the stored change is changed. A new key answers **201**. That is what makes\nthe call safe to retry \u2014 send an `Idempotency-Key` as well, but the stable key is the\nguarantee. Correcting a fact already stored is `PATCH /changes/{changeId}`, never a\nsecond registration.\n\nEverything the call files about what the reform is \u2014 its type, its flags, its scope\nterms and its obligation links \u2014 is stored as a suggestion, with nobody named as having\nconfirmed it, whoever sent it. A reader must not treat any of it as checked.\n\n**The drafted \u201cSo what?\u201d comes from the run that read the source** (D-66). Send\nit in `soWhat` with the model and the model version that wrote it and the public pages\nit rests on; the words are stored on the shared change, copied unconfirmed into every\nbank's case and recorded in the AI output log, where each bank's own person confirms or\nrewrites its own copy. **The model and the version are the caller's own report about\nitself, not something bleqq measured**, and the log row says so\n(`modelMetadataReportedByAgent`). In R1 every agent is bleqq's own, so that is a\nreporting boundary; it becomes a trust boundary the day a bank runs its own agent\nagainst this route. Send no `soWhat` and the change simply carries no draft: nothing\nelse about the call changes, and a later `PATCH /changes/{changeId}` may still file one.\nOn a merge \u2014 a `stableKey` the library already holds \u2014 a `soWhat` is filed only when the\nchange has no draft yet, like a page and a milestone: the merge adds what is missing and\nrewrites nothing.\n\nEvery page's text is screened for embedded instructions before it is stored (AGT-07) and\nwhat the screen finds is recorded in that page's `riskFlags`. The text itself is kept\nexactly as it arrived, because it is evidence: it is never executed, never rendered as\nHTML and never followed. A flag is a warning about the page, not about the reform.\n\nThe change, its timeline, its pages, its classification, its audit row and the outbox\nrow that opens the cases all go in one transaction, and every key is resolved first, so\na refusal stores nothing at all.\n\nErrors to branch on: `run_not_open` (422) when `agentRunId` names a run that is closed;\n`unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an\n`obligationId` or `authorityCode` names a row the library does not hold or has retired,\nwith the valid keys listed for a vocabulary; `validation_error` (422) for a body the\nschema refuses, for the same obligation named twice, for two pages both marked primary,\nand for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;\n`permission_denied` (403) without the scope or the permission; `unauthenticated` (401)\nwithout a credential.",
         "operationId": "createChange",
         "parameters": [
           {
@@ -14975,7 +15529,7 @@
         ]
       },
       "patch": {
-        "description": "Move the library facts of a reform already registered: its title, its type, its\nsummary, the date that drives \"coming up\", the flags that say what it is about and the\ntaxonomy terms that say who it reaches. Call it when a run reads the source again and\nhas something better than it filed the first time, and when a library editor corrects\nwhat a run got wrong. The answer is the change as it now stands.\n\n`flags` and `termIds` each replace the whole set they name, so send the full set and\nnever a delta; every other field is left exactly as it was when it is left out or sent\nas null. Nothing here is versioned, so no `If-Match` is taken and no ETag is checked;\nthe record that carries a version is the bank's own case, which this call never touches.\n\nAn agent's key needs the scope `changes:write` and a library editor's session the\npermission `proposals.review`, which no bank's role holds: a change's classification is\na library fact and a bank neither writes nor confirms one. Two things only the editor\nmay set: `status` and `supersededBy`, because deciding that a reform has been replaced\nor withdrawn is a reading of the law and not a sighting of it.\n\nEverything written here is a suggestion. A flag or a term arrives with `suggested` true\nand nobody named as having confirmed it, whoever sent it, and a reader must not treat it\nas checked. Confirming one is a library editor's act on a library row and is not built\nyet, so a call that would drop or overwrite something already confirmed answers\n`not_built` to that editor and is refused outright to a key. The whole call is one\ntransaction that writes an audit row naming who changed which facts, and the keys are\nresolved before anything is stored, so a refusal stores nothing.\n\nSending it again with the same body simply writes the same facts, so `Idempotency-Key`\ncosts nothing here and no retry can duplicate anything.\n\nErrors to branch on: `unknown_key` (422) when `changeType`, a flag key, a term id or\n`supersededBy` names a row the library does not hold or has retired, with the valid keys\nlisted for a vocabulary; `editor_only_field` (422) when a key sends `status` or\n`supersededBy`; `confirmed_fact` (422) when a key's new set would drop a flag or a term\na library editor confirmed; `not_built` (501) when an editor's call would do the same,\nwhich is the confirmation half of this feature; `validation_error` (422) for a field the\nschema refuses, and for a change asked to supersede itself; `not_found` (404) when no\nchange has that id; `permission_denied` (403) without the scope or the permission;\n`unauthenticated` (401) without a credential.",
+        "description": "Move the library facts of a reform already registered: its title, its type, its\nsummary, the date that drives \"coming up\", the flags that say what it is about and the\ntaxonomy terms that say who it reaches. Call it when a run reads the source again and\nhas something better than it filed the first time, and when a library editor corrects\nwhat a run got wrong. The answer is the change as it now stands.\n\n`flags` and `termIds` each replace the whole set they name, so send the full set and\nnever a delta; every other field is left exactly as it was when it is left out or sent\nas null. Nothing here is versioned, so no `If-Match` is taken and no ETag is checked;\nthe record that carries a version is the bank's own case, which this call never touches.\n\nAn agent's key needs the scope `changes:write` and a library editor's session the\npermission `proposals.review`, which no bank's role holds: a change's classification is\na library fact and a bank neither writes nor confirms one. Two things only the editor\nmay set: `status` and `supersededBy`, because deciding that a reform has been replaced\nor withdrawn is a reading of the law and not a sighting of it.\n\nEverything written here is a suggestion. A flag or a term arrives with `suggested` true\nand nobody named as having confirmed it, whoever sent it, and a reader must not treat it\nas checked. Confirming one is a library editor's act on a library row and is not built\nyet, so a call that would drop or overwrite something already confirmed answers\n`not_built` to that editor and is refused outright to a key. The whole call is one\ntransaction that writes an audit row naming who changed which facts, and the keys are\nresolved before anything is stored, so a refusal stores nothing.\n\n**A drafted \u201cSo what?\u201d may be filed here too** (D-66, WAT-05): send `soWhat`\nwith the words, the model and the model version that wrote them and the public pages\nthey rest on. The words replace the change's draft and reach every bank whose copy is\nstill that draft; a bank that has confirmed or rewritten its own keeps its wording,\nbecause a bank's words are its own. One row is written in the AI output log per send, so\nthe earlier draft stays on the record. **The model and the version are the caller's own\nreport about itself, not something bleqq measured**, and the log row says so\n(`modelMetadataReportedByAgent`): in R1 every agent is bleqq's own, so that is a\nreporting boundary, and it becomes a trust boundary the day a bank runs its own agent\nagainst this route.\n\nSending it again with the same body simply writes the same facts, so `Idempotency-Key`\ncosts nothing here and no retry can duplicate anything \u2014 except that each `soWhat` sent\nis one more row in the AI output log, which is a ledger of calls and never deduplicated.\n\nErrors to branch on: `unknown_key` (422) when `changeType`, a flag key, a term id or\n`supersededBy` names a row the library does not hold or has retired, with the valid keys\nlisted for a vocabulary; `editor_only_field` (422) when a key sends `status` or\n`supersededBy`; `confirmed_fact` (422) when a key's new set would drop a flag or a term\na library editor confirmed; `not_built` (501) when an editor's call would do the same,\nwhich is the confirmation half of this feature; `validation_error` (422) for a field the\nschema refuses, for a change asked to supersede itself, and for a `soWhat` whose words\ncarry no model, no model version or no citation; `not_found` (404) when no\nchange has that id; `permission_denied` (403) without the scope or the permission;\n`unauthenticated` (401) without a credential.",
         "operationId": "updateChange",
         "parameters": [
           {
@@ -15047,7 +15601,7 @@
     },
     "/api/v1/changes/{change_id}/case/obligation-links": {
       "post": {
-        "description": "Records, on this bank's own case, that one of the obligations an agent or a library\neditor linked to the change really is affected here, so the case works it. Call it from\nthe \"Obligations affected\" panel; call the matching `DELETE` when the link is not\nrelevant to this bank.\n\nA person's session holding `cases.work` in their own bank. It writes one row in that\nbank's zone and changes no library row: the shared link, its origin and its confidence\nstay exactly as they were, a library editor's confirmation is a separate decision, and\nanother bank still sees the link undecided. One decision per obligation per case, so\naccepting one already accepted is not a second row. The decision is recorded in the audit\nlog with the person named.\n\nAnswers 201 with the stored decision. No `If-Match` and no step-up. Errors: `not_found`\nwhen no change has that id, this bank has no case for it, or the obligation is not one\nthe caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a\nsession; `validation_error` for a body the schema refuses.\n\nPublished ahead of the logic that will fill it, and answering 501 `not_built` until that\nships.",
+        "description": "Records, on this bank's own case, that one of the obligations an agent or a library\neditor linked to the change really is affected here, so the case works it. Call it from\nthe \"Obligations affected\" panel; call the matching `DELETE` when the link is not\nrelevant to this bank.\n\nA person's session holding `cases.work` in their own bank. It writes one row in that\nbank's zone and changes no library row: the shared link, its origin and its confidence\nstay exactly as they were, a library editor's confirmation is a separate decision, and\nanother bank still sees the link undecided. One decision per obligation per case, so\naccepting one already accepted is not a second row. The decision is recorded in the audit\nlog with the person named.\n\nAnswers 201 with the stored decision. No `If-Match` and no step-up. Errors: `not_found`\nwhen no change has that id, this bank has no case for it, or the obligation is not one\nthe caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a\nsession; `validation_error` for a body the schema refuses.",
         "operationId": "acceptCaseObligationLink",
         "parameters": [
           {
@@ -15098,7 +15652,7 @@
     },
     "/api/v1/changes/{change_id}/case/obligation-links/{obligation_id}": {
       "delete": {
-        "description": "Records, on this bank's own case, that a suggested obligation link is not related\nhere, so the change page stops showing it. Call it from the \"Obligations affected\" panel\nwhen a link an agent proposed does not apply to this bank's business.\n\nA person's session holding `cases.work` in their own bank. Despite the method, nothing is\ndeleted: the decision is stored as `removed`, so the case file can say the bank looked at\nthe link and said no, and the same call can be reversed by accepting it again. No library\nrow moves \u2014 the shared link stays, still there for every other bank \u2014 and an obligation\nremoved here is not an obligation that does not apply, which is a separate fact in the\nregister (REG-01). The decision is recorded in the audit log with the person named.\n\nAnswers 200 with the stored decision. No `If-Match` and no step-up. Errors: `not_found`\nwhen no change has that id, this bank has no case for it, or the obligation is not one\nthe caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a\nsession.\n\nPublished ahead of the logic that will fill it, and answering 501 `not_built` until that\nships.",
+        "description": "Records, on this bank's own case, that a suggested obligation link is not related\nhere, so the change page stops showing it. Call it from the \"Obligations affected\" panel\nwhen a link an agent proposed does not apply to this bank's business.\n\nA person's session holding `cases.work` in their own bank. Despite the method, nothing is\ndeleted: the decision is stored as `removed`, so the case file can say the bank looked at\nthe link and said no, and the same call can be reversed by accepting it again. No library\nrow moves \u2014 the shared link stays, still there for every other bank \u2014 and an obligation\nremoved here is not an obligation that does not apply, which is a separate fact in the\nregister (REG-01). The decision is recorded in the audit log with the person named.\n\nAnswers 200 with the stored decision. No `If-Match` and no step-up. Errors: `not_found`\nwhen no change has that id, this bank has no case for it, or the obligation is not one\nthe caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a\nsession.",
         "operationId": "removeCaseObligationLink",
         "parameters": [
           {
@@ -15474,7 +16028,7 @@
     },
     "/api/v1/changes/{change_id}/so-what": {
       "put": {
-        "description": "Replaces the AI draft on this bank's case with the bank's own wording, at most 4000\ncharacters. Call it when the drafted \"So what?\" is wrong, incomplete or written for\nsomebody else's business; call `POST /changes/{changeId}/so-what/confirm` instead when\nthe draft is right as it stands.\n\nA person's session holding `cases.work` in their own bank. It writes one column of that\nbank's case and nothing else: no library row moves, and another bank reading the same\nchange still sees its own copy, still an AI draft. Saving marks the wording confirmed and\nnames the person and the time, because somebody who rewrote it has already decided. The\ntext is tenant content: it stays in the bank's zone and never reaches a log, Sentry or a\nmodel endpoint. The save is recorded in the audit log with the person named.\n\nNo `If-Match` and no step-up: the case carries no version in R1, so the last save wins\nuntil the case workflow lands. Errors: `not_found` when no change has that id or this\nbank has no case for it; `permission_denied` without `cases.work`; `unauthenticated`\nwithout a session; `validation_error` for empty text or text over the cap.\n\nPublished ahead of the logic that will fill it, and answering 501 `not_built` until that\nships.",
+        "description": "Replaces the AI draft on this bank's case with the bank's own wording, at most 4000\ncharacters. Call it when the drafted \"So what?\" is wrong, incomplete or written for\nsomebody else's business; call `POST /changes/{changeId}/so-what/confirm` instead when\nthe draft is right as it stands.\n\nA person's session holding `cases.work` in their own bank. It writes one column of that\nbank's case and nothing else: no library row moves, and another bank reading the same\nchange still sees its own copy, still an AI draft. Saving marks the wording confirmed and\nnames the person and the time, because somebody who rewrote it has already decided. The\ntext is tenant content: it stays in the bank's zone and never reaches a log, Sentry or a\nmodel endpoint. The save is recorded in the audit log with the person named.\n\nNo `If-Match` and no step-up: the case carries no version in R1, so the last save wins\nuntil the case workflow lands. Errors: `not_found` when no change has that id or this\nbank has no case for it; `permission_denied` without `cases.work`; `unauthenticated`\nwithout a session; `validation_error` for empty text or text over the cap.",
         "operationId": "saveSoWhat",
         "parameters": [
           {
@@ -15525,7 +16079,7 @@
     },
     "/api/v1/changes/{change_id}/so-what/confirm": {
       "post": {
-        "description": "Accepts the AI draft on this bank's case as it stands, so the screen stops labelling\nit \"AI draft\" and the case file can quote it as the bank's position. Call it when the\ndrafted \"So what?\" is right; use `PUT /changes/{changeId}/so-what` when it needs\nrewriting.\n\nA person's session holding `cases.work` in their own bank. It changes the confirmation\non that bank's case and not the text: the words stay the model's, now stood behind by a\nnamed person at a named time, which is what keeps AI output labelled until somebody\nconfirms it (WAT-05). No library row moves, and another bank's copy is untouched. The\nconfirmation is recorded in the audit log with the person named.\n\nNo request body, no `If-Match` and no step-up. Errors: `not_found` when no change has\nthat id, this bank has no case for it, or the case holds no draft to confirm;\n`permission_denied` without `cases.work`; `unauthenticated` without a session.\n\nPublished ahead of the logic that will fill it, and answering 501 `not_built` until that\nships.",
+        "description": "Accepts the AI draft on this bank's case as it stands, so the screen stops labelling\nit \"AI draft\" and the case file can quote it as the bank's position. Call it when the\ndrafted \"So what?\" is right; use `PUT /changes/{changeId}/so-what` when it needs\nrewriting.\n\nA person's session holding `cases.work` in their own bank. It changes the confirmation\non that bank's case and not the text: the words stay the model's, now stood behind by a\nnamed person at a named time, which is what keeps AI output labelled until somebody\nconfirms it (WAT-05). No library row moves, and another bank's copy is untouched. The\nconfirmation is recorded in the audit log with the person named.\n\nNo request body, no `If-Match` and no step-up. Errors: `not_found` when no change has\nthat id, this bank has no case for it, or the case holds no draft to confirm;\n`permission_denied` without `cases.work`; `unauthenticated` without a session.",
         "operationId": "confirmSoWhat",
         "parameters": [
           {

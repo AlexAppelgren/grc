@@ -307,6 +307,17 @@ LLM_MAX_RESPONSE_BYTES = env_int("LLM_MAX_RESPONSE_BYTES", 4 * 1024 * 1024)
 LLM_MAX_ERROR_BODY_BYTES = env_int("LLM_MAX_ERROR_BODY_BYTES", 64 * 1024)
 
 # ---------------------------------------------------------------------------------------
+# ===== AUD-02 the AI output log (apps/governance/ai_log.py) =============================
+# Two caps at one trust boundary: what a model wrote, and what an agent reported about it.
+# Model output is text off a network and an agent's report is a caller's body, so neither
+# is bounded by the provider's own token limit. Over the citation cap is a 422 naming the
+# field; a longer output is stored up to the character cap, because the log keeps the
+# record of what was said and not the whole transcript.
+# ---------------------------------------------------------------------------------------
+AI_GENERATION_OUTPUT_MAX_CHARS = env_int("AI_GENERATION_OUTPUT_MAX_CHARS", 20000)
+AI_GENERATION_CITATIONS_MAX = env_int("AI_GENERATION_CITATIONS_MAX", 20)
+
+# ---------------------------------------------------------------------------------------
 # File storage (playbook 4.6). local for dev and tests, s3 when deployed. Nothing public.
 # ---------------------------------------------------------------------------------------
 STORAGE_BACKEND = env_str("STORAGE_BACKEND", "local")  # local | s3
