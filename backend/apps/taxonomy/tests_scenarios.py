@@ -52,6 +52,7 @@ from apps.taxonomy.models import (
     Tagging,
     TenantTag,
     Urgency,
+    WatchedMarket,
 )
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
@@ -928,12 +929,67 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         Watching a market is one audited write that hides nothing (FP-04, AC-FP2).
         """
 
-    @skip("pending: FP-S11 (FP-04, R1)")
     def test_fp_s11(self) -> None:
         """FP-S11
 
         A market's level is computed, and operating comes first (FP-04).
         """
+        from apps.taxonomy import markets_logic
+
+        self._set_footprint(["regime:securities", "jurisdiction:se"])
+        norway = Jurisdiction.objects.get(key="no")
+        finland = Jurisdiction.objects.get(key="fi")
+
+        def _start_operating(key: str) -> dict[str, Any]:
+            officer = sign_in(self.officer, tenant=self.tenant)
+            request = self._post(
+                "/tenant/footprint/requests", {"adds": [{"dimension": "jurisdiction", "key": key}], "removes": []}, officer
+            ).json()
+            approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
+            self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH=str(request["version"]))
+            return request
+
+        def _stop_operating(key: str) -> dict[str, Any]:
+            officer = sign_in(self.officer, tenant=self.tenant)
+            request = self._post(
+                "/tenant/footprint/requests", {"adds": [], "removes": [{"dimension": "jurisdiction", "key": key}]}, officer
+            ).json()
+            approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
+            self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH=str(request["version"]))
+            return request
+
+        # Given a tenant operating in Sweden and watching Norway.
+        self.activate(self.tenant)
+        markets_logic.watch(tenant=self.tenant, actor=Actor.system("test"), key="no")
+        self.assertEqual(markets_logic.level_of(self.tenant.id, norway), markets_logic.WATCHING)
+        events_before = AuditEvent.objects.filter(action__in=["markets.watch_added", "markets.watch_removed"]).count()
+
+        # When a request to operate in Norway is approved, then Norway reads as operating,
+        # its watch row is untouched, and no watch event is written.
+        _start_operating("no")
+        self.activate(self.tenant)
+        self.assertEqual(markets_logic.level_of(self.tenant.id, norway), markets_logic.OPERATING)
+        self.assertTrue(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction=norway).exists())
+        self.assertEqual(
+            AuditEvent.objects.filter(action__in=["markets.watch_added", "markets.watch_removed"]).count(), events_before
+        )
+
+        # When a request to stop operating in Norway is approved, then Norway reads as
+        # watching again.
+        _stop_operating("no")
+        self.activate(self.tenant)
+        self.assertEqual(markets_logic.level_of(self.tenant.id, norway), markets_logic.WATCHING)
+
+        # Given Finland was never watched, when a request to operate is approved and later
+        # reversed, then Finland reads as not followed.
+        self.assertEqual(markets_logic.level_of(self.tenant.id, finland), markets_logic.NOT_FOLLOWED)
+        _start_operating("fi")
+        self.activate(self.tenant)
+        self.assertEqual(markets_logic.level_of(self.tenant.id, finland), markets_logic.OPERATING)
+        _stop_operating("fi")
+        self.activate(self.tenant)
+        self.assertEqual(markets_logic.level_of(self.tenant.id, finland), markets_logic.NOT_FOLLOWED)
+        self.assertFalse(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction=finland).exists())
 
     @skip("pending: FP-S12 (FP-04, R1)")
     def test_fp_s12(self) -> None:
