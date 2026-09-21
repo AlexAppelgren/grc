@@ -413,6 +413,26 @@ SEARCH_CONCEPT_SCORE_FLOOR = float(env_str("SEARCH_CONCEPT_SCORE_FLOOR", "0.5"))
 SEARCH_SNIPPET_CHARS = env_int("SEARCH_SNIPPET_CHARS", 240)
 
 # ---------------------------------------------------------------------------------------
+# ===== SRC-01, SRC-03, NFR-02 what one caller may spend (apps/search/limits.py) ==========
+# Per caller per minute, in a fixed window: a person's session or an agent's key, each
+# with a window of its own. Search is the whole index read twice and reranked; Ask is that
+# plus a model call the bank pays for, so Ask is the tighter of the two. Sixty searches a
+# minute is one a second, which no reader reaches and a runaway script passes at once; ten
+# questions a minute is more than anyone asks and far less than a loop costs.
+# ---------------------------------------------------------------------------------------
+SEARCH_RATE_PER_USER_PER_MINUTE = env_int("SEARCH_RATE_PER_USER_PER_MINUTE", 60)
+ASK_RATE_PER_USER_PER_MINUTE = env_int("ASK_RATE_PER_USER_PER_MINUTE", 10)
+# Bounded, like the page offset and the diff cap above and for the same reason: at zero or
+# below every call is over the limit and search stops answering at all, and there is no
+# value of these that means "no limit" — a limit that can be configured away is not one.
+# The production-safety block runs too late for this, so it refuses here.
+if min(SEARCH_RATE_PER_USER_PER_MINUTE, ASK_RATE_PER_USER_PER_MINUTE) < 1:
+    raise ImproperlyConfigured(
+        f"Refusing to boot: SEARCH_RATE_PER_USER_PER_MINUTE is {SEARCH_RATE_PER_USER_PER_MINUTE} "
+        f"and ASK_RATE_PER_USER_PER_MINUTE is {ASK_RATE_PER_USER_PER_MINUTE}; both must be at least 1."
+    )
+
+# ---------------------------------------------------------------------------------------
 # ===== INV-04 "show what changed" (apps/library/logic.py sentence_diff) ==================
 # Aligning two versions costs up to the cube of their sentence count when sentences repeat,
 # and the texts come from fetched sources. Above this many sentences on either side the

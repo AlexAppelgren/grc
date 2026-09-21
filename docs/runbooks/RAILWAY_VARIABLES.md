@@ -61,6 +61,8 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `SEARCH_RETRIEVAL_DEPTH` | api | `50` | `50` | `50` | How deep each leg reaches. A row ranked below this by a leg was not found by it, so it neither scores nor claims that match kind (SRC-01) |
 | `SEARCH_CONCEPT_SCORE_FLOOR` | api | `0.5` | `0.5` | `0.5` | The least cosine similarity that counts as a concept match. The vector leg always has a nearest neighbour, so without a floor every query would call every embedded chunk a concept hit. Re-tune it with the model D-09 chooses (SRC-01) |
 | `SEARCH_SNIPPET_CHARS` | api | `240` | `240` | `240` | The most of a hit's text a snippet shows, cut around what matched (SRC-02) |
+| `SEARCH_RATE_PER_USER_PER_MINUTE` | api | `60` | `60` | `60` | What one caller may spend on `POST /search` and `POST /search/similar` in a minute: a person's session or an agent's key, each with a window of its own, 429 `rate_limited` over it. Below 1 the app refuses to boot, because there is no value of it that means "no limit" (NFR-02) |
+| `ASK_RATE_PER_USER_PER_MINUTE` | api | `10` | `10` | `10` | The same for `POST /ask`, tighter because every call that passes it is a model call the bank pays for. Below 1 the app refuses to boot (NFR-02, D-07) |
 | `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
 
 ## Testing, observability, budgets

@@ -2133,12 +2133,21 @@ export interface paths {
          *     means nothing inside the bank's view matched, not that nothing exists.
          *
          *     Limits and budgets: the query is at most 500 characters (`SEARCH_QUERY_MAX_CHARS`),
-         *     and a longer one answers 422 rather than being truncated. The answer arrives inside
+         *     and a longer one answers 422 rather than being truncated. Each reader may search 60
+         *     times a minute (`SEARCH_RATE_PER_USER_PER_MINUTE`), counted per person rather than per
+         *     bank so one busy colleague cannot lock the others out. The answer arrives inside
          *     800 ms without the reranker and 1.5 s with it (NFR-02), reported in `Server-Timing`.
          *
          *     Shape of the call: a read. It is not streamed, it needs no idempotency key, and it
          *     writes no audit row, because nothing changed. It is a POST so the query never travels
          *     in a URL: what a reader types is the bank's own text.
+         *
+         *     Errors: `rate_limited` when that reader has searched more than the limit above in the
+         *     last minute, which is a 429 to wait out and retry rather than a call to change;
+         *     `unknown_key` for a `lang` that is not one of the library's language rows;
+         *     `validation_error` for a query over the cap, a `limit` above 100 or a filter the
+         *     contract does not name; `not_found` when the session belongs to no bank;
+         *     `permission_denied` without `search.use`; `unauthenticated` without a session.
          */
         post: operations["search"];
         delete?: never;
@@ -2166,15 +2175,27 @@ export interface paths {
          *     session is refused here even with `search.use`.
          *
          *     What comes back: the same ranked shape `POST /search` returns, over shared library
-         *     records only. No record of any bank's own zone is read or returned.
+         *     records only. No record of any bank's own zone is read or returned, and no bank's
+         *     regulatory scope narrows it, because a key belongs to no bank. The text carries no
+         *     language and no `asOf`: it is compared in every content language the library holds,
+         *     against the records in force today. `matchKind` says which leg found each record, so
+         *     an agent can tell a reference it recognised from a meaning it matched.
          *
          *     Limits and budgets: the text is at most 8000 characters
          *     (`SEARCH_SIMILAR_MAX_CHARS`); longer answers 422. `limit` defaults to 20 and may not
-         *     exceed 100. The same 800 ms budget as `POST /search` applies.
+         *     exceed 100. Each key may call 60 times a minute
+         *     (`SEARCH_RATE_PER_USER_PER_MINUTE`, the same allowance a reader has), counted per key.
+         *     The same 800 ms budget as `POST /search` applies.
          *
          *     Shape of the call: a read. Not streamed, no idempotency key, no audit row. The text
          *     an agent sends is fetched content and is treated as untrusted: it is not stored, and
          *     nothing it says directs the server.
+         *
+         *     Errors: `rate_limited` when that key has called more than the limit above in the last
+         *     minute, a 429 to wait out and retry; `validation_error` for a text over the cap, a
+         *     `limit` above 100 or a field the contract does not name; `permission_denied` without
+         *     the `search:read` scope; `unauthenticated` without a key, which is also what a
+         *     person's session gets here.
          */
         post: operations["findSimilar"];
         delete?: never;

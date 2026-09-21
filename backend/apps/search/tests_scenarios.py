@@ -196,8 +196,8 @@ class HybridSearchScenarioTests(CorpusMixin, TestCase):
         meaning, because not one of those words is in its text. Both answers are one
         statement over the chunk table, with the reranker given the fused window.
 
-        Operations: `search`. `findSimilar` ranks these same chunks for an agent's key and
-        answers 501 not_built until `c7-search-similar-limits` builds it.
+        Operations: `search`. `findSimilar` ranks these same chunks for an agent's key,
+        proved in tests_similar.py.
         """
         with mock.patch.object(
             reranker.MockReranker, "rerank", autospec=True, side_effect=reranker.MockReranker.rerank

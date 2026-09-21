@@ -81,11 +81,15 @@ class SearchContractTests(SearchApiTestCase):
         self.assertEqual(response.json()["code"], "not_built")
 
     # -- the agents' route ---------------------------------------------------------------
-    def test_similar_answers_not_built_for_a_key_with_the_scope(self) -> None:
+    def test_similar_is_built_and_runs_behind_the_agents_scope(self) -> None:
+        # `POST /search/similar` answers for real since `c7-search-similar-limits`; what it
+        # finds is proved in tests_similar.py. What belongs here is that the scope gate
+        # passed and the logic ran: nothing is indexed in this test database, and an
+        # empty answer is a 200 with an empty list, never a 404 (playbook 4.4).
         with stub_api_key(agent_principal(scopes={perms.SCOPE_SEARCH_READ})):
             response = self.post(SIMILAR, SIMILAR_BODY, KEY_HEADERS)
-        self.assertEqual(response.status_code, 501)
-        self.assertEqual(response.json()["code"], "not_built")
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["items"], [])
 
 
 class AskStreamContractTests(SearchApiTestCase):

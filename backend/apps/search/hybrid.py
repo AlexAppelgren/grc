@@ -34,14 +34,23 @@ on the Swedish text and a Finnish one on the Finnish text (SRC-S2).
 else: no log line, no audit row, no outbox payload and no URL (playbook 4.7). `POST /search`
 writes nothing at all, which is why its scenarios assert the audit count is unchanged.
 
-`find_similar` is the agents' nearest-neighbour read and is built by
-`c7-search-similar-limits`; until it lands it answers 501 `not_built` behind the scope gate
-`api.py` already applies.
+**`find_similar` is the same statement, read by an agent.** `POST /search/similar` is the
+agents' route (AGT-02): a watch agent sends a passage it fetched and asks which library
+records are nearest it. Three things differ from a reader's search, and nothing else does.
+A key belongs to no bank, so there is no regulatory scope to apply and no bank to read;
+the passage carries no language, so the keyword leg reads it in all five content
+configurations rather than one; and there is no `asOf`, so the ranking is taken at today.
+The vector leg leads, as it must for a paragraph, and the words catch what it cannot
+reach — a chunk whose embedding has not arrived, and a deployment with no embedding model
+contracted at all (D-09). Both routes spend from the same per-caller bucket in
+`limits.py`: an agent in a retry loop must not cost readers their budget.
 """
 
 from __future__ import annotations
 
 import datetime
+import functools
+import operator
 import re
 import uuid
 from typing import Any
@@ -69,10 +78,12 @@ from django.db.models import (
 )
 from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast, Coalesce, NullIf, RowNumber
+from django.utils import timezone
 from pgvector.django import CosineDistance
 
 from apps.library.models import Instrument, ObligationTerm, ObligationTitle, ObligationVersion, Provision
 from apps.library.reading import today_for
+from apps.search import limits
 from apps.search.models import TEXT_SEARCH_CONFIGS, SearchChunk, SearchSource
 from apps.search.schemas import (
     SearchFilters,
@@ -87,8 +98,6 @@ from apps.shared.adapters import embedder, reranker
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy import matching
-
-NOT_BUILT = "Search is not switched on yet."
 
 # Which chunk a caller means by a hit kind, and which kind a chunk answers as. One mapping,
 # read both ways, so a `types` filter and a hit can never disagree about what a chunk is.
@@ -122,37 +131,70 @@ ELLIPSIS = "…"
 
 
 # ---------------------------------------------------------------------------------------
-# POST /search
+# POST /search, POST /search/similar
 # ---------------------------------------------------------------------------------------
-def run_search(body: SearchRequest, *, tenant_id: uuid.UUID | None) -> SearchResponse:
+def run_search(body: SearchRequest, *, tenant_id: uuid.UUID | None, user_id: uuid.UUID) -> SearchResponse:
     """`POST /search`. The tenant scopes the footprint filter; the chunks are the
-    library's (D-10: only the library is indexed in R1)."""
+    library's (D-10: only the library is indexed in R1). The reader's own bucket is spent
+    before any of it runs, so a runaway client is refused at the door (NFR-02)."""
+    limits.search_bucket(user_id)
     tenant = _tenant(tenant_id)
     as_of = body.as_of or today_for(tenant)
-    configuration = _configuration(body.lang, tenant)
-    found = _candidates(body, tenant=tenant, as_of=as_of, configuration=configuration)
+    found = _candidates(
+        body.q,
+        configurations=(_configuration(body.lang, tenant),),
+        types=body.types,
+        filters=body.filters or SearchFilters(),
+        tenant=tenant,
+        as_of=as_of,
+        limit=body.limit,
+    )
     ranked = _best_per_record(_reranked(body.q, found))
     return SearchResponse(items=[_hit(row, body.q) for row in ranked[: body.limit]], as_of=as_of)
 
 
-def find_similar(body: SimilarRequest) -> SearchResponse:
+def find_similar(body: SimilarRequest, *, caller_id: uuid.UUID) -> SearchResponse:
     """`POST /search/similar`. The agents' nearest-neighbour read over library chunks
-    (AGT-02): no tenant row is read, and none is returned."""
-    raise ProblemError(status=501, code="not_built", detail=NOT_BUILT)
+    (AGT-02): no tenant row is read, and none is returned.
+
+    The passage carries no language and no `asOf`, because an agent has neither: it sends
+    what it fetched and asks what the library holds near it today. So the words are read
+    in every content language's configuration and the ranking is taken at today, UTC.
+    """
+    limits.search_bucket(caller_id)
+    as_of = timezone.localdate()
+    found = _candidates(
+        body.text,
+        configurations=tuple(TEXT_SEARCH_CONFIGS.values()),
+        types=body.types,
+        filters=SearchFilters(),
+        tenant=None,
+        as_of=as_of,
+        limit=body.limit,
+    )
+    ranked = _best_per_record(_reranked(body.text, found))
+    return SearchResponse(items=[_hit(row, body.text) for row in ranked[: body.limit]], as_of=as_of)
 
 
 # ---------------------------------------------------------------------------------------
 # The one statement
 # ---------------------------------------------------------------------------------------
 def _candidates(
-    body: SearchRequest, *, tenant: Tenant, as_of: datetime.date, configuration: str
+    text: str,
+    *,
+    configurations: tuple[str, ...],
+    types: list[SearchHitType],
+    filters: SearchFilters,
+    tenant: Tenant | None,
+    as_of: datetime.date,
+    limit: int,
 ) -> list[dict[str, Any]]:
     """The rows either leg found, best fused first. One query, however many hits."""
-    asked = SearchQuery(body.q, search_type="websearch", config=configuration)
-    rows = _filtered(body, tenant=tenant, as_of=as_of)
+    asked = _asked(text, configurations)
+    rows = _filtered(types=types, filters=filters, tenant=tenant, as_of=as_of)
     rows = rows.annotate(
         keyword_score=SearchRank(F("tsv"), asked),
-        similarity=_similarity(body.q),
+        similarity=_similarity(text),
     )
     rows = rows.annotate(
         keyword_rank=Window(RowNumber(), order_by=(F("keyword_score").desc(), F("id").asc())),
@@ -180,20 +222,37 @@ def _candidates(
     # without the multiplier a corpus in five languages could answer a page of twenty with
     # four records and call it the end of the list. The widest columns are left behind
     # (COLUMNS), so the extra rows cost a few kilobytes and no round trip.
-    wanted = max(reranker.get_reranker().top_k, body.limit) * len(TEXT_SEARCH_CONFIGS)
+    wanted = max(reranker.get_reranker().top_k, limit) * len(TEXT_SEARCH_CONFIGS)
     page = rows.order_by(F("fused").desc(), "id").values(*COLUMNS)[:wanted]
     return [row for row in page if row["by_keyword"] or row["by_concept"]]
 
 
-def _filtered(body: SearchRequest, *, tenant: Tenant, as_of: datetime.date) -> QuerySet[SearchChunk]:
+def _asked(text: str, configurations: tuple[str, ...]) -> SearchQuery:
+    """The text as PostgreSQL reads it, stemmed in each configuration given and OR-ed.
+
+    A reader tells the screen which language they are reading in, so their search is
+    stemmed once, in that language. An agent tells us nothing: it posts a paragraph it
+    fetched, in whatever language the supervisor published it. Stemming that as English
+    would put a Swedish passage next to no Swedish chunk at all, because the chunk's own
+    `tsv` holds Swedish stems, so the passage is read in all five and the tsqueries are
+    OR-ed into one. It stays one statement; only the query on the left of `@@` is wider.
+    """
+    return functools.reduce(
+        operator.or_,
+        (SearchQuery(text, search_type="websearch", config=config) for config in configurations),
+    )
+
+
+def _filtered(
+    *, types: list[SearchHitType], filters: SearchFilters, tenant: Tenant | None, as_of: datetime.date
+) -> QuerySet[SearchChunk]:
     """Everything the caller may see and asked for, before a single row is ranked. A filter
     applied after ranking would answer a short page of a long list and call it the answer."""
-    filters = body.filters or SearchFilters()
     rows = SearchChunk.objects.filter(owner_tenant__isnull=True)
     rows = rows.filter(Q(valid_from__isnull=True) | Q(valid_from__lte=as_of))
     rows = rows.filter(Q(valid_to__isnull=True) | Q(valid_to__gte=as_of))
-    if body.types:
-        rows = rows.filter(source_type__in=[SOURCE_OF_HIT[kind] for kind in body.types])
+    if types:
+        rows = rows.filter(source_type__in=[SOURCE_OF_HIT[kind] for kind in types])
     if filters.instrument_id is not None:
         rows = rows.filter(metadata__instrument_id=str(filters.instrument_id))
     if filters.jurisdiction is not None:
@@ -204,6 +263,11 @@ def _filtered(body: SearchRequest, *, tenant: Tenant, as_of: datetime.date) -> Q
         rows = rows.filter(metadata__binding=filters.binding)
     if filters.term_ids:
         rows = rows.filter(metadata__term_ids__contains=[str(term_id) for term_id in filters.term_ids])
+    if tenant is None:
+        # The agents' read. An API key belongs to no bank, so there is no regulatory scope
+        # to apply — not a wider read, because `owner_tenant_id IS NULL` above has already
+        # confined it to the shared library, which is what an agent is asking about.
+        return rows
     rows = rows.annotate(in_scope=_in_footprint(tenant))
     # Absent and true are both the bank's standing scope; false is the reader asking to see
     # what the scope holds back, which is the screen's "Search outside our scope".

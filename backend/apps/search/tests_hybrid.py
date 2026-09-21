@@ -235,7 +235,9 @@ def search(
     body = SearchRequest(
         q=query, lang=lang, as_of=as_of, types=types or [], filters=filters, limit=limit
     )
-    return hybrid.run_search(body, tenant_id=tenant.id)
+    # A fresh caller per search: the rate limit is per person (NFR-02), and a helper that
+    # reused one id would make a long test fail on the bucket rather than on the query.
+    return hybrid.run_search(body, tenant_id=tenant.id, user_id=uuid.uuid4())
 
 
 def titles_of(response: Any) -> list[str]:
@@ -282,7 +284,11 @@ class HybridLegsTests(CorpusMixin, TestCase):
     def test_a_chunk_with_no_vector_yet_is_still_found_by_its_words(self) -> None:
         """The narrower answer, never the wrong one: an approval is searchable the moment it
         commits, and the vector follows behind it."""
-        with indexing.index_write("test: the sweep has not reached these chunks yet"):
+        # With no tenant active, which is the only session that writes a shared chunk since
+        # H15: the corpus builder leaves this test's bank activated, and under that session
+        # the policy refuses the update and silently leaves every vector in place, so the
+        # assertion below would have passed on a corpus that still had all its vectors.
+        with tenancy.platform_zone(), indexing.index_write("test: the sweep has not reached these chunks yet"):
             SearchChunk.objects.filter(embedding__isnull=False).update(embedding=None)
 
         response = search("capital adequacy", tenant=self.tenant)
@@ -522,7 +528,7 @@ class SearchCallerTests(CorpusMixin, TestCase):
 
     def test_a_session_in_no_company_is_a_404(self) -> None:
         with self.assertRaises(ProblemError) as refusal:
-            hybrid.run_search(SearchRequest(q=FFFS), tenant_id=None)
+            hybrid.run_search(SearchRequest(q=FFFS), tenant_id=None, user_id=uuid.uuid4())
 
         self.assertEqual((refusal.exception.status, refusal.exception.code), (404, "not_found"))
 
@@ -624,15 +630,8 @@ class SearchWritesNothingTests(CorpusMixin, TestCase):
 
 
 class SearchStubsTests(TestCase):
-    """What this task did not build yet."""
-
-    def test_find_similar_is_still_the_contract_stub(self) -> None:
-        from apps.search.schemas import SimilarRequest
-
-        with self.assertRaises(ProblemError) as refusal:
-            hybrid.find_similar(SimilarRequest(text="anything at all"))
-
-        self.assertEqual((refusal.exception.status, refusal.exception.code), (501, "not_built"))
+    """What this task did not build yet. `find_similar` left it with
+    `c7-search-similar-limits`, and what it now answers is proved in tests_similar.py."""
 
     def test_every_hit_kind_maps_to_a_source_and_back(self) -> None:
         """A `types` filter and a hit read the one mapping, so they cannot disagree about
