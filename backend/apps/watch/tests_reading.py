@@ -144,6 +144,7 @@ class WatchReadFixture(TestCase):
         )
         cls.lead = build.change_with_timeline(
             stable_key="chg-lead",
+            first_seen_at=build.ANCHOR - datetime.timedelta(seconds=0),
             title="FI adopts amended rules on paying for investment research",
             key_date=LATER,
             urgency="act_now",
@@ -151,6 +152,7 @@ class WatchReadFixture(TestCase):
         build.obligation_link(cls.lead, cls.obligation, confidence=0.82)
         cls.earlier = build.change_with_timeline(
             stable_key="chg-earlier",
+            first_seen_at=build.ANCHOR - datetime.timedelta(seconds=60),
             title="FI reports on its supervision of research payments",
             change_type="supervision",
             key_date=EARLIER,
@@ -158,6 +160,7 @@ class WatchReadFixture(TestCase):
         )
         cls.undated = build.change_with_timeline(
             stable_key="chg-undated",
+            first_seen_at=build.ANCHOR - datetime.timedelta(seconds=120),
             title="FI consults on client categorisation",
             change_type="proposal",
             key_date=None,
@@ -165,6 +168,7 @@ class WatchReadFixture(TestCase):
         )
         cls.elsewhere = build.change_with_timeline(
             stable_key="chg-elsewhere",
+            first_seen_at=build.ANCHOR - datetime.timedelta(seconds=180),
             title="New rules on reporting suspicious transactions",
             terms=("regime:aml",),
             flags=(),

@@ -21,6 +21,7 @@ made one would hide the very thing CAS-01 has to prove.
 from __future__ import annotations
 
 import datetime
+import zlib
 import itertools
 from collections.abc import Iterable, Sequence
 from typing import Any
@@ -52,6 +53,18 @@ REASON = "test builder"
 # A fixed anchor rather than `timezone.now()`, so a fixture cannot drift into or out of a
 # window as the clock moves (playbook 8.3). It is the prototype's own anchor week.
 ANCHOR = datetime.datetime(2026, 9, 16, 6, 2, tzinfo=datetime.UTC)
+
+
+def _sighted_at(stable_key: str) -> datetime.datetime:
+    """A sighting time of this change's own, derived from its key.
+
+    Every change used to be sighted at `ANCHOR` exactly, and the feed orders by sighting
+    time and then by id. An id is a random uuid, so which change landed on page one changed
+    from run to run, and a query whose `IN` clause is empty does not execute: the console's
+    query-count test counted 16 here and 15 in CI, for a page holding a different change
+    (2026-09-21). Derived from the key rather than a counter, so the same key is the same
+    moment in every run, on every machine, whatever order the rows were built in."""
+    return ANCHOR - datetime.timedelta(seconds=zlib.crc32(stable_key.encode()) % 3600)
 PUBLISHED_ON = datetime.date(2026, 9, 15)
 KEY_DATE = datetime.date(2026, 10, 1)
 
@@ -145,12 +158,14 @@ def change(
     status: ChangeStatus = ChangeStatus.ACTIVE,
     run: AgentRun | None = None,
     so_what_draft: str = "",
+    first_seen_at: datetime.datetime | None = None,
 ) -> RegulatoryChange:
     """One reform, as the prototype's lead change reads. `stable_key` is the merge key, so
     two builds in one test get two keys unless a test names one on purpose (AC-WAT1)."""
+    key = stable_key or f"chg-fi-2026-research-payments-{next(_counter)}"
     with watch_write(REASON):
         return RegulatoryChange.objects.create(
-            stable_key=stable_key or f"chg-fi-2026-research-payments-{next(_counter)}",
+            stable_key=key,
             title=title,
             change_type=ChangeType.objects.get(key=change_type),
             authority=None if authority is None else Authority.objects.get(key=authority),
@@ -169,7 +184,7 @@ def change(
             origin=OriginType.AGENT.value,
             agent_run=run,
             model="agent pipeline 0.4",
-            first_seen_at=ANCHOR,
+            first_seen_at=first_seen_at or _sighted_at(key),
         )
 
 
