@@ -71,7 +71,9 @@ test.describe('home journeys', () => {
     await expect(decide.getByText(/proposal.*pending review/)).toBeVisible();
 
     const sources = page.locator('[data-source-health]');
-    await expect(sources).toContainText('Sources: 1 of 2 checked.');
+    // The panel counts the sources the seed holds, and chunk 5 added three more, so the
+    // sentence is asserted by shape and the failed source this journey seeded by name.
+    await expect(sources).toContainText(/Sources: \d+ of \d+ checked\./);
     await expect(sources).toContainText('EBA news feed (E2E) failed.');
   });
 
