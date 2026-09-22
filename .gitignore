@@ -78,3 +78,4 @@ tmp/
 # machine's preview-server config. Neither belongs in the repository.
 .claude/worktrees/
 .claude/launch.json
+.claude/settings.local.json

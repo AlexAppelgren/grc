@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__green-design-system__*",
+      "WebFetch"
+    ]
+  }
+}
