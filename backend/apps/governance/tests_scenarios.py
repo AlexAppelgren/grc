@@ -11,7 +11,7 @@ run those guard proofs, so one source proves each rule. AUD-S7 reads through
 GET /audit-events (chunk 4).
 
 Operations exercised (the audit-on-write guard reads these names): createProposal,
-approveProposal, createConsoleTenant, createFootprintRequest. ADM-S4 also drives the
+approveProposal, createConsoleTenant, updateTenant, createFootprintRequest. ADM-S4 also drives the
 console routes other apps register — the source registry and the platform agent keys —
 by their gate alone; what each one then does is its own app's scenario.
 
@@ -29,8 +29,9 @@ from django.db import connection
 from django.test import override_settings
 
 from apps.identity.models import Invitation, TenantRole
+from apps.identity.session_logic import actor_of
 from apps.library.seeds import seed_jurisdictions, seed_languages
-from apps.shared import factories, permissions as perms
+from apps.shared import factories, permissions as perms, tenancy
 # Modules, not classes: a TestCase imported by name would be collected and run here twice.
 from apps.shared import tests_append_only as append_only_guards
 from apps.shared import tests_audit_on_write as audit_guards
@@ -43,6 +44,7 @@ from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.models import ComplianceStatus, Flag
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
+from apps.tenants import logic as tenants_logic
 from config.api import api
 
 V1 = "/api/v1"
@@ -317,29 +319,23 @@ class GovernanceScenarioTests(ScenarioTestCase):
         headers = sign_in(platform_admin)
         created = self._post(
             "/console/tenants",
-            {
-                "name": "Example Bank AB",
-                "slug": "example-bank",
-                "timezone": "Europe/Stockholm",
-                "defaultLanguage": "sv",
-                "contentLanguages": ["sv", "en"],
-                "firstAdminEmail": "admin@example-bank.test",
-                "firstAdminTitle": "Head of Compliance",
-            },
+            {"name": "Example Bank AB", "firstAdminEmail": "admin@example-bank.test", "firstAdminTitle": "Head of Compliance"},
             headers,
         )
         self.assertEqual(created.status_code, 201, created.content)
         tenant = Tenant.objects.get(pk=created.json()["id"])
+        self.assertEqual(tenant.slug, "example-bank-ab")
         # The console lists it by id, never by a count.
         listed = self.client.get(f"{V1}/console/tenants", **headers)
         self.assertIn(str(tenant.id), [row["id"] for row in listed.json()["items"]])
-        # The tenant has its system roles, its own lists and its content languages.
+        # The tenant has its system roles, but no default or content language yet: those
+        # are the bank's own to set (D-68), and setting none here is how ADM-S17 finds its
+        # onboarding "profile" step open.
         self.activate(tenant)
         self.assertTrue(TenantRole.objects.filter(tenant=tenant, key="admin", is_system=True).exists())
         self.assertTrue(ComplianceStatus.objects.filter(tenant=tenant, is_system=True).exists())
-        self.assertEqual(
-            [link.language.key for link in TenantContentLanguage.objects.filter(tenant=tenant)], ["sv", "en"]
-        )
+        self.assertIsNone(tenant.default_language_id)
+        self.assertEqual(TenantContentLanguage.objects.filter(tenant=tenant).count(), 0)
         # And one pending administrator invitation, whose link was emailed.
         invitation = Invitation.objects.get(tenant=tenant)
         self.assertEqual([link.role.key for link in invitation.role_links.all()], ["admin"])
@@ -354,6 +350,54 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertEqual(listed_rows.count(), sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values()))
         self.assertEqual({(row.actor_type, row.actor_id) for row in listed_rows}, {(creation.actor_type, creation.actor_id)})
         self.assertEqual((creation.actor_type, creation.actor_id), ("user", platform_admin.id))
+
+        # Creating a second tenant whose name derives the same short name gets a suffix
+        # instead of a 409: nobody is ever asked to pick a different one. A fresh platform
+        # request starts with no tenant active, unlike this test's own connection, which
+        # the first create left scoped to the first tenant; clearing it first is what a
+        # second, unrelated request would actually see.
+        tenancy.clear_tenant()
+        second = self._post(
+            "/console/tenants",
+            {"name": "Example Bank AB", "firstAdminEmail": "admin2@example-bank.test"},
+            headers,
+        )
+        self.assertEqual(second.status_code, 201, second.content)
+        self.assertEqual(Tenant.objects.get(pk=second.json()["id"]).slug, "example-bank-ab-2")
+
+    def test_adm_s17(self) -> None:
+        """ADM-S17
+
+        A bank sets its own timezone and languages, not the platform on its behalf (ADM-02, TEN-01, D-68).
+        """
+        seed_languages()
+        platform_admin = factories.platform_user(roles=("platform_admin",))
+        # The real console path (create_tenant), not the factory: the factory builds a
+        # ready-to-use tenant with English already set, which is exactly what this
+        # scenario proves a console-created one does not have.
+        tenant = tenants_logic.create_tenant(
+            actor=actor_of(platform_admin), name="Example Bank AB", first_admin_email="admin@example-bank.test", first_admin_title=""
+        )
+        admin = factories.member(tenant, roles=("admin",)).user
+        headers = sign_in(admin, tenant=tenant)
+
+        before = self.client.get(f"{V1}/tenant", **headers).json()
+        self.assertEqual(before["timezone"], "Europe/Stockholm")
+        self.assertIsNone(before["defaultLanguage"])
+        self.assertFalse(next(step for step in before["onboarding"]["steps"] if step["key"] == "profile")["done"])
+
+        updated = self.client.patch(
+            f"{V1}/tenant",
+            data={"timezone": "Europe/Copenhagen", "defaultLanguage": "da", "contentLanguages": ["da", "en"]},
+            content_type="application/json",
+            **headers,
+        )
+        self.assertEqual(updated.status_code, 200, updated.content)
+
+        after = self.client.get(f"{V1}/tenant", **headers).json()
+        self.assertEqual(after["timezone"], "Europe/Copenhagen")
+        self.assertEqual(after["defaultLanguage"]["key"], "da")
+        self.assertTrue(next(step for step in after["onboarding"]["steps"] if step["key"] == "profile")["done"])
 
     @skip("pending: AUD-S8 (AUD-04, chunk 12)")
     def test_aud_s8(self) -> None:

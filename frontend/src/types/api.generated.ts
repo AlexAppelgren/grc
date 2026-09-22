@@ -1389,23 +1389,23 @@ export interface paths {
          *     second step that turns the bank on.
          *
          *     Needs the platform permission `tenants.manage`. One call writes the organisation with
-         *     its name, short name, timezone and languages; gives it the system roles and the
-         *     starting set of its own lists, which its administrator may extend afterwards; and
-         *     sends the first administrator an enrolment invitation carrying the system role that
-         *     can invite everyone else. That person receives a one-time code by email, which stops
-         *     working the moment their first passkey exists; no password is ever created. The
-         *     creation is recorded in the audit log as `tenant.created` with the whole profile, and
-         *     the invitation is recorded against the new bank. If anything in the call is refused,
-         *     nothing at all is written.
+         *     its name and a short name derived from it; gives it the system roles and the starting
+         *     set of its own lists, which its administrator may extend afterwards; and sends the
+         *     first administrator an enrolment invitation carrying the system role that can invite
+         *     everyone else. That person receives a one-time code by email, which stops working the
+         *     moment their first passkey exists; no password is ever created. The timezone, default
+         *     language and content languages are the bank's own to set afterwards, on its
+         *     Organisation profile screen (D-68): platform staff are never asked to guess at them,
+         *     and the onboarding "profile" step stays open until the bank's administrator sets them.
+         *     The creation is recorded in the audit log as `tenant.created` with the whole profile,
+         *     and the invitation is recorded against the new bank. If anything in the call is
+         *     refused, nothing at all is written.
          *
          *     The address must belong to the bank. Platform staff are separate accounts, and an
          *     address that already carries a platform role is refused, because a console account
          *     invited into a bank would carry the console's permissions into a bank session.
          *
-         *     Answers 201 with the new bank's console row. Errors: `duplicate_key` when the short
-         *     name is already taken; `unknown_key` for a timezone the IANA database does not hold or
-         *     a language key that is not an active language row; a 422 for a blank name, an empty
-         *     language list, a short name that is not lower-case letters, digits and hyphens, or an
+         *     Answers 201 with the new bank's console row. Errors: a 422 for a blank name or an
          *     address that belongs to platform staff, each with its own `code` and a message to
          *     show; `permission_denied` without `tenants.manage`.
          */
@@ -4238,30 +4238,16 @@ export interface components {
          * ConsoleTenantCreateBody
          * @description Create a bank and invite its first administrator in one action (ADM-02, ID-01).
          *     The address must be the administrator's own: platform staff are separate accounts.
+         *     The timezone, default language and content languages are not asked here (D-68): the
+         *     bank sets them itself on its Organisation profile screen, which already carries this
+         *     write under `security.manage`; a short name is derived from the name, never typed.
          * @example {
-         *       "contentLanguages": [
-         *         "da",
-         *         "en"
-         *       ],
-         *       "defaultLanguage": "da",
          *       "firstAdminEmail": "compliance.officer@second-bank.test",
          *       "firstAdminTitle": "Head of Compliance",
-         *       "name": "Second Bank A/S",
-         *       "slug": "second-bank",
-         *       "timezone": "Europe/Copenhagen"
+         *       "name": "Second Bank A/S"
          *     }
          */
         ConsoleTenantCreateBody: {
-            /**
-             * Contentlanguages
-             * @description Every language the bank will keep content in, as language keys in the order it wants them shown — `["da", "en"]` for a Danish bank. At least one is required and an empty list is refused. Each key must be an active language row or the whole call is refused with `unknown_key` naming the key. The bank's own administrators change the list afterwards.
-             */
-            contentLanguages: string[];
-            /**
-             * Defaultlanguage
-             * @description The key of the language the bank will read and write in first, at most 8 characters — `sv`, `da`, `nb`, `fi` or `en`. A language key, never a label. It must be an active language row or the call is refused with `unknown_key`. The languages on offer are library reference rows, not a vocabulary a bank's admin may extend.
-             */
-            defaultLanguage: string;
             /**
              * Firstadminemail
              * @description The work address of the person who will be the bank's first administrator, at most 254 characters. Creating the organisation sends that person an enrolment invitation carrying the system role that can invite everyone else; no password is created at any point, here or later. It has to be the bank's own person: an address that already belongs to platform staff is refused with a 422, because a console account carrying platform permissions into a bank session would collapse the separation the product rests on.
@@ -4275,19 +4261,9 @@ export interface components {
             firstAdminTitle: string;
             /**
              * Name
-             * @description The organisation's name as the bank itself will see it, at most 200 characters — 'Example Bank AB'. It is the bank's own from the moment it exists and its administrators reword it themselves afterwards. Blank is refused with a 422.
+             * @description The organisation's name as the bank itself will see it, at most 200 characters — 'Example Bank AB'. It is the bank's own from the moment it exists and its administrators reword it themselves afterwards. Blank is refused with a 422. Its short name is derived from this and never typed by a person: lower-cased, hyphenated, and given a numeric suffix if another tenant already derived the same one, so the call can never be refused with `duplicate_key`.
              */
             name: string;
-            /**
-             * Slug
-             * @description The short name the organisation will be known by in URLs and in support, at most 80 characters of lower-case letters, digits and hyphens — `second-bank`. Anything else is refused with a 422. It must be free across the whole platform: a name already taken is refused with `duplicate_key`. It is fixed for the life of the organisation, so choose it as deliberately as a customer number.
-             */
-            slug: string;
-            /**
-             * Timezone
-             * @description The IANA timezone the bank works in, at most 64 characters — `Europe/Stockholm` for a Swedish bank, `Europe/Copenhagen` for a Danish one. It sets the local day every deadline and every screen is counted in. A name the server's IANA database does not hold is refused with `unknown_key`.
-             */
-            timezone: string;
         };
         /**
          * ConsoleTenantPage

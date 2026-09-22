@@ -232,35 +232,36 @@ def console_tenants(*, limit: int, offset: int) -> tuple[list[Tenant], int]:
     return list(tenants[offset : offset + limit]), tenants.count()
 
 
-def _validate_slug(slug: str) -> str:
-    cleaned = slug.strip().lower()
-    if not cleaned or slugify(cleaned) != cleaned:
-        raise ValidationError("A short name is lower-case letters, digits and hyphens.", code="invalid_slug")
-    return cleaned
+def _derive_slug(name: str) -> str:
+    """A short name from the organisation's name, never typed by a person (D-68): lower-cased,
+    hyphenated, and de-duplicated with a numeric suffix when another tenant already derived
+    the same one. The column, its uniqueness constraint and every place that reads it are
+    unchanged; only the moment a person invented it is gone."""
+    base = slugify(name) or "tenant"
+    candidate = base
+    suffix = 2
+    while Tenant.objects.filter(slug=candidate).exists():
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+    return candidate
 
 
 def create_tenant(
     *,
     actor: Actor,
     name: str,
-    slug: str,
-    timezone_name: str,
-    default_language: str,
-    content_language_keys: list[str],
     first_admin_email: str,
     first_admin_title: str,
 ) -> Tenant:
-    """Write the bank, give it its roles, lists and languages, and invite its first
-    administrator, in the caller's transaction (FIRST_RUN_SETUP steps 6 and 7)."""
+    """Write the bank and invite its first administrator, in the caller's transaction
+    (FIRST_RUN_SETUP steps 6 and 7). The timezone, default language and content languages
+    are the bank's own to set, on the Organisation profile screen that already self-services
+    them under security.manage (D-68): platform staff no longer guess at them, the tenant
+    reads the model's default timezone and no language until its administrator chooses one,
+    and the onboarding "profile" step stays open until they do."""
     cleaned_name = name.strip()
     if not cleaned_name:
         raise ValidationError("Give the organisation a name.", code="name_required")
-    cleaned_slug = _validate_slug(slug)
-    if Tenant.objects.filter(slug=cleaned_slug).exists():
-        raise ValidationError("An organisation already uses that short name.", code="duplicate_key")
-    zone = _validate_timezone(timezone_name)
-    languages = _languages_by_keys(content_language_keys)
-    default = _languages_by_keys([default_language])[0]
     email = invitation_logic.normalise_email(first_admin_email)
     # Platform staff are separate accounts, the same rule bootstrap_platform enforces from
     # the other side: a platform role holder invited into a bank would carry the console's
@@ -270,11 +271,10 @@ def create_tenant(
             "That address belongs to platform staff. Invite the bank's administrator with an address of their own.",
             code="platform_account",
         )
-    tenant = Tenant.objects.create(name=cleaned_name, slug=cleaned_slug, timezone=zone, default_language=default)
+    tenant = Tenant.objects.create(name=cleaned_name, slug=_derive_slug(cleaned_name))
     # Platform staff have no bypass (playbook 14): the one tenant this call activates is
     # the one it has just written, so no other tenant's rows are readable or writable here.
     tenancy.activate(tenant.id)
-    set_content_languages(tenant, languages)
     roles_logic.ensure_system_roles(tenant)
     # The lists are this person's work too, not a deploy's: the same actor the creation
     # below is recorded under.
@@ -287,13 +287,7 @@ def create_tenant(
         subject_title=tenant.name,
         summary="Organisation created from the platform console.",
         tenant_id=tenant.id,
-        after={
-            "name": tenant.name,
-            "slug": tenant.slug,
-            "timezone": tenant.timezone,
-            "defaultLanguage": default.key,
-            "contentLanguages": [language.key for language in languages],
-        },
+        after={"name": tenant.name, "slug": tenant.slug, "timezone": tenant.timezone},
     )
     # The first administrator gets the system role that can invite the rest of the bank,
     # chosen by its permission and never by a role name (playbook 4.2). roles_by_keys

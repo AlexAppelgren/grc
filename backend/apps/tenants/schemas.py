@@ -414,17 +414,16 @@ class ConsoleTenantPage(CamelSchema):
 
 class ConsoleTenantCreateBody(CamelSchema):
     """Create a bank and invite its first administrator in one action (ADM-02, ID-01).
-    The address must be the administrator's own: platform staff are separate accounts."""
+    The address must be the administrator's own: platform staff are separate accounts.
+    The timezone, default language and content languages are not asked here (D-68): the
+    bank sets them itself on its Organisation profile screen, which already carries this
+    write under `security.manage`; a short name is derived from the name, never typed."""
 
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
                 {
                     "name": "Second Bank A/S",
-                    "slug": "second-bank",
-                    "timezone": "Europe/Copenhagen",
-                    "defaultLanguage": "da",
-                    "contentLanguages": ["da", "en"],
                     "firstAdminEmail": "compliance.officer@second-bank.test",
                     "firstAdminTitle": "Head of Compliance",
                 }
@@ -437,46 +436,10 @@ class ConsoleTenantCreateBody(CamelSchema):
         description=(
             "The organisation's name as the bank itself will see it, at most 200 characters — "
             "'Example Bank AB'. It is the bank's own from the moment it exists and its "
-            "administrators reword it themselves afterwards. Blank is refused with a 422."
-        ),
-    )
-    slug: str = Field(
-        max_length=80,
-        description=(
-            "The short name the organisation will be known by in URLs and in support, at most "
-            "80 characters of lower-case letters, digits and hyphens — `second-bank`. Anything "
-            "else is refused with a 422. It must be free across the whole platform: a name "
-            "already taken is refused with `duplicate_key`. It is fixed for the life of the "
-            "organisation, so choose it as deliberately as a customer number."
-        ),
-    )
-    timezone: str = Field(
-        max_length=64,
-        description=(
-            "The IANA timezone the bank works in, at most 64 characters — `Europe/Stockholm` "
-            "for a Swedish bank, `Europe/Copenhagen` for a Danish one. It sets the local day "
-            "every deadline and every screen is counted in. A name the server's IANA database "
-            "does not hold is refused with `unknown_key`."
-        ),
-    )
-    default_language: str = Field(
-        max_length=8,
-        description=(
-            "The key of the language the bank will read and write in first, at most 8 "
-            "characters — `sv`, `da`, `nb`, `fi` or `en`. A language key, never a label. It "
-            "must be an active language row or the call is refused with `unknown_key`. The "
-            "languages on offer are library reference rows, not a vocabulary a bank's admin "
-            "may extend."
-        ),
-    )
-    content_languages: list[str] = Field(
-        min_length=1,
-        description=(
-            "Every language the bank will keep content in, as language keys in the order it "
-            "wants them shown — `[\"da\", \"en\"]` for a Danish bank. At least one is required "
-            "and an empty list is refused. Each key must be an active language row or the "
-            "whole call is refused with `unknown_key` naming the key. The bank's own "
-            "administrators change the list afterwards."
+            "administrators reword it themselves afterwards. Blank is refused with a 422. Its "
+            "short name is derived from this and never typed by a person: lower-cased, "
+            "hyphenated, and given a numeric suffix if another tenant already derived the same "
+            "one, so the call can never be refused with `duplicate_key`."
         ),
     )
     first_admin_email: str = Field(

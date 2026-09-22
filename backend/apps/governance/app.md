@@ -205,14 +205,28 @@ Then /health/ answers 200 with every component ok and the worker ping bounded
 ### ADM-S6 — A tenant is created from the console with its first administrator invited `@integration` `@e2e` (ADM-02, ID-01, TEN-01)
 ```gherkin
 Given a platform admin with tenants.manage
-When they create a tenant with a name, a short name, a timezone, a language order and the first administrator's address
-Then the tenant exists with its system roles, its own vocabularies and its content languages
+When they create a tenant with only a name and the first administrator's address
+Then the tenant exists with its system roles, its own vocabularies and a short name derived from that name
+And it carries no default language and no content language yet, so its onboarding "profile" step is open
 And the console's tenant list holds it
 And one pending administrator invitation is sent to that address
 And the creation is audited in the new tenant's own log
-When they create another tenant with the same short name
-Then the answer is 409
+When they create another tenant whose name derives the same short name
+Then the second tenant's short name carries a numeric suffix, and both are created
 ```
+
+### ADM-S17 — A bank sets its own timezone and languages, not the platform on its behalf `@integration` (ADM-02, TEN-01)
+```gherkin
+Given a tenant just created from the console, before anyone has touched its profile
+When its administrator opens Organisation
+Then the profile onboarding step reads as open, the timezone reads "Europe/Stockholm" and no language is set
+When they set the timezone, a default language and the content language order, and save
+Then the profile step closes and the values are theirs from then on, unreachable from the console
+```
+Proven at the API alone: TEN-S1 already journeys the same form, the same save and the
+same onboarding checklist end to end on a seeded tenant; what this scenario adds is that
+a console-created tenant starts with the step open, which a second journey through an
+identical screen would not show any differently.
 
 ### AUD-S8 — The ledger purge refuses a cutoff inside the floor and a paused tenant `@integration` (AUD-04)
 ```gherkin

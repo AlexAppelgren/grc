@@ -240,23 +240,23 @@ def create_console_tenant(request: HttpRequest, body: ConsoleTenantCreateBody) -
     second step that turns the bank on.
 
     Needs the platform permission `tenants.manage`. One call writes the organisation with
-    its name, short name, timezone and languages; gives it the system roles and the
-    starting set of its own lists, which its administrator may extend afterwards; and
-    sends the first administrator an enrolment invitation carrying the system role that
-    can invite everyone else. That person receives a one-time code by email, which stops
-    working the moment their first passkey exists; no password is ever created. The
-    creation is recorded in the audit log as `tenant.created` with the whole profile, and
-    the invitation is recorded against the new bank. If anything in the call is refused,
-    nothing at all is written.
+    its name and a short name derived from it; gives it the system roles and the starting
+    set of its own lists, which its administrator may extend afterwards; and sends the
+    first administrator an enrolment invitation carrying the system role that can invite
+    everyone else. That person receives a one-time code by email, which stops working the
+    moment their first passkey exists; no password is ever created. The timezone, default
+    language and content languages are the bank's own to set afterwards, on its
+    Organisation profile screen (D-68): platform staff are never asked to guess at them,
+    and the onboarding "profile" step stays open until the bank's administrator sets them.
+    The creation is recorded in the audit log as `tenant.created` with the whole profile,
+    and the invitation is recorded against the new bank. If anything in the call is
+    refused, nothing at all is written.
 
     The address must belong to the bank. Platform staff are separate accounts, and an
     address that already carries a platform role is refused, because a console account
     invited into a bank would carry the console's permissions into a bank session.
 
-    Answers 201 with the new bank's console row. Errors: `duplicate_key` when the short
-    name is already taken; `unknown_key` for a timezone the IANA database does not hold or
-    a language key that is not an active language row; a 422 for a blank name, an empty
-    language list, a short name that is not lower-case letters, digits and hyphens, or an
+    Answers 201 with the new bank's console row. Errors: a 422 for a blank name or an
     address that belongs to platform staff, each with its own `code` and a message to
     show; `permission_denied` without `tenants.manage`.
     """
@@ -264,10 +264,6 @@ def create_console_tenant(request: HttpRequest, body: ConsoleTenantCreateBody) -
     tenant = logic.create_tenant(
         actor=actor_of(platform_user),
         name=body.name,
-        slug=body.slug,
-        timezone_name=body.timezone,
-        default_language=body.default_language,
-        content_language_keys=body.content_languages,
         first_admin_email=body.first_admin_email,
         first_admin_title=body.first_admin_title,
     )

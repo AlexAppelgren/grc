@@ -175,11 +175,10 @@ test.describe('governance journeys', () => {
 
   test("ADM-S6: A tenant is created from the console with its first administrator invited", async ({ page, request, apiGuard }, testInfo) => {
     allowFreshContext(apiGuard);
-    apiGuard.allow(/\/console\/tenants$/, 409, 'duplicate_key: the second attempt reuses the short name (ADM-S6)');
-    // A short name is unique for all time, so it carries the attempt: a retry
-    // and a parallel run never collide, and nothing seeded is touched.
-    const slug = `adm-s6-${Date.now().toString(36)}-${testInfo.retry}`;
-    const email = `administrator@${slug}.test`;
+    // A name carries the attempt, so a retry and a parallel run never collide and nothing
+    // seeded is touched. The short name is derived from it, never typed here.
+    const name = `ADM-S6 Bank AB ${Date.now().toString(36)}-${testInfo.retry}`;
+    const email = `administrator@${Date.now().toString(36)}-${testInfo.retry}.test`;
 
     await signInAs(page, LOGINS.platform);
     await page.goto('/console/tenants');
@@ -194,8 +193,7 @@ test.describe('governance journeys', () => {
     };
 
     const form = await openForm();
-    await form.getByLabel('Name', { exact: true }).fill('ADM-S6 Bank AB');
-    await form.getByLabel('Short name', { exact: true }).fill(slug);
+    await form.getByLabel('Name', { exact: true }).fill(name);
     await form.getByLabel("First administrator's email").fill(email);
     await form.getByLabel('Their title').fill('Head of compliance');
     const created = page.waitForResponse((r) => r.url().endsWith('/api/v1/console/tenants') && r.request().method() === 'POST' && r.ok());
@@ -203,10 +201,11 @@ test.describe('governance journeys', () => {
     const { id: tenantId } = (await (await created).json()) as { id: string };
     await expect(form).toBeHidden();
 
-    // The bank this attempt created, pinned by id, never by a count.
+    // The bank this attempt created, pinned by id, never by a count. It has a short name
+    // even though nobody typed one, and no timezone or language field was ever shown.
     const row = page.locator(`[data-tenant-id="${tenantId}"]`);
     await expect(row).toBeVisible();
-    await expect(row).toContainText(slug);
+    await expect(row).toHaveAttribute('data-tenant-slug', /.+/);
     await expect(row.getByText('Active', { exact: true })).toBeVisible();
 
     // One pending invitation went to that address, with the link that opens it.
@@ -214,13 +213,16 @@ test.describe('governance journeys', () => {
     const [invitation] = mailsTo(await mailOutbox(request), email);
     expect(invitation === undefined ? null : inviteLinkFrom(invitation)).not.toBeNull();
 
-    // The same short name a second time: 409, named in the form, nothing created.
+    // A second bank with the same name is created too, not refused: two console
+    // create-tenant calls never collide on a name a person never chose a short form for.
     const again = await openForm();
-    await again.getByLabel('Name', { exact: true }).fill('ADM-S6 Bank Two AB');
-    await again.getByLabel('Short name', { exact: true }).fill(slug);
+    await again.getByLabel('Name', { exact: true }).fill(name);
     await again.getByLabel("First administrator's email").fill(`second-${email}`);
+    const createdAgain = page.waitForResponse((r) => r.url().endsWith('/api/v1/console/tenants') && r.request().method() === 'POST' && r.ok());
     await again.getByRole('button', { name: 'Create tenant', exact: true }).click();
-    await expect(again.getByText('Another tenant already uses that short name.')).toBeVisible();
-    await expect(page.locator(`[data-tenant-id="${tenantId}"]`)).toHaveCount(1);
+    const { id: secondTenantId, slug: secondSlug } = (await (await createdAgain).json()) as { id: string; slug: string };
+    await expect(again).toBeHidden();
+    await expect(page.locator(`[data-tenant-id="${secondTenantId}"]`)).toHaveAttribute('data-tenant-slug', secondSlug);
+    expect(secondTenantId).not.toBe(tenantId);
   });
 });
