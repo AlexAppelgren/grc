@@ -397,3 +397,14 @@ change what four eyes means and are marked as such.
       should weigh: raise the per-boot timeout (a hang then takes longer to report), or prove
       the rules in-process by reloading settings instead of booting (cheaper and far faster,
       but it stops proving that a real process refuses to start, which is the whole point).
+
+## A banking group with several regulated companies (2026-09-22)
+- [ ] You want groups like SEB handled: several legal entities under one tenant, each
+      narrowing the group's regulatory scope for itself rather than sharing one, and some
+      members working across several entities while others stay scoped to one. D-69
+      records the direction you chose. **It is design only — nothing is built**, and it
+      reshapes `FootprintTerm` and the eleven call sites already shipped in R1 (FP-01 to
+      FP-04), plus TEN-02's `LegalEntity`, which does not exist until chunk 8. Say when
+      to schedule a proper planning pass for it (a brief, the way `AGENT_ACCESS.md` got
+      one, before chunk 8 or as part of it) — it should not land as a slice on an
+      unrelated push.
