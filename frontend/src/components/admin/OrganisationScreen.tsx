@@ -79,8 +79,11 @@ function ProfileForm({ tenant, languages }: { tenant: Tenant; languages: RoleRef
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setSaved(false);
+    // Omitting a field leaves it alone; an empty list is refused, not accepted as "no
+    // languages" (D-68 can leave a freshly created tenant with none set yet, so saving
+    // just the timezone before any language is chosen must not resend an empty list).
     update.mutate(
-      { name: name.trim(), timezone: timezone.trim(), defaultLanguage: defaultLanguage || undefined, contentLanguages: content },
+      { name: name.trim(), timezone: timezone.trim(), defaultLanguage: defaultLanguage || undefined, contentLanguages: content.length > 0 ? content : undefined },
       { onSuccess: () => setSaved(true) },
     );
   };

@@ -20,12 +20,12 @@ import { allowFreshContext, E2E_FIXED_CODE, installAuthenticator, inviteLink, in
 // 400 or above undeclared and no page throws on the way from nothing to a working bank,
 // and that the first screens render honest empty states rather than an error.
 
-/** A suffix no other run, attempt or parallel worker shares: every address and short name carries it. */
+/** A suffix no other run, attempt or parallel worker shares: every address and the bank's own name carries it. */
 const RUN = Date.now().toString(36);
 const PLATFORM_ADMIN = `platform-admin-${RUN}@bleqq.test`;
 const BANK_ADMIN = `administrator@coldstart-${RUN}.test`;
 const BANK_APPROVER = `approver@coldstart-${RUN}.test`;
-const BANK_SLUG = `coldstart-${RUN}`;
+const BANK_NAME = `Cold Start Bank ${RUN}`;
 
 /**
  * FIRST_RUN_SETUP step 4: `manage.py bootstrap_platform` on the api service, as a person
@@ -107,19 +107,19 @@ test.describe('cold start', () => {
 
     await page.getByRole('button', { name: 'Create a tenant', exact: true }).click();
     const form = page.getByRole('dialog', { name: 'Create a tenant' });
-    await form.getByLabel('Name', { exact: true }).fill('Cold Start Bank AB');
-    await form.getByLabel('Short name', { exact: true }).fill(BANK_SLUG);
+    await form.getByLabel('Name', { exact: true }).fill(BANK_NAME);
     await form.getByLabel("First administrator's email").fill(BANK_ADMIN);
     await form.getByLabel('Their title').fill('Head of compliance');
     const created = page.waitForResponse((r) => r.url().endsWith('/api/v1/console/tenants') && r.request().method() === 'POST' && r.ok());
     await form.getByRole('button', { name: 'Create tenant', exact: true }).click();
     const { id: tenantId } = (await (await created).json()) as { id: string };
-    await expect(page.locator(`[data-tenant-id="${tenantId}"]`)).toContainText(BANK_SLUG);
+    // Pinned by id, never by a short name: nobody types one any more, it is derived.
+    await expect(page.locator(`[data-tenant-id="${tenantId}"]`)).toHaveAttribute('data-tenant-slug', /.+/);
 
     // ——— step 8: the bank's administrator enrols from their own emailed link ————
     const admin = await otherPerson(browser, apiGuard);
     await enrol(admin, await invitationEmailedTo(page, BANK_ADMIN));
-    await expect(admin.locator('[data-who-panel]')).toContainText('Cold Start Bank AB');
+    await expect(admin.locator('[data-who-panel]')).toContainText(BANK_NAME);
 
     // ——— step 9: the bank's profile ————————————————————————————————————————
     await admin.goto('/admin/organisation');
