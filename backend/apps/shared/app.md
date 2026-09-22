@@ -144,6 +144,15 @@ Given every list and detail response
 Then pills are derivable from key, kind and counts only, and no response field holds a rendered phrase
 ```
 
+> **Note — chunk 3's rest.** The instrument header (level, binding, jurisdiction, regime),
+> the lineage pills and the provision tree's in-force chips (chunk3-rest T13, T17, T18) all
+> hold this rule the same way the obligation card already did: no response field named tone
+> or pill, the frontend chooses the slot and `tone-by-kind.ts` chooses the tone by kind, and
+> every pill renders through `Pill`. NFR-03 stays pending, not because this changed: NFR-S8
+> and NFR-S9, the pill gallery screenshot and the WCAG contrast sweep, are still unbuilt, and
+> until they run over the new instrument and provision surfaces too the design's own
+> reproduction is unverified even though the rule behind it holds.
+
 ### NFR-S11 — An unrecognised environment name is treated as production `@integration` (NFR-04)
 ```gherkin
 Given ENVIRONMENT set to "prod", "Production", "demo" and "dev" in turn, and RAILWAY_ENVIRONMENT_NAME set with ENVIRONMENT "local"

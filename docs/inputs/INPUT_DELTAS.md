@@ -687,6 +687,58 @@ in `docs/DECISIONS.md`; the researched detail is in
   fence already trusts, and a bank that thinks a record is wrong files a problem report
   instead. A report stays inside that bank (Alex, 2026-09-19): bleqq's watch agents find
   the deviation themselves by re-checking the source, and propose the correction.
+- `GET /instruments` (`listInstruments`) answers `{items, total}` with `limit` and
+  `offset`, like `GET /obligations`, instead of the designed bare array. Its filters are
+  `regime` (a regime term's key, not the designed `regimeTermId`) and `q` (matches the
+  name, short name or official reference, ignoring case); `outsideFootprint=true` lifts
+  the footprint filter, exactly as it does on `GET /obligations`. The designed `binding`
+  filter, and jurisdiction, level, authority and `asOf` filters nobody asked for, are
+  deferred (chunk3-rest defaults): "as of" applies to obligations only, and the
+  Instruments tab lists every visible instrument with its own in-force dates. A row is
+  `{id, stableKey, shortName, name{text,language,isOriginal,isMachine}, level, binding,
+  jurisdiction, authority{key,name,shortName,url}, regime, officialRef,
+  inForceFrom{date,precision}, inForceTo, implementsNote, obligationCount, inFootprint,
+  lastVerifiedAt, sourceUrl}`. `obligationCount` counts the obligations this bank would
+  see under the instrument: inside its footprint by default, or every one when
+  `outsideFootprint` lifts the filter, matching what `GET /obligations?instrument=` would
+  itself list. `inFootprint` is the instrument's own scope (its regime, the one dimension
+  an instrument carries) against the footprint, computed by the same `instrument_scopes()`
+  rule `GET /obligations` inherits through (one rule serves both, chunk3-rest-T13).
+- `GET /instruments/{instrumentId}` (`getInstrument`) answers the row's own facts plus
+  `eliUri` (an empty string, never null, when none is published), `authority` in full,
+  `verifiedBy` (a platform person or null, INV-06) and `lineage`, instead of the designed
+  `Instrument`. `lineage` is `[{relation, direction: outgoing|incoming, instrument{key,
+  shortName}, note, toRef}]`, both directions of `InstrumentRelation` in one list, so the
+  designed `GET /instruments/{instrumentId}/relations` is served here instead of as its
+  own route. `direction` says whether this instrument is the one relating (`outgoing`) or
+  the one related to (`incoming`); `toRef` is the relation's own pinpoint reference
+  (`Article 25(3) and (4)`), an empty string when the relation names no specific place,
+  which is most of them. The card carries no footprint verdict of its own; the Instruments
+  tab and its filter read that from the row. The provision tree is its own read
+  (`GET /instruments/{instrumentId}/provisions`, chunk3-rest-T16). A record the caller
+  cannot see answers 404, never 403 (INV-07).
+- `GET /instruments/{instrumentId}/provisions` (`listInstrumentProvisions`) answers a
+  plain array of root nodes instead of the designed array of flat `Provision` rows,
+  because the tree has no natural page boundary and a node needs its children beside it.
+  Each node is `{id, stableKey, kind{key,kind,label}, refLabel, heading, path,
+  children[], versions[{versionNumber, effectiveFrom, effectiveTo, transitionalNote,
+  text}], inForceVersion, obligations[{id, title, refLabel}]}`. `kind` on the reference
+  carries the row's own fixed structural kind (`division`, `unit` or `annex`) rather than
+  being null, because a screen groups by it. `versions[]` always lists every version, in
+  and out of force, so a reader chooses one by its own chip rather than trusting today's
+  date; `asOf` (default today in the tenant's time zone) decides only `inForceVersion`.
+  The designed `GET /provisions/{provisionId}/versions` is served embedded here instead
+  of as its own route. `effectiveTo` is derived exactly as an obligation version's is:
+  nothing is stored, and a version row is never touched after it is written. The number
+  of queries does not grow with the tree's size; an instrument the caller cannot see
+  answers 404 (INV-07), and a citing obligation the caller cannot see is left out
+  silently, never returned with a null.
+- `GET /provisions/{provisionId}/diff` (`getProvisionDiff`) is not in the design, which
+  has no diff operation at all. It takes the same `{from, to, lang}` triple as
+  `GET /obligations/{obligationId}/diff` (one shared query schema, `VersionDiffQuery`)
+  and answers the same `VersionDiff` shape: a provision's verbatim text and an
+  obligation's plain-language summary are versioned and diffed the same way, so one
+  function and one response shape serve both (chunk3-rest-T1, chunk3-rest-T16).
 
 Chunk 5 (watch and the agent API), 2026-09-20:
 

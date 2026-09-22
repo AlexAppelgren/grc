@@ -6,9 +6,10 @@ import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
+import { InstrumentRow } from './InstrumentRow';
 import { InventoryScreen, filtersFrom, isNarrowed, queryOf, searchOf } from './InventoryScreen';
 import { ObligationRow, factsOf, metaOf } from './ObligationRow';
-import type { Obligation } from '@/features/library/types';
+import type { Instrument, Obligation } from '@/features/library/types';
 import { createT } from '@/shared/i18n';
 import { defaultFormatContext } from '@/shared/utils/format';
 
@@ -75,10 +76,31 @@ function renderIn(node: ReactNode) {
   return render(<Wrapper>{<LocaleProvider locale="en">{node}</LocaleProvider>}</Wrapper>);
 }
 
+const fffs: Instrument = {
+  id: 'in-1',
+  stableKey: 'fffs-2017-2',
+  shortName: 'FFFS 2017:2',
+  name: { text: 'FFFS 2017:2 om värdepappersrörelse', language: 'sv', isOriginal: true, isMachine: false },
+  level: { key: 'authority_regulation', kind: null, label: 'Supervisory regulation' },
+  binding: true,
+  jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' },
+  authority: { key: 'fi', name: 'Finansinspektionen', shortName: 'FI', url: 'https://www.fi.se/' },
+  regime: { key: 'securities', kind: null, label: 'Securities' },
+  officialRef: 'FFFS 2017:2',
+  inForceFrom: { date: '2018-01-03', precision: 'day' },
+  inForceTo: null,
+  implementsNote: 'MiFID II delegated directive (EU) 2017/593',
+  obligationCount: 2,
+  inFootprint: true,
+  lastVerifiedAt: '2026-06-30',
+  sourceUrl: 'https://www.fi.se/en/published/regulations/2017/fffs-20172/',
+};
+
 /** The server: /me for the format context, the taxonomy and vocabulary reads for the filters, and the page. */
-function serve(page: { items: Obligation[]; total: number } | 'error') {
+function serve(page: { items: Obligation[]; total: number } | 'error', instrumentPage: { items: Instrument[]; total: number } = { items: [fffs], total: 1 }) {
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/obligations') return page === 'error' ? { status: 500 } : { status: 200, data: page };
+    if (sent.path === '/api/v1/instruments') return { status: 200, data: instrumentPage };
     if (sent.path === '/api/v1/me') return { status: 200, data: { user: { id: 'u1', name: 'Sara', locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: [], enrolmentPending: false } };
     if (sent.path === '/api/v1/taxonomy/terms') return { status: 200, data: { items: [{ dimension: { key: 'regime' }, key: 'securities', kind: null, label: 'Securities' }], total: 1 } };
     return { status: 200, data: [{ key: 'conduct', kind: null, label: 'Conduct', labels: { en: 'Conduct' }, usageNote: '', sortOrder: 1, active: true, isSystem: true, isDefault: true, usageCount: 2, extra: {} }] };
@@ -87,36 +109,41 @@ function serve(page: { items: Obligation[]; total: number } | 'error') {
 
 describe('inventory filters in the URL', () => {
   it('reads keys and a plain date, and writes them back without the ones that are not set', () => {
-    expect(filtersFrom(new URLSearchParams('regime=securities&service=advice&dutyType=conduct&asOf=2026-09-16&outside=true'))).toEqual({
+    expect(filtersFrom(new URLSearchParams('instrument=fffs-2017-2&regime=securities&service=advice&dutyType=conduct&asOf=2026-09-16&outside=true'))).toEqual({
+      instrument: 'fffs-2017-2',
       regime: 'securities',
       service: 'advice',
       dutyType: 'conduct',
       asOf: '2026-09-16',
       outsideFootprint: true,
     });
-    expect(filtersFrom(new URLSearchParams(''))).toEqual({ regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false });
+    expect(filtersFrom(new URLSearchParams(''))).toEqual({ instrument: '', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false });
     // Anything but the exact "true" leaves the footprint filter on.
     expect(filtersFrom(new URLSearchParams('outside=1')).outsideFootprint).toBe(false);
-    expect(searchOf({ regime: 'securities', service: 'advice', dutyType: 'conduct', asOf: '2026-09-16', outsideFootprint: true })).toBe(
-      'regime=securities&service=advice&dutyType=conduct&asOf=2026-09-16&outside=true',
-    );
-    expect(searchOf({ regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toBe('');
+    expect(
+      searchOf('obligations', { instrument: 'fffs-2017-2', regime: 'securities', service: 'advice', dutyType: 'conduct', asOf: '2026-09-16', outsideFootprint: true }),
+    ).toBe('instrument=fffs-2017-2&regime=securities&service=advice&dutyType=conduct&asOf=2026-09-16&outside=true');
+    expect(searchOf('obligations', { instrument: '', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toBe('');
+    // The Instruments tab rides in the same URL, as its own key.
+    expect(searchOf('instruments', { instrument: '', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toBe('tab=instruments');
   });
 
   it('turns a scope filter into a dimension:key term and leaves the rest of the query out', () => {
-    expect(queryOf({ regime: 'securities', service: 'advice', dutyType: 'conduct', asOf: '2026-09-16', outsideFootprint: true })).toEqual({
+    expect(queryOf({ instrument: '', regime: 'securities', service: 'advice', dutyType: 'conduct', asOf: '2026-09-16', outsideFootprint: true })).toEqual({
       term: ['regime:securities', 'service_type:advice'],
       dutyType: 'conduct',
       asOf: '2026-09-16',
       outsideFootprint: true,
     });
-    expect(queryOf({ regime: '', service: 'advice', dutyType: '', asOf: '', outsideFootprint: false })).toEqual({ term: ['service_type:advice'] });
-    expect(queryOf({ regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toEqual({});
-    expect(isNarrowed({ regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: true })).toBe(false);
-    expect(isNarrowed({ regime: '', service: '', dutyType: '', asOf: '2026-09-16', outsideFootprint: false })).toBe(true);
-    expect(isNarrowed({ regime: '', service: '', dutyType: 'conduct', asOf: '', outsideFootprint: false })).toBe(true);
-    expect(isNarrowed({ regime: 'securities', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toBe(true);
-    expect(isNarrowed({ regime: '', service: 'advice', dutyType: '', asOf: '', outsideFootprint: false })).toBe(true);
+    expect(queryOf({ instrument: 'fffs-2017-2', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toEqual({ instrument: 'fffs-2017-2' });
+    expect(queryOf({ instrument: '', regime: '', service: 'advice', dutyType: '', asOf: '', outsideFootprint: false })).toEqual({ term: ['service_type:advice'] });
+    expect(queryOf({ instrument: '', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toEqual({});
+    expect(isNarrowed({ instrument: '', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: true })).toBe(false);
+    expect(isNarrowed({ instrument: '', regime: '', service: '', dutyType: '', asOf: '2026-09-16', outsideFootprint: false })).toBe(true);
+    expect(isNarrowed({ instrument: '', regime: '', service: '', dutyType: 'conduct', asOf: '', outsideFootprint: false })).toBe(true);
+    expect(isNarrowed({ instrument: '', regime: 'securities', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toBe(true);
+    expect(isNarrowed({ instrument: '', regime: '', service: 'advice', dutyType: '', asOf: '', outsideFootprint: false })).toBe(true);
+    expect(isNarrowed({ instrument: 'fffs-2017-2', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toBe(true);
   });
 });
 
@@ -266,5 +293,80 @@ describe('InventoryScreen', () => {
     await screen.findByRole('link');
     expect(sent.find((s) => s.path === '/api/v1/obligations')?.params).toMatchObject({ outsideFootprint: true });
     expect(screen.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('lists an instrument filter whose options carry the obligation count', async () => {
+    serve({ items: [research], total: 1 });
+    renderIn(<InventoryScreen />);
+    const instrument = await screen.findByLabelText('Instrument');
+    await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined());
+    fireEvent.change(instrument, { target: { value: 'fffs-2017-2' } });
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?instrument=fffs-2017-2');
+  });
+
+  it('switches to the Instruments tab, carrying the tab in the URL, and lists instrument rows', async () => {
+    serve({ items: [research], total: 1 });
+    renderIn(<InventoryScreen />);
+    await screen.findByText('1 obligation');
+    fireEvent.click(screen.getByRole('tab', { name: 'Instruments' }));
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments');
+  });
+
+  it('reads the Instruments tab from the URL directly and shows its own rows and count', async () => {
+    nav.search = 'tab=instruments';
+    serve({ items: [], total: 0 }, { items: [fffs], total: 1 });
+    renderIn(<InventoryScreen />);
+    await waitFor(() => expect(screen.getByText('1 instrument')).toBeVisible());
+    expect(screen.getByRole('tab', { name: 'Instruments' })).toHaveAttribute('aria-selected', 'true');
+    const row = within(document.querySelector('[data-instrument-rows]') as HTMLElement).getByRole('link');
+    expect(row).toHaveAttribute('href', '/inventory/instruments/in-1');
+  });
+
+  it('narrows the Instruments tab by regime, and shows outside the footprint on request', async () => {
+    nav.search = 'tab=instruments';
+    serve({ items: [], total: 0 }, { items: [], total: 0 });
+    renderIn(<InventoryScreen />);
+    await screen.findByText('No instruments match');
+    fireEvent.change(screen.getByLabelText('Regime'), { target: { value: 'securities' } });
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&regime=securities');
+  });
+});
+
+describe('InstrumentRow', () => {
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+    nav.search = '';
+    nav.replace.mockReset();
+  });
+
+  it('renders the header pills, the name and the meta line', async () => {
+    serve({ items: [], total: 0 });
+    renderIn(<InstrumentRow instrument={fffs} />);
+    const row = await screen.findByRole('link');
+    expect(row).toHaveAttribute('href', '/inventory/instruments/in-1');
+    expect(row).toHaveAttribute('data-instrument', 'fffs-2017-2');
+    expect(row).not.toHaveAttribute('data-outside-footprint');
+    expect(within(row).getByRole('heading', { level: 3 })).toHaveTextContent('FFFS 2017:2 om värdepappersrörelse');
+    expect([...row.querySelectorAll('[data-pill]')].map((pill) => [pill.getAttribute('data-pill'), pill.textContent])).toEqual([
+      ['brand', 'FFFS 2017:2'],
+      ['information', 'Supervisory regulation'],
+      ['information', 'Binding'],
+      ['brand', 'Sweden'],
+      ['information', 'Securities'],
+    ]);
+    expect(within(row).getByText('Finansinspektionen')).toBeVisible();
+    expect(within(row).getByText('In force from 3 Jan 2018')).toBeVisible();
+    expect(within(row).getByText('Implements MiFID II delegated directive (EU) 2017/593')).toBeVisible();
+    expect(within(row).getByText('2 obligations')).toBeVisible();
+  });
+
+  it('renders a row outside the footprint dashed, and falls back to the short name with no name', async () => {
+    serve({ items: [], total: 0 });
+    renderIn(<InstrumentRow instrument={{ ...fffs, name: null, inFootprint: false }} />);
+    const row = await screen.findByRole('link');
+    expect(row).toHaveAttribute('data-outside-footprint', '');
+    expect(row.className).toContain('border-dashed');
+    expect(within(row).getByRole('heading', { level: 3 })).toHaveTextContent('FFFS 2017:2');
   });
 });

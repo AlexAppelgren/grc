@@ -6,6 +6,11 @@ import type { components } from '@/types/api.generated';
 
 import type {
   DiffSegment,
+  Instrument,
+  InstrumentAuthorityRef,
+  InstrumentDetail,
+  InstrumentLineageRef,
+  InstrumentQuery,
   InstrumentSummary,
   LibraryRef,
   LocalizedText,
@@ -20,6 +25,9 @@ import type {
   PageQuery,
   ProblemReportBody,
   ProblemReportCreated,
+  ProvisionCitedObligation,
+  ProvisionNode,
+  ProvisionVersionRow,
   RelatedObligation,
   ScopeDimension,
   VersionDiff,
@@ -32,6 +40,7 @@ import type {
 // use, so a difference in shape is absorbed here, once.
 
 const OBLIGATIONS = '/api/v1/obligations';
+const INSTRUMENTS = '/api/v1/instruments';
 
 type Schemas = components['schemas'];
 
@@ -227,4 +236,131 @@ export async function getObligationDiff(obligationId: string, lang?: string): Pr
 export async function reportObligationProblem(obligationId: string, body: ProblemReportBody): Promise<ProblemReportCreated> {
   const data = (await api.post<Schemas['ProblemReportCreated']>(`${OBLIGATIONS}/${obligationId}/problem-reports`, body)).data;
   return { id: data.id, status: data.status, createdAt: data.createdAt };
+}
+
+// Instruments (INV-01, INV-06): the Instruments tab, the instrument filter and the
+// instrument card. Reads only, like every obligation read above; "This looks wrong" is
+// the one write, and it stays inside the reader's own bank.
+
+function authorityRefOf(raw: Schemas['InstrumentAuthorityRef'] | null | undefined): InstrumentAuthorityRef | null {
+  if (raw === null || raw === undefined) return null;
+  return { key: raw.key, name: raw.name, shortName: raw.shortName, url: raw.url };
+}
+
+export function instrumentOf(raw: Schemas['InstrumentRow']): Instrument {
+  return {
+    id: raw.id,
+    stableKey: raw.stableKey,
+    shortName: raw.shortName,
+    name: textOf(raw.name),
+    level: refOf(raw.level),
+    binding: raw.binding,
+    jurisdiction: refOf(raw.jurisdiction),
+    authority: authorityRefOf(raw.authority),
+    regime: raw.regime === null || raw.regime === undefined ? null : refOf(raw.regime),
+    officialRef: raw.officialRef,
+    inForceFrom: partialDateOf(raw.inForceFrom),
+    inForceTo: partialDateOf(raw.inForceTo),
+    implementsNote: raw.implementsNote,
+    obligationCount: raw.obligationCount,
+    inFootprint: raw.inFootprint,
+    lastVerifiedAt: raw.lastVerifiedAt,
+    sourceUrl: raw.sourceUrl,
+  };
+}
+
+export async function listInstruments(query: InstrumentQuery & PageQuery = {}): Promise<Page<Instrument>> {
+  const data = (await api.get<Schemas['InstrumentPage']>(INSTRUMENTS, { params: query })).data;
+  return { items: data.items.map(instrumentOf), total: data.total };
+}
+
+function lineageOf(raw: Schemas['InstrumentLineageRef']): InstrumentLineageRef {
+  return {
+    relation: refOf(raw.relation),
+    direction: raw.direction === 'outgoing' ? 'outgoing' : 'incoming',
+    instrument: { key: raw.instrument.key, shortName: raw.instrument.shortName },
+    note: raw.note,
+    toRef: raw.toRef,
+  };
+}
+
+export function instrumentDetailOf(raw: Schemas['InstrumentDetail']): InstrumentDetail {
+  return {
+    id: raw.id,
+    stableKey: raw.stableKey,
+    shortName: raw.shortName,
+    name: textOf(raw.name),
+    level: refOf(raw.level),
+    binding: raw.binding,
+    jurisdiction: refOf(raw.jurisdiction),
+    authority: authorityRefOf(raw.authority),
+    regime: raw.regime === null || raw.regime === undefined ? null : refOf(raw.regime),
+    officialRef: raw.officialRef,
+    eliUri: raw.eliUri,
+    inForceFrom: partialDateOf(raw.inForceFrom),
+    inForceTo: partialDateOf(raw.inForceTo),
+    implementsNote: raw.implementsNote,
+    sourceUrl: raw.sourceUrl,
+    lastVerifiedAt: raw.lastVerifiedAt,
+    verifiedBy: raw.verifiedBy === null || raw.verifiedBy === undefined ? null : { id: raw.verifiedBy.id, name: raw.verifiedBy.name },
+    lineage: (raw.lineage ?? []).map(lineageOf),
+  };
+}
+
+export async function getInstrument(instrumentId: string): Promise<InstrumentDetail> {
+  return instrumentDetailOf((await api.get<Schemas['InstrumentDetail']>(`${INSTRUMENTS}/${instrumentId}`)).data);
+}
+
+/** "This looks wrong" on an instrument card; a provision is reported through the instrument whose card shows it. */
+export async function reportInstrumentProblem(instrumentId: string, body: ProblemReportBody): Promise<ProblemReportCreated> {
+  const data = (await api.post<Schemas['ProblemReportCreated']>(`${INSTRUMENTS}/${instrumentId}/problem-reports`, body)).data;
+  return { id: data.id, status: data.status, createdAt: data.createdAt };
+}
+
+// The provision tree (INV-02, INV-04, INV-05): every text version a provision has ever
+// carried, so the tree chooses one by its own chip rather than trusting today's date, and
+// the diff between any two of them.
+
+function provisionVersionRowOf(raw: Schemas['ProvisionVersionRow']): ProvisionVersionRow {
+  return {
+    versionNumber: raw.versionNumber,
+    effectiveFrom: partialDateOf(raw.effectiveFrom),
+    effectiveTo: partialDateOf(raw.effectiveTo),
+    transitionalNote: raw.transitionalNote,
+    text: textOf(raw.text),
+  };
+}
+
+function citedObligationOf(raw: Schemas['ProvisionCitedObligation']): ProvisionCitedObligation {
+  return { id: raw.id, title: textOf(raw.title), refLabel: raw.refLabel };
+}
+
+export function provisionNodeOf(raw: Schemas['ProvisionNode']): ProvisionNode {
+  return {
+    id: raw.id,
+    stableKey: raw.stableKey,
+    kind: refOf(raw.kind),
+    refLabel: raw.refLabel,
+    heading: raw.heading,
+    path: raw.path,
+    children: (raw.children ?? []).map(provisionNodeOf),
+    versions: (raw.versions ?? []).map(provisionVersionRowOf),
+    inForceVersion: raw.inForceVersion,
+    obligations: (raw.obligations ?? []).map(citedObligationOf),
+  };
+}
+
+/** The whole provision tree of one instrument, as of a date (default today where the tenant is). */
+export async function listInstrumentProvisions(instrumentId: string, asOf?: string): Promise<ProvisionNode[]> {
+  const params = asOf === undefined || asOf === '' ? {} : { asOf };
+  const data = (await api.get<Schemas['ProvisionNode'][]>(`${INSTRUMENTS}/${instrumentId}/provisions`, { params })).data;
+  return data.map(provisionNodeOf);
+}
+
+const PROVISIONS = '/api/v1/provisions';
+
+/** What changed between two versions of one provision's verbatim text, in the language on screen where both hold it. */
+export async function getProvisionDiff(provisionId: string, lang?: string): Promise<VersionDiff> {
+  const params = lang === undefined || lang === '' ? {} : { lang };
+  return diffOf((await api.get<Schemas['VersionDiff']>(`${PROVISIONS}/${provisionId}/diff`, { params })).data);
 }

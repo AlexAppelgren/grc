@@ -316,3 +316,218 @@ describe('library api', () => {
     expect(library.refOf({ key: 'conduct', label: 'Conduct' } as { key: string; kind: string | null; label: string })).toEqual({ key: 'conduct', kind: null, label: 'Conduct' });
   });
 });
+
+const serverInstrumentRow = {
+  id: 'in-1',
+  stableKey: 'fffs-2017-2',
+  shortName: 'FFFS 2017:2',
+  name: { text: 'FFFS 2017:2 om värdepappersrörelse', language: 'sv', isOriginal: true, isMachine: false },
+  level: { key: 'authority_regulation', kind: null, label: 'Supervisory regulation' },
+  binding: true,
+  jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' },
+  authority: { key: 'fi', name: 'Finansinspektionen', shortName: 'FI', url: 'https://www.fi.se/' },
+  regime: { key: 'securities', kind: null, label: 'Securities' },
+  officialRef: 'FFFS 2017:2',
+  inForceFrom: { date: '2018-01-03', precision: 'day' },
+  inForceTo: null,
+  implementsNote: 'MiFID II delegated directive (EU) 2017/593',
+  obligationCount: 2,
+  inFootprint: true,
+  lastVerifiedAt: '2026-06-30T07:12:44Z',
+  sourceUrl: 'https://www.fi.se/en/published/regulations/2017/fffs-20172/',
+};
+
+const serverInstrumentDetail = {
+  ...serverInstrumentRow,
+  eliUri: '',
+  verifiedBy: null,
+  lineage: [
+    {
+      relation: { key: 'amends', kind: null, label: 'Amends' },
+      direction: 'incoming',
+      instrument: { key: 'fffs-2026-11', shortName: 'FFFS 2026:11' },
+      note: 'Amends FFFS 2017:2, in force 1 October 2026.',
+      toRef: '',
+    },
+  ],
+};
+
+describe('library instruments api', () => {
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+  });
+
+  it('lists instruments and reads the page into the shape the screen uses', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { items: [serverInstrumentRow], total: 1 } }));
+    expect(await library.listInstruments({ regime: 'securities', outsideFootprint: true, limit: 20, offset: 0 })).toEqual({
+      items: [
+        {
+          id: 'in-1',
+          stableKey: 'fffs-2017-2',
+          shortName: 'FFFS 2017:2',
+          name: serverInstrumentRow.name,
+          level: serverInstrumentRow.level,
+          binding: true,
+          jurisdiction: serverInstrumentRow.jurisdiction,
+          authority: serverInstrumentRow.authority,
+          regime: serverInstrumentRow.regime,
+          officialRef: 'FFFS 2017:2',
+          inForceFrom: { date: '2018-01-03', precision: 'day' },
+          inForceTo: null,
+          implementsNote: 'MiFID II delegated directive (EU) 2017/593',
+          obligationCount: 2,
+          inFootprint: true,
+          lastVerifiedAt: '2026-06-30T07:12:44Z',
+          sourceUrl: serverInstrumentRow.sourceUrl,
+        },
+      ],
+      total: 1,
+    });
+    expect(sent.map((s) => [s.method, s.path, s.params])).toEqual([['get', '/api/v1/instruments', { regime: 'securities', outsideFootprint: true, limit: 20, offset: 0 }]]);
+  });
+
+  it('reads a row with no name, no authority and no regime', async () => {
+    installAdapter(() => ({
+      status: 200,
+      data: { items: [{ ...serverInstrumentRow, name: null, authority: null, regime: null }], total: 1 },
+    }));
+    const page = await library.listInstruments();
+    expect(page.items[0]).toMatchObject({ name: null, authority: null, regime: null });
+  });
+
+  it('reads one instrument with its ELI, its authority and its lineage', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: serverInstrumentDetail }));
+    expect(await library.getInstrument('in-1')).toEqual({
+      id: 'in-1',
+      stableKey: 'fffs-2017-2',
+      shortName: 'FFFS 2017:2',
+      name: serverInstrumentRow.name,
+      level: serverInstrumentRow.level,
+      binding: true,
+      jurisdiction: serverInstrumentRow.jurisdiction,
+      authority: serverInstrumentRow.authority,
+      regime: serverInstrumentRow.regime,
+      officialRef: 'FFFS 2017:2',
+      eliUri: '',
+      inForceFrom: { date: '2018-01-03', precision: 'day' },
+      inForceTo: null,
+      implementsNote: 'MiFID II delegated directive (EU) 2017/593',
+      sourceUrl: serverInstrumentRow.sourceUrl,
+      lastVerifiedAt: '2026-06-30T07:12:44Z',
+      verifiedBy: null,
+      lineage: [
+        {
+          relation: { key: 'amends', kind: null, label: 'Amends' },
+          direction: 'incoming',
+          instrument: { key: 'fffs-2026-11', shortName: 'FFFS 2026:11' },
+          note: 'Amends FFFS 2017:2, in force 1 October 2026.',
+          toRef: '',
+        },
+      ],
+    });
+    expect(sent.map((s) => [s.method, s.path])).toEqual([['get', '/api/v1/instruments/in-1']]);
+  });
+
+  it('reads a card with no lineage, an unknown direction and someone named as verifier', async () => {
+    installAdapter(() => ({
+      status: 200,
+      data: {
+        ...serverInstrumentDetail,
+        lineage: [{ ...serverInstrumentDetail.lineage[0], direction: 'sideways' }],
+        verifiedBy: { id: 'u-1', name: 'Johan Ek' },
+      },
+    }));
+    const record = await library.getInstrument('in-1');
+    expect(record.verifiedBy).toEqual({ id: 'u-1', name: 'Johan Ek' });
+    // A direction the screen has no rule for reads as incoming, never as a crash.
+    expect(record.lineage[0]?.direction).toBe('incoming');
+    installAdapter(() => ({ status: 200, data: { ...serverInstrumentDetail, lineage: undefined } }));
+    expect((await library.getInstrument('in-1')).lineage).toEqual([]);
+  });
+
+  it('files a problem report against an instrument', async () => {
+    const sent = installAdapter(() => ({ status: 201, data: { id: 'rep-2', status: 'open', createdAt: '2026-09-21T09:00:00Z' } }));
+    expect(await library.reportInstrumentProblem('in-1', { description: 'The in-force date looks wrong.' })).toEqual({
+      id: 'rep-2',
+      status: 'open',
+      createdAt: '2026-09-21T09:00:00Z',
+    });
+    expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([['post', '/api/v1/instruments/in-1/problem-reports', { description: 'The in-force date looks wrong.' }]]);
+  });
+});
+
+const serverProvisionNode = {
+  id: 'pr-6',
+  stableKey: 'fffs-2017-2/9-6',
+  kind: { key: 'section', kind: 'unit', label: 'Section' },
+  refLabel: '6 §',
+  heading: 'Betalning för analys',
+  path: 'FFFS 2017:2 > 9 kap. > 6 §',
+  children: [],
+  versions: [
+    {
+      versionNumber: 1,
+      effectiveFrom: { date: '2018-01-03', precision: 'day' },
+      effectiveTo: { date: '2026-09-30', precision: 'day' },
+      transitionalNote: '',
+      text: { text: 'Research payment under the earlier rules.', language: 'en', isOriginal: false, isMachine: true },
+    },
+  ],
+  inForceVersion: 1,
+  obligations: [{ id: 'ob-1', title: null, refLabel: 'Third-party payments' }],
+};
+
+describe('library provisions api', () => {
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+  });
+
+  it('reads the provision tree, recursively, into the shape the screen uses', async () => {
+    const chapterRow = { ...serverProvisionNode, id: 'pr-9', stableKey: 'fffs-2017-2/9', refLabel: '9 kap.', versions: [], obligations: [], children: [serverProvisionNode] };
+    const sent = installAdapter(() => ({ status: 200, data: [chapterRow] }));
+    const nodes = await library.listInstrumentProvisions('in-1', '2026-09-16');
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0]?.children[0]).toEqual({
+      id: 'pr-6',
+      stableKey: 'fffs-2017-2/9-6',
+      // A provision's own `kind` names its structural kind (`unit`, `division`, `annex`)
+      // rather than being null, because a screen groups by it (INV-02).
+      kind: { key: 'section', kind: 'unit', label: 'Section' },
+      refLabel: '6 §',
+      heading: 'Betalning för analys',
+      path: 'FFFS 2017:2 > 9 kap. > 6 §',
+      children: [],
+      versions: [
+        {
+          versionNumber: 1,
+          effectiveFrom: { date: '2018-01-03', precision: 'day' },
+          effectiveTo: { date: '2026-09-30', precision: 'day' },
+          transitionalNote: '',
+          text: { text: 'Research payment under the earlier rules.', language: 'en', isOriginal: false, isMachine: true },
+        },
+      ],
+      inForceVersion: 1,
+      obligations: [{ id: 'ob-1', title: null, refLabel: 'Third-party payments' }],
+    });
+    expect(sent.map((s) => [s.method, s.path, s.params])).toEqual([['get', '/api/v1/instruments/in-1/provisions', { asOf: '2026-09-16' }]]);
+  });
+
+  it('reads an empty tree, and a node with no children, no versions and no citing obligation', async () => {
+    installAdapter(() => ({ status: 200, data: [] }));
+    expect(await library.listInstrumentProvisions('in-1')).toEqual([]);
+    installAdapter(() => ({ status: 200, data: [{ ...serverProvisionNode, children: undefined, versions: undefined, obligations: undefined }] }));
+    const bare = await library.listInstrumentProvisions('in-1');
+    expect(bare[0]).toMatchObject({ children: [], versions: [], obligations: [] });
+  });
+
+  it('reads the diff between two provision versions', async () => {
+    const sent = installAdapter(() => ({
+      status: 200,
+      data: { fromVersion: 1, toVersion: 2, fromEffective: null, toEffective: { date: '2026-10-01', precision: 'day' }, language: 'en', isMachine: true, segments: [] },
+    }));
+    expect(await library.getProvisionDiff('pr-6', 'en')).toMatchObject({ fromVersion: 1, toVersion: 2, language: 'en' });
+    expect(sent.map((s) => [s.path, s.params])).toEqual([['/api/v1/provisions/pr-6/diff', { lang: 'en' }]]);
+  });
+});

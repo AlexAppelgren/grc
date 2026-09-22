@@ -1509,6 +1509,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/instruments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse the instruments behind the inventory
+         * @description The instruments inventory: every law, regulation or guideline of the shared library
+         *     whose own scope (its regime) overlaps this bank's footprint, narrowed by regime or a
+         *     phrase. Call it for the Instruments tab and its filter, and from an agent run that
+         *     needs the instruments an obligation's own regime reaches.
+         *
+         *     A read: it changes nothing and writes no audit row. It takes a person's session
+         *     holding `library.read` in their bank, or an agent's key carrying the `library:read`
+         *     scope. The rows are shared library facts, the same for every bank and changed only
+         *     through an approved proposal.
+         *
+         *     Paginated: 20 rows by default and 100 at most, ordered by stable key so paging is
+         *     repeatable. `obligationCount` counts the obligations this bank would see under each
+         *     instrument, inside its footprint by default. Jurisdiction, level, authority and
+         *     `asOf` filters are deferred: "as of" applies to obligations only, and the Instruments
+         *     tab lists every visible instrument with its own in-force dates.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
+         *     (403) without library.read or the library:read scope; `validation_error` (422) when
+         *     the phrase is longer than 200 characters or the page size or offset is out of range.
+         */
+        get: operations["listInstruments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/instruments/{instrument_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open one instrument and read its identity and lineage
+         * @description One instrument of the shared library: its identity, official reference and ELI, its
+         *     in-force dates with their precision, the authority behind it, when a person last
+         *     re-verified it and its lineage to other instruments (what it implements or
+         *     elaborates, and what implements, elaborates or amends it in turn). Call it for the
+         *     instrument card.
+         *
+         *     A read: it changes nothing and writes no audit row. It takes a person's session
+         *     holding `library.read` in their bank, or an agent's key carrying the `library:read`
+         *     scope. The designed `GET /instruments/{instrumentId}/relations` is served here as
+         *     `lineage`, and the provision tree is its own read.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
+         *     (403) without library.read or the library:read scope; `not_found` (404) when no
+         *     instrument has that id or it is one this caller may not see, the two answering alike
+         *     so that no id can be probed for; `validation_error` (422) when the path segment is
+         *     not a UUID.
+         */
+        get: operations["getInstrument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/instruments/{instrument_id}/problem-reports": {
         parameters: {
             query?: never;
@@ -1533,6 +1606,46 @@ export interface paths {
          *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the instrument is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language.
          */
         post: operations["reportInstrumentProblem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/instruments/{instrument_id}/provisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read an instrument's provision tree
+         * @description The verbatim provision tree of one instrument: chapters, sections, articles,
+         *     paragraphs or whatever each node's own kind names, each with every text version it
+         *     has ever carried, its children in the tree and the obligations that cite it. Call it
+         *     for the instrument card's provision tree, and from an agent run that needs the law
+         *     itself rather than a plain-language duty.
+         *
+         *     A read: it changes nothing and writes no audit row. It takes a person's session
+         *     holding `library.read` in their bank, or an agent's key carrying the `library:read`
+         *     scope. `asOf` decides only which version each node's `inForceVersion` names; every
+         *     version stays in `versions` regardless, so a reader can choose an earlier or a future
+         *     one by its own chip rather than trusting today's date. The designed
+         *     `GET /provisions/{provisionId}/versions` is served here, embedded in each node.
+         *
+         *     Answered as a plain array of root nodes rather than a page, because a tree has no
+         *     natural page boundary; an instrument with no provisions yet is a 200 with an empty
+         *     array. The number of queries does not grow with the tree's size.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
+         *     (403) without library.read or the library:read scope; `not_found` (404) when no
+         *     instrument has that id or it is one this caller may not see; `validation_error` (422)
+         *     when the path segment is not a UUID or asOf is not a date.
+         */
+        get: operations["listInstrumentProvisions"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2099,6 +2212,47 @@ export interface paths {
         put?: never;
         /** Reject Proposal */
         post: operations["rejectProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/provisions/{provision_id}/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what changed between two versions of a provision
+         * @description What changed between two versions of one provision's verbatim text, sentence by
+         *     sentence: the sentences that stand unchanged, the ones the newer version dropped and
+         *     the ones it adds. Call it behind "Show what changed" on the provision tree.
+         *
+         *     By default it compares the latest version against the one before it; from and to
+         *     name any two versions by their number. Both are versions of the same provision: this
+         *     call never compares one record with another. The comparison is made in a language
+         *     both versions hold, preferring the one lang asks for, and the answer says which
+         *     language it settled on and whether either side was machine translated and so still
+         *     unconfirmed by a person.
+         *
+         *     A read: it changes nothing, writes no audit row and logs none of the text, which is
+         *     the library's own content. It takes a person's session holding `library.read` in
+         *     their bank, or an agent's key carrying the `library:read` scope.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
+         *     (403) without library.read or the library:read scope; `not_found` (404) when no
+         *     provision has that id or it is one this caller may not see; `unknown_key` (422) when
+         *     a version number is asked for that this provision has no version for;
+         *     `validation_error` (422) when the provision has fewer than two versions and neither
+         *     number was given, when the two versions share no language at all, when lang is
+         *     longer than 8 characters, or when the path segment is not a UUID.
+         */
+        get: operations["getProvisionDiff"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5540,6 +5694,402 @@ export interface components {
             offset: number;
         };
         /**
+         * InstrumentAuthorityRef
+         * @description The authority behind an instrument, as the row and the card both name it: a library
+         *     fact, the same for every bank.
+         */
+        InstrumentAuthorityRef: {
+            /**
+             * Key
+             * @description The authority's immutable key, the value to store and to send back. It never changes; the name may be relabelled around it (playbook 4.3).
+             * @example fi
+             */
+            key: string;
+            /**
+             * Name
+             * @description The authority's full name, as it names itself.
+             * @example Finansinspektionen
+             */
+            name: string;
+            /**
+             * Shortname
+             * @description How the authority is abbreviated in a pill or a column, in its own language.
+             * @example FI
+             */
+            shortName: string;
+            /**
+             * Url
+             * @description The authority's own site, so a reader can open it.
+             * @example https://www.fi.se/
+             */
+            url: string;
+        };
+        /**
+         * InstrumentDetail
+         * @description `GET /instruments/{instrumentId}` (INV-01, INV-06): the row's own facts, plus the
+         *     ELI, the authority in full, who last re-verified it and its lineage to other
+         *     instruments. The provision tree is its own read (chunk3-rest T16).
+         * @example {
+         *       "authority": {
+         *         "key": "fi",
+         *         "name": "Finansinspektionen",
+         *         "shortName": "FI",
+         *         "url": "https://www.fi.se/"
+         *       },
+         *       "binding": true,
+         *       "eliUri": "",
+         *       "id": "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f",
+         *       "implementsNote": "MiFID II delegated directive (EU) 2017/593",
+         *       "inForceFrom": {
+         *         "date": "2018-01-03",
+         *         "precision": "day"
+         *       },
+         *       "inForceTo": null,
+         *       "jurisdiction": {
+         *         "key": "se",
+         *         "kind": "country",
+         *         "label": "Sweden"
+         *       },
+         *       "lastVerifiedAt": "2026-06-30T07:12:44Z",
+         *       "level": {
+         *         "key": "authority_regulation",
+         *         "kind": null,
+         *         "label": "Supervisory regulation"
+         *       },
+         *       "lineage": [
+         *         {
+         *           "direction": "incoming",
+         *           "instrument": {
+         *             "key": "fffs-2026-11",
+         *             "shortName": "FFFS 2026:11"
+         *           },
+         *           "note": "Amends FFFS 2017:2, in force 1 October 2026.",
+         *           "relation": {
+         *             "key": "amends",
+         *             "kind": null,
+         *             "label": "Amends"
+         *           },
+         *           "toRef": ""
+         *         }
+         *       ],
+         *       "name": {
+         *         "isMachine": false,
+         *         "isOriginal": true,
+         *         "language": "sv",
+         *         "text": "FFFS 2017:2 om värdepappersrörelse"
+         *       },
+         *       "officialRef": "FFFS 2017:2",
+         *       "regime": {
+         *         "key": "securities",
+         *         "kind": null,
+         *         "label": "Securities"
+         *       },
+         *       "shortName": "FFFS 2017:2",
+         *       "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
+         *       "stableKey": "fffs-2017-2",
+         *       "verifiedBy": null
+         *     }
+         */
+        InstrumentDetail: {
+            /** @description Who issued the instrument, in full, or null when the fixture carries none. */
+            authority: components["schemas"]["InstrumentAuthorityRef"] | null;
+            /**
+             * Binding
+             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
+             * @example true
+             */
+            binding: boolean;
+            /**
+             * Eliuri
+             * @description The European Legislation Identifier for this instrument, where the publisher gives one. An empty string when none is available, never null; the screen reads that as "Not available".
+             * @example
+             */
+            eliUri: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The instrument's identifier in the shared library, as a UUID. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.
+             * @example 3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f
+             */
+            id: string;
+            /**
+             * Implementsnote
+             * @description What this instrument implements or elaborates, in the library's own words, so a reader can see where a Swedish rule comes from. Free text for a person and never a machine-readable link; an empty string when nothing was recorded, never null. The structured lineage between instruments is `lineage` on the instrument's own read.
+             * @example MiFID II delegated directive (EU) 2017/593
+             */
+            implementsNote: string;
+            /** @description The legal date the instrument started binding, at the precision the source gave it (playbook 4.3). Null when the source names no start date. */
+            inForceFrom: components["schemas"]["PartialDate"] | null;
+            /** @description The legal date the instrument stopped binding, at the precision the source gave it. Null on an instrument still in force, which is most of them. */
+            inForceTo: components["schemas"]["PartialDate"] | null;
+            /** @description Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` says whether it is a country, a union or an international body. */
+            jurisdiction: components["schemas"]["LibraryRef"];
+            /**
+             * Lastverifiedat
+             * @description When a bleqq library editor last read this record against its public source and found it unchanged, as a UTC timestamp; a screen shows it as "Verified <date>" in the bank's own time zone. Null on a record nobody has confirmed that way.
+             * @example 2026-06-30T07:12:44Z
+             */
+            lastVerifiedAt: string | null;
+            /** @description What rank of instrument this is, as key, kind and label: how much weight it carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act` and `authority_regulation` are seeded on day one. */
+            level: components["schemas"]["LibraryRef"];
+            /**
+             * Lineage
+             * @description What this instrument implements or elaborates, and what implements, elaborates or amends it in turn: both directions of the library's own cross-references, so the designed `GET /instruments/{instrumentId}/relations` is served here instead. Only instruments this caller may read appear: a relation to one they may not is left out silently.
+             */
+            lineage: components["schemas"]["InstrumentLineageRef"][];
+            /** @description The instrument's full name, in the best language this reader can be served. The original is the jurisdiction's legal language, so a Swedish regulation read in English usually still answers its Swedish name rather than a translation. Null only when the record carries no name in any language. */
+            name: components["schemas"]["LocalizedText"] | null;
+            /**
+             * Officialref
+             * @description The reference the issuing authority itself publishes the instrument under, written as that authority writes it. It is how a lawyer cites the instrument and how a reader recognises it on the authority's own site; it is not an identifier this API accepts, which is `key`.
+             * @example FFFS 2017:2
+             */
+            officialRef: string;
+            /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits. Null only while an instrument carries none. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
+            regime: components["schemas"]["LibraryRef"] | null;
+            /**
+             * Shortname
+             * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead.
+             * @example FFFS 2017:2
+             */
+            shortName: string;
+            /**
+             * Sourceurl
+             * @description The public page this record was taken from, so a reader can open it and a re-check can fetch it again. It is the authority's own page and never a link into this product.
+             * @example https://www.fi.se/en/published/regulations/2017/fffs-20172/
+             */
+            sourceUrl: string;
+            /**
+             * Stablekey
+             * @description The instrument's immutable key, issued once and readable by a person. It survives every amendment and relabelling.
+             * @example fffs-2017-2
+             */
+            stableKey: string;
+            /** @description The bleqq platform person who last confirmed this record against its source, by id and name, or null when nobody has. Never a member of a bank: re-verifying a shared fact is bleqq's own check. */
+            verifiedBy: components["schemas"]["PersonRef"] | null;
+        };
+        /**
+         * InstrumentLineageRef
+         * @description One instrument-to-instrument relation, from either side (INV-01): what this
+         *     instrument implements or elaborates, and what implements, elaborates or amends it.
+         */
+        InstrumentLineageRef: {
+            /**
+             * Direction
+             * @description Whether this instrument is the one doing the relating (`outgoing`, this instrument implements, elaborates or amends the other) or the one being related to (`incoming`, the other does so to this one). A card reads `outgoing` under headings such as "Implements" and "incoming" under "Amended by".
+             * @example incoming
+             */
+            direction: string;
+            /** @description The other instrument in the relation, by key and short name. */
+            instrument: components["schemas"]["ObligationInstrumentRef"];
+            /**
+             * Note
+             * @description What the relation is, in the library's own words. An empty string when nothing was recorded, never null.
+             * @example Amends FFFS 2017:2, in force 1 October 2026.
+             */
+            note: string;
+            /** @description How the two instruments are related, as key, kind and label: `implements`, `elaborates` and `amends` are seeded on day one. The relation types are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/relation_type` for the live set and match on the key. */
+            relation: components["schemas"]["LibraryRef"];
+            /**
+             * Toref
+             * @description Where in the related instrument this points, in the words the source uses ("Article 25(3) and (4)"), whichever side of the relation this instrument is on. An empty string when the relation names no specific place, which is most of them: a whole-instrument amendment needs none.
+             * @example
+             */
+            toRef: string;
+        };
+        /**
+         * InstrumentPage
+         * @description One page of `GET /instruments`: the rows, and how many rows the filters match in
+         *     all.
+         * @example {
+         *       "items": [
+         *         {
+         *           "authority": {
+         *             "key": "fi",
+         *             "name": "Finansinspektionen",
+         *             "shortName": "FI",
+         *             "url": "https://www.fi.se/"
+         *           },
+         *           "binding": true,
+         *           "id": "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f",
+         *           "implementsNote": "MiFID II delegated directive (EU) 2017/593",
+         *           "inFootprint": true,
+         *           "inForceFrom": {
+         *             "date": "2018-01-03",
+         *             "precision": "day"
+         *           },
+         *           "inForceTo": null,
+         *           "jurisdiction": {
+         *             "key": "se",
+         *             "kind": "country",
+         *             "label": "Sweden"
+         *           },
+         *           "lastVerifiedAt": "2026-06-30T07:12:44Z",
+         *           "level": {
+         *             "key": "authority_regulation",
+         *             "kind": null,
+         *             "label": "Supervisory regulation"
+         *           },
+         *           "name": {
+         *             "isMachine": false,
+         *             "isOriginal": true,
+         *             "language": "sv",
+         *             "text": "FFFS 2017:2 om värdepappersrörelse"
+         *           },
+         *           "obligationCount": 2,
+         *           "officialRef": "FFFS 2017:2",
+         *           "regime": {
+         *             "key": "securities",
+         *             "kind": null,
+         *             "label": "Securities"
+         *           },
+         *           "shortName": "FFFS 2017:2",
+         *           "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
+         *           "stableKey": "fffs-2017-2"
+         *         }
+         *       ],
+         *       "total": 16
+         *     }
+         */
+        InstrumentPage: {
+            /**
+             * Items
+             * @description The instruments on this page, ordered by their stable key so that paging through them is repeatable. An empty list is an ordinary 200 and means nothing matched the filters, never that something went wrong.
+             */
+            items: components["schemas"]["InstrumentRow"][];
+            /**
+             * Total
+             * @description How many instruments match the filters in all, not how many are on this page. It is counted at the moment of the call, so a record written between two pages can move it.
+             * @example 16
+             */
+            total: number;
+        };
+        /**
+         * InstrumentProvisionsQuery
+         * @description `asOf` on the provision tree: which version of each unit `inForceVersion` names,
+         *     today in the tenant's time zone by default (AC-INV1). `versions` always lists every
+         *     one regardless, so a reader can choose an earlier or a future version by its own
+         *     chip and is never limited to what was in force on this date.
+         */
+        InstrumentProvisionsQuery: {
+            /**
+             * Asof
+             * @description Read the record as it stood on this date, as a plain calendar date such as `2026-06-30`: the answer carries the version in force on it, which is the version with the latest effective date on or before it. It defaults to today in the bank's own time zone and not the caller's, so two people in one bank always read the same day. Reading as of a future date shows wording that does not bind yet, and is never itself a statement that the bank has something to do. It decides `inForceVersion` alone; every version stays in `versions`.
+             * @example 2026-06-30
+             */
+            asOf?: string | null;
+        };
+        /**
+         * InstrumentQuery
+         * @description The filters of `GET /instruments`. Jurisdiction, level, authority and `asOf` are
+         *     deferred (chunk3-rest defaults): the Instruments tab lists every visible instrument
+         *     with its own in-force dates, and "as of" applies to obligations only.
+         */
+        InstrumentQuery: {
+            /**
+             * Outsidefootprint
+             * @description Whether to include the instruments the bank's footprint would otherwise hide. False by default, which is the working inventory: only the instruments whose own scope overlaps the footprint. It also lifts the footprint filter `obligationCount` counts obligations against.
+             * @default false
+             * @example false
+             */
+            outsideFootprint: boolean;
+            /**
+             * Q
+             * @description Find the instruments whose name, short name or official reference contains these words, ignoring case: a phrase to look for, never a document. At most 200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`.
+             * @example FFFS
+             */
+            q?: string | null;
+            /**
+             * Regime
+             * @description Only the instruments of this regime, by the regime term's key: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. A key no regime has matches nothing and answers 200 with an empty page.
+             * @example securities
+             */
+            regime?: string | null;
+        };
+        /**
+         * InstrumentRow
+         * @description One row of `GET /instruments` (INV-01). `obligationCount` counts the obligations
+         *     this row's reader would see: inside the footprint, or every one when
+         *     `outsideFootprint` is set.
+         */
+        InstrumentRow: {
+            /** @description Who issued the instrument, or null when the fixture carries none. */
+            authority: components["schemas"]["InstrumentAuthorityRef"] | null;
+            /**
+             * Binding
+             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
+             * @example true
+             */
+            binding: boolean;
+            /**
+             * Id
+             * Format: uuid
+             * @description The instrument's identifier in the shared library, as a UUID. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.
+             * @example 3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f
+             */
+            id: string;
+            /**
+             * Implementsnote
+             * @description What this instrument implements or elaborates, in the library's own words, so a reader can see where a Swedish rule comes from. Free text for a person and never a machine-readable link; an empty string when nothing was recorded, never null. The structured lineage between instruments is `lineage` on the instrument's own read.
+             * @example MiFID II delegated directive (EU) 2017/593
+             */
+            implementsNote: string;
+            /**
+             * Infootprint
+             * @description Whether the instrument's own scope (its regime) overlaps the bank's footprint. It is a filter and not a decision: it says nothing about whether any duty of this instrument applies to this bank, which a person judges separately.
+             * @example true
+             */
+            inFootprint: boolean;
+            /** @description The legal date the instrument started binding, at the precision the source gave it (playbook 4.3). Null when the source names no start date. */
+            inForceFrom: components["schemas"]["PartialDate"] | null;
+            /** @description The legal date the instrument stopped binding, at the precision the source gave it. Null on an instrument still in force, which is most of them. */
+            inForceTo: components["schemas"]["PartialDate"] | null;
+            /** @description Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` says whether it is a country, a union or an international body. */
+            jurisdiction: components["schemas"]["LibraryRef"];
+            /**
+             * Lastverifiedat
+             * @description When a bleqq library editor last read this record against its public source and found it unchanged, as a UTC timestamp; a screen shows it as "Verified <date>" in the bank's own time zone. Null on a record nobody has confirmed that way.
+             * @example 2026-06-30T07:12:44Z
+             */
+            lastVerifiedAt: string | null;
+            /** @description What rank of instrument this is, as key, kind and label: how much weight it carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act` and `authority_regulation` are seeded on day one. */
+            level: components["schemas"]["LibraryRef"];
+            /** @description The instrument's full name, in the best language this reader can be served. The original is the jurisdiction's legal language, so a Swedish regulation read in English usually still answers its Swedish name rather than a translation. Null only when the record carries no name in any language. */
+            name: components["schemas"]["LocalizedText"] | null;
+            /**
+             * Obligationcount
+             * @description How many duties this instrument carries that this read would show: inside the bank's footprint by default, or every one when `outsideFootprint=true` is set. It is not the instrument's whole duty count when the footprint hides some of them.
+             * @example 2
+             */
+            obligationCount: number;
+            /**
+             * Officialref
+             * @description The reference the issuing authority itself publishes the instrument under, written as that authority writes it. It is how a lawyer cites the instrument and how a reader recognises it on the authority's own site; it is not an identifier this API accepts, which is `key`.
+             * @example FFFS 2017:2
+             */
+            officialRef: string;
+            /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits. Null only while an instrument carries none. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
+            regime: components["schemas"]["LibraryRef"] | null;
+            /**
+             * Shortname
+             * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead.
+             * @example FFFS 2017:2
+             */
+            shortName: string;
+            /**
+             * Sourceurl
+             * @description The public page this record was taken from, so a reader can open it and a re-check can fetch it again. It is the authority's own page and never a link into this product.
+             * @example https://www.fi.se/en/published/regulations/2017/fffs-20172/
+             */
+            sourceUrl: string;
+            /**
+             * Stablekey
+             * @description The instrument's immutable key, issued once and readable by a person. It survives every amendment and relabelling, which is what makes it safe to keep in an export, a report or a system of the bank's own; it is also what `GET /obligations?instrument=` filters on.
+             * @example fffs-2017-2
+             */
+            stableKey: string;
+        };
+        /**
          * InvitationCodeVerifyBody
          * @description The invitation path: the link's token names the account, so no address travels.
          *     The token rides in the body, never the path, so no access log holds it (F6, F29).
@@ -6618,32 +7168,6 @@ export interface components {
              * @description Every version of this duty in version order, including the ones still to take effect, so a reader can see the whole history and ask for a diff between any two. Nothing here is ever rewritten: a correction is another version.
              */
             versions: components["schemas"]["ObligationVersionRow"][];
-        };
-        /**
-         * ObligationDiffQuery
-         * @description `from` and `to` are version numbers, defaulting to the latest version against the one
-         *     before it. `lang` asks for a language; the diff falls back to the reader's language
-         *     order when neither version has it (INV-05).
-         */
-        ObligationDiffQuery: {
-            /**
-             * From
-             * @description Which version to compare from, by its version number, 1 at the lowest. It defaults to the version before the latest one, so a plain call shows the most recent change. Both versions are versions of the same obligation: there is no comparison across records. A number this obligation has no version for is refused with 422 `unknown_key`.
-             * @example 1
-             */
-            from?: number | null;
-            /**
-             * Lang
-             * @description Which content language to compare in, as a language key of at most 8 characters such as `sv` or `en`. It is a preference and never a filter: a key the two versions do not both hold is not an error, and the diff falls back to the reader's own language order and then to an original before a translation, saying in `language` what it settled on. A key longer than 8 characters is refused with 422 `validation_error`, and two versions with no language in common answer 422 because there is nothing to compare.
-             * @example en
-             */
-            lang?: string | null;
-            /**
-             * To
-             * @description Which version to compare to, by its version number, 1 at the lowest. It defaults to the latest version the obligation has, including one that has been approved and does not take effect until later. A number this obligation has no version for is refused with 422 `unknown_key`.
-             * @example 2
-             */
-            to?: number | null;
         };
         /**
          * ObligationInstrumentRef
@@ -8299,6 +8823,118 @@ export interface components {
              */
             title: string;
         };
+        /**
+         * ProvisionCitedObligation
+         * @description An obligation the tree shows beside the provision it cites (INV-02, INV-03).
+         */
+        ProvisionCitedObligation: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The duty's identifier in the shared library, as a UUID: what every other call addresses this obligation by. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.
+             * @example 7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17
+             */
+            id: string;
+            /**
+             * Reflabel
+             * @description How the duty is cited inside its instrument, in the words the source itself uses — a chapter, a section or the heading the authority gave it. It is there for a reader to recognise the place in the rule book, not a structured reference to parse.
+             * @example Third-party payments
+             */
+            refLabel: string;
+            /** @description The duty in one line, in the best language this reader can be served: their own first, then their bank's default, then English, then whatever the record has. Null only when the record carries no title in any language at all. */
+            title: components["schemas"]["LocalizedText"] | null;
+        };
+        /**
+         * ProvisionNode
+         * @description One node of an instrument's provision tree (INV-02): a chapter, a section, a
+         *     paragraph or whatever `kind` names, with its own text versions, its children in the
+         *     tree and the obligations that cite it. `inForceVersion` is the version number in
+         *     force on the read's date (null when none is); `versions` lists every one regardless,
+         *     so a reader can choose an earlier or a future version by its own chip.
+         */
+        ProvisionNode: {
+            /**
+             * Children
+             * @description The units nested directly under this one, in the tree's own order. An empty list on a leaf.
+             */
+            children: components["schemas"]["ProvisionNode"][];
+            /**
+             * Heading
+             * @description The unit's own heading, in the library's words. An empty string when the source gives none, never null.
+             * @example Betalning för analys
+             */
+            heading: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The provision's identifier in the shared library, as a UUID. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved.
+             * @example b6d9f0a4-1c72-4e35-9f88-0a2c4e6b8d10
+             */
+            id: string;
+            /**
+             * Inforceversion
+             * @description The version number in force on the date this tree was read, or null when every version starts after that date. It says which chip a screen should select by default; the reader may still choose another one.
+             * @example 2
+             */
+            inForceVersion: number | null;
+            /** @description What structural kind of unit this is, as key, kind and label: `chapter`, `section`, `article`, `paragraph`, `part`, `annex` and `guideline` are seeded on day one. Here `kind` on the reference itself carries the row's own fixed structural kind (`division`, `unit` or `annex`) rather than being null, because a screen groups provisions by it. The kinds are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /vocab/provision_kind` for the live set and match on the key. */
+            kind: components["schemas"]["LibraryRef"];
+            /**
+             * Obligations
+             * @description The obligations that cite this unit, so a reader can jump from the law to the duty. Only obligations this caller may read appear: one they may not is left out silently.
+             */
+            obligations: components["schemas"]["ProvisionCitedObligation"][];
+            /**
+             * Path
+             * @description Where this unit sits in its instrument's structure, read from the top, as a breadcrumb a person reads.
+             * @example FFFS 2017:2 > 9 kap. > 6 §
+             */
+            path: string;
+            /**
+             * Reflabel
+             * @description How this unit is cited, in the words the source itself uses (`9 kap.`, `6 §`, `Article 25(3)`). For a reader to quote, not a reference to parse.
+             * @example 6 §
+             */
+            refLabel: string;
+            /**
+             * Stablekey
+             * @description The provision's immutable key, issued once and readable by a person, of the form `<instrument>/<unit>` (`fffs-2017-2/9-6` for 9 kap. 6 §). It survives every amendment and relabelling.
+             * @example fffs-2017-2/9-6
+             */
+            stableKey: string;
+            /**
+             * Versions
+             * @description Every text version of this unit in version order, including ones still to take effect, so a reader can choose any of them by its own chip rather than trusting today's date. Nothing here is ever rewritten: a correction is another version.
+             */
+            versions: components["schemas"]["ProvisionVersionRow"][];
+        };
+        /**
+         * ProvisionVersionRow
+         * @description One verbatim text version of a provision (INV-02, INV-04): when it took effect,
+         *     `effectiveTo` derived as the day before the next version did (nothing is stored,
+         *     because a version row is written once and never touched afterwards), any
+         *     transitional note, and the text itself in the reader's best language.
+         */
+        ProvisionVersionRow: {
+            /** @description The legal date this version started binding the bank, at the precision the source gave it. Null means it has been in force since the provision entered the library. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved. */
+            effectiveFrom: components["schemas"]["PartialDate"] | null;
+            /** @description The last day this version was in force, worked out as the day before the next version took effect. Null on the version still in force, on one whose successor carries no date, and on one corrected the same day it took effect. */
+            effectiveTo: components["schemas"]["PartialDate"] | null;
+            /** @description This version's verbatim text in the best language this reader can be served. Null only when the version carries no text in any language at all. */
+            text: components["schemas"]["LocalizedText"] | null;
+            /**
+             * Transitionalnote
+             * @description How the transition to this version is handled, in the library's own words ("the annual assessment is first due for research received after 1 October 2026"). An empty string when the source gave none, never null.
+             * @example The annual assessment is first due for research received after 1 October 2026.
+             */
+            transitionalNote: string;
+            /**
+             * Versionnumber
+             * @description Which version of this provision's text it is, numbered from 1 in the order the versions took effect. It is the number to send to the diff as `from` or `to`, and it never addresses another provision's version.
+             * @example 2
+             */
+            versionNumber: number;
+        };
         /** RefreshResult */
         RefreshResult: {
             /** Accesstoken */
@@ -9264,6 +9900,34 @@ export interface components {
              * @example 2
              */
             toVersion: number;
+        };
+        /**
+         * VersionDiffQuery
+         * @description `from` and `to` are version numbers, defaulting to the latest version against the one
+         *     before it. `lang` asks for a language; the diff falls back to the reader's language
+         *     order when neither version has it (INV-05). Serves the obligation diff and the
+         *     provision diff alike (chunk3-rest-T16): both compare two versions of one record and
+         *     never one record with another.
+         */
+        VersionDiffQuery: {
+            /**
+             * From
+             * @description Which version to compare from, by its version number, 1 at the lowest. It defaults to the version before the latest one, so a plain call shows the most recent change. Both versions are versions of the same record: there is no comparison across records. A number this record has no version for is refused with 422 `unknown_key`.
+             * @example 1
+             */
+            from?: number | null;
+            /**
+             * Lang
+             * @description Which content language to compare in, as a language key of at most 8 characters such as `sv` or `en`. It is a preference and never a filter: a key the two versions do not both hold is not an error, and the diff falls back to the reader's own language order and then to an original before a translation, saying in `language` what it settled on. A key longer than 8 characters is refused with 422 `validation_error`, and two versions with no language in common answer 422 because there is nothing to compare.
+             * @example en
+             */
+            lang?: string | null;
+            /**
+             * To
+             * @description Which version to compare to, by its version number, 1 at the lowest. It defaults to the latest version the record has, including one that has been approved and does not take effect until later. A number this record has no version for is refused with 422 `unknown_key`.
+             * @example 2
+             */
+            to?: number | null;
         };
         /**
          * VocabularyCreateBody
@@ -13437,6 +14101,75 @@ export interface operations {
             };
         };
     };
+    listInstruments: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Only the instruments of this regime, by the regime term's key: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. A key no regime has matches nothing and answers 200 with an empty page.
+                 * @example securities
+                 */
+                regime?: string | null;
+                /**
+                 * @description Find the instruments whose name, short name or official reference contains these words, ignoring case: a phrase to look for, never a document. At most 200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`.
+                 * @example FFFS
+                 */
+                q?: string | null;
+                /**
+                 * @description Whether to include the instruments the bank's footprint would otherwise hide. False by default, which is the working inventory: only the instruments whose own scope overlaps the footprint. It also lifts the footprint filter `obligationCount` counts obligations against.
+                 * @example false
+                 */
+                outsideFootprint?: boolean;
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstrumentPage"];
+                };
+            };
+        };
+    };
+    getInstrument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The instrument to read, by its identifier (a UUID), which is the `id` a row of `GET /instruments` carries. A record this caller cannot see answers 404 exactly as an identifier that names nothing does, so no id can be probed for. */
+                instrument_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstrumentDetail"];
+                };
+            };
+        };
+    };
     reportInstrumentProblem: {
         parameters: {
             query?: never;
@@ -13460,6 +14193,117 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProblemReportCreated"];
+                };
+            };
+        };
+    };
+    listInstrumentProvisions: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Read the record as it stood on this date, as a plain calendar date such as `2026-06-30`: the answer carries the version in force on it, which is the version with the latest effective date on or before it. It defaults to today in the bank's own time zone and not the caller's, so two people in one bank always read the same day. Reading as of a future date shows wording that does not bind yet, and is never itself a statement that the bank has something to do. It decides `inForceVersion` alone; every version stays in `versions`.
+                 * @example 2026-06-30
+                 */
+                asOf?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description The instrument whose provision tree to read, by its identifier (a UUID). A record this caller cannot see answers 404 exactly as an identifier that names nothing does, so no id can be probed for. */
+                instrument_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "children": [
+                     *           {
+                     *             "children": [],
+                     *             "heading": "Betalning för analys",
+                     *             "id": "b6d9f0a4-1c72-4e35-9f88-0a2c4e6b8d10",
+                     *             "inForceVersion": 1,
+                     *             "kind": {
+                     *               "key": "section",
+                     *               "kind": "unit",
+                     *               "label": "Section"
+                     *             },
+                     *             "obligations": [
+                     *               {
+                     *                 "id": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+                     *                 "refLabel": "Third-party payments",
+                     *                 "title": {
+                     *                   "isMachine": false,
+                     *                   "isOriginal": true,
+                     *                   "language": "en",
+                     *                   "text": "Pay for third-party research only under the permitted models"
+                     *                 }
+                     *               }
+                     *             ],
+                     *             "path": "FFFS 2017:2 > 9 kap. > 6 §",
+                     *             "refLabel": "6 §",
+                     *             "stableKey": "fffs-2017-2/9-6",
+                     *             "versions": [
+                     *               {
+                     *                 "effectiveFrom": {
+                     *                   "date": "2018-01-03",
+                     *                   "precision": "day"
+                     *                 },
+                     *                 "effectiveTo": {
+                     *                   "date": "2026-09-30",
+                     *                   "precision": "day"
+                     *                 },
+                     *                 "text": {
+                     *                   "isMachine": true,
+                     *                   "isOriginal": false,
+                     *                   "language": "en",
+                     *                   "text": "Investment research from a third party may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in these regulations."
+                     *                 },
+                     *                 "transitionalNote": "",
+                     *                 "versionNumber": 1
+                     *               },
+                     *               {
+                     *                 "effectiveFrom": {
+                     *                   "date": "2026-10-01",
+                     *                   "precision": "day"
+                     *                 },
+                     *                 "effectiveTo": null,
+                     *                 "text": {
+                     *                   "isMachine": true,
+                     *                   "isOriginal": false,
+                     *                   "language": "en",
+                     *                   "text": "Investment research from a third party may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in these regulations. The institution shall assess annually the quality and value of the research it receives."
+                     *                 },
+                     *                 "transitionalNote": "The annual assessment is first due for research received after 1 October 2026.",
+                     *                 "versionNumber": 2
+                     *               }
+                     *             ]
+                     *           }
+                     *         ],
+                     *         "heading": "Skydd för investerare",
+                     *         "id": "e4b8f1a2-6c3d-4e5f-9a7b-1c2d3e4f5a6b",
+                     *         "inForceVersion": null,
+                     *         "kind": {
+                     *           "key": "chapter",
+                     *           "kind": "division",
+                     *           "label": "Chapter"
+                     *         },
+                     *         "obligations": [],
+                     *         "path": "FFFS 2017:2 > 9 kap.",
+                     *         "refLabel": "9 kap.",
+                     *         "stableKey": "fffs-2017-2/9",
+                     *         "versions": []
+                     *       }
+                     *     ]
+                     */
+                    "application/json": components["schemas"]["ProvisionNode"][];
                 };
             };
         };
@@ -13804,12 +14648,12 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Which version to compare from, by its version number, 1 at the lowest. It defaults to the version before the latest one, so a plain call shows the most recent change. Both versions are versions of the same obligation: there is no comparison across records. A number this obligation has no version for is refused with 422 `unknown_key`.
+                 * @description Which version to compare from, by its version number, 1 at the lowest. It defaults to the version before the latest one, so a plain call shows the most recent change. Both versions are versions of the same record: there is no comparison across records. A number this record has no version for is refused with 422 `unknown_key`.
                  * @example 1
                  */
                 from?: number | null;
                 /**
-                 * @description Which version to compare to, by its version number, 1 at the lowest. It defaults to the latest version the obligation has, including one that has been approved and does not take effect until later. A number this obligation has no version for is refused with 422 `unknown_key`.
+                 * @description Which version to compare to, by its version number, 1 at the lowest. It defaults to the latest version the record has, including one that has been approved and does not take effect until later. A number this record has no version for is refused with 422 `unknown_key`.
                  * @example 2
                  */
                 to?: number | null;
@@ -14066,6 +14910,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProposalRow"];
+                };
+            };
+        };
+    };
+    getProvisionDiff: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Which version to compare from, by its version number, 1 at the lowest. It defaults to the version before the latest one, so a plain call shows the most recent change. Both versions are versions of the same record: there is no comparison across records. A number this record has no version for is refused with 422 `unknown_key`.
+                 * @example 1
+                 */
+                from?: number | null;
+                /**
+                 * @description Which version to compare to, by its version number, 1 at the lowest. It defaults to the latest version the record has, including one that has been approved and does not take effect until later. A number this record has no version for is refused with 422 `unknown_key`.
+                 * @example 2
+                 */
+                to?: number | null;
+                /**
+                 * @description Which content language to compare in, as a language key of at most 8 characters such as `sv` or `en`. It is a preference and never a filter: a key the two versions do not both hold is not an error, and the diff falls back to the reader's own language order and then to an original before a translation, saying in `language` what it settled on. A key longer than 8 characters is refused with 422 `validation_error`, and two versions with no language in common answer 422 because there is nothing to compare.
+                 * @example en
+                 */
+                lang?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description The provision whose two versions are compared, by its identifier (a UUID), which is the `id` a node of the provision tree carries. Both versions belong to this one record: a diff is never taken across provisions. A record this caller cannot see answers 404, never 403. */
+                provision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDiff"];
                 };
             };
         };

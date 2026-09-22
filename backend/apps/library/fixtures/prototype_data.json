@@ -398,6 +398,12 @@
     "label_sv": "Relaterad",
     "kind": null,
     "usage_note": "Two obligations a reader should see together, with no hierarchy between them."
+   },
+   "amends": {
+    "label_en": "Amends",
+    "label_sv": "Ändrar",
+    "kind": null,
+    "usage_note": "A later instrument that corrects, supersedes or adds to part of an earlier one."
    }
   },
   "source_kind": {
@@ -1452,6 +1458,27 @@
    "prototype_id": null,
    "from_prototype": false,
    "note": "Anchor for the implements relations of LFD and FFFS 2018:10."
+  },
+  {
+   "stable_key": "fffs-2026-11",
+   "short_name": "FFFS 2026:11",
+   "name": "FFFS 2026:11 om ändring i Finansinspektionens föreskrifter (FFFS 2017:2) om värdepappersrörelse",
+   "regime": "regime:securities",
+   "level": "authority_regulation",
+   "binding": true,
+   "official_ref": "FFFS 2026:11",
+   "eli_uri": null,
+   "source_url": "https://www.fi.se/",
+   "authority": "fi",
+   "jurisdiction": "SE",
+   "in_force_from": "2026-10-01",
+   "in_force_to": null,
+   "implements_note": "",
+   "status": "active",
+   "last_verified_at": null,
+   "verified_by": null,
+   "prototype_id": "FFFS202611",
+   "from_prototype": false
   }
  ],
  "instrument_relations": [
@@ -1494,6 +1521,14 @@
    "from_ref": null,
    "to_ref": null,
    "note": "IDD, Directive (EU) 2016/97"
+  },
+  {
+   "from_instrument": "fffs-2026-11",
+   "to_instrument": "fffs-2017-2",
+   "relation": "amends",
+   "from_ref": null,
+   "to_ref": null,
+   "note": "Amends FFFS 2017:2, in force 1 October 2026."
   }
  ],
  "provisions": [
@@ -1516,6 +1551,150 @@
    "heading": "Automated individual decision-making, including profiling",
    "path": "GDPR > Article 22",
    "ordinal": 22
+  },
+  {
+   "stable_key": "fffs-2017-2/9",
+   "instrument": "fffs-2017-2",
+   "parent": null,
+   "kind": "chapter",
+   "ref": "9 kap.",
+   "heading": "Skydd för investerare",
+   "path": "FFFS 2017:2 > 9 kap.",
+   "ordinal": 9
+  },
+  {
+   "stable_key": "fffs-2017-2/9-6",
+   "instrument": "fffs-2017-2",
+   "parent": "fffs-2017-2/9",
+   "kind": "section",
+   "ref": "6 §",
+   "heading": "Betalning för analys",
+   "path": "FFFS 2017:2 > 9 kap. > 6 §",
+   "ordinal": 6
+  },
+  {
+   "stable_key": "fffs-2017-2/9-6-1",
+   "instrument": "fffs-2017-2",
+   "parent": "fffs-2017-2/9-6",
+   "kind": "paragraph",
+   "ref": "första stycket",
+   "heading": "",
+   "path": "FFFS 2017:2 > 9 kap. > 6 § > första stycket",
+   "ordinal": 1
+  },
+  {
+   "stable_key": "fffs-2017-2/9-10",
+   "instrument": "fffs-2017-2",
+   "parent": "fffs-2017-2/9",
+   "kind": "section",
+   "ref": "10 §",
+   "heading": "Kostnader och avgifter",
+   "path": "FFFS 2017:2 > 9 kap. > 10 §",
+   "ordinal": 10
+  },
+  {
+   "stable_key": "fffs-2017-2/9-23",
+   "instrument": "fffs-2017-2",
+   "parent": "fffs-2017-2/9",
+   "kind": "section",
+   "ref": "23 §",
+   "heading": "Passandebedömning",
+   "path": "FFFS 2017:2 > 9 kap. > 23 §",
+   "ordinal": 23
+  },
+  {
+   "stable_key": "fffs-2017-2/10",
+   "instrument": "fffs-2017-2",
+   "parent": null,
+   "kind": "chapter",
+   "ref": "10 kap.",
+   "heading": "Produktstyrning",
+   "path": "FFFS 2017:2 > 10 kap.",
+   "ordinal": 10
+  },
+  {
+   "stable_key": "fffs-2017-2/11",
+   "instrument": "fffs-2017-2",
+   "parent": null,
+   "kind": "chapter",
+   "ref": "11 kap.",
+   "heading": "Kundmedel och finansiella instrument",
+   "path": "FFFS 2017:2 > 11 kap.",
+   "ordinal": 11
+  }
+ ],
+ "provision_versions": [
+  {
+   "provision": "fffs-2017-2/9",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Detta kapitel innehåller bestämmelser om skydd för investerare vid värdepappersrörelse.",
+   "text_en": "This chapter contains provisions on investor protection in securities business."
+  },
+  {
+   "provision": "fffs-2017-2/9-6",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor som anges i reglerna.",
+   "text_en": "Investment research from a third party may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in these regulations."
+  },
+  {
+   "provision": "fffs-2017-2/9-6",
+   "version_no": 2,
+   "effective_from": "2026-10-01",
+   "transitional_note": "The annual assessment is first due for research received after 1 October 2026.",
+   "original_language": "sv",
+   "text_sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel, från ett analyskonto, eller gemensamt med orderutförande enligt de villkor som anges i reglerna. Institutet ska årligen bedöma kvaliteten och nyttan av den analys som tas emot.",
+   "text_en": "Investment research from a third party may be received only if it is paid from the institution's own resources, from a research payment account, or jointly with execution under the conditions set out in these regulations. The institution shall assess annually the quality and value of the research it receives."
+  },
+  {
+   "provision": "fffs-2017-2/9-6-1",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Med institutets egna medel avses medel som inte har fakturerats kunden särskilt för analysen.",
+   "text_en": "The institution's own resources means funds that have not been separately invoiced to the client for the research."
+  },
+  {
+   "provision": "fffs-2017-2/9-10",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Institutet ska lämna information om samtliga kostnader och avgifter till kunden före och efter tillhandahållandet av tjänsten.",
+   "text_en": "The institution shall disclose all costs and charges to the client before and after providing the service."
+  },
+  {
+   "provision": "fffs-2017-2/9-23",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Institutet ska bedöma om en tjänst eller ett finansiellt instrument är lämpligt för kunden innan tjänsten tillhandahålls.",
+   "text_en": "The institution shall assess whether a service or financial instrument is appropriate for the client before the service is provided."
+  },
+  {
+   "provision": "fffs-2017-2/10",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Detta kapitel innehåller bestämmelser om produktstyrning.",
+   "text_en": "This chapter contains provisions on product governance."
+  },
+  {
+   "provision": "fffs-2017-2/11",
+   "version_no": 1,
+   "effective_from": "2018-01-03",
+   "transitional_note": "",
+   "original_language": "sv",
+   "text_sv": "Detta kapitel innehåller bestämmelser om hantering av kunders medel och finansiella instrument.",
+   "text_en": "This chapter contains provisions on the handling of clients' funds and financial instruments."
   }
  ],
  "obligation_provisions": [
@@ -1534,6 +1713,14 @@
   {
    "obligation": "obl-suitability-statement",
    "provision": "sfs-2007-528/9"
+  },
+  {
+   "obligation": "obl-research-payments",
+   "provision": "fffs-2017-2/9-6"
+  },
+  {
+   "obligation": "obl-costs-charges",
+   "provision": "fffs-2017-2/9-10"
   }
  ],
  "obligations": [

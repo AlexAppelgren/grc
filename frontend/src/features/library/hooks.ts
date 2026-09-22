@@ -3,7 +3,19 @@
 import { useMutation, useQuery, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
 import * as library from './api';
-import type { Obligation, ObligationDetail, ObligationQuery, Page, ProblemReportBody, ProblemReportCreated, VersionDiff } from './types';
+import type {
+  Instrument,
+  InstrumentDetail,
+  InstrumentQuery,
+  Obligation,
+  ObligationDetail,
+  ObligationQuery,
+  Page,
+  ProblemReportBody,
+  ProblemReportCreated,
+  ProvisionNode,
+  VersionDiff,
+} from './types';
 
 // Query keys for the inventory and the obligation card (playbook 6.1). The
 // filters and the date are part of the key, so changing "as of" or asking to
@@ -14,6 +26,10 @@ export const libraryKeys = {
   obligations: (query: ObligationQuery, limit: number) => ['library', 'obligations', { ...query, limit }] as const,
   obligation: (obligationId: string, asOf: string) => ['library', 'obligation', obligationId, asOf] as const,
   obligationDiff: (obligationId: string, lang: string) => ['library', 'obligation', obligationId, 'diff', lang] as const,
+  instruments: (query: InstrumentQuery, limit: number) => ['library', 'instruments', { ...query, limit }] as const,
+  instrument: (instrumentId: string) => ['library', 'instrument', instrumentId] as const,
+  provisions: (instrumentId: string, asOf: string) => ['library', 'instrument', instrumentId, 'provisions', asOf] as const,
+  provisionDiff: (provisionId: string, lang: string) => ['library', 'provision', provisionId, 'diff', lang] as const,
 };
 
 /** Playbook 10: the list default. The head states the total, so a longer library is visibly longer than the page. */
@@ -54,4 +70,48 @@ export function useObligationDiff(obligationId: string, lang: string, enabled: b
  */
 export function useReportObligationProblem(obligationId: string): UseMutationResult<ProblemReportCreated, unknown, ProblemReportBody> {
   return useMutation({ mutationFn: (body) => library.reportObligationProblem(obligationId, body) });
+}
+
+/** Playbook 10: the Instruments tab's own page size, like the obligations list. */
+export const INSTRUMENT_PAGE = 20;
+
+/** The Instruments tab and the instrument filter's own options; both read the same page. */
+export function useInstruments(query: InstrumentQuery): UseQueryResult<Page<Instrument>> {
+  return useQuery({
+    queryKey: libraryKeys.instruments(query, INSTRUMENT_PAGE),
+    queryFn: () => library.listInstruments({ ...query, limit: INSTRUMENT_PAGE, offset: 0 }),
+  });
+}
+
+export function useInstrument(instrumentId: string): UseQueryResult<InstrumentDetail> {
+  return useQuery({
+    queryKey: libraryKeys.instrument(instrumentId),
+    queryFn: () => library.getInstrument(instrumentId),
+  });
+}
+
+/** "This looks wrong" on an instrument card; the report stays inside the reader's own bank, so nothing here invalidates. */
+export function useReportInstrumentProblem(instrumentId: string): UseMutationResult<ProblemReportCreated, unknown, ProblemReportBody> {
+  return useMutation({ mutationFn: (body) => library.reportInstrumentProblem(instrumentId, body) });
+}
+
+/**
+ * The whole provision tree, every version of every unit included, so a
+ * reader chooses one by its own chip rather than trusting today's date.
+ * `asOf` only decides which version each node's `inForceVersion` names.
+ */
+export function useInstrumentProvisions(instrumentId: string, asOf = ''): UseQueryResult<ProvisionNode[]> {
+  return useQuery({
+    queryKey: libraryKeys.provisions(instrumentId, asOf),
+    queryFn: () => library.listInstrumentProvisions(instrumentId, asOf),
+  });
+}
+
+/** "Show what changed" on one provision, read only once the reader asks for it. */
+export function useProvisionDiff(provisionId: string, lang: string, enabled: boolean): UseQueryResult<VersionDiff> {
+  return useQuery({
+    queryKey: libraryKeys.provisionDiff(provisionId, lang),
+    queryFn: () => library.getProvisionDiff(provisionId, lang),
+    enabled,
+  });
 }

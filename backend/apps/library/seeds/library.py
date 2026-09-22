@@ -1,6 +1,7 @@
-"""The prototype's library as rows (chunk 3, INV-01..INV-05): authorities, instruments with
-their titles and lineage, provisions, obligations with titles, versions, summaries, scope
-terms, tags, provisions and relations, from apps/library/fixtures/prototype_data.json.
+"""The prototype's library as rows (chunk 3, INV-01..INV-06): authorities, instruments with
+their titles and lineage, provisions with their own verbatim text versions (T8), obligations
+with titles, versions, summaries, scope terms, tags, cited provisions and relations, from
+apps/library/fixtures/prototype_data.json.
 
 `seed_authorities` is a reference seed (INPUT_DELTAS §3: jurisdictions come with their
 authorities) and runs on every deploy. `load_library` is demo data: `seed_demo` and
@@ -39,6 +40,8 @@ from apps.library.models import (
     ObligationTitle,
     ObligationVersion,
     Provision,
+    ProvisionText,
+    ProvisionVersion,
 )
 from apps.proposals.models import OriginType
 from apps.shared.audit import Actor, record
@@ -52,6 +55,9 @@ RESEARCH_OBLIGATION = "obl-research-payments"
 # The prototype writes every obligation title in English; summaries name their original.
 TITLE_LANGUAGE = "en"
 SUMMARY_PREFIX = "summary_"
+# The provision tree's own text versions carry this prefix instead (T8), never a summary:
+# a provision's verbatim text is not an obligation's plain-language duty.
+PROVISION_TEXT_PREFIX = "text_"
 # The fixture's proposal kind for a new obligation version (schema v0.3 `proposal_kind`);
 # chunk 4 adds it to ProposalKind.
 NEW_OBLIGATION_VERSION = "new_obligation_version"
@@ -181,6 +187,24 @@ def _version(spec: dict[str, Any], obligation: Obligation) -> None:
                 )
 
 
+def _provision_version(spec: dict[str, Any], provision: Provision) -> None:
+    """A provision's verbatim text version (INV-02, T8): write-once, like `_version` above.
+    `effective_to` is never set here; every read derives it from the version that follows."""
+    version, created = ProvisionVersion.objects.get_or_create(
+        provision=provision,
+        version_number=spec["version_no"],
+        defaults={"effective_from": _date(spec["effective_from"]), "transitional_note": spec["transitional_note"] or ""},
+    )
+    if created:
+        original = spec["original_language"]
+        for field, text in spec.items():
+            if field.startswith(PROVISION_TEXT_PREFIX):
+                language = field.removeprefix(PROVISION_TEXT_PREFIX)
+                ProvisionText.objects.create(
+                    version=version, language_id=language, text=text, is_original=language == original, is_machine=language != original
+                )
+
+
 def _version_specs(data: dict[str, Any]) -> list[dict[str, Any]]:
     """The fixture's versions plus the pending second version held in a proposal payload."""
     specs: list[dict[str, Any]] = list(data["obligation_versions"])
@@ -207,7 +231,7 @@ def load_library() -> dict[str, int]:
             )
         provisions: dict[str, Provision] = {}
         for spec in data["provisions"]:  # a parent precedes its children in the file
-            provisions[spec["stable_key"]], _ = Provision.objects.get_or_create(
+            row, created = Provision.objects.get_or_create(
                 stable_key=spec["stable_key"],
                 defaults={
                     "instrument": instruments[spec["instrument"]],
@@ -219,6 +243,11 @@ def load_library() -> dict[str, int]:
                     "sort_order": spec["ordinal"],
                 },
             )
+            provisions[spec["stable_key"]] = row
+            if created:
+                _audit("provision", row, row.stable_key)
+        for spec in data.get("provision_versions", []):
+            _provision_version(spec, provisions[spec["provision"]])
         obligations = {spec["stable_key"]: _obligation(spec, instruments[spec["instrument"]]) for spec in data["obligations"]}
         versions = _version_specs(data)
         for spec in versions:

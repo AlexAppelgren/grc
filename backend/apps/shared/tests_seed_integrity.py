@@ -275,14 +275,15 @@ class SeedIntegrityGuard(TestCase):
         `embed_backlog()` inside the seed's own transaction, so a journey that searches the
         moment the seed finishes never races the outbox worker for a vector that has not
         arrived: SRC-S1's concept leg ("nudging in onboarding") only ever hits because every
-        seeded chunk already carries its mock vector. The fixture's two provisions carry no
-        version of their own (`prototype_data.json` has no `provision_versions`), so only the
-        obligation source type is indexed; every chunk is shared library data (D-10, H7):
-        `owner_tenant_id` is NULL, never a bank's."""
+        seeded chunk already carries its mock vector. FFFS 2017:2's provision tree (T8) now
+        carries its own text versions, so both the obligation and the provision source types
+        are indexed; every chunk is shared library data (D-10, H7): `owner_tenant_id` is
+        NULL, never a bank's."""
         counts = seed_e2e()
         self.assertGreater(counts["search_chunks"], 0)
         self.assertEqual(SearchChunk.objects.count(), counts["search_chunks"])
         self.assertGreater(SearchChunk.objects.filter(source_type=SearchSource.OBLIGATION_VERSION.value).count(), 0)
+        self.assertGreater(SearchChunk.objects.filter(source_type=SearchSource.PROVISION_VERSION.value).count(), 0)
         self.assertFalse(
             SearchChunk.objects.filter(embedding__isnull=True).exists(),
             "a journey must never race an embedding that has not arrived yet",

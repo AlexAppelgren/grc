@@ -17,6 +17,7 @@ from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_
 from apps.library.logic import in_force
 from apps.library.models import (
     Instrument,
+    InstrumentRelation,
     Jurisdiction,
     Obligation,
     ObligationSummary,
@@ -85,7 +86,7 @@ def seed_library() -> dict[str, int]:
 class LibraryLoaderTests(TestCase):
     def test_the_loader_files_the_prototype_library(self) -> None:
         counts = seed_library()
-        self.assertEqual(counts, {"instruments": 15, "provisions": 2, "obligations": 16, "obligation_versions": 17})
+        self.assertEqual(counts, {"instruments": 16, "provisions": 9, "obligations": 16, "obligation_versions": 17})
         lvm = Instrument.objects.get(stable_key="sfs-2007-528")
         self.assertIsNone(lvm.owner_tenant_id, "a seeded record is shared")
         self.assertEqual((lvm.level.key, lvm.jurisdiction.key, lvm.authority and lvm.authority.key), ("act", "se", "riksdagen"))
@@ -133,6 +134,19 @@ class LibraryLoaderTests(TestCase):
         self.assertFalse(Instrument.objects.exclude(verified_by=None).exists())
         self.assertFalse(Obligation.objects.exclude(verified_by=None).exists())
 
+    def test_fffs_2026_11_amends_fffs_2017_2_and_takes_the_anchor_date(self) -> None:
+        """T8, INV-01: the sample amending instrument carries no obligation of its own, so
+        its verified date falls to the fixture's anchor date (T2's rule)."""
+        seed_library()
+        stockholm = ZoneInfo("Europe/Stockholm")
+        amendment = Instrument.objects.get(stable_key="fffs-2026-11")
+        assert amendment.authority is not None
+        self.assertEqual((amendment.jurisdiction.key, amendment.authority.key, amendment.binding), ("se", "fi", True))
+        self.assertEqual((amendment.in_force_from, amendment.in_force_from_precision), (D(2026, 10, 1), "day"))
+        self.assertEqual(amendment.last_verified_at, datetime.datetime(2026, 9, 16, tzinfo=stockholm))
+        relation = InstrumentRelation.objects.get(from_instrument=amendment, to_instrument__stable_key="fffs-2017-2")
+        self.assertEqual(relation.relation_type.key, "amends")
+
     def test_the_advice_only_sample_obligation_is_filed_with_one_translated_version(self) -> None:
         """J-6: the one obligation whose only service is advice, added to the prototype's
         library (from_prototype false) so switching off Advice hides something."""
@@ -157,12 +171,45 @@ class LibraryLoaderTests(TestCase):
         seed_library()
         filed = AuditEvent.objects.filter(action="library.seeded", subject_type__in=("authority", "instrument", "obligation"))
         audited = filed.count()
-        self.assertEqual(audited, 8 + 15 + 16, "one audit row per authority, instrument and obligation")
+        self.assertEqual(audited, 8 + 16 + 16, "one audit row per authority, instrument and obligation")
         summaries = ObligationSummary.objects.count()
-        self.assertEqual(load_library(), {"instruments": 15, "provisions": 2, "obligations": 16, "obligation_versions": 17})
+        self.assertEqual(load_library(), {"instruments": 16, "provisions": 9, "obligations": 16, "obligation_versions": 17})
         self.assertEqual(seed_authorities(), 8)
         self.assertEqual(filed.count(), audited)
         self.assertEqual(ObligationSummary.objects.count(), summaries)
+
+    def test_the_fffs_provision_tree_has_three_levels_and_is_audited_once_each(self) -> None:
+        """T8, INV-02, INV-S2: chapter, section and paragraph, 9 kap. 6 §'s amendment still
+        in the future on the fixture's anchor date, and one library.seeded audit row per
+        provision stable key, none of them written again on reload."""
+        seed_library()
+        chapter = Provision.objects.get(stable_key="fffs-2017-2/9")
+        section = Provision.objects.get(stable_key="fffs-2017-2/9-6")
+        paragraph = Provision.objects.get(stable_key="fffs-2017-2/9-6-1")
+        self.assertIsNone(chapter.parent_id)
+        self.assertEqual(section.parent_id, chapter.id)
+        self.assertEqual(paragraph.parent_id, section.id)
+        self.assertEqual((chapter.kind.key, section.kind.key, paragraph.kind.key), ("chapter", "section", "paragraph"))
+
+        versions = list(section.versions.order_by("version_number"))
+        self.assertEqual([v.version_number for v in versions], [1, 2])
+        self.assertEqual(versions[0].effective_from, D(2018, 1, 3))
+        self.assertEqual(versions[1].effective_from, D(2026, 10, 1))
+        assert versions[1].effective_from is not None
+        self.assertGreater(versions[1].effective_from, D(2026, 9, 16), "the amendment is still ahead of the anchor date")
+        self.assertEqual(versions[0].transitional_note, "")
+        self.assertTrue(versions[1].transitional_note)
+        self.assertIsNone(versions[0].effective_to, "nothing is stored; every read derives it")
+
+        stable_keys = {"fffs-2017-2/9", "fffs-2017-2/9-6", "fffs-2017-2/9-6-1", "fffs-2017-2/9-10", "fffs-2017-2/9-23", "fffs-2017-2/10", "fffs-2017-2/11"}
+        audited = AuditEvent.objects.filter(action="library.seeded", subject_type="provision", subject_title__in=stable_keys)
+        self.assertEqual(audited.count(), len(stable_keys), "one audit row per provision stable key")
+        load_library()
+        self.assertEqual(
+            AuditEvent.objects.filter(action="library.seeded", subject_type="provision", subject_title__in=stable_keys).count(),
+            len(stable_keys),
+            "a second load writes none",
+        )
 
     def test_library_rows_refuse_a_write_outside_the_fence(self) -> None:
         seed_library()

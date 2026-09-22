@@ -6,9 +6,9 @@ that builds the scenario, and never delete one without updating app.md.
 The requirements coverage gate (scripts/requirements_coverage.py) fails
 when a scenario here and a heading in app.md drift apart.
 
-Chunk 3 un-skips INV-S3 to INV-S6, the record reads, and INV-S7 and INV-S8, the two
-scenarios the write routes prove. INV-S1, INV-S2 and INV-S10 wait for the instrument and
-provision reads; INV-S9 is R3.
+Chunk 3 un-skips INV-S3 to INV-S6, the record reads, INV-S7 and INV-S8, the two scenarios
+the write routes prove, and, with the instrument read (chunk3-rest-T13), INV-S1 and
+INV-S10. INV-S2 waits for the provision tree read (chunk3-rest-T16); INV-S9 is R3.
 
 Operations exercised (the audit-on-write guard reads these names):
 reportObligationProblem, reportInstrumentProblem, reverifyObligation.
@@ -150,19 +150,91 @@ class LibraryScenarioTests(ScenarioTestCase):
         body.update(fields)
         return body
 
-    @skip("pending: INV-S1")
     def test_inv_s1(self) -> None:
         """INV-S1
 
         An instrument carries its identity, dates and lineage (INV-01).
         """
+        card = self.read(f"/api/v1/instruments/{self.instrument.id}")
+        self.assertEqual((card["level"]["key"], card["binding"], card["officialRef"]), ("authority_regulation", True, "FFFS 2017:2"))
+        self.assertEqual(card["eliUri"], "", "the ELI where available; FFFS 2017:2 has none")
+        self.assertEqual((card["jurisdiction"]["key"], card["authority"]["key"]), ("se", "fi"))
+        self.assertEqual(card["inForceFrom"], {"date": "2018-01-03", "precision": "day"})
+        self.assertEqual(card["implementsNote"], "MiFID II delegated directive (EU) 2017/593")
+        amendments = [link for link in card["lineage"] if link["relation"]["key"] == "amends"]
+        self.assertEqual(
+            [(link["direction"], link["instrument"]["key"]) for link in amendments],
+            [("incoming", "fffs-2026-11")],
+            "amended by FFFS 2026:11",
+        )
 
-    @skip("pending: INV-S2")
+        # No tenant_id column: it is readable by every tenant, unchanged.
+        other_reader = sign_in(factories.member_user(self.other, roles=("reader",)), tenant=self.other)
+        response = self.client.get(f"/api/v1/instruments/{self.instrument.id}", **other_reader)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["stableKey"], "fffs-2017-2")
+
     def test_inv_s2(self) -> None:
         """INV-S2
 
         The provision tree holds verbatim text versions (INV-02).
         """
+        self.activate(self.tenant)
+        instrument = build.instrument(key="tree-instrument", regime="regime:securities", level="act")
+        chapter = build.provision(instrument, key="tree-instrument/1", ref_label="1 kap.", kind="chapter")
+        section = build.provision(instrument, key="tree-instrument/1-1", ref_label="1 §", kind="section", parent=chapter)
+        build.provision(instrument, key="tree-instrument/1-1-1", ref_label="första stycket", kind="paragraph", parent=section)
+        build.provision_version(section, version_no=1, effective_from=D(2018, 1, 1), texts={"en": "The original text."})
+        build.provision_version(
+            section,
+            version_no=2,
+            effective_from=D(2026, 11, 1),
+            transitional_note="The amendment applies from 1 November 2026.",
+            texts={"en": "The amended text."},
+        )
+        reader = sign_in(self.reader, tenant=self.tenant)
+
+        def tree(instrument_id: uuid.UUID, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+            response = self.client.get(f"{V1}/instruments/{instrument_id}/provisions", params or {}, **reader)
+            self.assertEqual(response.status_code, 200, response.content)
+            return list(response.json())
+
+        # Given a tree of chapter, section and paragraph, when a provision's text is
+        # replaced by an amendment in force on 2026-11-01, a new text version row exists
+        # with that effective date and a transitional note.
+        before = tree(instrument.id, {"asOf": "2026-10-31"})
+        found = next(node["children"][0] for node in before if node["stableKey"] == "tree-instrument/1")
+        self.assertEqual(found["kind"]["key"], "section")
+        self.assertEqual([v["versionNumber"] for v in found["versions"]], [1, 2])
+        self.assertEqual(found["versions"][1]["effectiveFrom"], {"date": "2026-11-01", "precision": "day"})
+        self.assertEqual(found["versions"][1]["transitionalNote"], "The amendment applies from 1 November 2026.")
+        self.assertEqual(found["inForceVersion"], 1, "as of the day before the amendment, the earlier version still applies")
+        unchanged_first_version = found["versions"][0]
+
+        # As of on or after the amendment, the new version is in force, and the earlier
+        # row has not been touched by the read.
+        after = tree(instrument.id, {"asOf": "2026-11-01"})
+        found_after = next(node["children"][0] for node in after if node["stableKey"] == "tree-instrument/1")
+        self.assertEqual(found_after["inForceVersion"], 2)
+        self.assertEqual(found_after["versions"][0], unchanged_first_version)
+
+        # The tree screen's "Show what changed" opens the diff between the two versions.
+        diff = self.client.get(f"{V1}/provisions/{section.id}/diff", **reader)
+        self.assertEqual(diff.status_code, 200, diff.content)
+        body = diff.json()
+        self.assertEqual((body["fromVersion"], body["toVersion"]), (1, 2))
+        self.assertEqual([segment["op"] for segment in body["segments"]], ["delete", "insert"])
+
+        # And the seeded FFFS 2017:2 tree: a chapter, its sections and one paragraph
+        # under a section (three levels), with 9 kap. 6 §'s own amendment.
+        fffs_tree = tree(self.instrument.id)
+        fffs_chapter = next(node for node in fffs_tree if node["stableKey"] == "fffs-2017-2/9")
+        fffs_section = next(child for child in fffs_chapter["children"] if child["stableKey"] == "fffs-2017-2/9-6")
+        self.assertTrue(
+            any(grandchild["kind"]["key"] == "paragraph" for grandchild in fffs_section["children"]), "9 kap. 6 § has a paragraph under it"
+        )
+        self.assertEqual([v["versionNumber"] for v in fffs_section["versions"]], [1, 2])
+        self.assertTrue(fffs_section["versions"][1]["transitionalNote"])
 
     def test_inv_s3(self) -> None:
         """INV-S3
@@ -266,13 +338,21 @@ class LibraryScenarioTests(ScenarioTestCase):
 
         # Given any instrument or obligation, it carries the source link and the date it was
         # last checked, which is what "Verified <date>" reads from. Asserted on the record the
-        # subject lookup resolves; getObligation serialises the same two fields (chunk3-rest-T6).
+        # subject lookup resolves; getObligation and getInstrument serialise the same fields
+        # (chunk3-rest-T6, chunk3-rest-T13).
         self.activate(self.tenant)
         subject = reading.obligation_subject(self.obligation.id)
         self.assertTrue(subject.source_url)
         self.assertTrue(subject.source_label)
         self.assertIsNotNone(subject.last_verified_at)
-        self.assertTrue(reading.instrument_subject(self.instrument.id).source_url)
+        instrument_subject = reading.instrument_subject(self.instrument.id)
+        self.assertTrue(instrument_subject.source_url)
+        self.assertIsNotNone(instrument_subject.last_verified_at)
+
+        # The instrument card itself carries the same two facts.
+        instrument_card = self.read(f"/api/v1/instruments/{self.instrument.id}")
+        self.assertEqual(instrument_card["sourceUrl"], instrument_subject.source_url)
+        self.assertIsNotNone(instrument_card["lastVerifiedAt"])
 
         # When a reader chooses "This looks wrong" and describes the problem, the report is
         # created and they see it acknowledged.
@@ -430,12 +510,17 @@ class LibraryScenarioTests(ScenarioTestCase):
         Tenant-private records are visible to their owner only (INV-07).
         """
 
-    @skip("pending: INV-S10")
     def test_inv_s10(self) -> None:
         """INV-S10
 
         Legal dates are plain dates with a precision (INV-01, INV-02).
         """
+        self.activate(self.tenant)
+        quarter = build.instrument(
+            key="quarter-precision", regime="regime:securities", in_force_from=D(2026, 10, 1), in_force_from_precision="quarter"
+        )
+        card = self.read(f"/api/v1/instruments/{quarter.id}")
+        self.assertEqual(card["inForceFrom"], {"date": "2026-10-01", "precision": "quarter"})
 
     @skip("pending: INV-S11 (INV-08, chunk 3)")
     def test_inv_s11(self) -> None:

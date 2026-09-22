@@ -164,6 +164,18 @@ class Checker:
             where = f"obligation_provisions.{op['obligation']}"
             self.ref(where, op["obligation"], self.obligations, "obligation")
             self.ref(where, op["provision"], self.provisions, "provision")
+        provision_versions_per: dict[str, set[int]] = {}
+        for v in d.get("provision_versions", []):
+            where = f"provision_versions.{v['provision']}#{v['version_no']}"
+            self.ref(where, v["provision"], self.provisions, "provision")
+            self.date(where + ".effective_from", v["effective_from"])
+            if not v["text_en"] or not v["text_sv"]:
+                self.problem(where, "text_en and text_sv are required")
+            if not v.get(f"text_{v['original_language']}"):
+                self.problem(where, f"no text in its original language {v['original_language']!r}")
+            if v["version_no"] in provision_versions_per.setdefault(v["provision"], set()):
+                self.problem(where, "duplicate version_no")
+            provision_versions_per[v["provision"]].add(v["version_no"])
 
         self.unique(d["obligations"], "stable_key", "obligations")
         for o in d["obligations"]:

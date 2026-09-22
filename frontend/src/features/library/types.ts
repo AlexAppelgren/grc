@@ -195,3 +195,102 @@ export interface ProblemReportCreated {
   status: string;
   createdAt: string;
 }
+
+/** Who issued an instrument, in full (INV-01). */
+export interface InstrumentAuthorityRef {
+  key: string;
+  name: string;
+  shortName: string;
+  url: string;
+}
+
+/** One row of GET /instruments (INV-01). `obligationCount` follows the same footprint filter the row itself does. */
+export interface Instrument {
+  id: string;
+  stableKey: string;
+  shortName: string;
+  name: LocalizedText | null;
+  level: LibraryRef;
+  binding: boolean;
+  jurisdiction: LibraryRef;
+  authority: InstrumentAuthorityRef | null;
+  regime: LibraryRef | null;
+  officialRef: string;
+  inForceFrom: PartialDate | null;
+  inForceTo: PartialDate | null;
+  implementsNote: string;
+  obligationCount: number;
+  inFootprint: boolean;
+  lastVerifiedAt: string | null;
+  sourceUrl: string;
+}
+
+/** The filters of GET /instruments. Jurisdiction, level, authority and asOf are deferred; "as of" applies to obligations only. */
+export interface InstrumentQuery {
+  regime?: string;
+  q?: string;
+  outsideFootprint?: boolean;
+}
+
+/** One instrument-to-instrument relation, from either side (INV-01). */
+export interface InstrumentLineageRef {
+  relation: LibraryRef;
+  direction: 'outgoing' | 'incoming';
+  instrument: InstrumentRef;
+  note: string;
+  toRef: string;
+}
+
+/** One text version of a provision (INV-02, INV-04): `effectiveTo` is derived, never stored. */
+export interface ProvisionVersionRow {
+  versionNumber: number;
+  effectiveFrom: PartialDate | null;
+  effectiveTo: PartialDate | null;
+  transitionalNote: string;
+  text: LocalizedText | null;
+}
+
+/** An obligation that cites a provision, as the tree's own row names it. */
+export interface ProvisionCitedObligation {
+  id: string;
+  title: LocalizedText | null;
+  refLabel: string;
+}
+
+/** One node of the provision tree (INV-02): a chapter, a section, a paragraph or whatever `kind` names. */
+export interface ProvisionNode {
+  id: string;
+  stableKey: string;
+  kind: LibraryRef;
+  refLabel: string;
+  heading: string;
+  path: string;
+  children: ProvisionNode[];
+  versions: ProvisionVersionRow[];
+  /** The version number in force on the read's date, or null when none is. */
+  inForceVersion: number | null;
+  obligations: ProvisionCitedObligation[];
+}
+
+/** GET /instruments/{id} (INV-01, INV-06): the row's own facts, the ELI, the authority in full, who last re-verified it and its lineage. */
+export interface InstrumentDetail {
+  id: string;
+  stableKey: string;
+  shortName: string;
+  name: LocalizedText | null;
+  level: LibraryRef;
+  binding: boolean;
+  jurisdiction: LibraryRef;
+  authority: InstrumentAuthorityRef | null;
+  regime: LibraryRef | null;
+  officialRef: string;
+  /** The European Legislation Identifier, or an empty string when none is published; never null. */
+  eliUri: string;
+  inForceFrom: PartialDate | null;
+  inForceTo: PartialDate | null;
+  implementsNote: string;
+  sourceUrl: string;
+  lastVerifiedAt: string | null;
+  verifiedBy: PersonRef | null;
+  lineage: InstrumentLineageRef[];
+}

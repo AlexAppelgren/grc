@@ -53,12 +53,12 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| INV-01 | Instruments with level (a standard's level says so), binding force, official reference, ELI where available, jurisdiction (International for standards bodies), authority, a regime, in-force dates and lineage | M | R1 | in_progress |
-| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes; never for a standard, whose text is licensed | S | R1 | in_progress |
-| INV-03 | Obligations: plain-language duty, duty type, scope facets, trigger, retention, sanction exposure, provenance, related obligations | M | R1 | in_progress |
-| INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | in_progress |
-| INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | in_progress |
-| INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | in_progress |
+| INV-01 | Instruments with level (a standard's level says so), binding force, official reference, ELI where available, jurisdiction (International for standards bodies), authority, a regime, in-force dates and lineage | M | R1 | built |
+| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes; never for a standard, whose text is licensed | S | R1 | built |
+| INV-03 | Obligations: plain-language duty, duty type, scope facets, trigger, retention, sanction exposure, provenance, related obligations | M | R1 | built |
+| INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | built |
+| INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | built |
+| INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | built |
 | INV-07 | Tenant-private instruments and obligations from the tenant's own sources, proposed and approved inside that bank by a second person; never seen by platform staff, a model, the search index or another tenant (D-57) | C | R3 | pending |
 | INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere | M | R1 | pending |
 
@@ -147,6 +147,13 @@ When a reader chooses "This looks wrong" and describes the problem
 Then a problem report is created inside the reader's own bank and the reader sees it acknowledged
 And nobody outside that bank reads it, bleqq included (Alex, 2026-09-19, OWNER_RECOMMENDATIONS item 3)
 ```
+
+> **Note — the provision's own report.** A provision has no source link or
+> "this looks wrong" of its own; both are shown and filed through its
+> instrument's card (chunk3-rest T17, T18), because the source, the
+> last-verified date and the re-verification stamp all sit on the instrument
+> row, never on a provision. A reader who spots a wrong sentence in the tree
+> reports it against the instrument that carries it.
 
 ### INV-S8 — The re-verification stamp is the only write outside a proposal `@integration` (INV-06)
 ```gherkin

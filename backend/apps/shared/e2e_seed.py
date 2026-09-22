@@ -169,11 +169,12 @@ class SeedLibrary:
 
 
 # Chunk 3: the prototype's library (the fixture's 12 instruments plus the three EU
-# directives its lineage needs), the obligation whose second version is still ahead, and
-# the one sample obligation whose only service is advice, which J-6's switch-off hides
-# (the prototype's 15 obligations plus that one).
+# directives its lineage needs and FFFS 2026:11, the sample instrument T8 adds so
+# FFFS 2017:2's own provision tree has something that amends it), the obligation whose
+# second version is still ahead, and the one sample obligation whose only service is
+# advice, which J-6's switch-off hides (the prototype's 15 obligations plus that one).
 EXPECTED_LIBRARY = SeedLibrary(
-    instruments=15,
+    instruments=16,
     obligations=16,
     research_obligation=RESEARCH_OBLIGATION,
     advice_only_obligation="obl-suitability-statement",

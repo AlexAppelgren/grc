@@ -21,10 +21,6 @@ GET /eval/questions chunk 7
 GET /eval/runs chunk 7
 GET /exports/{} chunk 12
 GET /imports/{} chunk 12
-GET /instruments chunk 3
-GET /instruments/{} chunk 3
-GET /instruments/{}/provisions chunk 3
-GET /instruments/{}/relations chunk 3
 GET /integrations/tickets chunk 13
 GET /me/whats-new chunk 1
 GET /me/work chunk 1
@@ -33,7 +29,6 @@ GET /obligations/{}/attestations chunk 8
 GET /obligations/{}/internal-links chunk 8
 GET /obligations/{}/waivers chunk 8
 GET /problem-reports chunk 4
-GET /provisions/{}/versions chunk 3
 GET /reports/gaps chunk 12
 GET /reports/overdue-actions chunk 12
 GET /reports/summary chunk 12

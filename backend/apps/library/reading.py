@@ -1,15 +1,17 @@
-"""Reading the library (INV-03, INV-04, INV-05, INV-06, FP-01, FP-03): the helpers every
-library read shares, the obligations list, one obligation and the diff between two of its
-versions. Nothing here writes.
+"""Reading the library (INV-01, INV-03, INV-04, INV-05, INV-06, FP-01, FP-03): the helpers
+every library read shares, the obligations list and card, the instruments list and card,
+and the diffs between two versions. Nothing here writes.
 
 - `localized()` picks one translation row in the caller's language order (INV-05).
 - `partial_date()` is a legal date with its precision (playbook 4.3).
 - `vocabulary_refs()` labels every distinct vocabulary row or term of a page from one
   query over its label table.
-- `obligation_scopes()` is the one place for the scope rule: an obligation's scope is its
-  own terms plus its instrument's regime. Neither inherits a jurisdiction term.
-  `scope_term_ids()` is its SQL twin, which the list hands to the database's
-  `taxonomy_in_footprint` and to the term filter; the tests pin the two to each other.
+- `instrument_scopes()` is the one place for an instrument's own scope: its regime, the
+  one dimension an instrument itself carries. `obligation_scopes()` inherits through it:
+  an obligation's scope is its own terms plus its instrument's scope. Neither inherits a
+  jurisdiction term. `instrument_scope_term_ids()` and `scope_term_ids()` are their SQL
+  twins, which the lists hand to the database's `taxonomy_in_footprint` and to the term
+  filter; the tests pin them to their Python counterparts.
 - `outside_reasons()` is the footprint verdict and its reason, built on
   `taxonomy.matching`: a record is inside when it has no reason to be outside, and
   `scope_and_verdict()` builds both for a row of the list and for a record's own card.
@@ -47,32 +49,42 @@ from django.contrib.postgres.expressions import ArraySubquery
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.lookups import DataContains
 from django.core.exceptions import ValidationError
-from django.db.models import BooleanField, Exists, F, Func, Model, OuterRef, Q, QuerySet, UUIDField, Value
+from django.db.models import BooleanField, Count, Exists, F, Func, Model, OuterRef, Q, QuerySet, UUIDField, Value
 from django.utils import timezone
 
 from apps.library.logic import in_force, version_diff
 from apps.library.models import (
     Authority,
     Instrument,
+    InstrumentRelation,
+    InstrumentTitle,
     JurisdictionLabel,
     Obligation,
+    ObligationProvision,
     ObligationRelation,
     ObligationTag,
     ObligationTerm,
     ObligationTitle,
     ObligationVersion,
     Provision,
+    ProvisionText,
+    ProvisionVersion,
     RecordStatus,
     Translation,
 )
 from apps.library.schemas import (
     DiffSegment,
+    InstrumentAuthorityRef,
+    InstrumentDetail,
+    InstrumentLineageRef,
+    InstrumentProvisionsQuery,
+    InstrumentQuery,
+    InstrumentRow,
     LibraryAuthority,
     LibraryRef,
     LocalizedText,
     ObligationAsOfQuery,
     ObligationDetail,
-    ObligationDiffQuery,
     ObligationInstrumentRef,
     ObligationInstrumentSummary,
     ObligationProvenance,
@@ -83,9 +95,13 @@ from apps.library.schemas import (
     ObligationVersionRow,
     OutsideReason,
     PartialDate,
+    ProvisionCitedObligation,
+    ProvisionNode,
+    ProvisionVersionRow,
     RelatedObligation,
     ScopeDimension,
     VersionDiff,
+    VersionDiffQuery,
 )
 from apps.shared.models import Tenant
 from apps.shared.errors import ProblemError
@@ -95,6 +111,7 @@ from apps.taxonomy.models import (
     InstrumentLevelLabel,
     LibraryTag,
     LibraryTagLabel,
+    ProvisionKindLabel,
     RelationTypeLabel,
     TaxonomyTerm,
     TaxonomyTermLabel,
@@ -246,30 +263,60 @@ def unknown_provision_keys(keys: Collection[str]) -> set[str]:
 # ---------------------------------------------------------------------------------------
 # Scope and footprint (FP-01, FP-03)
 # ---------------------------------------------------------------------------------------
-def obligation_scopes(obligation_ids: Collection[uuid.UUID] | None = None) -> dict[uuid.UUID, dict[str, list[TaxonomyTerm]]]:
-    """The scope rule, in one place: an obligation's own terms plus its instrument's regime,
-    grouped by dimension key in the terms' order. For the given obligations, or for every
-    one the caller can see; three queries either way. An obligation with no terms has no
-    entry: it matches every footprint."""
-    obligations = Obligation.objects.all() if obligation_ids is None else Obligation.objects.filter(id__in=obligation_ids)
-    pairs = {
-        *ObligationTerm.objects.filter(obligation__in=obligations).order_by().values_list("obligation_id", "term_id"),
-        *obligations.filter(instrument__regime__isnull=False).order_by().values_list("id", "instrument__regime_id"),
-    }
+def instrument_scopes(instrument_ids: Collection[uuid.UUID] | None = None) -> dict[uuid.UUID, dict[str, list[TaxonomyTerm]]]:
+    """An instrument's own scope, in one place: its regime, the one dimension an instrument
+    itself carries (INV-01, FP-03). `obligation_scopes()` inherits through this, so the
+    list's footprint verdict and the instrument's own can never disagree. For the given
+    instruments, or for every one the caller can see; two queries either way. An instrument
+    with no regime has no entry: it matches every footprint."""
+    instruments = Instrument.objects.all() if instrument_ids is None else Instrument.objects.filter(id__in=instrument_ids)
+    pairs = set(instruments.filter(regime__isnull=False).order_by().values_list("id", "regime_id"))
     terms = TaxonomyTerm.objects.select_related("dimension").in_bulk({term_id for _, term_id in pairs})
     scopes: dict[uuid.UUID, dict[str, list[TaxonomyTerm]]] = {}
-    for obligation_id, term_id in sorted(pairs, key=lambda pair: (terms[pair[1]].sort_order, terms[pair[1]].key)):
+    for instrument_id, term_id in pairs:
+        term = terms[term_id]
+        scopes.setdefault(instrument_id, {})[term.dimension.key] = [term]
+    return scopes
+
+
+def obligation_scopes(obligation_ids: Collection[uuid.UUID] | None = None) -> dict[uuid.UUID, dict[str, list[TaxonomyTerm]]]:
+    """The scope rule, in one place: an obligation's own terms plus its instrument's own
+    scope (`instrument_scopes()`, its regime), grouped by dimension key in the terms'
+    order. For the given obligations, or for every one the caller can see; five queries
+    either way. An obligation with no terms and an unscoped instrument has no entry: it
+    matches every footprint."""
+    obligations = Obligation.objects.all() if obligation_ids is None else Obligation.objects.filter(id__in=obligation_ids)
+    own_pairs = set(ObligationTerm.objects.filter(obligation__in=obligations).order_by().values_list("obligation_id", "term_id"))
+    by_instrument = dict(obligations.order_by().values_list("id", "instrument_id"))
+    inherited = instrument_scopes(set(by_instrument.values()))
+    terms = TaxonomyTerm.objects.select_related("dimension").in_bulk({term_id for _, term_id in own_pairs})
+    scopes: dict[uuid.UUID, dict[str, list[TaxonomyTerm]]] = {}
+    for obligation_id, term_id in sorted(own_pairs, key=lambda pair: (terms[pair[1]].sort_order, terms[pair[1]].key)):
         term = terms[term_id]
         scopes.setdefault(obligation_id, {}).setdefault(term.dimension.key, []).append(term)
+    for obligation_id, instrument_id in by_instrument.items():
+        for dimension_key, dimension_terms in inherited.get(instrument_id, {}).items():
+            scopes.setdefault(obligation_id, {}).setdefault(dimension_key, []).extend(dimension_terms)
     return scopes
+
+
+def _regime_array(field: str) -> Func:
+    """One instrument regime id as a `uuid[]`, empty when it carries none: the SQL half of
+    an instrument's own scope (`instrument_scopes()`), shared by both SQL twins below."""
+    return Func(F(field), template="array_remove(ARRAY[%(expressions)s], NULL)", output_field=ArrayField(UUIDField()))
+
+
+def instrument_scope_term_ids() -> Func:
+    """The SQL twin of `instrument_scopes()`: an instrument's own scope is its regime id
+    alone, as one uuid[]."""
+    return _regime_array("regime_id")
 
 
 def scope_term_ids() -> Func:
     """The SQL twin of `obligation_scopes()`: the obligation's own term ids plus its
-    instrument's regime id, as one uuid[]."""
+    instrument's own scope (`instrument_scope_term_ids()`), as one uuid[]."""
     own = ArraySubquery(ObligationTerm.objects.filter(obligation=OuterRef("pk")).order_by().values("term_id"))
-    regime = Func(F("instrument__regime_id"), template="array_remove(ARRAY[%(expressions)s], NULL)", output_field=ArrayField(UUIDField()))
-    return Func(own, regime, function="array_cat", output_field=ArrayField(UUIDField()))
+    return Func(own, _regime_array("instrument__regime_id"), function="array_cat", output_field=ArrayField(UUIDField()))
 
 
 def outside_reasons(
@@ -573,7 +620,7 @@ def _numbered(versions: list[ObligationVersion], number: int) -> ObligationVersi
     return found
 
 
-def obligation_diff(order: list[str], obligation_id: uuid.UUID, query: ObligationDiffQuery) -> VersionDiff:
+def obligation_diff(order: list[str], obligation_id: uuid.UUID, query: VersionDiffQuery) -> VersionDiff:
     """"Show what changed" between two versions of one obligation (INV-04, AC-INV1), by
     default the latest against the one before it. The comparison itself is `version_diff`,
     which is pure and writes nothing to a log: the summaries are the library's content."""
@@ -596,6 +643,270 @@ def obligation_diff(order: list[str], obligation_id: uuid.UUID, query: Obligatio
         is_machine=is_machine,
         segments=[DiffSegment(op=op, text=text) for op, text in segments],
     )
+
+
+# ---------------------------------------------------------------------------------------
+# GET /instruments and GET /instruments/{id} (INV-01, INV-06, FP-03)
+# ---------------------------------------------------------------------------------------
+def _authority_ref(authority: Authority | None) -> InstrumentAuthorityRef | None:
+    if authority is None:
+        return None
+    return InstrumentAuthorityRef(key=authority.key, name=authority.name, short_name=authority.short_name, url=authority.url)
+
+
+def instrument_page(tenant: Tenant, order: list[str], query: InstrumentQuery, *, limit: int, offset: int) -> tuple[list[InstrumentRow], int]:
+    """The instruments the tenant sees (INV-01), inside its footprint unless
+    `outsideFootprint` asks for everything (FP-03). The same number of queries whatever
+    the page size (NFR-02)."""
+    footprint = matching.footprint_of(tenant.id)
+    restricting = matching.restricting_dimensions()
+    scope_ids = instrument_scope_term_ids()
+    queryset = Instrument.objects.all()
+    if query.regime:
+        queryset = queryset.filter(regime__key=query.regime)
+    if query.q:
+        titled = InstrumentTitle.objects.filter(instrument=OuterRef("pk"), text__icontains=query.q)
+        queryset = queryset.filter(Q(official_ref__icontains=query.q) | Q(short_name__icontains=query.q) | Exists(titled))
+    if not query.outside_footprint:
+        queryset = queryset.filter(
+            Func(Value(tenant.id, output_field=UUIDField()), scope_ids, function=matching.SQL_FUNCTION, output_field=BooleanField())
+        )
+    total = queryset.count()
+    page = list(queryset.order_by("stable_key").select_related("level", "authority", "jurisdiction").prefetch_related("titles")[offset : offset + limit])
+    ids = [instrument.id for instrument in page]
+    scopes = instrument_scopes(ids)
+    regime_refs = vocabulary_refs(
+        TaxonomyTermLabel, (term for scope in scopes.values() for terms in scope.values() for term in terms), order, field="term"
+    )
+    level_refs = vocabulary_refs(InstrumentLevelLabel, (instrument.level for instrument in page), order)
+    jurisdiction_refs = vocabulary_refs(JurisdictionLabel, (instrument.jurisdiction for instrument in page), order)
+    dimensions = footprint_dimensions(order)
+    obligation_counts = _obligation_counts(ids, tenant, query.outside_footprint)
+    rows: list[InstrumentRow] = []
+    for instrument in page:
+        scope = scopes.get(instrument.id, {})
+        _carried, outside = scope_and_verdict(scope, dimensions, regime_refs, footprint, restricting)
+        rows.append(
+            InstrumentRow(
+                id=instrument.id,
+                stable_key=instrument.stable_key,
+                short_name=instrument.short_name,
+                name=localized(instrument.titles.all(), order),
+                level=level_refs[instrument.level_id],
+                binding=instrument.binding,
+                jurisdiction=jurisdiction_refs[instrument.jurisdiction_id],
+                authority=_authority_ref(instrument.authority),
+                regime=regime_refs.get(instrument.regime_id) if instrument.regime_id else None,
+                official_ref=instrument.official_ref,
+                in_force_from=partial_date(instrument.in_force_from, instrument.in_force_from_precision),
+                in_force_to=partial_date(instrument.in_force_to, instrument.in_force_to_precision),
+                implements_note=instrument.implements_note,
+                obligation_count=obligation_counts.get(instrument.id, 0),
+                in_footprint=not outside,
+                last_verified_at=instrument.last_verified_at,
+                source_url=instrument.source_url,
+            )
+        )
+    return rows, total
+
+
+def _obligation_counts(instrument_ids: Collection[uuid.UUID], tenant: Tenant, outside_footprint: bool) -> dict[uuid.UUID, int]:
+    """How many obligations of each instrument this read would show: one query, whatever
+    the page size (INV-01). Inside the bank's footprint by default, or every obligation
+    when `outsideFootprint` lifts the filter, matching what `GET /obligations` itself
+    would list."""
+    queryset = Obligation.objects.filter(instrument_id__in=instrument_ids)
+    if not outside_footprint:
+        queryset = queryset.filter(
+            Func(Value(tenant.id, output_field=UUIDField()), scope_term_ids(), function=matching.SQL_FUNCTION, output_field=BooleanField())
+        )
+    counted = queryset.order_by().values("instrument_id").annotate(n=Count("id"))
+    return {row["instrument_id"]: row["n"] for row in counted}
+
+
+def _lineage(instrument: Instrument, order: list[str]) -> list[InstrumentLineageRef]:
+    """What this instrument implements or elaborates, and what implements, elaborates or
+    amends it in turn (INV-01): both directions of `InstrumentRelation`, so the designed
+    `GET /instruments/{instrumentId}/relations` is served here instead. Row-level security
+    runs the same join either way, so a relation to an instrument the caller cannot see
+    drops the row entirely rather than answering it with a null (INV-07, R3)."""
+    outgoing = list(InstrumentRelation.objects.filter(from_instrument=instrument).select_related("to_instrument", "relation_type"))
+    incoming = list(InstrumentRelation.objects.filter(to_instrument=instrument).select_related("from_instrument", "relation_type"))
+    relation_refs = vocabulary_refs(RelationTypeLabel, (relation.relation_type for relation in (*outgoing, *incoming)), order)
+    lineage = [
+        InstrumentLineageRef(
+            relation=relation_refs[relation.relation_type_id],
+            direction="outgoing",
+            instrument=ObligationInstrumentRef(key=relation.to_instrument.stable_key, short_name=relation.to_instrument.short_name),
+            note=relation.note,
+            to_ref=relation.to_ref,
+        )
+        for relation in outgoing
+    ]
+    lineage.extend(
+        InstrumentLineageRef(
+            relation=relation_refs[relation.relation_type_id],
+            direction="incoming",
+            instrument=ObligationInstrumentRef(key=relation.from_instrument.stable_key, short_name=relation.from_instrument.short_name),
+            note=relation.note,
+            to_ref=relation.to_ref,
+        )
+        for relation in incoming
+    )
+    return lineage
+
+
+def instrument_detail(order: list[str], instrument_id: uuid.UUID) -> InstrumentDetail:
+    """One instrument as the card reads it (INV-01, INV-06): its identity, dates, lineage
+    and re-verification stamp. The card carries no footprint verdict of its own (the
+    Instruments tab and its filter read that from the row); the queries fan out, so their
+    number does not grow with the lineage the record carries."""
+    instrument = _visible(
+        Instrument.objects.select_related("level", "authority", "jurisdiction", "regime__dimension", "verified_by").prefetch_related("titles"),
+        instrument_id,
+    )
+    regime_refs = vocabulary_refs(TaxonomyTermLabel, [instrument.regime] if instrument.regime else [], order, field="term")
+    level_refs = vocabulary_refs(InstrumentLevelLabel, [instrument.level], order)
+    jurisdiction_refs = vocabulary_refs(JurisdictionLabel, [instrument.jurisdiction], order)
+    verifier = instrument.verified_by
+    return InstrumentDetail(
+        id=instrument.id,
+        stable_key=instrument.stable_key,
+        short_name=instrument.short_name,
+        name=localized(instrument.titles.all(), order),
+        level=level_refs[instrument.level_id],
+        binding=instrument.binding,
+        jurisdiction=jurisdiction_refs[instrument.jurisdiction_id],
+        authority=_authority_ref(instrument.authority),
+        regime=regime_refs[instrument.regime_id] if instrument.regime_id else None,
+        official_ref=instrument.official_ref,
+        eli_uri=instrument.eli_uri,
+        in_force_from=partial_date(instrument.in_force_from, instrument.in_force_from_precision),
+        in_force_to=partial_date(instrument.in_force_to, instrument.in_force_to_precision),
+        implements_note=instrument.implements_note,
+        source_url=instrument.source_url,
+        last_verified_at=instrument.last_verified_at,
+        verified_by=None if verifier is None else PersonRef(id=verifier.id, name=verifier.name),
+        lineage=_lineage(instrument, order),
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# GET /instruments/{id}/provisions and GET /provisions/{id}/diff (INV-02, INV-04, INV-05)
+# ---------------------------------------------------------------------------------------
+def _provision_version_rows(versions: list[ProvisionVersion], texts: Mapping[uuid.UUID, list[ProvisionText]], order: list[str]) -> list[ProvisionVersionRow]:
+    """A provision's own version list (INV-02, INV-04): the same `effectiveTo` derivation
+    as `version_rows()`, plus each version's transitional note and text. Kept apart from
+    `version_rows()` because an obligation's version carries neither."""
+    rows: list[ProvisionVersionRow] = []
+    for index, version in enumerate(versions):
+        following = versions[index + 1] if index + 1 < len(versions) else None
+        ends = None
+        if (
+            following is not None
+            and following.effective_from is not None
+            and (version.effective_from is None or following.effective_from > version.effective_from)
+        ):
+            ends = partial_date(following.effective_from - datetime.timedelta(days=1), following.effective_from_precision)
+        rows.append(
+            ProvisionVersionRow(
+                version_number=version.version_number,
+                effective_from=partial_date(version.effective_from, version.effective_from_precision),
+                effective_to=ends,
+                transitional_note=version.transitional_note,
+                text=localized(texts.get(version.id, []), order),
+            )
+        )
+    return rows
+
+
+def provision_tree(tenant: Tenant, instrument_id: uuid.UUID, order: list[str], query: InstrumentProvisionsQuery) -> list[ProvisionNode]:
+    """The provision tree of one instrument (INV-02), as of a date (AC-INV1): a bounded
+    number of queries however many provisions, versions or citing obligations the
+    instrument carries, because every table is read once for the whole tree rather than
+    once per node. An instrument the caller cannot see answers 404 (INV-07)."""
+    instrument = _visible(Instrument.objects.all(), instrument_id)
+    as_of = query.as_of or today_for(tenant)
+    provisions = list(Provision.objects.filter(instrument=instrument).select_related("kind").order_by("sort_order", "stable_key"))
+    kind_refs = vocabulary_refs(ProvisionKindLabel, (provision.kind for provision in provisions), order)
+    provision_ids = [provision.id for provision in provisions]
+    versions_by_provision: dict[uuid.UUID, list[ProvisionVersion]] = {provision_id: [] for provision_id in provision_ids}
+    for version in ProvisionVersion.objects.filter(provision_id__in=provision_ids).order_by("version_number"):
+        versions_by_provision[version.provision_id].append(version)
+    all_versions = [version for versions in versions_by_provision.values() for version in versions]
+    texts_by_version: dict[uuid.UUID, list[ProvisionText]] = {version.id: [] for version in all_versions}
+    for text in ProvisionText.objects.filter(version_id__in=texts_by_version):
+        texts_by_version[text.version_id].append(text)
+    links = list(ObligationProvision.objects.filter(provision_id__in=provision_ids).select_related("obligation"))
+    obligation_ids = {link.obligation_id for link in links}
+    titles_by_obligation: dict[uuid.UUID, list[ObligationTitle]] = {obligation_id: [] for obligation_id in obligation_ids}
+    for title in ObligationTitle.objects.filter(obligation_id__in=obligation_ids):
+        titles_by_obligation[title.obligation_id].append(title)
+    cites_by_provision: dict[uuid.UUID, list[ObligationProvision]] = {}
+    for link in links:
+        cites_by_provision.setdefault(link.provision_id, []).append(link)
+    children_of: dict[uuid.UUID | None, list[Provision]] = {}
+    for provision in provisions:
+        children_of.setdefault(provision.parent_id, []).append(provision)
+
+    def node(provision: Provision) -> ProvisionNode:
+        versions = versions_by_provision[provision.id]
+        current = in_force(versions, as_of)
+        return ProvisionNode(
+            id=provision.id,
+            stable_key=provision.stable_key,
+            kind=kind_refs[provision.kind_id],
+            ref_label=provision.ref_label,
+            heading=provision.heading,
+            path=provision.path,
+            children=[node(child) for child in children_of.get(provision.id, [])],
+            versions=_provision_version_rows(versions, texts_by_version, order),
+            in_force_version=current.version_number if current else None,
+            obligations=[
+                ProvisionCitedObligation(
+                    id=link.obligation_id,
+                    title=localized(titles_by_obligation[link.obligation_id], order),
+                    ref_label=link.obligation.ref_label,
+                )
+                for link in cites_by_provision.get(provision.id, [])
+            ],
+        )
+
+    return [node(root) for root in children_of.get(None, [])]
+
+
+def provision_diff(order: list[str], provision_id: uuid.UUID, query: VersionDiffQuery) -> VersionDiff:
+    """"Show what changed" between two versions of one provision (INV-02, INV-04,
+    AC-INV1), by default the latest against the one before it. Serialises `logic.
+    version_diff` exactly as `obligation_diff()` does, because a provision's text and an
+    obligation's summary are compared the same way."""
+    provision = _visible(Provision.objects.prefetch_related("versions__texts"), provision_id)
+    versions = list(provision.versions.all())
+    if len(versions) < 2 and (query.from_version is None or query.to_version is None):
+        raise ValidationError("There are not two versions of this provision to compare.")
+    older = _numbered_provision(versions, query.from_version) if query.from_version is not None else versions[-2]
+    newer = _numbered_provision(versions, query.to_version) if query.to_version is not None else versions[-1]
+    compared = version_diff(older.texts.all(), newer.texts.all(), order, query.lang)
+    if compared is None:
+        raise ValidationError("These two versions have no language in common, so there is nothing to compare.")
+    language, is_machine, segments = compared
+    return VersionDiff(
+        from_version=older.version_number,
+        to_version=newer.version_number,
+        from_effective=partial_date(older.effective_from, older.effective_from_precision),
+        to_effective=partial_date(newer.effective_from, newer.effective_from_precision),
+        language=language,
+        is_machine=is_machine,
+        segments=[DiffSegment(op=op, text=text) for op, text in segments],
+    )
+
+
+def _numbered_provision(versions: list[ProvisionVersion], number: int) -> ProvisionVersion:
+    """The version the caller named; a number this provision has no version for is a 422."""
+    found = next((version for version in versions if version.version_number == number), None)
+    if found is None:
+        raise ValidationError(f"This provision has no version {number}.", code="unknown_key")
+    return found
 
 
 # ---------------------------------------------------------------------------------------

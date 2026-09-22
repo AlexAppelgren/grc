@@ -108,6 +108,14 @@ When they drag "Custody services" above "Advice"
 Then sort_order is stored and the picker follows it
 ```
 
+> **Note — the preview shows counts only.** `relation_type`'s `VocabularyList` entry
+> carries no `usage=` annotation, so its usage count is `registry._no_usage()`, hardcoded to
+> 0 for every row (registry.py). Chunk3-rest (T8) filed the first real use of one of its
+> values, the "Amends" row, on FFFS 2026:11's `instrument_relations` row to FFFS 2017:2, but
+> the vocabulary screen still shows 0 for it: nothing in `registry.py` counts
+> `instrument_relations` yet. Wiring a real count (`_count("...")` against that relation) is
+> not INV-01 or INV-02 work and is left for the chunk that next touches `relation_type`.
+
 ### VOC-S4 — Retiring a used value keeps history readable and leaves pickers `@integration` `@e2e` (VOC-02, AC-VOC2)
 ```gherkin
 Given the tag "Custody" is used by four obligations
@@ -250,6 +258,15 @@ And one audit event per term records the change with the assertion reference
 And every decided request — approved, rejected or withdrawn — carries the counts it was decided against, the same ones its decision event holds
 ```
 
+> **Note — the preview shows counts only.** `footprint_logic.preview_of()` counts
+> obligations, never instruments, because a footprint change never hides or reveals an
+> instrument row by itself; it only changes which obligations under it a bank can see. Chunk
+> 3's rest (T13) taught `reading.obligation_scopes()` to inherit an obligation's scope through
+> its instrument's own regime (`reading.instrument_scopes()`, the one footprint rule), so an
+> obligation whose instrument's regime narrowed is counted correctly, but the preview's shape
+> is unchanged: one `FootprintPreviewCount` for obligations, one for cases, and nothing that
+> counts instruments on their own.
+
 ### FP-S3 — The requester cannot approve their own footprint change `@integration` (FP-02)
 ```gherkin
 Given a footprint change request created by Anna
@@ -283,6 +300,13 @@ Reports are the note below.
 > outside the scope is the inventory's, which chunk 3 built: the feed, the roadmap and the
 > briefing carry no such switch on purpose, because a person planning work should see the
 > work that is theirs (chunk 6 defaults).
+
+> **Note — the Instruments tab.** Chunk3-rest (T17) split the inventory into an
+> Obligations tab and an Instruments tab. Both filter through the same footprint rule
+> (`reading.obligation_scopes()` and `reading.instrument_scopes()`, one rule for both kinds,
+> INV-01) and both carry their own "Show outside our scope" switch, so the scenario above
+> holds unchanged for the new tab: an instrument outside the regulatory scope is absent by
+> default and appears marked as outside it when a reader asks to see past the scope.
 
 ### FP-S5 — J-6: regulatory scope change with preview and second-person approval `@e2e` (FP-01, FP-02, FP-03, AC-FP1, J-6)
 ```gherkin

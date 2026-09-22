@@ -1095,10 +1095,12 @@ class ObligationAsOfQuery(CamelSchema):
     )
 
 
-class ObligationDiffQuery(CamelSchema):
+class VersionDiffQuery(CamelSchema):
     """`from` and `to` are version numbers, defaulting to the latest version against the one
     before it. `lang` asks for a language; the diff falls back to the reader's language
-    order when neither version has it (INV-05)."""
+    order when neither version has it (INV-05). Serves the obligation diff and the
+    provision diff alike (chunk3-rest-T16): both compare two versions of one record and
+    never one record with another."""
 
     from_version: int | None = Field(
         default=None,
@@ -1107,8 +1109,8 @@ class ObligationDiffQuery(CamelSchema):
         description=(
             "Which version to compare from, by its version number, 1 at the lowest. It "
             "defaults to the version before the latest one, so a plain call shows the most "
-            "recent change. Both versions are versions of the same obligation: there is no "
-            "comparison across records. A number this obligation has no version for is "
+            "recent change. Both versions are versions of the same record: there is no "
+            "comparison across records. A number this record has no version for is "
             "refused with 422 `unknown_key`."
         ),
         examples=[1],
@@ -1119,8 +1121,8 @@ class ObligationDiffQuery(CamelSchema):
         ge=1,
         description=(
             "Which version to compare to, by its version number, 1 at the lowest. It "
-            "defaults to the latest version the obligation has, including one that has been "
-            "approved and does not take effect until later. A number this obligation has no "
+            "defaults to the latest version the record has, including one that has been "
+            "approved and does not take effect until later. A number this record has no "
             "version for is refused with 422 `unknown_key`."
         ),
         examples=[2],
@@ -1406,6 +1408,611 @@ class VerificationCreated(LibraryResponse):
             "on a record nobody has ever confirmed, and left as it was when the outcome was not "
             "`no_change`."
         )
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# GET /instruments and GET /instruments/{instrumentId} (INV-01, INV-06, FP-03)
+# ---------------------------------------------------------------------------------------
+class InstrumentAuthorityRef(LibraryResponse):
+    """The authority behind an instrument, as the row and the card both name it: a library
+    fact, the same for every bank."""
+
+    key: str = Field(
+        description=(
+            "The authority's immutable key, the value to store and to send back. It never "
+            "changes; the name may be relabelled around it (playbook 4.3)."
+        ),
+        examples=["fi"],
+    )
+    name: str = Field(description="The authority's full name, as it names itself.", examples=["Finansinspektionen"])
+    short_name: str = Field(
+        description="How the authority is abbreviated in a pill or a column, in its own language.", examples=["FI"]
+    )
+    url: str = Field(description="The authority's own site, so a reader can open it.", examples=["https://www.fi.se/"])
+
+
+_INSTRUMENT_SHORT_NAME = (
+    "How the instrument is written on a pill or in a column, in its own language. A "
+    "label a person wrote and may be reworded, so show it and match on `key` instead."
+)
+_INSTRUMENT_NAME = (
+    "The instrument's full name, in the best language this reader can be served. The "
+    "original is the jurisdiction's legal language, so a Swedish regulation read in "
+    "English usually still answers its Swedish name rather than a translation. Null only "
+    "when the record carries no name in any language."
+)
+_INSTRUMENT_LEVEL = (
+    "What rank of instrument this is, as key, kind and label: how much weight it carries. "
+    "The levels are vocabulary rows and not a closed set — a platform admin may extend, "
+    "relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` "
+    "for the live set and match on the key; `eu_regulation`, `eu_directive`, "
+    "`eu_guidance`, `act` and `authority_regulation` are seeded on day one."
+)
+_INSTRUMENT_JURISDICTION = (
+    "Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary "
+    "(`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are rows "
+    "an admin manages, not a closed set: a platform admin may extend, relabel or retire one "
+    "without a deploy, so read `GET /reference/jurisdictions` for the live set and match on "
+    "the key, never on the label. The `kind` says whether it is a country, a union or an "
+    "international body."
+)
+_INSTRUMENT_REGIME = (
+    "Which body of law the instrument belongs to, as a term of the taxonomy's `regime` "
+    "dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, "
+    "`banking` and `payments` are seeded on day one. This is the sector boundary every "
+    "instrument carries (playbook 4.3), and it is what an obligation's own scope "
+    "inherits. Null only while an instrument carries none. The terms are vocabulary rows "
+    "a platform admin may extend or retire without a deploy, so read "
+    "`GET /taxonomy/terms` for the live set and match on the key."
+)
+_INSTRUMENT_OFFICIAL_REF = (
+    "The reference the issuing authority itself publishes the instrument under, written "
+    "as that authority writes it. It is how a lawyer cites the instrument and how a "
+    "reader recognises it on the authority's own site; it is not an identifier this API "
+    "accepts, which is `key`."
+)
+_INSTRUMENT_IN_FORCE_FROM = (
+    "The legal date the instrument started binding, at the precision the source gave it "
+    "(playbook 4.3). Null when the source names no start date."
+)
+_INSTRUMENT_IN_FORCE_TO = (
+    "The legal date the instrument stopped binding, at the precision the source gave it. "
+    "Null on an instrument still in force, which is most of them."
+)
+_INSTRUMENT_IMPLEMENTS_NOTE = (
+    "What this instrument implements or elaborates, in the library's own words, so a "
+    "reader can see where a Swedish rule comes from. Free text for a person and never a "
+    "machine-readable link; an empty string when nothing was recorded, never null. The "
+    "structured lineage between instruments is `lineage` on the instrument's own read."
+)
+_INSTRUMENT_LAST_VERIFIED_AT = (
+    "When a bleqq library editor last read this record against its public source and "
+    "found it unchanged, as a UTC timestamp; a screen shows it as \"Verified <date>\" in "
+    "the bank's own time zone. Null on a record nobody has confirmed that way."
+)
+_INSTRUMENT_SOURCE_URL = (
+    "The public page this record was taken from, so a reader can open it and a re-check "
+    "can fetch it again. It is the authority's own page and never a link into this "
+    "product."
+)
+
+
+class InstrumentRow(LibraryResponse):
+    """One row of `GET /instruments` (INV-01). `obligationCount` counts the obligations
+    this row's reader would see: inside the footprint, or every one when
+    `outsideFootprint` is set."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f",
+                    "stableKey": "fffs-2017-2",
+                    "shortName": "FFFS 2017:2",
+                    "name": {"text": "FFFS 2017:2 om värdepappersrörelse", "language": "sv", "isOriginal": True, "isMachine": False},
+                    "level": {"key": "authority_regulation", "kind": None, "label": "Supervisory regulation"},
+                    "binding": True,
+                    "jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"},
+                    "authority": {"key": "fi", "name": "Finansinspektionen", "shortName": "FI", "url": "https://www.fi.se/"},
+                    "regime": {"key": "securities", "kind": None, "label": "Securities"},
+                    "officialRef": "FFFS 2017:2",
+                    "inForceFrom": {"date": "2018-01-03", "precision": "day"},
+                    "inForceTo": None,
+                    "implementsNote": "MiFID II delegated directive (EU) 2017/593",
+                    "obligationCount": 2,
+                    "inFootprint": True,
+                    "lastVerifiedAt": "2026-06-30T07:12:44Z",
+                    "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
+                }
+            ]
+        }
+    )
+
+    id: UUID = Field(
+        description=f"The instrument's identifier in the shared library, as a UUID. {LIBRARY_FACT}",
+        examples=["3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f"],
+    )
+    stable_key: str = Field(
+        description=(
+            "The instrument's immutable key, issued once and readable by a person. It "
+            "survives every amendment and relabelling, which is what makes it safe to "
+            "keep in an export, a report or a system of the bank's own; it is also what "
+            "`GET /obligations?instrument=` filters on."
+        ),
+        examples=["fffs-2017-2"],
+    )
+    short_name: str = Field(description=_INSTRUMENT_SHORT_NAME, examples=["FFFS 2017:2"])
+    name: LocalizedText | None = Field(description=_INSTRUMENT_NAME)
+    level: LibraryRef = Field(description=_INSTRUMENT_LEVEL)
+    binding: bool = Field(description=_BINDING, examples=[True])
+    jurisdiction: LibraryRef = Field(description=_INSTRUMENT_JURISDICTION)
+    authority: InstrumentAuthorityRef | None = Field(description="Who issued the instrument, or null when the fixture carries none.")
+    regime: LibraryRef | None = Field(description=_INSTRUMENT_REGIME)
+    official_ref: str = Field(description=_INSTRUMENT_OFFICIAL_REF, examples=["FFFS 2017:2"])
+    in_force_from: PartialDate | None = Field(description=_INSTRUMENT_IN_FORCE_FROM)
+    in_force_to: PartialDate | None = Field(description=_INSTRUMENT_IN_FORCE_TO)
+    implements_note: str = Field(description=_INSTRUMENT_IMPLEMENTS_NOTE, examples=["MiFID II delegated directive (EU) 2017/593"])
+    obligation_count: int = Field(
+        description=(
+            "How many duties this instrument carries that this read would show: inside "
+            "the bank's footprint by default, or every one when `outsideFootprint=true` "
+            "is set. It is not the instrument's whole duty count when the footprint hides "
+            "some of them."
+        ),
+        examples=[2],
+    )
+    in_footprint: bool = Field(
+        description=(
+            "Whether the instrument's own scope (its regime) overlaps the bank's "
+            "footprint. It is a filter and not a decision: it says nothing about whether "
+            "any duty of this instrument applies to this bank, which a person judges "
+            "separately."
+        ),
+        examples=[True],
+    )
+    last_verified_at: datetime.datetime | None = Field(description=_INSTRUMENT_LAST_VERIFIED_AT, examples=["2026-06-30T07:12:44Z"])
+    source_url: str = Field(
+        description=_INSTRUMENT_SOURCE_URL, examples=["https://www.fi.se/en/published/regulations/2017/fffs-20172/"]
+    )
+
+    model_config = ConfigDict(revalidate_instances="always")
+
+
+class InstrumentPage(LibraryResponse):
+    """One page of `GET /instruments`: the rows, and how many rows the filters match in
+    all."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "items": [
+                        {
+                            "id": "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f",
+                            "stableKey": "fffs-2017-2",
+                            "shortName": "FFFS 2017:2",
+                            "name": {"text": "FFFS 2017:2 om värdepappersrörelse", "language": "sv", "isOriginal": True, "isMachine": False},
+                            "level": {"key": "authority_regulation", "kind": None, "label": "Supervisory regulation"},
+                            "binding": True,
+                            "jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"},
+                            "authority": {"key": "fi", "name": "Finansinspektionen", "shortName": "FI", "url": "https://www.fi.se/"},
+                            "regime": {"key": "securities", "kind": None, "label": "Securities"},
+                            "officialRef": "FFFS 2017:2",
+                            "inForceFrom": {"date": "2018-01-03", "precision": "day"},
+                            "inForceTo": None,
+                            "implementsNote": "MiFID II delegated directive (EU) 2017/593",
+                            "obligationCount": 2,
+                            "inFootprint": True,
+                            "lastVerifiedAt": "2026-06-30T07:12:44Z",
+                            "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
+                        }
+                    ],
+                    "total": 16,
+                }
+            ]
+        }
+    )
+
+    items: list[InstrumentRow] = Field(
+        description=(
+            "The instruments on this page, ordered by their stable key so that paging "
+            "through them is repeatable. An empty list is an ordinary 200 and means "
+            "nothing matched the filters, never that something went wrong."
+        )
+    )
+    total: int = Field(
+        description=(
+            "How many instruments match the filters in all, not how many are on this "
+            "page. It is counted at the moment of the call, so a record written between "
+            "two pages can move it."
+        ),
+        examples=[16],
+    )
+
+
+class InstrumentQuery(CamelSchema):
+    """The filters of `GET /instruments`. Jurisdiction, level, authority and `asOf` are
+    deferred (chunk3-rest defaults): the Instruments tab lists every visible instrument
+    with its own in-force dates, and "as of" applies to obligations only."""
+
+    regime: str | None = Field(
+        default=None,
+        description=(
+            "Only the instruments of this regime, by the regime term's key: `securities`, "
+            "`insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and "
+            "`payments` are seeded on day one. A key no regime has matches nothing and "
+            "answers 200 with an empty page."
+        ),
+        examples=["securities"],
+    )
+    q: str | None = Field(
+        default=None,
+        max_length=MAX_QUERY_LENGTH,
+        description=(
+            "Find the instruments whose name, short name or official reference contains "
+            "these words, ignoring case: a phrase to look for, never a document. At most "
+            "200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 "
+            "`validation_error`."
+        ),
+        examples=["FFFS"],
+    )
+    outside_footprint: bool = Field(
+        default=False,
+        description=(
+            "Whether to include the instruments the bank's footprint would otherwise "
+            "hide. False by default, which is the working inventory: only the "
+            "instruments whose own scope overlaps the footprint. It also lifts the "
+            "footprint filter `obligationCount` counts obligations against."
+        ),
+        examples=[False],
+    )
+
+
+class InstrumentLineageRef(LibraryResponse):
+    """One instrument-to-instrument relation, from either side (INV-01): what this
+    instrument implements or elaborates, and what implements, elaborates or amends it."""
+
+    relation: LibraryRef = Field(
+        description=(
+            "How the two instruments are related, as key, kind and label: `implements`, "
+            "`elaborates` and `amends` are seeded on day one. The relation types are "
+            "vocabulary rows a platform admin may extend, relabel or retire without a "
+            "deploy, so read `GET /vocab/relation_type` for the live set and match on the "
+            "key."
+        )
+    )
+    direction: str = Field(
+        description=(
+            "Whether this instrument is the one doing the relating (`outgoing`, this "
+            "instrument implements, elaborates or amends the other) or the one being "
+            "related to (`incoming`, the other does so to this one). A card reads "
+            "`outgoing` under headings such as \"Implements\" and \"incoming\" under "
+            "\"Amended by\"."
+        ),
+        examples=["incoming"],
+    )
+    instrument: ObligationInstrumentRef = Field(description="The other instrument in the relation, by key and short name.")
+    note: str = Field(
+        description="What the relation is, in the library's own words. An empty string when nothing was recorded, never null.",
+        examples=["Amends FFFS 2017:2, in force 1 October 2026."],
+    )
+    to_ref: str = Field(
+        description=(
+            "Where in the related instrument this points, in the words the source uses "
+            "(\"Article 25(3) and (4)\"), whichever side of the relation this instrument "
+            "is on. An empty string when the relation names no specific place, which is "
+            "most of them: a whole-instrument amendment needs none."
+        ),
+        examples=[""],
+    )
+
+
+_SAMPLE_INSTRUMENT_DETAIL: dict[str, Any] = {
+    "id": "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f",
+    "stableKey": "fffs-2017-2",
+    "shortName": "FFFS 2017:2",
+    "name": {"text": "FFFS 2017:2 om värdepappersrörelse", "language": "sv", "isOriginal": True, "isMachine": False},
+    "level": {"key": "authority_regulation", "kind": None, "label": "Supervisory regulation"},
+    "binding": True,
+    "jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"},
+    "authority": {"key": "fi", "name": "Finansinspektionen", "shortName": "FI", "url": "https://www.fi.se/"},
+    "regime": {"key": "securities", "kind": None, "label": "Securities"},
+    "officialRef": "FFFS 2017:2",
+    "eliUri": "",
+    "inForceFrom": {"date": "2018-01-03", "precision": "day"},
+    "inForceTo": None,
+    "implementsNote": "MiFID II delegated directive (EU) 2017/593",
+    "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
+    "lastVerifiedAt": "2026-06-30T07:12:44Z",
+    "verifiedBy": None,
+    "lineage": [
+        {
+            "relation": {"key": "amends", "kind": None, "label": "Amends"},
+            "direction": "incoming",
+            "instrument": {"key": "fffs-2026-11", "shortName": "FFFS 2026:11"},
+            "note": "Amends FFFS 2017:2, in force 1 October 2026.",
+            "toRef": "",
+        }
+    ],
+}
+
+
+class InstrumentDetail(LibraryResponse):
+    """`GET /instruments/{instrumentId}` (INV-01, INV-06): the row's own facts, plus the
+    ELI, the authority in full, who last re-verified it and its lineage to other
+    instruments. The provision tree is its own read (chunk3-rest T16)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_SAMPLE_INSTRUMENT_DETAIL]})
+
+    id: UUID = Field(
+        description=f"The instrument's identifier in the shared library, as a UUID. {LIBRARY_FACT}",
+        examples=["3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f"],
+    )
+    stable_key: str = Field(
+        description=(
+            "The instrument's immutable key, issued once and readable by a person. It "
+            "survives every amendment and relabelling."
+        ),
+        examples=["fffs-2017-2"],
+    )
+    short_name: str = Field(description=_INSTRUMENT_SHORT_NAME, examples=["FFFS 2017:2"])
+    name: LocalizedText | None = Field(description=_INSTRUMENT_NAME)
+    level: LibraryRef = Field(description=_INSTRUMENT_LEVEL)
+    binding: bool = Field(description=_BINDING, examples=[True])
+    jurisdiction: LibraryRef = Field(description=_INSTRUMENT_JURISDICTION)
+    authority: InstrumentAuthorityRef | None = Field(description="Who issued the instrument, in full, or null when the fixture carries none.")
+    regime: LibraryRef | None = Field(description=_INSTRUMENT_REGIME)
+    official_ref: str = Field(description=_INSTRUMENT_OFFICIAL_REF, examples=["FFFS 2017:2"])
+    eli_uri: str = Field(
+        description=(
+            "The European Legislation Identifier for this instrument, where the "
+            "publisher gives one. An empty string when none is available, never null; "
+            "the screen reads that as \"Not available\"."
+        ),
+        examples=[""],
+    )
+    in_force_from: PartialDate | None = Field(description=_INSTRUMENT_IN_FORCE_FROM)
+    in_force_to: PartialDate | None = Field(description=_INSTRUMENT_IN_FORCE_TO)
+    implements_note: str = Field(description=_INSTRUMENT_IMPLEMENTS_NOTE, examples=["MiFID II delegated directive (EU) 2017/593"])
+    source_url: str = Field(
+        description=_INSTRUMENT_SOURCE_URL, examples=["https://www.fi.se/en/published/regulations/2017/fffs-20172/"]
+    )
+    last_verified_at: datetime.datetime | None = Field(description=_INSTRUMENT_LAST_VERIFIED_AT, examples=["2026-06-30T07:12:44Z"])
+    verified_by: PersonRef | None = Field(
+        description=(
+            "The bleqq platform person who last confirmed this record against its "
+            "source, by id and name, or null when nobody has. Never a member of a bank: "
+            "re-verifying a shared fact is bleqq's own check."
+        )
+    )
+    lineage: list[InstrumentLineageRef] = Field(
+        description=(
+            "What this instrument implements or elaborates, and what implements, "
+            "elaborates or amends it in turn: both directions of the library's own "
+            "cross-references, so the designed `GET /instruments/{instrumentId}/relations` "
+            "is served here instead. Only instruments this caller may read appear: a "
+            "relation to one they may not is left out silently."
+        )
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# GET /instruments/{instrumentId}/provisions and GET /provisions/{provisionId}/diff
+# (INV-02, INV-04, INV-05)
+# ---------------------------------------------------------------------------------------
+class ProvisionVersionRow(LibraryResponse):
+    """One verbatim text version of a provision (INV-02, INV-04): when it took effect,
+    `effectiveTo` derived as the day before the next version did (nothing is stored,
+    because a version row is written once and never touched afterwards), any
+    transitional note, and the text itself in the reader's best language."""
+
+    version_number: int = Field(
+        description=(
+            "Which version of this provision's text it is, numbered from 1 in the order "
+            "the versions took effect. It is the number to send to the diff as `from` or "
+            "`to`, and it never addresses another provision's version."
+        ),
+        examples=[2],
+    )
+    effective_from: PartialDate | None = Field(
+        description=(
+            "The legal date this version started binding the bank, at the precision the "
+            "source gave it. Null means it has been in force since the provision entered "
+            f"the library. {LIBRARY_FACT}"
+        )
+    )
+    effective_to: PartialDate | None = Field(
+        description=(
+            "The last day this version was in force, worked out as the day before the "
+            "next version took effect. Null on the version still in force, on one whose "
+            "successor carries no date, and on one corrected the same day it took effect."
+        )
+    )
+    transitional_note: str = Field(
+        description=(
+            "How the transition to this version is handled, in the library's own words "
+            "(\"the annual assessment is first due for research received after 1 October "
+            "2026\"). An empty string when the source gave none, never null."
+        ),
+        examples=["The annual assessment is first due for research received after 1 October 2026."],
+    )
+    text: LocalizedText | None = Field(
+        description=(
+            "This version's verbatim text in the best language this reader can be "
+            "served. Null only when the version carries no text in any language at all."
+        )
+    )
+
+
+class ProvisionCitedObligation(LibraryResponse):
+    """An obligation the tree shows beside the provision it cites (INV-02, INV-03)."""
+
+    id: UUID = Field(description=_OBLIGATION_ID, examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"])
+    title: LocalizedText | None = Field(description=_OBLIGATION_TITLE)
+    ref_label: str = Field(description=_OBLIGATION_REF_LABEL, examples=["Third-party payments"])
+
+
+class ProvisionNode(LibraryResponse):
+    """One node of an instrument's provision tree (INV-02): a chapter, a section, a
+    paragraph or whatever `kind` names, with its own text versions, its children in the
+    tree and the obligations that cite it. `inForceVersion` is the version number in
+    force on the read's date (null when none is); `versions` lists every one regardless,
+    so a reader can choose an earlier or a future version by its own chip."""
+
+    id: UUID = Field(
+        description=f"The provision's identifier in the shared library, as a UUID. {LIBRARY_FACT}",
+        examples=["b6d9f0a4-1c72-4e35-9f88-0a2c4e6b8d10"],
+    )
+    stable_key: str = Field(
+        description=(
+            "The provision's immutable key, issued once and readable by a person, of the "
+            "form `<instrument>/<unit>` (`fffs-2017-2/9-6` for 9 kap. 6 §). It survives "
+            "every amendment and relabelling."
+        ),
+        examples=["fffs-2017-2/9-6"],
+    )
+    kind: LibraryRef = Field(
+        description=(
+            "What structural kind of unit this is, as key, kind and label: `chapter`, "
+            "`section`, `article`, `paragraph`, `part`, `annex` and `guideline` are seeded "
+            "on day one. Here `kind` on the reference itself carries the row's own fixed "
+            "structural kind (`division`, `unit` or `annex`) rather than being null, "
+            "because a screen groups provisions by it. The kinds are vocabulary rows a "
+            "platform admin may extend or retire without a deploy, so read "
+            "`GET /vocab/provision_kind` for the live set and match on the key."
+        )
+    )
+    ref_label: str = Field(
+        description=(
+            "How this unit is cited, in the words the source itself uses (`9 kap.`, "
+            "`6 §`, `Article 25(3)`). For a reader to quote, not a reference to parse."
+        ),
+        examples=["6 §"],
+    )
+    heading: str = Field(
+        description="The unit's own heading, in the library's words. An empty string when the source gives none, never null.",
+        examples=["Betalning för analys"],
+    )
+    path: str = Field(
+        description="Where this unit sits in its instrument's structure, read from the top, as a breadcrumb a person reads.",
+        examples=["FFFS 2017:2 > 9 kap. > 6 §"],
+    )
+    children: list[ProvisionNode] = Field(
+        description="The units nested directly under this one, in the tree's own order. An empty list on a leaf."
+    )
+    versions: list[ProvisionVersionRow] = Field(
+        description=(
+            "Every text version of this unit in version order, including ones still to "
+            "take effect, so a reader can choose any of them by its own chip rather than "
+            "trusting today's date. Nothing here is ever rewritten: a correction is "
+            "another version."
+        )
+    )
+    in_force_version: int | None = Field(
+        description=(
+            "The version number in force on the date this tree was read, or null when "
+            "every version starts after that date. It says which chip a screen should "
+            "select by default; the reader may still choose another one."
+        ),
+        examples=[2],
+    )
+    obligations: list[ProvisionCitedObligation] = Field(
+        description=(
+            "The obligations that cite this unit, so a reader can jump from the law to "
+            "the duty. Only obligations this caller may read appear: one they may not is "
+            "left out silently."
+        )
+    )
+
+
+ProvisionNode.model_rebuild()
+
+SAMPLE_PROVISION_TREE: list[dict[str, Any]] = [
+    {
+        "id": "e4b8f1a2-6c3d-4e5f-9a7b-1c2d3e4f5a6b",
+        "stableKey": "fffs-2017-2/9",
+        "kind": {"key": "chapter", "kind": "division", "label": "Chapter"},
+        "refLabel": "9 kap.",
+        "heading": "Skydd för investerare",
+        "path": "FFFS 2017:2 > 9 kap.",
+        "children": [
+            {
+                "id": "b6d9f0a4-1c72-4e35-9f88-0a2c4e6b8d10",
+                "stableKey": "fffs-2017-2/9-6",
+                "kind": {"key": "section", "kind": "unit", "label": "Section"},
+                "refLabel": "6 §",
+                "heading": "Betalning för analys",
+                "path": "FFFS 2017:2 > 9 kap. > 6 §",
+                "children": [],
+                "versions": [
+                    {
+                        "versionNumber": 1,
+                        "effectiveFrom": {"date": "2018-01-03", "precision": "day"},
+                        "effectiveTo": {"date": "2026-09-30", "precision": "day"},
+                        "transitionalNote": "",
+                        "text": {
+                            "text": (
+                                "Investment research from a third party may be received only if it is paid "
+                                "from the institution's own resources, from a research payment account, or "
+                                "jointly with execution under the conditions set out in these regulations."
+                            ),
+                            "language": "en",
+                            "isOriginal": False,
+                            "isMachine": True,
+                        },
+                    },
+                    {
+                        "versionNumber": 2,
+                        "effectiveFrom": {"date": "2026-10-01", "precision": "day"},
+                        "effectiveTo": None,
+                        "transitionalNote": "The annual assessment is first due for research received after 1 October 2026.",
+                        "text": {
+                            "text": (
+                                "Investment research from a third party may be received only if it is paid "
+                                "from the institution's own resources, from a research payment account, or "
+                                "jointly with execution under the conditions set out in these regulations. "
+                                "The institution shall assess annually the quality and value of the research "
+                                "it receives."
+                            ),
+                            "language": "en",
+                            "isOriginal": False,
+                            "isMachine": True,
+                        },
+                    },
+                ],
+                "inForceVersion": 1,
+                "obligations": [
+                    {
+                        "id": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
+                        "title": {
+                            "text": "Pay for third-party research only under the permitted models",
+                            "language": "en",
+                            "isOriginal": True,
+                            "isMachine": False,
+                        },
+                        "refLabel": "Third-party payments",
+                    }
+                ],
+            }
+        ],
+        "versions": [],
+        "inForceVersion": None,
+        "obligations": [],
+    }
+]
+
+
+class InstrumentProvisionsQuery(CamelSchema):
+    """`asOf` on the provision tree: which version of each unit `inForceVersion` names,
+    today in the tenant's time zone by default (AC-INV1). `versions` always lists every
+    one regardless, so a reader can choose an earlier or a future version by its own
+    chip and is never limited to what was in force on this date."""
+
+    as_of: datetime.date | None = Field(
+        default=None,
+        description=f"{_AS_OF} It decides `inForceVersion` alone; every version stays in `versions`.",
+        examples=["2026-06-30"],
     )
 
 

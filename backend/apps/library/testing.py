@@ -15,7 +15,9 @@ import datetime
 from collections.abc import Iterable, Mapping
 
 from apps.library.models import (
+    Authority,
     Instrument,
+    InstrumentRelation,
     InstrumentTitle,
     Jurisdiction,
     Obligation,
@@ -27,7 +29,10 @@ from apps.library.models import (
     ObligationTitle,
     ObligationVersion,
     Provision,
+    ProvisionText,
+    ProvisionVersion,
 )
+from apps.identity.models import User
 from apps.proposals.models import OriginType
 from apps.shared.models import Tenant
 from apps.shared.tenancy import library_write
@@ -52,6 +57,14 @@ def instrument(
     level: str = "act",
     binding: bool = True,
     owner_tenant: Tenant | None = None,
+    authority: str | None = None,
+    eli_uri: str = "",
+    in_force_from: datetime.date | None = None,
+    in_force_from_precision: str = "day",
+    in_force_to: datetime.date | None = None,
+    implements_note: str = "",
+    last_verified_at: datetime.datetime | None = None,
+    verified_by: User | None = None,
 ) -> Instrument:
     """A Swedish instrument titled by its short name in English, the original."""
     with library_write(REASON):
@@ -59,29 +72,68 @@ def instrument(
             stable_key=key,
             short_name=short_name or key.upper(),
             official_ref=key.upper(),
+            eli_uri=eli_uri,
             source_url=SOURCE_URL,
             level=InstrumentLevel.objects.get(key=level),
             binding=binding,
             jurisdiction=Jurisdiction.objects.get(key="se"),
+            authority=Authority.objects.get(key=authority) if authority else None,
             regime=term(regime) if regime else None,
+            in_force_from=in_force_from,
+            in_force_from_precision=in_force_from_precision,
+            in_force_to=in_force_to,
+            implements_note=implements_note,
             owner_tenant=owner_tenant,
             created_origin=OriginType.USER.value,
+            last_verified_at=last_verified_at,
+            verified_by=verified_by,
         )
         InstrumentTitle.objects.create(instrument=row, language_id="en", text=row.short_name, is_original=True)
     return row
 
 
-def provision(on: Instrument, *, key: str, ref_label: str = "9 kap.", kind: str = "chapter") -> Provision:
-    """A node of an instrument's tree, which an obligation cites. Its verbatim text versions
-    belong to the provision tree read, never to an obligation."""
+def relate_instruments(source: Instrument, target: Instrument, *, relation: str, note: str = "", to_ref: str = "") -> InstrumentRelation:
+    """Files `target` beside `source` (INV-01): `source` "implements", "elaborates" or
+    "amends" `target`, the direction the fixture and the lineage read both use."""
+    with library_write(REASON):
+        return InstrumentRelation.objects.create(
+            from_instrument=source, to_instrument=target, relation_type=RelationType.objects.get(key=relation), note=note, to_ref=to_ref
+        )
+
+
+def provision(on: Instrument, *, key: str, ref_label: str = "9 kap.", kind: str = "chapter", parent: Provision | None = None, heading: str = "", sort_order: int = 0) -> Provision:
+    """A node of an instrument's tree, which an obligation cites and which carries its own
+    verbatim text versions (`provision_version()` below), never an obligation's."""
     with library_write(REASON):
         return Provision.objects.create(
             stable_key=key,
             instrument=on,
+            parent=parent,
             kind=ProvisionKind.objects.get(key=kind),
             ref_label=ref_label,
-            path=f"{on.short_name} > {ref_label}",
+            heading=heading,
+            path=f"{parent.path} > {ref_label}" if parent else f"{on.short_name} > {ref_label}",
+            sort_order=sort_order,
         )
+
+
+def provision_version(
+    on: Provision,
+    *,
+    version_no: int = 1,
+    effective_from: datetime.date | None = None,
+    transitional_note: str = "",
+    texts: Mapping[str, str] | None = None,
+) -> ProvisionVersion:
+    """A verbatim text version of `on` (INV-02): write-once, like an obligation's version.
+    The first language given is the original; every other one is a machine translation."""
+    with library_write(REASON):
+        version = ProvisionVersion.objects.create(
+            provision=on, version_number=version_no, effective_from=effective_from, transitional_note=transitional_note
+        )
+        for index, (language, text) in enumerate((texts or {"en": "The provision as it reads."}).items()):
+            ProvisionText.objects.create(version=version, language_id=language, text=text, is_original=index == 0, is_machine=index > 0)
+    return version
 
 
 def relate(source: Obligation, target: Obligation, *, relation: str = "related") -> None:

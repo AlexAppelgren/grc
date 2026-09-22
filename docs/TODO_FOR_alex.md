@@ -384,6 +384,91 @@ change what four eyes means and are marked as such.
       the rules in-process by reloading settings instead of booting (cheaper and far faster,
       but it stops proving that a real process refuses to start, which is the whole point).
 
+## Chunk 3's rest: defaults taken and two open questions (2026-09-22)
+
+`docs/plans/briefs/CHUNK3_TASKS.md` names these defaults, each already stated in
+its task's commit body, and two open questions from its own "Open questions"
+section. Copied here as chunk3-rest-T20 requires.
+
+**Open questions**
+
+- [ ] **Urgency and the rule that a tone is never chosen by a person (NFR-S10).**
+      INPUT_DELTAS §1 says urgency has a "fixed ordinal and tone", yet the chunk 2
+      registry lists urgency with the kind "pill_tone", so a library editor who
+      proposes a new urgency row picks its tone. CHUNK3_TASKS.md left this open on
+      2026-09-19 and had T3 leave urgency unchanged, refusing only fields named
+      `tone` or `colour`, until you decided. **This looks already answered:**
+      `docs/DECISIONS.md` D-48, "answered OK by Alex 2026-09-19 (item 1)", takes
+      Option A — the five levels are fixed rows with the tone each already has, a
+      library editor changes only labels, usage note and SLA days, creating a
+      level answers 422, and `GET /vocab` entries gain `fixedRows` so the screen
+      hides Create and reorder. But `fixedRows` does not exist anywhere in
+      `backend/apps/taxonomy/`, so D-48's answer was never built. This chunk did
+      not touch `apps/taxonomy/registry.py` or the urgency vocabulary screen (out
+      of chunk3-rest-T20's owned paths) and is reporting the gap rather than
+      building around it: either T3's own work predates D-48 and needs a follow-up
+      task to add `fixedRows` and the 422 refusal, or something about D-48's answer
+      needs revisiting. Flagging rather than guessing which.
+- [ ] **Problem area ("Where" in the report form).** `tenant-obligation.html` was
+      designed with a Where select (legal text, translation, scope, duty, source or
+      reference, something else), and `console-problem-reports.html` was designed
+      to filter and pill by it. Nothing in the rules branches on it, and it is not
+      in INPUT_DELTAS §1's kind list, so under "enums in code are for kinds only" it
+      cannot be a code enum. Chunk3-rest built the designed body
+      `{description, versionNumber?, language?}` with no area column and no Where
+      select, on both obligations and instruments. If you want the field, it
+      becomes a tier-2 library vocabulary (a registry entry plus seeded system
+      rows) in a later task.
+
+**Defaults taken** (each stated in its task's own commit body)
+
+- [x] J-6: one sample advice-only obligation was added (`from_prototype: false`).
+      No prototype obligation was rescoped, because none is advice-only.
+- [x] The FFFS 2017:2 provision tree and FFFS 2026:11 are sample rows taken from
+      the instrument card, marked `from_prototype: false`. Never presented as
+      verbatim law.
+- [x] Seeded records carry no verifier. The fixture's verifier is a tenant user,
+      so `verified_by` stays null until someone re-verifies; the card shows
+      "by <name>" only when it is set.
+- [x] An instrument's verified date is derived from its obligations, or is the
+      fixture anchor date when it has none.
+- [x] A provision is shown on its instrument's card, under the instrument's own
+      source link and verified date, and is reported through the instrument's
+      "This looks wrong" (see also the open question on the Where field above).
+- [x] `GET /problem-reports` (a list) moves to chunk 4; `GET /authorities` moves to
+      chunk 5, with `console-sources.html`, which builds its add form. An
+      instrument's authority is read embedded in `GET /instruments/{id}` until then.
+- [x] Lineage and version lists are embedded in the detail reads (`GET
+      /instruments/{id}`, `GET /instruments/{id}/provisions`); there is no `GET
+      /instruments/{id}/relations` or `GET /provisions/{id}/versions`. The
+      obligation detail cites provisions by reference and path, without their
+      text; the card shows none.
+- [x] `GET /instruments` filters by regime, `q` and `outsideFootprint` only, and
+      takes no `asOf`. The Instruments tab lists every visible instrument with its
+      in-force dates; "As of" applies to obligations only. `GET /obligations` has
+      no tag filter. The unused designed filters are deferred.
+- [x] The footprint scope rule sits in one place, `library/reading.py`: an
+      instrument's scope is its regime, an obligation's scope is its own terms
+      plus its instrument's regime. Neither inherits a jurisdiction term, because
+      none is seeded.
+- [x] The footprint preview counts obligations only (how many it hides and
+      reveals), never their titles and never instruments — a footprint change
+      never hides or reveals an instrument row by itself.
+- [x] `?lang=` is accepted only on the diff reads (obligation and provision).
+      Everything else follows `language_order`, and `translations[]` feeds the
+      language chips.
+- [x] Re-verification needs `proposals.review` plus a step-up — the stricter of
+      the brief and the UI plan.
+- [x] Re-pointing records when library lists are merged stays in chunk 4
+      (`proposals/apply.py`). `relation_type`'s usage count also stays hardcoded 0
+      (`registry.py`'s `_no_usage`) even though `instrument_relations` now uses it;
+      wiring a real count is not INV-01 or INV-02 work.
+- [x] INV-S9 stays skipped (R3, tenant-private records). FP-S4 stays fixme: its
+      backend half is proven (`apps/taxonomy/tests_scenarios.py::test_fp_s4`), but
+      its journey still waits on the feed, roadmap and briefing screens to exist
+      alongside the inventory's own "Show outside our scope" switch.
+- [x] No "Adopted" row on the instrument card, because no such data exists.
+
 ## A banking group with several regulated companies (2026-09-22)
 - [ ] You want groups like SEB handled: several legal entities under one tenant, each
       narrowing the group's regulatory scope for itself rather than sharing one, and some

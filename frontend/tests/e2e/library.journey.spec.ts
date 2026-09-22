@@ -31,22 +31,72 @@ async function openObligation(page: Page, stableKey: string): Promise<void> {
   await expect(page.locator(`[data-obligation="${stableKey}"] [data-header-pills]`)).toBeVisible();
 }
 
+/** The Instruments tab, then one card by stable key: the row's link carries the id. */
+async function openInstrument(page: Page, stableKey: string): Promise<void> {
+  await page.goto('/inventory?tab=instruments');
+  await expect(page.locator('[data-instrument-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+  await page.locator(`[data-instrument="${stableKey}"]`).click();
+  await expect(page.locator(`[data-instrument="${stableKey}"] [data-header-pills]`)).toBeVisible();
+}
+
 function headerPills(page: Page) {
   return page.locator('[data-header-pills] [data-pill]');
 }
 
 test.describe('library journeys', () => {
-  // The instrument card and the provision tree (chunk 3, chunk3-rest-T17 and
-  // T18) need reads that are not built: GET /instruments, GET /instruments/{id},
-  // GET /instruments/{id}/provisions and GET /provisions/{id}/diff are still
-  // listed as undelivered in backend/scripts/contract_drift_pending.txt, and
-  // no route answers them. They un-fixme with chunk3-rest-T13 and T16.
-  test.fixme("INV-S1: An instrument carries its identity, dates and lineage", async () => {
-    // pending: INV-S1 (INV-01); needs GET /instruments and GET /instruments/{id}
+  test("INV-S1: An instrument carries its identity, dates and lineage", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openInstrument(page, 'fffs-2017-2');
+
+    // The short name and jurisdiction are brand, the level and binding force
+    // information: a tone is chosen by slot or kind, never by a person.
+    await expect(headerPills(page)).toHaveText(['FFFS 2017:2', 'Supervisory regulation', 'Binding', 'Sweden', 'Securities']);
+    await expect(headerPills(page).nth(0)).toHaveAttribute('data-pill', 'brand');
+    await expect(headerPills(page).nth(1)).toHaveAttribute('data-pill', 'information');
+    await expect(headerPills(page).nth(2)).toHaveAttribute('data-pill', 'information');
+    await expect(headerPills(page).nth(3)).toHaveAttribute('data-pill', 'brand');
+
+    // Identity: official reference, ELI where available (FFFS has none), the
+    // authority and the in-force date with its day precision.
+    const identity = page.locator('[data-identity-panel]');
+    await expect(identity.getByText('FFFS 2017:2')).toBeVisible();
+    await expect(identity.getByText('Not available')).toBeVisible();
+    // The authority, a library fact rather than app copy (playbook's copy-drift check
+    // only scans getByText for app copy, so a data value asserts through a locator).
+    await expect(identity).toContainText('Finansinspektionen');
+    await expect(identity.getByText('In force from 3 Jan 2018')).toBeVisible();
+
+    // Lineage: amended by FFFS 2026:11 (INV-01, T13's seeded amendment).
+    await expect(page.locator('[data-lineage-group="Amended by"]').getByText('FFFS 2026:11')).toBeVisible();
   });
 
-  test.fixme("INV-S2: The provision tree holds verbatim text versions", async () => {
-    // pending: INV-S2 (INV-02); needs GET /instruments/{id}/provisions and GET /provisions/{id}/diff
+  test("INV-S2: The provision tree holds verbatim text versions", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openInstrument(page, 'fffs-2017-2');
+
+    // 9 kap. 6 § opens with the version in force before the amendment: both
+    // chips exist, and versions are chosen by their own chip rather than by
+    // today's date, which stays ahead of the amendment for years.
+    const section = page.locator('[data-provision="fffs-2017-2/9-6"]');
+    await expect(section).toBeVisible();
+    await expect(section.getByRole('button', { name: 'In force 3 Jan 2018 to 30 Sept 2026' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(section.getByRole('button', { name: 'In force from 1 Oct 2026' })).toHaveAttribute('aria-pressed', 'false');
+
+    await section.getByRole('button', { name: 'In force from 1 Oct 2026' }).click();
+    await expect(section.getByRole('button', { name: 'In force from 1 Oct 2026' })).toHaveAttribute('aria-pressed', 'true');
+    // The transitional note is the fixture's own text (T8), not app copy.
+    await expect(section).toContainText('The annual assessment is first due for research received after 1 October 2026.');
+
+    // "Show what changed" opens the sentence-level diff between the two versions.
+    await section.getByRole('button', { name: 'Show what changed' }).click();
+    await expect(section.locator('[data-legal-text] ins, [data-legal-text] del').first()).toBeVisible();
+
+    // The provision half of INV-S7: with 6 § expanded, the card still shows
+    // the instrument's own source link and verified date (chunk3-rest-T17).
+    await expect(page.getByRole('link', { name: 'Source' })).toHaveAttribute('href', /^https?:\/\//);
+    await expect(page.locator('[data-identity-panel]').getByText('Last verified')).toBeVisible();
   });
 
   test("INV-S3: An obligation states the duty and its facets", async ({ page, apiGuard }) => {
@@ -147,8 +197,7 @@ test.describe('library journeys', () => {
   });
 
   test("INV-S7: Every record has a source link, a last-verified date and a way to report it", async ({ page, apiGuard }) => {
-    // The instrument and provision halves arrive with the instrument card
-    // (chunk3-rest-T17 and T18), which needs the instrument reads.
+    // The provision half arrives with the provision tree panel (chunk3-rest-T18).
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.complianceOfficer);
     await openObligation(page, RESEARCH);
@@ -171,6 +220,22 @@ test.describe('library journeys', () => {
     await expect(dialog.getByText('Report sent. Thank you.')).toBeVisible();
     await dialog.getByRole('button', { name: 'Done' }).click();
     await expect(dialog).toBeHidden();
+
+    // The instrument half: the same source link, verified date and report,
+    // this time on FFFS 2017:2's own card (chunk3-rest-T17).
+    await openInstrument(page, 'fffs-2017-2');
+    const identity = page.locator('[data-identity-panel]');
+    await expect(page.getByRole('link', { name: 'Source' })).toHaveAttribute('href', /^https?:\/\//);
+    await expect(identity.getByText('Last verified')).toBeVisible();
+    await expect(identity.locator('[data-last-verified]')).toHaveText(/\d{4}$/);
+
+    await identity.getByRole('button', { name: 'This looks wrong' }).click();
+    const instrumentDialog = page.getByRole('dialog', { name: 'What looks wrong?' });
+    await instrumentDialog.getByLabel('What you see').fill('The in-force date does not match the source.');
+    await instrumentDialog.getByRole('button', { name: 'Send report' }).click();
+    await expect(instrumentDialog.getByText('Report sent. Thank you.')).toBeVisible();
+    await instrumentDialog.getByRole('button', { name: 'Done' }).click();
+    await expect(instrumentDialog).toBeHidden();
   });
 });
 

@@ -401,6 +401,10 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/obligations"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/obligations/{obligation_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/obligations/{obligation_id}/diff"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
+    ("GET", "/instruments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
+    ("GET", "/instruments/{instrument_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
+    ("GET", "/instruments/{instrument_id}/provisions"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
+    ("GET", "/provisions/{provision_id}/diff"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     # Chunk 5 (the agent API). Eight routes serve more than one kind of principal, so
     # apps/watch/api.py and apps/agents/api.py decide and still answer the structured 403
     # with requiredPermission. Everything else the chunk declares carries a single gate.

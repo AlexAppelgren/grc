@@ -45,6 +45,7 @@ overwritten.
 | served | Exists from Phase 0 (`/health/`, `GET /me` minimal) |
 | in build | Chunk 1, on `main` in progress |
 | designed | A card in `design/screens/` exists; chunk 2 to 7 |
+| shipped | The covered rule above holds: screen, role variants, every state, `@e2e` un-fixme'd and green, on `main` |
 | later chunk N, card pending | An R2/R3 operation; the screen that will hold it is named, its card is not drawn yet |
 | removed | Dropped by INPUT_DELTAS; the row says what replaces it |
 | agent only | Called with an API key by agents; no screen calls it |
@@ -61,9 +62,9 @@ overwritten.
 | `admin-vocabulary.html` | `/admin/vocabularies/[list]`; console variant `/console/vocabularies/[list]` | both | 2, 4 | designed |
 | `admin-footprint.html` (on screen: Regulatory scope) | `/admin/footprint` | tenant | 2; markets panel 3 | designed, markets panel included (card states 17 to 19) |
 | `picker-create-or-suggest.html` | inside every vocabulary picker | both | 2 (near-duplicate), 8 (suggest) | designed |
-| `tenant-inventory.html` | `/inventory` (Obligations, Instruments tabs) | tenant | 3 | designed |
-| `tenant-obligation.html` | `/inventory/obligations/[obligationId]` | tenant | 3; register panels 8 | designed |
-| `tenant-instrument.html` | `/inventory/instruments/[instrumentId]` | tenant | 3 | designed |
+| `tenant-inventory.html` | `/inventory` (Obligations, Instruments tabs) | tenant | 3 | shipped |
+| `tenant-obligation.html` | `/inventory/obligations/[obligationId]` | tenant | 3; register panels 8 | shipped; register panels land with chunk 8 |
+| `tenant-instrument.html` | `/inventory/instruments/[instrumentId]` | tenant | 3 | shipped |
 | `console-shell.html` | `/console` | console | 4 | designed |
 | `console-queue.html` | `/console/queue`, `/console/queue/[proposalId]` | console | 4 | designed |
 | `console-problem-reports.html` | `/console/problem-reports` | console | 4 | designed |
@@ -177,16 +178,16 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
-| `GET /authorities` | `console-sources.html` add form; `tenant-instrument.html` facts | both | `library.read`; `key:library:read` | no | All 7; LE | INV-S1 | designed |
-| `GET /instruments`, `GET /instruments/{id}` | `tenant-inventory.html` Instruments tab; `tenant-instrument.html` | tenant | `library.read`; `key:library:read` | no | All 7 | INV-S1, INV-S10 | designed |
-| `GET /instruments/{id}/relations` | `tenant-instrument.html` Lineage | tenant | `library.read` | no | All 7 | INV-S1 | designed |
-| `GET /instruments/{id}/provisions`, `GET /provisions/{id}/versions` | `tenant-instrument.html` provision tree | tenant | `library.read` | no | All 7 | INV-S2, INV-S10 | designed |
-| `GET /obligations` | `tenant-inventory.html` (filters, "as of", outside footprint) | tenant | `library.read`; `key:library:read` | no | All 7; register overlay columns from chunk 8 | INV-S3, INV-S4, FP-S4 | designed |
-| `GET /obligations/{id}` | `tenant-obligation.html` | tenant | `library.read` | no | All 7 | INV-S3, INV-S6, INV-S7 | designed |
-| `GET /obligations/{id}/versions`, `GET /obligations/{id}/diff` | `tenant-obligation.html` version chips, Show what changed, Versions panel; `tenant-library-updates.html` Show what changed | tenant | `library.read` | no | All 7 | INV-S4, INV-S5, AGT-S10 | designed |
-| `GET /obligations/{id}/changes` | `tenant-obligation.html` Related changes | tenant | `library.read` | no | All 7 | WAT-S6 | designed |
+| `GET /authorities` | `console-sources.html` add form | console | `key:library:read` | no | LE | — | later chunk 5, card pending (an instrument's authority is read embedded in `GET /instruments/{id}` today, not through its own route) |
+| `GET /instruments`, `GET /instruments/{id}` | `tenant-inventory.html` Instruments tab; `tenant-instrument.html` | tenant | `library.read`; `key:library:read` | no | All 7 | INV-S1, INV-S10 | shipped; no "Adopted" row on the card, because no such data exists |
+| `GET /instruments/{id}/relations` | `tenant-instrument.html` Lineage | tenant | `library.read` | no | All 7 | INV-S1 | shipped (no standalone route: `GET /instruments/{id}` answers `lineage` embedded, the same instrument read the card already makes) |
+| `GET /instruments/{id}/provisions`, `GET /provisions/{id}/diff` | `tenant-instrument.html` provision tree, Show what changed | tenant | `library.read` | no | All 7 | INV-S2, INV-S10 | shipped (a provision's versions and their text are embedded in the tree read; there is no `GET /provisions/{id}/versions`) |
+| `GET /obligations` | `tenant-inventory.html` (Obligations tab: filters, "as of", outside footprint, instrument filter with counts) | tenant | `library.read`; `key:library:read` | no | All 7; register overlay columns from chunk 8 | INV-S3, INV-S4, FP-S4 | shipped |
+| `GET /obligations/{id}` | `tenant-obligation.html` | tenant | `library.read` | no | All 7 | INV-S3, INV-S6, INV-S7 | shipped |
+| `GET /obligations/{id}/versions`, `GET /obligations/{id}/diff` | `tenant-obligation.html` version chips, Show what changed, Versions panel; `tenant-library-updates.html` Show what changed | tenant | `library.read` | no | All 7 | INV-S4, INV-S5, AGT-S10 | shipped |
+| `GET /obligations/{id}/changes` | `tenant-obligation.html` Related changes | tenant | `library.read` | no | All 7 | WAT-S6 | later chunk 5, card pending (WAT-S6 is the watch feed's own scenario) |
 | `POST /obligations/{id}/verifications` | `console-queue.html` (a Re-verification proposal applies the stamp on approval) | console | `proposals.review` | no | LE; never a tenant role | INV-S8 | designed |
-| `POST /obligations/{id}/problem-reports` | `tenant-obligation.html`, `tenant-instrument.html`, `tenant-change.html`, `tenant-library-updates.html` This looks wrong | tenant | `problems.report` | no | All 7 | INV-S7, PRO-S7, AUD-S5 | designed |
+| `POST /obligations/{id}/problem-reports` | `tenant-obligation.html`, `tenant-instrument.html`, `tenant-change.html`, `tenant-library-updates.html` This looks wrong | tenant | `problems.report` | no | All 7 | INV-S7, PRO-S7, AUD-S5 | shipped on `tenant-obligation.html` and `tenant-instrument.html`, body `{description, versionNumber?, language?}` with no "Where" select (open question for Alex, `docs/TODO_FOR_alex.md`); `tenant-change.html` and `tenant-library-updates.html` land with their own chunks. No `GET .../problem-reports` list exists yet (chunk 4, with the tenant's own proposal queue) |
 
 ### Register (chunk 8, R2)
 
