@@ -38,6 +38,11 @@ def resolve_api_key(plain: str) -> Principal | None:
         return None
     if key.tenant_id is not None:
         tenancy.activate(key.tenant_id)
+    else:
+        # A platform key's own zone is "no tenant", not "whatever the last request left
+        # active": a prior tenant-scoped request in the same connection must never leak its
+        # context into this one (H15).
+        tenancy.clear_tenant()
     throttle = timedelta(seconds=settings.API_KEY_LAST_USED_THROTTLE_SECONDS)
     if key.last_used_at is None or now - key.last_used_at > throttle:
         key.last_used_at = now
@@ -60,6 +65,12 @@ def _validate_scopes(values: Iterable[str]) -> list[str]:
     unknown = [value for value in wanted if value not in perms.ALL_SCOPES]
     if unknown:
         raise ValidationError(f"Unknown scope: {', '.join(unknown)}.", code="unknown_key")
+    # proposals:review is platform-only (D-62, ADR 0054): every key this function grants
+    # scopes to is created under a tenant (create_api_key always names one), so a request
+    # for it is refused here rather than only at the review gate.
+    platform_only = [value for value in wanted if value in perms.PLATFORM_ONLY_SCOPES]
+    if platform_only:
+        raise ValidationError(f"{', '.join(platform_only)} is platform-only; a tenant's key may not hold it.", code="unknown_key")
     return wanted
 
 

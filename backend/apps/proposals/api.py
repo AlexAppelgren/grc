@@ -1,20 +1,28 @@
 """Routes of the proposals app: auth class, permission or scope, step-up where playbook 4.2
 lists the action, no business logic (playbook 4.1).
 
-The queue is the platform console's (PRO-03): reading and deciding need
-`proposals.review`, and approving needs a fresh passkey assertion (AC-PRO2). Creating is
-open to a tenant member with `proposals.create`, a platform editor with
-`library_vocab.manage` and an agent's key with `proposals:write` (a logic gate, listed in
-`UNGATED_BY_DESIGN`). No route writes a library row: approval does, through
-apps/proposals/apply.py.
+The queue is the platform console's (PRO-03): reading and deciding need `proposals.review`
+from a person, or the scope `proposals:review` from a platform key bound to an agent
+(PRO-S13, D-62, ADR 0054); approving needs a fresh passkey assertion from a person and
+never from a key, which holds no assertion to give. `require_reviewer` below is that gate,
+in the route body rather than a decorator: `Principal.has_permission` and `has_scope` are
+kind-exclusive, so no single decorator can express "a session or a key" the way
+`@requires_permission`/`@requires_scope` express one kind alone (apps/shared/tests_library_fence.py
+reads this function back as the door's gate). Creating is open to a tenant member with
+`proposals.create`, a platform editor with `library_vocab.manage` and an agent's key with
+`proposals:write` (a logic gate, listed in `UNGATED_BY_DESIGN`). No route writes a library
+row: approval does, through apps/proposals/apply.py.
 """
 
+import uuid
+from dataclasses import replace
 from typing import Any
 
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
 from apps.proposals import logic, reading, updates
+from apps.proposals.logic import Reviewer
 from apps.proposals.schemas import (
     LibraryUpdatesPage,
     LibraryUpdatesQuery,
@@ -29,8 +37,10 @@ from apps.proposals.schemas import (
     TenantProposalQuery,
 )
 from apps.shared import permissions as perms
-from apps.shared.authentication import ApiKeyAuth, SessionAuth
-from apps.shared.permissions import requires_permission, requires_step_up
+from apps.shared.audit import Actor, ActorType
+from apps.shared.authentication import ApiKeyAuth, PrincipalKind, SessionAuth
+from apps.shared.errors import ProblemError
+from apps.shared.permissions import enforce_step_up, requires_permission
 from apps.shared.schemas import PageQuery
 from apps.taxonomy.reading import language_order
 from apps.taxonomy.http import (
@@ -48,17 +58,56 @@ from apps.taxonomy.http import (
 router = Router(tags=["Proposals"])
 
 SESSION = SessionAuth()
+REVIEWER_AUTH = [SessionAuth(), ApiKeyAuth()]
+
+
+def require_reviewer(request: HttpRequest) -> Reviewer:
+    """Who may work the review queue (PRO-S13, PRO-S14, ID-S31, D-62, ADR 0054): a person
+    holding `proposals.review`, or a platform key bound to an agent and holding the scope
+    `proposals:review`. `proposals:review` is platform-only (`PLATFORM_ONLY_SCOPES`): a key
+    carrying a tenant is refused here with 403 even if its scopes list somehow names it,
+    which is the gate's own word beside the 422 a tenant key is refused it with at creation
+    (apps/identity/api_keys_logic.py). A reviewing key that names no agent is refused too,
+    the same way the widened `proposal_four_eyes` constraint refuses it on its own: an
+    unbound platform key can never stand in for the independent second agent the scope is
+    for. Never applies a step-up: a key holds no passkey assertion, so that stays the
+    caller's own job for the one route that needs one (`approve_proposal`)."""
+    from apps.identity.models import ApiKey
+
+    who = principal(request)
+    if who.kind is PrincipalKind.AGENT:
+        if who.tenant_id is not None or not who.has_scope(perms.SCOPE_PROPOSALS_REVIEW):
+            raise ProblemError(
+                status=403,
+                code="permission_denied",
+                detail="This key does not have the scope for that.",
+                required_permission=perms.SCOPE_PROPOSALS_REVIEW,
+            )
+        key = ApiKey.objects.select_related("agent").filter(pk=who.subject_id).first()  # ordering: pk lookup, at most one row
+        version = key.agent.current_version if key is not None and key.agent is not None else None
+        label = who.agent_label if version is None else f"{who.agent_label} v{version}"
+        return Reviewer(
+            actor=Actor(kind=ActorType.AGENT, id=who.agent_id, label=label),
+            api_key_id=who.subject_id,
+            agent_id=who.agent_id,
+            api_key_prefix=key.key_prefix if key is not None else "",
+        )
+    if not who.has_permission(perms.PROPOSALS_REVIEW):
+        raise ProblemError(
+            status=403, code="permission_denied", detail="You do not have access to this.", required_permission=perms.PROPOSALS_REVIEW
+        )
+    user = caller_user(request)
+    return Reviewer(actor=actor_for(request, user), user=user)
 
 
 @router.get(
     "/proposals",
     response=ProposalPage,
-    auth=SESSION,
+    auth=REVIEWER_AUTH,
     operation_id="listProposals",
     by_alias=True,
     summary="Read the queue of changes waiting to enter the shared library",
 )
-@requires_permission(perms.PROPOSALS_REVIEW)
 @answers_problems
 def list_proposals(request: HttpRequest, query: Query[ProposalQuery]) -> ProposalPage:
     """Every change an agent or a person has asked for, with the library record each one
@@ -69,16 +118,23 @@ def list_proposals(request: HttpRequest, query: Query[ProposalQuery]) -> Proposa
     The answer is every proposal matching the filters in one page, oldest first. Nothing is
     hidden by them: `total` counts the same rows the list carries. A proposal filed inside a
     bank arrives without its proposer and says `fromOrganisation` instead, and `isMine` says
-    whether the reader filed it, which four eyes will not let them decide.
+    whether the reader filed it, which four eyes will not let them decide; it is always
+    false for the platform key of an independent agent reading the same queue (PRO-S13).
 
-    Needs the platform permission `proposals.review`. No bank role reaches it, whatever the
-    member holds inside their own organisation, and no API key scope reaches it either.
+    Needs the platform permission `proposals.review` from a person, or the platform-only
+    scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054). No
+    bank role and no tenant key reaches it either way.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without `proposals.review`; `unknown_key` (422) when `origin` is a value that is
-    neither `agent` nor `user`.
+    Errors to branch on: `unauthenticated` (401) without a session or a key;
+    `permission_denied` (403) without `proposals.review` or `proposals:review`;
+    `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`.
     """
-    me_id = principal(request).subject_id
+    reviewer = require_reviewer(request)
+    # `queue_rows()` and `logic.queue()` take a real reviewer id to test "is this mine" and
+    # to filter it out under `notMine` (apps/proposals/reading.py); an agent's key is never
+    # the proposer of a session's proposal, so a fresh id it can never equal reads the same
+    # as "nobody", without widening that function's signature for this app alone.
+    me_id = reviewer.user.id if reviewer.user is not None else uuid.uuid4()
     queryset = logic.queue(
         status=query.status,
         kind=query.kind,
@@ -192,12 +248,18 @@ def list_library_updates(request: HttpRequest, query: Query[LibraryUpdatesQuery]
 @answers_problems
 def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     # Ungated by design: logic-gate (proposals.create, library_vocab.manage or the proposals:write scope; PRO-01).
-    require_proposer(request)
+    who = require_proposer(request)
+    proposer = proposer_for(request)
+    if who.kind is PrincipalKind.AGENT and who.agent_id is not None:
+        # Copied from the key onto the proposal at this one write path, because the widened
+        # `proposal_four_eyes` constraint compares agent ids and a check constraint cannot
+        # dereference a key to find one (PRO-S13, PRO-S14, D-62, ADR 0054).
+        proposer = replace(proposer, agent_id=who.agent_id)
     proposal, created = logic.create(
         kind=body.kind,
         title=body.title,
         payload=body.payload,
-        proposer=proposer_for(request),
+        proposer=proposer,
         idempotency_key=idempotency_key(request),
         target_type=body.target_type,
         target_id=body.target_id,
@@ -245,13 +307,11 @@ def get_proposal(request: HttpRequest, proposal_id: str) -> ProposalDetail:
 @router.post(
     "/proposals/{proposal_id}/approve",
     response=ProposalRow,
-    auth=SESSION,
+    auth=REVIEWER_AUTH,
     operation_id="approveProposal",
     by_alias=True,
     summary="Approve a proposal and let the change into the shared library",
 )
-@requires_permission(perms.PROPOSALS_REVIEW)
-@requires_step_up
 @answers_problems
 def approve_proposal(
     request: HttpRequest,
@@ -275,42 +335,47 @@ def approve_proposal(
     was proposed, so the queue and the audit trail keep both. The answer is the proposal
     row as it now stands, with `status` `approved` and `appliedAt` set.
 
-    Needs the platform permission `proposals.review` and a fresh passkey step-up, whose
-    assertion id is written on the audit rows the approval leaves. The reviewer is never
-    the proposer. No API key scope reaches this call: a key holds no passkey assertion, so
-    an agent working the same queue is a separate, independent principal by construction.
+    Needs the platform permission `proposals.review` from a person, stepped up fresh: the
+    assertion id is written on the audit rows the approval leaves. Or the platform-only
+    scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): a
+    key holds no passkey assertion, so it is never asked for one, and the audit rows the
+    approval leaves carry no assertion id for its decision. Either way the reviewer is
+    never the proposer, the same key, or a key of the same agent definition: the widened
+    proposal_four_eyes constraint refuses that row on its own, whichever principal wrote
+    it.
 
-    Errors to branch on: `permission_denied` without `proposals.review`;
-    `step_up_required` when no fresh passkey assertion accompanies the call;
-    `four_eyes_violation` when the reviewer is the person who made the proposal;
-    `invalid_transition` when the proposal was already approved or rejected, which is also
-    what a repeated call answers, since nothing is ever applied twice; `source_missing`
-    when a correction introduces a field the proposal never sourced; `validation_error`
-    when a correction is offered on a kind that cannot be corrected or does not fit its
-    payload; `unknown_key` when the payload names a row the library does not hold;
-    `not_found` when there is no such proposal.
+    Errors to branch on: `permission_denied` without `proposals.review` or
+    `proposals:review`; `step_up_required` when a person calls without a fresh passkey
+    assertion; `four_eyes_violation` when the reviewer is the person, key or agent who made
+    the proposal, or a reviewing key names no agent definition; `invalid_transition` when
+    the proposal was already approved or rejected, which is also what a repeated call
+    answers, since nothing is ever applied twice; `source_missing` when a correction
+    introduces a field the proposal never sourced; `validation_error` when a correction is
+    offered on a kind that cannot be corrected or does not fit its payload; `unknown_key`
+    when the payload names a row the library does not hold; `not_found` when there is no
+    such proposal.
     """
-    reviewer = caller_user(request)
+    reviewer = require_reviewer(request)
+    step_up_assertion_id = enforce_step_up(request) if reviewer.user is not None else None
     proposal = logic.approve(
         proposal=logic.by_id(uuid_or_404(proposal_id)),
         reviewer=reviewer,
-        actor=actor_for(request, reviewer),
+        actor=reviewer.actor,
         note=body.note,
         payload_overrides=body.payload_overrides,
-        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        step_up_assertion_id=step_up_assertion_id,
     )
     return logic.row(proposal)
 
 
-@router.post("/proposals/{proposal_id}/reject", response=ProposalRow, auth=SESSION, operation_id="rejectProposal", by_alias=True)
-@requires_permission(perms.PROPOSALS_REVIEW)
+@router.post("/proposals/{proposal_id}/reject", response=ProposalRow, auth=REVIEWER_AUTH, operation_id="rejectProposal", by_alias=True)
 @answers_problems
 def reject_proposal(request: HttpRequest, proposal_id: str, body: ProposalRejectBody) -> ProposalRow:
-    reviewer = caller_user(request)
+    reviewer = require_reviewer(request)
     proposal = logic.reject(
         proposal=logic.by_id(uuid_or_404(proposal_id)),
         reviewer=reviewer,
-        actor=actor_for(request, reviewer),
+        actor=reviewer.actor,
         rejection_code=body.rejection_code,
         note=body.note,
     )

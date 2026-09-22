@@ -31,7 +31,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 8,
+            "maxItems": 9,
             "minItems": 1,
             "title": "Scopes",
             "type": "array"
@@ -228,6 +228,37 @@
           "total"
         ],
         "title": "AgentKeysPage",
+        "type": "object"
+      },
+      "AgentRef": {
+        "description": "One of the platform's research agents, named the way a screen may label it: its\ndefinition key, which never changes, and never its internal id alone (AUD-02).",
+        "examples": [
+          {
+            "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+            "key": "watch-sweeper"
+          }
+        ],
+        "properties": {
+          "id": {
+            "description": "The agent definition, as a UUID.",
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "description": "The agent definition's own key, stable and never changed, for example `watch-sweeper`.",
+            "examples": [
+              "watch-sweeper"
+            ],
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "key"
+        ],
+        "title": "AgentRef",
         "type": "object"
       },
       "AgentRunFinish": {
@@ -5649,16 +5680,19 @@
             "outsideReason": [],
             "productScope": "Third-party research",
             "provenance": {
+              "confirmedByAgent": null,
               "createdAt": "2026-02-11T08:45:03Z",
               "createdModel": "agent pipeline 0.4",
               "createdOrigin": "agent",
               "lastVerifiedAt": "2026-06-30T07:12:44Z",
+              "proposedByAgent": null,
               "sourceLabel": "FFFS 2017:2, 9 kap. 6 \u00a7",
               "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
               "verifiedBy": {
                 "id": "0a2e6b81-5f4d-4a3b-9c77-1d8e3f5a6c20",
                 "name": "Johan Ek"
-              }
+              },
+              "verifiedOrigin": "user"
             },
             "provisions": [
               {
@@ -6423,8 +6457,19 @@
         "type": "object"
       },
       "ObligationProvenance": {
-        "description": "Where the record came from and when it was last checked against its source (INV-06).\n`verifiedBy` is a platform person or null: a seeded record has never been re-verified.",
+        "description": "Where the record came from and when it was last checked against its source (INV-06).\n`verifiedBy` is a platform person or null: a seeded record has never been re-verified.\n\n`verifiedOrigin`, `confirmedByAgent` and `proposedByAgent` (INV-05, PRO-02, D-62) are a\nsecond pair of facts, about who confirmed the approval of the version now in force, not\nabout who last re-verified it: `agent` means two independent agents proposed and\nconfirmed it, naming both, and never reads as a person's verification; `user`, and\nempty for a version applied before this existed, means a person confirmed it and\nneither agent field is set. This response decides nothing itself: `verifiedBy` being\nset is a person's own later re-verification, and the screen, not this answer, is where\nthat is read as superseding the machine-confirmed label.",
         "properties": {
+          "confirmedByAgent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The independent agent that confirmed the approval, by definition key, when `verifiedOrigin` is `agent`. Null when a person confirmed it."
+          },
           "createdAt": {
             "description": "When the record was first written into the library, as a UTC timestamp. It is not the date the rule began to bind anyone: that is the version's effective date, which can be years earlier.",
             "examples": [
@@ -6466,6 +6511,17 @@
             ],
             "title": "Lastverifiedat"
           },
+          "proposedByAgent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The agent that proposed the version, by definition key, read from the approving proposal and named beside `confirmedByAgent` so a machine-confirmed record is never shown with only one agent's name. Null when a person proposed it, whoever confirmed it."
+          },
           "sourceLabel": {
             "description": "What that page is called, in the words a reader recognises, down to the place in it the record came from. A label for a person, not a citation a machine resolves.",
             "examples": [
@@ -6492,6 +6548,15 @@
               }
             ],
             "description": "The bleqq platform person who last confirmed this record against its source, by id and name, or null when nobody has. Never a member of a bank: re-verifying a shared fact is bleqq's own check, and a bank reading the record leaves nothing here."
+          },
+          "verifiedOrigin": {
+            "default": "",
+            "description": "Who confirmed the approval of the version now in force: `agent` when a second, independent agent did, `user` when a person did. Empty for a version applied before this existed, which reads the same as `user`: a person's approval, unlabelled. Never confuse this with `verifiedBy`, which is a later re-verification.",
+            "examples": [
+              "agent"
+            ],
+            "title": "Verifiedorigin",
+            "type": "string"
           }
         },
         "required": [
@@ -20039,7 +20104,7 @@
     },
     "/api/v1/proposals": {
       "get": {
-        "description": "Every change an agent or a person has asked for, with the library record each one\nwould change named by its own title and reference, so a reviewer can work the queue\nwithout opening each proposal. Call it for the console's Waiting, Approved and Rejected\ntabs, each of which is this call with its own `status`.\n\nThe answer is every proposal matching the filters in one page, oldest first. Nothing is\nhidden by them: `total` counts the same rows the list carries. A proposal filed inside a\nbank arrives without its proposer and says `fromOrganisation` instead, and `isMine` says\nwhether the reader filed it, which four eyes will not let them decide.\n\nNeeds the platform permission `proposals.review`. No bank role reaches it, whatever the\nmember holds inside their own organisation, and no API key scope reaches it either.\n\nErrors to branch on: `unauthenticated` (401) without a session; `permission_denied`\n(403) without `proposals.review`; `unknown_key` (422) when `origin` is a value that is\nneither `agent` nor `user`.",
+        "description": "Every change an agent or a person has asked for, with the library record each one\nwould change named by its own title and reference, so a reviewer can work the queue\nwithout opening each proposal. Call it for the console's Waiting, Approved and Rejected\ntabs, each of which is this call with its own `status`.\n\nThe answer is every proposal matching the filters in one page, oldest first. Nothing is\nhidden by them: `total` counts the same rows the list carries. A proposal filed inside a\nbank arrives without its proposer and says `fromOrganisation` instead, and `isMine` says\nwhether the reader filed it, which four eyes will not let them decide; it is always\nfalse for the platform key of an independent agent reading the same queue (PRO-S13).\n\nNeeds the platform permission `proposals.review` from a person, or the platform-only\nscope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054). No\nbank role and no tenant key reaches it either way.\n\nErrors to branch on: `unauthenticated` (401) without a session or a key;\n`permission_denied` (403) without `proposals.review` or `proposals:review`;\n`unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`.",
         "operationId": "listProposals",
         "parameters": [
           {
@@ -20172,6 +20237,9 @@
         "security": [
           {
             "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
           }
         ],
         "summary": "Read the queue of changes waiting to enter the shared library",
@@ -20268,7 +20336,7 @@
     },
     "/api/v1/proposals/{proposal_id}/approve": {
       "post": {
-        "description": "The only door into the shared library. Call it once a reviewer has read the\nproposal, opened its sources and satisfied themselves that the facts are right; what\nit applies is what every bank on the platform will read as the library's own text.\n\nIn one transaction it applies the payload, writes the new library version, writes the\naudit rows for the library record and for the proposal, and re-indexes the record for\nsearch: all of it commits or none of it does. The reviewer may correct the payload on\nthe way through with `payloadOverrides`, and what they approved is stored beside what\nwas proposed, so the queue and the audit trail keep both. The answer is the proposal\nrow as it now stands, with `status` `approved` and `appliedAt` set.\n\nNeeds the platform permission `proposals.review` and a fresh passkey step-up, whose\nassertion id is written on the audit rows the approval leaves. The reviewer is never\nthe proposer. No API key scope reaches this call: a key holds no passkey assertion, so\nan agent working the same queue is a separate, independent principal by construction.\n\nErrors to branch on: `permission_denied` without `proposals.review`;\n`step_up_required` when no fresh passkey assertion accompanies the call;\n`four_eyes_violation` when the reviewer is the person who made the proposal;\n`invalid_transition` when the proposal was already approved or rejected, which is also\nwhat a repeated call answers, since nothing is ever applied twice; `source_missing`\nwhen a correction introduces a field the proposal never sourced; `validation_error`\nwhen a correction is offered on a kind that cannot be corrected or does not fit its\npayload; `unknown_key` when the payload names a row the library does not hold;\n`not_found` when there is no such proposal.",
+        "description": "The only door into the shared library. Call it once a reviewer has read the\nproposal, opened its sources and satisfied themselves that the facts are right; what\nit applies is what every bank on the platform will read as the library's own text.\n\nIn one transaction it applies the payload, writes the new library version, writes the\naudit rows for the library record and for the proposal, and re-indexes the record for\nsearch: all of it commits or none of it does. The reviewer may correct the payload on\nthe way through with `payloadOverrides`, and what they approved is stored beside what\nwas proposed, so the queue and the audit trail keep both. The answer is the proposal\nrow as it now stands, with `status` `approved` and `appliedAt` set.\n\nNeeds the platform permission `proposals.review` from a person, stepped up fresh: the\nassertion id is written on the audit rows the approval leaves. Or the platform-only\nscope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): a\nkey holds no passkey assertion, so it is never asked for one, and the audit rows the\napproval leaves carry no assertion id for its decision. Either way the reviewer is\nnever the proposer, the same key, or a key of the same agent definition: the widened\nproposal_four_eyes constraint refuses that row on its own, whichever principal wrote\nit.\n\nErrors to branch on: `permission_denied` without `proposals.review` or\n`proposals:review`; `step_up_required` when a person calls without a fresh passkey\nassertion; `four_eyes_violation` when the reviewer is the person, key or agent who made\nthe proposal, or a reviewing key names no agent definition; `invalid_transition` when\nthe proposal was already approved or rejected, which is also what a repeated call\nanswers, since nothing is ever applied twice; `source_missing` when a correction\nintroduces a field the proposal never sourced; `validation_error` when a correction is\noffered on a kind that cannot be corrected or does not fit its payload; `unknown_key`\nwhen the payload names a row the library does not hold; `not_found` when there is no\nsuch proposal.",
         "operationId": "approveProposal",
         "parameters": [
           {
@@ -20308,6 +20376,9 @@
         "security": [
           {
             "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
           }
         ],
         "summary": "Approve a proposal and let the change into the shared library",
@@ -20355,6 +20426,9 @@
         "security": [
           {
             "SessionAuth": []
+          },
+          {
+            "ApiKeyAuth": []
           }
         ],
         "summary": "Reject Proposal",

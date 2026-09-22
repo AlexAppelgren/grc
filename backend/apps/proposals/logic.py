@@ -1,16 +1,21 @@
 """Business logic of the proposals app (PRO-01, PRO-02, AC-PRO1, AC-PRO2, VOC-07).
 
 A proposal is the only door into the library. People and agents create them here; a
-second person approves one here, and apps/proposals/apply.py applies its payload inside
-`library_write()` in the same transaction as the approval's audit row. Nothing here writes
-a library row, which is why this module names no `LibraryModel` class (the library fence's
-AST guard, apps/shared/tests_library_fence.py); the library rows a proposal points at and
-cites are looked up through apps/library/reading.py, which is where every library read
-lives.
+second, independent principal decides one here — a person, or a platform key bound to an
+agent and holding `proposals:review` (PRO-S13, D-62, ADR 0054) — and apps/proposals/apply.py
+applies its payload inside `library_write()` in the same transaction as the approval's
+audit row. Nothing here writes a library row, which is why this module names no
+`LibraryModel` class (the library fence's AST guard, apps/shared/tests_library_fence.py);
+the library rows a proposal points at and cites are looked up through
+apps/library/reading.py, which is where every library read lives.
 
-Four eyes (AC-PRO2) is checked here and by the `proposal_four_eyes` check constraint; the
-API answers 409 `four_eyes_violation`. An agent's proposal has no proposing user, so any
-reviewer may decide it.
+Four eyes (AC-PRO2) is checked here, in `_decidable`, and by the widened
+`proposal_four_eyes` check constraint on the same three pairs of columns; the API answers
+409 `four_eyes_violation`. The `Reviewer` below is who decided, a person or an agent, never
+a bare `User`; `_decidable` refuses a repeated user, a repeated key or a repeated agent
+definition, and a reviewing key that names no agent, so an unbound platform key can never
+stand in for the independent second agent the scope is for. A proposal with no proposing
+user, key or agent (none of the three match) may be decided by any reviewer.
 
 A proposal made inside a tenant (a bank's own person or its agent key) is linked to that
 tenant through `ProposalTenant`, a tenant table under forced row-level security, and its
@@ -99,11 +104,31 @@ class Proposer:
     actor: Actor
     user: Any = None
     api_key_id: uuid.UUID | None = None
+    agent_id: uuid.UUID | None = None
     agent_run_id: uuid.UUID | None = None
 
     @property
     def origin(self) -> OriginType:
         return OriginType.USER if self.user is not None else OriginType.AGENT
+
+
+@dataclass(frozen=True)
+class Reviewer:
+    """Who decides: a person (session) holding `proposals.review`, or an agent (a platform
+    API key) holding the scope `proposals:review` (PRO-S13, D-62, ADR 0054). Exactly one of
+    `user` and `api_key_id` is set; `agent_id` names the key's agent definition, which the
+    widened `proposal_four_eyes` constraint compares against the proposer's own.
+
+    `Principal.has_permission` and `has_scope` are kind-exclusive, so one decorator cannot
+    express "a session or a key"; `apps.proposals.api.require_reviewer` builds this from
+    whichever principal called, and every function below decides on it rather than on a
+    bare `User`."""
+
+    actor: Actor
+    user: Any = None
+    api_key_id: uuid.UUID | None = None
+    agent_id: uuid.UUID | None = None
+    api_key_prefix: str = ""
 
 
 # ---------------------------------------------------------------------------------------
@@ -402,6 +427,7 @@ def create(
         agent_run_id=agent_run_id or proposer.agent_run_id,
         proposed_by_user=proposer.user,
         proposed_by_api_key_id=proposer.api_key_id,
+        proposed_by_agent_id=proposer.agent_id,
         idempotency_key=idempotency_key or None,
         status=ProposalStatus.OPEN.value,
         proposed_in_tenant=tenant_id is not None,
@@ -525,17 +551,49 @@ def row(proposal: Proposal) -> ProposalRow:
 # ---------------------------------------------------------------------------------------
 # Deciding
 # ---------------------------------------------------------------------------------------
-def _decidable(proposal: Proposal, reviewer: Any) -> None:
+def _decidable(proposal: Proposal, reviewer: Reviewer) -> None:
+    """Four eyes, checked here so the API answers before the database does (AC-PRO2); the
+    widened `proposal_four_eyes` constraint is the same rule and answers on its own if this
+    is ever bypassed. A repeated user, a repeated key or a repeated agent definition is the
+    same principal twice by construction, whichever pair of columns it shows up on; a
+    reviewing key that names no agent is refused too, so an unbound platform key can never
+    stand in for independence (PRO-S13, PRO-S14, D-62, ADR 0054)."""
     if proposal.status != ProposalStatus.OPEN.value:
         raise ValidationError("This proposal has already been decided.", code="invalid_transition")
-    if proposal.proposed_by_user_id is not None and proposal.proposed_by_user_id == reviewer.id:
+    if reviewer.api_key_id is not None and reviewer.agent_id is None:
         raise ValidationError(
-            "A proposal is decided by someone other than the person who made it.",
+            "A reviewing key must be bound to an agent definition.",
+            code="four_eyes_violation",
+        )
+    same_user = reviewer.user is not None and proposal.proposed_by_user_id == reviewer.user.id
+    same_key = reviewer.api_key_id is not None and proposal.proposed_by_api_key_id == reviewer.api_key_id
+    same_agent = reviewer.agent_id is not None and proposal.proposed_by_agent_id == reviewer.agent_id
+    if same_user or same_key or same_agent:
+        raise ValidationError(
+            "A proposal is decided by someone other than the person, key or agent who made it.",
             code="four_eyes_violation",
         )
 
 
-def corrected(proposal: Proposal, reviewer: Any, overrides: dict[str, Any]) -> dict[str, Any]:
+def as_reviewer(reviewer: "Reviewer | Any", actor: Actor) -> Reviewer:
+    """Every caller before T25 passed the deciding person as a bare `User`; the queue and
+    the tests built against that contract still do. Normalize it into a `Reviewer` with no
+    key and no agent, rather than pushing the change out to every existing call site."""
+    if isinstance(reviewer, Reviewer):
+        return reviewer
+    return Reviewer(actor=actor, user=reviewer)
+
+
+def _reviewer_facts(reviewer: Reviewer) -> dict[str, Any]:
+    """What a decision's audit row names beside the actor label (AUD-01, AUD-02, AUD-S9):
+    the key an agent used, by its public prefix and never its internal id alone. Empty for
+    a person, whose audit row already carries no key at all."""
+    if reviewer.api_key_id is None:
+        return {}
+    return {"reviewingApiKeyPrefix": reviewer.api_key_prefix}
+
+
+def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any]) -> dict[str, Any]:
     """The payload as the reviewer corrected it, checked as firmly as the one that arrived
     (PRO-02, AC-PRO1).
 
@@ -559,7 +617,7 @@ def corrected(proposal: Proposal, reviewer: Any, overrides: dict[str, Any]) -> d
     parsed = validated_payload(proposal.kind, merged)
     check_field_sources(parsed, proposal.field_sources)
     proposal.corrected_payload = payload_dict(parsed)
-    proposal.corrected_by = reviewer
+    proposal.corrected_by = reviewer.user
     proposal.corrected_at = timezone.now()
     # The row's own date follows the correction, because a queue row that showed one date
     # while the version carried another would be a proposal nobody could read straight
@@ -571,30 +629,37 @@ def corrected(proposal: Proposal, reviewer: Any, overrides: dict[str, Any]) -> d
 def approve(
     *,
     proposal: Proposal,
-    reviewer: Any,
+    reviewer: "Reviewer | Any",
     actor: Actor,
     note: str,
     payload_overrides: dict[str, Any] | None = None,
-    step_up_assertion_id: uuid.UUID,
+    step_up_assertion_id: uuid.UUID | None,
 ) -> Proposal:
     """Apply the payload and approve, in one transaction (PRO-02): the library row, its
     audit row and the proposal's own audit row commit together or not at all.
 
     A reviewer may correct the payload on the way through (`payload_overrides`). What they
     approved is stored beside what was proposed, as their own correction, so the queue and
-    the audit trail keep both.
+    the audit trail keep both. `step_up_assertion_id` is null for an agent's decision: a key
+    holds no passkey assertion (PRO-S13, D-62, ADR 0054).
+
+    `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
+    older caller; `as_reviewer` normalizes either into the same shape below.
     """
     from apps.proposals import apply
 
+    reviewer = as_reviewer(reviewer, actor)
     _decidable(proposal, reviewer)
-    decided = ["status", "reviewed_by", "reviewed_at", "applied_at", "review_note"]
+    decided = ["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "applied_at", "review_note"]
     if payload_overrides:
         corrected(proposal, reviewer, payload_overrides)
         decided += ["corrected_payload", "corrected_by", "corrected_at", "effective_from"]
     apply.apply(proposal, actor=actor, reviewer=reviewer, step_up=step_up_assertion_id)
     now = timezone.now()
     proposal.status = ProposalStatus.APPROVED.value
-    proposal.reviewed_by = reviewer
+    proposal.reviewed_by = reviewer.user
+    proposal.reviewed_by_api_key_id = reviewer.api_key_id
+    proposal.reviewed_by_agent_id = reviewer.agent_id
     proposal.reviewed_at = now
     proposal.applied_at = now
     proposal.review_note = note.strip()
@@ -608,19 +673,28 @@ def approve(
         summary=f"Approved: {proposal.title}",
         tenant_id=None,
         before={"status": ProposalStatus.OPEN.value},
-        after={"status": proposal.status, "note": proposal.review_note, "corrected": proposal.corrected_payload is not None},
+        after={
+            "status": proposal.status,
+            "note": proposal.review_note,
+            "corrected": proposal.corrected_payload is not None,
+            **_reviewer_facts(reviewer),
+        },
         step_up_assertion_id=step_up_assertion_id,
     )
     return proposal
 
 
-def reject(*, proposal: Proposal, reviewer: Any, actor: Actor, rejection_code: str, note: str) -> Proposal:
+def reject(*, proposal: Proposal, reviewer: "Reviewer | Any", actor: Actor, rejection_code: str, note: str) -> Proposal:
     """A rejection needs a reason (PRO-01): a code the proposer's screen can branch on and a
     sentence they can read. The code is a live row of the `rejection_reason` library list, an
     admin's to extend and retire, so a code from an older screen or a retired row is refused
-    rather than stored as a reason nobody can look up. The outbox event is what tells them."""
+    rather than stored as a reason nobody can look up. The outbox event is what tells them.
+
+    `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
+    older caller; `as_reviewer` normalizes either into the same shape below."""
     from apps.taxonomy.registry import REGISTRY
 
+    reviewer = as_reviewer(reviewer, actor)
     code = rejection_code.strip()
     text = note.strip()
     if not code or not text:
@@ -644,11 +718,15 @@ def reject(*, proposal: Proposal, reviewer: Any, actor: Actor, rejection_code: s
         )
     _decidable(proposal, reviewer)
     proposal.status = ProposalStatus.REJECTED.value
-    proposal.reviewed_by = reviewer
+    proposal.reviewed_by = reviewer.user
+    proposal.reviewed_by_api_key_id = reviewer.api_key_id
+    proposal.reviewed_by_agent_id = reviewer.agent_id
     proposal.reviewed_at = timezone.now()
     proposal.rejection_code = code
     proposal.review_note = text
-    proposal.save(update_fields=["status", "reviewed_by", "reviewed_at", "rejection_code", "review_note"])
+    proposal.save(
+        update_fields=["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "rejection_code", "review_note"]
+    )
     record(
         action="proposal.rejected",
         actor=actor,
@@ -658,7 +736,7 @@ def reject(*, proposal: Proposal, reviewer: Any, actor: Actor, rejection_code: s
         summary=f"Rejected: {proposal.title}",
         tenant_id=None,
         before={"status": ProposalStatus.OPEN.value},
-        after={"status": proposal.status, "rejectionCode": code, "note": text},
+        after={"status": proposal.status, "rejectionCode": code, "note": text, **_reviewer_facts(reviewer)},
         topic="proposal.rejected",
     )
     return proposal

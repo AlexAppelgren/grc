@@ -2104,14 +2104,16 @@ export interface paths {
          *     The answer is every proposal matching the filters in one page, oldest first. Nothing is
          *     hidden by them: `total` counts the same rows the list carries. A proposal filed inside a
          *     bank arrives without its proposer and says `fromOrganisation` instead, and `isMine` says
-         *     whether the reader filed it, which four eyes will not let them decide.
+         *     whether the reader filed it, which four eyes will not let them decide; it is always
+         *     false for the platform key of an independent agent reading the same queue (PRO-S13).
          *
-         *     Needs the platform permission `proposals.review`. No bank role reaches it, whatever the
-         *     member holds inside their own organisation, and no API key scope reaches it either.
+         *     Needs the platform permission `proposals.review` from a person, or the platform-only
+         *     scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054). No
+         *     bank role and no tenant key reaches it either way.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without `proposals.review`; `unknown_key` (422) when `origin` is a value that is
-         *     neither `agent` nor `user`.
+         *     Errors to branch on: `unauthenticated` (401) without a session or a key;
+         *     `permission_denied` (403) without `proposals.review` or `proposals:review`;
+         *     `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`.
          */
         get: operations["listProposals"];
         put?: never;
@@ -2179,20 +2181,25 @@ export interface paths {
          *     was proposed, so the queue and the audit trail keep both. The answer is the proposal
          *     row as it now stands, with `status` `approved` and `appliedAt` set.
          *
-         *     Needs the platform permission `proposals.review` and a fresh passkey step-up, whose
-         *     assertion id is written on the audit rows the approval leaves. The reviewer is never
-         *     the proposer. No API key scope reaches this call: a key holds no passkey assertion, so
-         *     an agent working the same queue is a separate, independent principal by construction.
+         *     Needs the platform permission `proposals.review` from a person, stepped up fresh: the
+         *     assertion id is written on the audit rows the approval leaves. Or the platform-only
+         *     scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): a
+         *     key holds no passkey assertion, so it is never asked for one, and the audit rows the
+         *     approval leaves carry no assertion id for its decision. Either way the reviewer is
+         *     never the proposer, the same key, or a key of the same agent definition: the widened
+         *     proposal_four_eyes constraint refuses that row on its own, whichever principal wrote
+         *     it.
          *
-         *     Errors to branch on: `permission_denied` without `proposals.review`;
-         *     `step_up_required` when no fresh passkey assertion accompanies the call;
-         *     `four_eyes_violation` when the reviewer is the person who made the proposal;
-         *     `invalid_transition` when the proposal was already approved or rejected, which is also
-         *     what a repeated call answers, since nothing is ever applied twice; `source_missing`
-         *     when a correction introduces a field the proposal never sourced; `validation_error`
-         *     when a correction is offered on a kind that cannot be corrected or does not fit its
-         *     payload; `unknown_key` when the payload names a row the library does not hold;
-         *     `not_found` when there is no such proposal.
+         *     Errors to branch on: `permission_denied` without `proposals.review` or
+         *     `proposals:review`; `step_up_required` when a person calls without a fresh passkey
+         *     assertion; `four_eyes_violation` when the reviewer is the person, key or agent who made
+         *     the proposal, or a reviewing key names no agent definition; `invalid_transition` when
+         *     the proposal was already approved or rejected, which is also what a repeated call
+         *     answers, since nothing is ever applied twice; `source_missing` when a correction
+         *     introduces a field the proposal never sourced; `validation_error` when a correction is
+         *     offered on a kind that cannot be corrected or does not fit its payload; `unknown_key`
+         *     when the payload names a row the library does not hold; `not_found` when there is no
+         *     such proposal.
          */
         post: operations["approveProposal"];
         delete?: never;
@@ -3436,6 +3443,29 @@ export interface components {
             items: components["schemas"]["AgentKeyOut"][];
             /** Total */
             total: number;
+        };
+        /**
+         * AgentRef
+         * @description One of the platform's research agents, named the way a screen may label it: its
+         *     definition key, which never changes, and never its internal id alone (AUD-02).
+         * @example {
+         *       "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *       "key": "watch-sweeper"
+         *     }
+         */
+        AgentRef: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The agent definition, as a UUID.
+             */
+            id: string;
+            /**
+             * Key
+             * @description The agent definition's own key, stable and never changed, for example `watch-sweeper`.
+             * @example watch-sweeper
+             */
+            key: string;
         };
         /**
          * AgentRunFinish
@@ -6812,16 +6842,19 @@ export interface components {
          *       "outsideReason": [],
          *       "productScope": "Third-party research",
          *       "provenance": {
+         *         "confirmedByAgent": null,
          *         "createdAt": "2026-02-11T08:45:03Z",
          *         "createdModel": "agent pipeline 0.4",
          *         "createdOrigin": "agent",
          *         "lastVerifiedAt": "2026-06-30T07:12:44Z",
+         *         "proposedByAgent": null,
          *         "sourceLabel": "FFFS 2017:2, 9 kap. 6 §",
          *         "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
          *         "verifiedBy": {
          *           "id": "0a2e6b81-5f4d-4a3b-9c77-1d8e3f5a6c20",
          *           "name": "Johan Ek"
-         *         }
+         *         },
+         *         "verifiedOrigin": "user"
          *       },
          *       "provisions": [
          *         {
@@ -7434,8 +7467,19 @@ export interface components {
          * ObligationProvenance
          * @description Where the record came from and when it was last checked against its source (INV-06).
          *     `verifiedBy` is a platform person or null: a seeded record has never been re-verified.
+         *
+         *     `verifiedOrigin`, `confirmedByAgent` and `proposedByAgent` (INV-05, PRO-02, D-62) are a
+         *     second pair of facts, about who confirmed the approval of the version now in force, not
+         *     about who last re-verified it: `agent` means two independent agents proposed and
+         *     confirmed it, naming both, and never reads as a person's verification; `user`, and
+         *     empty for a version applied before this existed, means a person confirmed it and
+         *     neither agent field is set. This response decides nothing itself: `verifiedBy` being
+         *     set is a person's own later re-verification, and the screen, not this answer, is where
+         *     that is read as superseding the machine-confirmed label.
          */
         ObligationProvenance: {
+            /** @description The independent agent that confirmed the approval, by definition key, when `verifiedOrigin` is `agent`. Null when a person confirmed it. */
+            confirmedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Createdat
              * Format: date-time
@@ -7461,6 +7505,8 @@ export interface components {
              * @example 2026-06-30T07:12:44Z
              */
             lastVerifiedAt: string | null;
+            /** @description The agent that proposed the version, by definition key, read from the approving proposal and named beside `confirmedByAgent` so a machine-confirmed record is never shown with only one agent's name. Null when a person proposed it, whoever confirmed it. */
+            proposedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Sourcelabel
              * @description What that page is called, in the words a reader recognises, down to the place in it the record came from. A label for a person, not a citation a machine resolves.
@@ -7475,6 +7521,13 @@ export interface components {
             sourceUrl: string;
             /** @description The bleqq platform person who last confirmed this record against its source, by id and name, or null when nobody has. Never a member of a bank: re-verifying a shared fact is bleqq's own check, and a bank reading the record leaves nothing here. */
             verifiedBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Verifiedorigin
+             * @description Who confirmed the approval of the version now in force: `agent` when a second, independent agent did, `user` when a person did. Empty for a version applied before this existed, which reads the same as `user`: a person's approval, unlabelled. Never confuse this with `verifiedBy`, which is a later re-verification.
+             * @default
+             * @example agent
+             */
+            verifiedOrigin: string;
         };
         /**
          * ObligationProvisionRef

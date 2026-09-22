@@ -120,7 +120,7 @@ from django.test import SimpleTestCase
 
 from apps.identity import roles_logic
 from apps.shared import permissions as perms
-from apps.shared.authentication import Principal, PrincipalKind, SessionAuth
+from apps.shared.authentication import ApiKeyAuth, Principal, PrincipalKind, SessionAuth
 from apps.shared.routes import RegisteredOperation, iter_operations
 from apps.shared.tenancy import LibraryModel
 from config.api import api
@@ -289,6 +289,11 @@ APPLY_REVERIFICATION: Node = ("apps.proposals.apply", "apply_reverification")
 APPROVE: Node = ("apps.proposals.logic", "approve")
 WATCH_WRITE: Node = ("apps.watch.write", "watch_write")
 CHANGE_WRITER: Node = ("apps.watch.api", "require_change_writer")
+# The body-level gate `approveProposal` carries instead of a decorator (PRO-S13, D-62, ADR
+# 0054): `Principal.has_permission` and `has_scope` are kind-exclusive, so no single
+# decorator can express "a session holding the permission or a key holding the scope", and
+# this function is the door's own word on who may pass either way.
+REQUIRE_REVIEWER: Node = ("apps.proposals.api", "require_reviewer")
 # Each route that may reach a library write, and the one function opening library_write()
 # it may reach. The stamp is chunk 3's POST /obligations/{id}/verifications (INV-S8).
 LIBRARY_WRITING_ROUTES: dict[str, Node] = {
@@ -538,6 +543,12 @@ class ProposalDoorGuard(SimpleTestCase):
         )
 
     def test_a_route_reaching_a_library_write_needs_proposals_review_a_step_up_and_a_person(self) -> None:
+        """Amended for PRO-S13, PRO-S14 and ID-S31 (D-62, ADR 0054), strengthened rather
+        than dropped: `approveProposal` is the one route the second, independent principal
+        may now be an agent for, so its gate is `require_reviewer()` in the route body, not
+        a decorator, and it accepts a key beside a session. Every other route that reaches a
+        library write is exactly as before: `proposals.review`, a fresh step-up and a
+        person's session alone."""
         index = code_index()
         # The watch routes are the exception the guard now knows (D-64): they write a sighting,
         # not the inventory, and are gated instead by the two tests below.
@@ -549,11 +560,60 @@ class ProposalDoorGuard(SimpleTestCase):
         self.assertTrue(writing, "no route reaches a library write; the walk is broken")
         for operation in writing:
             with self.subTest(route=_label(operation)):
-                self.assertEqual(perms.gate_of(operation.view_func), perms.Gate("permission", perms.PROPOSALS_REVIEW))
-                self.assertTrue(perms.step_up_of(operation.view_func), "a library write needs a fresh passkey assertion")
-                self.assertTrue(operation.auth, "a library write needs a signed-in person")
-                for auth in operation.auth:
-                    self.assertIsInstance(auth, SessionAuth, "no API key reaches a library write")
+                node = view_node(operation)
+                if operation.operation_id == "approveProposal":
+                    self.assertIsNone(
+                        perms.gate_of(operation.view_func),
+                        "approveProposal takes no single decorator gate: require_reviewer() decides per principal",
+                    )
+                    self.assertIn(
+                        REQUIRE_REVIEWER,
+                        index.edges[node],
+                        "approveProposal must call require_reviewer(), the one function admitting a session or a reviewing key",
+                    )
+                    self.assertEqual(
+                        {type(auth) for auth in operation.auth},
+                        {SessionAuth, ApiKeyAuth},
+                        "approveProposal accepts a session and a key, and nothing else",
+                    )
+                else:
+                    self.assertEqual(perms.gate_of(operation.view_func), perms.Gate("permission", perms.PROPOSALS_REVIEW))
+                    self.assertTrue(perms.step_up_of(operation.view_func), "a library write needs a fresh passkey assertion")
+                    self.assertTrue(operation.auth, "a library write needs a signed-in person")
+                    for auth in operation.auth:
+                        self.assertIsInstance(auth, SessionAuth, "no API key reaches a library write")
+
+    def test_a_reviewing_key_needs_the_scope_and_never_a_tenant_role_or_key(self) -> None:
+        """The claims `require_reviewer()` rests on, checked rather than described: it names
+        the platform-only scope for a key and the unchanged permission for a person, and
+        neither is ever handed to a tenant role or, for the permission, to a key's
+        principal at all (PRO-S13, ID-S31, D-62, ADR 0054)."""
+        index = code_index()
+        named = {
+            name
+            for module, name in index.edges[REQUIRE_REVIEWER]
+            if module == "apps.shared.permissions" and name.isupper()
+        }
+        self.assertEqual(
+            {"SCOPE_PROPOSALS_REVIEW", "PROPOSALS_REVIEW"} & named,
+            {"SCOPE_PROPOSALS_REVIEW", "PROPOSALS_REVIEW"},
+            "require_reviewer must name the scope for a key and the permission for a person",
+        )
+        self.assertIn(perms.SCOPE_PROPOSALS_REVIEW, perms.PLATFORM_ONLY_SCOPES, "the review scope is platform-only, like the permission")
+        tenant_roles = [key for key in perms.SYSTEM_ROLES if key not in roles_logic.PLATFORM_ROLE_LABELS]
+        for key in tenant_roles:
+            self.assertNotIn(perms.PROPOSALS_REVIEW, perms.SYSTEM_ROLES[key], f"the tenant role {key!r}")
+        with self.assertRaises(ValidationError):
+            roles_logic._validate_permissions([perms.PROPOSALS_REVIEW])
+        # A key's principal never passes a permission gate, whatever tenant it carries or
+        # scope it lists: the scope check inside require_reviewer is the whole of its gate.
+        agent = Principal(
+            kind=PrincipalKind.AGENT,
+            subject_id=uuid.uuid4(),
+            tenant_id=uuid.uuid4(),
+            scopes=perms.ALL_SCOPES | {perms.PROPOSALS_REVIEW},
+        )
+        self.assertFalse(agent.has_permission(perms.PROPOSALS_REVIEW))
 
     def test_a_watch_route_is_gated_as_its_map_says_and_reaches_nothing_but_the_watch_door(self) -> None:
         index = code_index()
@@ -705,8 +765,10 @@ class ProposalDoorGuard(SimpleTestCase):
         # A tenant's own role is refused it by the role editor.
         with self.assertRaises(ValidationError):
             roles_logic._validate_permissions([perms.PROPOSALS_REVIEW])
-        # No scope is named for it, and a key's principal never passes a permission gate.
-        self.assertNotIn(perms.PROPOSALS_REVIEW.replace(".", ":"), perms.ALL_SCOPES)
+        # D-62/ADR 0054: an independent agent may hold the scope now, but only a platform
+        # key, never a tenant's, and a key's principal never passes a permission gate.
+        self.assertIn(perms.SCOPE_PROPOSALS_REVIEW, perms.ALL_SCOPES)
+        self.assertIn(perms.SCOPE_PROPOSALS_REVIEW, perms.PLATFORM_ONLY_SCOPES)
         agent = Principal(
             kind=PrincipalKind.AGENT,
             subject_id=uuid.uuid4(),

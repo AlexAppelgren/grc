@@ -195,6 +195,12 @@ class IdentityLookupMode(TestCase):
             # `manage.py seed_e2e` refuses to run on a deployed environment — and a seed
             # that could not leave a bank's zone could not seed the shared library at all.
             "apps/shared/e2e_seed.py",
+            # Resolving a platform API key (D-62, ADR 0054): `api_key.tenant_id` is null for
+            # a key bound to an agent, and the row it authenticates as belongs to no tenant.
+            # The request that carries it may be the first on this connection since a
+            # tenant-scoped one, so its own zone is asserted rather than inherited from
+            # whatever the last request left active.
+            "apps/identity/api_keys_logic.py",
         }
         offenders = [
             caller

@@ -54,7 +54,7 @@ from apps.identity.models import (
 )
 from apps.identity.tests_webauthn_support import SoftwareAuthenticator
 from apps.library.seeds import seed_languages
-from apps.shared import factories, permissions as perms
+from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.authentication import ApiKeyAuth
 from apps.shared.models import AuditEvent
@@ -922,12 +922,71 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.activate(self.tenant)
         self.assertFalse(Membership.objects.filter(tenant=self.tenant, user=late).exists())
 
-    @skip("pending: ID-S31 (D-62, chunk 4 c4-agent-approver)")
     def test_id_s31(self) -> None:
         """ID-S31
 
         The review scope reaches the queue and never a library row (ID-10, AC-PRO1, AC-ID3).
         """
+        from apps.agents import testing as agents_testing
+        from apps.library.seeds import seed_jurisdictions
+        from apps.shared.audit import Actor
+        from apps.taxonomy.models import Flag
+        from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+        from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
+
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        ensure_tenant_vocabularies(self.tenant, actor=Actor.system("test"))
+
+        proposer_key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        agent_headers = {"HTTP_X_API_KEY": proposer_key.plain_key}
+        made = self._post(
+            "/proposals",
+            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}},
+            **agent_headers,
+        )
+        self.assertEqual(made.status_code, 201, made.content)
+        second = self._post(
+            "/proposals",
+            {"kind": "vocabulary_create", "title": "Add the flag Sanctioned", "payload": {"list": "flag", "key": "sanctioned", "labels": {"en": "Sanctioned"}}},
+            **agent_headers,
+        )
+        self.assertEqual(second.status_code, 201, second.content)
+
+        # A platform key bound to an agent definition, holding proposals:review, reads the
+        # queue and approves, corrects or rejects a proposal it did not file.
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        reviewer_key = agents_testing.reviewer_api_key()
+        reviewer = {"HTTP_X_API_KEY": reviewer_key.plain_key}
+        listed = self.client.get("/api/v1/proposals?status=open", **reviewer)
+        self.assertEqual(listed.status_code, 200, listed.content)
+        self.assertIn(made.json()["id"], [row["id"] for row in listed.json()["items"]])
+        approved = self._post(f"/proposals/{made.json()['id']}/approve", {"note": "Agreed."}, **reviewer)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertTrue(Flag.objects.filter(key="client_money").exists(), "the change reached the library only through apply")
+        rejected = self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists."}, **reviewer)
+        self.assertEqual(rejected.status_code, 200, rejected.content)
+
+        # A key without proposals:review answers 403 naming the missing scope; every
+        # instrument, provision, obligation and vocabulary route it might try to write
+        # directly answers 403 or does not exist, exactly as ID-S21 already proves for
+        # every scope (AC-PRO1).
+        no_scope = factories.api_key(self.tenant, scopes=("changes:write",))
+        denied = self.client.get("/api/v1/proposals", **{"HTTP_X_API_KEY": no_scope.plain_key})
+        self.assertEqual(denied.status_code, 403, denied.content)
+        self.assertEqual(denied.json()["requiredPermission"], perms.SCOPE_PROPOSALS_REVIEW)
+        self.assertEqual(self._post("/vocab/flag", {"labels": {"en": "x"}}, **reviewer).status_code, 401)
+
+        # A key tries a step-up: there is no path for it. A key holds no assertion, and the
+        # review routes ask for none: the ceremony itself answers unauthenticated to a key.
+        self.assertEqual(self._post("/auth/step-up/options", **reviewer).status_code, 401)
+
+        # A tenant key carrying proposals:review is refused: the scope is platform-only.
+        headers = sign_in(self.admin, tenant=self.tenant, step_up=True)
+        refused = self._post("/tenant/api-keys", {"name": "Rogue reviewer", "scopes": [perms.SCOPE_PROPOSALS_REVIEW]}, **headers)
+        self.assertEqual(refused.status_code, 422, refused.content)
 
     def test_id_s32(self) -> None:
         """ID-S32

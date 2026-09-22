@@ -216,6 +216,13 @@ SCOPE_SEARCH_READ = "search:read"
 SCOPE_LIBRARY_READ = "library:read"
 SCOPE_UPCOMING_READ = "upcoming:read"
 SCOPE_TENANT_READ = "tenant:read"
+# The second, independent principal an agent may be (PRO-S13, D-62, ADR 0054): reads the
+# same review queue a person reads and may approve, correct or reject through the same
+# logic, which still writes the library only through an approved proposal. Platform-only
+# (PLATFORM_ONLY_SCOPES below): a key carrying a tenant is refused it at creation (422,
+# apps/identity/api_keys_logic.py) and at the review gate (403,
+# apps/proposals/api.py:require_reviewer).
+SCOPE_PROPOSALS_REVIEW = "proposals:review"
 ALL_SCOPES: frozenset[str] = frozenset(
     {
         SCOPE_AGENT_RUNS_WRITE,
@@ -226,8 +233,13 @@ ALL_SCOPES: frozenset[str] = frozenset(
         SCOPE_LIBRARY_READ,
         SCOPE_UPCOMING_READ,
         SCOPE_TENANT_READ,
+        SCOPE_PROPOSALS_REVIEW,
     }
 )
+# A scope a tenant's own key may never hold, however it is granted (ID-10, D-62): the
+# review queue is the platform's, never a bank's, and this is the one place that rule is
+# a set membership test rather than a sentence.
+PLATFORM_ONLY_SCOPES: frozenset[str] = frozenset({SCOPE_PROPOSALS_REVIEW})
 
 # ---------------------------------------------------------------------------------------
 # The permission catalogue for the role editor (`GET /reference/permissions`, ID-09):
@@ -273,6 +285,7 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     AGENT_DEFINITIONS_MANAGE: "Manage agent definitions.",
     SUPPORT_ACCESS_GRANT: "Enter a tenant under a logged support access grant.",
     SYSTEM_HEALTH: "Read system health.",
+    SCOPE_PROPOSALS_REVIEW: "Read the proposal queue and approve, correct or reject a proposal, as an independent agent (platform-only).",
 }
 
 
@@ -313,6 +326,7 @@ _LOGIC_WATCH_READER = "watch.read in the caller's tenant, an agent's key with li
 _LOGIC_CHANGE_FACTS = "An agent's key with changes:write, or a library editor with proposals.review; a change's facts are library facts and no tenant role holds that (WAT-02, WAT-03, PRO-01). The gate is apps/watch/api.py:require_change_writer, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_LIBRARY_RECORDS = "library.read in the caller's tenant, or an agent's key holding library:read; one read serves the inventory and the agents (INV-03, AGT-02)."
 _LOGIC_UPCOMING_READER = "roadmap.read in the caller's tenant, or an agent's key with upcoming:read, because the newsletter run has to know which dates are already public (HOM-04, AGT-02). The list holds library facts only — no case, no footprint verdict, no owner, no 'So what?' — which is what makes a key safe on it, and it is the one route of the home app a key reaches. The gate is apps/home/api.py:require_upcoming_reader, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
+_LOGIC_PROPOSALS_REVIEW = "The queue read, approve and reject accept a session holding `proposals.review` or a platform key bound to an agent and holding the scope `proposals:review`, because `Principal.has_permission`/`has_scope` are kind-exclusive and one decorator cannot express 'a session or a key' (PRO-01, PRO-S13, PRO-S14, D-62, ADR 0054). The gate is apps/proposals/api.py:require_reviewer, which branches on the principal kind, refuses a tenant-carrying key even if its scopes list somehow names the scope, and never applies a step-up to a key, which holds no passkey assertion."
 _PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the whole grant: a calendar client sends no header, follows no sign-in and cannot be asked for a passkey, so the URL is the only credential it can carry (HOM-04, D-52, ADR 0045). The mitigations are the ones that decision weighed. The token is `<prefix>.<secret>` with 256 bits of secret, kept as a lookup prefix beside the secret's SHA-256, shown once and never again. It rides in the query string, not the path, because our own access log prints the route and drops the query while a hosting edge writes whole request lines, which makes this the one named exception to CONVENTIONS 3.6 and is pinned by a guard test that no other route reads a token from the query string. A person may hold only CALENDAR_FEEDS_PER_USER addresses and mints one only from a recent sign-in or a step-up, so a stolen access token cannot leave a lasting one behind. Every fetch re-checks that the owner is still a member holding roadmap.read and has not been enrolled again, revoking the subscription when a check fails; an idle one expires after CALENDAR_FEED_IDLE_DAYS; unknown, revoked and expired answer one 404. What is left is the residual risk the decision accepted and the dialog states: whoever holds the address can see which public regulatory dates the bank has open work on, and nothing else - no internal deadline, owner, urgency or 'So what?' reaches a calendar. The behaviour is `c6-upcoming-calendar-backend`'s; until it lands the route answers 501 without reading a token."  # noqa: S105 a reviewer's note, not a credential
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
@@ -388,6 +402,9 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         UngatedReason.LOGIC_GATE,
         "proposals.create from a tenant, library_vocab.manage from the console or the proposals:write scope (PRO-01).",
     ),
+    ("GET", "/proposals"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
+    ("POST", "/proposals/{proposal_id}/approve"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
+    ("POST", "/proposals/{proposal_id}/reject"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
     ("GET", "/tenant/footprint"): Ungated(
         UngatedReason.CAPABILITY, "Every member reads the footprint that filters every surface they see (FP-03)."
     ),

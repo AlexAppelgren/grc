@@ -209,6 +209,13 @@ class Instrument(LibraryModel):
     created_by_agent_run = models.UUIDField(null=True, blank=True)
     last_verified_at = models.DateTimeField(null=True, blank=True)
     verified_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    # Machine-confirmed provenance (INV-05, INV-06, PRO-02, chunk4-T26): who confirmed the
+    # change that produced the record's current state, an agent or a person, beside
+    # `verified_by`'s own re-verification stamp. Blank/null until a proposal that changes
+    # this table is applied; no kind creates or versions an instrument yet, so these two
+    # columns exist for the shape schema v0.3 names and are set once that apply path exists.
+    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -346,6 +353,14 @@ class Obligation(LibraryModel):
     source_label = models.CharField(max_length=500)
     last_verified_at = models.DateTimeField(null=True, blank=True)
     verified_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    # Machine-confirmed provenance (INV-05, INV-06, PRO-02, chunk4-T26), beside `verified_by`'s
+    # own re-verification stamp: blank/null until a proposal that changes the obligation row
+    # itself is applied. The confirmation of the obligation's current version lives on the
+    # version row (`ObligationVersion.verified_origin`/`verified_by_agent`), read there and
+    # never overwritten; these two columns are the same shape for the obligation row itself,
+    # for the kind chunk 5 or later adds.
+    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
     provisions = models.ManyToManyField(Provision, through="library.ObligationProvision", related_name="obligations")
     terms = models.ManyToManyField("taxonomy.TaxonomyTerm", through="library.ObligationTerm", related_name="+")
@@ -383,6 +398,13 @@ class ObligationVersion(LibraryModel):
     applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_at = models.DateTimeField(null=True, blank=True)
+    # Machine-confirmed provenance (INV-05, INV-06, PRO-02, chunk4-T26): set once, with the
+    # version, from the approving proposal's two sides, and never edited afterwards. `agent`
+    # means an independent agent confirmed it (`verified_by_agent` names it; the proposing
+    # agent is `applied_by_proposal.proposed_by_agent`, so both are named without a second
+    # column here); `user` means `approved_by` names the person who did, exactly as before.
+    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

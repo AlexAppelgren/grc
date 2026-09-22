@@ -45,14 +45,17 @@ from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 
 V1 = "/api/v1"
 SOURCE = "https://www.fi.se/"
-# The whole answer costs this much, measured 2026-09-21 and pinned so an N+1 shows up as a
-# number: the scenario client's audit count (1), the request's savepoint pair (2), the auth
-# layer for a tenant session (6), the reader's own locale and their bank's language (2),
-# their membership for the bookmark (1), how many changes there are and the page (2), the
-# records the page names (2), the versions those changes wrote (1), and the footprint
-# verdict, which is the duties' scope (3), the bank's footprint (1), the dimensions that
-# restrict it (1) and the dimensions and terms a screen names them by (3).
-UPDATES_QUERIES = 1 + 2 + 6 + 2 + 1 + 2 + 2 + 1 + 8
+# The whole answer costs this much, re-measured 2026-09-22 after chunk3-rest-T13 (an
+# obligation's scope now inherits through its instrument's own, `library.reading.
+# instrument_scopes()`, so the single footprint rule agrees for instruments too): the
+# scenario client's audit count (1), the request's savepoint pair (2), the auth layer for a
+# tenant session (6), the reader's own locale and their bank's language (2), their
+# membership for the bookmark (1), how many changes there are and the page (2), the records
+# the page names (2), the versions those changes wrote (1), and the footprint verdict,
+# which is `obligation_scopes()`'s own five queries (its own terms, its instrument id, and
+# `instrument_scopes()`'s pair and term lookups), the bank's footprint (1), the dimensions
+# that restrict it (1) and the dimensions and terms a screen names them by (3).
+UPDATES_QUERIES = 1 + 2 + 6 + 2 + 1 + 2 + 2 + 1 + 9
 
 
 class LibraryUpdates(ScenarioTestCase):

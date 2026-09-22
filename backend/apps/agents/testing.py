@@ -66,6 +66,13 @@ def agent_key(*, agent_row: Agent | None = None, scopes: Iterable[str] = WATCH_S
     return SimpleNamespace(id=row.id, row=row, agent=row_agent, plain_key=plain)
 
 
+def reviewer_api_key(*, scopes: Iterable[str] = ("proposals:review",)) -> SimpleNamespace:
+    """A platform key bound to its own agent definition, holding `scopes` (PRO-S13, ID-S31,
+    D-62, ADR 0054): a second, independent agent that can work the review queue. A thin
+    wrapper over `agent_key()` so every review-queue test asks for the same shape by name."""
+    return agent_key(scopes=scopes)
+
+
 def platform_run(
     *, key: SimpleNamespace | None = None, model: str = SWEEPER_MODEL, pipeline_version: str = SWEEPER_PIPELINE
 ) -> AgentRun:

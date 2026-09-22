@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import unittest
 import uuid
-from typing import Any
+from typing import Any, ClassVar
 from unittest import skip
 
 from django.db import connection
@@ -32,6 +32,7 @@ from apps.identity.models import Invitation, TenantRole
 from apps.identity.session_logic import actor_of
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms, tenancy
+from apps.shared.audit import AppendOnlyRefused
 # Modules, not classes: a TestCase imported by name would be collected and run here twice.
 from apps.shared import tests_append_only as append_only_guards
 from apps.shared import tests_audit_on_write as audit_guards
@@ -258,9 +259,21 @@ class GovernanceScenarioTests(ScenarioTestCase):
         send = getattr(self.client, method.lower())  # POST and PATCH both carry a body
         return send(f"{V1}{path}", data=payload, content_type="application/json", **headers)
 
+    # The queue read, approve and reject are gated in the body (apps/proposals/api.py:
+    # require_reviewer), never by a decorator, because a session and a platform key need
+    # different checks and `has_permission`/`has_scope` are kind-exclusive (PRO-S13, D-62,
+    # ADR 0054). For a session principal that gate is still exactly `proposals.review`, which
+    # is what ADM-02 asks about here, so these three are named the same way
+    # `tests_library_fence.py`'s `WATCH_ROUTE_GATES` names its own body-gated routes.
+    BODY_GATED_PLATFORM_OPERATIONS: ClassVar[dict[str, str]] = {
+        "listProposals": perms.PROPOSALS_REVIEW,
+        "approveProposal": perms.PROPOSALS_REVIEW,
+        "rejectProposal": perms.PROPOSALS_REVIEW,
+    }
+
     def _platform_gated_operations(self) -> dict[str, str]:
         """Every registered operation a platform permission gates, with that permission."""
-        gated: dict[str, str] = {}
+        gated: dict[str, str] = dict(self.BODY_GATED_PLATFORM_OPERATIONS)
         for operation in iter_operations(api):
             gate = gate_of(operation.view_func)
             if gate is not None and gate.kind == "permission" and gate.value in perms.PLATFORM_PERMISSIONS:
@@ -413,9 +426,80 @@ class GovernanceScenarioTests(ScenarioTestCase):
         The console reads each bank's figures through one audited window (ADM-02).
         """
 
-    @skip("pending: AUD-S9 (D-62, chunk 4 c4-agent-approver)")
     def test_aud_s9(self) -> None:
         """AUD-S9
 
         An agent's approval is in the audit trail with the agent named (AUD-01, AUD-02).
+
+        The model call behind an agent's own decision is chunk 5's pipeline (AGT-01):
+        nothing here calls a model, so the AI output log gets nothing to carry, and this
+        scenario is proven for the parts D-62 actually builds: the audit row, the null
+        assertion, and append-only.
         """
+        from apps.agents import testing as agents_testing
+        from apps.shared.audit import Actor
+        from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
+
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        tenant = factories.tenant(slug="aud-s9")
+        self.activate(tenant)
+        ensure_tenant_vocabularies(tenant, actor=Actor.system("test"))
+
+        proposer_key = factories.api_key(tenant, scopes=("proposals:write",))
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        reviewer_key = agents_testing.reviewer_api_key()
+        approved = self._post(
+            "/proposals",
+            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}},
+            {"HTTP_X_API_KEY": proposer_key.plain_key},
+        )
+        self.assertEqual(approved.status_code, 201, approved.content)
+        # The create request authenticated with a tenant key, which re-activates the tenant
+        # for the rest of this connection's transaction; a platform key is written and read
+        # with no tenant activated (H15).
+        tenancy.clear_tenant()
+        decision = self._post(
+            f"/proposals/{approved.json()['id']}/approve", {"note": "Confirmed."}, {"HTTP_X_API_KEY": reviewer_key.plain_key}
+        )
+        self.assertEqual(decision.status_code, 200, decision.content)
+        self.assertTrue(Flag.objects.filter(key="client_money").exists())
+
+        event = self._one("proposal.approved", uuid.UUID(approved.json()["id"]))
+        self.assertEqual(event.actor_type, "agent")
+        self.assertEqual(event.actor_id, reviewer_key.agent.id)
+        # Named by its definition, its version and the key it used, not the key's id alone.
+        self.assertIn(reviewer_key.agent.key, event.actor_label)
+        self.assertIn(f"v{reviewer_key.agent.current_version}", event.actor_label)
+        self.assertEqual(event.after["reviewingApiKeyPrefix"], reviewer_key.row.key_prefix)
+        self.assertNotIn(str(reviewer_key.id), event.actor_label)
+        # No step-up assertion: a key cannot step up.
+        self.assertIsNone(event.step_up_assertion_id)
+
+        # A rejection by that agent is recorded the same way, with its reason.
+        second = self._post(
+            "/proposals",
+            {"kind": "vocabulary_create", "title": "Add the flag Sanctioned", "payload": {"list": "flag", "key": "sanctioned", "labels": {"en": "Sanctioned"}}},
+            {"HTTP_X_API_KEY": proposer_key.plain_key},
+        )
+        self.assertEqual(second.status_code, 201, second.content)
+        tenancy.clear_tenant()  # the create request re-activated the tenant; see above (H15)
+        rejected = self._post(
+            f"/proposals/{second.json()['id']}/reject",
+            {"rejectionCode": "duplicate", "note": "Already exists."},
+            {"HTTP_X_API_KEY": reviewer_key.plain_key},
+        )
+        self.assertEqual(rejected.status_code, 200, rejected.content)
+        reject_event = self._one("proposal.rejected", uuid.UUID(second.json()["id"]))
+        self.assertEqual(reject_event.actor_type, "agent")
+        self.assertEqual(reject_event.after["rejectionCode"], "duplicate")
+        self.assertIsNone(reject_event.step_up_assertion_id)
+        self.assertIn(reviewer_key.agent.key, reject_event.actor_label)
+
+        # Append-only: the decision cannot be edited afterwards.
+        with self.assertRaisesMessage(AppendOnlyRefused, "is append-only"):
+            event.summary = "edited"
+            event.save(update_fields=["summary"])

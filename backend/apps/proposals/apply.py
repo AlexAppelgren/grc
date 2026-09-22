@@ -39,8 +39,8 @@ from apps.library.models import (
     VerificationOutcome,
 )
 from apps.library.reading import active_obligation, terms_of
-from apps.proposals.logic import parsed_payload
-from apps.proposals.models import Proposal, ProposalKind
+from apps.proposals.logic import Reviewer, as_reviewer, parsed_payload
+from apps.proposals.models import OriginType, Proposal, ProposalKind
 from apps.proposals.schemas import (
     ProposalObligationVersionPayload,
     ProposalTermCreatePayload,
@@ -60,14 +60,19 @@ from apps.taxonomy.tenant_lists_logic import extra_columns
 ORIGINAL_LANGUAGE = "en"
 
 
-def apply(proposal: Proposal, *, actor: Actor, reviewer: Any, step_up: uuid.UUID) -> None:
+def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_up: uuid.UUID | None) -> None:
     """Write what the approved `proposal` asks for, as the reviewer corrected it.
 
     `corrected_payload` is what the reviewer approved and what the library gets; the
     proposal's own `payload` stays as it arrived, so the queue keeps both. `step_up` is the
     assertion the reviewer just made: it goes on every audit row this writes, so the log of
-    a library change says which passkey opened the door (ID-06, AC-ID3).
+    a library change says which passkey opened the door (ID-06, AC-ID3). It is null for an
+    agent's decision, since a key holds no passkey assertion (PRO-S13, D-62, ADR 0054).
+
+    `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
+    older caller (including this app's own tests); `as_reviewer` normalizes either.
     """
+    reviewer = as_reviewer(reviewer, actor)
     payload = parsed_payload(proposal.kind, proposal.corrected_payload or proposal.payload)
     with library_write(f"proposal:{proposal.id}"):
         if proposal.kind == ProposalKind.VOCABULARY_CREATE.value:
@@ -165,7 +170,7 @@ def _scope(obligation: Obligation) -> list[str]:
 
 
 def _obligation_version(
-    payload: ProposalObligationVersionPayload, proposal: Proposal, actor: Actor, reviewer: Any, step_up: uuid.UUID
+    payload: ProposalObligationVersionPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
 ) -> None:
     """Add the version the proposal asks for, and nothing else (INV-04, PRO-02).
 
@@ -201,8 +206,15 @@ def _obligation_version(
         effective_from_precision=payload.effective_from_precision,
         caused_by_change=proposal.change_id,
         applied_by_proposal=proposal,
-        approved_by=reviewer,
+        approved_by=reviewer.user,
         approved_at=timezone.now(),
+        # Machine-confirmed provenance (INV-05, INV-06, PRO-02, D-62): an agent's decision
+        # names itself here, beside `approved_by` staying null, and never reads as a
+        # person's verification. The proposing agent is not repeated on this row: it is
+        # read through `applied_by_proposal.proposed_by_agent`, so both agents are named
+        # without a second column (chunk4-T26).
+        verified_origin=(OriginType.AGENT.value if reviewer.agent_id is not None else OriginType.USER.value),
+        verified_by_agent_id=reviewer.agent_id,
     )
     for language, text in payload.summaries.items():
         # The language it was written in is the original; the others are translations, and
@@ -279,7 +291,7 @@ def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str]) -> No
             )
 
 
-def _vocabulary_create(payload: ProposalVocabularyCreatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID) -> None:
+def _vocabulary_create(payload: ProposalVocabularyCreatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
     entry = _entry(payload.list)
     if entry.model._default_manager.filter(key__iexact=payload.key).exists():
         raise ValidationError(f"{payload.key!r} already exists on {payload.list!r}.", code="duplicate_key")
@@ -309,7 +321,7 @@ def _vocabulary_create(payload: ProposalVocabularyCreatePayload, proposal: Propo
     )
 
 
-def _vocabulary_relabel(payload: ProposalVocabularyRelabelPayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID) -> None:
+def _vocabulary_relabel(payload: ProposalVocabularyRelabelPayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
     entry = _entry(payload.list)
     row = _row(entry, payload.key)
     before = {label.language: label.text for label in entry.label_model._default_manager.filter(vocabulary=row)}
@@ -337,7 +349,7 @@ def _vocabulary_relabel(payload: ProposalVocabularyRelabelPayload, proposal: Pro
     )
 
 
-def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID, *, active: bool) -> None:
+def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None, *, active: bool) -> None:
     entry = _entry(payload.list)
     row = _row(entry, payload.key)
     if not active and row.is_system:
@@ -363,7 +375,7 @@ def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Propo
     )
 
 
-def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID) -> None:
+def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
     entry = _entry(payload.list)
     source = _row(entry, payload.key)
     target = _row(entry, payload.into)
@@ -412,7 +424,7 @@ def _term_labels(term: TaxonomyTerm, labels: dict[str, str]) -> None:
             TaxonomyTermLabel.objects.create(term=term, language=language, text=text, is_original=language == original)
 
 
-def _term_create(payload: ProposalTermCreatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID) -> None:
+def _term_create(payload: ProposalTermCreatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
     dimension = _dimension(payload.dimension)
     if TaxonomyTerm.objects.filter(dimension=dimension, key__iexact=payload.key).exists():
         raise ValidationError(f"{payload.key!r} already exists in {payload.dimension!r}.", code="duplicate_key")
@@ -447,7 +459,7 @@ def _term_create(payload: ProposalTermCreatePayload, proposal: Proposal, actor: 
     )
 
 
-def _term_update(payload: ProposalTermUpdatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID) -> None:
+def _term_update(payload: ProposalTermUpdatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
     dimension = _dimension(payload.dimension)
     term = TaxonomyTerm.objects.filter(dimension=dimension, key=payload.key).order_by("sort_order", "key").first()
     if term is None:

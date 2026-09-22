@@ -73,6 +73,7 @@ from apps.library.models import (
     Translation,
 )
 from apps.library.schemas import (
+    AgentRef,
     DiffSegment,
     InstrumentAuthorityRef,
     InstrumentDetail,
@@ -567,6 +568,16 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
     )
     rows = version_rows(versions)
     verifier = obligation.verified_by
+    confirmed_by_agent = None
+    proposed_by_agent = None
+    verified_origin = ""
+    if current is not None:
+        verified_origin = current.verified_origin
+        if current.verified_by_agent is not None:
+            confirmed_by_agent = AgentRef(id=current.verified_by_agent.id, key=current.verified_by_agent.key)
+        proposing_agent = current.applied_by_proposal.proposed_by_agent if current.applied_by_proposal is not None else None
+        if proposing_agent is not None:
+            proposed_by_agent = AgentRef(id=proposing_agent.id, key=proposing_agent.key)
     return ObligationDetail(
         id=obligation.id,
         stable_key=obligation.stable_key,
@@ -608,6 +619,9 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
             last_verified_at=obligation.last_verified_at,
             source_url=obligation.source_url,
             source_label=obligation.source_label,
+            verified_origin=verified_origin,
+            confirmed_by_agent=confirmed_by_agent,
+            proposed_by_agent=proposed_by_agent,
         ),
     )
 

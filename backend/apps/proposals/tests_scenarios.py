@@ -18,6 +18,7 @@ from datetime import date
 from typing import Any
 from unittest import mock, skip
 
+from apps.agents import testing as agents_testing
 from apps.library.models import (
     Instrument,
     ProblemReport,
@@ -42,15 +43,17 @@ from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from config.api import api
 
 V1 = "/api/v1"
-# Queries per queue read, measured 2026-09-21 and pinned so an N+1 shows up as a number
-# (playbook 10): the scenario client's audit count (1), the request's savepoint pair (2), the
-# auth layer for a platform session with no tenant (identity flag on, the session row, flag
-# off, platform roles, latest step-up: 5), the reader's own locale for the language the rows
-# are titled in (1) and the page with its proposer and reviewer (1). The library records the
+# Queries per queue read, re-measured 2026-09-22 after chunk4-T25 (D-62, ADR 0054): the
+# scenario client's audit count (1), the request's savepoint pair (2), the auth layer for a
+# platform session with no tenant (identity flag on, the session row, flag off, platform
+# roles, latest step-up: 5), `require_reviewer`'s own fetch of the caller's `User` row for
+# the audit actor's label (1, new: the dual-principal gate needs the real row, not just the
+# session's already-joined columns), the reader's own locale for the language the rows are
+# titled in (1) and the page with its proposer and reviewer (1). The library records the
 # rows name cost two more, for the whole page at once rather than per row, and this queue
 # holds a vocabulary proposal, which names none (apps/proposals/tests_reading.py pins that
 # the cost does not grow with the row count).
-PROPOSAL_QUEUE_QUERIES = 1 + 2 + 5 + 1 + 1
+PROPOSAL_QUEUE_QUERIES = 1 + 2 + 5 + 1 + 1 + 1
 # The change an agent's watch run linked the proposal to (chunk 5 makes these rows; the
 # column is a plain id until then), and the summary version 1 carries, so a scenario can
 # prove that applying version 2 leaves version 1 exactly as it was written.
@@ -123,9 +126,12 @@ class ProposalsScenarioTests(ScenarioTestCase):
     def _term(self, dimension: str, key: str) -> Any:
         return TaxonomyTerm.objects.get(dimension__key=dimension, key=key)
 
-    def _version_proposal(self, obligation: Obligation, *, scoped: bool = True) -> dict[str, Any]:
+    def _version_proposal(self, obligation: Obligation, *, scoped: bool = True, key: Any = None) -> dict[str, Any]:
         """An agent's proposal of a new version, sourced field by field, waiting in the
-        queue. `scoped=False` leaves the scope alone, and then names no source for it."""
+        queue. `scoped=False` leaves the scope alone, and then names no source for it.
+        `key` lets a caller file it through a specific platform key, for example one bound
+        to an agent definition (PRO-S13, PRO-S14); left out, a fresh tenant key is used, as
+        before."""
         payload: dict[str, Any] = {
             "summaries": {"sv": "Institutet bedömer kunden innan rådgivning.", "en": "The institution assesses the client before advising."},
             "originalLanguage": "sv",
@@ -141,7 +147,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         if scoped:
             payload["terms"] = ["legal_entity:bank", "client_category:retail"]
             sources["terms"] = "https://www.fi.se/"
-        key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        key = key or factories.api_key(self.tenant, scopes=("proposals:write",))
         created = self._post(
             "/proposals",
             {
@@ -591,16 +597,122 @@ class ProposalsScenarioTests(ScenarioTestCase):
         A private proposal is approved inside the bank and never reaches the console (INV-07, PRO-03).
         """
 
-    @skip("pending: PRO-S13 (D-62, chunk 4 c4-agent-approver)")
     def test_pro_s13(self) -> None:
         """PRO-S13
 
         An independent agent confirms a proposal from the same queue (PRO-01, PRO-02, AUD-02).
         """
+        obligation = self._obligation()
+        self._version_one(obligation)
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        proposing_agent = agents_testing.agent(key="watch-sweeper-pro-s13")
+        proposer_key = agents_testing.agent_key(agent_row=proposing_agent, scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        proposal = self._version_proposal(obligation, key=proposer_key)
+        # _version_proposal() re-activates self.tenant for its ordinary callers; a platform
+        # key is written with no tenant activated (H15).
+        tenancy.clear_tenant()
 
-    @skip("pending: PRO-S14 (D-62, chunk 4 c4-agent-approver)")
+        # A second platform key, bound to a different agent definition, holds proposals:review.
+        reviewer_key = agents_testing.reviewer_api_key()
+        reviewer_headers = {"HTTP_X_API_KEY": reviewer_key.plain_key}
+
+        # It reads the pending proposals through the queue route a person reads, with the
+        # same source beside the same diff.
+        listed = self.client.get(f"{V1}/proposals?status=open", **reviewer_headers)
+        self.assertEqual(listed.status_code, 200, listed.content)
+        row = next(item for item in listed.json()["items"] if item["id"] == proposal["id"])
+        self.assertEqual(row["fieldSources"], proposal["fieldSources"])
+        self.assertEqual(row["payload"], proposal["payload"])
+        self.assertFalse(row["isMine"], "isMine is always false for an agent, whatever it filed")
+
+        # It approves through the same route a person calls, and the decision applies
+        # exactly as a person's does, in one transaction.
+        approved = self._post(f"/proposals/{proposal['id']}/approve", {"note": "Confirmed against the source."}, reviewer_headers)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertEqual(approved.json()["status"], "approved")
+        version = obligation.versions.order_by("-version_number").first()
+        assert version is not None
+        self.assertEqual(version.version_number, 2)
+
+        # The audit row names the confirming agent, its definition version and its key, and
+        # carries no step-up assertion.
+        event = AuditEvent.objects.get(action="proposal.approved", subject_id=proposal["id"])
+        self.assertEqual(event.actor_type, "agent")
+        self.assertEqual(event.actor_id, reviewer_key.agent.id)
+        self.assertIn(reviewer_key.agent.key, event.actor_label)
+        self.assertIn(f"v{reviewer_key.agent.current_version}", event.actor_label)
+        self.assertEqual(event.after["reviewingApiKeyPrefix"], reviewer_key.row.key_prefix)
+        self.assertIsNone(event.step_up_assertion_id)
+
+        # A key without the review scope answers 403; no route under it writes a library
+        # row except through apply, which the fence guard proves structurally.
+        no_scope = factories.api_key(self.tenant, scopes=("changes:write",))
+        self.assertEqual(self.client.get(f"{V1}/proposals", **{"HTTP_X_API_KEY": no_scope.plain_key}).status_code, 403)
+
     def test_pro_s14(self) -> None:
         """PRO-S14
 
         The same principal can never both propose and approve (PRO-02, AC-PRO2).
         """
+        obligation = self._obligation()
+        self._version_one(obligation)
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        agent_definition = agents_testing.agent(key="watch-sweeper-pro-s14")
+        # A key of the proposing agent, holding both scopes, so it can try to review its own
+        # filing: four eyes refuses that by identity, never by a missing scope.
+        proposer_key = agents_testing.agent_key(
+            agent_row=agent_definition, scopes=(perms.SCOPE_PROPOSALS_WRITE, perms.SCOPE_PROPOSALS_REVIEW)
+        )
+        proposal = self._version_proposal(obligation, key=proposer_key)
+        # _version_proposal() re-activates self.tenant for its ordinary callers; a platform
+        # key is written with no tenant activated (H15).
+        tenancy.clear_tenant()
+
+        same_key = self._post(f"/proposals/{proposal['id']}/approve", {}, {"HTTP_X_API_KEY": proposer_key.plain_key})
+        self.assertEqual(same_key.status_code, 409, same_key.content)
+        self.assertEqual(same_key.json()["code"], "four_eyes_violation")
+
+        # A second key of the same agent definition is refused the same way.
+        second_key_same_agent = agents_testing.agent_key(agent_row=agent_definition, scopes=(perms.SCOPE_PROPOSALS_REVIEW,))
+        same_agent = self._post(f"/proposals/{proposal['id']}/approve", {}, {"HTTP_X_API_KEY": second_key_same_agent.plain_key})
+        self.assertEqual(same_agent.status_code, 409, same_agent.content)
+        self.assertEqual(same_agent.json()["code"], "four_eyes_violation")
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
+
+        # A third, unrelated agent, used below only to give an isolating proof its own
+        # distinct id: never the reviewer that actually decides this proposal.
+        third_reviewer = agents_testing.reviewer_api_key()
+
+        # The row is written directly, bypassing the logic: the check constraint refuses it
+        # for a repeated user, key or agent alike, and it refuses a reviewing key that names
+        # no agent, so two unbound keys cannot pass on nulls.
+        from django.db import connection, transaction
+
+        def _refused_by_four_eyes(sql: str, params: list[Any]) -> None:
+            with self.assertRaises(Exception) as caught:  # compliance: allow-broad-except the driver raises IntegrityError for a CHECK violation
+                with transaction.atomic(), connection.cursor() as cursor:
+                    cursor.execute(sql, params)
+            self.assertIn("four_eyes", str(caught.exception))
+
+        # Same key: isolated by naming a different agent on the review side too.
+        _refused_by_four_eyes(
+            "UPDATE proposal SET reviewed_by_api_key_id = %s, reviewed_by_agent_id = %s WHERE id = %s",
+            [str(proposer_key.id), str(third_reviewer.agent.id), proposal["id"]],
+        )
+        # Same agent: isolated by naming a different key on the review side.
+        _refused_by_four_eyes(
+            "UPDATE proposal SET reviewed_by_api_key_id = %s, reviewed_by_agent_id = %s WHERE id = %s",
+            [str(second_key_same_agent.id), str(agent_definition.id), proposal["id"]],
+        )
+        # A reviewing key that names no agent at all.
+        _refused_by_four_eyes(
+            "UPDATE proposal SET reviewed_by_api_key_id = %s WHERE id = %s",
+            [str(second_key_same_agent.id), proposal["id"]],
+        )
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
+        self.assertIsNone(Proposal.objects.get(pk=proposal["id"]).reviewed_by_api_key_id)
+
+        # A key of a different agent definition approves, and the change applies.
+        approved = self._post(f"/proposals/{proposal['id']}/approve", {}, {"HTTP_X_API_KEY": third_reviewer.plain_key})
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertEqual(approved.json()["status"], "approved")

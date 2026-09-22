@@ -543,9 +543,59 @@ class LibraryScenarioTests(ScenarioTestCase):
         A private record's text never reaches a model, the index or another bank (INV-07).
         """
 
-    @skip("pending: INV-S14 (D-62, chunk 4 c4-agent-approver)")
     def test_inv_s14(self) -> None:
         """INV-S14
 
         A record an agent confirmed reads as machine-confirmed (INV-05, INV-06, PRO-02).
         """
+        from apps.agents import testing as agents_testing
+        from apps.shared import tenancy
+
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+
+        # A record of its own, with a single version dated "since always" (DEFAULT_VERSIONS),
+        # so the version the proposal adds is unambiguously the one now in force: same date
+        # (null), higher number.
+        obligation = build.obligation(
+            build.instrument(key="inv-s14-instrument", short_name="INV S14", regime="regime:securities"),
+            key="obl-inv-s14-agent-confirmed",
+            titles={"en": "A duty an agent confirms"},
+        )
+        proposer = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        confirmer = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_REVIEW,))
+        body = {
+            "kind": "new_obligation_version",
+            "title": "Refresh the wording against the source",
+            "targetType": "obligation",
+            "targetId": str(obligation.id),
+            "payload": {
+                "summaries": {"en": "Agents keep the wording current with the source."},
+                "originalLanguage": "en",
+                "isMachine": True,
+            },
+            "fieldSources": {"summaries.en": "https://www.fi.se/"},
+        }
+        created = self._post("/proposals", body, {"HTTP_X_API_KEY": proposer.plain_key})
+        self.assertEqual(created.status_code, 201, created.content)
+        approved = self._post(f"/proposals/{created.json()['id']}/approve", {}, {"HTTP_X_API_KEY": confirmer.plain_key})
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+        # The record's provenance names the proposing agent and the confirming agent:
+        # verified_origin is "agent" and no person is named as its verifier.
+        card = self.card(obligation.stable_key)
+        provenance = card["provenance"]
+        self.assertEqual(provenance["verifiedOrigin"], "agent")
+        self.assertEqual(provenance["confirmedByAgent"]["key"], confirmer.agent.key)
+        self.assertEqual(provenance["proposedByAgent"]["key"], proposer.agent.key)
+        self.assertIsNone(provenance["verifiedBy"])
+
+        # When a person later re-verifies the record against its source, the stamp names
+        # that person and the machine-confirmed label gives way to it.
+        editor = sign_in(self.editor, step_up=True)
+        reverified = self._post(f"/obligations/{obligation.id}/verifications", {"outcome": "no_change"}, editor)
+        self.assertEqual(reverified.status_code, 201, reverified.content)
+        after = self.card(obligation.stable_key)
+        self.assertEqual(after["provenance"]["verifiedBy"]["name"], self.editor.name)
+        # The version's own machine-confirmed facts are untouched: nothing overwritten.
+        self.assertEqual(after["provenance"]["verifiedOrigin"], "agent")
+        self.assertEqual(after["provenance"]["confirmedByAgent"]["key"], confirmer.agent.key)

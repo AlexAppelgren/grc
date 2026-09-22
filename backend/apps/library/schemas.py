@@ -674,9 +674,28 @@ class RelatedObligation(LibraryResponse):
     )
 
 
+class AgentRef(LibraryResponse):
+    """One of the platform's research agents, named the way a screen may label it: its
+    definition key, which never changes, and never its internal id alone (AUD-02)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05", "key": "watch-sweeper"}]})
+
+    id: UUID = Field(description="The agent definition, as a UUID.")
+    key: str = Field(description="The agent definition's own key, stable and never changed, for example `watch-sweeper`.", examples=["watch-sweeper"])
+
+
 class ObligationProvenance(LibraryResponse):
     """Where the record came from and when it was last checked against its source (INV-06).
-    `verifiedBy` is a platform person or null: a seeded record has never been re-verified."""
+    `verifiedBy` is a platform person or null: a seeded record has never been re-verified.
+
+    `verifiedOrigin`, `confirmedByAgent` and `proposedByAgent` (INV-05, PRO-02, D-62) are a
+    second pair of facts, about who confirmed the approval of the version now in force, not
+    about who last re-verified it: `agent` means two independent agents proposed and
+    confirmed it, naming both, and never reads as a person's verification; `user`, and
+    empty for a version applied before this existed, means a person confirmed it and
+    neither agent field is set. This response decides nothing itself: `verifiedBy` being
+    set is a person's own later re-verification, and the screen, not this answer, is where
+    that is read as superseding the machine-confirmed label."""
 
     created_origin: str = Field(
         description=(
@@ -736,6 +755,32 @@ class ObligationProvenance(LibraryResponse):
             "resolves."
         ),
         examples=["FFFS 2017:2, 9 kap. 6 §"],
+    )
+    verified_origin: str = Field(
+        default="",
+        description=(
+            "Who confirmed the approval of the version now in force: `agent` when a second, "
+            "independent agent did, `user` when a person did. Empty for a version applied "
+            "before this existed, which reads the same as `user`: a person's approval, "
+            "unlabelled. Never confuse this with `verifiedBy`, which is a later re-verification."
+        ),
+        examples=["agent"],
+    )
+    confirmed_by_agent: AgentRef | None = Field(
+        default=None,
+        description=(
+            "The independent agent that confirmed the approval, by definition key, when "
+            "`verifiedOrigin` is `agent`. Null when a person confirmed it."
+        ),
+    )
+    proposed_by_agent: AgentRef | None = Field(
+        default=None,
+        description=(
+            "The agent that proposed the version, by definition key, read from the "
+            "approving proposal and named beside `confirmedByAgent` so a machine-confirmed "
+            "record is never shown with only one agent's name. Null when a person proposed "
+            "it, whoever confirmed it."
+        ),
     )
 
 
@@ -829,6 +874,9 @@ _SAMPLE_DETAIL: dict[str, Any] = {
         "lastVerifiedAt": "2026-06-30T07:12:44Z",
         "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
         "sourceLabel": "FFFS 2017:2, 9 kap. 6 §",
+        "verifiedOrigin": "user",
+        "confirmedByAgent": None,
+        "proposedByAgent": None,
     },
 }
 

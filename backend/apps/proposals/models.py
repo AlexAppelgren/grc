@@ -12,8 +12,13 @@ column on `proposal`.
 
 `kind` and `status` are tier-one kinds (apps/shared/kinds.py). The payload's shape is
 named per kind in apps/proposals/schemas.py and validated when the proposal is created.
-The check constraint `proposal_four_eyes` (RunSQL in migration 0001) is the database's word
-on "never the proposer".
+The check constraint `proposal_four_eyes` (RunSQL in migration 0001, widened in migration
+0003) is the database's word on "never the proposer": refused for a repeated user, a
+repeated key or a repeated agent definition, and for a reviewing key that names no agent
+(PRO-S13, PRO-S14, D-62, ADR 0054). `proposed_by_agent`, `reviewed_by_api_key` and
+`reviewed_by_agent` are copied from the acting API key at the one write path (a check
+constraint cannot dereference a key), because a platform key holding `proposals:review`
+is a second, independent agent that may work the same queue a person does.
 """
 
 from __future__ import annotations
@@ -77,10 +82,13 @@ class Proposal(models.Model):
     model = models.CharField(max_length=200, blank=True)
     proposed_by_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     proposed_by_api_key = models.ForeignKey("identity.ApiKey", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    proposed_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     idempotency_key = models.CharField(max_length=200, null=True, blank=True, unique=True)
     proposed_in_tenant = models.BooleanField(default=False)
     status = models.CharField(max_length=16, choices=_choices(ProposalStatus), default=ProposalStatus.OPEN.value)
     reviewed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    reviewed_by_api_key = models.ForeignKey("identity.ApiKey", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    reviewed_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     reviewed_at = models.DateTimeField(null=True, blank=True)
     rejection_code = models.CharField(max_length=64, blank=True)
     review_note = models.TextField(blank=True)
@@ -96,8 +104,14 @@ class Proposal(models.Model):
         indexes = [models.Index(fields=["status", "created_at"], name="proposal_queue_idx")]
         # The four-eyes check constraint `proposal_four_eyes` is created by RunSQL in
         # migration 0001 as `reviewed_by_id IS NULL OR proposed_by_user_id IS NULL OR
-        # reviewed_by_id <> proposed_by_user_id`: Django cannot spell `<>`, and the
-        # four-eyes guard reads the definition back from pg_constraint.
+        # reviewed_by_id <> proposed_by_user_id`, and widened by RunSQL in migration 0003
+        # with the same clause for the reviewing key and for the reviewing agent, plus a
+        # clause refusing a reviewing key that names no agent (`reviewed_by_api_key_id IS
+        # NULL OR reviewed_by_agent_id IS NOT NULL`): without it two unbound platform keys
+        # would both carry a NULL agent, and NULL <> NULL is unknown in SQL, so the
+        # agent comparison would pass on a missing value rather than on independence.
+        # Django cannot spell `<>`, and the four-eyes guard reads the definition back from
+        # pg_constraint.
 
     def __str__(self) -> str:
         return f"{self.kind} {self.id}"
