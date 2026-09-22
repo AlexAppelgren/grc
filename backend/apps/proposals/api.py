@@ -14,23 +14,32 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.proposals import logic
+from apps.proposals import logic, reading, updates
 from apps.proposals.schemas import (
+    LibraryUpdatesPage,
+    LibraryUpdatesQuery,
     ProposalApproveBody,
     ProposalCreateBody,
+    ProposalDetail,
     ProposalPage,
     ProposalQuery,
     ProposalRejectBody,
     ProposalRow,
+    TenantProposalPage,
+    TenantProposalQuery,
 )
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
+from apps.shared.schemas import PageQuery
+from apps.taxonomy.reading import language_order
 from apps.taxonomy.http import (
     actor_for,
     answers_problems,
+    caller_tenant,
     caller_user,
     idempotency_key,
+    principal,
     proposer_for,
     require_proposer,
     uuid_or_404,
@@ -41,13 +50,136 @@ router = Router(tags=["Proposals"])
 SESSION = SessionAuth()
 
 
-@router.get("/proposals", response=ProposalPage, auth=SESSION, operation_id="listProposals", by_alias=True)
+@router.get(
+    "/proposals",
+    response=ProposalPage,
+    auth=SESSION,
+    operation_id="listProposals",
+    by_alias=True,
+    summary="Read the queue of changes waiting to enter the shared library",
+)
 @requires_permission(perms.PROPOSALS_REVIEW)
 @answers_problems
 def list_proposals(request: HttpRequest, query: Query[ProposalQuery]) -> ProposalPage:
-    queryset = logic.queue(status=query.status, kind=query.kind, target_list=query.target_list)
-    rows = [logic.row(proposal) for proposal in queryset]
+    """Every change an agent or a person has asked for, with the library record each one
+    would change named by its own title and reference, so a reviewer can work the queue
+    without opening each proposal. Call it for the console's Waiting, Approved and Rejected
+    tabs, each of which is this call with its own `status`.
+
+    The answer is every proposal matching the filters in one page, oldest first. Nothing is
+    hidden by them: `total` counts the same rows the list carries. A proposal filed inside a
+    bank arrives without its proposer and says `fromOrganisation` instead, and `isMine` says
+    whether the reader filed it, which four eyes will not let them decide.
+
+    Needs the platform permission `proposals.review`. No bank role reaches it, whatever the
+    member holds inside their own organisation, and no API key scope reaches it either.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without `proposals.review`; `unknown_key` (422) when `origin` is a value that is
+    neither `agent` nor `user`.
+    """
+    me_id = principal(request).subject_id
+    queryset = logic.queue(
+        status=query.status,
+        kind=query.kind,
+        target_list=query.target_list,
+        origin=query.origin,
+        not_mine=query.not_mine,
+        reviewer_id=me_id,
+    )
+    rows = reading.queue_rows(list(queryset), language_order(request), me_id=me_id)
     return ProposalPage(items=rows, total=len(rows))
+
+
+@router.get(
+    "/tenant/proposals",
+    response=TenantProposalPage,
+    auth=SESSION,
+    operation_id="listTenantProposals",
+    by_alias=True,
+    summary="Read what your organisation has asked to change in the shared library",
+)
+@requires_permission(perms.VOCAB_MANAGE)
+@answers_problems
+def list_tenant_proposals(request: HttpRequest, query: Query[TenantProposalQuery], page: Query[PageQuery]) -> TenantProposalPage:
+    """The proposals this organisation filed against the shared library lists, and how far
+    each has got. Call it for the pending list beside a shared vocabulary, so somebody who
+    suggested a value can see it is still waiting rather than suggesting it again.
+
+    It answers this organisation's own proposals and no others: the link between a proposal
+    and the organisation that filed it is a row in this organisation's zone, and row-level
+    security is what limits the read. Another bank's proposals are not filtered out of the
+    answer; they are never in it. What comes back is the request and its status, never the
+    platform reviewer who decided it and never another organisation's wording.
+
+    Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
+    quietly trimmed, oldest first so paging is repeatable. Nothing matching the filters is a
+    200 with an empty items list and a total of 0, never a 404.
+
+    Needs `vocab.manage`, the permission that manages this organisation's vocabularies.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without `vocab.manage`; `not_found` (404) for a principal in no organisation;
+    `validation_error` (422) when the page size or offset is out of range.
+    """
+    queryset = reading.tenant_queue(status=query.status, kind=query.kind, target_list=query.target_list)
+    total = queryset.count()
+    rows = reading.tenant_rows(list(queryset[page.offset : page.offset + page.limit]))
+    return TenantProposalPage(items=rows, total=total)
+
+
+@router.get(
+    "/library-updates",
+    response=LibraryUpdatesPage,
+    auth=SESSION,
+    operation_id="listLibraryUpdates",
+    by_alias=True,
+    summary="See what changed in the shared library since you last looked",
+)
+@requires_permission(perms.LIBRARY_READ)
+@answers_problems
+def list_library_updates(request: HttpRequest, query: Query[LibraryUpdatesQuery], page: Query[PageQuery]) -> LibraryUpdatesPage:
+    """Every change that reached the shared library since this reader last marked it as seen
+    with `POST /me/visit`, grouped by the day it arrived in the organisation's own time zone,
+    the most recent day first. Call it for the "what changed" screen a reader opens when they
+    come back from leave; `since` in the answer says what the list is measured from, and for
+    a reader who has never marked the library as seen it is the start of the default window
+    instead of an empty list.
+
+    Each change is titled by the library record it touched, never by the request that carried
+    it, and nobody's name appears: a change another organisation asked for reads exactly like
+    any other. Duties outside this organisation's footprint are left out unless
+    `outsideFootprint` asks for them, by the same rule the inventory applies, and each of
+    those says in `outsideReason` which facets would have hidden it. A change to a shared
+    list is never cut, because a list belongs to every organisation.
+
+    What comes back are facts about the shared library. Whether a duty applies here, and
+    whether this organisation complies with it, are its own judgements and are recorded
+    elsewhere; a change appearing here decides neither and is not a task.
+
+    Paginated: 20 changes by default and 100 at most, with a larger limit refused rather than
+    quietly trimmed, and `total` counting every change since that moment. Nothing since then
+    is a 200 with an empty days list and a total of 0, never a 404.
+
+    Needs `library.read`, which every member holds, and a session in an organisation: an API
+    key has no bookmark of its own, so this list is a person's.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
+    without `library.read`; `not_found` (404) for a principal in no organisation;
+    `validation_error` (422) when the page size or offset is out of range.
+    """
+    tenant = caller_tenant(request)
+    membership = reading.membership_of(tenant, principal(request).subject_id)
+    return updates.page(
+        tenant,
+        language_order(request, tenant=tenant),
+        membership,
+        kind=query.kind,
+        outside_footprint=query.outside_footprint,
+        limit=page.limit,
+        offset=page.offset,
+    )
+
 
 
 @router.post(
@@ -80,11 +212,34 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     return (201 if created else 200), logic.row(proposal)
 
 
-@router.get("/proposals/{proposal_id}", response=ProposalRow, auth=SESSION, operation_id="getProposal", by_alias=True)
+@router.get(
+    "/proposals/{proposal_id}",
+    response=ProposalDetail,
+    auth=SESSION,
+    operation_id="getProposal",
+    by_alias=True,
+    summary="Open one proposal and read it against what the library says today",
+)
 @requires_permission(perms.PROPOSALS_REVIEW)
 @answers_problems
-def get_proposal(request: HttpRequest, proposal_id: str) -> ProposalRow:
-    return logic.row(logic.by_id(uuid_or_404(proposal_id)))
+def get_proposal(request: HttpRequest, proposal_id: str) -> ProposalDetail:
+    """One proposal as a reviewer decides it: the record it would change, what that record
+    says today against what this would make it say, the two compared sentence by sentence,
+    the source behind every changed value, and the scope before and after. Read it, open the
+    sources, and only then approve.
+
+    What comes back is a request and not the library: until the proposal is approved the
+    library still says what `currentSummary` says. A proposal filed inside a bank arrives
+    without its proposer, as in the list.
+
+    Needs the platform permission `proposals.review`; no bank role and no API key scope
+    reaches it.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without `proposals.review`; `not_found` (404) for a proposal that does not exist
+    and for anything that is not a UUID.
+    """
+    return reading.detail(logic.by_id(uuid_or_404(proposal_id)), language_order(request), me_id=principal(request).subject_id)
 
 
 @router.post(

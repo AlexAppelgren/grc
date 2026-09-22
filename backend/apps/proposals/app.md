@@ -36,6 +36,12 @@ editor, other bank, agent or model reads it, and the library is corrected
 instead by the watch agents' re-check, which proposes the correction like any
 other (D-50, ADR 0043).
 
+A bank reads none of that queue. It reads the other end of it: `GET /library-updates`
+lists what was approved and applied since it last marked the library as seen, titled by
+the library record and never by the request that carried it, cut to its own footprint, and
+naming nobody. Its own requests to a shared list it follows through
+`GET /tenant/proposals`, which answers its rows and no other bank's.
+
 A bank's own private records travel the same table but never the console: the
 server sets the proposal's owner from the target, and a second person in the
 same bank approves under `private_records.approve` with a passkey, through the
@@ -64,7 +70,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | PRO-01 | The review queue is the only way into the library, for agents and people, with a source per changed field | M | R1 | in_progress |
 | PRO-02 | Approval applies the payload, writes the version, the audit row and the re-index in one transaction; the reviewer can correct scope and wording first; never the proposer | M | R1 | in_progress |
-| PRO-03 | The queue lives in the platform console; tenants see library updates and can report a problem, which stays inside their bank. A bank's private records are proposed and approved inside the bank and never reach the console (D-50, D-57) | M | R1 | pending |
+| PRO-03 | The queue lives in the platform console; tenants see library updates and can report a problem, which stays inside their bank. A bank's private records are proposed and approved inside the bank and never reach the console (D-50, D-57) | M | R1 | in_progress |
 | PRO-04 | Batch proposals (re-tag, backfill) with a preview, approved whole or row by row | S | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)

@@ -319,38 +319,24 @@ change what four eyes means and are marked as such.
       sees what changed". It is the intervention path and it stays tested end to end. The
       agent-confirmed path is `PRO-S13`, whose journey half waits for chunk 5. Say the word if the
       agent path should become the journey and the person's path the variant.
-- [ ] **Who confirms a watch item's curation now?** (Your item 16, `q-editor-confirm`.) You
-      answered that a library editor with `proposals.review` may confirm an agent's suggested
-      change type, flag, scope term or obligation link alone, with no proposal and no second
-      pair of eyes. Item 19 leaves that role staffed by nobody, so the answer now names no one.
-      Default until you say otherwise: `c5-watch-curation-confirm` stays held, the agent's
-      suggestion keeps reading as a suggestion, and no agent confirms a change's facts, because
-      item 19 widened who may approve a **proposal** and said nothing about confirming without
-      one. The two ways out are to staff the role for curation only, or to let a confirming
-      agent of another definition confirm and label the item machine-confirmed as a library
-      record is labelled. The second changes what a confirmation is worth, so it is yours.
+- [x] **Who confirms a watch item's curation now?** (Your item 16, `q-editor-confirm`.)
+      **Answered 2026-09-21: an agent of a different definition and key confirms, and the item
+      reads machine-confirmed** (D-74). The control on the console's Change facts detail is built
+      as the intervention path a person still has; the routine confirmation is an agent's.
+      What this settles of the three things the question asked for: the principal is a confirming
+      agent, the write goes through the **watch door** rather than the proposal door and so adds
+      no second exception to the library invariant (`change_term` and `change_obligation` are
+      watch tables behind `watch_write()`, which D-64 already separated from the inventory), and
+      it takes no passkey step-up, because a key cannot step up and the scope separation is the
+      gate. `regulatory_change.change_type` gains `suggested`, `confirmed_by` and `confirmed_at`
+      in one migration, so a type can be settled like a term or a link.
 
-      **Where it would attach, now that the case side is built** (2026-09-21). The bank's own
-      half of WAT-04 ships: a compliance officer accepts or removes a suggested obligation link
-      on its own case, and WAT-S6 is green over that path. What is still missing is one flag on
-      the shared row. The affordance is a single control on the console's Change facts detail —
-      "Confirm" beside a suggested type, flag, scope term or obligation link — and behind it a
-      route that sets `suggested`, `confirmed_by` and `confirmed_at` on `change_term`, or
-      `confirmed_by` and `confirmed_at` on `change_obligation`, and nothing else. It needs three
-      things from you and nothing from engineering: a principal who may press it (a person with
-      `proposals.review`, or an agent of another definition), whether it goes through the
-      proposal door or is a second named exception beside the re-verification stamp, and whether
-      it takes a passkey step-up. Until then `PUT /changes/{changeId}/obligations` answers 501
-      `not_built` to an editor whose call would unmake a confirmation and refuses a key outright,
-      WAT-S6 carries a note saying the step is WAT-S4's, and the reads already carry `confirmed`
-      per link so the control is the only thing left to add.
+      Still worth your eye, but not blocking: a curation confirmation carries no four eyes behind
+      it. A proposal's does, through a check constraint on the proposal row; there is no proposal
+      here, so this is the one confirmation in the product resting on the scope separation alone.
+      If an assurance review finds that too thin, the way back is to make curation a proposal
+      like everything else, which costs a queue and nothing else.
 
-      **A change's own type has no column to record a confirmation, and this work did not add
-      one.** `change_term` and `change_obligation` each carry `suggested`, `confirmed_by` and
-      `confirmed_at`; `regulatory_change.change_type` is a plain foreign key with none of the
-      three, so today the type reads as a suggestion for as long as the change exists and there
-      is nowhere to say a person settled it. Adding the pair is one migration on one table, and
-      it belongs with whichever way you answer above rather than ahead of it.
 - [ ] **Should any change still need a person?** (Would change what four eyes means.) Default:
       **no** — every proposal kind may be confirmed by an agent. A carve-out is defensible for a
       first-of-its-kind instrument, a retirement, or anything carrying a standard's term, and it
@@ -408,3 +394,24 @@ change what four eyes means and are marked as such.
       to schedule a proper planning pass for it (a brief, the way `AGENT_ACCESS.md` got
       one, before chunk 8 or as part of it) — it should not land as a slice on an
       unrelated push.
+
+## The calendar feed carries every roadmap date, whatever the date's precision (2026-09-21, HOM-04)
+
+- [ ] **ADR 0045 says the feed carries dates "with a day-precision key date today or later";
+      the built feed carries every date the roadmap carries.** The two are the same date for
+      almost every reform, because a change is registered with day precision unless somebody
+      records otherwise. They part when a reform is dated only to a month, a quarter or a
+      year: the roadmap shows it with its precision beside it, and a calendar client would
+      draw the same date as one all-day event and put a reminder on a day nobody published.
+      Filtering it out was built and then taken out again, for a reason worth your ruling: the
+      precision lives on `regulatory_change`, a library record, and reading it inside the
+      module that writes a bank's `calendar_feed` rows is the exact shape
+      `apps/shared/tests_library_fence.py` refuses (a module that names a library model and
+      calls a write). The alternatives are each somebody's decision: carry the precision on
+      `RoadmapItem` so the feed can read it from the roadmap it already asks (a contract
+      change in `c6-home-api-contract`'s shape), have the feed emit a vague date as an event
+      spanning the month or quarter (a calendar can say that, and it is arguably the truer
+      entry), or leave it as built and let a vague date show as one day, which is what the
+      roadmap page already shows. Default if you say nothing: it stays as built, and a feed
+      never disagrees with the roadmap page beside it, which is the rule chunk 6 ruling 5 set
+      for these two reads.

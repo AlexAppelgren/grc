@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from apps.shared.schemas import CamelSchema, VocabularyExtra, WriteBody
 
@@ -268,9 +268,62 @@ class FootprintRequestRow(CamelSchema):
     version: int = 1
 
 
+class MarketRow(CamelSchema):
+    """One active country's market level (FP-04), computed fresh on every read and never
+    stored: operating when the jurisdiction's mirrored term sits in the tenant's footprint,
+    set only through a footprint change request (FP-02); watching when a `watched_market`
+    row names it, a direct write that hides nothing. Both false reads as not followed."""
+
+    jurisdiction: TermRef = Field(
+        description=(
+            "The country: its key, kind (always `country`) and label in the caller's language. A row of "
+            "the jurisdiction vocabulary; an admin may add more without a deploy, and `GET /reference/jurisdictions` "
+            "lists the live set."
+        )
+    )
+    operating: bool = Field(
+        description=(
+            "True when this country's mirrored jurisdiction term is in the tenant's footprint. Changes "
+            "only through a footprint change request with its preview, second person and step-up."
+        )
+    )
+    watching: bool = Field(
+        description=(
+            "True when the tenant has a `watched_market` row naming this country. Set directly with "
+            "`POST /tenant/footprint/watching`, with no preview, no second person and no step-up, "
+            "because watching hides nothing."
+        )
+    )
+
+
+class MarketWatchBody(WriteBody):
+    """`POST /tenant/footprint/watching` and `POST /tenant/footprint/watching/remove`
+    (FP-04): the jurisdiction key rides in the body on both routes, never in the path or a
+    query string, because the tenant's watch list is sensitive and does not belong on an
+    access log line."""
+
+    model_config = ConfigDict(extra="forbid", json_schema_extra={"examples": [{"jurisdiction": "no"}]})
+
+    jurisdiction: str = Field(
+        min_length=1,
+        max_length=80,
+        description=(
+            "The key of a row of the jurisdiction vocabulary naming a country, at most 80 characters, "
+            "such as `no` for Norway (`GET /reference/jurisdictions` lists the live rows; an admin may "
+            "add more without a deploy). The union itself, an unknown or inactive key, or a supranational "
+            "key answers 422 `unknown_key` or `not_a_country`."
+        ),
+        examples=["no"],
+    )
+
+
 class FootprintView(CamelSchema):
     dimensions: list[FootprintDimension]
     pending_request: FootprintRequestRow | None = None
+    markets: list[MarketRow] = Field(
+        default_factory=list,
+        description="Every active country's operating and watching level, one row per country, in jurisdiction sort order (FP-04).",
+    )
 
 
 class FootprintRequestPage(CamelSchema):

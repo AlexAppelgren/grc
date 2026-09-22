@@ -40,7 +40,7 @@ from __future__ import annotations
 import datetime
 import uuid
 from collections.abc import Collection, Iterable, Mapping
-from typing import Any, NoReturn, TypeVar
+from typing import Any, NamedTuple, NoReturn, TypeVar
 from zoneinfo import ZoneInfo
 
 from django.contrib.postgres.expressions import ArraySubquery
@@ -140,6 +140,47 @@ def vocabulary_refs(label_model: type[Any], rows: Iterable[Any], order: list[str
         )
         for row in distinct
     }
+
+
+class RecordHeading(NamedTuple):
+    """How a record outside the library app names one of its rows: the record's own title,
+    its reference inside its instrument and that instrument's short name. The library's own
+    wording, never a proposal's or a case's description of it."""
+
+    title: str
+    reference_label: str
+    instrument_short_name: str
+
+
+def obligation_headings(obligation_ids: Collection[uuid.UUID], order: list[str]) -> dict[uuid.UUID, RecordHeading]:
+    """How to name each of these duties, in two queries however many ids there are, so a
+    list that points at library records stays constant in its row count. An id the caller
+    cannot see, or that no longer exists, is simply absent."""
+    if not obligation_ids:
+        return {}
+    rows = list(
+        Obligation.objects.filter(id__in=obligation_ids).select_related("instrument").prefetch_related("titles")
+    )
+    headings = {}
+    for row in rows:
+        title = localized(row.titles.all(), order)
+        headings[row.id] = RecordHeading(
+            title="" if title is None else title.text,
+            reference_label=row.ref_label,
+            instrument_short_name=row.instrument.short_name,
+        )
+    return headings
+
+
+def obligation_scope_refs(obligation_id: uuid.UUID) -> list[str]:
+    """One duty's own scope facets as `dimension:key`, in the order a reader sees them and
+    the spelling a proposal's payload uses. The instrument's regime is deliberately not
+    here: a proposal replaces the record's own terms and never the instrument's, so this is
+    the list a reviewer compares a proposed scope against."""
+    return [
+        f"{link.term.dimension.key}:{link.term.key}"
+        for link in ObligationTerm.objects.filter(obligation_id=obligation_id).select_related("term__dimension")
+    ]
 
 
 def today_for(tenant: Tenant) -> datetime.date:

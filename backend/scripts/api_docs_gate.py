@@ -109,6 +109,7 @@ RAISABLE_CODES = raisable_codes()
 VOCABULARY_PROPERTIES = frozenset(
     {
         "JurisdictionRow.parentKey",
+        "MarketWatchBody.jurisdiction",
         "ObligationQuery.dutyType",
         "ObligationQuery.term",
         "TaxonomyTermRow.parentKey",

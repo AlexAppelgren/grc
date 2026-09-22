@@ -156,6 +156,12 @@ class IdentityLookupMode(TestCase):
             "apps/identity/session_logic.py",
             "apps/identity/invitation_logic.py",
             "apps/identity/api_keys_logic.py",
+            # The fifth table of the clause and the fifth caller (HOM-04, D-52, ADR 0045):
+            # a calendar client presents no session and no key, so the feed's token is
+            # resolved to a row before any bank is known, exactly as an API key's is. It
+            # reads `calendar_feed` by its unique prefix and nothing else, and activates
+            # that row's tenant before it reads one row of the bank's own.
+            "apps/home/feed.py",
         }
         offenders = [caller for caller in self._callers_of("identity_lookup") if caller.rsplit(":", 1)[0] not in allowed]
         self.assertEqual(offenders, [], f"identity_lookup() is for the auth layer only; allowed: {sorted(allowed)}")
