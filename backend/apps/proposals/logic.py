@@ -49,6 +49,7 @@ from apps.governance import ai_log
 from apps.governance.models import AiPurpose
 from apps.library.models import DatePrecision
 from apps.library.reading import active_obligation, terms_of, unknown_provision_keys
+from apps.proposals import standards
 from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus, ProposalTenant
 from apps.proposals.schemas import (
     ProposalActorRef,
@@ -399,6 +400,7 @@ def create(
     validated_kind(kind)
     parsed = validated_payload(kind, payload)
     _validate_obligation_target(kind, target_type, target_id)
+    standards.check_payload(kind, target_id, parsed)
     sources = {field: value.strip() for field, value in (field_sources or {}).items()}
     check_field_sources(parsed, sources)
     effective_from = _agreed_effective_from(parsed, effective_from)
@@ -753,6 +755,7 @@ def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any])
         )
     merged = {**proposal.payload, **overrides}
     parsed = validated_payload(proposal.kind, merged)
+    standards.check_payload(proposal.kind, proposal.target_id, parsed)
     check_field_sources(parsed, proposal.field_sources)
     stored = payload_dict(parsed)
     if reviewer.user is None and stored.get("originalLanguage") != proposal.payload.get("originalLanguage"):

@@ -346,9 +346,10 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     `source_missing` (422) when a changed value carries no source; `unknown_key` (422) for a
     kind, a list, a language, a term or a target obligation the library does not hold;
     `validation_error` (422) for a body the schema or the kind's payload refuses;
-    `idempotency_conflict` (409) when the same `Idempotency-Key` arrives with a different
-    body; `permission_denied` (403) without the permission or the scope;
-    `unauthenticated` (401) without a credential.
+    `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
+    obligation whose instrument is not a standard; `idempotency_conflict` (409) when the
+    same `Idempotency-Key` arrives with a different body; `permission_denied` (403) without
+    the permission or the scope; `unauthenticated` (401) without a credential.
     """
     # Ungated by design: logic-gate (proposals.create, library_vocab.manage or the proposals:write scope; PRO-01).
     who = require_proposer(request)
@@ -494,7 +495,9 @@ def approve_proposal(
     payload names a row the library does not hold; `jurisdiction_term_mirrored` (422) when
     the payload adds or renames a term of a dimension that mirrors the jurisdiction list,
     or scopes an obligation with one, which a proposal filed before that rule may still ask
-    for.
+    for; `standard_term_only_on_standards` (422) when the payload, as proposed or as
+    corrected, puts a standard's term on an obligation whose instrument is not a standard;
+    `not_found` when there is no such proposal.
     """
     reviewer = require_reviewer(request)
     step_up_assertion_id = enforce_step_up(request) if reviewer.user is not None else None
