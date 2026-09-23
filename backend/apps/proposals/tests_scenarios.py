@@ -33,6 +33,7 @@ from apps.library.models import (
     ObligationVersion,
 )
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.library.seeds.library import seed_authorities
 from apps.proposals import apply
 from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
 from apps.shared import factories, tenancy, permissions as perms
@@ -41,6 +42,8 @@ from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.routes import iter_operations
 from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
+from apps.proposals.tests_kinds import INSTRUMENT_KEY, OBLIGATION_KEY, instrument_body, obligation_body
+from apps.search.models import SearchChunk
 from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
@@ -261,6 +264,24 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual([link.tenant_id for link in ProposalTenant.objects.all()], [self.tenant.id])
         self.assertEqual(AuditEvent.objects.get(action="proposal.created", subject_id=proposal["id"]).tenant_id, self.tenant.id)
 
+        # A new record carries a source for every fact it sets, an https link each, since
+        # there is no provision of its own to cite yet.
+        seed_authorities()
+        new = instrument_body()
+        for missing in ("titles.sv", "regime"):
+            without = self._post("/proposals", {**new, "fieldSources": {f: u for f, u in new["fieldSources"].items() if f != missing}}, agent)
+            self.assertEqual(without.status_code, 422, without.content)
+            self.assertEqual(without.json()["code"], "source_missing")
+            self.assertIn(missing, without.json()["detail"])
+        not_a_link = self._post("/proposals", {**new, "fieldSources": {**new["fieldSources"], "level": "n/a"}}, agent)
+        self.assertEqual(not_a_link.json()["code"], "validation_error")
+        self.assertFalse(Proposal.objects.filter(kind="new_instrument").exists())
+        filed = self._post("/proposals", new, agent)
+        self.assertEqual(filed.status_code, 201, filed.content)
+        self.assertEqual(filed.json()["fieldSources"], new["fieldSources"])
+        waiting = self.client.get(f"{V1}/proposals?status=open&kind=new_instrument", **editor)
+        self.assertEqual([row["id"] for row in waiting.json()["items"]], [filed.json()["id"]])
+
     def test_pro_s2(self) -> None:
         """PRO-S2
 
@@ -361,6 +382,27 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertTrue(OutboxEvent.objects.filter(topic="obligation.version_applied").exists())
         self.assertTrue(OutboxEvent.objects.filter(topic="proposal.approved").exists())
 
+        # A new obligation arrives the same way: the record, its first version, the audit
+        # row and the re-index in one transaction, or none of them.
+        key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        new = self._post("/proposals", obligation_body(obligation.instrument.stable_key), {"HTTP_X_API_KEY": key.plain_key})
+        self.assertEqual(new.status_code, 201, new.content)
+        with mock.patch.object(apply, "reindex", side_effect=RuntimeError("index unavailable")):
+            failed = self._post(f"/proposals/{new.json()['id']}/approve", {}, sign_in(self.second_editor, step_up=True))
+        self.assertEqual(failed.status_code, 500, failed.content)
+        self.assertFalse(Obligation.objects.filter(stable_key=OBLIGATION_KEY).exists())
+        self.assertEqual(Proposal.objects.get(pk=new.json()["id"]).status, ProposalStatus.OPEN.value)
+        approved = self._post(f"/proposals/{new.json()['id']}/approve", {}, sign_in(self.second_editor, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+        created = Obligation.objects.get(stable_key=OBLIGATION_KEY)
+        first_version = ObligationVersion.objects.get(obligation=created)
+        self.assertEqual((first_version.version_number, first_version.effective_from), (1, date(2027, 1, 1)))
+        self.assertEqual(str(first_version.applied_by_proposal_id), new.json()["id"])
+        self.assertEqual(first_version.approved_by_id, self.second_editor.id)
+        self.assertTrue(SearchChunk.objects.filter(source_id=first_version.id).exists())
+        self.assertIsNotNone(AuditEvent.objects.get(action="obligation.created", subject_id=created.id).step_up_assertion_id)
+        self.assertTrue(OutboxEvent.objects.filter(topic="obligation.created").exists())
+
     def test_pro_s4(self) -> None:
         """PRO-S4
 
@@ -460,6 +502,14 @@ class ProposalsScenarioTests(ScenarioTestCase):
         twice = self._post(f"/proposals/{proposal['id']}/approve", {}, sign_in(self.second_editor, step_up=True))
         self.assertEqual(twice.status_code, 409)
         self.assertEqual(twice.json()["code"], "invalid_transition")
+        # A new record is no different: its proposer cannot approve it, and nothing is written.
+        seed_authorities()
+        filed = self._post("/proposals", instrument_body(), editor)
+        self.assertEqual(filed.status_code, 201, filed.content)
+        own_record = self._post(f"/proposals/{filed.json()['id']}/approve", {}, editor)
+        self.assertEqual(own_record.status_code, 409, own_record.content)
+        self.assertEqual(own_record.json()["code"], "four_eyes_violation")
+        self.assertFalse(Instrument.objects.filter(stable_key=INSTRUMENT_KEY).exists())
 
     def test_pro_s6(self) -> None:
         """PRO-S6
@@ -506,6 +556,18 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(self.client.get(f"{V1}/proposals?status=approved,rejected", **editor).json()["total"], 0)
         with self.assertNumQueries(PROPOSAL_QUEUE_QUERIES):
             self.client.get(f"{V1}/proposals", **editor)
+        # A new record retried under one key is one proposal, and the key cannot carry another.
+        self._obligation()
+        retried = {"HTTP_X_API_KEY": key.plain_key, "HTTP_IDEMPOTENCY_KEY": "run-42-obl-7"}
+        new = obligation_body("fffs-2017-2")
+        once = self._post("/proposals", new, retried)
+        self.assertEqual(once.status_code, 201, once.content)
+        again = self._post("/proposals", new, retried)
+        self.assertEqual((again.status_code, again.json()["id"]), (200, once.json()["id"]))
+        self.assertEqual(Proposal.objects.filter(idempotency_key="run-42-obl-7").count(), 1)
+        other = self._post("/proposals", obligation_body("fffs-2017-2", refLabel="4 kap. 3 §"), retried)
+        self.assertEqual(other.status_code, 409, other.content)
+        self.assertEqual(other.json()["code"], "idempotency_conflict")
 
     def test_pro_s7(self) -> None:
         """PRO-S7
