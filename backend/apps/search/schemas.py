@@ -956,6 +956,7 @@ class AskAnswerEvent(CamelSchema):
                         "aiGenerated": True,
                         "createdAt": "2026-09-20T09:14:02Z",
                     },
+                    "stopReason": "end_turn",
                 }
             ]
         }
@@ -975,6 +976,20 @@ class AskAnswerEvent(CamelSchema):
             "not read it as confirmed: it stays labelled AI output until a person says "
             "otherwise."
         )
+    )
+    stop_reason: str | None = Field(
+        default=None,
+        description=(
+            "How the model finished writing, in the provider's own word, exactly as the "
+            "answer's AI log row stores it (`stopReason` there, D-82): `end_turn` when the "
+            "model finished the answer, `max_tokens` when it was cut off at the length "
+            "limit (`ASK_MAX_TOKENS`, 1024 tokens), and any other word the provider gives "
+            "passed on unchanged. Empty when no model was asked, because no passage "
+            "supported an answer. Source: the model's provider. Do not read `max_tokens` "
+            "as a wrong answer: every statement sent is still cited, but the answer may "
+            "stop before its last point, so the screen says it was cut short and a "
+            "narrower question may get the rest."
+        ),
     )
 
 
