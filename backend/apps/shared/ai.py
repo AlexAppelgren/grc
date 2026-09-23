@@ -19,11 +19,13 @@ through `modelMetadataReportedByAgent`.
 
 **The bank's own switch.** A bank can switch its own AI features off (`tenant.ai_enabled`,
 D-07, owner item 14): Ask, the drafts a model writes for it and, from chunk 11, its own
-agents. The switch is read here, before the model is reached, and only when a tenant is
-active: a platform (library) run has none, so bleqq's own watch agents, which are part of
-the base package, never consult it and no bank can stop them. A bank whose row cannot be
-read is treated as switched off, because the switch is what decides whether a bank's own
-words leave it for a model.
+agents. The switch is read here, before the model is reached, and only when the caller's
+transaction is in a bank's zone: a platform (library) run is in none, so bleqq's own watch
+agents, which are part of the base package, never consult it and no bank can stop them.
+The zone is the database's own setting, the one row-level security reads, and not the
+Python-side mirror of it, which outlives the transaction that set it on a thread that
+serves one request after another. A bank whose row cannot be read is treated as switched
+off, because the switch is what decides whether a bank's own words leave it for a model.
 """
 
 from __future__ import annotations
@@ -65,9 +67,9 @@ def prompt_hash(system: str, prompt: str) -> str:
 
 def ensure_enabled() -> None:
     """Refuse a model call for a bank that switched its own AI features off, before any
-    model is reached. With no tenant active this is a platform call, and it passes: no
-    bank's switch reaches bleqq's own agents (owner item 14)."""
-    tenant_id = tenancy.active_tenant_id()
+    model is reached. With no bank in the transaction's zone this is a platform call, and
+    it passes: no bank's switch reaches bleqq's own agents (owner item 14)."""
+    tenant_id = tenancy.database_tenant_id()
     if tenant_id is None:
         return
     enabled = Tenant.objects.filter(pk=tenant_id).values_list("ai_enabled", flat=True).first()  # ordering: pk lookup, at most one row

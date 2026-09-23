@@ -128,3 +128,30 @@ class AiSwitchTests(TestCase):
             [],
             "a platform call never reads a bank's switch",
         )
+
+    def test_a_bank_an_earlier_transaction_activated_does_not_decide_a_platform_call(self) -> None:
+        """A worker thread serves one request after another, and the Python-side mirror of
+        the active bank outlives the transaction that set it, while the database's own
+        setting ends with it. The switch reads the database's, which is also what row-level
+        security reads, so a call with no bank in its own transaction is a platform call
+        whatever the thread served before."""
+        switch_off(self.on)
+        self.addCleanup(tenancy.clear_tenant)
+        tenancy.clear_tenant()
+        try:
+            with transaction.atomic():
+                tenancy.activate(self.on.id)  # an earlier request on the same thread
+                raise _Ended
+        except _Ended:
+            pass
+        self.assertEqual((tenancy.active_tenant_id(), tenancy.database_tenant_id()), (self.on.id, None))
+
+        with CaptureQueriesContext(connection) as queries:
+            result = generate(None)
+
+        self.assertTrue(result.text)
+        self.assertEqual([query["sql"] for query in queries.captured_queries if 'FROM "tenant"' in query["sql"]], [])
+
+
+class _Ended(Exception):
+    """Rolls a block back, as the end of a request's transaction does."""

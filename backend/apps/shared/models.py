@@ -48,8 +48,9 @@ class Tenant(models.Model):
     )
     # The one switch over this bank's own AI features: Ask, the drafts a model writes for
     # it, and from chunk 11 its own agents (D-07, owner item 14). bleqq's platform agents
-    # never read it. `apps/shared/ai.py` checks it before every model call made with a
-    # tenant active; it is written only behind a passkey step-up (`PUT /tenant/ai`).
+    # never read it. `apps/shared/ai.py` checks it before every model call made in this
+    # bank's zone. No route writes it yet: the switch's own route, behind a passkey
+    # step-up, is still to come.
     ai_enabled = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
 
