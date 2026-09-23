@@ -1633,11 +1633,12 @@ class RecordSourcesTests(TestCase):
         }
         created = self.client.post("/api/v1/proposals", body, content_type="application/json", HTTP_X_API_KEY=proposer.plain_key)
         self.assertEqual(created.status_code, 201, created.content)
+        confirmer = agents_testing.reviewer_api_key()
         approved = self.client.post(
             f"/api/v1/proposals/{created.json()['id']}/approve",
-            {},
+            agents_testing.decision(confirmer),  # the model call behind the decision, and its run (D-80)
             content_type="application/json",
-            HTTP_X_API_KEY=agents_testing.reviewer_api_key().plain_key,
+            HTTP_X_API_KEY=confirmer.plain_key,
         )
         self.assertEqual(approved.status_code, 200, approved.content)
 

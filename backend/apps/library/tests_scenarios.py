@@ -564,7 +564,7 @@ class LibraryScenarioTests(ScenarioTestCase):
 
         # bindingLevel carries the kind "standard" on the standard's duty and a null kind on
         # every other level, in the list and on the card.
-        rows = self.read(URL, {"outsideFootprint": "true", "limit": settings.API_PAGE_SIZE_MAX})
+        rows = self.read(URL, {"footprint": "all", "limit": settings.API_PAGE_SIZE_MAX})
         self.assertEqual(rows["total"], len(rows["items"]))
         kinds = {row["stableKey"]: row["bindingLevel"]["kind"] for row in rows["items"]}
         self.assertEqual(kinds.pop(duty.stable_key), "standard")
@@ -573,7 +573,7 @@ class LibraryScenarioTests(ScenarioTestCase):
         self.assertEqual(self.card(duty.stable_key)["bindingLevel"]["kind"], "standard")
 
         # The instrument has exactly one obligation and no provision.
-        mine = self.read(URL, {"outsideFootprint": "true", "instrument": edition.stable_key})
+        mine = self.read(URL, {"footprint": "all", "instrument": edition.stable_key})
         self.assertEqual([row["stableKey"] for row in mine["items"]], [duty.stable_key])
         response = self.client.get(f"{V1}/instruments/{edition.id}/provisions", **sign_in(self.reader, tenant=self.tenant))
         self.assertEqual((response.status_code, response.json()), (200, []))

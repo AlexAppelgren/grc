@@ -1933,7 +1933,7 @@ class HeldStandardInScope(ScenarioTestCase):
         FootprintTerm.objects.create(tenant=self.tenant, term=tenant_lists_logic.term_by_ref("regime", "ai_ict"), added_by=self.officer)
 
     def _inventory(self, headers: dict[str, Any], *, outside: bool = False) -> dict[str, dict[str, Any]]:
-        params = {"outsideFootprint": "true"} if outside else {}
+        params = {"footprint": "all"} if outside else {}
         response = self.client.get(f"{V1}/obligations", params, **headers)
         self.assertEqual(response.status_code, 200, response.content)
         return {row["stableKey"]: row for row in response.json()["items"]}

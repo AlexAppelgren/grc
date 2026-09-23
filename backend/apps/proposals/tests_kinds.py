@@ -49,6 +49,7 @@ from apps.search.models import SearchChunk
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
+from apps.shared.schemas import AgentDecision
 from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.models import TaxonomyTerm
@@ -226,8 +227,8 @@ class KindsTestCase(ScenarioTestCase):
             agent_run_id=self.agent_run.id,
         )
 
-    def _agent_reviewer(self) -> logic.Reviewer:
-        confirmer = agents_testing.reviewer_api_key()
+    def _agent_reviewer(self, confirmer: Any = None) -> logic.Reviewer:
+        confirmer = confirmer or agents_testing.reviewer_api_key()
         actor = Actor(kind=ActorType.AGENT, id=confirmer.agent.id, label=confirmer.agent.key)
         return logic.Reviewer(actor=actor, api_key_id=confirmer.id, agent_id=confirmer.agent.id, api_key_prefix=confirmer.row.key_prefix)
 
@@ -572,9 +573,21 @@ class NewProvision(KindsTestCase):
     def test_an_agent_cannot_approve_a_provision_yet(self) -> None:
         """A provision version has nowhere to say an agent confirmed it (INV-05, D-79)."""
         proposal = Proposal.objects.get(pk=self._filed(provision_body())["id"])
-        reviewer = self._agent_reviewer()
+        confirmer = agents_testing.reviewer_api_key()
+        reviewer = self._agent_reviewer(confirmer)
+        # With the model call behind its decision and an open run of its own key (D-80), so
+        # the refusal is D-79's and nothing else's.
+        decided = agents_testing.decision(confirmer)
         with self.assertRaises(ValidationError) as caught:
-            logic.approve(proposal=proposal, reviewer=reviewer, actor=reviewer.actor, note="", step_up_assertion_id=None)
+            logic.approve(
+                proposal=proposal,
+                reviewer=reviewer,
+                actor=reviewer.actor,
+                note="",
+                step_up_assertion_id=None,
+                decision=AgentDecision.model_validate(decided["decision"]),
+                agent_run_id=uuid.UUID(decided["agentRunId"]),
+            )
         self.assertEqual(caught.exception.code, "person_review_required")
         self.assertFalse(Provision.objects.filter(stable_key=PROVISION_KEY).exists())
 
