@@ -12,11 +12,12 @@ which may name a member of another tenant).
 from __future__ import annotations
 
 import uuid
+from typing import cast
 
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
-from apps.governance.schemas import AuditActorRef, AuditEventQuery, AuditEventRow
+from apps.governance.schemas import AuditActorKind, AuditActorRef, AuditEventQuery, AuditEventRow
 from apps.identity.models import PlatformRoleAssignment
 from apps.shared.audit import ActorType
 from apps.shared.models import AuditEvent
@@ -55,7 +56,7 @@ def audit_row(event: AuditEvent) -> AuditEventRow:
     return AuditEventRow(
         id=event.id,
         created_at=event.created,
-        actor=AuditActorRef(type=event.actor_type, id=event.actor_id, label=event.actor_label),
+        actor=AuditActorRef(type=cast(AuditActorKind, event.actor_type), id=event.actor_id, label=event.actor_label),
         action=event.action,
         subject_type=event.subject_type,
         subject_id=event.subject_id,

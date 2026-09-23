@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from django.conf import settings
 from pydantic import ConfigDict, Field
@@ -21,41 +22,296 @@ from apps.shared.schemas import AiCitation, AuditSnapshot, CamelSchema
 
 
 class AuditEventQuery(CamelSchema):
-    """Filters of the audit log, each optional. A record is `subjectType` and `subjectId`;
-    `from` is inclusive and `to` exclusive."""
+    """Filters of the audit log, each optional and combined with AND. A record is `subjectType`
+    and `subjectId`; `from` is inclusive and `to` exclusive."""
 
-    subject_type: str | None = Field(default=None, max_length=64)
-    subject_id: uuid.UUID | None = None
-    actor_id: uuid.UUID | None = None
-    from_: datetime | None = Field(default=None, alias="from")
-    to: datetime | None = None
+    subject_type: str | None = Field(
+        default=None,
+        max_length=64,
+        description=(
+            "Show only the rows about one kind of record, by the kind key a row carries in "
+            "`subjectType`, such as `footprint_change_request`, `membership` or `obligation`; "
+            "pair it with `subjectId` to read one record's history. Matched exactly, at most "
+            "64 characters; a longer value is refused with `validation_error` (422). A kind no "
+            "row carries matches nothing and answers 200 with an empty page, because a filter "
+            "that finds nothing is an empty answer and not an error."
+        ),
+        examples=["footprint_change_request"],
+    )
+    subject_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Show only the rows about one record, by the UUID a row carries in `subjectId`. "
+            "For most kinds that is the id the API uses for the record, such as a footprint "
+            "change request's id; a `membership` row carries the membership's own id, which "
+            "the API does not otherwise show, and not the member's `userId`, so take it from a "
+            "row. A value that is not a UUID is refused with `validation_error` (422); an id "
+            "no row names answers 200 with an empty page."
+        ),
+        examples=["4a7c1e9b-3d5f-4b2a-8e6c-0f1d3b5a7c92"],
+    )
+    actor_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Show only what one person or agent did, by the UUID a row carries in `actor.id`: "
+            "a person's user id, or for an agent the agent its key is bound to (the key's own "
+            "id for a key bound to no agent). The system has no id, so its rows cannot be "
+            "picked out this way. A value that is not a UUID is refused with "
+            "`validation_error` (422); an actor who did nothing here answers 200 with an empty "
+            "page."
+        ),
+        examples=["8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30"],
+    )
+    from_: datetime | None = Field(
+        default=None,
+        alias="from",
+        description=(
+            "Show only rows written at or after this moment (inclusive), as an ISO 8601 "
+            "timestamp such as `2026-09-16T00:00:00+02:00`. Give the offset: a value without "
+            "one, or a date alone, is read as UTC (a date as midnight UTC) and not as the "
+            "bank's local time. In the query string write the offset's `+` as `%2B` (or use "
+            "`Z`): a bare `+` arrives as a space. A value that is not a timestamp is refused "
+            "with `validation_error` (422). A `from` later than `to` matches nothing and "
+            "answers 200 with an empty page."
+        ),
+        examples=["2026-09-16T00:00:00+02:00"],
+    )
+    to: datetime | None = Field(
+        default=None,
+        description=(
+            "Show only rows written before this moment (exclusive), so `from` one midnight and "
+            "`to` the next is exactly one day and back-to-back windows never count a row "
+            "twice. An ISO 8601 timestamp such as `2026-09-17T00:00:00+02:00`, read like "
+            "`from`: without an offset it is UTC, the `+` is sent as `%2B`, and a value that is "
+            "not a timestamp is refused with `validation_error` (422)."
+        ),
+        examples=["2026-09-17T00:00:00+02:00"],
+    )
+
+
+# The actor kinds of apps.shared.audit.ActorType, closed in the contract so a client sees all three.
+AuditActorKind = Literal["user", "agent", "system"]
 
 
 class AuditActorRef(CamelSchema):
     """Who did it: a user, an agent or the system. `id` is empty for the system."""
 
-    type: str
-    id: uuid.UUID | None
-    label: str
+    type: AuditActorKind = Field(
+        description=(
+            "What kind of actor made the change, a fixed kind: `user` (a person, either a "
+            "member of this bank or bleqq's platform staff changing the shared library), "
+            "`agent` (an agent working through its key; it cannot step up, so its rows "
+            "always carry `steppedUp` false, and a proposal it confirmed "
+            "is machine-confirmed and never a person's decision) and `system` (the product "
+            "itself, such as a seed or a scheduled job). Fixed in code: an admin adds no "
+            "fourth kind."
+        ),
+        examples=["user"],
+    )
+    id: uuid.UUID | None = Field(
+        description=(
+            "Who acted, as a UUID: a person's user id, or for an agent the agent its key is "
+            "bound to (the key's own id for a key bound to no agent). Null for the system, "
+            "which has no identity of its own. Pass it as `actorId` to list everything this "
+            "actor did."
+        ),
+        examples=["8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30"],
+    )
+    label: str = Field(
+        max_length=200,
+        description=(
+            "The actor's name as it stood when the row was written, at most 200 characters, "
+            "for display: a person's name; for an agent, the key of the agent its key is bound "
+            "to (such as `library-confirmer`), with the agent's version where the row records "
+            "one (`library-confirmer v1`), or `api key <id>` for a key bound to no agent; for "
+            "the system, the job's name (`system` when it gave none). A snapshot that is "
+            "never updated, so a person renamed later keeps the old name here: match on `id`, "
+            "never on the label."
+        ),
+        examples=["Erik Holm"],
+    )
 
 
 class AuditEventRow(CamelSchema):
-    id: uuid.UUID
-    created_at: datetime
-    actor: AuditActorRef
-    action: str
-    subject_type: str
-    subject_id: uuid.UUID | None
-    subject_title: str
-    summary: str
-    before: AuditSnapshot
-    after: AuditSnapshot
-    stepped_up: bool
+    """One change in the bank's audit log (AUD-01): who made it, what happened to which record,
+    and the record's fields before and after. Written in the same transaction as the change and
+    never edited afterwards; a later change to the same record is a new row."""
+
+    id: uuid.UUID = Field(
+        description=(
+            "The audit row's identifier, as a UUID. A row is written once and never changed, "
+            "so the id names the same facts for good."
+        ),
+        examples=["5d0e8c2a-91b4-4f6e-a3d7-0c8b2e6f4a19"],
+    )
+    created_at: datetime = Field(
+        description=(
+            "When the row was written, as an RFC 3339 timestamp in UTC "
+            "(`2026-09-16T08:14:00Z`), taken from the server's clock inside the change's own "
+            "transaction. It is the moment of writing and not of committing, so a change that "
+            "took longer to commit can show up after rows with a later time. The log is ordered "
+            "by it, newest first, and `from` and `to` compare against it: to poll for new rows, "
+            "start `from` a little before the newest time already seen and drop the rows whose "
+            "`id` you already have."
+        ),
+        examples=["2026-09-16T08:14:00Z"],
+    )
+    actor: AuditActorRef = Field(
+        description=(
+            "Who made the change: a person, an agent or the system, with the id to filter on "
+            "and the name as it stood at the time."
+        )
+    )
+    action: str = Field(
+        max_length=100,
+        description=(
+            "What happened, as a machine key of the form `<record>.<event>` of at most 100 "
+            "characters, such as `member.updated`, `footprint.change_approved`, "
+            "`library.problem_reported` or `obligation.version_applied`. Written by the code that made "
+            "the change, and the set grows as the product records new kinds of change, so show "
+            "a key you do not know rather than fail on it. It is a key to compare and filter "
+            "on, not a sentence: `summary` is the sentence."
+        ),
+        examples=["member.updated"],
+    )
+    subject_type: str = Field(
+        max_length=64,
+        description=(
+            "What kind of record changed, as a snake_case kind key of at most 64 characters, "
+            "such as `membership`, `tenant_role` or `footprint_change_request` for the bank's "
+            "own records. The shared library's kinds are `authority`, `instrument`, "
+            "`provision`, `obligation`, `vocabulary` and `taxonomy_term`: a row about one of "
+            "those is either the bank's own act on that record, such as a problem it reported, "
+            "or a change to the library itself made by an agent, the system or bleqq's "
+            "platform staff, which every bank sees; `action` says which. `vocabulary` also "
+            "covers this bank's own lists, which its administrators edit: its `subjectTitle` "
+            "starts with the list's name (`<list>:<key>`), and the list says whether it is the "
+            "library's or the bank's. Written by the code, and the set grows as features ship. "
+            "Filter on it with `subjectType`."
+        ),
+        examples=["membership"],
+    )
+    subject_id: uuid.UUID | None = Field(
+        description=(
+            "The record that changed, as a UUID, which `subjectId` filters on. For most kinds "
+            "it is the id the API uses for that record, so a screen can link to it; a few kinds "
+            "name a row the API does not otherwise show, such as `membership`, whose id is the "
+            "membership's own and not the member's `userId`. Null for a change about no single "
+            "record."
+        ),
+        examples=["b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70"],
+    )
+    subject_title: str = Field(
+        max_length=500,
+        description=(
+            "The record's name as it read when the change was made, at most 500 characters, "
+            "such as a member's name, an obligation's stable key or `<list>:<key>` for a list "
+            "value. A snapshot: a record renamed later keeps its old title here, which is what "
+            "an audit trail is for. Empty when the record has no name."
+        ),
+        examples=["Johan Berg"],
+    )
+    summary: str = Field(
+        max_length=1000,
+        description=(
+            "One sentence saying what happened, at most 1000 characters, written in English by "
+            "the code that made the change and not translated. Read it as the row's caption; "
+            "`before` and `after` hold the detail."
+        ),
+        examples=["Member roles or title changed."],
+    )
+    before: AuditSnapshot = Field(
+        description=(
+            "The record's fields before the change, keyed by field name, as the code that made "
+            "the change chose to record them: usually only what changed, sometimes with context "
+            "such as a version number. Values are JSON as stored. An empty object (`{}`) when "
+            "there was nothing before, such as a creation. The keys differ by `subjectType` "
+            "and are not a fixed schema, so show them rather than branch on them."
+        ),
+        examples=[{"roles": ["contributor"], "title": "Obligation owner, digital investing"}],
+    )
+    after: AuditSnapshot = Field(
+        description=(
+            "The record's fields after the change, in the same shape as `before`: compare the "
+            "two field by field, and a field present on one side only was added or removed. "
+            "An empty object (`{}`) when the change left nothing to show."
+        ),
+        examples=[{"roles": ["contributor", "owner"], "title": "Obligation owner, digital investing"}],
+    )
+    stepped_up: bool = Field(
+        description=(
+            "True when the person who made the change confirmed it with a fresh passkey "
+            "step-up, which the product demands for approvals, sign-off, footprint changes, "
+            "exports, key creation, role and security changes and re-enrolment. Always false "
+            "for an agent or the system, neither of which can step up: a decision an agent "
+            "confirmed is machine-confirmed and never reads as a person's passkey-backed one."
+        ),
+        examples=[True],
+    )
 
 
 class AuditEventPage(CamelSchema):
-    items: list[AuditEventRow]
-    total: int
+    """One page of the bank's audit log, newest change first."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "items": [
+                        {
+                            "id": "5d0e8c2a-91b4-4f6e-a3d7-0c8b2e6f4a19",
+                            "createdAt": "2026-09-16T08:14:00Z",
+                            "actor": {"type": "user", "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30", "label": "Erik Holm"},
+                            "action": "member.updated",
+                            "subjectType": "membership",
+                            "subjectId": "b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70",
+                            "subjectTitle": "Johan Berg",
+                            "summary": "Member roles or title changed.",
+                            "before": {"roles": ["contributor"], "title": "Obligation owner, digital investing"},
+                            "after": {"roles": ["contributor", "owner"], "title": "Obligation owner, digital investing"},
+                            "steppedUp": True,
+                        },
+                        {
+                            "id": "e7a1c3f5-4b2d-4e8f-8a6c-1d3f5b7e9c02",
+                            "createdAt": "2026-09-16T07:40:00Z",
+                            "actor": {"type": "agent", "id": "3c5e7a9b-1d2f-4a6c-8e0b-2f4a6c8e0d13", "label": "library-confirmer v1"},
+                            "action": "obligation.version_applied",
+                            "subjectType": "obligation",
+                            "subjectId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+                            "subjectTitle": "obl-research-payments",
+                            "summary": "Filed version 2 of obl-research-payments (proposal 9d4f2b6a-0c8e-4a1f-b3d5-6e8a0c2f4b17).",
+                            "before": {"versionNumber": 1, "terms": None},
+                            "after": {
+                                "versionNumber": 2,
+                                "versionId": "0a2c4e6f-8b1d-4f3a-9c5e-7b9d1f3a5c68",
+                                "effectiveFrom": "2027-01-01",
+                                "effectiveFromPrecision": "day",
+                                "languages": ["en", "sv"],
+                                "terms": None,
+                                "proposal": "9d4f2b6a-0c8e-4a1f-b3d5-6e8a0c2f4b17",
+                            },
+                            "steppedUp": False,
+                        },
+                    ],
+                    "total": 2,
+                }
+            ]
+        }
+    )
+
+    items: list[AuditEventRow] = Field(
+        description=(
+            "The rows of this page, newest first, with rows written in the same instant ordered "
+            "by `id`, descending. Empty when nothing matches, which is a 200 and never an error."
+        )
+    )
+    total: int = Field(
+        description=(
+            "How many rows match the filters in total, counted at the moment of the call and "
+            "not only on this page, so a screen can say “n of m” and know when to stop paging."
+        ),
+        examples=[2],
+    )
 
 
 # ---------------------------------------------------------------------------------------
