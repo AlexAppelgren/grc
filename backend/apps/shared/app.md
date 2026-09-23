@@ -57,8 +57,9 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 Integration scenarios for `shared` live in the backend's `apps/shared/tests_*.py`
 (the structural guards) and its `tests_scenarios.py`, which the backend agent
-owns. E2E scenarios in `frontend/tests/e2e/shared.journey.spec.ts`. Each test
-carries its scenario ID.
+owns. E2E scenarios in `frontend/tests/e2e/shared.journey.spec.ts`, except NFR-S8, which
+sits beside its screenshot baselines in `pills.gallery.spec.ts`. Each test carries its
+scenario ID.
 
 ### NFR-S1 — A record of tenant A requested by tenant B answers 404 on every tenant route `@integration` (NFR-01, AC-NFR1)
 ```gherkin
@@ -125,6 +126,7 @@ And the measurement is recorded beside the screen in the UI plan
 Given the /dev/pills gallery route rendering every tone, slot and record type
 When the screenshot spec runs in light and dark
 Then both match the committed baselines from design/system/pills-and-labels.html
+And each section's pills, tone and label in order, match the text pinned beside the screenshot
 And a changed tone, label or slot order fails the spec
 ```
 
