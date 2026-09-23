@@ -344,15 +344,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Ask for a sign-in code by email to finish joining
+         * Ask for an enrolment code by email to finish joining
          * @description The "First time here?" path, for an invitee who has their invitation but not its link
          *     to hand: post the invited address and, when it has an open invitation and no passkey
-         *     yet, a one-time code is emailed to it. The invitee then sends the address and the code to
-         *     `POST /auth/code/verify`. Asking again sends a fresh code and retires the earlier one.
+         *     yet, a one-time enrolment code is emailed to it. The invitee then sends the address and
+         *     the code to `POST /auth/code/verify`. Asking again sends a fresh code and retires the
+         *     earlier one.
          *
          *     The answer is the same 202 with an empty body whatever the address, invited, enrolled or
-         *     unknown, and the server does the same work for each, so the call cannot be used to learn
-         *     who has an account. An address that already holds a passkey is sent nothing: the code is
+         *     unknown, and the server does the same hashing work for each: the answer never says
+         *     whether the address has an account, and the rate limits below bound what the response
+         *     time could hint. An address that already holds a passkey is sent nothing: the code is
          *     for enrolment only and never a way around a passkey. There is no password and no
          *     self-service recovery; a person who has lost every passkey asks their bank's
          *     administrator to re-issue their enrolment.
@@ -361,9 +363,10 @@ export interface paths {
          *     names the account only when the address is known; a code sent, and a code refused to an
          *     enrolled address, are also written to the security log.
          *
-         *     Errors: `rate_limited` (429) past 5 requests an hour for one address or 20 an hour from
-         *     one network address, whether or not the address is known; `validation_error` (422) for a
-         *     missing address or one over 254 characters.
+         *     Errors: `rate_limited` (429) past 5 requests an hour for one
+         *     address or 20 an hour from one network address, counted together with
+         *     opening invitation links and whether or not the address is known; `validation_error`
+         *     (422) for a missing address or one over 254 characters.
          */
         post: operations["requestCode"];
         delete?: never;
@@ -390,16 +393,17 @@ export interface paths {
          *     `/api/v1/auth`. The enrolment session reaches only passkey registration and `GET /me`;
          *     every other route answers 403 `enrolment_only` until the first passkey is registered.
          *
-         *     No session is needed. A code works once; each wrong try spends one of its five attempts,
-         *     after which even the right code is refused and a new one must be requested. A right code
-         *     for an address with no open invitation, or one that already holds a passkey, is refused
-         *     like a wrong one. Failures are written to the security log; success writes the audit
-         *     event `session.created`.
+         *     No session is needed. A code works once; each wrong try spends one of its 5
+         *     attempts, after which even the right code is refused and a new one must be requested. A
+         *     right code for an address with no open invitation, or one that already holds a passkey,
+         *     is refused like a wrong one. Failures are written to the security log; success writes
+         *     the audit event `session.created`.
          *
          *     Errors: `invalid_code` (400) for a wrong, expired or missing code or a closed invitation,
          *     one answer for all of them; `code_locked` (400) once the attempts are spent;
-         *     `rate_limited` (429) past 30 calls a minute from one network address; `validation_error`
-         *     (422) for a missing field or one over its length.
+         *     `rate_limited` (429) past 30 calls a minute from one network
+         *     address, one allowance shared by opening an invitation, both code checks and both halves
+         *     of passkey sign-in; `validation_error` (422) for a missing field or one over its length.
          */
         post: operations["verifyCode"];
         delete?: never;
@@ -418,22 +422,27 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Open your invitation link and get a sign-in code by email
+         * Open your invitation link and get an enrolment code by email
          * @description Call this when an invitee opens the link in their invitation email: the page reads the
          *     token from the link's fragment (`/invite#<token>`) and posts it here. A valid token sends
-         *     a one-time code to the invited address, six digits and good for ten minutes, which the
-         *     invitee then sends with the same token to `POST /auth/invitations/verify`. Opening the
-         *     link again sends a fresh code and retires the earlier one. The code is never returned
-         *     here: the answer is 202 with an empty body.
+         *     a one-time enrolment code to the invited address, 6 digits and good for
+         *     10 minutes, which the invitee then sends with the same token to
+         *     `POST /auth/invitations/verify`. The code is for enrolment only: it opens an enrolment
+         *     session that can register a passkey, never a full sign-in. Opening the link again sends
+         *     a fresh code and retires the earlier one.
+         *     The code is never returned here: the answer is 202 with an empty body.
          *
          *     No session is needed; the single-use token is the grant. It writes a code-sent entry to
          *     the inviting bank's security log and the audit event `invitation.opened`.
          *
-         *     Errors: `invitation_expired` (410) when the token is unknown, already used, past its 72
-         *     hours, or revoked or replaced by an administrator; `rate_limited` (429) past 30 calls a
-         *     minute from one network address, or past 5 codes an hour for one invited address or 20
-         *     an hour from one network address; `validation_error` (422) for a missing token or one
-         *     over 128 characters.
+         *     Errors: `invitation_expired` (410) when the token is unknown, already used, past its
+         *     72 hours, or revoked or replaced by an administrator; `rate_limited` (429)
+         *     past 30 calls a minute from one network address, one allowance
+         *     shared by opening an invitation, both code checks and both halves of passkey sign-in, or
+         *     past 5 codes an hour for one invited address or
+         *     20 an hour from one network address, counted together with
+         *     `POST /auth/code/request`; `validation_error` (422) for a missing token or one over 128
+         *     characters.
          */
         post: operations["openInvitation"];
         delete?: never;
@@ -462,15 +471,17 @@ export interface paths {
          *
          *     No session is needed: the token and the code together are the grant, so no email address
          *     travels on this path, and only a code sent to the invitation's own address verifies. A
-         *     code works once; each wrong try spends one of its five attempts, after which even the
-         *     right code is refused. Failures are written to the bank's security log; success writes
-         *     the audit event `session.created`.
+         *     code works once; each wrong try spends one of its 5 attempts, after which
+         *     even the right code is refused. Failures are written to the bank's security log; success
+         *     writes the audit event `session.created`.
          *
          *     Errors: `invitation_expired` (410) when the token is unknown, used, expired or revoked;
          *     `invalid_code` (400) for a wrong or expired code or when none is waiting, one answer for
          *     all of them; `code_locked` (400) once the attempts are spent, when the invitee opens the
-         *     link again for a new code; `rate_limited` (429) past 30 calls a minute from one network
-         *     address; `validation_error` (422) for a missing field or one over its length.
+         *     link again for a new code; `rate_limited` (429) past 30 calls a
+         *     minute from one network address, one allowance shared by opening an invitation, both
+         *     code checks and both halves of passkey sign-in; `validation_error` (422) for a missing
+         *     field or one over its length.
          */
         post: operations["verifyInvitationCode"];
         delete?: never;
@@ -497,11 +508,13 @@ export interface paths {
          *     for this domain and the account is found from the one that answers. Then send the
          *     browser's answer to `POST /auth/passkeys/authenticate/verify`.
          *
-         *     No session is needed. Each call stores a single-use challenge that expires after 120
-         *     seconds and writes the audit event `auth.challenge_issued`; no account is read or
-         *     revealed.
+         *     No session is needed. Each call stores a single-use challenge that expires after
+         *     120 seconds and writes the audit event `auth.challenge_issued`; no
+         *     account is read or revealed.
          *
-         *     Errors: `rate_limited` (429) past 30 calls a minute from one network address.
+         *     Errors: `rate_limited` (429) past 30 calls a minute from one
+         *     network address, one allowance shared by opening an invitation, both code checks and
+         *     both halves of passkey sign-in, so each sign-in spends two.
          */
         post: operations["passkeyAuthenticateOptions"];
         delete?: never;
@@ -541,8 +554,9 @@ export interface paths {
          *     Errors: `signin_failed` (401) for every refusal (an unknown or retired passkey, an
          *     account that is not active, a spent or expired challenge, a user handle naming someone
          *     else, a bad signature), one answer so a caller cannot tell them apart; `rate_limited`
-         *     (429) past 30 calls a minute from one network address; `validation_error` (422) for a
-         *     malformed body.
+         *     (429) past 30 calls a minute from one network address, one
+         *     allowance shared by opening an invitation, both code checks and both halves of passkey
+         *     sign-in; `validation_error` (422) for a malformed body.
          */
         post: operations["passkeyAuthenticateVerify"];
         delete?: never;
@@ -611,7 +625,7 @@ export interface paths {
          *     revoked, and a full session starts with this response, its access token in the body and
          *     its refresh token as an `HttpOnly` cookie. A screen then offers a second passkey. From a
          *     full session it adds a passkey and the session carries on; adding an authentication
-         *     factor needs a session younger than five minutes or a fresh passkey step-up.
+         *     factor needs a session younger than 5 minutes or a fresh passkey step-up.
          *
          *     Needs a session of either kind and no permission. It writes an enrolled entry to the
          *     security log and the audit event `passkey.registered` with the name, how it was chosen,
@@ -651,11 +665,12 @@ export interface paths {
          *     answer carries a new access token, and the refresh token is rotated: the response sets a
          *     new cookie and the old one stops working.
          *
-         *     Two tabs refreshing at once are safe: the previous refresh token presented within 30
-         *     seconds of its rotation gets a fresh access token without rotating again. Presented any
-         *     later it is treated as stolen, the whole session is revoked and the replay is written to
-         *     the security log. A session also ends after 30 minutes without a refresh or 12 hours
-         *     after sign-in, and a revoked one cannot be refreshed.
+         *     Two tabs refreshing at once are safe: the previous refresh token presented within
+         *     30 seconds of its rotation gets a fresh access token without rotating
+         *     again. Presented any later it is treated as stolen, the whole session is revoked and the
+         *     replay is written to the security log. A session also ends after 30 minutes
+         *     without a refresh or 12 hours after sign-in, and a revoked one cannot be
+         *     refreshed.
          *
          *     Writes the audit event `session.refreshed`; a session that ends here writes
          *     `session.revoked`.
@@ -714,13 +729,14 @@ export interface paths {
          * Start confirming a sensitive action with your passkey
          * @description The first half of a step-up. A sensitive action (an approval, a sign-off, a footprint
          *     change, an export, a key, a role or security change, a re-enrolment) answers 403
-         *     `step_up_required` unless the session holds a passkey assertion younger than five
-         *     minutes. Call this, pass the options to `navigator.credentials.get({publicKey: ...})`,
-         *     send the answer to `POST /auth/step-up/verify`, then repeat the action.
+         *     `step_up_required` unless the session holds a passkey assertion younger than
+         *     5 minutes. Call this, pass the options to
+         *     `navigator.credentials.get({publicKey: ...})`, send the answer to
+         *     `POST /auth/step-up/verify`, then repeat the action.
          *
-         *     The options list the caller's own live passkeys, so no other account's passkey can
-         *     confirm, and require user verification. The challenge works once, only for this person
-         *     and session, and expires after 120 seconds.
+         *     The options list the caller's own live passkeys in `allowCredentials`, so no other
+         *     account's passkey can confirm, and require user verification. The challenge works once,
+         *     only for this person and session, and expires after 120 seconds.
          *
          *     Needs a full session and no permission; an agent's API key can never step up. It stores
          *     the challenge and writes the audit event `auth.challenge_issued`.
@@ -750,7 +766,7 @@ export interface paths {
          *     checks that the passkey is one of the caller's own live ones, the challenge, the origin
          *     and the domain, user verification, the signature and the counter, then records the
          *     assertion on this session and answers with its identifier and until when it counts as
-         *     fresh, five minutes. Until then every sensitive action on this session may proceed, and
+         *     fresh, 5 minutes. Until then every sensitive action on this session may proceed, and
          *     each writes the assertion's identifier onto its own audit event. It covers this session
          *     only; another device steps up for itself.
          *
@@ -2029,7 +2045,7 @@ export interface paths {
          *     self-service recovery: add another first.
          *
          *     Removing an authentication factor asks for a fresh proof of presence: a session younger
-         *     than five minutes or a passkey step-up on this session. It needs a full session and no
+         *     than 5 minutes or a passkey step-up on this session. It needs a full session and no
          *     permission, and writes the audit event `passkey.retired` with the passkey's name.
          *
          *     Errors: `last_passkey` (409) for the only live passkey; `not_found` (404) when the
@@ -2067,12 +2083,14 @@ export interface paths {
         };
         /**
          * See where you are signed in
-         * @description Every live signed-in session the caller has, in every bank they belong to and on the
-         *     platform, most recently active first: when it began, when it last refreshed, the network
-         *     address and browser it came from, and `current` true for the one making this call.
-         *     Enrolment sessions, revoked ones and those past their 12-hour limit are not listed; an
-         *     idle one shows until its next refresh attempt ends it. An empty answer is a 200 with an
-         *     empty list.
+         * @description Every live signed-in session the caller has in the bank this session is signed in to
+         *     (on a platform session, their platform sessions), most recently active first: when it
+         *     began, when it last refreshed, the network address and browser it came from, and
+         *     `current` true for the one making this call. A person who belongs to several banks sees
+         *     here only this bank's sessions; the ones in another bank stay inside that bank and
+         *     cannot be listed or revoked from this session. Enrolment sessions, revoked ones and
+         *     those past their 12-hour limit are not listed; an idle one shows until its
+         *     next refresh attempt ends it. An empty answer is a 200 with an empty list.
          *
          *     Self-service: needs a full session and no permission, and lists only the caller's own. It
          *     changes nothing and writes no audit event.
@@ -2107,12 +2125,13 @@ export interface paths {
          *     signs this device out too. A session already revoked answers 204 and changes nothing.
          *
          *     Self-service: needs a full session and no permission, and reaches only the caller's own
-         *     sessions. It writes an entry to the security log and the audit event `session.revoked`,
-         *     with the reason that the person revoked it themselves.
+         *     sessions in the bank this session is signed in to. It writes an entry to the security
+         *     log and the audit event `session.revoked`, with the reason that the person revoked it
+         *     themselves.
          *
-         *     Errors: `not_found` (404) when the session does not exist or belongs to someone else;
-         *     `unauthenticated` (401) without a live session; `enrolment_only` (403) from an enrolment
-         *     session.
+         *     Errors: `not_found` (404) when the session does not exist, belongs to someone else or is
+         *     one of the caller's own in another bank, one answer for all three; `unauthenticated`
+         *     (401) without a live session; `enrolment_only` (403) from an enrolment session.
          */
         delete: operations["revokeMySession"];
         options?: never;
@@ -4879,7 +4898,8 @@ export interface components {
         };
         /**
          * CodeRequestBody
-         * @description Asking for a one-time sign-in code by email, the "First time here?" path.
+         * @description Asking for a one-time enrolment code by email, the "First time here?" path. The code
+         *     opens only an enrolment session that can register a passkey, never a full sign-in.
          * @example {
          *       "email": "anna@example-bank.test"
          *     }
@@ -4887,7 +4907,7 @@ export interface components {
         CodeRequestBody: {
             /**
              * Email
-             * @description The address the invitation was sent to, at most 254 characters. Case and surrounding spaces are ignored. Any text is accepted and answered alike: a code goes out only when the address has an open invitation and no passkey yet, and the answer never says whether it did, so it cannot be used to learn who holds an account.
+             * @description The address the invitation was sent to, at most 254 characters. Case and surrounding spaces are ignored. Any text is accepted and answered alike: a code goes out only when the address has an open invitation and no passkey yet, and the answer never says whether it did, so it never tells who holds an account.
              */
             email: string;
         };
@@ -6478,7 +6498,7 @@ export interface components {
         /**
          * InvitationCodeVerifyBody
          * @description The invitation path: the link's token names the account, so no address travels.
-         *     The token rides in the body, never the path, so no access log holds it (F6, F29).
+         *     The token rides in the body, never the path, so no access log holds it.
          * @example {
          *       "code": "482915",
          *       "token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"
@@ -6499,7 +6519,7 @@ export interface components {
         /**
          * InvitationOpenBody
          * @description Opening the emailed link. The token rides in the body, never a path, so no server
-         *     that logs request lines ever holds it (security review F29).
+         *     that logs request lines ever holds it.
          * @example {
          *       "token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"
          *     }
@@ -7094,7 +7114,7 @@ export interface components {
          *     }
          */
         Me: {
-            /** @description The caller's own queue counts for 'Decide now' (D-23), or null for a platform session, which has no tenant to count against. Each of the three counts is 0 rather than refused when the caller's permissions do not unlock it (f03-T48). */
+            /** @description The caller's own queue counts for 'Decide now', or null for a platform session, which has no tenant to count against. Each of the three counts is 0 rather than refused when the caller's permissions do not unlock it. */
             counts: components["schemas"]["MeCounts"] | null;
             /**
              * Enrolmentpending
@@ -7139,10 +7159,9 @@ export interface components {
         };
         /**
          * MeCounts
-         * @description The queue counts behind Today's "Decide now" panel (HOM-01, D-23): three
-         *     independent reads, each filtered by the caller's own permissions rather than
-         *     refused, so a reader without a permission sees a true zero and not a 403 that
-         *     would take the whole panel away.
+         * @description The queue counts behind Today's "Decide now" panel: three independent reads, each
+         *     filtered by the caller's own permissions rather than refused, so a reader without a
+         *     permission sees a true zero and not a 403 that would take the whole panel away.
          */
         MeCounts: {
             /**
@@ -14296,6 +14315,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "allowCredentials": [
+                     *         {
+                     *           "id": "cGAj7tm8-pSeo4if4t4UZw",
+                     *           "type": "public-key"
+                     *         }
+                     *       ],
+                     *       "challenge": "17VoHXgjAFgx-a7KvEKYOGhID_jY6qtdxVWbbqlYnpYZUevP1U9KO-7YdzF428z81RchpdXMzymHYrb-g5LI4g",
+                     *       "rpId": "compliance.bleqq.com",
+                     *       "timeout": 120000,
+                     *       "userVerification": "required"
+                     *     }
+                     */
                     "application/json": components["schemas"]["WebAuthnRequestOptions"];
                 };
             };
@@ -15551,7 +15584,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The identifier of one of your own sessions, the UUID `GET /me/sessions` returns as `id`. Another person's session or an unknown identifier answers `not_found`. */
+                /** @description The identifier of one of your own sessions in the bank this session is signed in to (on a platform session, one of your platform sessions), the UUID `GET /me/sessions` returns as `id`. Another person's session, one of yours in another bank or an unknown identifier all answer `not_found` alike. */
                 session_id: string;
             };
             cookie?: never;

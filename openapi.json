@@ -2005,7 +2005,7 @@
         "type": "object"
       },
       "CodeRequestBody": {
-        "description": "Asking for a one-time sign-in code by email, the \"First time here?\" path.",
+        "description": "Asking for a one-time enrolment code by email, the \"First time here?\" path. The code\nopens only an enrolment session that can register a passkey, never a full sign-in.",
         "examples": [
           {
             "email": "anna@example-bank.test"
@@ -2013,7 +2013,7 @@
         ],
         "properties": {
           "email": {
-            "description": "The address the invitation was sent to, at most 254 characters. Case and surrounding spaces are ignored. Any text is accepted and answered alike: a code goes out only when the address has an open invitation and no passkey yet, and the answer never says whether it did, so it cannot be used to learn who holds an account.",
+            "description": "The address the invitation was sent to, at most 254 characters. Case and surrounding spaces are ignored. Any text is accepted and answered alike: a code goes out only when the address has an open invitation and no passkey yet, and the answer never says whether it did, so it never tells who holds an account.",
             "maxLength": 254,
             "title": "Email",
             "type": "string"
@@ -4401,7 +4401,7 @@
         "type": "object"
       },
       "InvitationCodeVerifyBody": {
-        "description": "The invitation path: the link's token names the account, so no address travels.\nThe token rides in the body, never the path, so no access log holds it (F6, F29).",
+        "description": "The invitation path: the link's token names the account, so no address travels.\nThe token rides in the body, never the path, so no access log holds it.",
         "examples": [
           {
             "code": "482915",
@@ -4430,7 +4430,7 @@
         "type": "object"
       },
       "InvitationOpenBody": {
-        "description": "Opening the emailed link. The token rides in the body, never a path, so no server\nthat logs request lines ever holds it (security review F29).",
+        "description": "Opening the emailed link. The token rides in the body, never a path, so no server\nthat logs request lines ever holds it.",
         "examples": [
           {
             "token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"
@@ -5347,7 +5347,7 @@
                 "type": "null"
               }
             ],
-            "description": "The caller's own queue counts for 'Decide now' (D-23), or null for a platform session, which has no tenant to count against. Each of the three counts is 0 rather than refused when the caller's permissions do not unlock it (f03-T48)."
+            "description": "The caller's own queue counts for 'Decide now', or null for a platform session, which has no tenant to count against. Each of the three counts is 0 rather than refused when the caller's permissions do not unlock it."
           },
           "enrolmentPending": {
             "description": "True while the person has not finished enrolling: the session is an enrolment session, which reaches only passkey registration and this call, or the account is not yet active. A screen that reads true sends the person to register a passkey. False for every full session of an active account.",
@@ -5444,7 +5444,7 @@
         "type": "object"
       },
       "MeCounts": {
-        "description": "The queue counts behind Today's \"Decide now\" panel (HOM-01, D-23): three\nindependent reads, each filtered by the caller's own permissions rather than\nrefused, so a reader without a permission sees a true zero and not a 403 that\nwould take the whole panel away.",
+        "description": "The queue counts behind Today's \"Decide now\" panel: three independent reads, each\nfiltered by the caller's own permissions rather than refused, so a reader without a\npermission sees a true zero and not a 403 that would take the whole panel away.",
         "properties": {
           "assignedToMe": {
             "description": "How many open cases (not `closed` or `dismissed`) this caller owns, never negative. Every member sees their own, so this is 0 only when they own none.",
@@ -17124,7 +17124,7 @@
     },
     "/api/v1/auth/code/request": {
       "post": {
-        "description": "The \"First time here?\" path, for an invitee who has their invitation but not its link\nto hand: post the invited address and, when it has an open invitation and no passkey\nyet, a one-time code is emailed to it. The invitee then sends the address and the code to\n`POST /auth/code/verify`. Asking again sends a fresh code and retires the earlier one.\n\nThe answer is the same 202 with an empty body whatever the address, invited, enrolled or\nunknown, and the server does the same work for each, so the call cannot be used to learn\nwho has an account. An address that already holds a passkey is sent nothing: the code is\nfor enrolment only and never a way around a passkey. There is no password and no\nself-service recovery; a person who has lost every passkey asks their bank's\nadministrator to re-issue their enrolment.\n\nNo session is needed. Every call writes the audit event `auth.code_requested`, which\nnames the account only when the address is known; a code sent, and a code refused to an\nenrolled address, are also written to the security log.\n\nErrors: `rate_limited` (429) past 5 requests an hour for one address or 20 an hour from\none network address, whether or not the address is known; `validation_error` (422) for a\nmissing address or one over 254 characters.",
+        "description": "The \"First time here?\" path, for an invitee who has their invitation but not its link\nto hand: post the invited address and, when it has an open invitation and no passkey\nyet, a one-time enrolment code is emailed to it. The invitee then sends the address and\nthe code to `POST /auth/code/verify`. Asking again sends a fresh code and retires the\nearlier one.\n\nThe answer is the same 202 with an empty body whatever the address, invited, enrolled or\nunknown, and the server does the same hashing work for each: the answer never says\nwhether the address has an account, and the rate limits below bound what the response\ntime could hint. An address that already holds a passkey is sent nothing: the code is\nfor enrolment only and never a way around a passkey. There is no password and no\nself-service recovery; a person who has lost every passkey asks their bank's\nadministrator to re-issue their enrolment.\n\nNo session is needed. Every call writes the audit event `auth.code_requested`, which\nnames the account only when the address is known; a code sent, and a code refused to an\nenrolled address, are also written to the security log.\n\nErrors: `rate_limited` (429) past 5 requests an hour for one\naddress or 20 an hour from one network address, counted together with\nopening invitation links and whether or not the address is known; `validation_error`\n(422) for a missing address or one over 254 characters.",
         "operationId": "requestCode",
         "parameters": [],
         "requestBody": {
@@ -17149,7 +17149,7 @@
             "description": "Accepted"
           }
         },
-        "summary": "Ask for a sign-in code by email to finish joining",
+        "summary": "Ask for an enrolment code by email to finish joining",
         "tags": [
           "Identity"
         ]
@@ -17157,7 +17157,7 @@
     },
     "/api/v1/auth/code/verify": {
       "post": {
-        "description": "The second step of the \"First time here?\" path: send the invited address and the code\nemailed to it. A right code opens an enrolment session in the bank whose invitation is\nthe newest open one for that address, and answers with its access token (`sessionKind`\n`enrolment`); the refresh token arrives as an `HttpOnly` cookie scoped to\n`/api/v1/auth`. The enrolment session reaches only passkey registration and `GET /me`;\nevery other route answers 403 `enrolment_only` until the first passkey is registered.\n\nNo session is needed. A code works once; each wrong try spends one of its five attempts,\nafter which even the right code is refused and a new one must be requested. A right code\nfor an address with no open invitation, or one that already holds a passkey, is refused\nlike a wrong one. Failures are written to the security log; success writes the audit\nevent `session.created`.\n\nErrors: `invalid_code` (400) for a wrong, expired or missing code or a closed invitation,\none answer for all of them; `code_locked` (400) once the attempts are spent;\n`rate_limited` (429) past 30 calls a minute from one network address; `validation_error`\n(422) for a missing field or one over its length.",
+        "description": "The second step of the \"First time here?\" path: send the invited address and the code\nemailed to it. A right code opens an enrolment session in the bank whose invitation is\nthe newest open one for that address, and answers with its access token (`sessionKind`\n`enrolment`); the refresh token arrives as an `HttpOnly` cookie scoped to\n`/api/v1/auth`. The enrolment session reaches only passkey registration and `GET /me`;\nevery other route answers 403 `enrolment_only` until the first passkey is registered.\n\nNo session is needed. A code works once; each wrong try spends one of its 5\nattempts, after which even the right code is refused and a new one must be requested. A\nright code for an address with no open invitation, or one that already holds a passkey,\nis refused like a wrong one. Failures are written to the security log; success writes\nthe audit event `session.created`.\n\nErrors: `invalid_code` (400) for a wrong, expired or missing code or a closed invitation,\none answer for all of them; `code_locked` (400) once the attempts are spent;\n`rate_limited` (429) past 30 calls a minute from one network\naddress, one allowance shared by opening an invitation, both code checks and both halves\nof passkey sign-in; `validation_error` (422) for a missing field or one over its length.",
         "operationId": "verifyCode",
         "parameters": [],
         "requestBody": {
@@ -17195,7 +17195,7 @@
     },
     "/api/v1/auth/invitations/open": {
       "post": {
-        "description": "Call this when an invitee opens the link in their invitation email: the page reads the\ntoken from the link's fragment (`/invite#<token>`) and posts it here. A valid token sends\na one-time code to the invited address, six digits and good for ten minutes, which the\ninvitee then sends with the same token to `POST /auth/invitations/verify`. Opening the\nlink again sends a fresh code and retires the earlier one. The code is never returned\nhere: the answer is 202 with an empty body.\n\nNo session is needed; the single-use token is the grant. It writes a code-sent entry to\nthe inviting bank's security log and the audit event `invitation.opened`.\n\nErrors: `invitation_expired` (410) when the token is unknown, already used, past its 72\nhours, or revoked or replaced by an administrator; `rate_limited` (429) past 30 calls a\nminute from one network address, or past 5 codes an hour for one invited address or 20\nan hour from one network address; `validation_error` (422) for a missing token or one\nover 128 characters.",
+        "description": "Call this when an invitee opens the link in their invitation email: the page reads the\ntoken from the link's fragment (`/invite#<token>`) and posts it here. A valid token sends\na one-time enrolment code to the invited address, 6 digits and good for\n10 minutes, which the invitee then sends with the same token to\n`POST /auth/invitations/verify`. The code is for enrolment only: it opens an enrolment\nsession that can register a passkey, never a full sign-in. Opening the link again sends\na fresh code and retires the earlier one.\nThe code is never returned here: the answer is 202 with an empty body.\n\nNo session is needed; the single-use token is the grant. It writes a code-sent entry to\nthe inviting bank's security log and the audit event `invitation.opened`.\n\nErrors: `invitation_expired` (410) when the token is unknown, already used, past its\n72 hours, or revoked or replaced by an administrator; `rate_limited` (429)\npast 30 calls a minute from one network address, one allowance\nshared by opening an invitation, both code checks and both halves of passkey sign-in, or\npast 5 codes an hour for one invited address or\n20 an hour from one network address, counted together with\n`POST /auth/code/request`; `validation_error` (422) for a missing token or one over 128\ncharacters.",
         "operationId": "openInvitation",
         "parameters": [],
         "requestBody": {
@@ -17220,7 +17220,7 @@
             "description": "Accepted"
           }
         },
-        "summary": "Open your invitation link and get a sign-in code by email",
+        "summary": "Open your invitation link and get an enrolment code by email",
         "tags": [
           "Identity"
         ]
@@ -17228,7 +17228,7 @@
     },
     "/api/v1/auth/invitations/verify": {
       "post": {
-        "description": "The second step of joining by invitation: send the token from the link and the code\nfrom the email. A right code opens an enrolment session in the inviting bank and answers\nwith its access token (`sessionKind` `enrolment`); the refresh token arrives as an\n`HttpOnly` cookie scoped to `/api/v1/auth`. The enrolment session can do two things,\nregister a passkey and read `GET /me`, and every other route answers 403\n`enrolment_only`. Registering the first passkey ends it and starts a full session.\n\nNo session is needed: the token and the code together are the grant, so no email address\ntravels on this path, and only a code sent to the invitation's own address verifies. A\ncode works once; each wrong try spends one of its five attempts, after which even the\nright code is refused. Failures are written to the bank's security log; success writes\nthe audit event `session.created`.\n\nErrors: `invitation_expired` (410) when the token is unknown, used, expired or revoked;\n`invalid_code` (400) for a wrong or expired code or when none is waiting, one answer for\nall of them; `code_locked` (400) once the attempts are spent, when the invitee opens the\nlink again for a new code; `rate_limited` (429) past 30 calls a minute from one network\naddress; `validation_error` (422) for a missing field or one over its length.",
+        "description": "The second step of joining by invitation: send the token from the link and the code\nfrom the email. A right code opens an enrolment session in the inviting bank and answers\nwith its access token (`sessionKind` `enrolment`); the refresh token arrives as an\n`HttpOnly` cookie scoped to `/api/v1/auth`. The enrolment session can do two things,\nregister a passkey and read `GET /me`, and every other route answers 403\n`enrolment_only`. Registering the first passkey ends it and starts a full session.\n\nNo session is needed: the token and the code together are the grant, so no email address\ntravels on this path, and only a code sent to the invitation's own address verifies. A\ncode works once; each wrong try spends one of its 5 attempts, after which\neven the right code is refused. Failures are written to the bank's security log; success\nwrites the audit event `session.created`.\n\nErrors: `invitation_expired` (410) when the token is unknown, used, expired or revoked;\n`invalid_code` (400) for a wrong or expired code or when none is waiting, one answer for\nall of them; `code_locked` (400) once the attempts are spent, when the invitee opens the\nlink again for a new code; `rate_limited` (429) past 30 calls a\nminute from one network address, one allowance shared by opening an invitation, both\ncode checks and both halves of passkey sign-in; `validation_error` (422) for a missing\nfield or one over its length.",
         "operationId": "verifyInvitationCode",
         "parameters": [],
         "requestBody": {
@@ -17266,7 +17266,7 @@
     },
     "/api/v1/auth/passkeys/authenticate/options": {
       "post": {
-        "description": "The first half of sign-in: returns the options to pass to\n`navigator.credentials.get({publicKey: ...})`, or to\n`PublicKeyCredential.parseRequestOptionsFromJSON()`. No username is asked for:\n`allowCredentials` is empty, so the browser offers whichever passkeys the person holds\nfor this domain and the account is found from the one that answers. Then send the\nbrowser's answer to `POST /auth/passkeys/authenticate/verify`.\n\nNo session is needed. Each call stores a single-use challenge that expires after 120\nseconds and writes the audit event `auth.challenge_issued`; no account is read or\nrevealed.\n\nErrors: `rate_limited` (429) past 30 calls a minute from one network address.",
+        "description": "The first half of sign-in: returns the options to pass to\n`navigator.credentials.get({publicKey: ...})`, or to\n`PublicKeyCredential.parseRequestOptionsFromJSON()`. No username is asked for:\n`allowCredentials` is empty, so the browser offers whichever passkeys the person holds\nfor this domain and the account is found from the one that answers. Then send the\nbrowser's answer to `POST /auth/passkeys/authenticate/verify`.\n\nNo session is needed. Each call stores a single-use challenge that expires after\n120 seconds and writes the audit event `auth.challenge_issued`; no\naccount is read or revealed.\n\nErrors: `rate_limited` (429) past 30 calls a minute from one\nnetwork address, one allowance shared by opening an invitation, both code checks and\nboth halves of passkey sign-in, so each sign-in spends two.",
         "operationId": "passkeyAuthenticateOptions",
         "parameters": [],
         "responses": {
@@ -17289,7 +17289,7 @@
     },
     "/api/v1/auth/passkeys/authenticate/verify": {
       "post": {
-        "description": "The second half of sign-in: send the credential the browser returned from\n`navigator.credentials.get()`. The server finds the passkey by its credential ID and\nchecks that the user handle names its owner, that the challenge is one it issued, the\npage's origin and the domain, that the person was verified, the signature, and that the\nsignature counter moved forward, since one going backwards suggests a cloned\nauthenticator. It then opens a full session and answers with its access token\n(`sessionKind` `full`); the refresh token arrives as an `HttpOnly` cookie scoped to\n`/api/v1/auth`.\n\nA member is signed in to their bank, the one they joined first when they belong to\nseveral, and platform staff to the platform. Signing in is not a step-up: a sensitive\naction still asks for its own passkey confirmation through `POST /auth/step-up/options`.\n\nNo session is needed. Success records the passkey's use and writes a sign-in entry to\nthe security log and the audit event `session.created`; a refusal writes a failed\nsign-in with its reason to the security log, and tells the caller nothing more.\n\nErrors: `signin_failed` (401) for every refusal (an unknown or retired passkey, an\naccount that is not active, a spent or expired challenge, a user handle naming someone\nelse, a bad signature), one answer so a caller cannot tell them apart; `rate_limited`\n(429) past 30 calls a minute from one network address; `validation_error` (422) for a\nmalformed body.",
+        "description": "The second half of sign-in: send the credential the browser returned from\n`navigator.credentials.get()`. The server finds the passkey by its credential ID and\nchecks that the user handle names its owner, that the challenge is one it issued, the\npage's origin and the domain, that the person was verified, the signature, and that the\nsignature counter moved forward, since one going backwards suggests a cloned\nauthenticator. It then opens a full session and answers with its access token\n(`sessionKind` `full`); the refresh token arrives as an `HttpOnly` cookie scoped to\n`/api/v1/auth`.\n\nA member is signed in to their bank, the one they joined first when they belong to\nseveral, and platform staff to the platform. Signing in is not a step-up: a sensitive\naction still asks for its own passkey confirmation through `POST /auth/step-up/options`.\n\nNo session is needed. Success records the passkey's use and writes a sign-in entry to\nthe security log and the audit event `session.created`; a refusal writes a failed\nsign-in with its reason to the security log, and tells the caller nothing more.\n\nErrors: `signin_failed` (401) for every refusal (an unknown or retired passkey, an\naccount that is not active, a spent or expired challenge, a user handle naming someone\nelse, a bad signature), one answer so a caller cannot tell them apart; `rate_limited`\n(429) past 30 calls a minute from one network address, one\nallowance shared by opening an invitation, both code checks and both halves of passkey\nsign-in; `validation_error` (422) for a malformed body.",
         "operationId": "passkeyAuthenticateVerify",
         "parameters": [],
         "requestBody": {
@@ -17353,7 +17353,7 @@
     },
     "/api/v1/auth/passkeys/register/verify": {
       "post": {
-        "description": "The second half of the registration ceremony: send the credential the browser returned\nfrom `navigator.credentials.create()`, in its JSON form, and optionally a name. The server\nchecks the challenge, the page's origin, the domain and that the person was verified,\nthen stores the passkey (its credential ID, public key, signature counter, transports,\nauthenticator model and backup flags) and answers 201 with it. With no name given it\nnames the passkey from the device; the person may rename it later.\n\nFrom an enrolment session this completes enrolment: the invitation is accepted, the\nperson becomes a member of the bank with the roles they were invited with, the account\nturns active and the emailed code stops working for good, the enrolment session is\nrevoked, and a full session starts with this response, its access token in the body and\nits refresh token as an `HttpOnly` cookie. A screen then offers a second passkey. From a\nfull session it adds a passkey and the session carries on; adding an authentication\nfactor needs a session younger than five minutes or a fresh passkey step-up.\n\nNeeds a session of either kind and no permission. It writes an enrolled entry to the\nsecurity log and the audit event `passkey.registered` with the name, how it was chosen,\nthe device type and the authenticator model; completing an enrolment also writes\n`session.revoked` and `session.created`.\n\nErrors: `challenge_expired` (400) when the challenge is unknown, used or older than its\nlifetime, and start again from the options call; `invalid_credential` (400) when the\ncredential cannot be read; `registration_failed` (400) when it does not verify or that\npasskey is already registered; `step_up_required` (403) when a full session is older\nthan the step-up window and holds no fresh assertion; `platform_account` (422) when a\nbank invitation reaches an account that has since become platform staff;\n`unauthenticated` (401) without a live session; `validation_error` (422) for a malformed\nbody.",
+        "description": "The second half of the registration ceremony: send the credential the browser returned\nfrom `navigator.credentials.create()`, in its JSON form, and optionally a name. The server\nchecks the challenge, the page's origin, the domain and that the person was verified,\nthen stores the passkey (its credential ID, public key, signature counter, transports,\nauthenticator model and backup flags) and answers 201 with it. With no name given it\nnames the passkey from the device; the person may rename it later.\n\nFrom an enrolment session this completes enrolment: the invitation is accepted, the\nperson becomes a member of the bank with the roles they were invited with, the account\nturns active and the emailed code stops working for good, the enrolment session is\nrevoked, and a full session starts with this response, its access token in the body and\nits refresh token as an `HttpOnly` cookie. A screen then offers a second passkey. From a\nfull session it adds a passkey and the session carries on; adding an authentication\nfactor needs a session younger than 5 minutes or a fresh passkey step-up.\n\nNeeds a session of either kind and no permission. It writes an enrolled entry to the\nsecurity log and the audit event `passkey.registered` with the name, how it was chosen,\nthe device type and the authenticator model; completing an enrolment also writes\n`session.revoked` and `session.created`.\n\nErrors: `challenge_expired` (400) when the challenge is unknown, used or older than its\nlifetime, and start again from the options call; `invalid_credential` (400) when the\ncredential cannot be read; `registration_failed` (400) when it does not verify or that\npasskey is already registered; `step_up_required` (403) when a full session is older\nthan the step-up window and holds no fresh assertion; `platform_account` (422) when a\nbank invitation reaches an account that has since become platform staff;\n`unauthenticated` (401) without a live session; `validation_error` (422) for a malformed\nbody.",
         "operationId": "passkeyRegisterVerify",
         "parameters": [],
         "requestBody": {
@@ -17394,7 +17394,7 @@
     },
     "/api/v1/auth/refresh": {
       "post": {
-        "description": "Call this shortly before the access token expires. It takes no body and no\n`Authorization` header: the credential is the `HttpOnly` refresh cookie that sign-in set,\nscoped to `/api/v1/auth`, so a browser client calls it with credentials included. The\nanswer carries a new access token, and the refresh token is rotated: the response sets a\nnew cookie and the old one stops working.\n\nTwo tabs refreshing at once are safe: the previous refresh token presented within 30\nseconds of its rotation gets a fresh access token without rotating again. Presented any\nlater it is treated as stolen, the whole session is revoked and the replay is written to\nthe security log. A session also ends after 30 minutes without a refresh or 12 hours\nafter sign-in, and a revoked one cannot be refreshed.\n\nWrites the audit event `session.refreshed`; a session that ends here writes\n`session.revoked`.\n\nErrors: `unauthenticated` (401) when the cookie is missing, unreadable or replayed late,\nor its session is revoked, idle too long or past its absolute limit: sign in again.",
+        "description": "Call this shortly before the access token expires. It takes no body and no\n`Authorization` header: the credential is the `HttpOnly` refresh cookie that sign-in set,\nscoped to `/api/v1/auth`, so a browser client calls it with credentials included. The\nanswer carries a new access token, and the refresh token is rotated: the response sets a\nnew cookie and the old one stops working.\n\nTwo tabs refreshing at once are safe: the previous refresh token presented within\n30 seconds of its rotation gets a fresh access token without rotating\nagain. Presented any later it is treated as stolen, the whole session is revoked and the\nreplay is written to the security log. A session also ends after 30 minutes\nwithout a refresh or 12 hours after sign-in, and a revoked one cannot be\nrefreshed.\n\nWrites the audit event `session.refreshed`; a session that ends here writes\n`session.revoked`.\n\nErrors: `unauthenticated` (401) when the cookie is missing, unreadable or replayed late,\nor its session is revoked, idle too long or past its absolute limit: sign in again.",
         "operationId": "refreshSession",
         "parameters": [],
         "responses": {
@@ -17433,13 +17433,25 @@
     },
     "/api/v1/auth/step-up/options": {
       "post": {
-        "description": "The first half of a step-up. A sensitive action (an approval, a sign-off, a footprint\nchange, an export, a key, a role or security change, a re-enrolment) answers 403\n`step_up_required` unless the session holds a passkey assertion younger than five\nminutes. Call this, pass the options to `navigator.credentials.get({publicKey: ...})`,\nsend the answer to `POST /auth/step-up/verify`, then repeat the action.\n\nThe options list the caller's own live passkeys, so no other account's passkey can\nconfirm, and require user verification. The challenge works once, only for this person\nand session, and expires after 120 seconds.\n\nNeeds a full session and no permission; an agent's API key can never step up. It stores\nthe challenge and writes the audit event `auth.challenge_issued`.\n\nErrors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an\nenrolment session.",
+        "description": "The first half of a step-up. A sensitive action (an approval, a sign-off, a footprint\nchange, an export, a key, a role or security change, a re-enrolment) answers 403\n`step_up_required` unless the session holds a passkey assertion younger than\n5 minutes. Call this, pass the options to\n`navigator.credentials.get({publicKey: ...})`, send the answer to\n`POST /auth/step-up/verify`, then repeat the action.\n\nThe options list the caller's own live passkeys in `allowCredentials`, so no other\naccount's passkey can confirm, and require user verification. The challenge works once,\nonly for this person and session, and expires after 120 seconds.\n\nNeeds a full session and no permission; an agent's API key can never step up. It stores\nthe challenge and writes the audit event `auth.challenge_issued`.\n\nErrors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an\nenrolment session.",
         "operationId": "stepUpOptions",
         "parameters": [],
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "allowCredentials": [
+                    {
+                      "id": "cGAj7tm8-pSeo4if4t4UZw",
+                      "type": "public-key"
+                    }
+                  ],
+                  "challenge": "17VoHXgjAFgx-a7KvEKYOGhID_jY6qtdxVWbbqlYnpYZUevP1U9KO-7YdzF428z81RchpdXMzymHYrb-g5LI4g",
+                  "rpId": "compliance.bleqq.com",
+                  "timeout": 120000,
+                  "userVerification": "required"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/WebAuthnRequestOptions"
                 }
@@ -17461,7 +17473,7 @@
     },
     "/api/v1/auth/step-up/verify": {
       "post": {
-        "description": "The second half of a step-up: send the credential the browser returned. The server\nchecks that the passkey is one of the caller's own live ones, the challenge, the origin\nand the domain, user verification, the signature and the counter, then records the\nassertion on this session and answers with its identifier and until when it counts as\nfresh, five minutes. Until then every sensitive action on this session may proceed, and\neach writes the assertion's identifier onto its own audit event. It covers this session\nonly; another device steps up for itself.\n\nNeeds a full session and no permission; an agent's API key can never step up. Success\nrecords the passkey's use and writes a step-up entry to the security log and the audit\nevent `step_up.asserted`; a refusal writes a failed step-up with its reason to the\nsecurity log.\n\nErrors: `step_up_failed` (400) for every refusal (a passkey that is not the caller's or\nis retired, a spent or expired challenge, a user handle naming someone else, a bad\nsignature); `unauthenticated` (401) without a live session; `enrolment_only` (403) from\nan enrolment session; `validation_error` (422) for a malformed body.",
+        "description": "The second half of a step-up: send the credential the browser returned. The server\nchecks that the passkey is one of the caller's own live ones, the challenge, the origin\nand the domain, user verification, the signature and the counter, then records the\nassertion on this session and answers with its identifier and until when it counts as\nfresh, 5 minutes. Until then every sensitive action on this session may proceed, and\neach writes the assertion's identifier onto its own audit event. It covers this session\nonly; another device steps up for itself.\n\nNeeds a full session and no permission; an agent's API key can never step up. Success\nrecords the passkey's use and writes a step-up entry to the security log and the audit\nevent `step_up.asserted`; a refusal writes a failed step-up with its reason to the\nsecurity log.\n\nErrors: `step_up_failed` (400) for every refusal (a passkey that is not the caller's or\nis retired, a spent or expired challenge, a user handle naming someone else, a bad\nsignature); `unauthenticated` (401) without a live session; `enrolment_only` (403) from\nan enrolment session; `validation_error` (422) for a malformed body.",
         "operationId": "stepUpVerify",
         "parameters": [],
         "requestBody": {
@@ -19809,7 +19821,7 @@
     },
     "/api/v1/me/passkeys/{passkey_id}": {
       "delete": {
-        "description": "Retires one of the caller's own passkeys: it stops working for sign-in and step-up at\nonce and leaves the list. It is retired and not deleted, so its record stays for the\naudit trail. Sessions already open stay open; sign them out with\n`DELETE /me/sessions/{session_id}` if the passkey was lost. The last live passkey cannot\nbe removed, because without one the person could not sign in again and there is no\nself-service recovery: add another first.\n\nRemoving an authentication factor asks for a fresh proof of presence: a session younger\nthan five minutes or a passkey step-up on this session. It needs a full session and no\npermission, and writes the audit event `passkey.retired` with the passkey's name.\n\nErrors: `last_passkey` (409) for the only live passkey; `not_found` (404) when the\npasskey does not exist, is already retired or belongs to someone else;\n`step_up_required` (403) when the session is older than the step-up window and holds no\nfresh assertion; `unauthenticated` (401) without a live session; `enrolment_only` (403)\nfrom an enrolment session.",
+        "description": "Retires one of the caller's own passkeys: it stops working for sign-in and step-up at\nonce and leaves the list. It is retired and not deleted, so its record stays for the\naudit trail. Sessions already open stay open; sign them out with\n`DELETE /me/sessions/{session_id}` if the passkey was lost. The last live passkey cannot\nbe removed, because without one the person could not sign in again and there is no\nself-service recovery: add another first.\n\nRemoving an authentication factor asks for a fresh proof of presence: a session younger\nthan 5 minutes or a passkey step-up on this session. It needs a full session and no\npermission, and writes the audit event `passkey.retired` with the passkey's name.\n\nErrors: `last_passkey` (409) for the only live passkey; `not_found` (404) when the\npasskey does not exist, is already retired or belongs to someone else;\n`step_up_required` (403) when the session is older than the step-up window and holds no\nfresh assertion; `unauthenticated` (401) without a live session; `enrolment_only` (403)\nfrom an enrolment session.",
         "operationId": "removeMyPasskey",
         "parameters": [
           {
@@ -19892,7 +19904,7 @@
     },
     "/api/v1/me/sessions": {
       "get": {
-        "description": "Every live signed-in session the caller has, in every bank they belong to and on the\nplatform, most recently active first: when it began, when it last refreshed, the network\naddress and browser it came from, and `current` true for the one making this call.\nEnrolment sessions, revoked ones and those past their 12-hour limit are not listed; an\nidle one shows until its next refresh attempt ends it. An empty answer is a 200 with an\nempty list.\n\nSelf-service: needs a full session and no permission, and lists only the caller's own. It\nchanges nothing and writes no audit event.\n\nErrors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an\nenrolment session.",
+        "description": "Every live signed-in session the caller has in the bank this session is signed in to\n(on a platform session, their platform sessions), most recently active first: when it\nbegan, when it last refreshed, the network address and browser it came from, and\n`current` true for the one making this call. A person who belongs to several banks sees\nhere only this bank's sessions; the ones in another bank stay inside that bank and\ncannot be listed or revoked from this session. Enrolment sessions, revoked ones and\nthose past their 12-hour limit are not listed; an idle one shows until its\nnext refresh attempt ends it. An empty answer is a 200 with an empty list.\n\nSelf-service: needs a full session and no permission, and lists only the caller's own. It\nchanges nothing and writes no audit event.\n\nErrors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an\nenrolment session.",
         "operationId": "listMySessions",
         "parameters": [],
         "responses": {
@@ -19942,16 +19954,16 @@
     },
     "/api/v1/me/sessions/{session_id}": {
       "delete": {
-        "description": "Revokes one of the caller's own sessions at once: its access token stops working on\nits next call and its refresh token can no longer renew it. Use it to sign out a lost or\nforgotten device from the list `GET /me/sessions` returns; revoking the current session\nsigns this device out too. A session already revoked answers 204 and changes nothing.\n\nSelf-service: needs a full session and no permission, and reaches only the caller's own\nsessions. It writes an entry to the security log and the audit event `session.revoked`,\nwith the reason that the person revoked it themselves.\n\nErrors: `not_found` (404) when the session does not exist or belongs to someone else;\n`unauthenticated` (401) without a live session; `enrolment_only` (403) from an enrolment\nsession.",
+        "description": "Revokes one of the caller's own sessions at once: its access token stops working on\nits next call and its refresh token can no longer renew it. Use it to sign out a lost or\nforgotten device from the list `GET /me/sessions` returns; revoking the current session\nsigns this device out too. A session already revoked answers 204 and changes nothing.\n\nSelf-service: needs a full session and no permission, and reaches only the caller's own\nsessions in the bank this session is signed in to. It writes an entry to the security\nlog and the audit event `session.revoked`, with the reason that the person revoked it\nthemselves.\n\nErrors: `not_found` (404) when the session does not exist, belongs to someone else or is\none of the caller's own in another bank, one answer for all three; `unauthenticated`\n(401) without a live session; `enrolment_only` (403) from an enrolment session.",
         "operationId": "revokeMySession",
         "parameters": [
           {
-            "description": "The identifier of one of your own sessions, the UUID `GET /me/sessions` returns as `id`. Another person's session or an unknown identifier answers `not_found`.",
+            "description": "The identifier of one of your own sessions in the bank this session is signed in to (on a platform session, one of your platform sessions), the UUID `GET /me/sessions` returns as `id`. Another person's session, one of yours in another bank or an unknown identifier all answer `not_found` alike.",
             "in": "path",
             "name": "session_id",
             "required": true,
             "schema": {
-              "description": "The identifier of one of your own sessions, the UUID `GET /me/sessions` returns as `id`. Another person's session or an unknown identifier answers `not_found`.",
+              "description": "The identifier of one of your own sessions in the bank this session is signed in to (on a platform session, one of your platform sessions), the UUID `GET /me/sessions` returns as `id`. Another person's session, one of yours in another bank or an unknown identifier all answer `not_found` alike.",
               "format": "uuid",
               "title": "Session Id",
               "type": "string"

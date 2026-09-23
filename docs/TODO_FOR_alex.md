@@ -501,7 +501,7 @@ section. Copied here as chunk3-rest-T20 requires.
       never disagrees with the roadmap page beside it, which is the rule chunk 6 ruling 5 set
       for these two reads.
 
-## api-docs-identity-auth: a passkey prompt gives up after two minutes (2026-09-23, ID-02, ID-06)
+## api-docs-identity-auth: a passkey prompt gives up after two minutes, and re-enrolment stops at one bank (2026-09-23, ID-02, ID-04, ID-06)
 
 - [ ] **Web Authentication Level 3 (W3C Recommendation, 25 August 2026, §15.1) recommends a
       ceremony timeout of 5 to 10 minutes, default 5, and challenges that stay valid about
@@ -510,6 +510,21 @@ section. Copied here as chunk3-rest-T20 requires.
       has to wake for a hybrid sign-in, a screen reader user) gets `challenge_expired` and
       starts again. The spec's range comes from WCAG's "Enough time". Raising the default to
       300 is one setting and changes no invariant: challenges stay single use, and the
-      registration and step-up ones stay bound to the person and session. It was left alone because the package that found it was
-      documentation only; the published docs state the current value, so they follow the
-      setting either way. Default if you say nothing: it stays at 120.
+      registration and step-up ones stay bound to the person and session. It was left alone
+      because the package that found it was documentation only. Every lifetime the published
+      descriptions and examples quote is read from its setting when the API loads, so they
+      follow the setting either way. Default if you say nothing: it stays at 120.
+- [ ] **Re-enrolment signs a person out only in the bank that re-issued it.** Re-issuing
+      someone's enrolment (a bank admin, or the console acting for a bank) retires every one
+      of their passkeys everywhere, because passkeys belong to the account, and then revokes
+      "every" session. But it runs with that one bank activated, and row-level security hides
+      the person's sessions in any other bank they belong to. Those sessions keep refreshing
+      until their absolute limit (`SESSION_ABSOLUTE_HOURS_DEFAULT`, 12 hours), although the
+      person is back to awaiting enrolment. Reaching past one bank's rows from inside a bank
+      is a zone decision, so it is yours. Either the product says re-enrolment ends
+      sessions in the acting bank only, or re-enrolment revokes the other banks' sessions
+      through one narrowly scoped function the schema owner holds, like the retention purge.
+      It predates this package and was found while checking that `GET /me/sessions` lists
+      only this bank's sessions. Default if you say nothing: it stays as built, and the
+      published description of `GET /me/sessions` says a person sees only this bank's
+      sessions there.

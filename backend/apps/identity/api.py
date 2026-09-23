@@ -2,8 +2,10 @@
 else). Operation ids are explicit and camelCase so the audit-on-write guard can find
 each mutating route by name in tests_scenarios.py."""
 
+import string
 import uuid
-from typing import cast
+from collections.abc import Callable
+from typing import TypeVar, cast
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -61,6 +63,7 @@ from apps.identity.schemas import (
     SecurityLogPage,
     SessionOut,
     SessionTokens,
+    STEP_UP_OPTIONS_EXAMPLE,
     StepUpResult,
     WebAuthnCreationOptions,
     WebAuthnRequestOptions,
@@ -112,8 +115,35 @@ def _session_response(bundle: session_logic.SessionBundle, response: HttpRespons
 # Each route's docstring is its published `description` (django-ninja reads it), written for
 # an integrator who has never seen this codebase: when to call it, what it changes, what it
 # needs, what it leaves in the audit and security logs, and which RFC 9457 `code` to branch
-# on (docs/plans/briefs/API_DOCUMENTATION.md). Numbers are the settings' defaults.
+# on (docs/plans/briefs/API_DOCUMENTATION.md). Every number it quotes that is a setting is a
+# `$placeholder` that `_quoting_settings` fills in, so the contract follows the setting.
 # ---------------------------------------------------------------------------------------
+_View = TypeVar("_View", bound=Callable[..., object])
+
+_SETTINGS_IN_DOCS = {
+    "challenge_seconds": settings.CHALLENGE_TTL_SECONDS,
+    "step_up_minutes": settings.STEP_UP_FRESHNESS_MINUTES,
+    "replay_grace_seconds": settings.REFRESH_REPLAY_GRACE_SECONDS,
+    "idle_minutes": settings.SESSION_IDLE_MINUTES_DEFAULT,
+    "absolute_hours": settings.SESSION_ABSOLUTE_HOURS_DEFAULT,
+    "invitation_hours": settings.INVITATION_TTL_HOURS,
+    "code_digits": settings.ENROLMENT_CODE_DIGITS,
+    "code_minutes": settings.ENROLMENT_CODE_TTL_MINUTES,
+    "code_attempts": settings.ENROLMENT_CODE_MAX_ATTEMPTS,
+    "codes_per_address_hour": settings.ENROLMENT_CODE_RATE_PER_ADDRESS_PER_HOUR,
+    "codes_per_ip_hour": settings.ENROLMENT_CODE_RATE_PER_IP_PER_HOUR,
+    "auth_calls_per_ip_minute": settings.AUTH_RATE_PER_IP_PER_MINUTE,
+}
+
+
+def _quoting_settings(view: _View) -> _View:
+    """Fill the `$placeholders` in a route's docstring from the settings. It sits under the
+    route decorator, so it runs before Ninja reads the docstring; an unknown placeholder
+    fails the import rather than reaching the contract."""
+    view.__doc__ = string.Template(view.__doc__ or "").substitute(_SETTINGS_IN_DOCS)
+    return view
+
+
 def _example(status: int, value: object) -> dict[str, object]:
     """An example answer for an operation whose response schema cannot carry one itself."""
     return {"responses": {status: {"content": {"application/json": {"example": value}}}}}
@@ -125,24 +155,30 @@ def _example(status: int, value: object) -> dict[str, object]:
     auth=None,
     operation_id="openInvitation",
     by_alias=True,
-    summary="Open your invitation link and get a sign-in code by email",
+    summary="Open your invitation link and get an enrolment code by email",
 )
+@_quoting_settings
 def open_invitation(request: HttpRequest, body: InvitationOpenBody) -> tuple[int, Empty]:
     """Call this when an invitee opens the link in their invitation email: the page reads the
     token from the link's fragment (`/invite#<token>`) and posts it here. A valid token sends
-    a one-time code to the invited address, six digits and good for ten minutes, which the
-    invitee then sends with the same token to `POST /auth/invitations/verify`. Opening the
-    link again sends a fresh code and retires the earlier one. The code is never returned
-    here: the answer is 202 with an empty body.
+    a one-time enrolment code to the invited address, $code_digits digits and good for
+    $code_minutes minutes, which the invitee then sends with the same token to
+    `POST /auth/invitations/verify`. The code is for enrolment only: it opens an enrolment
+    session that can register a passkey, never a full sign-in. Opening the link again sends
+    a fresh code and retires the earlier one.
+    The code is never returned here: the answer is 202 with an empty body.
 
     No session is needed; the single-use token is the grant. It writes a code-sent entry to
     the inviting bank's security log and the audit event `invitation.opened`.
 
-    Errors: `invitation_expired` (410) when the token is unknown, already used, past its 72
-    hours, or revoked or replaced by an administrator; `rate_limited` (429) past 30 calls a
-    minute from one network address, or past 5 codes an hour for one invited address or 20
-    an hour from one network address; `validation_error` (422) for a missing token or one
-    over 128 characters.
+    Errors: `invitation_expired` (410) when the token is unknown, already used, past its
+    $invitation_hours hours, or revoked or replaced by an administrator; `rate_limited` (429)
+    past $auth_calls_per_ip_minute calls a minute from one network address, one allowance
+    shared by opening an invitation, both code checks and both halves of passkey sign-in, or
+    past $codes_per_address_hour codes an hour for one invited address or
+    $codes_per_ip_hour an hour from one network address, counted together with
+    `POST /auth/code/request`; `validation_error` (422) for a missing token or one over 128
+    characters.
     """
     # Ungated by design: public-token (the single-use token is the grant). It rides in the
     # body, never the path, so no request line holds it (security review F29).
@@ -159,6 +195,7 @@ def open_invitation(request: HttpRequest, body: InvitationOpenBody) -> tuple[int
     summary="Trade your invitation code for an enrolment session",
     openapi_extra=_example(200, ENROLMENT_SESSION_EXAMPLE),
 )
+@_quoting_settings
 def verify_invitation_code(request: HttpRequest, body: InvitationCodeVerifyBody, response: HttpResponse) -> SessionTokens:
     """The second step of joining by invitation: send the token from the link and the code
     from the email. A right code opens an enrolment session in the inviting bank and answers
@@ -169,15 +206,17 @@ def verify_invitation_code(request: HttpRequest, body: InvitationCodeVerifyBody,
 
     No session is needed: the token and the code together are the grant, so no email address
     travels on this path, and only a code sent to the invitation's own address verifies. A
-    code works once; each wrong try spends one of its five attempts, after which even the
-    right code is refused. Failures are written to the bank's security log; success writes
-    the audit event `session.created`.
+    code works once; each wrong try spends one of its $code_attempts attempts, after which
+    even the right code is refused. Failures are written to the bank's security log; success
+    writes the audit event `session.created`.
 
     Errors: `invitation_expired` (410) when the token is unknown, used, expired or revoked;
     `invalid_code` (400) for a wrong or expired code or when none is waiting, one answer for
     all of them; `code_locked` (400) once the attempts are spent, when the invitee opens the
-    link again for a new code; `rate_limited` (429) past 30 calls a minute from one network
-    address; `validation_error` (422) for a missing field or one over its length.
+    link again for a new code; `rate_limited` (429) past $auth_calls_per_ip_minute calls a
+    minute from one network address, one allowance shared by opening an invitation, both
+    code checks and both halves of passkey sign-in; `validation_error` (422) for a missing
+    field or one over its length.
     """
     # Ungated by design: public-token (the single-use token and the code are the grant).
     return _session_response(code_logic.verify_invitation_code(body.token, body.code, request), response)
@@ -189,17 +228,20 @@ def verify_invitation_code(request: HttpRequest, body: InvitationCodeVerifyBody,
     auth=None,
     operation_id="requestCode",
     by_alias=True,
-    summary="Ask for a sign-in code by email to finish joining",
+    summary="Ask for an enrolment code by email to finish joining",
 )
+@_quoting_settings
 def request_code(request: HttpRequest, body: CodeRequestBody) -> tuple[int, Empty]:
     """The "First time here?" path, for an invitee who has their invitation but not its link
     to hand: post the invited address and, when it has an open invitation and no passkey
-    yet, a one-time code is emailed to it. The invitee then sends the address and the code to
-    `POST /auth/code/verify`. Asking again sends a fresh code and retires the earlier one.
+    yet, a one-time enrolment code is emailed to it. The invitee then sends the address and
+    the code to `POST /auth/code/verify`. Asking again sends a fresh code and retires the
+    earlier one.
 
     The answer is the same 202 with an empty body whatever the address, invited, enrolled or
-    unknown, and the server does the same work for each, so the call cannot be used to learn
-    who has an account. An address that already holds a passkey is sent nothing: the code is
+    unknown, and the server does the same hashing work for each: the answer never says
+    whether the address has an account, and the rate limits below bound what the response
+    time could hint. An address that already holds a passkey is sent nothing: the code is
     for enrolment only and never a way around a passkey. There is no password and no
     self-service recovery; a person who has lost every passkey asks their bank's
     administrator to re-issue their enrolment.
@@ -208,9 +250,10 @@ def request_code(request: HttpRequest, body: CodeRequestBody) -> tuple[int, Empt
     names the account only when the address is known; a code sent, and a code refused to an
     enrolled address, are also written to the security log.
 
-    Errors: `rate_limited` (429) past 5 requests an hour for one address or 20 an hour from
-    one network address, whether or not the address is known; `validation_error` (422) for a
-    missing address or one over 254 characters.
+    Errors: `rate_limited` (429) past $codes_per_address_hour requests an hour for one
+    address or $codes_per_ip_hour an hour from one network address, counted together with
+    opening invitation links and whether or not the address is known; `validation_error`
+    (422) for a missing address or one over 254 characters.
     """
     # Ungated by design: bootstrap. Neutral answer whatever the address (AC-ID1).
     code_logic.request_code(body.email, request)
@@ -226,6 +269,7 @@ def request_code(request: HttpRequest, body: CodeRequestBody) -> tuple[int, Empt
     summary="Trade the code emailed to your address for an enrolment session",
     openapi_extra=_example(200, ENROLMENT_SESSION_EXAMPLE),
 )
+@_quoting_settings
 def verify_code(request: HttpRequest, body: CodeVerifyBody, response: HttpResponse) -> SessionTokens:
     """The second step of the "First time here?" path: send the invited address and the code
     emailed to it. A right code opens an enrolment session in the bank whose invitation is
@@ -234,16 +278,17 @@ def verify_code(request: HttpRequest, body: CodeVerifyBody, response: HttpRespon
     `/api/v1/auth`. The enrolment session reaches only passkey registration and `GET /me`;
     every other route answers 403 `enrolment_only` until the first passkey is registered.
 
-    No session is needed. A code works once; each wrong try spends one of its five attempts,
-    after which even the right code is refused and a new one must be requested. A right code
-    for an address with no open invitation, or one that already holds a passkey, is refused
-    like a wrong one. Failures are written to the security log; success writes the audit
-    event `session.created`.
+    No session is needed. A code works once; each wrong try spends one of its $code_attempts
+    attempts, after which even the right code is refused and a new one must be requested. A
+    right code for an address with no open invitation, or one that already holds a passkey,
+    is refused like a wrong one. Failures are written to the security log; success writes
+    the audit event `session.created`.
 
     Errors: `invalid_code` (400) for a wrong, expired or missing code or a closed invitation,
     one answer for all of them; `code_locked` (400) once the attempts are spent;
-    `rate_limited` (429) past 30 calls a minute from one network address; `validation_error`
-    (422) for a missing field or one over its length.
+    `rate_limited` (429) past $auth_calls_per_ip_minute calls a minute from one network
+    address, one allowance shared by opening an invitation, both code checks and both halves
+    of passkey sign-in; `validation_error` (422) for a missing field or one over its length.
     """
     # Ungated by design: bootstrap.
     return _session_response(code_logic.verify_code(body.email, body.code, request), response)
@@ -260,6 +305,7 @@ def verify_code(request: HttpRequest, body: CodeVerifyBody, response: HttpRespon
     by_alias=True,
     summary="Start registering a passkey",
 )
+@_quoting_settings
 def passkey_register_options(request: HttpRequest) -> WebAuthnCreationOptions:
     """The first half of the registration ceremony: returns the options to pass to
     `navigator.credentials.create({publicKey: ...})`, byte members base64url-encoded in
@@ -271,7 +317,7 @@ def passkey_register_options(request: HttpRequest) -> WebAuthnCreationOptions:
     The options ask for a discoverable passkey with user verification required, from any
     kind of authenticator and with no attestation, and list the person's existing passkeys so
     the same authenticator is not registered twice. The challenge inside works once, only for
-    this person and session, and expires after 120 seconds.
+    this person and session, and expires after $challenge_seconds seconds.
 
     Needs a session of either kind and no permission: a person can only ever register a
     passkey for their own account. It stores the challenge and writes the audit event
@@ -291,6 +337,7 @@ def passkey_register_options(request: HttpRequest) -> WebAuthnCreationOptions:
     by_alias=True,
     summary="Finish registering a passkey",
 )
+@_quoting_settings
 def passkey_register_verify(request: HttpRequest, body: PasskeyRegisterBody, response: HttpResponse) -> tuple[int, PasskeyRegistered]:
     """The second half of the registration ceremony: send the credential the browser returned
     from `navigator.credentials.create()`, in its JSON form, and optionally a name. The server
@@ -305,7 +352,7 @@ def passkey_register_verify(request: HttpRequest, body: PasskeyRegisterBody, res
     revoked, and a full session starts with this response, its access token in the body and
     its refresh token as an `HttpOnly` cookie. A screen then offers a second passkey. From a
     full session it adds a passkey and the session carries on; adding an authentication
-    factor needs a session younger than five minutes or a fresh passkey step-up.
+    factor needs a session younger than $step_up_minutes minutes or a fresh passkey step-up.
 
     Needs a session of either kind and no permission. It writes an enrolled entry to the
     security log and the audit event `passkey.registered` with the name, how it was chosen,
@@ -348,6 +395,7 @@ def passkey_register_verify(request: HttpRequest, body: PasskeyRegisterBody, res
     by_alias=True,
     summary="Start signing in with a passkey",
 )
+@_quoting_settings
 def passkey_authenticate_options(request: HttpRequest) -> WebAuthnRequestOptions:
     """The first half of sign-in: returns the options to pass to
     `navigator.credentials.get({publicKey: ...})`, or to
@@ -356,11 +404,13 @@ def passkey_authenticate_options(request: HttpRequest) -> WebAuthnRequestOptions
     for this domain and the account is found from the one that answers. Then send the
     browser's answer to `POST /auth/passkeys/authenticate/verify`.
 
-    No session is needed. Each call stores a single-use challenge that expires after 120
-    seconds and writes the audit event `auth.challenge_issued`; no account is read or
-    revealed.
+    No session is needed. Each call stores a single-use challenge that expires after
+    $challenge_seconds seconds and writes the audit event `auth.challenge_issued`; no
+    account is read or revealed.
 
-    Errors: `rate_limited` (429) past 30 calls a minute from one network address.
+    Errors: `rate_limited` (429) past $auth_calls_per_ip_minute calls a minute from one
+    network address, one allowance shared by opening an invitation, both code checks and
+    both halves of passkey sign-in, so each sign-in spends two.
     """
     # Ungated by design: bootstrap.
     return WebAuthnRequestOptions.model_validate(passkey_logic.authentication_options(request))
@@ -374,6 +424,7 @@ def passkey_authenticate_options(request: HttpRequest) -> WebAuthnRequestOptions
     by_alias=True,
     summary="Sign in with your passkey",
 )
+@_quoting_settings
 def passkey_authenticate_verify(request: HttpRequest, body: PasskeyAssertBody, response: HttpResponse) -> SessionTokens:
     """The second half of sign-in: send the credential the browser returned from
     `navigator.credentials.get()`. The server finds the passkey by its credential ID and
@@ -395,8 +446,9 @@ def passkey_authenticate_verify(request: HttpRequest, body: PasskeyAssertBody, r
     Errors: `signin_failed` (401) for every refusal (an unknown or retired passkey, an
     account that is not active, a spent or expired challenge, a user handle naming someone
     else, a bad signature), one answer so a caller cannot tell them apart; `rate_limited`
-    (429) past 30 calls a minute from one network address; `validation_error` (422) for a
-    malformed body.
+    (429) past $auth_calls_per_ip_minute calls a minute from one network address, one
+    allowance shared by opening an invitation, both code checks and both halves of passkey
+    sign-in; `validation_error` (422) for a malformed body.
     """
     # Ungated by design: bootstrap.
     bundle = passkey_logic.verify_authentication(body.credential.model_dump(by_alias=True, exclude_none=True), request)
@@ -410,17 +462,20 @@ def passkey_authenticate_verify(request: HttpRequest, body: PasskeyAssertBody, r
     operation_id="stepUpOptions",
     by_alias=True,
     summary="Start confirming a sensitive action with your passkey",
+    openapi_extra=_example(200, STEP_UP_OPTIONS_EXAMPLE),
 )
+@_quoting_settings
 def step_up_options(request: HttpRequest) -> WebAuthnRequestOptions:
     """The first half of a step-up. A sensitive action (an approval, a sign-off, a footprint
     change, an export, a key, a role or security change, a re-enrolment) answers 403
-    `step_up_required` unless the session holds a passkey assertion younger than five
-    minutes. Call this, pass the options to `navigator.credentials.get({publicKey: ...})`,
-    send the answer to `POST /auth/step-up/verify`, then repeat the action.
+    `step_up_required` unless the session holds a passkey assertion younger than
+    $step_up_minutes minutes. Call this, pass the options to
+    `navigator.credentials.get({publicKey: ...})`, send the answer to
+    `POST /auth/step-up/verify`, then repeat the action.
 
-    The options list the caller's own live passkeys, so no other account's passkey can
-    confirm, and require user verification. The challenge works once, only for this person
-    and session, and expires after 120 seconds.
+    The options list the caller's own live passkeys in `allowCredentials`, so no other
+    account's passkey can confirm, and require user verification. The challenge works once,
+    only for this person and session, and expires after $challenge_seconds seconds.
 
     Needs a full session and no permission; an agent's API key can never step up. It stores
     the challenge and writes the audit event `auth.challenge_issued`.
@@ -440,12 +495,13 @@ def step_up_options(request: HttpRequest) -> WebAuthnRequestOptions:
     by_alias=True,
     summary="Confirm a sensitive action with your passkey",
 )
+@_quoting_settings
 def step_up_verify(request: HttpRequest, body: PasskeyAssertBody) -> StepUpResult:
     """The second half of a step-up: send the credential the browser returned. The server
     checks that the passkey is one of the caller's own live ones, the challenge, the origin
     and the domain, user verification, the signature and the counter, then records the
     assertion on this session and answers with its identifier and until when it counts as
-    fresh, five minutes. Until then every sensitive action on this session may proceed, and
+    fresh, $step_up_minutes minutes. Until then every sensitive action on this session may proceed, and
     each writes the assertion's identifier onto its own audit event. It covers this session
     only; another device steps up for itself.
 
@@ -475,6 +531,7 @@ def step_up_verify(request: HttpRequest, body: PasskeyAssertBody) -> StepUpResul
     by_alias=True,
     summary="Keep your session going with a fresh access token",
 )
+@_quoting_settings
 def refresh_session(request: HttpRequest, response: HttpResponse) -> RefreshResult:
     """Call this shortly before the access token expires. It takes no body and no
     `Authorization` header: the credential is the `HttpOnly` refresh cookie that sign-in set,
@@ -482,11 +539,12 @@ def refresh_session(request: HttpRequest, response: HttpResponse) -> RefreshResu
     answer carries a new access token, and the refresh token is rotated: the response sets a
     new cookie and the old one stops working.
 
-    Two tabs refreshing at once are safe: the previous refresh token presented within 30
-    seconds of its rotation gets a fresh access token without rotating again. Presented any
-    later it is treated as stolen, the whole session is revoked and the replay is written to
-    the security log. A session also ends after 30 minutes without a refresh or 12 hours
-    after sign-in, and a revoked one cannot be refreshed.
+    Two tabs refreshing at once are safe: the previous refresh token presented within
+    $replay_grace_seconds seconds of its rotation gets a fresh access token without rotating
+    again. Presented any later it is treated as stolen, the whole session is revoked and the
+    replay is written to the security log. A session also ends after $idle_minutes minutes
+    without a refresh or $absolute_hours hours after sign-in, and a revoked one cannot be
+    refreshed.
 
     Writes the audit event `session.refreshed`; a session that ends here writes
     `session.revoked`.
@@ -630,8 +688,10 @@ _PASSKEY_ID = Path(
 _SESSION_ID = Path(
     ...,
     description=(
-        "The identifier of one of your own sessions, the UUID `GET /me/sessions` returns as "
-        "`id`. Another person's session or an unknown identifier answers `not_found`."
+        "The identifier of one of your own sessions in the bank this session is signed in to "
+        "(on a platform session, one of your platform sessions), the UUID `GET /me/sessions` "
+        "returns as `id`. Another person's session, one of yours in another bank or an "
+        "unknown identifier all answer `not_found` alike."
     ),
 )
 
@@ -695,6 +755,7 @@ def rename_my_passkey(request: HttpRequest, body: PasskeyPatch, passkey_id: uuid
     by_alias=True,
     summary="Remove one of your passkeys",
 )
+@_quoting_settings
 def remove_my_passkey(request: HttpRequest, passkey_id: uuid.UUID = _PASSKEY_ID) -> tuple[int, None]:
     """Retires one of the caller's own passkeys: it stops working for sign-in and step-up at
     once and leaves the list. It is retired and not deleted, so its record stays for the
@@ -704,7 +765,7 @@ def remove_my_passkey(request: HttpRequest, passkey_id: uuid.UUID = _PASSKEY_ID)
     self-service recovery: add another first.
 
     Removing an authentication factor asks for a fresh proof of presence: a session younger
-    than five minutes or a passkey step-up on this session. It needs a full session and no
+    than $step_up_minutes minutes or a passkey step-up on this session. It needs a full session and no
     permission, and writes the audit event `passkey.retired` with the passkey's name.
 
     Errors: `last_passkey` (409) for the only live passkey; `not_found` (404) when the
@@ -734,13 +795,16 @@ def _session_out(row: session_logic.UserSession, current_id: uuid.UUID | None) -
     summary="See where you are signed in",
     openapi_extra=_example(200, MY_SESSIONS_EXAMPLE),
 )
+@_quoting_settings
 def list_my_sessions(request: HttpRequest) -> list[SessionOut]:
-    """Every live signed-in session the caller has, in every bank they belong to and on the
-    platform, most recently active first: when it began, when it last refreshed, the network
-    address and browser it came from, and `current` true for the one making this call.
-    Enrolment sessions, revoked ones and those past their 12-hour limit are not listed; an
-    idle one shows until its next refresh attempt ends it. An empty answer is a 200 with an
-    empty list.
+    """Every live signed-in session the caller has in the bank this session is signed in to
+    (on a platform session, their platform sessions), most recently active first: when it
+    began, when it last refreshed, the network address and browser it came from, and
+    `current` true for the one making this call. A person who belongs to several banks sees
+    here only this bank's sessions; the ones in another bank stay inside that bank and
+    cannot be listed or revoked from this session. Enrolment sessions, revoked ones and
+    those past their $absolute_hours-hour limit are not listed; an idle one shows until its
+    next refresh attempt ends it. An empty answer is a 200 with an empty list.
 
     Self-service: needs a full session and no permission, and lists only the caller's own. It
     changes nothing and writes no audit event.
@@ -769,12 +833,13 @@ def revoke_my_session(request: HttpRequest, session_id: uuid.UUID = _SESSION_ID)
     signs this device out too. A session already revoked answers 204 and changes nothing.
 
     Self-service: needs a full session and no permission, and reaches only the caller's own
-    sessions. It writes an entry to the security log and the audit event `session.revoked`,
-    with the reason that the person revoked it themselves.
+    sessions in the bank this session is signed in to. It writes an entry to the security
+    log and the audit event `session.revoked`, with the reason that the person revoked it
+    themselves.
 
-    Errors: `not_found` (404) when the session does not exist or belongs to someone else;
-    `unauthenticated` (401) without a live session; `enrolment_only` (403) from an enrolment
-    session.
+    Errors: `not_found` (404) when the session does not exist, belongs to someone else or is
+    one of the caller's own in another bank, one answer for all three; `unauthenticated`
+    (401) without a live session; `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: self.
     session_logic.revoke_own_session(_principal(request), session_id, request)

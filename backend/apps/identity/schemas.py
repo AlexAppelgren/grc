@@ -160,14 +160,26 @@ _EXAMPLE_OTHER_SESSION: dict[str, JsonValue] = {
 # on the operations that return them.
 MY_PASSKEYS_EXAMPLE: list[JsonValue] = [_EXAMPLE_PASSKEY, _EXAMPLE_SECURITY_KEY]
 MY_SESSIONS_EXAMPLE: list[JsonValue] = [_EXAMPLE_SESSION, _EXAMPLE_OTHER_SESSION]
-ENROLMENT_SESSION_EXAMPLE: dict[str, JsonValue] = {"accessToken": _EXAMPLE_ENROLMENT_TOKEN, "sessionKind": "enrolment", "expiresIn": 600}
+_EXAMPLE_EXPIRES_IN = settings.ACCESS_TOKEN_TTL_MINUTES * 60
+_EXAMPLE_TIMEOUT = settings.CHALLENGE_TTL_SECONDS * 1000
+ENROLMENT_SESSION_EXAMPLE: dict[str, JsonValue] = {"accessToken": _EXAMPLE_ENROLMENT_TOKEN, "sessionKind": "enrolment", "expiresIn": _EXAMPLE_EXPIRES_IN}
+# Step-up lists the caller's own passkeys, where sign-in lists none; its challenge is the one
+# the assertion example above answers.
+STEP_UP_OPTIONS_EXAMPLE: dict[str, JsonValue] = {
+    "challenge": _EXAMPLE_SIGN_IN_CHALLENGE,
+    "timeout": _EXAMPLE_TIMEOUT,
+    "rpId": "compliance.bleqq.com",
+    "allowCredentials": [_EXAMPLE_DESCRIPTOR],
+    "userVerification": "required",
+}
 
 # What every bytes value in the WebAuthn shapes is, said once.
 _BASE64URL = "base64url-encoded without padding, the encoding WebAuthn's own JSON form uses"
 
 
 class CodeRequestBody(CamelSchema):
-    """Asking for a one-time sign-in code by email, the "First time here?" path."""
+    """Asking for a one-time enrolment code by email, the "First time here?" path. The code
+    opens only an enrolment session that can register a passkey, never a full sign-in."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"email": "anna@example-bank.test"}]})
 
@@ -177,8 +189,7 @@ class CodeRequestBody(CamelSchema):
             "The address the invitation was sent to, at most 254 characters. Case and "
             "surrounding spaces are ignored. Any text is accepted and answered alike: a code "
             "goes out only when the address has an open invitation and no passkey yet, and "
-            "the answer never says whether it did, so it cannot be used to learn who holds "
-            "an account."
+            "the answer never says whether it did, so it never tells who holds an account."
         ),
     )
 
@@ -211,7 +222,9 @@ class CodeVerifyBody(CamelSchema):
 
 class InvitationOpenBody(CamelSchema):
     """Opening the emailed link. The token rides in the body, never a path, so no server
-    that logs request lines ever holds it (security review F29)."""
+    that logs request lines ever holds it."""
+
+    # Security review F29: the token moved out of the path.
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"}]})
 
@@ -230,7 +243,9 @@ class InvitationOpenBody(CamelSchema):
 
 class InvitationCodeVerifyBody(CamelSchema):
     """The invitation path: the link's token names the account, so no address travels.
-    The token rides in the body, never the path, so no access log holds it (F6, F29)."""
+    The token rides in the body, never the path, so no access log holds it."""
+
+    # Security review F6 and F29: no address on this path, and the token out of the path.
 
     model_config = ConfigDict(
         json_schema_extra={"examples": [{"token": "Tq3xExampleInvitationToken0fTheEmailedLinkA", "code": "482915"}]}
@@ -262,7 +277,7 @@ class SessionTokens(CamelSchema):
     set as an `HttpOnly` cookie by the same response and never appears in a body."""
 
     model_config = ConfigDict(
-        json_schema_extra={"examples": [{"accessToken": _EXAMPLE_ACCESS_TOKEN, "sessionKind": "full", "expiresIn": 600}]}
+        json_schema_extra={"examples": [{"accessToken": _EXAMPLE_ACCESS_TOKEN, "sessionKind": "full", "expiresIn": _EXAMPLE_EXPIRES_IN}]}
     )
 
     access_token: str = Field(
@@ -301,7 +316,7 @@ class RefreshResult(CamelSchema):
     """The next access token for a live session. The rotated refresh token arrives as a
     cookie in the same response, never in the body."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"accessToken": _EXAMPLE_ACCESS_TOKEN, "expiresIn": 600}]})
+    model_config = ConfigDict(json_schema_extra={"examples": [{"accessToken": _EXAMPLE_ACCESS_TOKEN, "expiresIn": _EXAMPLE_EXPIRES_IN}]})
 
     access_token: str = Field(
         description=(
@@ -493,7 +508,7 @@ class WebAuthnCreationOptions(CamelSchema):
                     "user": {"id": _EXAMPLE_USER_HANDLE, "name": "compliance_officer@example-bank.test", "displayName": "Sara Lindqvist"},
                     "challenge": _EXAMPLE_REGISTRATION_CHALLENGE,
                     "pubKeyCredParams": [{"type": "public-key", "alg": -8}, {"type": "public-key", "alg": -7}, {"type": "public-key", "alg": -257}],
-                    "timeout": 120000,
+                    "timeout": _EXAMPLE_TIMEOUT,
                     "excludeCredentials": [_EXAMPLE_DESCRIPTOR],
                     "authenticatorSelection": {"residentKey": "required", "requireResidentKey": True, "userVerification": "required"},
                     "attestation": "none",
@@ -587,7 +602,7 @@ class WebAuthnRequestOptions(CamelSchema):
             "examples": [
                 {
                     "challenge": _EXAMPLE_SIGN_IN_CHALLENGE,
-                    "timeout": 120000,
+                    "timeout": _EXAMPLE_TIMEOUT,
                     "rpId": "compliance.bleqq.com",
                     "allowCredentials": [],
                     "userVerification": "required",
@@ -902,7 +917,7 @@ class PasskeyRegistered(CamelSchema):
 
     model_config = ConfigDict(
         json_schema_extra={
-            "examples": [{"passkey": _EXAMPLE_PASSKEY, "accessToken": _EXAMPLE_ACCESS_TOKEN, "sessionKind": "full", "expiresIn": 600}]
+            "examples": [{"passkey": _EXAMPLE_PASSKEY, "accessToken": _EXAMPLE_ACCESS_TOKEN, "sessionKind": "full", "expiresIn": _EXAMPLE_EXPIRES_IN}]
         }
     )
 
@@ -1031,10 +1046,11 @@ class MeTenant(CamelSchema):
 
 
 class MeCounts(CamelSchema):
-    """The queue counts behind Today's "Decide now" panel (HOM-01, D-23): three
-    independent reads, each filtered by the caller's own permissions rather than
-    refused, so a reader without a permission sees a true zero and not a 403 that
-    would take the whole panel away."""
+    """The queue counts behind Today's "Decide now" panel: three independent reads, each
+    filtered by the caller's own permissions rather than refused, so a reader without a
+    permission sees a true zero and not a 403 that would take the whole panel away."""
+
+    # HOM-01, D-23.
 
     triage: int = Field(
         ge=0,
@@ -1190,11 +1206,12 @@ class Me(CamelSchema):
             "prompt. Signing in never counts as a step-up."
         )
     )
+    # The counts are D-23's; zero rather than refused is f03-T48.
     counts: MeCounts | None = Field(
         description=(
-            "The caller's own queue counts for 'Decide now' (D-23), or null for a platform "
-            "session, which has no tenant to count against. Each of the three counts is 0 "
-            "rather than refused when the caller's permissions do not unlock it (f03-T48)."
+            "The caller's own queue counts for 'Decide now', or null for a platform session, "
+            "which has no tenant to count against. Each of the three counts is 0 rather than "
+            "refused when the caller's permissions do not unlock it."
         )
     )
     last_visit_at: datetime | None = Field(
