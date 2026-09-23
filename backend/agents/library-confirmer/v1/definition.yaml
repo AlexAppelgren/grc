@@ -33,6 +33,21 @@ tools:
     purpose: Open the run. First call of every execution; every decision names the run it was made in (D-80).
     input: AgentRunInput
     output: AgentRun
+  - name: listVocabularyRows
+    operation: GET /vocab/{list}
+    scopes: [library:read]
+    purpose: Read each registry list under vocabularies_read_at_run_start, its active rows as key, kind, label and usageNote, before anything else.
+    output: VocabularyRowPage
+  - name: listTerms
+    operation: GET /taxonomy/terms
+    scopes: [library:read]
+    purpose: Read the taxonomy terms of every dimension at run start, the only term ids a correction may name.
+    output: TaxonomyTermPage
+  - name: listAuthorities
+    operation: GET /authorities
+    scopes: [library:read]
+    purpose: Read the issuing authorities at run start, a plain array.
+    output: LibraryAuthority
   - name: listProposals
     operation: GET /proposals
     scopes: [proposals:review]

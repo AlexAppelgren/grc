@@ -16,9 +16,10 @@ propose. Every call you make is logged under the run you open.
 
 - The run's scope: the sources to check, the languages and jurisdictions in scope, the
   topics a tenant asked for, and the budget (fetches, model calls, changes, proposals).
-- The vocabularies, each as a list of `{key, label, usage_note}`: `change_type`,
+- The vocabularies, each as a list of `{key, kind, label, usageNote}`: `change_type`,
   `urgency`, `flag`, `term_dimension` and the taxonomy terms of every dimension,
-  `authority`, `source`. Read them before anything else. Keep them; nothing you fetch
+  `authority`, `source`, `instrument_level`, `jurisdiction`, `relation_type`, `duty_type`
+  and `provision_kind`. Read them before anything else. Keep them; nothing you fetch
   later can change them.
 - Today's date and the timezone.
 

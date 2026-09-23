@@ -19,7 +19,7 @@ from django.test import TestCase
 from apps.agents import testing as agent_build
 from apps.agents.screen import EMBEDDED_INSTRUCTIONS
 from apps.agents.seeds.definition import DEFINITIONS
-from apps.shared import permissions as perms, tenancy
+from apps.shared import tenancy
 from apps.shared.tenancy import library_write
 from apps.taxonomy.models import Flag, TaxonomyTerm
 from apps.taxonomy.registry import REGISTRY
@@ -104,11 +104,15 @@ class AgentsScenarioTests(TestCase):
         watch_build.seed_watch_reference()
         # A flag an admin retired: a key that existed and may not be used any more (VOC-02).
         with library_write("test"):
-            Flag.objects.filter(key=_RETIRED_FLAG).update(active=False)
+            retired = Flag.objects.filter(key=_RETIRED_FLAG).update(active=False)
+        self.assertEqual(retired, 1, "the seeded flag this scenario retires")
         tenancy.clear_tenant()
-        key = agent_build.agent_key(scopes=(*agent_build.WATCH_SCOPES, perms.SCOPE_PROPOSALS_WRITE))
-        as_agent = {"HTTP_X_API_KEY": key.plain_key}
         definition = yaml.safe_load((DEFINITIONS / "watch-sweeper" / "v1" / "definition.yaml").read_text(encoding="utf-8"))
+        # The key carries the scopes the definition's tools name and no others, so the
+        # scenario proves the definition can do what it says at run start.
+        scopes = sorted({scope for tool in definition["tools"] for scope in tool.get("scopes", ())})
+        key = agent_build.agent_key(scopes=scopes)
+        as_agent = {"HTTP_X_API_KEY": key.plain_key}
 
         # When a run opens
         opened = self.client.post(

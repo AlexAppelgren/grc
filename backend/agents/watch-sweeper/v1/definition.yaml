@@ -26,6 +26,26 @@ tools:
     purpose: Open the run. First call of every execution; returns the run id every later call carries.
     input: AgentRunInput
     output: AgentRun
+  - name: listVocabularyRows
+    operation: GET /vocab/{list}
+    scopes: [library:read]
+    purpose: Read each registry list under vocabularies_read_at_run_start, its active rows as key, kind, label and usageNote, before anything else.
+    output: VocabularyRowPage
+  - name: listTerms
+    operation: GET /taxonomy/terms
+    scopes: [library:read]
+    purpose: Read the taxonomy terms of every dimension at run start, the only term ids a change or a proposal may name.
+    output: TaxonomyTermPage
+  - name: listAuthorities
+    operation: GET /authorities
+    scopes: [library:read]
+    purpose: Read the issuing authorities at run start, a plain array.
+    output: LibraryAuthority
+  - name: listSources
+    operation: GET /sources
+    scopes: [library:read]
+    purpose: Read the registered sources at run start, a plain array, the sources a run checks.
+    output: WatchSourceOut
   - name: recordSourceCheck
     operation: POST /agent-runs/{runId}/source-checks
     scopes: [sources:write]
@@ -57,7 +77,7 @@ tools:
     input: AgentRunFinish
     output: AgentRun
 
-# Read at run start (key, label, usage note). The agent may submit these keys only; an
+# Read at run start (key, kind, label, usage note). The agent may submit these keys only; an
 # unknown key answers 422 unknown_key with the valid list (AC-WAT2) and is never retried
 # with an invented key. A missing value is a proposal.
 vocabularies_read_at_run_start:
@@ -68,7 +88,7 @@ vocabularies_read_at_run_start:
   - taxonomy_term        # every dimension, restricts_footprint and descriptive alike
   - authority
   - source
-  - instrument_level     # this and the four below: what a proposal's payload names (AGT-S3)
+  - instrument_level     # this and the four below: no payload names them yet; read so a vocabulary proposal never repeats a key that exists (AGT-S3)
   - jurisdiction
   - relation_type
   - duty_type

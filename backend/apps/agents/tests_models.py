@@ -5,7 +5,8 @@ so the seed's stripped-down reader can never drift from real YAML; the definitio
 the API image, where the seed reads them on every deploy; the seed creates one agent row
 per definition once and leaves it alone on the next deploy, and an agent's key never
 changes; the confirming definition is independent of the proposing one by what it may
-call, and every vocabulary a definition reads at run start is one the API serves;
+call, and every vocabulary a definition reads at run start is one the API serves through
+a tool the definition declares with `library:read`;
 `agent_run` is a mixed table whose policies bite for `cw_app`: a tenant reads the
 library's runs but never writes them, and a run lives in its key's zone; a key bound to
 an agent writes its audit rows as that agent, not as a bare key id; and the decision an
@@ -51,10 +52,15 @@ from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 V1 = "/api/v1"
 WATCH_SWEEPER = DEFINITIONS / "watch-sweeper" / "v1" / "definition.yaml"
 LIBRARY_CONFIRMER = DEFINITIONS / "library-confirmer" / "v1" / "definition.yaml"
-# The lists an agent's key reads that are not rows of the vocabulary registry, each behind
-# a route of its own that takes `library:read`: `GET /taxonomy/terms`, `GET /authorities`
-# and `GET /sources`.
-READ_OUTSIDE_THE_REGISTRY = frozenset({"taxonomy_term", "authority", "source"})
+# Where a run reads each list it names at run start, every route taking `library:read`: the
+# registry's library lists through one route, the three that are not registry rows through
+# routes of their own.
+READ_FROM_THE_REGISTRY = "GET /vocab/{list}"
+READ_OUTSIDE_THE_REGISTRY = {
+    "taxonomy_term": "GET /taxonomy/terms",
+    "authority": "GET /authorities",
+    "source": "GET /sources",
+}
 # A .dockerignore wildcard as Docker compiles it (moby/patternmatcher), keyed by its
 # re.escape spelling: `**` spans directories, `*` and `?` stay inside one.
 DOCKER_WILDCARDS = {r"\*\*/": "(.*/)?", r"\*\*": ".*", r"\*": "[^/]*", r"\?": "[^/]"}
@@ -178,15 +184,21 @@ class DefinitionContractTests(SimpleTestCase):
         }
         self.assertEqual(len(prompts), 2, "the confirmer has a prompt of its own")
 
-    def test_every_vocabulary_read_at_run_start_is_one_the_api_serves(self) -> None:
-        """A list named here that no route serves would fail the run at its first read.
-        The registry's library lists come from `GET /vocab/{list}`; the rest have routes of
-        their own. A tenant list is never one: a platform run reads no bank's rows."""
-        served = set(LIBRARY_LISTS) | READ_OUTSIDE_THE_REGISTRY
+    def test_every_vocabulary_read_at_run_start_is_one_the_definition_may_read(self) -> None:
+        """A list named here that no route serves, or whose route the definition declares
+        no tool for with `library:read`, would fail the run at its first read: the key the
+        platform issues carries the scopes of the definition's tools and no others. A tenant
+        list is never one: a platform run reads no bank's rows."""
         for name, version in SHIPPED:
-            lists = _parsed(name, version)["vocabularies_read_at_run_start"]
+            definition = _parsed(name, version)
+            lists = definition["vocabularies_read_at_run_start"]
             self.assertEqual(len(lists), len(set(lists)), f"{name} names a list twice")
-            self.assertLessEqual(set(lists), served, name)
+            tools = {tool["operation"]: tool for tool in definition["tools"] if "operation" in tool}
+            for listed in lists:
+                route = READ_FROM_THE_REGISTRY if listed in LIBRARY_LISTS else READ_OUTSIDE_THE_REGISTRY.get(listed)
+                self.assertIsNotNone(route, f"{name}: no route serves {listed}")
+                self.assertIn(route, sorted(tools), f"{name} reads {listed} at run start and declares no tool for {route}")
+                self.assertIn(perms.SCOPE_LIBRARY_READ, tools[route]["scopes"], f"{name}: {route} needs library:read")
         self.assertIn("rejection_reason", _parsed("library-confirmer", 1)["vocabularies_read_at_run_start"])
 
 
