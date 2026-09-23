@@ -1,0 +1,961 @@
+[
+ {
+  "key": "tax-nordic-seed",
+  "wave": 2,
+  "size": "M",
+  "title": "The demo library holds Danish and Norwegian rules, tenant A watches Denmark, and the E2E seed starts from a clean mailbox",
+  "goal": "Verified DK/NO authorities, instruments and obligations exist for the markets journeys; the seed is deterministic and its copy says regulatory scope.",
+  "requirement_ids": [
+   "FP-04",
+   "FP-02"
+  ],
+  "scenario_ids": [
+   "FP-S8",
+   "FP-S10",
+   "FP-S13",
+   "FP-S15"
+  ],
+  "files_owned": [
+   "backend/apps/library/fixtures/prototype_data.json",
+   "backend/apps/taxonomy/seeds/__init__.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/e2e_seed.py (own block; EXPECTED_LIBRARY ~176; the MockMailer.reset() call at the top of seed_e2e ~1238)",
+   "backend/apps/shared/tests_seed_integrity.py (EXPECTED_LIBRARY counts, the chunk-5 runs test ~569-581, a new mailbox test)",
+   "docs/plans/Verification_Log.md (new rows only)",
+   "frontend/tests/e2e/*.journey.spec.ts (count assertions only; never shell.journey.spec.ts or shared.journey.spec.ts, which tax-scope-journeys and screen-budget-nfr-s7 own)"
+  ],
+  "depends_on": [],
+  "acceptance": "check_prototype_data.py --eval and search_eval.py (gate 9) pass; every new date, reference and authority fact cites a Verification_Log row; prototype_data.json holds a Danish and a Norwegian supervisory authority, one instrument each under a regime: term with dated precision, and obligations scoped to Custody and to Advice with own-words en/sv summaries; seed_e2e makes tenant A watch DK through markets_logic.watch() (one markets.watch_added audit row, idempotent on a reseed), tenant B watches nothing; EXPECTED_LIBRARY, seed-integrity and every journey that counts tenant A's obligations, instruments or search hits are updated; the theme and channel usage notes say 'regulatory scope', not 'footprint'; seed_e2e empties the mock mail outbox first, proven by a seed-integrity test; the chunk-5 runs test is renamed to what it proves and asserts the exact number of runs per status; library, taxonomy and shared suites green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. prototype_data.json: add the Danish and the Norwegian financial supervisory authority, one instrument each (the DK one is the tenant-inventory card's watched-market example, Kapitalmarkedsloven with a custody duty, design/screens/tenant-inventory.html ~290; the NO one an act of the same family), each with jurisdiction dk or no, a regime that is a regime: term (Instrument.regime is NOT NULL since library 0008, and check_prototype_data refuses anything else), dates with a precision, and obligations scoped to Custody and to Advice with our own-words en/sv summaries. Fetch every fact from the authority's or the legislator's own site and log it in docs/plans/Verification_Log.md; invent nothing, and leave out (with a TODO_FOR_alex line) any fact no site gives. 2. seed_e2e: tenant A watches DK through apps/taxonomy/markets_logic.watch(tenant=..., actor=..., key='dk'), so the audited write the product makes is the one the seed makes. It answers already_watching on a repeat, so skip it when the WatchedMarket row exists. Tenant B watches nothing. 3. Counts: tenant A's regulatory scope has no jurisdiction term, so the new obligations reach A wherever their other terms match. Update EXPECTED_LIBRARY (e2e_seed.py ~176) and tests_seed_integrity.py, and find and update every journey or seed assertion that counts A's obligations, instruments or search hits. Send any count in shell.journey.spec.ts (tax-scope-journeys owns it) or shared.journey.spec.ts (screen-budget-nfr-s7) to the orchestrator. lib-standard-e2e-seed changes the same counts in this wave: whichever merges later recomputes them. 4. Carry-over (footprint-requests-paging-and-copy ND1): two seeded usage notes still say footprint. taxonomy/seeds/__init__.py:91 (theme, 'Never narrows the footprint.') and prototype_data.json:324 (channel, '...never narrows the footprint.') become 'regulatory scope'. Both seeds are create-only and nothing is deployed yet, so editing them is enough and no library proposal is needed. Acceptance: neither note says footprint. 5. Carry-over (api-docs-shared ND1): the mock outbox is one Redis cache entry that never expires (apps/shared/adapters/mailer.py:19,46), and start-backend.sh recreates the database but never the cache, so a run can read an earlier run's mail. Make seed_e2e call MockMailer.reset() before anything else. Acceptance: a seed-integrity test puts a message in the outbox, runs seed_e2e and finds the outbox empty. 6. Carry-over (agent-flow-run-guards fix-note, low priority): tests_seed_integrity.test_chunk5_seeds_two_platform_agent_runs_and_a_recheck (~569-581) keys runs by status, which hides the open runs the seed now opens for each agent proposal. Rename it to what it proves and assert the number of runs per status. 7. search_eval (gate 9): the new obligations join the sample library that the retrieval track reads. tax-jurisdiction-derivation changes hybrid search's tie-breaks in this wave, and whichever of the two merges later re-runs gate 9. Apply the clock rules (gate 12) to every dated seed row. Leave alone: tenant A's scope (it holds no jurisdiction term, so A operates in no market and the DK and NO obligations already reach it; whether A's scope gains jurisdiction:se for the market journeys is tax-market-journeys' call in wave 3, after tax-jurisdiction-derivation, and not this package's), the jurisdiction derivation (tax-jurisdiction-derivation), the Danish change (tax-watched-feed, wave 3), the market journeys and the second tenant-B approver (tax-market-journeys, wave 3), the held ISO/IEC 27001 term's active flag (watch-standards, wave 3). Suites: library, taxonomy, shared. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "tax-markets-panel",
+  "wave": 2,
+  "size": "M",
+  "title": "The regulatory scope screen shows the markets we operate in and watch, and pages its history",
+  "goal": "TAX-08's panel, a served market level, and paged request history.",
+  "requirement_ids": [
+   "FP-04",
+   "AC-FP2",
+   "FP-02",
+   "NFR-02"
+  ],
+  "scenario_ids": [
+   "FP-S10",
+   "FP-S11"
+  ],
+  "files_owned": [
+   "backend/apps/taxonomy/markets_logic.py",
+   "backend/apps/taxonomy/tests_markets.py",
+   "frontend/src/components/admin/FootprintScreen.tsx",
+   "frontend/src/components/admin/FootprintScreen.test.tsx",
+   "frontend/src/features/footprint/api.ts",
+   "frontend/src/features/footprint/hooks.ts",
+   "frontend/src/features/footprint/types.ts",
+   "frontend/src/features/footprint/footprint-presentation.ts",
+   "frontend/src/features/footprint/api.test.ts",
+   "frontend/src/features/footprint/hooks.test.tsx",
+   "frontend/src/features/footprint/footprint-presentation.test.ts",
+   "frontend/src/features/footprint/branch-edges.test.ts",
+   "frontend/src/features/footprint/dry-run.test.tsx",
+   "frontend/src/messages/footprint/en.json",
+   "frontend/src/messages/footprint/sv.json"
+  ],
+  "shared_files": [
+   "backend/apps/taxonomy/schemas.py (MarketRow only)",
+   "backend/apps/taxonomy/tests_scenarios.py (test_fp_s10, test_fp_s11, and FOOTPRINT_READ_QUERIES ~91 only if the count moves)",
+   "design/screens/admin-footprint.html (the state-18 key name ~612 only)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "MarketRow serves level operating|watching|not_followed (operating first, level_of's rule), documented, and test_fp_s11 asserts it through GET /tenant/footprint; markets_logic._operating reads TaxonomyTerm.jurisdiction, not the literal dimension key 'jurisdiction'; market types, reads and watch/unwatch mutations (key in the body, never the URL) with hooks and tests; the panel renders design states 17-19 including the approver-only read with its own footprint key and state 19's save error, plus 'Also included' and 'Everywhere else'; the request history pages with limit/offset/total and a 'show more'; the frontend compares no dimension key; no comment says 'Send for approval'; taxonomy suite and frontend gates green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. CLAUDE.md section 11 applies in full (production build, passkey sign-in, api-guard, no mocks, extend seed_e2e). Backend. 1. markets_of/row_for (apps/taxonomy/markets_logic.py) serve a computed level on MarketRow (level_of's rule, operating first; D-27, D-31), documented to the API standard; rewrite test_fp_s11 through GET /tenant/footprint, so level_of is no longer test-only. 2. _operating (~48-52) reads the mirror link TaxonomyTerm.jurisdiction (D-29) instead of footprint.get(JURISDICTION_DIMENSION), the literal key 'jurisdiction' (markets_logic.py:29), which also assumes a mirrored term's key equals its jurisdiction's key. Keep markets_of at a fixed query count, never one per row: four today, counted inside FOOTPRINT_READ_QUERIES (taxonomy/tests_scenarios.py:91); if the mirror link costs one more, update that constant and say why. Frontend. 3. Market types, footprintOf keeps markets, watchMarket/unwatchMarket mutations with the key in the body (never the URL, so no access-log line names a market, D-30), hooks and tests. 4. The panel in FootprintScreen per design/screens/admin-footprint.html states 17-19: 'Operating' as meta text, a Watching toggle as a pressed button with aria-pressed, the approver-only reader sees every level in words, state 19's save error for a 409 or 404, and the 'Also included' and 'Everywhere else' notes. en/sv keys per the card's list (footprint.markets.*). 5. Carry-over (tax-scope-screen ND1): the card names footprint.readOnly for state 18's notice, but REGULATORY_SCOPE.md:80 deleted that key. Add a footprint key of its own for state 18 ('You can see the regulatory scope. Changing it needs footprint request; ask a compliance officer or an administrator.'), never call footprint.readOnly, and change the card's line ~612 to name the new key. 6. Carry-over (footprint-requests-paging-and-copy ND0): the history shows only the first 20 requests. Page it with limit/offset/total from GET /tenant/footprint/requests and a 'show more'. 7. Carry-over (tax-scope-screen ND0): features/footprint/api.ts:109 and dry-run.test.tsx:12 still say 'Send for approval'; the button reads 'Request approval' (footprint.preview.send). Reword both comments. The FP-S10 journey is tax-market-journeys' (wave 3). tax-preview-cases edits another paragraph of the same design card in parallel. Suites: taxonomy; frontend lint, typecheck, test:coverage, check:messages, build; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "tax-scope-journeys",
+  "wave": 2,
+  "size": "S",
+  "title": "Only scope holders are pointed at the scope page, FP-S7 is proven, and FP-S5 checks the audit log",
+  "goal": "TAX-07 and TAX-14, and FP-S7's journey including the 375 px check.",
+  "requirement_ids": [
+   "FP-02",
+   "ADM-01",
+   "AC-FP1"
+  ],
+  "scenario_ids": [
+   "FP-S7",
+   "FP-S5"
+  ],
+  "files_owned": [
+   "frontend/src/components/home/TodayScreen.tsx",
+   "frontend/src/components/inventory/InventoryScreen.tsx",
+   "frontend/tests/e2e/shell.journey.spec.ts",
+   "frontend/src/components/inventory/InventoryScreen.test.tsx"
+  ],
+  "shared_files": [
+   "frontend/tests/e2e/taxonomy.journey.spec.ts (the FP-S7 block ~646 and the FP-S5 test after its approval only)",
+   "frontend/src/components/home/TodayScreen.test.tsx (the empty-state link tests; security-review-c6 gives the comingUp fixture its precision)"
+  ],
+  "depends_on": [],
+  "acceptance": "Today's and the inventory's empty-state links show only to holders of footprint.request or footprint.approve (checked by permission, never role); the FP-S7 journey is live: the reader sees no nav entry and a restricted page naming the permission, the approver-only login sees no checkbox and no 'Propose a change' and no sideways scroll at 375 px, the compliance officer can propose; FP-S5 asserts on /admin/audit-log one removal event for Advice naming the request and one addition on restore, inside the @smoke budget; frontend gates green; the FP-S2, FP-S5, FP-S7, coldstart and shell journeys pass against the real stack.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. CLAUDE.md section 11 applies in full (production build, passkey sign-in, api-guard, no mocks, extend seed_e2e). 1. TAX-07: TodayScreen ~87 (today.empty.action, 'Set the regulatory scope under Admin') and InventoryScreen ~120 (inventory.empty.inScope.action) show their link only to holders of footprint.request or footprint.approve, through the permissions the session carries (shared/navigation/require-permission), never role names. Unit tests for both, in TodayScreen.test.tsx and InventoryScreen.test.tsx (security-review-c6 edits TodayScreen.test.tsx's comingUp fixture in parallel). 2. FP-S7 (taxonomy.journey.spec.ts ~646, test.fixme today): reader@example-bank.test (no nav entry; /admin/footprint directly shows the restricted page naming the permission, design state 16); approver@example-bank.test, who holds footprint.approve only (no checkbox, no 'Propose a change', and at a 375 px viewport the page does not scroll sideways: carry-over tax-scope-screen ND2); compliance_officer@example-bank.test. The footprint describe block runs FP-S2, FP-S4 and FP-S5 in order against tenant A's one scope, and approver is FP-S2's and FP-S5's decider: FP-S7 only reads, and it settles on a waiting request before it branches. 3. Update shell.journey.spec.ts wherever it touches these links, and apply any count tax-nordic-seed sends for it. 4. TAX-14: after FP-S5's approval, open /admin/audit-log and assert the footprint.term_removed event for Advice naming the request, then footprint.term_added when the journey restores it. Stay inside the @smoke budget. tax-preview-cases edits officerRemovesAdvice's case lines (~455-458) and vocab-usage-and-merge the J-5 block of the same spec in parallel. Gates: frontend lint, typecheck, test:coverage, check:messages, build; the FP-S2, FP-S5, FP-S7, coldstart and shell journeys against the real stack (carry-over tax-scope-screen ND2: those journeys, the build, the full lint, coverage and the 375 px check never ran after the scope screen changed). Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "tax-preview-cases",
+  "wave": 2,
+  "size": "S",
+  "title": "A scope change previews the open cases it hides",
+  "goal": "TAX-16: the preview counts this bank's open cases whose change flips, per AC-FP1.",
+  "requirement_ids": [
+   "FP-02",
+   "AC-FP1"
+  ],
+  "scenario_ids": [
+   "FP-S2"
+  ],
+  "files_owned": [
+   "backend/apps/taxonomy/footprint_logic.py",
+   "backend/apps/cases/reading.py"
+  ],
+  "shared_files": [
+   "backend/apps/taxonomy/schemas.py (FootprintPreviewCount description only)",
+   "backend/apps/taxonomy/tests_scenarios.py (test_fp_s2)",
+   "backend/apps/taxonomy/tests_footprint.py",
+   "backend/apps/taxonomy/app.md (FP-S2's text ~251)",
+   "frontend/tests/e2e/taxonomy.journey.spec.ts (officerRemovesAdvice's two case assertions ~455-458 only)",
+   "design/screens/admin-footprint.html (the four drawn 'Open cases: not counted yet' lines ~343, ~352, ~412, ~421 and the sentence ~557 only)",
+   "backend/scripts/api_docs_pending.txt (the FootprintPreviewCount line only, if fully documented)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "preview_of counts this bank's open cases whose change's scope flips in or out under the hypothetical scope, with available true; the change scopes are read through a cases/reading helper; the opt-in rule applies through restricting_dimensions(); test_fp_s2, FP-S2's text, the module docstring and the card sentence say cases are counted; the J-6/FP-S2 journey asserts the counted case line instead of 'Open cases: not counted yet'; taxonomy and cases suites and api_docs_gate green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. PRD AC-FP1 outranks taxonomy/app.md's 'cases are not counted yet' (orchestrator ruling: count now; say so in the commit body). 1. Add a helper in cases/reading.py that returns this bank's open cases with their change's scope as dimension key to term keys. cases/reading.py already reads a change's scope (_scope_of ~60, and scope_term_ids_of_each_case ~124 for the SQL function); the preview judges a hypothetical footprint the SQL function cannot see, so it compares in Python. footprint_logic writes, so it must not name library or watch records directly (the library fence). preview_of (footprint_logic.py ~159-183) counts cases whose change flips in or out under the hypothetical footprint, using matching.in_footprint and restricting_dimensions() (opt-in included); cases becomes available true. Update the module docstring (~14-15). tax-watched-feed (wave 3) adds the derived jurisdiction to that helper: keep its signature simple. 2. Update test_fp_s2 and FP-S2's text in taxonomy/app.md (~251). 3. The frontend already renders a counted cases line (footprint.preview.cases), but the J-6/FP-S2 helper officerRemovesAdvice in taxonomy.journey.spec.ts (~455-458) asserts 'Open cases: not counted yet' on both sides. Replace those two assertions with the counted form (a number of open cases, or none) instead of 'not counted yet': other journeys triage tenant A's cases in parallel, so match the shape unless the count rests on a case no journey moves; test_fp_s2 proves the exact numbers. On admin-footprint.html, redraw the four 'Open cases: not counted yet' lines (~343, ~352, ~412, ~421) in the counted form and reword the sentence (~557) that says cases read 'not counted yet'. 4. If FootprintPreviewCount becomes fully documented, delete its api_docs_pending line in the same commit. tax-markets-panel edits another line of the card, and tax-scope-journeys and vocab-usage-and-merge edit other blocks of the same spec, in parallel. Suites: taxonomy, cases; the FP-S2 and FP-S5 journeys; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "vocab-usage-and-merge",
+  "wave": 2,
+  "size": "M",
+  "title": "Library lists count their real uses, a merge moves them, and J-5 reads a real feed tab",
+  "goal": "Usage counts and merge re-pointing for every library list a library or watch row references.",
+  "requirement_ids": [
+   "VOC-02",
+   "VOC-07",
+   "AC-VOC2",
+   "INV-01",
+   "INV-03"
+  ],
+  "scenario_ids": [
+   "VOC-S4",
+   "VOC-S5",
+   "VOC-S15"
+  ],
+  "files_owned": [
+   "backend/apps/taxonomy/registry.py",
+   "backend/apps/taxonomy/repoint.py",
+   "backend/apps/taxonomy/tests_vocabulary.py"
+  ],
+  "shared_files": [
+   "backend/apps/proposals/apply.py (_vocabulary_merge only)",
+   "backend/apps/proposals/tests_apply.py",
+   "backend/apps/watch/write.py (watch-table re-point helper only)",
+   "backend/apps/taxonomy/app.md (the relation_type note ~111-117)",
+   "frontend/tests/e2e/taxonomy.journey.spec.ts (the VOC-S15 J-5 block ~282-400 only)"
+  ],
+  "depends_on": [],
+  "acceptance": "Usage > 0 for flag, change_type, duty_type, library_tag, instrument_level, relation_type ('Amends'), provision_kind and source_kind; urgency counts library suggestions only; a merge moves current link rows inside the approval transaction with unique collisions handled; the merged-away row stays retired and resolvable; the dry-run count equals the moved count and is in the audit row; J-5's merge assertion is tightened and its feed step opens a real tab; taxonomy, proposals and watch suites green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. registry.py (~112-140): usage through Subqueries over library and watch tables for flag (ChangeTerm.flag), change_type, urgency (library suggestions only), duty_type, library_tag (ObligationTag), instrument_level, relation_type (instrument and obligation relations; this fixes 'Amends' retiring without in_use), provision_kind and source_kind. Keep one query per list read. 2. Re-point on merge inside the approval transaction; handle unique collisions on obligation_tag and change_term as repoint.tenant_tag does; the audit row names from, to and the moved count per table. Nothing is overwritten: the merged-away row stays, retired and pointing at its target, so versions, audit rows and old labels still resolve; re-pointing moves only current link rows, never a version row or an append-only ledger row. 3. The fences decide where writes live: library writes in proposals/apply.py (_vocabulary_merge, inside library_write), watch-table writes through watch/write.py's door; taxonomy/repoint.py only dispatches. 4. Tests: a used flag's merge moves its change_term rows; dry-run count == moved count; usage > 0 per list. Retitle or remove the relation_type note in taxonomy/app.md (~111-117). 5. Tighten J-5's merge assertion (VOC-S15). 6. Carry-over (tax-fp-s4-journey ND5): taxonomy.journey.spec.ts:355 does page.goto('/watch?tab=all'), but the feed's tabFrom() accepts only triage, inProgress, closed, dismissed and coverage, so the step lands on triage by luck. Open the tab where chg-e2e-c5-payments really sits (or use the scope switch), and settle before asserting (await expect(rows.or(empty).first()).toBeVisible()). Acceptance: the step names a real tab and passes on a fresh seed. Leave taxonomy/api.py and taxonomy/schemas.py's Vocabulary* classes alone (api-docs-taxonomy-vocabularies). vocab-term-provenance and proposals-kind-instrument-obligation edit other functions of apply.py, and h16-library-db-policy edits watch_write, in parallel. Suites: taxonomy, proposals, watch; the VOC-S4, VOC-S5 and VOC-S15 journeys. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "lib-standard-e2e-seed",
+  "wave": 2,
+  "size": "M",
+  "title": "The first standard exists for tests and E2E, and INV-S11 and FP-S16's integration half are proven",
+  "goal": "ISO/IEC 27001:2022 with its one conformance obligation, loaded only by seed_e2e until Alex answers the legal question.",
+  "requirement_ids": [
+   "INV-08",
+   "INV-01",
+   "FP-01",
+   "FP-02",
+   "AC-FP3"
+  ],
+  "scenario_ids": [
+   "INV-S11",
+   "FP-S16"
+  ],
+  "files_owned": [
+   "backend/apps/library/fixtures/e2e_standard.json",
+   "backend/apps/library/fixtures/check_prototype_data.py"
+  ],
+  "shared_files": [
+   "backend/apps/library/seeds/library.py (load_library's path parameter only; h16-library-db-policy may touch its write door)",
+   "backend/apps/library/tests_scenarios.py (test_inv_s11)",
+   "backend/apps/taxonomy/tests_scenarios.py (test_fp_s16)",
+   "backend/apps/shared/e2e_seed.py (own block)",
+   "backend/apps/shared/tests_seed_integrity.py (the standard's counts and fixture checks only)",
+   "backend/apps/library/app.md (INV-S11 and the standard-clauses note's seeded-edition item only)",
+   "docs/TODO_FOR_alex.md"
+  ],
+  "depends_on": [],
+  "acceptance": "test_inv_s11 and test_fp_s16 un-skipped and green, built with library test factories; the FP-S16 test activates the held ISO/IEC 27001 term in its own setUp, never in a seed or fixture, and HeldStandard (taxonomy/tests_matching.py:266) stays green; e2e_standard.json loads only from seed_e2e and links the conformance obligation to the held term without activating it; prototype_data.json holds no standard; check_prototype_data refuses a second obligation under a standard in either file; seed-integrity counts updated; no official title anywhere in the library; library, taxonomy and shared suites green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. Default until Alex answers TODO_FOR_alex.md 'Legal, before any standard is seeded' (~101): the standard lives in a separate E2E-only fixture and in tests, never in prototype_data.json, which seed_demo loads. Add a TODO line saying so. 1. load_library(path=...) in library/seeds/library.py. e2e_standard.json: jurisdiction intl (kind international, D-38), authority iso-iec, instrument iso-iec-27001-2022 (official_ref and short_name 'ISO/IEC 27001:2022', level standard, binding false, regime regime:ai_ict, in_force_from 2022-10-25 at day precision citing Verification_Log.md's row ~108, source_url the IEC webstore catalogue page webstore.iec.ch/en/publication/79694, an implements_note for Nordic adoptions, no provisions, no relations) and one obligation iso-iec-27001-2022-conformance (ref_label = official_ref, duty type governance, our-own-words en/sv summaries, term standard:iso_iec_27001). The loader resolves terms whatever their state (it maps every TaxonomyTerm), so the obligation links to the held term and the term stays inactive: taxonomy/seeds/__init__.py:126-136 seeds it active False, and watch-standards (wave 3) switches it on. seed_e2e loads the fixture; no E2E tenant follows it. 2. check_prototype_data.py: exactly one obligation under a standard, checked in prototype_data.json and in e2e_standard.json. 3. test_inv_s11 with library test factories: official reference, publication date with precision, catalogue link, regime; bindingLevel and level kind 'standard', the others null; GET /instruments/{id}/provisions answers 200 empty; exactly one obligation. 4. test_fp_s16 (TAX-05's integration half) with factories: absent from the inventory; shown under 'Show outside our scope'; the preview reveals it and warns of no narrowing; approval needs step-up and writes one audit event naming the request; removing it later counts as hidden. Carry-over (tax-opt-in-rule ND0): every term door resolves active terms only (terms_of, term_by_ref, resolve_terms), so the scope request here fails on the held term. Activate it in the test's own setUp, inside library_write as the test builders do, and never in a seed or the fixture. 5. Seed-integrity counts: tax-nordic-seed changes EXPECTED_LIBRARY in this wave, and whichever merges later recomputes. Leave FP-01's status cell (taxonomy/app.md:45, in_progress) to r1-close-and-readiness (carry-over tax-opt-in-rule ND3). The FP-S16 and INV-S11 journeys are std-journeys' (wave 3). Suites: library, taxonomy, shared. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "lib-standard-presentation",
+  "wave": 2,
+  "size": "M",
+  "title": "A standard reads 'Standard', its tree says its text is licensed, and the library screens stop expecting a missing regime",
+  "goal": "LIB-STD-SCREEN's presentation and tree state, driven by the level kind, plus the frontend cleanup the NOT NULL regime allows.",
+  "requirement_ids": [
+   "INV-08",
+   "INV-01",
+   "INV-02"
+  ],
+  "scenario_ids": [
+   "INV-S11"
+  ],
+  "files_owned": [
+   "frontend/src/features/library/instrument-presentation.ts",
+   "frontend/src/features/library/instrument-presentation.test.ts",
+   "frontend/src/features/library/obligation-presentation.ts",
+   "frontend/src/features/library/obligation-presentation.test.ts",
+   "frontend/src/features/library/api.ts",
+   "frontend/src/features/library/api.test.ts",
+   "frontend/src/features/library/hooks.test.tsx",
+   "frontend/src/features/library/types.ts",
+   "frontend/src/components/inventory/ObligationRow.tsx",
+   "frontend/src/components/inventory/InstrumentRow.tsx",
+   "frontend/src/components/inventory/ProvisionTree.tsx",
+   "frontend/src/components/inventory/ProvisionTree.test.tsx",
+   "frontend/src/components/inventory/InstrumentScreen.tsx",
+   "frontend/src/components/inventory/ObligationScreen.tsx",
+   "frontend/src/components/inventory/ObligationScreen.test.tsx",
+   "design/system/pills-and-labels.md",
+   "design/screens/tenant-instrument.html",
+   "frontend/src/components/inventory/InstrumentScreen.test.tsx"
+  ],
+  "shared_files": [
+   "frontend/src/messages/library/en.json (the standard pill and licensed-tree keys only)",
+   "frontend/src/messages/library/sv.json (the standard pill and licensed-tree keys only)",
+   "frontend/src/messages/common/en.json",
+   "frontend/src/messages/common/sv.json",
+   "frontend/src/messages/inventory/en.json",
+   "frontend/src/messages/inventory/sv.json",
+   "frontend/tests/e2e/pills.gallery.spec.ts and its snapshots (only if the gallery lists the pill)",
+   "docs/TODO_FOR_alex.md (tick the empty-tree box ~663-667 only)",
+   "frontend/src/app/dev/pills/samples.ts and page.tsx (the instrument and obligation samples only, if their facts gain the level kind)"
+  ],
+  "depends_on": [],
+  "acceptance": "bindingLevel/level kind 'standard' reads 'Standard' in the information tone in the header binding slot and the row guidance slot, never 'Guidance, comply or explain'; null+true and null+false unchanged, all three tested; a standard's instrument shows the licensed-text state with the catalogue link, with loading, error and denied; pills-and-labels.md and tenant-instrument.html updated; no frontend branch or fixture treats an instrument's or obligation's regime as null; the outsideFootprintLabel comment quotes today's copy; frontend gates green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. CLAUDE.md section 11 applies in full (production build, passkey sign-in, api-guard, no mocks, extend seed_e2e). D-37's default (no card drawn yet): 'Standard' in the information tone. 1. Choose the binding pill from the level kind in presentBindingLevel and the row's guidance slot (obligation-presentation.ts ~66-69 and ~127-130) and in instrument-presentation.ts ~34. Tests for null+true, null+false and standard. 2. ProvisionTree: when the instrument's level kind is standard, show 'The text of this standard is licensed and not held here' with the catalogue link (instrument.sourceUrl) instead of the tree, with loading, error and denied. InstrumentScreen passes what the tree needs. The tree's strings live in the inventory catalog (inventory.instrument.provisionsEmpty.*). 3. en/sv strings; update design/system/pills-and-labels.md, and the pill gallery (src/app/dev/pills/samples.ts and page.tsx, with the gallery snapshots for both platforms, as 5d0eda9 and 8970c73 did for the More sheet) only if the pill appears there; samples.ts must still typecheck if InstrumentFacts or ObligationFacts gain the level kind. 4. Carry-over (lib-standard-model ND1e): the generated types say an instrument's and an obligation's regime is never null (api.generated.ts ~7172, ~7445, ~8683), but InstrumentRow.tsx:27, InstrumentScreen.tsx:191, ObligationScreen.tsx:128 and features/library/api.ts:187, 271, 308 still branch on null, and fixtures use regime: null (api.test.ts x4, hooks.test.tsx x2, ObligationScreen.test.tsx x1). Delete the branches, make the types non-null, give every fixture a regime. Acceptance: no regime === null or regime: null left under src/features/library and src/components/inventory. 5. Carry-over (tax-scope-screen ND0): obligation-presentation.ts:181 quotes 'Outside your scope: Advice' and 'Show outside footprint'; the copy is 'Outside our scope: {terms}' and 'Show outside our scope'. Reword the comment. 6. Carry-over (lib-instrument-card-fixes ND2b): design/screens/tenant-instrument.html:296 still says the tree appears 'as the library editor approves it'. D-62 decided no library editor exists, so no question is open: make the card's empty line match inventory.instrument.provisionsEmpty.body ('The provision tree appears here once the library holds it.'), draw the licensed-text state on the card, and tick the TODO_FOR_alex.md box (~663-667). The INV-S11 journey is std-journeys' (wave 3). The inventory list row's machine-confirmed label is lib-machine-confirmed-journey's (wave 3), which edits ObligationRow.tsx after this lands. Gates: frontend lint, typecheck, test:coverage, check:messages, check:copy-drift, build. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "library-recheck-loop",
+  "wave": 2,
+  "size": "M",
+  "title": "A record's sources can be read, the watch re-checks the records it came from, and the sweeper's prompt lists what it really gets",
+  "goal": "getRecordSources is served, run stats count re-checks, WAT-S12 is green, and the sweeper prompt's vocabulary bullet is current.",
+  "requirement_ids": [
+   "WAT-01",
+   "AUD-03",
+   "AGT-01",
+   "INV-06",
+   "PRO-01",
+   "PRO-02"
+  ],
+  "scenario_ids": [
+   "WAT-S12"
+  ],
+  "files_owned": [
+   "backend/apps/library/api.py",
+   "backend/apps/library/tests_contract.py",
+   "backend/agents/watch-sweeper/v1/definition.yaml",
+   "backend/agents/watch-sweeper/v1/prompt.md"
+  ],
+  "shared_files": [
+   "backend/apps/library/reading.py (get_record_sources only)",
+   "backend/apps/library/schemas.py (record-sources schemas only)",
+   "backend/apps/library/tests_reading.py (record-sources tests only)",
+   "backend/apps/agents/schemas.py (AgentRunStats only)",
+   "backend/apps/agents/runs.py",
+   "backend/apps/watch/tests_scenarios.py (test_wat_s12)",
+   "backend/apps/watch/app.md (the WAT-01 note only)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "GET /obligations/{id}/sources answers 200 to a library:read key and 404 for another bank's private record, returning the in-force version's applied proposal's field_sources or one 'summary' citation from source_url/source_label; the 501 pin and 'Published ahead of the logic' text are gone; AgentRunStats counts records_rechecked and corrections_proposed, documented; test_wat_s12 un-skipped; the sweeper prompt's vocabulary bullet names {key, kind, label, usageNote} and all twelve lists; library, agents and watch suites green; WAT-01's cell left to r1-close-and-readiness.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. reading.get_record_sources(obligation_id) (library/reading.py ~1003, a 501 today): resolve through _visible() and never a lookup of its own; take the version in force today; one item per entry of its applied_by_proposal.field_sources (field, url, label = proposal.source_label; contentHash, fetchedAt and documentId null as the schema allows); a seeded version with no proposal gives one 'summary' citation from obligation.source_url/source_label. No new model. Replace library/tests_contract.py's 501 pin (~84-97) with real-data tests in tests_reading.py (with an explicit as-of, never the real clock against the seeded 2026-10-01 version); drop the route docstring's 'Published ahead of the logic' paragraph (library/api.py ~635). 2. AgentRunStats (agents/schemas.py ~66) gains records_rechecked and corrections_proposed, documented to the API standard (carry-over agents-sector-scope-eval ND4a). 3. test_wat_s12 (watch/tests_scenarios.py ~480): two recheck checks, exactly one new_obligation_version proposal carrying field sources for the drift, the record unchanged until an independent principal approves, no proposal when nothing drifted; un-skip. 4. Add the re-check to watch-sweeper/v1/definition.yaml (budget in the definition, no server setting). 5. Carry-over (agents-confirmer-definition ND0): watch-sweeper/v1/prompt.md:19-21 still lists seven lists as {key, label, usage_note}. Make the bullet read exactly: 'The vocabularies, each as a list of `{key, kind, label, usageNote}`: `change_type`, `urgency`, `flag`, `term_dimension` and the taxonomy terms of every dimension (each term also says whether it is `mirrored`), `authority`, `source`, `instrument_level`, `jurisdiction`, `relation_type`, `duty_type` and `provision_kind`.' Acceptance: the agents contract test that ties the definition's lists to declared routes stays green. 6. WAT-01's status cell stays for r1-close-and-readiness, because WAT-S11 (watch-standards, wave 3) also names it. tax-jurisdiction-derivation edits other functions of reading.py in parallel. Suites: library, agents, watch; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "problem-reports-backend",
+  "wave": 2,
+  "size": "M",
+  "title": "A bank reads and closes its own problem reports",
+  "goal": "AUD-03's model and routes, with AUD-S5 proven.",
+  "requirement_ids": [
+   "AUD-03",
+   "PRO-03",
+   "INV-06"
+  ],
+  "scenario_ids": [
+   "AUD-S5"
+  ],
+  "files_owned": [
+   "backend/apps/library/models.py",
+   "backend/apps/library/migrations/0009_problem_report_closure.py",
+   "backend/apps/library/reports.py",
+   "backend/apps/governance/problem_reports_logic.py",
+   "backend/apps/governance/tests_problem_reports.py"
+  ],
+  "shared_files": [
+   "backend/apps/library/tests_library.py",
+   "backend/apps/shared/tests_rls.py (problem_report's mixed shape only; search-eval-sets adds PLATFORM_ONLY_TABLES in parallel)",
+   "backend/apps/shared/factories.py",
+   "backend/apps/governance/api.py (the two problem-report routes only)",
+   "backend/apps/governance/schemas.py (problem-report classes only)",
+   "backend/apps/governance/tests_scenarios.py (test_aud_s5 and the stale comment ~113-115)",
+   "backend/apps/governance/app.md (AUD-03's status and AUD-S5 only)",
+   "backend/scripts/contract_drift_pending.txt (the two problem-report lines)",
+   "docs/inputs/INPUT_DELTAS.md",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "Migration library 0009 depends on 0008; GET /problem-reports paginated with the visibility rule; PATCH closes with a note, 409 already_closed, 403 naming proposals.create; record() with outbox problem_report.closed and no report text in audit, outbox or logs; platform sessions and keys 403; test_aud_s5 un-skipped including the agent-proposal-to-Library-updates clause; drift lines deleted with INPUT_DELTAS rows; the tests_rls change had a security look before merge; library, governance and shared suites green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. Defaults from TODO_FOR_alex.md 'Problem reports (your item 3)' (~246): colleagues see each other's reports under proposals.create; problem_report.tenant stays nullable (Alex's call); close = answered|fixed|rejected with a required note, using the existing ReportStatus kinds (library/models.py:127; add no enum and no vocabulary); no notification; bleqq editors do not read reports (D-50, ADR 0043). 1. T16: add resolution_note, closed_by, closed_at; drop resolved_by_proposal (library/models.py:546; nothing has ever written it) in migration 0009; reword the docstrings; pin the mixed shape in shared/tests_rls.py (a guard edit: the orchestrator gives it a security look before merge). 2. T18 in governance/problem_reports_logic.py: GET /problem-reports under problems.report (every report of the bank for proposals.create holders, only the caller's own otherwise; filters status and subject; PageQuery); PATCH /problem-reports/{id} as in acceptance; routes documented to the API standard. 3. Un-skip test_aud_s5 (governance/tests_scenarios.py ~177) and prove its last clause: an agent key files a new_obligation_version on the reported obligation inside an open run, a reviewer approves, GET /library-updates for tenant A lists it. If proposals-agent-decision-log has merged first, the agent's approval body carries its decision and run. 4. Fix the stale comment (~113-115, 'chunk4-T16b adds GET /problem-reports'); delete the GET and PATCH /problem-reports lines in contract_drift_pending.txt and add INPUT_DELTAS rows for any departure. The new list route must pass NFR-S6 (nfr-integration-scenarios, same wave). ai-log-read edits other classes and routes of governance/api.py and schemas.py in parallel. Security verdicts for this tail go to security-review-c4 (wave 4). Suites: library, governance, shared; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "ai-log-read",
+  "wave": 2,
+  "size": "M",
+  "title": "The AI log shows feedback, reviewer and review state, filterable by record, and its audit test stops flaking",
+  "goal": "GOV-3: complete the AI-log read for AUD-02, and fix the flaky audit-events ordering test.",
+  "requirement_ids": [
+   "AUD-02",
+   "AUD-01"
+  ],
+  "scenario_ids": [
+   "AUD-S7",
+   "AUD-S4"
+  ],
+  "files_owned": [
+   "backend/apps/governance/ai_log.py",
+   "backend/apps/governance/tests_ai_log.py",
+   "backend/apps/governance/tests_audit_events.py"
+  ],
+  "shared_files": [
+   "backend/apps/governance/api.py (listAiGenerations only)",
+   "backend/apps/governance/schemas.py (AiGenerationRow, AiGenerationQuery only)",
+   "backend/apps/governance/tests_scenarios.py (AUD-S7's MIXED_TABLES ~54 only)",
+   "backend/apps/governance/app.md (AUD-S4 wording)",
+   "docs/inputs/INPUT_DELTAS.md",
+   "docs/TODO_FOR_alex.md",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "GET /ai-generations filters by subjectId; rows carry feedback, feedbackNote, the reviewer and review state; a shared 'So what?' row's review state is computed per reading bank from its own change_case and nothing shared is written; ai_generation is in AUD-S7's MIXED_TABLES; test_newest_first_and_paginated_with_a_total gives its events distinct created times and passes 50 runs in a row with its assertions unchanged; governance suite green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. Build on the ai_log.py shape search-ask-backend landed (log_generation, answer_of, set_feedback; generations_for ~129); add no second feedback writer (tests_ai_wrapper's AI_LOG_WRITER_ALLOWLIST stays governance/ai_log.py). Add the designed subjectId filter; AiGenerationRow gains feedback, feedbackNote and the reviewer with review state, documented to the API standard. 2. Default (TODO_FOR_alex line; reword AUD-S4 in governance/app.md): for a reading bank, a library 'So what?' row's review state comes from its own change_case (so_what_confirmed_by, so_what_confirmed_at); nothing shared is written (resolves chunk 5 ruling I against D-62). agent_review rows stay platform-only (D-80): a bank never reads them. 3. Add ai_generation to AUD-S7's MIXED_TABLES (governance/tests_scenarios.py:54). INPUT_DELTAS rows for the filter and fields. 4. Carry-over (proposals-decide-hardening fix-note): governance/tests_audit_events.py test_newest_first_and_paginated_with_a_total (~139-147) records three events in a row, and logic.py:51 orders by -created then -id, with uuid4 ids (shared/models.py:88), so events sharing a timestamp come back in random order. Give each event a distinct created time at insert (AuditEvent.created is auto_now_add, so patch django.utils.timezone.now per event); never update the append-only row and never weaken the assertion. The screen is ai-log-screen's (wave 3); test_aud_s4 is aud-s4-integration's (wave 3). problem-reports-backend edits other routes and classes of governance/api.py and schemas.py in parallel. Suites: governance; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "console-proposals-frontend",
+  "wave": 2,
+  "size": "M",
+  "title": "The console names the agent that decided or corrected, pages its queue, and shows decided proposals newest first",
+  "goal": "Frontend half of the proposal findings, plus the small queue-order option the Approved and Rejected tabs need.",
+  "requirement_ids": [
+   "PRO-01",
+   "PRO-02",
+   "PRO-03",
+   "NFR-02"
+  ],
+  "scenario_ids": [
+   "PRO-S13",
+   "PRO-S14"
+  ],
+  "files_owned": [
+   "frontend/src/features/proposals/types.ts",
+   "frontend/src/features/proposals/api.ts",
+   "frontend/src/features/proposals/api.test.ts",
+   "frontend/src/features/proposals/hooks.ts",
+   "frontend/src/features/proposals/hooks.test.tsx",
+   "frontend/src/features/proposals/proposal-presentation.ts",
+   "frontend/src/features/proposals/proposal-presentation.test.ts",
+   "frontend/src/components/console/ProposalDetailScreen.tsx",
+   "frontend/src/components/console/QueueScreen.tsx",
+   "frontend/src/features/library-updates/library-updates-presentation.ts",
+   "frontend/src/features/library-updates/library-updates-presentation.test.ts",
+   "frontend/src/messages/console/en.json",
+   "frontend/src/messages/console/sv.json",
+   "frontend/src/components/console/ProposalDetailScreen.test.tsx",
+   "frontend/src/components/console/QueueScreen.test.tsx"
+  ],
+  "shared_files": [
+   "backend/apps/proposals/api.py (list_proposals' docstring only)",
+   "backend/apps/proposals/schemas.py (ProposalQuery only)",
+   "backend/apps/proposals/logic.py (queue() only)",
+   "backend/apps/proposals/tests_reading.py (queue-order tests only)",
+   "frontend/src/messages/library/en.json (the new proposal-kind labels only)",
+   "frontend/src/messages/library/sv.json (the new proposal-kind labels only)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "The decision panel never interpolates an empty reviewer, uses machine-confirmed copy naming reviewedByAgent and labels the agent's note as the agent's, and names correctedByAgent as a machine, never in a person's slot; the queue uses the server's isMine, fromOrganisation and target and pages with limit/offset/total; types alias the generated schemas; the Approved and Rejected tabs read newest first through a documented order option on GET /proposals, with console.queue.more saying which order; listProposals documents agent_not_bound; labels for new_instrument, new_obligation, new_provision and new_provision_version; the four-eyes copy and the console vocabularies lede name no library editor; proposals suite and frontend gates green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. CLAUDE.md section 11 applies in full (production build, passkey sign-in, api-guard, no mocks, extend seed_e2e). 1. ProposalDetailScreen's DecisionPanel (~160-180): branch on reviewedByAgent to new catalog keys ('Applied {date} by the agent {agent}' and the rejected twin), label the agent's note as the agent's, and never interpolate '' (today proposal.reviewedBy?.name ?? ''). Carry-over (proposals-reads-agent-visible ND1): render correctedByAgent (the agent that corrected the payload, asserted in proposals/tests_reading.py:460) as a machine, never in a person's slot. 2. QueueScreen and proposal-presentation: use the server's isMine, fromOrganisation and target; delete the client-side computation and the stale notes (QueueScreen ~20-33, presentation ~13-18, types ~7-10 and ~29-35); alias types to components['schemas']; page with limit/offset/total and paging controls (carry-over proposals-reads-agent-visible ND6a). 3. Carry-over (proposals-reads-agent-visible ND6b): listProposals is oldest first only (api.py ~141), ProposalQuery has no order, and console.queue.more (console/en.json:63) says 'oldest first'. Add a small, documented order option to ProposalQuery (oldest first by default; newest first allowed), applied inside logic.queue (~513), which takes its order today from logic.filtered (~470-476, order_by('created_at', 'id')); filtered() also serves GET /tenant/proposals, which stays oldest first, so order queue()'s answer rather than changing filtered(), with id as the stable tie-break; tested in proposals/tests_reading.py; the Approved and Rejected tabs ask for newest first and the Waiting tab keeps oldest first; reword console.queue.more per tab. Carry-over (proposals-decide-hardening ND0): in the same docstring, add '`agent_not_bound` (403) for a key holding the scope but bound to no agent definition' to listProposals' errors (getProposal and approveProposal already say it). Regenerate types. 4. Kind labels for new_instrument, new_obligation, new_provision and new_provision_version in proposal-presentation and library-updates-presentation (keys only; new_instrument and new_obligation land in this wave, the provision kinds in wave 3). 5. console.queue.detail.fourEyes.body ('A second library editor has to approve it.') and console.vocabularies.lede (console/en.json:2, '...waits for a second library editor.') become neutral about who approves (en/sv); D-62 retired the role. 6. Component tests in the new ProposalDetailScreen.test.tsx (an agent's approval, correction and rejection, a person's decision, and never an empty name) and QueueScreen.test.tsx (the server's isMine, fromOrganisation and target, paging, and the order each tab asks for). The VocabularyScreen's pending proposals are vocab-screen-pending-proposals'. proposals-agent-decision-log, proposals-standards-check and proposals-kind-instrument-obligation edit other functions of the same backend files in parallel. Gates: proposals suite; frontend lint, typecheck, test:coverage, check:messages, check:copy-drift, build. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "vocab-screen-pending-proposals",
+  "wave": 2,
+  "size": "S",
+  "title": "A bank sees what it proposed on a library list and is still waiting on",
+  "goal": "chunk4-T20's PendingProposals on the tenant's library-list screen, now that GET /tenant/proposals is on main.",
+  "requirement_ids": [
+   "VOC-07",
+   "PRO-01"
+  ],
+  "scenario_ids": [
+   "VOC-S11"
+  ],
+  "files_owned": [
+   "frontend/src/components/admin/VocabularyScreen.tsx",
+   "frontend/src/components/admin/VocabularyScreen.test.tsx",
+   "frontend/src/features/vocabularies/api.ts",
+   "frontend/src/messages/vocabularies/en.json",
+   "frontend/src/messages/vocabularies/sv.json"
+  ],
+  "shared_files": [
+   "frontend/tests/e2e/taxonomy.journey.spec.ts (the VOC-S11 block ~251 only)"
+  ],
+  "depends_on": [],
+  "acceptance": "On a tenant's library list (never on the console surface; the tenant route already requires vocab.manage, as GET /tenant/proposals does), the proposals this bank filed on that list and still waiting are listed from useTenantProposals, with loading, empty and error states; the 'not on main' note (~633-640) and the stale api.ts comment (~114-118) are gone; no string in the vocabularies catalog names a library editor; component tests for every state; the VOC-S11 journey sees the compliance officer's own suggestion waiting in the pending list right after sending it, and still not in the list; frontend gates and check:copy-drift green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. CLAUDE.md section 11 applies in full (production build, passkey sign-in, api-guard, no mocks, extend seed_e2e). 1. VocabularyScreen.tsx (~633-640) still carries chunk4-T20's note that GET /tenant/proposals is not on main. It is now (listTenantProposals and useTenantProposals in features/proposals, built and tested). Build <PendingProposals list={list} /> inline as the note describes, rendered only for a library list on the tenant surface (surface !== 'console'), never on the console. GET /tenant/proposals requires vocab.manage (proposals/api.py ~176), and so does the tenant route itself (shared/navigation/registry.ts:73), so every tenant reader of this screen may call it and no second permission check is needed; read useTenantProposals with status open and targetList as its filter; pills through Pill and a presentation function; en/sv copy in the vocabularies catalog. 2. Delete the note and features/vocabularies/api.ts's stale comment (~114-118, 'What this tenant has proposed on a library list is not read in chunk 2'). 3. Component tests (loading, empty, one waiting, error, and never rendered on the console surface). The VOC-S11 journey (taxonomy.journey.spec.ts ~251) signs in as the compliance officer, who holds both proposals.create and vocab.manage (shared/permissions.py SYSTEM_ROLES; the admin holds vocab.manage but not proposals.create, so only the officer can suggest), and today asserts no [data-pending-proposals] (~274) only because the list was never built. Replace that assertion: after 'Done', the officer's 'Outsourcing' suggestion shows as waiting in the pending list on the same screen, matched by its own label because other runs may leave proposals there, and it is still not a row of the list. 4. The same catalog still names a library editor, whom D-62 retired: admin.vocabularies.libraryLede, admin.vocabularies.proposed, admin.vocabulary.proposalSent and picker.proposeHint (vocabularies/en.json:6, 19, 114, 133, and sv). Make them neutral about who reviews, and update VOC-S11's exact-text assertions that quote them (~262, ~268). Import TenantProposalRow and the hook as they are: console-proposals-frontend owns features/proposals and aliases the type to the generated schema in parallel. Out of scope: the tenant-list suggestion inbox (VOC-03, R2). Gates: frontend lint, typecheck, test:coverage, check:messages, build; the VOC-S11 journey. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "proposals-standards-check",
+  "wave": 2,
+  "size": "S",
+  "title": "A standard's term never sits on a law's obligation",
+  "goal": "PRO-S11 through one standards check at creation, over corrections and at apply, for the obligation kind on main.",
+  "requirement_ids": [
+   "INV-08",
+   "FP-01",
+   "PRO-01",
+   "PRO-02",
+   "AC-FP3"
+  ],
+  "scenario_ids": [
+   "PRO-S11"
+  ],
+  "files_owned": [
+   "backend/apps/proposals/standards.py"
+  ],
+  "shared_files": [
+   "backend/apps/proposals/logic.py (one call each in create and corrected)",
+   "backend/apps/proposals/apply.py (one call in the new_obligation_version apply)",
+   "backend/apps/proposals/api.py (one sentence each in createProposal's and approveProposal's 'Errors to branch on')",
+   "backend/apps/proposals/tests_scenarios.py (test_pro_s11)",
+   "backend/apps/proposals/app.md (PRO-S11 only)"
+  ],
+  "depends_on": [],
+  "acceptance": "422 standard_term_only_on_standards at creation (person and agent path) with no proposal stored, and at approval over a correction with nothing written and no audit row; a tenant whose scope names no standard still sees the obligation; the code is documented on createProposal and approveProposal; test_pro_s11 un-skipped; proposals suite and api_docs_gate green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. Create backend/apps/proposals/standards.py with one check(kind, instrument, term_ids) that refuses an opt-in-dimension term (read TermDimension.kind, never a key) on an obligation whose instrument's level kind is not standard: 422 standard_term_only_on_standards (D-36, D-37). 2. Call it from logic.create (person and agent path), logic.corrected and apply() for new_obligation_version, the obligation kind on main. new_obligation lands in parallel (proposals-kind-instrument-obligation), and proposals-kind-provision-licensed (wave 3, f03-T42) wires check() into it and appends licensed_text, one_conformance_obligation and standard_term_required (D-35; carry-over lib-standard-model ND1c). So check() takes the resolved instrument and term ids and lets later rules append. 3. This package raises the code, so it documents it: add one sentence to createProposal's and to approveProposal's 'Errors to branch on' paragraphs (proposals/api.py ~339 and ~462). The api_docs_gate refuses a documented code no source raises, so proposals-kind-instrument-obligation does not list it; it adds its own sentences to createProposal's paragraph in parallel, and the integrator keeps both. 4. Un-skip test_pro_s11 (proposals/tests_scenarios.py ~645). Merge after proposals-agent-decision-log, which rewrites approve() and reject(). Suites: proposals. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "proposals-kind-instrument-obligation",
+  "wave": 2,
+  "size": "L",
+  "title": "A new instrument or a new obligation enters the library through a proposal, and says who confirmed it",
+  "goal": "PRO-5 part 1: new_instrument and new_obligation kinds with the regime refusal and machine-confirmed provenance, and INV-S12 green.",
+  "requirement_ids": [
+   "PRO-01",
+   "PRO-02",
+   "INV-01",
+   "INV-02",
+   "INV-05",
+   "INV-08",
+   "AGT-01"
+  ],
+  "scenario_ids": [
+   "INV-S12",
+   "PRO-S1",
+   "PRO-S3",
+   "PRO-S5",
+   "PRO-S6"
+  ],
+  "files_owned": [
+   "backend/apps/proposals/models.py",
+   "backend/apps/proposals/migrations/0004_instrument_obligation_kinds.py",
+   "backend/apps/proposals/tests_kinds.py"
+  ],
+  "shared_files": [
+   "backend/apps/proposals/apply.py (new apply functions and the dispatch only)",
+   "backend/apps/proposals/logic.py (parsed_payload, validated_payload, _validate_target, the OBLIGATION_KINDS uses in _validate_obligation_target and corrected, sourceable_fields)",
+   "backend/apps/proposals/schemas.py (the two payload schemas, ProposalCreateBody)",
+   "backend/apps/proposals/api.py (createProposal's kinds paragraph and its own error sentences)",
+   "backend/apps/proposals/reading.py and updates.py (only where a new kind needs a branch)",
+   "backend/apps/proposals/tests_scenarios.py (PRO-S1, PRO-S3, PRO-S5, PRO-S6)",
+   "backend/apps/library/tests_scenarios.py (test_inv_s12)",
+   "backend/apps/library/app.md (INV-S12's wording and the standard-clauses note's not_a_regime item only)",
+   "backend/apps/proposals/app.md (the two new kinds and the PRO-S1, PRO-S3, PRO-S5 and PRO-S6 notes only)",
+   "backend/scripts/api_docs_pending.txt (ProposalCreateBody only)",
+   "docs/TODO_FOR_alex.md",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "Both kinds validate named payloads and per-field sources at creation and over corrections, and apply the record (and a new obligation's first version) with the audit row and the reindex in one transaction; an instrument whose regime is not a regime-dimension term is refused 422 not_a_regime at creation, over a correction and at apply, nothing written; an agent's approval of either kind stamps verified_origin 'agent' and verified_by_agent and names the proposing side, a person's stamps 'user'; test_inv_s12 un-skipped; PRO-S1/S3/S5/S6 cover the kinds; createProposal lists the new kinds and not_a_regime and jurisdiction_term_mirrored; ProposalCreateBody documented and its line deleted; proposals and library suites green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. Add new_instrument and new_obligation to ProposalKind (proposals/models.py:38, migration 0004), each with a named payload schema and per-field sources (links only), checked at creation and again over corrections. logic.OBLIGATION_KINDS (~91) has three uses today: _validate_obligation_target (the target must be an existing obligation), corrected() (only these kinds may be corrected), and approve()'s D-79 refusal of an agent. Give each use the set it needs: the new kinds name no target record, may be corrected, and are not added to D-79's set here (vocab-term-provenance removes that refusal in this wave). 2. Apply them in proposals/apply.py (the fence allowlists it; inside library_write) with the record, a new obligation's first ObligationVersion (applied_by_proposal set), the audit row and the reindex in one transaction; four eyes and step-up come from the existing approve path unchanged. 3. Provenance (INV-05, D-62, 2492f80): stamp verified_origin and verified_by_agent on the new Instrument or Obligation from the Reviewer passed into apply(), as _obligation_version does for a version, and name the proposing side (the obligation's first version through applied_by_proposal; the instrument through created_origin and created_by_agent_run from the proposal). Test an agent Reviewer and a person through apply.apply directly, because D-79 still refuses an agent's approve() until vocab-term-provenance merges. 4. One regime check (D-39, library/models.py:197-201): the instrument's regime must be a term of the regime dimension, else 422 not_a_regime at creation, over a correction and at apply (carry-over lib-standard-model ND1b). 5. The standards check for new_obligation is proposals-kind-provision-licensed's (wave 3, f03-T42): keep new_obligation's resolved instrument and term ids reachable so it can plug in, and do not import standards.py here. 6. Citations: write source_url and keep field_sources on the proposal (no citation table; state the cut in the commit body and a TODO line). Defer update_obligation and retire_record (no R1 scenario needs them; the re-check uses new_obligation_version). Do not add change_link (D-64: watch links go through the watch door). 7. Un-skip test_inv_s12 (library/tests_scenarios.py ~547) and reword INV-S12's 'a library editor approves it' to 'a reviewer approves it' (D-62). Extend PRO-S1/S3/S5/S6. 8. Docs: createProposal is already documented and no longer in api_docs_pending. Add the two kinds to its first paragraph, and to its 'Errors to branch on' add not_a_regime (422) and, carry-over tax-mirror-refusal ND0, 'jurisdiction_term_mirrored (422) when the payload scopes an obligation with a term of a dimension that mirrors the jurisdiction list' (approveProposal has it at ~472; createProposal raises it through _validate_obligation_payload today). standard_term_only_on_standards is proposals-standards-check's to document. Document ProposalCreateBody and delete its one api_docs_pending line. Frontend labels are console-proposals-frontend's. Merge after proposals-agent-decision-log and before vocab-term-provenance. Size L on purpose: two kinds share one validation, apply and provenance path. Suites: proposals, library; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "console-agent-keys-screen",
+  "wave": 2,
+  "size": "M",
+  "title": "The console mints an agent's key with a real select and shows it once",
+  "goal": "ID-S20's console half and a reusable E2E helper for minting keys.",
+  "requirement_ids": [
+   "ID-10",
+   "AGT-01",
+   "ADM-02"
+  ],
+  "scenario_ids": [
+   "ID-S20"
+  ],
+  "files_owned": [
+   "frontend/src/features/console-watch/agent-keys.ts",
+   "frontend/src/components/console/AgentKeysScreen.tsx",
+   "frontend/src/components/console/AgentKeysScreen.test.tsx",
+   "frontend/src/messages/console-agent-keys/en.json",
+   "frontend/src/messages/console-agent-keys/sv.json",
+   "frontend/tests/e2e/support/agent-key.ts"
+  ],
+  "shared_files": [
+   "frontend/tests/e2e/identity.journey.spec.ts (the console ID-S20 block ~424 only)"
+  ],
+  "depends_on": [],
+  "acceptance": "The agent is chosen from a select fed by GET /agent-definitions (listAgentDefinitions); AGENT_KEY_SCOPES includes proposals:review; the scopes hint names no library editor; the console ID-S20 journey is live (create bound to watch-sweeper, step-up, plain key shown once, gone after reload, revoke); support/agent-key.ts mints a key through the real UI and returns the plain value without writing or logging it; frontend gates green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. CLAUDE.md section 11 applies in full (production build, passkey sign-in, api-guard, no mocks, extend seed_e2e). 1. Replace AgentKeysScreen's raw agent-id TextInput and its comment (~106-111, 'the platform's agent definitions have no read of their own yet') with a select over the agent-definitions read (design/screens/console-agent-keys.html ~278). 2. Add proposals:review to AGENT_KEY_SCOPES (features/console-watch/agent-keys.ts:32): the confirming agent's key (D-62, D-74; the backend already allows it, identity/api_keys_logic.py ~166), and keep the constant's comment true: proposals:review approves through the proposal door and writes nothing else. 3. Reword console.agentKeys.scopesHint ('...an agent proposes, and a library editor approves.') so an independent agent may approve. 4. Un-fixme the console ID-S20 journey (identity.journey.spec.ts ~424) as agent-keys@bleqq.test (carry-over identity-agent-keys-backend ND1). 5. Write support/agent-key.ts: sign in as that login, mint a key bound to a named definition with the given scopes through the real UI and its step-up, return the plain key (never written to disk or logged). agent-j4-smoke and pro-s13-journey (wave 3) import it. The UI plan's agent-key rows are r1-close-and-readiness' to re-sweep. Gates: frontend lint, typecheck, test:coverage, check:messages, build; the ID-S20 journeys. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "watch-regime-required",
+  "wave": 2,
+  "size": "M",
+  "title": "Every change carries a regime, an agent's suggested classification is logged, and the eval punishes a mirrored term",
+  "goal": "WAT-S11's regime rule matching the published contract, the D-66 extension for AUD-S4, and an eval case for 'never send a mirrored term'.",
+  "requirement_ids": [
+   "WAT-03",
+   "WAT-01",
+   "AC-AGT1",
+   "AUD-02",
+   "AGT-07",
+   "SRC-05"
+  ],
+  "scenario_ids": [
+   "WAT-S11",
+   "AUD-S4"
+  ],
+  "files_owned": [
+   "backend/apps/watch/tests_change_reads.py",
+   "backend/apps/watch/tests_reading.py",
+   "backend/apps/watch/tests_so_what_draft.py",
+   "backend/apps/watch/tests_contract.py",
+   "backend/eval/classification.jsonl",
+   "backend/eval/tests_scoring.py",
+   "backend/agents/watch-sweeper/v1/evals/cases.jsonl",
+   "backend/scripts/search_eval.py"
+  ],
+  "shared_files": [
+   "backend/apps/watch/registration.py (the regime check and the scope_suggestion log only)",
+   "backend/apps/watch/curation.py (updateChange's termIds check only)",
+   "backend/apps/watch/keys.py (resolve_terms and a regime-key helper only)",
+   "backend/apps/watch/schemas.py (createChange and updateChange body descriptions only)",
+   "backend/apps/watch/api.py (createChange and updateChange docstrings only)",
+   "backend/apps/watch/tests_registration.py (the regime tests and the changes it registers only)",
+   "backend/apps/watch/tests_curation.py (the termIds-replacing updateChange tests only)",
+   "backend/apps/watch/tests_scenarios.py (_CHANGE ~47 and test_wat_s11's regime step)",
+   "backend/apps/agents/tests_scenarios.py (_CHANGE ~39)",
+   "backend/apps/agents/tests_flow.py",
+   "backend/apps/governance/tests_scenarios.py (the changes it registers only)",
+   "backend/apps/shared/tests_library_fence.py (only if it registers a change)",
+   "backend/apps/watch/e2e_seed.py",
+   "backend/apps/shared/e2e_seed.py (seeded changes' regime terms only)",
+   "backend/apps/shared/tests_seed_integrity.py (one assertion)",
+   "docs/TODO_FOR_alex.md"
+  ],
+  "depends_on": [],
+  "acceptance": "createChange for a new change and updateChange replacing termIds answer 422 regime_required listing the valid regime keys, documented on both routes; every test and seed that registers a change carries a regime and every seeded change is asserted to; test_wat_s11's regime step is written and the scenario stays skipped for watch-standards; createChange logs its suggested classification as one scope_suggestion ai_generation row with the filing's reported model metadata (model_metadata_reported_by_agent true), writer still ai_log.py only; classification.jsonl and cases.jsonl hold a case where a mirrored jurisdiction term must not be sent, and search_eval scores a predicted term of a mirrored dimension as a miss, tested in tests_scoring.py; watch, agents and governance suites and gate 9 green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. Enforce 422 regime_required (with the valid regime keys) on createChange for a new change and on an updateChange that replaces termIds, as watch/schemas.py ~1207-1221 and ~1318-1327 already promise (D-39, AC-AGT1). Document the code on createChange and updateChange (watch/api.py ~552-600 and ~700-720). 2. Update every test and seed that registers without a regime: agents/tests_scenarios.py _CHANGE (~39), watch/tests_scenarios.py _CHANGE (~47), agents/tests_flow.py, governance/tests_scenarios.py, shared/tests_library_fence.py if it posts one, watch tests_registration, tests_change_reads, tests_reading, tests_so_what_draft and tests_contract. The E2E seed builds changes through watch/e2e_seed.seed_change, not the route: give any seeded change without a regime one and add a seed-integrity assertion that every seeded change carries a regime term. Pin any assertion in the four owned test files that flips once today passes 2026-10-01. 3. Write test_wat_s11's regime step and keep its skip: watch-standards (wave 3) lands standard_term_only_on_standards, flips the ISO seed flag and un-skips it whole. 4. D-66 extension (TODO_FOR_alex line; AUD-S4's producer): createChange's suggested classification is logged through governance ai_log.log_generation() as a scope_suggestion row with the agent-reported model metadata of the same filing and model_metadata_reported_by_agent=True. The writer stays ai_log.py, so tests_ai_wrapper's allowlist does not change. 5. Carry-over (tax-mirror-refusal ND1): no eval case says 'never send a mirrored term', and search_eval.py's score_classification (~247-268) scores scope only over the dimensions the expectation names, so an extra jurisdiction term is never penalised. Add a classification.jsonl row (a national supervisor's page whose expected scope names no jurisdiction) and its watch-sweeper cases.jsonl case, and a scorer rule that counts any predicted term of a mirrored dimension as a miss for the row; the scorer is pure and reads no database, so take which dimensions mirror from the set's own data (a field the row or the set's header carries, checked by validate_classification), never a dimension key hard-coded in the scorer. Tests in backend/eval/tests_scoring.py. Acceptance: gate 9 passes and a planted prediction carrying jurisdiction:se scores lower. watch-curation-confirm-backend edits other parts of registration.py, curation.py, schemas.py, keys.py and api.py in parallel; updateChange's docstring is shared at line level (this package adds regime_required, that one removes not_built). Suites: watch, agents, governance; gate 9; regenerate types if descriptions changed. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "watch-case-reads-name-the-person",
+  "wave": 2,
+  "size": "S",
+  "title": "A bank's change page can name who confirmed its 'So what?' and who decided a link, and a removed link leaves the obligation's panel",
+  "goal": "The watch reads carry the deciding person's name, and the related-changes panel drops links this bank removed.",
+  "requirement_ids": [
+   "WAT-04",
+   "WAT-05"
+  ],
+  "scenario_ids": [
+   "WAT-S6",
+   "WAT-S7"
+  ],
+  "files_owned": [
+   "backend/apps/watch/tests_case_reads.py"
+  ],
+  "shared_files": [
+   "backend/apps/watch/reading.py (_CASE_COLUMNS, _case_of, _decisions_by_case, list_obligation_changes only)",
+   "backend/apps/watch/schemas.py (WatchChangeCase, WatchCaseObligationDecision, WatchObligationChangePage only)",
+   "backend/apps/watch/app.md (the WAT-S6/WAT-S7 note ~182-189 only)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "WatchChangeCase carries soWhatConfirmedByName and WatchCaseObligationDecision carries decidedByName, documented, read without a query per row; GET /obligations/{id}/changes leaves out a change this bank decided 'removed' for that obligation from items, total and openCount; tests in tests_case_reads.py; watch app.md's note says the read now names the person; watch suite green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. Carry-over (watch-case-controls-ui ND1, backend half): PRD WAT-04 is a person's decision per bank, so the screen must be able to name that person. watch/app.md (~182-189) records the fields as pending. Add so_what_confirmed_by_name to WatchChangeCase (from change_case.so_what_confirmed_by) and decided_by_name to WatchCaseObligationDecision (from case_obligation_link.decided_by): a person's display name only, read under row-level security in the same queries (_CASE_COLUMNS ~100, _case_of ~302, _decisions_by_case ~328), documented to the API standard. Rendering them, dropping watch.change.linkAccepted (watch/en.json:128) and asserting the names in WAT-S6 and WAT-S7 are watch-curation-confirm-frontend's (wave 3). 2. Carry-over (watch-case-controls-ui ND2): list_obligation_changes (reading.py ~560-586) counts openCount over every linked change with no decision filter. Leave out a change this bank decided 'removed' (CaseLinkDecision.REMOVED) for that obligation from items, total and openCount. 3. Tests in the new backend/apps/watch/tests_case_reads.py: both names present and null when undecided, a removed link gone from all three counts, and a pinned query count. 4. Reword watch/app.md's note to say the read carries the names and the screen renders them in wave 3. watch-curation-confirm-backend edits other functions of reading.py and schemas.py in parallel; merge after it. Suites: watch; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "ask-feedback-and-limits",
+  "wave": 2,
+  "size": "S",
+  "title": "A person rates an answer, and Ask and search keep their budgets and rates",
+  "goal": "rateAnswer and SRC-S9.",
+  "requirement_ids": [
+   "SRC-03",
+   "AUD-02",
+   "NFR-02"
+  ],
+  "scenario_ids": [
+   "SRC-S9"
+  ],
+  "files_owned": [
+   "backend/apps/search/tests_ask_limits.py"
+  ],
+  "shared_files": [
+   "backend/apps/search/ask.py (rate_answer only)",
+   "backend/apps/search/api.py (rateAnswer only)",
+   "backend/apps/search/schemas.py (AnswerFeedbackBody only)",
+   "backend/apps/search/tests_scenarios.py (test_src_s9)",
+   "backend/apps/search/tests_contract.py (the rateAnswer not_built pin)",
+   "backend/scripts/api_docs_pending.txt (rateAnswer)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "rate_answer uses answer_of and set_feedback with record() in the same transaction and no question, answer or note text in the audit row or logs; idempotent for the same value; another bank's answer 404; SRC-S9 un-skipped (search under SEARCH_BUDGET_MS / SEARCH_RERANKED_BUDGET_MS, Ask's first event under ASK_FIRST_TOKEN_BUDGET_MS, 429 on both routes); rateAnswer documented (answer_id) and its line deleted; search suite green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. Write ask.rate_answer() (search/ask.py ~182, a 501 today) through governance ai_log.answer_of() and set_feedback() (tests_ai_wrapper's writer allowlist requires it), with record() in the same transaction carrying no text. Idempotent; 404 across banks. 2. Un-skip SRC-S9 (search/tests_scenarios.py ~162) using the budget settings in config/settings.py (SEARCH_BUDGET_MS ~345, SEARCH_RERANKED_BUDGET_MS ~346, ASK_FIRST_TOKEN_BUDGET_MS ~374) and the rate-limit helpers in search/limits.py (carry-over perf-harness ND1). 3. Rewrite the rateAnswer not_built contract test; document rateAnswer including answer_id and delete its api_docs_pending line. ask-screen edits ask._events and AskAnswerEvent (the stop reason) and search-eval-sets adds eval routes and schemas to the same files in parallel. r1-perf (wave 4) records the medians. Suites: search, governance; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "ask-switch-route",
+  "wave": 2,
+  "size": "M",
+  "title": "A bank switches Ask off with a passkey",
+  "goal": "D-07's per-bank switch as a stepped-up, audited route and a toggle on the organisation screen.",
+  "requirement_ids": [
+   "SRC-03",
+   "TEN-01"
+  ],
+  "scenario_ids": [
+   "SRC-S6"
+  ],
+  "files_owned": [
+   "backend/apps/tenants/api.py",
+   "backend/apps/tenants/logic.py",
+   "backend/apps/tenants/schemas.py",
+   "backend/apps/tenants/tests_organisation.py",
+   "frontend/src/components/admin/OrganisationScreen.tsx",
+   "frontend/src/components/admin/OrganisationScreen.test.tsx",
+   "frontend/src/features/tenant-admin/api.ts",
+   "frontend/src/features/tenant-admin/hooks.ts",
+   "frontend/src/features/tenant-admin/api.test.ts",
+   "frontend/src/features/tenant-admin/hooks.test.tsx",
+   "design/screens/admin-organisation.html"
+  ],
+  "shared_files": [
+   "frontend/src/messages/tenant-admin/en.json",
+   "frontend/src/messages/tenant-admin/sv.json",
+   "docs/inputs/INPUT_DELTAS.md",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "TenantOut.aiEnabled; PUT /tenant/ai under security.manage with step-up, audited with before, after and step_up_assertion_id, documented; PATCH /tenant unchanged; tests for step-up, requiredPermission and the audit row; the toggle's states drawn on admin-organisation.html and built with on, off, saving, step-up and denied tests, its copy naming this organisation's Ask and drafts, never bleqq's agents; INPUT_DELTAS row; tenants suite and frontend gates green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. CLAUDE.md section 11 applies in full (production build, passkey sign-in, api-guard, no mocks, extend seed_e2e). Tenant.ai_enabled exists (shared migration 0007, search-ask-backend) and Ask already reads it; no route sets it. 1. Add aiEnabled to TenantOut (tenants/schemas.py:93) and PUT /tenant/ai (security.manage + @requires_step_up, a security change under CLAUDE.md section 5), audited through record() with before, after and step_up_assertion_id; keep it off PATCH /tenant (updateTenant) so profile edits need no step-up. Tests in the new tenants/tests_organisation.py. 2. No design card draws the toggle: draw its states on design/screens/admin-organisation.html first (an agent may, as 4672b19 did for the markets panel), then build the toggle on /admin/organisation wired to the step-up prompt, with component tests. 3. INPUT_DELTAS row for the route and field; document to the API standard. test_src_s6 (search/tests_scenarios.py ~545) already proves the switch's effect and stays as it is. Suites: tenants; frontend lint, typecheck, test:coverage, check:messages, build; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "ask-screen",
+  "wave": 2,
+  "size": "L",
+  "title": "Ask is the second mode of search, streamed statement by statement, and says when an answer was cut short",
+  "goal": "The tenant-ask.html screen with citations, pending flags, feedback and every state, and D-82's open question closed with a default.",
+  "requirement_ids": [
+   "SRC-03",
+   "AUD-02",
+   "AC-SRC2"
+  ],
+  "scenario_ids": [
+   "SRC-S4",
+   "SRC-S5",
+   "SRC-S10"
+  ],
+  "files_owned": [
+   "frontend/src/components/search/AskPanel.tsx",
+   "frontend/src/components/search/AskPanel.test.tsx",
+   "frontend/src/components/search/SearchScreen.tsx",
+   "frontend/src/components/search/SearchScreen.test.tsx",
+   "frontend/src/features/search/api.ts",
+   "frontend/src/features/search/api.test.ts",
+   "frontend/src/features/search/hooks.ts",
+   "frontend/src/features/search/hooks.test.tsx",
+   "frontend/src/features/search/types.ts",
+   "frontend/src/features/search/ask-presentation.ts",
+   "frontend/src/features/search/ask-presentation.test.ts",
+   "frontend/src/messages/search/en.json",
+   "frontend/src/messages/search/sv.json",
+   "backend/apps/search/tests_ask.py"
+  ],
+  "shared_files": [
+   "backend/apps/search/ask.py (the closing answer event in _events only)",
+   "backend/apps/search/schemas.py (AskAnswerEvent only)",
+   "frontend/src/shared/utils/api-client.ts and api-client.test.ts (only if streaming needs an option)",
+   "docs/DECISIONS.md (D-82's last column only)",
+   "docs/TODO_FOR_alex.md",
+   "docs/plans/UI_Implementation_Plan.md (Ask rows)",
+   "docs/plans/Verification_Log.md (new rows only)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "/search?mode=ask with the question never in the URL and As of carried; the stream goes through the single axios instance; start, statement, answer and problem events rendered; numbered citations link to the obligation; AI label with basis and As of; 'Change pending: <date>' via Pill and presentChangePending with precision; no-answer offers 'Search instead'; Helpful/Wrong with a reason posts rateAnswer; feature_off, loading, error and denied states; the closing answer event carries stopReason and the screen says an answer stopped at the length limit was cut short; D-82 records the default; component tests for every state; check:messages and check:copy-drift pass; search suite green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. CLAUDE.md section 11 applies in full (production build, passkey sign-in, api-guard, no mocks, extend seed_e2e). 1. Build Ask from design/screens/tenant-ask.html as /search?mode=ask. Stream through the single axios instance (never raw fetch) so the bearer, refresh and step-up interceptors apply: fetch axios' docs for its fetch adapter with responseType 'stream', log a Verification_Log row, and add a small option to api-client.ts only if needed. Render events (AskStartEvent, AskStatementEvent, AskAnswerEvent, AskProblemEvent in search/schemas.py ~850-990) statement by statement. 2. Citations link to /inventory/obligations/{id} without a version (ObligationScreen does not read ?asOf=; leave it). Reuse presentChangePending, pill.changePending and formatPartialDate. 3. The no-answer state offers 'Search instead'; Helpful and Wrong (with a reason) post rateAnswer and confirm (ask-feedback-and-limits builds the route in parallel; component tests cover the rating states and the journey is wave 3's). feature_off notice ('Ask is switched off ... Search still works'). The question and answer never reach the URL, storage or the logger. 4. Carry-over (search-ask-backend ND1): D-82 (DECISIONS.md ~83) says what the stream tells a reader whose answer the model cut off at ASK_MAX_TOKENS is 'not decided'; only the AI log records max_tokens. Take the default: the closing answer event carries stopReason (the provider's word, end_turn or max_tokens, as the AI log row stores it), documented; the screen shows a 'cut short' line when it is max_tokens. Record it in D-82's last column and add a TODO_FOR_alex line so Alex can overrule it. Backend test in search/tests_ask.py. 5. Add the screen's rows to the UI plan. The SRC-S4, SRC-S5 and SRC-S10 journeys are ask-journeys' (wave 3; carry-over search-ask-backend ND0). ask-feedback-and-limits edits rate_answer and AnswerFeedbackBody in the same backend files in parallel. Size L on purpose: one screen, one stream, one event field. Gates: search suite; frontend lint, typecheck, test:coverage, check:messages, check:copy-drift, build; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "search-eval-sets",
+  "wave": 2,
+  "size": "M",
+  "title": "Platform staff keep the evaluation questions and runs in the console's database",
+  "goal": "SRC-05's eval tables, commands and routes, platform-only.",
+  "requirement_ids": [
+   "SRC-05",
+   "ADM-02"
+  ],
+  "scenario_ids": [
+   "ADM-S4"
+  ],
+  "files_owned": [
+   "backend/apps/search/models.py",
+   "backend/apps/search/migrations/0002_eval_sets.py",
+   "backend/apps/search/eval_sets.py",
+   "backend/apps/search/management/commands/record_eval_run.py",
+   "backend/apps/search/management/commands/dump_eval_questions.py",
+   "backend/apps/shared/management/commands/seed_eval_questions.py",
+   "backend/apps/search/tests_eval_sets.py",
+   "backend/apps/search/tests_eval_routes.py"
+  ],
+  "shared_files": [
+   "backend/apps/search/api.py (eval routes only)",
+   "backend/apps/search/schemas.py (eval schemas only)",
+   "backend/apps/shared/tests_rls.py (PLATFORM_ONLY_TABLES and its one test only)",
+   "backend/apps/governance/tests_scenarios.py (PLATFORM_ROUTE_REQUESTS ~63 only)",
+   "backend/scripts/contract_drift_pending.txt (the four eval lines)",
+   "docs/inputs/INPUT_DELTAS.md",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "EvalQuestion and EvalRun platform tables with forced RLS refusing any tenant session; a PLATFORM_ONLY_TABLES test; commands create-only and jsonl and rows agree; GET/POST /eval/questions and GET /eval/runs under eval.manage, audited, paginated, documented; three drift lines deleted and POST /eval/runs moved to chunk 14 with its reason; ADM-S4's PLATFORM_ROUTE_REQUESTS includes the routes; the tests_rls guard edit had a security look before merge; search, shared and governance suites green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. EvalQuestion and EvalRun in search/models.py (no tenant column, not LibraryModel) with migration search 0002: RLS enabled and forced with one policy refusing any tenant session. 2. PLATFORM_ONLY_TABLES (new) and one test in shared/tests_rls.py (a guard edit: ask the orchestrator for a security review before merge). 3. seed_eval_questions (create-only from backend/eval/retrieval.jsonl), record_eval_run and dump_eval_questions (using search-eval-gate's apps.search.eval.Retriever); logic in search/eval_sets.py; tests_eval_sets.py (a cw_app tenant session sees and writes nothing; jsonl and rows agree). 4. Routes under eval.manage (shared/permissions.py:75), audited, PageQuery, documented: GET /eval/questions, POST /eval/questions (marked 'not yet in the gate'), GET /eval/runs; tests_eval_routes.py. The list routes must pass NFR-S6 (nfr-integration-scenarios, same wave). 5. contract_drift_pending.txt has four eval lines: delete GET /eval/questions, GET /eval/runs and POST /eval/questions, and move POST /eval/runs to chunk 14 with its reason; INPUT_DELTAS row for leaving schema.sql's LIBRARY label. 6. Add the operations to PLATFORM_ROUTE_REQUESTS (governance/tests_scenarios.py ~63). ask-feedback-and-limits (rateAnswer) and ask-screen (AskAnswerEvent) edit other parts of search/api.py and schemas.py, and problem-reports-backend edits tests_rls.py, in parallel: own entries only. The console screen is console-evaluation-screen's (wave 3). Suites: search, shared, governance; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "nfr-integration-scenarios",
+  "wave": 2,
+  "size": "M",
+  "title": "NFR-01's and NFR-02's integration scenarios assert their own Gherkin",
+  "goal": "Un-skip NFR-S1..S6, S13 and S16 with real assertions.",
+  "requirement_ids": [
+   "NFR-01",
+   "NFR-02"
+  ],
+  "scenario_ids": [
+   "NFR-S1",
+   "NFR-S2",
+   "NFR-S3",
+   "NFR-S4",
+   "NFR-S5",
+   "NFR-S6",
+   "NFR-S13",
+   "NFR-S16"
+  ],
+  "files_owned": [
+   "backend/apps/shared/tests_scenarios.py"
+  ],
+  "shared_files": [
+   "backend/apps/shared/app.md (NFR scenario notes only)"
+  ],
+  "depends_on": [],
+  "acceptance": "Each stub calls its guard's entry points and asserts its Gherkin end to end; NFR-S6 asserts Server-Timing with a request id and the budget WARNING, and walks every list-shaped GET in the contract (PageQuery default 20, max 100, 422 above, or an explicit bounded-by-design entry with a reason, including listSources and GET /calendar-feeds); NFR-S16 proves an unmatched filter answers 200 empty; each scenario shown to fail against a planted weakening (reported, not committed); NFR-S11, S12, S14 and S15's skip strings read '(NFR-04, chunk 14)'; shared suite green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. Replace each @skip stub in shared/tests_scenarios.py (NFR-S1 isolation ~105, S2 database role, S3 RLS, S4 tenancy, S5 celery registration, S6 pagination ~140, S13 route permissions ~252, S16 errors ~273) with assertions that call the guards' entry points (tests_tenant_isolation, tests_database_role and db_role_guard, tests_rls, tests_tenancy, tests_celery_registration, tests_middleware, tests_route_permissions, tests_errors), not comments pointing at them. 2. NFR-S6 asserts its whole Gherkin: every response carries Server-Timing: app with the server time and a request id, and an endpoint over API_BUDGET_MS logs a WARNING naming the request id and the endpoint (tests_middleware's entry points). It then walks the exported contract's list GETs; each takes PageQuery or sits on a bounded-by-design list with a reason, like UNGATED_BY_DESIGN (dimensions, languages, jurisdictions, permissions, roles, my passkeys and sessions, vocabulary rows, the roadmap window, the capped calendar feeds, listSources while platform-curated) (carry-overs proposals-reads-agent-visible ND5, footprint-requests-paging-and-copy ND2, perf-harness ND1). An unpaged list it finds beyond these goes to the orchestrator as a named fix task; this package edits no other app's routes. problem-reports-backend and search-eval-sets add list routes in this wave: whichever of the three merges later runs NFR-S6 before merge. 3. Prove each scenario fails once against a planted weakening; report it to the orchestrator, do not commit it. 4. The NFR-04 stubs (S11 ~238, S12 ~245, S14 ~259, S15 ~266) name their chunk: '(NFR-04, chunk 14)'. Status notes beside the scenarios in shared/app.md; NFR-01's cell is r1-close-and-readiness'. Suites: shared. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "screen-budget-nfr-s7",
+  "wave": 2,
+  "size": "M",
+  "title": "Every screen reaches real data within its budget",
+  "goal": "The screen-timing helper, per-destination budgets and the NFR-S7 journey.",
+  "requirement_ids": [
+   "NFR-02"
+  ],
+  "scenario_ids": [
+   "NFR-S7"
+  ],
+  "files_owned": [
+   "frontend/tests/e2e/support/screen-timing.ts",
+   "frontend/tests/e2e/support/screen-budgets.ts",
+   "frontend/tests/e2e/shared.journey.spec.ts"
+  ],
+  "shared_files": [
+   "docs/plans/UI_Implementation_Plan.md (the measurement column only)",
+   "backend/apps/shared/app.md (the NFR-S7 note only)"
+  ],
+  "depends_on": [],
+  "acceptance": "measureScreen takes the median over SCREEN_SAMPLES (a setting with an env override) from client-side navigation to the destination's own real-data locator, fails loudly on a missing locator or a lingering skeleton, and refuses next dev; a completeness check fails when any tenant or console registry destination lacks a budget row (500 ms default); NFR-S7 un-fixme'd under api-guard with passkey sign-in as a tenant user and a platform admin; an empty measurement column added to the UI plan's screen table.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. CLAUDE.md section 11 applies in full (production build, passkey sign-in, api-guard, no mocks, extend seed_e2e). No data-loaded marker exists: keep a per-destination ready locator in screen-budgets.ts so no screen changes. 1. Write measureScreen(page, destination) as in acceptance and assert a production build (playwright.config.ts already boots next start). 2. A completeness check over frontend/src/shared/navigation/registry.ts (tenant and console destinations). Destinations added later (ai-log-screen, console-evaluation-screen, wave 3) add their own rows. Ask is a mode of /search, so it needs no row of its own. 3. Un-fixme NFR-S7 (shared.journey.spec.ts ~171). r1-perf (wave 4) records the medians against next start. Gates: frontend lint and typecheck; the NFR-S7 journey against the real stack. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "api-docs-identity-admin",
+  "wave": 2,
+  "size": "M",
+  "title": "Member, role, invitation, key and security-log operations explain themselves, and the code email says what the code is for",
+  "goal": "Clear the 35 identity admin ledger lines and fix the enrolment-code subject line.",
+  "requirement_ids": [
+   "ID-09",
+   "ID-10",
+   "ID-11",
+   "ADM-01",
+   "ADM-03",
+   "ID-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/identity/mail.py"
+  ],
+  "shared_files": [
+   "backend/apps/identity/api.py (admin route docstrings only)",
+   "backend/apps/identity/schemas.py (admin classes only)",
+   "backend/apps/shared/api.py (the mail-outbox example ~37 only)",
+   "backend/apps/shared/schemas.py (the mail-outbox subject description ~109 only)",
+   "backend/scripts/api_docs_pending.txt",
+   "backend/scripts/api_docs_gate.py (VOCABULARY_PROPERTIES only if needed)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "api_docs_gate.py --app identity is clean and the 35 identity lines are gone from api_docs_pending.txt; ApiKey* scope descriptions match the tenant-safe scope set and revokeApiKey's summary covers a repeat revoke; the enrolment-code mail's subject no longer says sign-in, and the mail-outbox example and description match it; identity and shared suites green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. Document to docs/plans/briefs/API_DOCUMENTATION.md the operations createApiKey, createRole, deactivateMember, inviteMember, listApiKeys, listInvitations, listMemberSessions, listMembers, listPermissions, listRoles, listSecurityLog, reissueEnrolment, resendInvitation, retireRole, revokeApiKey, revokeInvitation, revokeMemberSessions, updateMember, updateRole and the schemas ApiKeyCreate, ApiKeyCreated, ApiKeyOut, ApiKeysPage, InvitationOut, InvitationsPage, MemberInvite, MemberOut, MemberPatch, MembersPage, PermissionOut, RoleCreate, RoleOut, RolePatch, SecurityEventOut, SecurityLogPage (35 lines today). ApiKey* scopes follow the tenant-key restriction identity-agent-keys-backend landed (proposals:review and the agent scopes are refused on a bank's key); revokeApiKey's summary says what a repeat revoke answers (carry-over identity-agent-keys-backend ND2). Add to VOCABULARY_PROPERTIES only after reading the model behind a field. Docstrings only, except step 2. 2. Carry-over (api-docs-identity-auth ND2): identity/mail.py:37 sends 'Your <product> sign-in code', but the emailed code works once, for enrolment only, and stops working once the first passkey exists (CLAUDE.md section 5). Make the subject name enrolment, not sign-in, and update the mail-outbox example (shared/api.py:37) and description (shared/schemas.py:109) to match. No journey reads the subject (git grep in frontend/tests/e2e finds none); check the identity tests that read the outbox. Suites: identity, shared; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "api-docs-taxonomy-vocabularies",
+  "wave": 2,
+  "size": "M",
+  "title": "Vocabulary operations explain themselves",
+  "goal": "Clear the 28 taxonomy vocabulary ledger lines and the taxonomy-labelled ProposalAccepted line.",
+  "requirement_ids": [
+   "VOC-01",
+   "VOC-02",
+   "VOC-07"
+  ],
+  "scenario_ids": [],
+  "files_owned": [],
+  "shared_files": [
+   "backend/apps/taxonomy/api.py (vocabulary route docstrings only)",
+   "backend/apps/taxonomy/schemas.py (Vocabulary* classes only)",
+   "backend/apps/proposals/schemas.py (ProposalAccepted ~1019 only)",
+   "backend/scripts/api_docs_pending.txt",
+   "backend/scripts/api_docs_gate.py (VOCABULARY_PROPERTIES only if needed)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [],
+  "acceptance": "api_docs_gate.py --app taxonomy reports none of the 11 vocabulary operations, the 17 Vocabulary* schemas or ProposalAccepted, and their 29 lines are deleted; taxonomy suite green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. Document to docs/plans/briefs/API_DOCUMENTATION.md the operations createVocabularyRow, declineVocabularySuggestion, getVocabularyRow, listVocabularies, listVocabularyRows, mergeVocabularyRow, reorderVocabulary, restoreVocabularyRow, retireVocabularyRow, suggestVocabularyRow and updateVocabularyRow (listVocabularySuggestions was documented with its paging in wave 1 and is no longer in the ledger), and the schemas VocabularyCreateBody, VocabularyListEntry, VocabularyListPage, VocabularyMergeBody, VocabularyMergeQuery, VocabularyMerged, VocabularyPatchBody, VocabularyQuery, VocabularyReorderBody, VocabularyRestored, VocabularyRetireBody, VocabularyRetired, VocabularyRow, VocabularyRowDetail, VocabularyRowPage, VocabularySuggestBody and VocabularySuggestionRow. Also document ProposalAccepted (proposals/schemas.py ~1019, returned by the vocabulary writes that become proposals, labelled taxonomy in the ledger): touch only that class in proposals/schemas.py. Docstrings only. tax-markets-panel (MarketRow) and tax-preview-cases (FootprintPreviewCount) edit other classes of taxonomy/schemas.py in parallel; vocab-term-provenance adds provenance fields to VocabularyRow and VocabularyRowDetail and merges after this package, documenting its own fields. The scope, term and jurisdiction lines are api-docs-taxonomy-scope's (wave 3). Suites: taxonomy; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "security-review-c6",
+  "wave": 2,
+  "size": "M",
+  "title": "Chunk 6 security review and fixes, and the roadmap prints a date only as precisely as it is known",
+  "goal": "A recorded chunk-wide review of the timeline, briefing, roadmap and calendar feed, plus the roadmap's date-precision fix.",
+  "requirement_ids": [
+   "HOM-01",
+   "HOM-02",
+   "HOM-03",
+   "HOM-04"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "docs/security/CHUNK6_REVIEW_<yyyy-mm-dd>.md (the day it is written)",
+   "backend/apps/home/roadmap.py",
+   "backend/apps/home/schemas.py",
+   "frontend/src/components/home/RoadmapScreen.tsx",
+   "frontend/src/components/home/RoadmapScreen.test.tsx",
+   "frontend/src/components/home/ComingUpPanel.tsx",
+   "frontend/src/features/home/roadmap-presentation.ts",
+   "frontend/src/features/home/roadmap-presentation.test.ts",
+   "frontend/src/features/home/types.ts"
+  ],
+  "shared_files": [
+   "docs/plans/briefs/HARDENING.md (new rows only)",
+   "backend/apps/home/* other files (fixes only)",
+   "frontend/src/features/calendar-feeds/* (fixes only)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts",
+   "frontend/src/components/home/TodayScreen.test.tsx (the comingUp fixture's precision only; tax-scope-journeys edits its empty-state tests)"
+  ],
+  "depends_on": [],
+  "acceptance": "A report with a verdict and evidence per area; every medium-or-higher finding fixed with a test; lower findings as HARDENING rows; HomeRoadmapItem carries the date's precision and the roadmap and Coming up render it with formatPartialDate, tested with a quarter-precision date; home suite and frontend gates green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. 1. Review the whole chunk 6 diff including the calendar-feeds screen: the token route, briefing, briefing_item and calendar_feed tables, briefing mail content, GET /upcoming, the feed's kind and precision filters, the cap, the address never stored or logged by the screen, and that calendar_ics's auto-revoke commits under ATOMIC_REQUESTS before the ProblemError (home/tests_feed.py, assert_stopped and the stop tests ~714-800). Run the guard suites (tests_rls, tests_tenant_isolation, tests_route_permissions, tests_audit_on_write) with the home suite. Fix medium and higher findings with a test; HARDENING rows for the rest. 2. Carry-over (calendar-feed-hardening ND1), a named fix: HomeRoadmapItem (home/schemas.py ~213) has date and quarter but no precision, and RoadmapScreen.tsx:83 and :98 and ComingUpPanel.tsx:29 render formatDate(item.date), so a quarter-precision date prints as a day. roadmap.py (~226) uses precision only for the calendar. Legal dates carry a precision (HOM-03, INV-S10). Serve the precision on HomeRoadmapItem (documented), render it with formatPartialDate on the roadmap and in Coming up, and show no 'days left' count for a date less precise than a day. Acceptance: a backend test and component tests with a quarter-precision item. A precision on HomeRoadmapItem changes the generated type every comingUp fixture uses: give TodayScreen.test.tsx's fixture (~72-86) its precision. tax-scope-journeys edits TodayScreen.tsx and that file's empty-state tests (not ComingUpPanel) in parallel. Suites: home plus the guard suites; frontend lint, typecheck, test:coverage, check:messages, build; regenerate types. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "shell-sign-out-gate",
+  "wave": 2,
+  "size": "S",
+  "title": "Signing out takes the screens down first, so none of them asks the server for anything once the session has ended",
+  "goal": "Fix the production sign-out race the journeys only worked around: a screen still loading after sign-out triggers a 401.",
+  "requirement_ids": [
+   "ID-04"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "frontend/src/components/shell/SessionGate.tsx",
+   "frontend/src/components/shell/SessionGate.test.tsx",
+   "frontend/src/features/identity/hooks.ts",
+   "frontend/src/features/identity/hooks.test.tsx",
+   "frontend/src/components/shell/AccountMenu.tsx",
+   "frontend/src/components/shell/shell.test.tsx"
+  ],
+  "shared_files": [],
+  "depends_on": [],
+  "acceptance": "While a sign-out is pending, SessionGate renders its loading state instead of the screens, so no screen query runs after the session ends; a component test proves a pending sign-out unmounts the children and that the redirect to /sign-in still happens after the menu that started it has unmounted; the J-1 and 'signing out works from More' journeys pass without an undeclared 401, with their existing waits kept; frontend gates green.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. CLAUDE.md section 11 applies in full (production build, passkey sign-in, api-guard, no mocks, extend seed_e2e). Carry-over (integration notes): b884886 stopped one query (the interface-language list) reading after sign-out, and b25aba5 made the journeys wait; the race itself remains. In production a screen still loading when a person signs out (Today's GET /home and briefing reads) asks the server after the session has ended and meets a 401. useSignOut (features/identity/hooks.ts ~172) clears the query cache only when the call settles, and SessionGate (components/shell/SessionGate.tsx, 46 lines) keeps rendering the screens until the session read says anonymous. 1. Give the sign-out mutation a mutation key and have SessionGate render its loading state (the same 'shell.loading' status) while that mutation is pending (useIsMutating), so every screen unmounts and its queries stop before the session ends. 2. useSignOutToSignIn (components/shell/AccountMenu.tsx ~64-71), which the rail's menu and the More sheet share, redirects to /sign-in in a per-call mutate() onSettled. TanStack Query drops per-call callbacks once the calling component unmounts, and with the gate taking the shell down that redirect would never run. Move the redirect where it survives the unmount (the mutation's own options), and update shell.test.tsx, which mocks useSignOut. 3. Component tests: a pending sign-out shows no children; a settled one redirects to /sign-in even when the menu that started it has unmounted. 4. Run the journeys that sign out (identity J-1, navigation 'signing out works from More', and the others b884886 lists) and keep their waits: removing a wait is not part of this fix. Gates: frontend lint, typecheck, test:coverage, build; those journeys against the real stack. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ },
+ {
+  "key": "worktree-drop-databases",
+  "wave": 2,
+  "size": "S",
+  "title": "Removing a worktree drops every database its slot made, and only those",
+  "goal": "Dev tooling: scripts/worktree.sh remove leaves no slot database behind.",
+  "requirement_ids": [],
+  "scenario_ids": [],
+  "files_owned": [
+   "scripts/worktree.sh",
+   "docs/runbooks/WORKTREES.md"
+  ],
+  "shared_files": [],
+  "depends_on": [],
+  "acceptance": "drop_databases drops <base>, <base>_scratch, <base>_e2e, <base>_e2e_cold, test_<base>, test_<base>_<n> and test_<base>_search_eval_<pid>, and never a database of another slot (compliance_watch_wt1 never matches compliance_watch_wt10's names); shown on a slot that has all of them; WORKTREES.md lists what remove drops.",
+  "brief": "Start from main at 8d45615 in your own worktree (scripts/worktree.sh; load .env.worktree first). Every wave-1 package is merged there. Read CLAUDE.md, docs/CONVENTIONS.md and the app.md of each app you touch before code. Carry-overs (search-eval-gate fix-note; integration_not_done 1): drop_databases in scripts/worktree.sh (~163-185) drops base, _scratch, _e2e, test_base and test_base_N, but not <base>_e2e_cold (playwright.config.ts:30, COLD_SUFFIX) or test_<base>_search_eval_<pid> (apps/search/eval.py ~25), so 'remove' leaves those behind. 1. Find the slot's databases by exact patterns, never a bare prefix: ^<base>(_scratch|_e2e|_e2e_cold)?$ and ^test_<base>(_\\d+|_search_eval_\\d+)?$, because a prefix match on compliance_watch_wt1 would also drop compliance_watch_wt10's databases. 2. Show it on a slot that has every kind of database (create them, run remove, list pg_database). 3. Say in docs/runbooks/WORKTREES.md what remove drops. Leftover slot databases from wave 1 are the orchestrator's to drop before wave 2 claims slots; this package only makes the script complete. Gates: bash scripts/prepush.sh --quick. Gates (D-67): the static gates and the suites of the apps named here; the whole suite, coverage floors and E2E run once over the merged batch. Commit messages as CLAUDE.md section 7 says, with no Co-Authored-By trailer and no model or tool names."
+ }
+]
