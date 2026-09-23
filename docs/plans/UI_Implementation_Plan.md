@@ -90,7 +90,7 @@ records it.
 | `console-vocabularies.html` | `/console/vocabularies` | console | 4 | not drawn: `admin-vocabularies.html` shared-list tab is the same list, rendered for `library_vocab.manage` with Rename, Merge, Retire producing proposals. Draw a separate card only if the build finds a difference |  |
 | `console-languages.html` | `/console/languages` | console | 4 | card pending (languages and jurisdictions are library vocabularies; `admin-vocabulary.html` console variant renders them) |  |
 | `admin-audit-log.html` | `/admin/audit-log` | tenant | 4 (proposed, AUD-01 is R1 M and no chunk names its screen) | in build without a card: the screen is on `main`, cut from the prototype's `vAudit()`, and AUD-S3's journey is un-fixme'd |  |
-| `admin-ai-log.html` | `/admin/ai-log` | tenant | 7 (AUD-02) | card pending |  |
+| `admin-ai-log.html` | `/admin/ai-log` | tenant | 7 (AUD-02) | in build: the card is drawn and the screen reads `GET /ai-generations` under `ai_log.read`, filtered by purpose, review state and one record; a row opens to what the model wrote and its sources, labelled AI until a person confirmed it (AUD-S4 un-fixme'd) |  |
 | `console-evaluation.html` | `/console/evaluation` | console | 7 (SRC-05) | card pending |  |
 | `tenant-gaps.html`, register panels | `/inventory/obligations/[id]` right column, `/gaps` | tenant | 8 | card pending; prototype `vGaps()`, `vGap()`, `entityPanel()`, `gapsPanel()`, `historyPanel()`, `interpPanel()` are the cut |  |
 | `admin-organisation.html` entities, licences and certificates, products, departments with heads, teams | `/admin/organisation` | tenant | 8 | extends the chunk 1 card; departments with heads and teams designed (f03-T60); the entity, licence, certificate and product sections are card pending |  |
@@ -293,7 +293,7 @@ contributor, R reader, AU auditor, LE library editor, PA platform admin.
 | Operation | Card | Surface | Permission | Step-up | Role variants | E2E | Status |
 |---|---|---|---|---|---|---|---|
 | `GET /audit-events` | `admin-audit-log.html` | tenant | `audit.read` | no | All 7 | AUD-S3, AUD-S7 | in build without a card: the route (offset pages and its own filters, INPUT_DELTAS) and `/admin/audit-log` are on `main`, cut from `vAudit()`; AUD-S3 is un-fixme'd |
-| `GET /ai-generations` | `admin-ai-log.html` | tenant | `ai_log.read` | no | A, CO, AP, AU | AUD-S4 | in build: the route is on `main`; its screen and card are chunk 7's (AUD-S4 fixme) |
+| `GET /ai-generations` | `admin-ai-log.html` | tenant | `ai_log.read` | no | A, CO, AP, AU | AUD-S4 | in build: the route is on `main` and the AI log screen reads it (ai-log-screen; AUD-S4 un-fixme'd) |
 | `GET /problem-reports`, `PATCH /problem-reports/{id}` | `console-problem-reports.html` | console | `proposals.review` | no | LE | AUD-S5, PRO-S7 | removed from the console (D-50): a report stays inside the bank that filed it; the bank's own list and close are chunk 4's (AUD-03), card pending |
 | `GET/POST /eval/questions`, `GET/POST /eval/runs` | `console-evaluation.html` | console | `eval.manage` | no | LE | SRC-S8 | later chunk 7, card pending |
 

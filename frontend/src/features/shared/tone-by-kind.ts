@@ -77,6 +77,28 @@ export const apiKeyStateTone: Record<ApiKeyStateKind, PillTone> = {
   expired: 'warning',
 };
 
+// AUD-02: an AI log row's review state and a reader's verdict on an Ask
+// answer, as the API names them. A draft nobody has reviewed is a neutral
+// fact, as an agent's suggestion is; a person standing behind the words, as
+// drafted or rewritten, is positive; a rejection is a decision made on
+// purpose, so it stays neutral. A reader saying "wrong" needs a look, it is
+// not itself bad. The purpose sits in `slotTone.aiPurpose`.
+export type AiReviewKind = 'draft' | 'confirmed' | 'edited' | 'rejected';
+
+export const aiReviewTone: Record<AiReviewKind, PillTone> = {
+  draft: 'information',
+  confirmed: 'positive',
+  edited: 'positive',
+  rejected: 'information',
+};
+
+export type AiFeedbackKind = 'helpful' | 'wrong';
+
+export const aiFeedbackTone: Record<AiFeedbackKind, PillTone> = {
+  helpful: 'positive',
+  wrong: 'warning',
+};
+
 // "Applies" is positive on the system card's obligation row; the other two
 // are neutral facts.
 export const applicabilityTone: Record<ApplicabilityKind, PillTone> = {
@@ -132,4 +154,6 @@ export const slotTone = {
   // A source that has gone past its cadence, or failed more times in a row
   // than the stale rule allows: it needs attention, it is not itself bad.
   stale: 'warning',
+  // AUD-02: what a model call was for, a kind of call, as a change type is a kind of change.
+  aiPurpose: 'notice',
 } as const satisfies Record<string, PillTone>;
