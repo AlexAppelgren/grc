@@ -1,13 +1,30 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { createElement, type ReactNode } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
-import { CHANGE_PAGE, useChange, useChangeFeed, useObligationChanges, useScopeTerms, useTriageCount, watchKeys } from './hooks';
+import type { ChangeDetail } from './api';
+import {
+  CHANGE_PAGE,
+  useAcceptCaseObligationLink,
+  useCanWorkCase,
+  useChange,
+  useChangeFeed,
+  useConfirmSoWhat,
+  useObligationChanges,
+  useRemoveCaseObligationLink,
+  useSaveSoWhat,
+  useScopeTerms,
+  useTriageCount,
+  watchKeys,
+} from './hooks';
 
 // The feed's paging, its tab counts and its cache keys. A filter is part of
-// the key, so narrowing re-reads rather than reuses.
+// the key, so narrowing re-reads rather than reuses. And this bank's own
+// writes on its case: each one re-reads what the watch screens show.
 
 const page = (items: number, total: number) => ({ items: Array.from({ length: items }, (_, i) => ({ id: `c-${i}` })), total });
 
@@ -73,5 +90,48 @@ describe('watch hooks', () => {
     expect(watchKeys.change('c-1')).toEqual(['watch', 'change', 'c-1']);
     expect(watchKeys.obligationChanges('ob-1', 20)).toEqual(['watch', 'obligation-changes', 'ob-1', { limit: 20 }]);
     expect(watchKeys.coverage).toEqual(['watch', 'coverage']);
+  });
+
+  it('each write on the case re-reads every watch read, because each moves the page, the feed and a count', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: {} }));
+    const { wrapper, queryClient } = queryWrapper();
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+    const save = renderHook(() => useSaveSoWhat('c-1'), { wrapper });
+    const confirm = renderHook(() => useConfirmSoWhat('c-1'), { wrapper });
+    const accept = renderHook(() => useAcceptCaseObligationLink('c-1'), { wrapper });
+    const remove = renderHook(() => useRemoveCaseObligationLink('c-1'), { wrapper });
+
+    await save.result.current.mutateAsync('Ours.');
+    await confirm.result.current.mutateAsync();
+    await accept.result.current.mutateAsync('ob-1');
+    await remove.result.current.mutateAsync('ob-2');
+
+    expect(sent.map((s) => [s.method, s.path])).toEqual([
+      ['put', '/api/v1/changes/c-1/so-what'],
+      ['post', '/api/v1/changes/c-1/so-what/confirm'],
+      ['post', '/api/v1/changes/c-1/case/obligation-links'],
+      ['delete', '/api/v1/changes/c-1/case/obligation-links/ob-2'],
+    ]);
+    expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([watchKeys.all, watchKeys.all, watchKeys.all, watchKeys.all]);
+  });
+
+  it('a write the server refuses re-reads nothing', async () => {
+    installAdapter(() => ({ status: 403, data: { code: 'permission_denied', detail: '', requiredPermission: 'cases.work' } }));
+    const { wrapper, queryClient } = queryWrapper();
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+    const confirm = renderHook(() => useConfirmSoWhat('c-1'), { wrapper });
+    await expect(confirm.result.current.mutateAsync()).rejects.toBeDefined();
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it('offers the case controls only with cases.work and a case to write to', () => {
+    const withCase = { case: { id: 'case-1' } } as unknown as ChangeDetail;
+    const without = { case: null } as unknown as ChangeDetail;
+    const as = (permissions: string[] | null) => ({ children }: { children: ReactNode }) => createElement(PermissionsProvider, { permissions, children });
+    expect(renderHook(() => useCanWorkCase(withCase), { wrapper: as(['cases.work']) }).result.current).toBe(true);
+    expect(renderHook(() => useCanWorkCase(without), { wrapper: as(['cases.work']) }).result.current).toBe(false);
+    expect(renderHook(() => useCanWorkCase(withCase), { wrapper: as(['watch.read']) }).result.current).toBe(false);
+    // No session known yet is never a grant.
+    expect(renderHook(() => useCanWorkCase(withCase), { wrapper: as(null) }).result.current).toBe(false);
   });
 });

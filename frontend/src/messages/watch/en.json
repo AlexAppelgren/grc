@@ -124,5 +124,6 @@
   "watch.change.screened": "Flagged when screened. Open the publisher’s page with care.",
   "watch.soWhat.draftedBy": "Drafted by {agent}, which read this change",
   "watch.soWhat.draftedByAgent": "Drafted by the agent that read this change",
-  "watch.soWhat.confirmedAt": "Confirmed {date}"
+  "watch.soWhat.confirmedAt": "Confirmed {date}",
+  "watch.change.linkAccepted": "Confirmed for us, {date}"
 }

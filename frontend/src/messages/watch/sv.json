@@ -124,5 +124,6 @@
   "watch.change.screened": "Flaggad vid granskningen. Öppna utgivarens sida med försiktighet.",
   "watch.soWhat.draftedBy": "Utkast av {agent}, som läste ändringen",
   "watch.soWhat.draftedByAgent": "Utkast av agenten som läste ändringen",
-  "watch.soWhat.confirmedAt": "Bekräftad {date}"
+  "watch.soWhat.confirmedAt": "Bekräftad {date}",
+  "watch.change.linkAccepted": "Bekräftad för oss, {date}"
 }

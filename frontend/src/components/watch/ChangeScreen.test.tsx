@@ -1,16 +1,17 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { ChangeDetail } from '@/features/watch/api';
+import type { CaseObligationDecision, ChangeDetail } from '@/features/watch/api';
 import { createT } from '@/shared/i18n';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
+import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 import { defaultFormatContext } from '@/shared/utils/format';
 
 import { ChangeDocuments, fetchedLine, presentDocument } from './ChangeDocuments';
-import { ChangeObligations, presentObligationLink } from './ChangeObligations';
+import { ChangeObligations, decisionsOf, presentObligationLink, type ObligationLink } from './ChangeObligations';
 import { ChangeScreen, detailFacts, headMeta, presentChangeDetail, presentScopeTerms } from './ChangeScreen';
 import { ChangeTimeline, eventMeta, nextEventId } from './ChangeTimeline';
 
@@ -238,29 +239,105 @@ describe('the documents panel', () => {
 });
 
 describe('the obligations affected', () => {
-  it('shows a suggestion with the agent’s confidence and a confirmed link as settled', () => {
-    expect(presentObligationLink(change.obligations[0]!, t).map((pill) => [pill.label, pill.tone])).toEqual([
+  const [suggested, libraryConfirmed] = change.obligations as [ObligationLink, ObligationLink];
+  const accepted: CaseObligationDecision = { obligationId: 'o-1', decision: 'accepted', decidedAt: '2026-09-17T09:12:00Z' };
+  const removed: CaseObligationDecision = { obligationId: 'o-1', decision: 'removed', decidedAt: '2026-09-17T09:12:00Z' };
+  const decided = (decision: CaseObligationDecision): ChangeDetail => ({ ...change, case: { ...change.case!, obligationDecisions: [decision] } });
+
+  beforeEach(() => {
+    resetApiForTests();
+    tokenStore.set('tok');
+  });
+
+  /** The session read answers a signed-in reader, every write answers `answer`; what is returned is the writes alone. */
+  function serveWrite(answer: Answer): () => Sent[] {
+    const sent = installAdapter((request) => (request.method === 'get' ? { status: 200, data: SESSION } : answer));
+    return () => sent.filter((request) => request.method !== 'get');
+  }
+
+  function renderLinks(of: ChangeDetail, permissions: string[] = []): void {
+    render(shell(<PermissionsProvider permissions={permissions}><ChangeObligations change={of} /></PermissionsProvider>));
+  }
+
+  it('shows a suggestion with the agent’s confidence and a library editor’s confirmation as settled', () => {
+    expect(presentObligationLink(suggested, undefined, t, ctx).map((pill) => [pill.label, pill.tone])).toEqual([
       ['FFFS 2017:2', 'brand'],
       ['Suggested, 86% match', 'information'],
     ]);
-    expect(presentObligationLink(change.obligations[1]!, t).map((pill) => [pill.label, pill.tone])).toEqual([
+    expect(presentObligationLink(libraryConfirmed, undefined, t, ctx).map((pill) => [pill.label, pill.tone])).toEqual([
       ['LVM', 'brand'],
       ['Confirmed by a library editor', 'positive'],
     ]);
   });
 
-  it('a suggestion nobody scored still says who put it forward', () => {
-    expect(presentObligationLink({ ...change.obligations[0]!, confidence: null }, t)[1]!.label).toBe('Suggested by the agent');
+  it('this bank’s own confirmation takes the slot, whatever the library says, and says when', () => {
+    expect(presentObligationLink(suggested, accepted, t, ctx).map((pill) => [pill.label, pill.tone])).toEqual([
+      ['FFFS 2017:2', 'brand'],
+      ['Confirmed for us, 17 Sept 2026', 'positive'],
+    ]);
+    expect(presentObligationLink(libraryConfirmed, { ...accepted, obligationId: 'o-2' }, t, ctx)[1]!.label).toBe('Confirmed for us, 17 Sept 2026');
+    expect(decisionsOf({ ...change, case: null }).size).toBe(0);
   });
 
-  it('links into the obligation and offers no control that would settle a library fact', () => {
-    render(shell(<ChangeObligations obligations={change.obligations} />));
+  it('a suggestion nobody scored still says who put it forward', () => {
+    expect(presentObligationLink({ ...suggested, confidence: null }, undefined, t, ctx)[1]!.label).toBe('Suggested by the agent');
+  });
+
+  it('links into the obligation, and a reader without cases.work gets no control', () => {
+    renderLinks(change, ['watch.read']);
     expect(screen.getByRole('link', { name: 'Pay for third-party research only under the permitted models' })).toHaveAttribute('href', '/inventory/obligations/o-1');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
+  it('a change this bank has no case for offers no control, because there is nothing to write to', () => {
+    renderLinks({ ...change, case: null }, ['cases.work']);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('a person with cases.work confirms a link on this bank’s case, never on the library’s link', async () => {
+    const writes = serveWrite({ status: 201, data: { obligationId: 'o-1', decision: 'accepted' } });
+    renderLinks(change, ['cases.work']);
+    // One pair per undecided link: the library's own confirmation of o-2 is not this bank's decision.
+    expect(screen.getAllByRole('button', { name: 'Confirm link' })).toHaveLength(2);
+    const row = screen.getByText('Pay for third-party research only under the permitted models').closest('[data-obligation]') as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Confirm link' }));
+    await waitFor(() => expect(writes()).toHaveLength(1));
+    expect([writes()[0]?.method, writes()[0]?.path, writes()[0]?.body]).toEqual(['post', '/api/v1/changes/c-1/case/obligation-links', { obligationId: 'o-1' }]);
+  });
+
+  it('"Not related" stores the bank’s decision rather than deleting a library link', async () => {
+    const writes = serveWrite({ status: 200, data: { obligationId: 'o-1', decision: 'removed' } });
+    renderLinks(change, ['cases.work']);
+    const row = screen.getByText('Pay for third-party research only under the permitted models').closest('[data-obligation]') as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Not related' }));
+    await waitFor(() => expect(writes()).toHaveLength(1));
+    expect([writes()[0]?.method, writes()[0]?.path]).toEqual(['delete', '/api/v1/changes/c-1/case/obligation-links/o-1']);
+  });
+
+  it('a link this bank removed is hidden from its page, and the others stay', () => {
+    renderLinks(decided(removed), ['cases.work']);
+    expect(screen.queryByText('Pay for third-party research only under the permitted models')).not.toBeInTheDocument();
+    expect(screen.getByText('Assess suitability when giving investment advice')).toBeInTheDocument();
+  });
+
+  it('an accepted link reads confirmed for us and asks nothing more', () => {
+    renderLinks(decided(accepted), ['cases.work']);
+    const row = screen.getByText('Pay for third-party research only under the permitted models').closest('[data-obligation]') as HTMLElement;
+    expect(row).toHaveAttribute('data-case-decision', 'accepted');
+    expect(within(row).getByText('Confirmed for us, 17 Sept 2026')).toHaveAttribute('data-pill', 'positive');
+    expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('a decision the server refuses says why, in the row it was made from', async () => {
+    serveWrite({ status: 404, data: { code: 'not_found', detail: 'Not found.' } });
+    renderLinks(change, ['cases.work']);
+    const row = screen.getByText('Pay for third-party research only under the permitted models').closest('[data-obligation]') as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Confirm link' }));
+    expect(await within(row).findByRole('alert')).toHaveTextContent('Not found.');
+  });
+
   it('an obligation nothing is linked to says so', () => {
-    render(shell(<ChangeObligations obligations={[]} />));
+    renderLinks({ ...change, obligations: [] });
     expect(screen.getByText('No obligation is linked yet')).toBeInTheDocument();
   });
 });

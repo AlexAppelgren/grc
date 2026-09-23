@@ -27,9 +27,11 @@ import { hasProblemCode } from '@/shared/utils/problem';
 // "What happened"; triage, assessment, actions, evidence and sign-off are
 // the case workflow and arrive with chunk 9.
 //
-// Nothing here writes. A change's type, flags and scope are library facts
-// that only a library editor settles, so this screen shows what an agent put
-// forward and offers a reader of this bank no control that would confirm it.
+// A change's type, flags and scope are library facts that only a library
+// editor settles, so this screen shows what an agent put forward and offers a
+// reader of this bank no control that would confirm one. The only writes are
+// this bank's own, on its case: the "So what?" and its decision about each
+// suggested obligation link (SoWhatPanel, ChangeObligations).
 
 /**
  * The facts the header's pills are made of, in the card's slot order.
@@ -162,7 +164,7 @@ export function ChangeScreen({ changeId }: { changeId: string }) {
           </Panel>
 
           <Panel title={t('watch.change.obligations')}>
-            <ChangeObligations obligations={change.obligations} />
+            <ChangeObligations change={change} />
           </Panel>
         </div>
 
