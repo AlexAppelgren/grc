@@ -90,127 +90,746 @@ class JurisdictionRow(CamelSchema):
 # ---------------------------------------------------------------------------------------
 # Vocabularies (VOC-01, VOC-02, VOC-03, VOC-07)
 # ---------------------------------------------------------------------------------------
-class VocabularyListEntry(CamelSchema):
-    """One row of `GET /vocab`: the list of lists the admin screens and the agents read."""
+# What several vocabulary shapes say in the same words, written once.
+_VOCABULARY_KEY = (
+    "The value's stable key, such as `custody`, and the only part of the row to store, compare or send "
+    "back: it never changes, whatever happens to the labels. The rows are a vocabulary and not a fixed set: "
+    "a bank's admin extends its own lists with `vocab.manage`, and a library list is extended through a "
+    "proposal a second person approves, so a key you have not seen before is new data and not an error. "
+    "`GET /vocab/{list}` gives the live set."
+)
+_KINDS_BY_LIST = (
+    "`term_dimension` takes `scope`, `classification` or `opt_in`; `instrument_level` `standard` or none; "
+    "`provision_kind` `division`, `unit` or `annex`; `change_type` `pre_adoption`, `adopted`, `in_force`, "
+    "`supervisory` or `recurring`; `urgency` the tone its pill shows, `information`, `notice`, `positive`, "
+    "`warning`, `negative` or `brand`; `jurisdiction` `supranational`, `country` or `international`; "
+    "`compliance_status` `compliant`, `partly`, `gap` or `not_assessed`; `case_sub_status` the case "
+    "category it sits inside, `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed` or "
+    "`dismissed`; and `close_reason` `signed_off`, `not_applicable` or `no_action`. Every other list's "
+    "rows carry no kind."
+)
+_LABELS_WRITE = (
+    "The value's name per content language, as a map from language key to text, such as "
+    '`{"en": "Custody", "sv": "Förvaring"}`. The keys are the platform\'s content languages, `en`, `sv`, '
+    "`da`, `nb` and `fi`, a set a bank's admin cannot extend (`GET /reference/languages` lists it); any "
+    "other key answers 422 `unknown_key` with the valid ones. Surrounding spaces are trimmed and an empty "
+    "text is ignored, and at least one label must be left or the write answers 422 `validation_error`."
+)
+_KEY_WRITE = (
+    "Optional: left out, the server makes it from the English label, or from the first label given, as "
+    "lower-case words joined by underscores (`Custody services` becomes `custody_services`), and a key you "
+    "give is normalised the same way; one that normalises to nothing answers 422 `validation_error`. A key "
+    "the list already holds in any letter case, retired values included, answers 409 `duplicate_key` with "
+    "the existing value in `candidates`. The key never changes once the value exists."
+)
+_EXTRA_COLUMNS = (
+    "`urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days "
+    "a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and "
+    "`rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and "
+    "`compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale. Every other "
+    "list has none."
+)
+_EXTRA_WRITE = (
+    "Keyed as a row's `extra` reads them (`slaDays`) or by column name (`sla_days`); a key the list does "
+    "not have is ignored, never stored. Each value is checked like the column it fills, so a wrong one "
+    "answers 422 `validation_error`, and a reference to a row that does not exist answers 422 "
+    "`unknown_key` with the valid keys. `tone`, `colour` and `color` are refused with 422 "
+    "`validation_error`: a value's tone follows its kind and is never chosen."
+)
 
-    list: str
-    tier: int
-    kind: str | None = None  # the tier-one kind's INPUT_DELTAS §1 name, when rows carry one
-    kinds: builtins.list[str] = Field(default_factory=builtins.list)  # the values that kind may take
-    count: int
-    retired_count: int
-    proposable: bool
+
+class VocabularyListEntry(CamelSchema):
+    """One row of `GET /vocab`: one list a picker, a filter or an agent reads its values
+    from, with how many values it holds. The list itself is fixed by the product; its rows
+    are the data."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "list": "urgency",
+                    "tier": 2,
+                    "kind": "pill_tone",
+                    "kinds": ["information", "notice", "positive", "warning", "negative", "brand"],
+                    "count": 4,
+                    "retiredCount": 0,
+                    "proposable": True,
+                }
+            ]
+        }
+    )
+
+    list: str = Field(
+        description=(
+            "The list's name, which every other vocabulary path takes as `{list}`. The set of lists is fixed "
+            "by the product and never by an admin, who adds values to a list and never a list. The shared "
+            "library's lists are `term_dimension`, `instrument_level`, `provision_kind`, `change_type`, "
+            "`duty_type`, `relation_type`, `source_kind`, `urgency`, `library_tag`, `flag`, "
+            "`rejection_reason` and `jurisdiction`; a bank's own lists are `tenant_tag`, `link_kind`, "
+            "`effort_size`, `compliance_status`, `risk_rating`, `case_sub_status`, `dismissal_reason` and "
+            "`close_reason`."
+        ),
+        examples=["urgency"],
+    )
+    tier: int = Field(
+        description=(
+            "Who owns the list's values, one of two numbers. `2`: a library list shared by every bank, "
+            "changed only through a proposal that a second, independent person or agent approves, so every "
+            "write to it answers 202 with that proposal and changes nothing yet. `3`: the bank's own list, "
+            "never shared and never seen by another bank, which a person holding `vocab.manage` changes "
+            "directly. The first tier, the fixed kinds, lives in code and is never a list here."
+        ),
+        examples=[2],
+    )
+    kind: str | None = Field(
+        default=None,
+        description=(
+            "The name of the fixed kind the list's values carry, such as `change_lifecycle_kind` for "
+            "`change_type` or `pill_tone` for `urgency`, and null for a list whose values carry none. It "
+            "names the set that `kinds` spells out."
+        ),
+        examples=["pill_tone"],
+    )
+    kinds: builtins.list[str] = Field(
+        default_factory=builtins.list,
+        description=(
+            "Every value a row of this list may carry in its `kind`, and so the full set for this release: "
+            "kinds are fixed in code and an admin never adds one. Empty for a list whose values carry no "
+            f"kind. Per list, {_KINDS_BY_LIST}"
+        ),
+        examples=[["information", "notice", "positive", "warning", "negative", "brand"]],
+    )
+    count: int = Field(
+        description=(
+            "How many of the list's values are active now and offered by pickers, counting only the "
+            "caller's bank for a bank's own list. Retired values are counted in `retiredCount` instead."
+        ),
+        examples=[4],
+    )
+    retired_count: int = Field(
+        description=(
+            "How many of the list's values were retired or merged away. They stay so the records that carry "
+            "them remain readable, but no picker offers them."
+        ),
+        examples=[0],
+    )
+    proposable: bool = Field(
+        description=(
+            "False for a library list that is reference data, seeded with every deploy and never changed "
+            "through the API (`instrument_level` and `jurisdiction`): a create, suggestion, change, retire, "
+            "restore or merge on it answers 422 `validation_error`. True for every other list, a bank's own "
+            "lists included, which change directly rather than by proposal."
+        ),
+        examples=[True],
+    )
 
 
 class VocabularyListPage(CamelSchema):
-    items: list[VocabularyListEntry]
-    total: int
+    """`GET /vocab`: every vocabulary list the caller can read, in one answer."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "items": [
+                        {
+                            "list": "change_type",
+                            "tier": 2,
+                            "kind": "change_lifecycle_kind",
+                            "kinds": ["pre_adoption", "adopted", "in_force", "supervisory", "recurring"],
+                            "count": 9,
+                            "retiredCount": 0,
+                            "proposable": True,
+                        },
+                        {
+                            "list": "tenant_tag",
+                            "tier": 3,
+                            "kind": None,
+                            "kinds": [],
+                            "count": 3,
+                            "retiredCount": 1,
+                            "proposable": True,
+                        },
+                    ],
+                    "total": 2,
+                }
+            ]
+        }
+    )
+
+    items: list[VocabularyListEntry] = Field(
+        description=(
+            "Every list the caller can read: the library's lists first, then, for a caller signed in to a "
+            "bank, the bank's own lists, in an order that never changes. Not paginated, because the set is "
+            "short and fixed by the product; a platform session outside any bank gets the library's lists only."
+        )
+    )
+    total: int = Field(description="How many lists `items` holds; the whole set always arrives on this one page.")
 
 
 class VocabularyRow(CamelSchema):
-    """One vocabulary row as every surface reads it (playbook 15). `extra` carries the
-    list's own columns (an urgency's ordinal and SLA days, a dimension's
-    `restrictsFootprint`) so one schema serves every list and the contract does not grow a
-    shape per list."""
+    """One value of a vocabulary list as every picker, filter, pill and agent reads it: the
+    key to store and the labels to show. `extra` carries the list's own columns (an
+    urgency's ordinal and SLA days, a dimension's `restrictsFootprint`), so one shape serves
+    every list and the contract does not grow a shape per list."""
 
-    key: str
-    kind: str | None = None
-    label: str
-    labels: dict[str, str] = Field(default_factory=dict)
-    usage_note: str = ""
-    sort_order: int = 0
-    active: bool = True
-    is_system: bool = False
-    is_default: bool = False
-    usage_count: int = 0
-    version: int = 1
-    extra: dict[str, Any] = Field(default_factory=dict)  # schema: VocabularyExtra
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "key": "act_now",
+                    "kind": "negative",
+                    "label": "Act now",
+                    "labels": {"en": "Act now", "sv": "Agera nu"},
+                    "usageNote": "Something must change within weeks.",
+                    "sortOrder": 0,
+                    "active": True,
+                    "isSystem": False,
+                    "isDefault": False,
+                    "usageCount": 0,
+                    "version": 1,
+                    "extra": {"ordinal": 1, "slaDays": 14},
+                }
+            ]
+        }
+    )
+
+    key: str = Field(description=_VOCABULARY_KEY, examples=["act_now"])
+    kind: str | None = Field(
+        default=None,
+        description=(
+            "The fixed kind the value belongs to, on the lists whose values carry one, and null on the others. "
+            "A kind in code, never a vocabulary value: the rules branch on it and an admin never adds one, and "
+            f"`kinds` on the list's entry in `GET /vocab` gives the list's set. Per list, {_KINDS_BY_LIST}"
+        ),
+        examples=["negative"],
+    )
+    label: str = Field(
+        description=(
+            "The value's name in the reader's language: the label in the first of the caller's languages "
+            "that has one (their own, then their bank's, then English), otherwise the original, otherwise "
+            "the key. For display only: a person wrote it and may reword or translate it at any time, so "
+            "nothing may match on it."
+        ),
+        examples=["Act now"],
+    )
+    labels: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Every label the value has, as a map from content language (`en`, `sv`, `da`, `nb` or `fi`) to "
+            "text; a language with no label is absent. `GET /vocab/{list}/{key}` says which one is the "
+            "original and which a machine translated. For display and editing, never for matching."
+        ),
+        examples=[{"en": "Act now", "sv": "Agera nu"}],
+    )
+    usage_note: str = Field(
+        default="",
+        description=(
+            "When to use the value, in the words of whoever added it, shown beside the picker so two people "
+            'choose alike. Guidance, not a rule the server applies; the default "" means nobody wrote one.'
+        ),
+        examples=["Something must change within weeks."],
+    )
+    sort_order: int = Field(
+        default=0,
+        description=(
+            "Where the value sits in its list's pickers and filters, lowest first, with the key settling a tie; "
+            "0 by default. It orders the list and ranks nothing: an urgency's rank is `extra.ordinal`. "
+            "`POST /vocab/{list}/reorder` moves values."
+        ),
+        examples=[0],
+    )
+    active: bool = Field(
+        default=True,
+        description=(
+            "True, the default, while pickers offer the value. False once it was retired or merged away: the "
+            "records that carry it keep it and still show its label, but no picker offers it and "
+            "`GET /vocab/{list}` leaves it out unless `includeRetired` is true."
+        ),
+        examples=[True],
+    )
+    is_system: bool = Field(
+        default=False,
+        description=(
+            "True for a value the product relies on, seeded with the platform: it can be relabelled but never "
+            "retired or merged away, which answers 409 `system_row`. False, the default, for a value an admin "
+            "or an approved proposal added."
+        ),
+        examples=[True],
+    )
+    is_default: bool = Field(
+        default=False,
+        description=(
+            "True for the value the list preselects when nobody chooses one. Set by the platform's seed and not changed through this API; false, the default, for every "
+            "other value."
+        ),
+        examples=[False],
+    )
+    usage_count: int = Field(
+        default=0,
+        description=(
+            "How many records carry the value, counted when the call is answered, so the reach of a rename, "
+            "retire or merge is known before it is made. The default of 0 is also what a list whose users are "
+            "not counted yet answers: today only a bank's tags (`tenant_tag`) and the taxonomy dimensions "
+            "(`term_dimension`) count theirs, so 0 on any other list means not counted, not unused."
+        ),
+        examples=[0],
+    )
+    version: int = Field(
+        default=1,
+        description=(
+            "The value's version: 1 when it was added, the default, and one higher with every change to it, a "
+            "relabel, a retire, a restore or a merge. Send it back as `If-Match` on `PATCH /vocab/{list}/{key}` "
+            "so a change someone made in between is refused with 409 `stale_write` rather than overwritten."
+        ),
+        examples=[1],
+    )
+    extra: dict[str, Any] = Field(  # schema: VocabularyExtra
+        default_factory=dict,
+        description=(
+            f"The list's own columns, camelCased, which only some lists have: {_EXTRA_COLUMNS} An empty object "
+            "for those. Never a tone or a colour: a value's pill tone follows its kind."
+        ),
+        examples=[{"ordinal": 1, "slaDays": 14}],
+    )
 
 
 class VocabularyRowDetail(VocabularyRow):
-    """`GET /vocab/{list}/{key}`: the row plus which label is the original and which are
+    """`GET /vocab/{list}/{key}`: the value plus which label is the original and which are
     machine translations (I18N-01, D-12)."""
 
-    original_language: str | None = None
-    machine_languages: list[str] = Field(default_factory=list)
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "key": "custody",
+                    "kind": None,
+                    "label": "Custody",
+                    "labels": {"en": "Custody", "sv": "Förvaring"},
+                    "usageNote": "Safekeeping and administration of clients' financial instruments.",
+                    "sortOrder": 2,
+                    "active": True,
+                    "isSystem": False,
+                    "isDefault": False,
+                    "usageCount": 12,
+                    "version": 3,
+                    "extra": {},
+                    "originalLanguage": "en",
+                    "machineLanguages": ["sv"],
+                }
+            ]
+        }
+    )
+
+    original_language: str | None = Field(
+        default=None,
+        description=(
+            "The content language the value was first named in (`en`, `sv`, `da`, `nb` or `fi`), which every "
+            "other label translates: English when English was among its first labels, otherwise the language "
+            "they were written in. Null for a value whose labels name no original."
+        ),
+        examples=["en"],
+    )
+    machine_languages: list[str] = Field(
+        default_factory=list,
+        description=(
+            "The content languages whose label a machine translated and no person has confirmed since, so a "
+            "screen can label them as machine output. A person's edit to a label takes its language off this "
+            "list. Empty when a person wrote every label."
+        ),
+        examples=[["sv"]],
+    )
 
 
 class VocabularyRowPage(CamelSchema):
-    items: list[VocabularyRow]
-    total: int
+    """The values of one list, in list order, in one answer."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "items": [
+                        {
+                            "key": "custody",
+                            "kind": None,
+                            "label": "Custody",
+                            "labels": {"en": "Custody", "sv": "Förvaring"},
+                            "usageNote": "Safekeeping and administration of clients' financial instruments.",
+                            "sortOrder": 0,
+                            "active": True,
+                            "isSystem": False,
+                            "isDefault": False,
+                            "usageCount": 12,
+                            "version": 3,
+                            "extra": {},
+                        }
+                    ],
+                    "total": 1,
+                }
+            ]
+        }
+    )
+
+    items: list[VocabularyRow] = Field(
+        description=(
+            "The list's values in list order (`sortOrder`, then key), active ones only unless `includeRetired` "
+            "asked for the retired ones too. They are vocabulary rows, which a bank's admin adds to its own "
+            "lists and a proposal adds to a library list, so read this endpoint for the live set rather than "
+            "keeping a copy. Not paginated: a list is short enough to arrive whole, and a list with no values "
+            "is a 200 with an empty list."
+        )
+    )
+    total: int = Field(description="How many values `items` holds; the whole list always arrives on this one page.")
 
 
 class VocabularyCreateBody(WriteBody):
-    """`key` is optional: it is slugified from the English label when absent, because a
-    person types a label and never a key. `force` is how a holder of vocab.manage insists
-    past the near-duplicate hint (VOC-03, AC-VOC3)."""
+    """The body of `POST /vocab/{list}`: a new value for a list. `key` is optional because a
+    person types a label and never a key; `force` is how a holder of vocab.manage insists
+    past the near-duplicate hint (VOC-03, AC-VOC3). A field this body does not name answers
+    422 rather than being dropped."""
 
-    key: str | None = None
-    labels: dict[str, str]
-    usage_note: str = ""
-    kind: str | None = None
-    sort_order: int | None = None
-    extra: VocabularyExtra = Field(default_factory=dict)
-    force: bool = False
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "labels": {"en": "Custody services", "sv": "Förvaringstjänster"},
+                    "usageNote": "Safekeeping of client assets, including sub-custody arrangements.",
+                    "force": False,
+                }
+            ]
+        }
+    )
+
+    key: str | None = Field(
+        default=None,
+        description=(
+            "The new value's stable key, which every record, filter, saved search and export will store. "
+            f"{_KEY_WRITE} The values are rows of the vocabulary the path names, which an admin may extend, so "
+            "`GET /vocab/{list}` gives the live set."
+        ),
+        examples=["custody_services"],
+    )
+    labels: dict[str, str] = Field(
+        description=(
+            f"{_LABELS_WRITE} The first labels a value gets name its original language: English when English "
+            "is among them, otherwise the one given."
+        ),
+        examples=[{"en": "Custody services", "sv": "Förvaringstjänster"}],
+    )
+    usage_note: str = Field(
+        default="",
+        description=(
+            "When to use the new value, in the writer's words, shown beside the picker; surrounding spaces are "
+            'trimmed. The default "" leaves it without one.'
+        ),
+        examples=["Safekeeping of client assets, including sub-custody arrangements."],
+    )
+    kind: str | None = Field(
+        default=None,
+        description=(
+            "The fixed kind the new value belongs to, on the lists whose values carry one. A kind in code and "
+            "not a vocabulary value: an admin may add values to a list but never a kind, and `kinds` on the "
+            f"list's entry in `GET /vocab` gives the set. Per list, {_KINDS_BY_LIST} A list with kinds needs "
+            "one, except `instrument_level`, and leaving it out or naming another answers 422 `unknown_key` "
+            "with the valid values; a list without kinds ignores this field."
+        ),
+        examples=["supervisory"],
+    )
+    sort_order: int | None = Field(
+        default=None,
+        description=(
+            "Where to place the value in the list, lowest first. Left out, it goes last, one after the "
+            "highest place the list holds."
+        ),
+        examples=[3],
+    )
+    extra: VocabularyExtra = Field(
+        default_factory=dict,
+        description=f"The list's own columns for the new value, where the list has any: {_EXTRA_COLUMNS} {_EXTRA_WRITE}",
+        examples=[{"ordinal": 2, "slaDays": 30}],
+    )
+    force: bool = Field(
+        default=False,
+        description=(
+            "True creates the value even though its label is close to one the list already holds. False, the "
+            "default, refuses such a value with 422 `near_duplicate` and the close matches in `candidates`, so "
+            "a typo like `Custdy` beside `Custody` is caught before it splits the records. It never overrides "
+            "`duplicate_key`: two values never share a key."
+        ),
+        examples=[False],
+    )
 
 
 class VocabularyPatchBody(WriteBody):
-    labels: dict[str, str] | None = None
-    usage_note: str | None = None
-    sort_order: int | None = None
-    extra: VocabularyExtra | None = None
+    """The body of `PATCH /vocab/{list}/{key}` and `PATCH /taxonomy/terms/{termId}`: only
+    what changes. A field left out or null keeps its value; the key never changes."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"labels": {"en": "Custody services"}, "usageNote": "Safekeeping of client assets."}]}
+    )
+
+    labels: dict[str, str] | None = Field(
+        default=None,
+        description=(
+            "The labels to set, per content language (`en`, `sv`, `da`, `nb` or `fi`), merged into those the "
+            "value has: a language named here gets this text and counts as a person's from now on, and a "
+            "language left out keeps its label. Null or absent changes no label. An unknown language answers "
+            "422 `unknown_key`, and a map whose every text is empty 422 `validation_error`. The key stays what "
+            "it was, whatever the labels now say."
+        ),
+        examples=[{"en": "Custody services"}],
+    )
+    usage_note: str | None = Field(
+        default=None,
+        description=(
+            "The new usage note, with surrounding spaces trimmed; an empty string clears it. Null or absent "
+            "leaves it as it is."
+        ),
+        examples=["Safekeeping of client assets."],
+    )
+    sort_order: int | None = Field(
+        default=None,
+        description=(
+            "The value's new place in the list, lowest first. Null or absent leaves it; "
+            "`POST /vocab/{list}/reorder` moves several values at once."
+        ),
+        examples=[1],
+    )
+    extra: VocabularyExtra | None = Field(
+        default=None,
+        description=(
+            f"The list's own columns to change, where the list has any: {_EXTRA_COLUMNS} A column not named "
+            f"keeps its value, and null or absent changes none; a taxonomy term has no such columns and ignores it. "
+            f"{_EXTRA_WRITE}"
+        ),
+        examples=[{"slaDays": 21}],
+    )
 
 
 class VocabularyReorderBody(WriteBody):
-    keys: list[str]
+    """The body of `POST /vocab/{list}/reorder`: the order a person dragged the values into."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"keys": ["custody", "advice", "pension_transfers"]}]})
+
+    keys: list[str] = Field(
+        description=(
+            "The keys of the list's values in the order the screen now shows them, first to last. Values not "
+            "named keep their order after the ones named, and a key named twice counts at its first place. A "
+            "key the list does not hold answers 422 `unknown_key` and nothing moves."
+        ),
+        examples=[["custody", "advice", "pension_transfers"]],
+    )
 
 
 class VocabularyRetireBody(WriteBody):
-    confirm: bool = False
+    """The body of `POST /vocab/{list}/{key}/retire`."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"confirm": True}]})
+
+    confirm: bool = Field(
+        default=False,
+        description=(
+            "True retires the value even though records carry it. False, the default, retires a value nothing "
+            "carries but refuses a used one with 409 `in_use` and its `usageCount`, so the person decides "
+            "knowing how many records keep it. Retiring never touches those records: they keep the value and "
+            "still show its label."
+        ),
+        examples=[True],
+    )
 
 
 class VocabularyRetired(CamelSchema):
-    key: str
-    usage_count: int
-    retired: bool
+    """What `POST /vocab/{list}/{key}/retire` answers for a bank's own list."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"key": "custody", "usageCount": 12, "retired": True}]})
+
+    key: str = Field(description="The key of the value just retired; it never changes and a restore brings it back.", examples=["custody"])
+    usage_count: int = Field(
+        description=(
+            "How many records carry the value. They keep it and still show its label; only the pickers stop "
+            "offering it."
+        ),
+        examples=[12],
+    )
+    retired: bool = Field(
+        description="Always true in this answer: the value is retired and no picker offers it any more.",
+        examples=[True],
+    )
 
 
 class VocabularyRestored(CamelSchema):
-    key: str
-    usage_count: int
-    restored: bool
+    """What `POST /vocab/{list}/{key}/restore` answers for a bank's own list."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"key": "custody", "usageCount": 12, "restored": True}]})
+
+    key: str = Field(description="The key of the value just restored, the same key it had before it was retired.", examples=["custody"])
+    usage_count: int = Field(
+        description="How many records carry the value, which kept it all the while it was retired.",
+        examples=[12],
+    )
+    restored: bool = Field(
+        description="Always true in this answer: the value is active again and pickers offer it.",
+        examples=[True],
+    )
 
 
 class VocabularyMergeBody(WriteBody):
-    into: str
+    """The body of `POST /vocab/{list}/{key}/merge`: the value to keep."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"into": "custody"}]})
+
+    into: str = Field(
+        description=(
+            "The key of the value to keep, on the same list; the records that carry the value in the path move "
+            "to it. Naming that same value answers 422 `validation_error`, and a key the list does not hold "
+            "404 `not_found`."
+        ),
+        examples=["custody"],
+    )
 
 
 class VocabularyMerged(CamelSchema):
     """Both the dry run and the commit answer this shape, so the screen renders one
     preview and one result from the same fields (playbook 15: dry run, preview, commit)."""
 
-    from_: str = Field(alias="from")
-    into: str
-    usage_count: int
-    repointed: int
-    dry_run: bool
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"from": "custody_services", "into": "custody", "usageCount": 5, "repointed": 4, "dryRun": True}]
+        }
+    )
+
+    from_: str = Field(
+        alias="from",
+        description=(
+            "The key of the value merged away. After the merge it is retired, kept only so history stays "
+            "readable, and the records counted in `repointed` carry `into` instead."
+        ),
+        examples=["custody_services"],
+    )
+    into: str = Field(description="The key of the value kept, which the records the merge moved now carry.", examples=["custody"])
+    usage_count: int = Field(
+        description="How many records carried the merged-away value when the call was answered.",
+        examples=[5],
+    )
+    repointed: int = Field(
+        description=(
+            "How many records move to `into` in a preview, or moved in a merge. It can be lower than "
+            "`usageCount`: a record that already carried both values keeps a single link to `into`, so "
+            "nothing is counted twice."
+        ),
+        examples=[4],
+    )
+    dry_run: bool = Field(
+        description=(
+            "True when this is a preview: nothing changed and no audit event was written. False when the merge "
+            "was made."
+        ),
+        examples=[True],
+    )
 
 
 class VocabularySuggestBody(WriteBody):
-    key: str | None = None
-    labels: dict[str, str]
-    usage_note: str = ""
+    """The body of `POST /vocab/{list}/suggest`: a value a member without `vocab.manage`
+    wants added."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "labels": {"en": "Pension transfers"},
+                    "usageNote": "Moving an occupational pension from one provider to another.",
+                }
+            ]
+        }
+    )
+
+    key: str | None = Field(
+        default=None,
+        description=f"The key the value would get. {_KEY_WRITE}",
+        examples=["pension_transfers"],
+    )
+    labels: dict[str, str] = Field(description=_LABELS_WRITE, examples=[{"en": "Pension transfers"}])
+    usage_note: str = Field(
+        default="",
+        description=(
+            "Why the value is needed, in the member's words, which the admin reads in the inbox; surrounding "
+            'spaces are trimmed. The default "" sends none.'
+        ),
+        examples=["Moving an occupational pension from one provider to another."],
+    )
 
 
 class VocabularySuggestionRow(CamelSchema):
-    id: UUID
-    list: str
-    key: str
-    labels: dict[str, str] = Field(default_factory=dict)
-    usage_note: str = ""
-    suggested_by: PersonRef | None = None
-    status: str
-    created_at: datetime
+    """One suggestion in a bank's own inbox: a value a member asked an admin to add. The
+    bank's own data, never shared with another bank or with the platform."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "6d2f9a14-8b3e-4c71-a5d0-3e9b1f7c2a58",
+                    "list": "tenant_tag",
+                    "key": "pension_transfers",
+                    "labels": {"en": "Pension transfers"},
+                    "usageNote": "Moving an occupational pension from one provider to another.",
+                    "suggestedBy": {"id": "0b7e4c2d-9f61-4a38-b5e2-7c1d8a3f6e90", "name": "Oskar Lund"},
+                    "status": "pending",
+                    "createdAt": "2026-09-18T10:12:00Z",
+                }
+            ]
+        }
+    )
+
+    id: UUID = Field(
+        description=(
+            "The suggestion, as `POST /vocab/{list}/suggestions/{suggestionId}/decline` addresses it: a UUID "
+            "the server assigns once and never changes."
+        ),
+        examples=["6d2f9a14-8b3e-4c71-a5d0-3e9b1f7c2a58"],
+    )
+    list: str = Field(
+        description="The name of the bank's own list the suggestion is for, such as `tenant_tag`.",
+        examples=["tenant_tag"],
+    )
+    key: str = Field(
+        description=(
+            "The key the value would get. An admin who creates a value with this key on the list answers the "
+            "suggestion, and every other waiting suggestion for the same key, at once."
+        ),
+        examples=["pension_transfers"],
+    )
+    labels: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "The labels the member suggested, per content language (`en`, `sv`, `da`, `nb` or `fi`), as they "
+            "typed them apart from surrounding spaces."
+        ),
+        examples=[{"en": "Pension transfers"}],
+    )
+    usage_note: str = Field(
+        default="",
+        description='Why the member wants the value, in their own words; the default "" means they gave no reason.',
+        examples=["Moving an occupational pension from one provider to another."],
+    )
+    suggested_by: PersonRef | None = Field(
+        default=None,
+        description=(
+            "The member who suggested it, by id and name, the only personal data a suggestion carries. Always "
+            "set on a suggestion this API returns."
+        ),
+    )
+    status: str = Field(
+        description=(
+            "Where the suggestion stands, a fixed kind and not a vocabulary: `pending` while it waits in the "
+            "admin's inbox, `accepted` once an admin created a value with its key, and `declined` once an admin "
+            "turned it down. Only a `pending` suggestion is listed in the inbox."
+        ),
+        examples=["pending"],
+    )
+    created_at: datetime = Field(
+        description="When the member sent it: a UTC timestamp, date and time together. The inbox is worked oldest first by it.",
+        examples=["2026-09-18T10:12:00Z"],
+    )
 
 
 class VocabularySuggestionPage(CamelSchema):
@@ -531,7 +1150,14 @@ class FootprintDryRun(CamelSchema):
 # Query parameters: camelCase on the wire like every other name (`includeRetired`, `dryRun`)
 # ---------------------------------------------------------------------------------------
 class VocabularyQuery(CamelSchema):
-    include_retired: bool = False
+    include_retired: bool = Field(
+        default=False,
+        description=(
+            "True also returns the values that were retired or merged away, each with `active` false, which "
+            "an admin screen needs to restore one. False, the default, returns only what pickers offer."
+        ),
+        examples=[True],
+    )
 
 
 class TaxonomyTermQuery(CamelSchema):
@@ -540,7 +1166,16 @@ class TaxonomyTermQuery(CamelSchema):
 
 
 class VocabularyMergeQuery(CamelSchema):
-    dry_run: bool = False
+    dry_run: bool = Field(
+        default=False,
+        description=(
+            "True previews the merge and changes nothing: the answer is a 200 with how many records would "
+            "move, no proposal is filed and no audit event is written, on a library list as on a bank's own. "
+            "False, the default, makes the merge on a bank's own list (200) or files it as a proposal on a "
+            "library list (202)."
+        ),
+        examples=[True],
+    )
 
 
 class FootprintRequestQuery(CamelSchema):
