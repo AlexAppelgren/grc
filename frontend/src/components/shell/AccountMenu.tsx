@@ -63,11 +63,8 @@ export function useInterfaceLanguages(): { options: LanguageRef[]; choose: (key:
 /** Signs out, then leaves for sign in whatever the server answered. The rail's menu and the More sheet share it. */
 export function useSignOutToSignIn(): { pending: boolean; signOut: () => void } {
   const router = useRouter();
-  const signOut = useSignOut();
-  return {
-    pending: signOut.isPending,
-    signOut: () => signOut.mutate(undefined, { onSettled: () => router.replace('/sign-in') }),
-  };
+  const signOut = useSignOut(() => router.replace('/sign-in'));
+  return { pending: signOut.isPending, signOut: () => signOut.mutate() };
 }
 
 export function AccountMenu() {
