@@ -141,6 +141,8 @@ function serve(answer: ObligationDetail | number) {
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path.endsWith('/diff')) return { status: 200, data: versionDiff };
+    // The record's "Reported problems" (AUD-03): the bank has filed none on it.
+    if (sent.path === '/api/v1/problem-reports') return { status: 200, data: { items: [], total: 0 } };
     if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
     // "As of" a date before version 2 is the same record read again; the
@@ -451,9 +453,25 @@ describe('ObligationScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
     expect(await screen.findByText('Report sent. Thank you.')).toBeInTheDocument();
     // What was on screen rides along: the version and the language being read.
-    expect(sent.filter((call) => call.path.endsWith('/problem-reports')).map((call) => call.body)).toEqual([
+    expect(sent.filter((call) => call.method === 'post' && call.path.endsWith('/problem-reports')).map((call) => call.body)).toEqual([
       { description: 'The English says annually.', language: 'en', versionNumber: 1 },
     ]);
+  });
+
+  it('shows the record\'s reported problems, and reads them again once a report is filed', async () => {
+    const sent = serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    const section = await screen.findByRole('heading', { name: 'Reported problems' });
+    expect(section.closest('[data-problem-reports]')).not.toBeNull();
+    expect(await screen.findByText('No problems reported on this record.')).toBeInTheDocument();
+    const reads = () => sent.filter((call) => call.path === '/api/v1/problem-reports');
+    expect(reads().map((call) => call.params)).toEqual([{ subjectType: 'obligation', subjectId: 'ob-1', limit: 20, offset: 0 }]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'This looks wrong' }));
+    fireEvent.change(await screen.findByLabelText('What you see'), { target: { value: 'The English says annually.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(reads()).toHaveLength(2));
   });
 });
 

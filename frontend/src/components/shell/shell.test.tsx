@@ -673,7 +673,7 @@ describe('the console surface and the helpers', () => {
     }
   });
 
-  it('draws their own icons for the console destinations that join the rail next', () => {
+  it('draws its own icon for the console tenants destination, and none for a problem-report surface', () => {
     const paths = (id: string) => {
       const { container, unmount } = render(<NavIcon id={id} />);
       const d = [...container.querySelectorAll('path')].map((p) => p.getAttribute('d'));
@@ -681,9 +681,9 @@ describe('the console surface and the helpers', () => {
       return d;
     };
     const dot = paths('no-such-destination');
-    for (const id of ['console-tenants', 'console-problem-reports']) {
-      expect(paths(id)).not.toEqual(dot);
-    }
+    expect(paths('console-tenants')).not.toEqual(dot);
+    // A bank's problem report stays inside the bank (D-50): the console has no surface for one.
+    expect(paths('console-problem-reports')).toEqual(dot);
   });
 
   it('groups destinations in the rail order and drops empty groups', () => {
