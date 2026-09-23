@@ -545,6 +545,7 @@ Nothing waits for these; each has the default the build took.
       filed it, while a bank today sees only the proposals it filed itself. Default: the
       library read policy on `ai_generation` leaves `agent_review` out, the platform
       alone reads those rows, and a bank still sees on the record itself which agents
-      proposed and confirmed it (D-62). Say if a bank should read the reasoning behind a
+      proposed and confirmed it (D-62). A watch item's curation confirmation (D-74)
+      follows the same rule, although the item is one every bank reads. Say if a bank should read the reasoning behind a
       record it relies on. That would take a narrower read, for example the decisions on
       applied proposals only, and never the rejections of other banks' filings.

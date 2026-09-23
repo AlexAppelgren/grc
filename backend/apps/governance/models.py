@@ -45,9 +45,9 @@ class AiPurpose(enum.StrEnum):
     correcting or rejecting a proposal, or confirming a watch item's curation — which the
     agent reports with the decision (`AgentDecision`, D-80). Its row is always marked
     `model_metadata_reported_by_agent` and names the run and the record decided, which a
-    check constraint holds, and no bank reads it: it is about the proposal queue, where a
-    bank sees only what it filed itself, so the library read policy leaves it to the
-    platform. A machine's approval is never logged as one of the drafting purposes above,
+    check constraint holds, and no bank reads it: a decision on a proposal is about the
+    queue, where a bank sees only what it filed itself, and a curation confirmation follows
+    the same one rule, so the library read policy leaves it to the platform. A machine's approval is never logged as one of the drafting purposes above,
     so the log can tell a draft from a decision."""
 
     SO_WHAT = "so_what"

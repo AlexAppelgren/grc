@@ -13,9 +13,10 @@ machine's decision from a machine's draft. Three things change:
   run it was made in and names the record it decided, so no caller can log a decision
   nobody can trace.
 - The library read policy. Every bank reads the rows with no tenant, and a decision is
-  one of them, because the deciding agent's run is the platform's. But it is about the
-  proposal queue, where a bank sees only what it filed itself, so `library_rows_visible`
-  now leaves `agent_review` out. The platform still reads it through `tenant_isolation`,
+  one of them, because the deciding agent's run is the platform's. But a decision on a
+  proposal is about the queue, where a bank sees only what it filed itself, and a
+  curation confirmation follows the same one rule, so `library_rows_visible` now leaves
+  `agent_review` out. The platform still reads it through `tenant_isolation`,
   the own-zone rule of a session with no tenant. The write rule does not change."""
 
 from django.db import migrations, models
