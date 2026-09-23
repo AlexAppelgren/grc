@@ -26,9 +26,9 @@ const APPROPRIATENESS_TITLE = 'Add version 2 of the appropriateness assessment o
 const COSTS_CHARGES_TITLE = 'Add version 2 of the costs and charges obligation, extending it to professional clients';
 // PRO-S7 (e2e_seed.py PRO_S7_OBLIGATION): the proposal the console decides, and the
 // duty's own title the bank then reads it under, never the proposal's.
-const PENSION_TRANSFER_TITLE = 'Add version 2 of the pension transfer obligation, with a one-month deadline for the transfer';
-const PENSION_TRANSFER_SOURCE = 'Riksdagen, Försäkringsavtalslagen (2005:104), consolidated text';
-const PENSION_TRANSFER_OBLIGATION = "Honour the policyholder's right to transfer pension insurance savings";
+const AUTOMATED_DECISIONS_TITLE = 'Add version 2 of the automated decisions obligation, with a review by a person within one month';
+const AUTOMATED_DECISIONS_SOURCE = 'EUR-Lex, Regulation (EU) 2016/679, Article 22, consolidated text';
+const AUTOMATED_DECISIONS_OBLIGATION = 'Apply safeguards to solely automated decisions with significant effects';
 // The console's destinations, read from the registry (src/shared/navigation/registry.ts)
 // and never from a list written here, as ADM-S4 reads them.
 const CONSOLE_HREFS: readonly string[] = destinations.filter((d) => d.surface === 'console').map((d) => d.href);
@@ -181,11 +181,11 @@ test.describe('proposals journeys', () => {
     // The editor opens the queue in the console and reads the source beside what changes
     // before approving with a passkey. A retry finds the proposal already applied.
     await signInAs(page, LOGINS.editor);
-    await openProposal(page, new RegExp(PENSION_TRANSFER_TITLE));
+    await openProposal(page, new RegExp(AUTOMATED_DECISIONS_TITLE));
     const proposal = page.locator('[data-proposal]');
     await expect(proposal.locator('[data-proposal-changes]')).toBeVisible();
-    await expect(proposal).toContainText(PENSION_TRANSFER_SOURCE);
-    await expect(proposal.locator('a[href="https://www.riksdagen.se/"]').first()).toBeVisible();
+    await expect(proposal).toContainText(AUTOMATED_DECISIONS_SOURCE);
+    await expect(proposal.locator('a[href="https://eur-lex.europa.eu/"]').first()).toBeVisible();
     await approveAndApply(page);
     // The console offers no surface for a bank's problem report: its rail draws only the
     // registry's console destinations, the queue among them, and the registry holds none
@@ -211,14 +211,14 @@ test.describe('proposals journeys', () => {
     // the proposal's, and says it looks wrong through the same form the obligation card uses.
     await page.goto('/inventory/updates');
     await expect(page.locator('[data-update-days]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
-    const row = page.locator('[data-update-id]').filter({ has: page.getByRole('heading', { level: 3, name: PENSION_TRANSFER_OBLIGATION, exact: true }) }).first();
+    const row = page.locator('[data-update-id]').filter({ has: page.getByRole('heading', { level: 3, name: AUTOMATED_DECISIONS_OBLIGATION, exact: true }) }).first();
     await expect(row).toBeVisible();
-    await expect(row).not.toContainText(PENSION_TRANSFER_TITLE);
+    await expect(row).not.toContainText(AUTOMATED_DECISIONS_TITLE);
     await expect(row.getByRole('link', { name: 'Show what changed' })).toHaveAttribute('href', /^\/inventory\/obligations\/[0-9a-f-]{36}$/);
     await row.getByRole('button', { name: 'This looks wrong' }).click();
     const dialog = page.getByRole('dialog', { name: 'What looks wrong?' });
     await expect(dialog.getByText('Colleagues in your organisation read this and take it up. It reaches nobody outside your organisation.')).toBeVisible();
-    await dialog.getByLabel('What you see').fill('The one-month deadline is not in the consolidated text we read.');
+    await dialog.getByLabel('What you see').fill('The one-month review period is not in the consolidated text we read.');
     await dialog.getByRole('button', { name: 'Send report' }).click();
     await expect(dialog.getByText('Report sent. Thank you.')).toBeVisible();
     await dialog.getByRole('button', { name: 'Done' }).click();

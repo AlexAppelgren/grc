@@ -394,11 +394,13 @@ def seed_pending_footprint_request(tenants: list[Tenant]) -> int:
 # --- library-updates-frontend (PRO-S7) ---------------------------------------------------
 # PRO-S7 approves its proposal and then finds the change on the bank's "Library updates" by
 # the duty's own title. Its target was obl-isk-control-statements until SRC-S3
-# (search.journey.spec.ts) came to name that duty's title, so it is now the pension transfer
-# right: version 1 only, inside tenant A's footprint with or without Advice (J-6 switches
-# Advice off while other journeys run), and named by no other spec or seed.
-PRO_S7_OBLIGATION = "obl-pension-transfer-right"
-PENSION_TRANSFER_RUN = uuid.UUID("00000000-0000-4000-9000-000000000005")
+# (search.journey.spec.ts) came to name that duty's title, and then the pension transfer
+# right until FP-S4 took that duty as the one record outside tenant A's scope
+# (`EXPECTED_OUTSIDE_SCOPE`), so it is now the safeguards on automated decisions: version 1
+# only, inside tenant A's footprint with or without Advice (J-6 switches Advice off while
+# other journeys run), and named by no other spec or seed.
+PRO_S7_OBLIGATION = "obl-gdpr-article-22"
+AUTOMATED_DECISIONS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000005")
 # --- end library-updates-frontend ---------------------------------------------------------
 AGENT_MODEL = "agent pipeline 0.4"
 # The library editor who files PRO-S5's proposal; the second editor decides everything else.
@@ -428,7 +430,7 @@ EXPECTED_PROPOSALS: tuple[SeedProposal, ...] = (
     SeedProposal("PRO-S3", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-appropriateness", APPROPRIATENESS_RUN),
     SeedProposal("PRO-S4", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-costs-charges", COSTS_CHARGES_RUN),
     SeedProposal("PRO-S9", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-client-assets", CLIENT_ASSETS_RUN),
-    SeedProposal("PRO-S7", ProposalKind.NEW_OBLIGATION_VERSION.value, PRO_S7_OBLIGATION, PENSION_TRANSFER_RUN),
+    SeedProposal("PRO-S7", ProposalKind.NEW_OBLIGATION_VERSION.value, PRO_S7_OBLIGATION, AUTOMATED_DECISIONS_RUN),
     SeedProposal("PRO-S5", ProposalKind.VOCABULARY_RELABEL.value, "flag:ai", proposed_by_email=LIBRARY_EDITOR_EMAIL),
 )
 
@@ -663,24 +665,25 @@ def seed_proposals() -> int:
     # library-updates-frontend (PRO-S7): see PRO_S7_OBLIGATION above.
     _propose_obligation_version(
         obligation=PRO_S7_OBLIGATION,
-        agent_run=PENSION_TRANSFER_RUN,
-        title="Add version 2 of the pension transfer obligation, with a one-month deadline for the transfer",
+        agent_run=AUTOMATED_DECISIONS_RUN,
+        title="Add version 2 of the automated decisions obligation, with a review by a person within one month",
         summaries={
             "sv": (
-                "En försäkringstagare får flytta värdet av en pensionsförsäkring till ett annat "
-                "försäkringsföretag. Försäkringsföretaget ska genomföra flytten inom en månad från "
-                "begäran, och avgiften för flytten får inte överstiga företagets kostnad för att "
-                "genomföra den."
+                "Den registrerade får begära att en person granskar ett beslut som enbart grundas på "
+                "automatiserad behandling och som i betydande grad påverkar den registrerade. Banken "
+                "förklarar logiken bakom beslutet, låter den registrerade framföra sin synpunkt och "
+                "låter en person granska beslutet inom en månad från begäran."
             ),
             "en": (
-                "A policyholder may transfer the value of a pension insurance to another insurer. The "
-                "insurer completes the transfer within one month of the request, and the fee for the "
-                "transfer may not exceed the insurer's own cost of carrying it out."
+                "A data subject may ask that a person review a decision based solely on automated "
+                "processing that significantly affects them. The bank explains the logic behind the "
+                "decision, lets the data subject state their view and has a person review the decision "
+                "within one month of the request."
             ),
         },
         effective_from="2027-01-01",
-        source_label="Riksdagen, Försäkringsavtalslagen (2005:104), consolidated text",
-        source_url="https://www.riksdagen.se/",
+        source_label="EUR-Lex, Regulation (EU) 2016/679, Article 22, consolidated text",
+        source_url="https://eur-lex.europa.eu/",
     )
     _propose_flag_relabel()
     return len(EXPECTED_PROPOSALS)
