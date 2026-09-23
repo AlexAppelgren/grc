@@ -23,6 +23,7 @@ export function factsOf(obligation: Obligation): ObligationFacts {
   return {
     instrument: { key: obligation.instrument.key, label: obligation.instrument.shortName },
     binding: obligation.binding,
+    levelKind: obligation.bindingLevel.kind,
     complianceStatus: obligation.complianceStatus ?? undefined,
     changeWaitingForApproval: obligation.pendingApplicability === true,
     openChangeCount: obligation.openChangeCount,
