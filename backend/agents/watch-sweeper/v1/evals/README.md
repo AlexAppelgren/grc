@@ -19,7 +19,8 @@ classifier that drives this prompt and records the first baseline with `--record
   medical-device rule, a construction-safety rule, an environmental permit and a revision
   of ISO 14001, an environmental management standard) expect `false`, no regime and no
   term, and carry the check `counted_out_of_scope`. The gate scores in-scope accuracy on
-  every row.
+  every row, with a tolerance of 0. The text is still read whole, so an off-sector row
+  still expects the change type its text describes.
 - **Standards.** Publication facts only: a standard's requirements, clause and control
   numbers and titles are never fetched, quoted, summarised, translated or restated, a
   blocked page is a failed source check that is never worked around, an inactive

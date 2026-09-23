@@ -71,9 +71,13 @@ vocabularies_read_at_run_start:
 
 # What the run must emit for every classification (WAT-03, WAT-04).
 classification_contract:
-  fields: [change_type, suggested_urgency, flags, terms, obligation_links, risk_flags]
+  fields: [in_scope, change_type, suggested_urgency, flags, terms, standard_terms, obligation_links, risk_flags]
   confidence: 0.0 to 1.0 on change_type, on each flag and on each obligation link
   status: suggestion until a person confirms it in the app
+  # AGT-08. in_scope false sets the document aside: counted as outOfScope, nothing registered
+  # or proposed, though the text is still read whole and its change type still named.
+  # standard_terms holds the opt-in standard:<key> term, on a standard's own record only and
+  # never on a law that cites one.
 
 # Screen for embedded instructions (AGT-07). Applied to every fetched body before any
 # other reading of it. A hit marks the document risk_flags ["embedded_instructions"];
