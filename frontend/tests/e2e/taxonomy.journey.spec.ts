@@ -409,49 +409,67 @@ test.describe('taxonomy journeys', () => {
     // waiting (the seed leaves one for J-6) before it branches.
     test.describe.configure({ mode: 'default' });
 
-    /** Opens the footprint as the officer, withdrawing a request of theirs that is still waiting. */
+    /** Opens the scope as the officer, withdrawing a request of theirs that is still waiting. */
     async function officerStartsClean(page: Page): Promise<void> {
       await page.goto('/admin/footprint');
       // The banner's text spans lines (pill, title, sentence), so the match is unanchored.
       const mine = page.locator('[data-pending-request]').filter({ hasText: /You requested this on/ });
-      const dimensions = page.locator('[data-footprint-dimensions]');
-      await expect(mine.or(dimensions).first()).toBeVisible();
+      const groups = page.locator('[data-footprint-dimensions]');
+      await expect(mine.or(groups).first()).toBeVisible();
       if ((await mine.count()) > 0) {
         await mine.getByRole('button', { name: 'Withdraw' }).click();
+        await expect(page.getByText('Withdrawn.', { exact: true })).toBeFocused();
         await expect(page.locator('[data-pending-request]')).toHaveCount(0);
       }
     }
 
-    function adviceChip(page: Page) {
-      return page.locator(`[data-dimension="${SERVICES}"]`).getByRole('button', { name: /^Advice$/ });
+    /** Advice in the read state: a glyph and the label, with "In our scope" or "Not in our scope" for a screen reader. Found by key: terms are rows. */
+    function adviceItem(page: Page) {
+      return page.locator(`[data-dimension="${SERVICES}"] [data-term="advice"]`);
     }
 
-    async function officerSwitchesOffAdvice(page: Page): Promise<void> {
-      await expect(adviceChip(page)).toHaveAttribute('aria-pressed', 'true');
-      await adviceChip(page).click();
+    function adviceCheckbox(page: Page) {
+      return page.locator(`[data-dimension="${SERVICES}"]`).getByRole('checkbox', { name: /^Advice$/ });
+    }
+
+    async function officerRemovesAdvice(page: Page): Promise<void> {
+      // Read-only until asked: Advice is held, and nothing on the page is a checkbox.
+      await expect(adviceItem(page)).toHaveText(/^Advice In our scope$/);
+      await expect(page.locator('[data-footprint-dimensions]').getByRole('checkbox')).toHaveCount(0);
+      await page.getByRole('button', { name: 'Propose a change' }).click();
+      await expect(adviceCheckbox(page)).toBeChecked();
+      await adviceCheckbox(page).uncheck();
       const draft = page.locator('[data-draft-preview]');
-      await expect(draft.getByText('Your change: Switch off Advice')).toBeVisible();
+      await expect(draft.getByRole('heading', { name: 'Your change: Remove Advice' })).toBeVisible();
       const hides = draft.locator('[data-preview-side="hides"]');
+      const reveals = draft.locator('[data-preview-side="reveals"]');
       await expect(hides.getByText('Hides')).toBeVisible();
-      await expect(draft.locator('[data-preview-side="reveals"]').getByText('Reveals')).toBeVisible();
+      await expect(reveals.getByText('Reveals')).toBeVisible();
       await expect(draft.getByText('Loading…')).toHaveCount(0);
       // J-6: the preview counts what the change would take away, and the count
       // is not zero — one seeded obligation reaches this bank through Advice
       // alone. Counts only: the preview never names the records.
       await expect(hides.getByText(/^[1-9]\d* obligations?$/)).toBeVisible();
       await expect(hides.getByText('Nothing.')).toHaveCount(0);
-      await draft.getByRole('button', { name: 'Send for approval' }).click();
-      await expect(page.getByText('Sent for approval.')).toBeVisible();
+      // FP-S2: any that would appear are counted too, and cases are not counted yet, on either side.
+      await expect(reveals.getByText(/^(\d+ obligations?|Nothing\.)$/)).toBeVisible();
+      await expect(hides.getByText('Open cases: not counted yet')).toBeVisible();
+      await expect(reveals.getByText('Open cases: not counted yet')).toBeVisible();
+      // It hides something, so the panel says once what that means for every member.
+      await expect(draft.getByText('What this hides leaves the feed, the inventory, the roadmap and the briefing for every member.')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Cancel' })).toHaveCount(1);
+      await draft.getByRole('button', { name: 'Request approval' }).click();
+      await expect(page.getByText('Sent for approval.', { exact: true })).toBeFocused();
       const banner = page.locator('[data-pending-request]');
       await expect(banner.getByText('Waiting for approval')).toBeVisible();
-      await expect(banner.getByText('Switch off Advice')).toBeVisible();
+      await expect(banner.getByText('Remove Advice')).toBeVisible();
       // Four eyes on screen: the requester is offered Withdraw, never Approve.
       await expect(banner.getByRole('button', { name: 'Approve' })).toHaveCount(0);
       await expect(banner.getByRole('button', { name: 'Withdraw' })).toBeVisible();
-      // While it waits, the chips are read-only and Advice is struck.
-      await expect(page.getByText('While a request is waiting for approval, the terms cannot be changed.')).toBeVisible();
-      await expect(adviceChip(page)).toBeDisabled();
-      await expect(adviceChip(page)).toHaveAttribute('data-struck', '');
+      // While it waits, nothing is a control and Advice carries the change it waits for.
+      await expect(page.getByRole('button', { name: 'Propose a change' })).toHaveCount(0);
+      await expect(page.locator('[data-footprint-dimensions]').getByRole('checkbox')).toHaveCount(0);
+      await expect(adviceItem(page).getByText('Removed when approved')).toBeVisible();
     }
 
     async function approveWithPasskey(approver: Page): Promise<void> {
@@ -478,29 +496,36 @@ test.describe('taxonomy journeys', () => {
       await officerStartsClean(page);
       await expect(page.getByRole('heading', { level: 1, name: 'Regulatory scope' })).toBeVisible();
 
-      await officerSwitchesOffAdvice(page);
+      await officerRemovesAdvice(page);
       // The stored request shows its counted preview on demand.
-      await page.locator('[data-pending-request]').getByRole('button', { name: 'See the preview' }).click();
+      const seePreview = page.locator('[data-pending-request]').getByRole('button', { name: 'See the preview' });
+      await expect(seePreview).toHaveAttribute('aria-expanded', 'false');
+      await seePreview.click();
+      await expect(seePreview).toHaveAttribute('aria-expanded', 'true');
       await expect(page.locator('[data-pending-preview]').getByText('Hides')).toBeVisible();
 
-      // The second person decides: here, a rejection with a reason.
+      // The second person decides: here, a rejection, which needs a reason.
       const approver = await secondPerson(browser, apiGuard, testInfo, LOGINS.approver);
       await approver.goto('/admin/footprint');
       const banner = approver.locator('[data-pending-request]');
       await expect(banner.getByText(/^Requested by .+, .+\./)).toBeVisible();
       await banner.getByRole('button', { name: 'Reject' }).click();
       const dialog = approver.getByRole('dialog', { name: 'Reject this change' });
+      await dialog.getByRole('button', { name: 'Reject' }).click();
+      await expect(dialog.getByText('Give a reason.')).toBeVisible();
+      await expect(dialog.getByLabel('Reason')).toBeFocused();
+      await expect(dialog.getByLabel('Reason')).toHaveAttribute('aria-invalid', 'true');
       await dialog.getByLabel('Reason').fill('We still advise in private banking');
       await dialog.getByRole('button', { name: 'Reject' }).click();
-      await expect(approver.getByText('Rejected.')).toBeVisible();
+      await expect(approver.getByText('Rejected.', { exact: true })).toBeFocused();
       await expect(approver.locator('[data-history-entry="rejected"]').first()).toBeVisible();
       await approver.context().close();
 
-      // Rejected, so Advice is still held and the officer may change the terms again.
+      // Rejected, so Advice is still held and the officer may propose a change again.
       await page.reload();
       await expect(page.locator('[data-pending-request]')).toHaveCount(0);
-      await expect(adviceChip(page)).toHaveAttribute('aria-pressed', 'true');
-      await expect(adviceChip(page)).toBeEnabled();
+      await expect(adviceItem(page)).toHaveText(/^Advice In our scope$/);
+      await expect(page.getByRole('button', { name: 'Propose a change' })).toBeVisible();
     });
 
     test.fixme("FP-S4: Every surface respects the footprint and offers a way to look outside it", async () => {
@@ -531,14 +556,14 @@ test.describe('taxonomy journeys', () => {
       apiGuard.allow(/\/api\/v1\/tenant\/footprint\/requests\/[^/]+\/approve$/, 403, 'the first attempt answers step_up_required and opens the prompt');
       await signInAs(page, LOGINS.complianceOfficer);
       await officerStartsClean(page);
-      await officerSwitchesOffAdvice(page);
+      await officerRemovesAdvice(page);
 
       const approver = await secondPerson(browser, apiGuard, testInfo, LOGINS.approver);
       try {
         await approveWithPasskey(approver);
         await expect(approver.locator('[data-history-entry="approved"]').first()).toBeVisible();
         await page.reload();
-        await expect(adviceChip(page)).toHaveAttribute('aria-pressed', 'false');
+        await expect(adviceItem(page)).toHaveText(/^Advice Not in our scope$/);
 
         // J-6 on the inventory: the obligation the change hides is gone, the
         // rest of the library still reads, and "Show outside our scope" brings
@@ -549,15 +574,16 @@ test.describe('taxonomy journeys', () => {
 
         await page.getByRole('button', { name: 'Show outside our scope' }).click();
         await expect(adviceOnlyRow(page)).toHaveAttribute('data-outside-footprint', '');
-        await expect(adviceOnlyRow(page).getByText('Outside your scope: Advice')).toBeVisible();
+        await expect(adviceOnlyRow(page).getByText('Outside our scope: Advice')).toBeVisible();
       } finally {
-        // Put Advice back through the same door, so the footprint reads as seeded.
+        // Put Advice back through the same door, so the scope reads as seeded.
         await page.goto('/admin/footprint');
-        await expect(page.locator('[data-footprint-dimensions]')).toBeVisible();
-        if ((await page.locator('[data-pending-request]').count()) === 0 && (await adviceChip(page).getAttribute('aria-pressed')) === 'false') {
-          await adviceChip(page).click();
-          await page.locator('[data-draft-preview]').getByRole('button', { name: 'Send for approval' }).click();
-          await expect(page.getByText('Sent for approval.')).toBeVisible();
+        await expect(adviceItem(page)).toBeVisible();
+        if ((await page.locator('[data-pending-request]').count()) === 0 && /Not in our scope/.test((await adviceItem(page).textContent()) ?? '')) {
+          await page.getByRole('button', { name: 'Propose a change' }).click();
+          await adviceCheckbox(page).check();
+          await page.locator('[data-draft-preview]').getByRole('button', { name: 'Request approval' }).click();
+          await expect(page.getByText('Sent for approval.', { exact: true })).toBeFocused();
           await approveWithPasskey(approver);
         }
         await approver.context().close();

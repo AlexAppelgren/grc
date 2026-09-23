@@ -3,36 +3,17 @@ import type { PresentedPill } from '@/features/shared/presentation-types';
 import { slotTone } from '@/features/shared/tone-by-kind';
 import type { Translate } from '@/shared/i18n';
 import type { FormatContext } from '@/shared/utils/format';
-import { formatDate } from '@/shared/utils/format';
+import { formatDateTime } from '@/shared/utils/format';
 
 import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, FootprintPreviewCount, FootprintRequestStatus, TaxonomyTerm, TermChange, TermRef } from './types';
 
-// Pills and derived facts for the footprint screen
-// (design/screens/admin-footprint.html; FP-01, FP-02, AC-FP1). A scope term
-// is always a brand pill. "Every service" stands for a dimension with every
-// term selected; an empty dimension is plain text, because empty means no
-// restriction (pills-and-labels.md, "Scope block").
+// Derived facts and pills for the regulatory scope screen
+// (design/screens/admin-footprint.html; FP-01, FP-02, AC-FP1). The page reads
+// the scope as groups of terms, held or not; an empty group means no
+// restriction, and a term a waiting request changes carries a warning pill.
 
 export const FOUR_EYES_CODE = 'four_eyes_violation';
 export const REQUEST_PENDING_CODE = 'request_pending';
-
-export interface PresentedScope {
-  pills: PresentedPill[];
-  /** Set when the dimension holds no term: the text to show instead of pills. */
-  emptyText: string | null;
-}
-
-export function presentScope(dimension: Pick<TermRef, 'label'>, terms: readonly TermRef[], allSelected: boolean, t: Translate): PresentedScope {
-  if (terms.length === 0) return { pills: [], emptyText: t('footprint.notRestricted') };
-  if (allSelected) {
-    return { pills: [{ key: 'scope:all', label: t('footprint.allSelected', { dimension: dimension.label.toLowerCase() }), tone: slotTone.scopeTerm, order: 0 }], emptyText: null };
-  }
-  return { pills: terms.map((term, i) => ({ key: `term:${term.key}`, label: term.label, tone: slotTone.scopeTerm, order: i })), emptyText: null };
-}
-
-export function presentFootprintDimension(dimension: FootprintDimension, t: Translate): PresentedScope {
-  return presentScope(dimension.dimension, dimension.terms, dimension.allSelected, t);
-}
 
 export interface ScopeGroupRow {
   term: TermRef;
@@ -44,21 +25,25 @@ export interface ScopeGroup {
   rows: ScopeGroupRow[];
 }
 
-/** The read-state groups (REGULATORY_SCOPE.md 4.2): a dimension appears only when it
- * restricts the footprint and currently holds at least one term — an unrestricting
- * dimension (channel, lifecycle stage, theme) and a termless one both stay off the page,
- * because neither ever narrows what a member sees. Each kept dimension lists every term
- * the picker offers, held or not, in dimension order. */
+/** The groups the page shows (REGULATORY_SCOPE.md 4.2): a dimension appears when it
+ * restricts the scope and has a term to show. Channel, lifecycle stage and theme never
+ * restrict, and a dimension with nothing to show has nothing to offer, so both stay off the
+ * page. Each group lists every active term in the taxonomy's order, held or not; one with
+ * nothing held is the unrestricted one. A held term that is no longer active still filters
+ * (the scope match ignores `active`), so it is listed after them, held, to be read and unticked. */
 export function scopeGroups(dimensions: readonly FootprintDimension[], terms: readonly TaxonomyTerm[]): ScopeGroup[] {
   return dimensions
-    .filter((d) => d.restrictsFootprint && d.terms.length > 0)
+    .filter((d) => d.restrictsFootprint)
     .map((d) => {
       const held = new Set(d.terms.map((term) => term.key));
+      const active = terms.filter((term) => term.dimension === d.dimension.key && term.active !== false);
+      const listed = new Set(active.map((term) => term.key));
       return {
         dimension: d.dimension,
-        rows: terms.filter((term) => term.dimension === d.dimension.key && term.active !== false).map((term) => ({ term, held: held.has(term.key) })),
+        rows: [...active.map((term) => ({ term, held: held.has(term.key) })), ...d.terms.filter((term) => !listed.has(term.key)).map((term) => ({ term, held: true }))],
       };
-    });
+    })
+    .filter((group) => group.rows.length > 0);
 }
 
 /** The groups a draft would start restricting (REGULATORY_SCOPE.md 4.3): empty in the
@@ -88,14 +73,20 @@ export function presentRequestStatus(status: FootprintRequestStatus, t: Translat
   return { key: `status:${status}`, label, tone: requestStatusTone[status], order: 0 };
 }
 
-function labels(terms: readonly Pick<TermRef, 'label'>[]): string {
-  return terms.map((term) => term.label).join(', ');
+/** "Advice", "Advice and Custody", "Advice, Custody and Tax". */
+function joined(names: readonly string[], t: Translate): string {
+  if (names.length < 2) return names.join('');
+  return `${names.slice(0, -1).join(', ')}${t('footprint.preview.and')}${names[names.length - 1]}`;
 }
 
-/** "Switch off Advice", "Add Fund company", or both: the request's title, built from its terms. */
+function labels(terms: readonly Pick<TermRef, 'label'>[], t: Translate): string {
+  return joined(terms.map((term) => term.label), t);
+}
+
+/** "Remove Advice", "Add Fund company", or both: the request's title, built from its terms. */
 export function requestTitle(request: Pick<FootprintChangeRequest, 'adds' | 'removes'>, t: Translate): string {
-  const adds = labels(request.adds);
-  const removes = labels(request.removes);
+  const adds = labels(request.adds, t);
+  const removes = labels(request.removes, t);
   if (adds.length > 0 && removes.length > 0) return t('footprint.request.addAndRemove', { adds, removes });
   if (adds.length > 0) return t('footprint.request.add', { adds });
   return t('footprint.request.remove', { removes });
@@ -130,13 +121,27 @@ export function previewLines(preview: FootprintPreview | null | undefined, t: Tr
   return { hides: previewSide(preview?.hidden, 'hides', t), reveals: previewSide(preview?.revealed, 'reveals', t) };
 }
 
-/** "Hides 4 obligations and 2 open cases", for the banner; counts not yet known are left out. */
+/** The kinds on one side with a known count above zero: "4 obligations and 2 open cases". */
+function counted(side: Record<string, FootprintPreviewCount> | undefined, t: Translate): string {
+  const kinds = Object.entries(side ?? {}).filter(([, entry]) => entry.available && entry.count > 0);
+  return joined(kinds.map(([kind, entry]) => kindLabel(kind, entry.count, t)), t);
+}
+
+/** "Hides 2 obligations and reveals 1 obligation.", for the banner and the approve dialog. A
+ * side that moves nothing is left out, and so are counts not yet known. */
 export function previewSummary(preview: FootprintPreview | null | undefined, t: Translate): string {
-  const parts = previewLines(preview, t)
-    .hides.filter((line) => line.available)
-    .map((line) => line.text);
-  if (parts.length === 0) return t('footprint.preview.nothingCounted');
-  return t('footprint.preview.hides', { what: parts.join(t('footprint.preview.and')) });
+  if (!Object.values(preview?.hidden ?? {}).some((entry) => entry.available)) return t('footprint.preview.nothingCounted');
+  const hides = counted(preview?.hidden, t);
+  const reveals = counted(preview?.revealed, t);
+  if (hides.length > 0 && reveals.length > 0) return t('footprint.preview.summary', { hides, reveals });
+  if (hides.length > 0) return t('footprint.preview.hidesOnly', { hides });
+  if (reveals.length > 0) return t('footprint.preview.revealsOnly', { reveals });
+  return t('footprint.preview.movesNothing');
+}
+
+/** True when a counted record kind would be hidden: the change takes something away from every member. */
+export function hidesSomething(preview: FootprintPreview | null | undefined): boolean {
+  return Object.values(preview?.hidden ?? {}).some((entry) => entry.available && entry.count > 0);
 }
 
 export function isRequester(request: Pick<FootprintChangeRequest, 'requestedBy'>, userId: string | null | undefined): boolean {
@@ -161,6 +166,14 @@ export function draftOf(dimensions: readonly FootprintDimension[]): FootprintDra
   return Object.fromEntries(dimensions.map((d) => [d.dimension.key, new Set(d.terms.map((term) => term.key))]));
 }
 
+/** The scope a request leaves once approved: what the approver weighs narrowing against. */
+export function draftAfter(dimensions: readonly FootprintDimension[], request: Pick<FootprintChangeRequest, 'adds' | 'removes'>): FootprintDraft {
+  const draft = Object.fromEntries(dimensions.map((d) => [d.dimension.key, new Set(d.terms.map((term) => term.key))]));
+  for (const term of request.adds) draft[term.dimension]?.add(term.key);
+  for (const term of request.removes) draft[term.dimension]?.delete(term.key);
+  return draft;
+}
+
 export function toggleTerm(draft: FootprintDraft, dimension: string, key: string): FootprintDraft {
   const current = new Set(draft[dimension] ?? []);
   if (current.has(key)) current.delete(key);
@@ -180,27 +193,22 @@ export function diffFootprint(dimensions: readonly FootprintDimension[], draft: 
   return { adds, removes };
 }
 
-/** The terms a pending request is about to switch off in a dimension, so the chip can show it struck through. */
+/** The terms a pending request removes from a dimension, each marked "Removed when approved". */
 export function pendingRemovals(request: Pick<FootprintChangeRequest, 'removes'> | null, dimension: string): ReadonlySet<string> {
   return new Set((request?.removes ?? []).filter((term) => term.dimension === dimension).map((term) => term.key));
 }
 
+/** The terms a pending request adds to a dimension, each marked "Added when approved". */
 export function pendingAdditions(request: Pick<FootprintChangeRequest, 'adds'> | null, dimension: string): ReadonlySet<string> {
   return new Set((request?.adds ?? []).filter((term) => term.dimension === dimension).map((term) => term.key));
 }
 
-/** The terms of a dimension not yet in the footprint, offered by the chip adder. */
-export function termsOutside(all: readonly TaxonomyTerm[], dimension: FootprintDimension): TaxonomyTerm[] {
-  const held = new Set(dimension.terms.map((term) => term.key));
-  return all.filter((term) => term.dimension === dimension.dimension.key && term.active !== false && !held.has(term.key));
-}
-
-/** "Maria Ek approved "Switch off Tax" requested by Sara Lindqvist" plus the note, for the history. */
+/** "Maria Ek approved "Remove Tax" requested by Sara Lindqvist" plus the note, for the history. */
 export function historyLine(request: FootprintChangeRequest, t: Translate, ctx: FormatContext): { when: string; who: string; text: string } {
   const title = requestTitle(request, t);
   const requester = request.requestedBy.name;
   const who = request.decidedBy?.name ?? requester;
-  const when = formatDate(request.decidedAt ?? request.requestedAt, ctx);
+  const when = formatDateTime(request.decidedAt ?? request.requestedAt, ctx);
   const text =
     request.status === 'approved'
       ? t('footprint.history.approved', { title, requester })

@@ -144,15 +144,16 @@ test.describe('cold start', () => {
     // ——— step 11: the footprint, requested by one person and approved by the other ———
     await admin.goto('/admin/footprint');
     await expect(admin.getByRole('heading', { level: 1, name: 'Regulatory scope' })).toBeVisible();
-    // A bank that has just been created holds no terms, so every chip is off and the first
-    // footprint is a switch-on. Found by dimension key, never by a label: terms are rows.
-    const chip = admin.locator('[data-dimension="licensed_activity"]').getByRole('button').first();
-    await expect(chip).toHaveAttribute('aria-pressed', 'false');
-    await chip.click();
+    // A bank that has just been created holds no terms, so every group reads as unrestricted
+    // and the first scope is an addition. Found by dimension key, never by a label: terms are rows.
+    const regime = admin.locator('[data-dimension="regime"]');
+    await expect(regime.getByText('Not restricted: every option applies.')).toBeVisible();
+    await admin.getByRole('button', { name: 'Propose a change' }).click();
+    await regime.getByRole('checkbox').first().check();
     const draft = admin.locator('[data-draft-preview]');
     await expect(draft).toBeVisible();
     await expect(draft.getByText('Loading…')).toHaveCount(0);
-    await draft.getByRole('button', { name: 'Send for approval' }).click();
+    await draft.getByRole('button', { name: 'Request approval' }).click();
     await expect(admin.getByText('Sent for approval.')).toBeVisible();
     // Four eyes on screen: the requester is offered Withdraw, never Approve.
     await expect(admin.locator('[data-pending-request]').getByRole('button', { name: 'Approve' })).toHaveCount(0);
@@ -167,7 +168,7 @@ test.describe('cold start', () => {
     await expect(approved).toBeVisible();
 
     await admin.reload();
-    await expect(admin.locator('[data-dimension="licensed_activity"]').getByRole('button').first()).toHaveAttribute('aria-pressed', 'true');
+    await expect(regime.locator('[data-term]').first()).toHaveText(/ In our scope$/);
 
     // ——— the first screens, on a library that has never held a row ————————————
     // Each answers with its own empty state, and the api guard fails this journey if any
