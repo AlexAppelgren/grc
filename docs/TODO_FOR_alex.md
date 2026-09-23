@@ -948,3 +948,14 @@ for later packages, not questions: `backend/agents/library-confirmer/v1/definiti
 does not yet list the confirm route as a tool (its package owns that file this wave), and
 `backend/apps/watch/app.md`'s context still says every classification waits for "a person"
 to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WAT-04 to built.
+
+## tax-nordic-seed: Kapitalmarkedsloven has no issuer in the sample library (2026-09-23, FP-04)
+
+- [ ] **Folketinget as an authority.** The Danish sample act (`dk-lov-2017-650`, Lov om
+      kapitalmarkeder) is filed without an issuing authority. Retsinformation.dk states that
+      Folketinget passed it ("Folketinget har vedtaget ..."), but Folketinget's own site,
+      ft.dk, answered this build's fetches with a challenge page, so its address could not be
+      verified, and the rule is to invent nothing. The Norwegian act names Stortinget, whose
+      site answered. Default if you say nothing: the Danish act stays without an issuer until
+      someone files Folketinget (key `folketinget`, `https://www.ft.dk/`) after checking the
+      address, and then sets it on the instrument through a proposal.

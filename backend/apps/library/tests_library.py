@@ -92,7 +92,7 @@ def seed_library() -> dict[str, int]:
 class LibraryLoaderTests(TestCase):
     def test_the_loader_files_the_prototype_library(self) -> None:
         counts = seed_library()
-        self.assertEqual(counts, {"instruments": 16, "provisions": 9, "obligations": 16, "obligation_versions": 17})
+        self.assertEqual(counts, {"instruments": 18, "provisions": 9, "obligations": 18, "obligation_versions": 19})
         lvm = Instrument.objects.get(stable_key="sfs-2007-528")
         self.assertIsNone(lvm.owner_tenant_id, "a seeded record is shared")
         self.assertEqual((lvm.level.key, lvm.jurisdiction.key, lvm.authority and lvm.authority.key), ("act", "se", "riksdagen"))
@@ -177,10 +177,10 @@ class LibraryLoaderTests(TestCase):
         seed_library()
         filed = AuditEvent.objects.filter(action="library.seeded", subject_type__in=("authority", "instrument", "obligation"))
         audited = filed.count()
-        self.assertEqual(audited, 8 + 16 + 16, "one audit row per authority, instrument and obligation")
+        self.assertEqual(audited, 11 + 18 + 18, "one audit row per authority, instrument and obligation")
         summaries = ObligationSummary.objects.count()
-        self.assertEqual(load_library(), {"instruments": 16, "provisions": 9, "obligations": 16, "obligation_versions": 17})
-        self.assertEqual(seed_authorities(), 8)
+        self.assertEqual(load_library(), {"instruments": 18, "provisions": 9, "obligations": 18, "obligation_versions": 19})
+        self.assertEqual(seed_authorities(), 11)
         self.assertEqual(filed.count(), audited)
         self.assertEqual(ObligationSummary.objects.count(), summaries)
 
@@ -241,7 +241,7 @@ class LibraryLoaderTests(TestCase):
     def test_seed_demo_prints_counts_and_refuses_a_deployed_environment(self) -> None:
         out = StringIO()
         call_command("seed_demo", stdout=out)
-        self.assertIn("obligations: 16", out.getvalue())
+        self.assertIn("obligations: 18", out.getvalue())
         with override_settings(IS_DEPLOYED_ENVIRONMENT=True, ENVIRONMENT="prod"), self.assertRaises(SeedRefused):
             call_command("seed_demo", stdout=StringIO())
 

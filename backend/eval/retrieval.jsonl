@@ -44,7 +44,7 @@
 {"id": "r-da-05", "language": "da", "query": "register over it-leverandører efter DORA", "expected": ["obl-dora-ict-register"], "match_kind": "both"}
 {"id": "r-da-06", "language": "da", "query": "automatiske afgørelser med betydelig virkning, artikel 22", "expected": ["obl-gdpr-article-22", "celex-32016r0679/art-22"], "match_kind": "both"}
 {"id": "r-da-07", "language": "da", "query": "central investorinformation før kunden binder sig", "expected": ["obl-priips-kid"], "match_kind": "concept"}
-{"id": "r-nb-01", "language": "nb", "query": "egnethetsvurdering ved investeringsrådgivning", "expected": ["obl-suitability"], "match_kind": "concept"}
+{"id": "r-nb-01", "language": "nb", "query": "egnethetsvurdering ved investeringsrådgivning", "expected": ["obl-suitability", "obl-no-suitability"], "match_kind": "concept"}
 {"id": "r-nb-02", "language": "nb", "query": "hensiktsmessighetstest før handel i komplekse instrumenter", "expected": ["obl-appropriateness"], "match_kind": "concept"}
 {"id": "r-nb-03", "language": "nb", "query": "målgruppe og distribusjonsstrategi for hvert produkt", "expected": ["obl-product-governance"], "match_kind": "concept"}
 {"id": "r-nb-04", "language": "nb", "query": "flytting av pensjonsforsikring til et annet selskap", "expected": ["obl-pension-transfer-right"], "match_kind": "concept"}
