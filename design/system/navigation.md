@@ -688,7 +688,7 @@ Name each pair for the bar or the sheet, even where a generic pair already cover
 | The other 27 screen cards | Their `.tabbar` is the old full-width brand bar. They are restyled when their chunk is built. Until then, this file wins |
 | `docs/adr/0020-design-direction.md` | New amendment, "2026-09-19: the tab bar below 1024 px". It:<br>- replaces the rail amendment's phone sheet and "an off-canvas sheet below 768 px"<br>- strikes `SidebarTrigger` from that amendment's parts list<br>- strikes "a second navigation model for phones" from its "Deliberately not done", as Alex's new decision<br>- keeps one navigation model per width<br>- records sections 1, 3 and 14 |
 | `docs/plans/Verification_Log.md` | One row per external claim relied on above (see Sources), dated 2026-09-19 |
-| `docs/TODO_FOR_alex.md` | - The open questions.<br>- The device checks in section 18.<br>- Overlay motion for `Modal` and the sheet together.<br>- Dark screenshots, once a real theme switch exists.<br>- `<html lang>` following the person's language |
+| `docs/TODO_FOR_alex.md` | - The open questions.<br>- The device checks in section 18.<br>- Overlay motion for `Modal` and the sheet together.<br>- Dark screenshots of the bar and the sheet (the app follows the system theme; say if you want them).<br>- `<html lang>` following the person's language |
 
 `docs/PLAYBOOK.md` 6.2 and `docs/CONVENTIONS.md` 3.2 already name "dock rank … Dock, sidebar, More menu". They are unchanged.
 
