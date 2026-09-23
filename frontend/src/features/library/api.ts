@@ -66,7 +66,14 @@ export function partialDateOf(raw: Schemas['PartialDate'] | null | undefined): P
 
 export function versionOf(raw: Schemas['ObligationVersionRef'] | null | undefined): ObligationVersion | null {
   if (raw === null || raw === undefined) return null;
-  return { versionNumber: raw.versionNumber, effectiveFrom: partialDateOf(raw.effectiveFrom) };
+  return {
+    versionNumber: raw.versionNumber,
+    effectiveFrom: partialDateOf(raw.effectiveFrom),
+    approvedAt: raw.approvedAt,
+    verifiedOrigin: raw.verifiedOrigin,
+    confirmedByAgent: agentOf(raw.confirmedByAgent),
+    proposedByAgent: agentOf(raw.proposedByAgent),
+  };
 }
 
 /**
@@ -107,6 +114,7 @@ export function obligationOf(raw: Schemas['ObligationRow']): Obligation {
     inFootprint: raw.inFootprint,
     outsideReason: (raw.outsideReason ?? []).map(reasonOf),
     lastVerifiedAt: raw.lastVerifiedAt,
+    verifiedBy: raw.verifiedBy === null || raw.verifiedBy === undefined ? null : { id: raw.verifiedBy.id, name: raw.verifiedBy.name },
     openChangeCount: raw.openChangeCount,
     pendingApplicability: raw.pendingApplicability,
     complianceStatus: complianceOf(raw.complianceStatus),

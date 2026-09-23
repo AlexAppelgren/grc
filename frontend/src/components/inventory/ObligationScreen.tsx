@@ -17,7 +17,7 @@ import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useObligation, useObligationDiff, useReportObligationProblem } from '@/features/library/hooks';
-import { presentObligation } from '@/features/library/obligation-presentation';
+import { machineConfirmedLabel, presentObligation } from '@/features/library/obligation-presentation';
 import type { LocalizedText, ObligationDetail, VersionDiff } from '@/features/library/types';
 import type { PartialDate } from '@/features/shared/presentation-types';
 import { languageName } from '@/features/library/version-presentation';
@@ -132,6 +132,9 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
     t,
   );
   const shown = textIn(record.translations, selected);
+  // The newer side of the comparison, when an independent agent confirmed it, says so in the banner (INV-05).
+  const diffMachine =
+    diff.data === undefined ? null : machineConfirmedLabel(record.versions.find((version) => version.versionNumber === diff.data.toVersion) ?? null, null, t, ctx);
   const original = originalLanguage(record.translations);
   const context: ReportContext = { language: selected, ...(record.version === null ? {} : { versionNumber: record.version.versionNumber }) };
 
@@ -178,7 +181,14 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
       {showDiff && diff.isError ? <ErrorState title={t('inventory.obligation.diffErrorTitle')} onRetry={() => void diff.refetch()} /> : null}
       {showDiff && diff.data !== undefined ? (
         <>
-          <Notice data-diff-banner="">{diffSentence(diff.data, t, ctx)}</Notice>
+          <Notice data-diff-banner="">
+            {diffSentence(diff.data, t, ctx)}
+            {diffMachine === null ? null : (
+              <span className="mt-1 block" data-machine-confirmed="">
+                {diffMachine}
+              </span>
+            )}
+          </Notice>
           <LegalText lang={diff.data.language} translatedFrom={diff.data.isMachine && original !== null ? original : undefined} reference={<Reference obligation={record} />}>
             <DiffText segments={diff.data.segments} />
           </LegalText>

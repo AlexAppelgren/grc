@@ -39,6 +39,8 @@
   "library.updates.showWhatChanged": "Visa vad som ändrats",
   "library.updates.open": "Öppna",
   "library.updates.thisLooksWrong": "Det här ser fel ut",
+  "library.updates.machineConfirmed": "Maskinbekräftad: föreslagen av {proposer}, bekräftad av {confirmer}",
+  "library.updates.machineConfirmedBy": "Maskinbekräftad av {confirmer}",
   "library.updates.outsideScope": "Utanför vår omfattning: {terms}",
   "library.updates.errorTitle": "Kunde inte läsa uppdateringarna",
   "library.updates.empty.title": "Inget har ändrats sedan {date}",

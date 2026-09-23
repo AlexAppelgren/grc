@@ -41,11 +41,12 @@ const research: Obligation = {
     { dimension: { key: 'service_type', kind: null, label: 'Service' }, terms: [{ key: 'advice', kind: null, label: 'Advice' }, { key: 'portfolio_management', kind: null, label: 'Portfolio management' }], allSelected: false },
     { dimension: { key: 'channel', kind: null, label: 'Channel' }, terms: [], allSelected: false },
   ],
-  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' } },
-  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' } },
+  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
+  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
   inFootprint: true,
   outsideReason: [],
   lastVerifiedAt: '2026-06-30',
+  verifiedBy: null,
   openChangeCount: 1,
   pendingApplicability: null,
   complianceStatus: null,
@@ -179,6 +180,29 @@ describe('ObligationRow', () => {
 
   it('puts the scope terms, the version coming next and the verified date in the meta line', () => {
     expect(metaOf(research, t, defaultFormatContext)).toEqual(['Advice, Portfolio management', 'Version 2, from 1 Oct 2026', 'Verified 30 Jun 2026']);
+  });
+
+  it('labels a row whose wording in force agents confirmed, where the verified date would read, until a named person re-verifies it later', () => {
+    const byAgents: Obligation = {
+      ...research,
+      upcomingVersion: null,
+      version: {
+        versionNumber: 2,
+        effectiveFrom: null,
+        approvedAt: '2026-08-17T14:02:11Z',
+        verifiedOrigin: 'agent',
+        confirmedByAgent: { id: 'a2', key: 'library-confirmer' },
+        proposedByAgent: { id: 'a1', key: 'watch-sweeper' },
+      },
+    };
+    const machine = 'Machine-confirmed 17 Aug 2026: proposed by watch-sweeper, confirmed by library-confirmer';
+    expect(metaOf(byAgents, t, defaultFormatContext)).toEqual(['Advice, Portfolio management', machine]);
+    // A later stamp nobody signed never vouches for wording no person has seen.
+    expect(metaOf({ ...byAgents, lastVerifiedAt: '2026-08-20T09:00:00Z', verifiedBy: null }, t, defaultFormatContext)).toEqual(['Advice, Portfolio management', machine]);
+    expect(metaOf({ ...byAgents, lastVerifiedAt: '2026-08-20T09:00:00Z', verifiedBy: { id: 'u1', name: 'Ida Holm' } }, t, defaultFormatContext)).toEqual([
+      'Advice, Portfolio management',
+      'Verified 20 Aug 2026',
+    ]);
   });
 
   it('names the terms that put a row outside the footprint, and leaves out what the row does not carry', () => {

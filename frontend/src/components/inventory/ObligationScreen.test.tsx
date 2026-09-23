@@ -297,6 +297,13 @@ describe('ObligationScreen', () => {
       expect(document.querySelector('[data-version-row="1"] [data-machine-confirmed]')).toBeNull();
     });
 
+    it('says in the "Show what changed" banner that agents confirmed the newer wording', async () => {
+      await open({ ...research, version: byAgents, versions: [seeded, byAgents], provenance: { ...research.provenance, ...confirmedByAgents } });
+      fireEvent.click(screen.getByRole('button', { name: 'Show what changed' }));
+      await waitFor(() => expect(document.querySelector('[data-diff-banner]')).toBeInTheDocument());
+      expect(document.querySelector('[data-diff-banner] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
+    });
+
     it('labels the version before it takes effect, beside the person\'s verification of the one in force', async () => {
       await open({ ...research, versions: [seeded, byAgents], provenance: { ...research.provenance, verifiedBy: sara } });
       const verified = document.querySelector('[data-last-verified]');
@@ -408,6 +415,7 @@ describe('ObligationScreen', () => {
     expect(document.querySelector('[data-diff-banner]')).toHaveTextContent(
       'Comparing version 1 (in force since it began) with version 2 (in force from 1 Oct 2026).',
     );
+    expect(document.querySelector('[data-diff-banner] [data-machine-confirmed]')).toBeNull();
     expect(document.querySelector('[data-legal-text] ins')?.textContent).toContain('The institution sets criteria for an annual assessment.');
     // Either side machine translated labels the whole comparison (INV-05).
     expect(screen.getByText('Machine translation from Swedish. The original is authoritative.')).toBeInTheDocument();

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createT } from '@/shared/i18n';
 import { defaultFormatContext } from '@/shared/utils/format';
 
-import { inForceLine, KIND_FILTER, outsideScopeLine, presentLibraryUpdate, titleOf, updateKindLabel } from './library-updates-presentation';
+import { confirmedLine, inForceLine, KIND_FILTER, outsideScopeLine, presentLibraryUpdate, titleOf, updateKindLabel } from './library-updates-presentation';
 import type { LibraryUpdateRow } from './types';
 
 const t = createT('en');
@@ -154,5 +154,21 @@ describe('outsideScopeLine', () => {
   it('says nothing on a row inside the footprint', () => {
     expect(outsideScopeLine(row(), t)).toBeNull();
     expect(outsideScopeLine({ inFootprint: true, outsideReason: undefined }, t)).toBeNull();
+  });
+});
+
+describe('confirmedLine', () => {
+  const byAgents = { verifiedOrigin: 'agent', proposedByAgent: { id: 'ag-1', key: 'watch-sweeper' }, confirmedByAgent: { id: 'ag-2', key: 'library-confirmer' } };
+
+  it('names both agents when an independent agent confirmed what another agent proposed', () => {
+    expect(confirmedLine(row(byAgents), t)).toBe('Machine-confirmed: proposed by watch-sweeper, confirmed by library-confirmer');
+    expect(confirmedLine(row(byAgents), sv)).toBe('Maskinbekräftad: föreslagen av watch-sweeper, bekräftad av library-confirmer');
+  });
+
+  it('names the confirming agent alone when no agent proposed it, and decides by who confirmed, never by which agents are named', () => {
+    expect(confirmedLine(row({ ...byAgents, proposedByAgent: null }), t)).toBe('Machine-confirmed by library-confirmer');
+    // A person approved an agent's proposal: that is a person's approval, and the row says nothing.
+    expect(confirmedLine(row({ ...byAgents, verifiedOrigin: 'user', confirmedByAgent: null }), t)).toBeNull();
+    expect(confirmedLine(row(), t)).toBeNull();
   });
 });

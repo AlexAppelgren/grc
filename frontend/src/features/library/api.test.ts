@@ -22,11 +22,12 @@ const serverRow = {
     { dimension: { key: 'service_type', kind: null, label: 'Service' }, terms: [{ key: 'advice', kind: null, label: 'Advice' }], allSelected: false },
     { dimension: { key: 'channel', kind: null, label: 'Channel' }, terms: [], allSelected: false },
   ],
-  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' } },
-  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' } },
+  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
+  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
   inFootprint: true,
   outsideReason: [],
   lastVerifiedAt: '2026-06-30',
+  verifiedBy: null,
   openChangeCount: 1,
   pendingApplicability: null,
   complianceStatus: null,
@@ -46,11 +47,12 @@ const screenRow = {
     { dimension: { key: 'service_type', kind: null, label: 'Service' }, terms: [{ key: 'advice', kind: null, label: 'Advice' }], allSelected: false },
     { dimension: { key: 'channel', kind: null, label: 'Channel' }, terms: [], allSelected: false },
   ],
-  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' } },
-  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' } },
+  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
+  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
   inFootprint: true,
   outsideReason: [],
   lastVerifiedAt: '2026-06-30',
+  verifiedBy: null,
   openChangeCount: 1,
   pendingApplicability: null,
   complianceStatus: null,
@@ -182,7 +184,15 @@ describe('library api', () => {
   it('reads a version, a legal date and a compliance status only when the server sent one it knows', () => {
     expect(library.versionOf(null)).toBeNull();
     expect(library.versionOf(undefined)).toBeNull();
-    expect(library.versionOf({ versionNumber: 3, effectiveFrom: null, ...nobody })).toEqual({ versionNumber: 3, effectiveFrom: null });
+    expect(library.versionOf({ versionNumber: 3, effectiveFrom: null, approvedAt: null, ...nobody })).toEqual({ versionNumber: 3, effectiveFrom: null, approvedAt: null, ...nobody });
+    // Who confirmed a version reaches the row, so the row can say an agent did (INV-05).
+    const agents = { verifiedOrigin: 'agent', confirmedByAgent: { id: 'a2', key: 'library-confirmer' }, proposedByAgent: { id: 'a1', key: 'watch-sweeper' } };
+    expect(library.versionOf({ versionNumber: 2, effectiveFrom: null, approvedAt: '2026-09-15T14:02:11Z', ...agents })).toEqual({
+      versionNumber: 2,
+      effectiveFrom: null,
+      approvedAt: '2026-09-15T14:02:11Z',
+      ...agents,
+    });
     expect(library.partialDateOf({ date: '2026-10-01', precision: 'quarter' })).toEqual({ date: '2026-10-01', precision: 'quarter' });
     // A precision the screen has no rule for reads as the day the string carries, never as a crash.
     expect(library.partialDateOf({ date: '2026-10-01', precision: 'decade' })).toEqual({ date: '2026-10-01', precision: 'day' });
