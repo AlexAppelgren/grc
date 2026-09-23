@@ -39,6 +39,7 @@ from apps.library.models import (
     VerificationOutcome,
 )
 from apps.library.reading import active_obligation, terms_of
+from apps.proposals import standards
 from apps.proposals.logic import Reviewer, as_reviewer, parsed_payload
 from apps.proposals.models import OriginType, Proposal, ProposalKind
 from apps.proposals.schemas import (
@@ -205,6 +206,7 @@ def _obligation_version(
     # empty filter matches every term.
     terms = terms_of(payload.terms) if payload.terms else []
     refuse_mirrored(term.dimension_id for term in terms)
+    standards.check(proposal.kind, obligation.instrument, [term.id for term in terms])
     highest = (
         ObligationVersion.objects.filter(obligation=obligation)
         .order_by("-version_number")
