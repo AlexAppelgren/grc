@@ -19,7 +19,9 @@ and the diffs between two versions. Nothing here writes.
   an obligation proposal's scope.
 - `active_obligation()` and `unknown_provision_keys()` are what a proposal points at and
   cites; they live here because the library fence keeps library models out of the
-  proposals app (PRO-01).
+  proposals app (PRO-01). `instrument_refs()`, `shared_instrument()`, `live_duty_type()`
+  and `stable_key_taken()` are what a new instrument or obligation names, for the same
+  reason.
 - "As of" a date is `logic.in_force()` and nothing else (AC-INV1). A version's end date is
   never stored: `version_rows()` derives it from the version that follows (INV-04).
 - `confirmation_of()` is who confirmed each version's approval and which agent proposed it
@@ -266,6 +268,70 @@ def unknown_provision_keys(keys: Collection[str]) -> set[str]:
     resolves to nothing is a source nobody can follow."""
     found = set(Provision.objects.filter(stable_key__in=keys).values_list("stable_key", flat=True))
     return {key for key in keys if key not in found}
+
+
+# ---------------------------------------------------------------------------------------
+# What a new instrument or obligation names (PRO-01, INV-01, INV-03)
+# ---------------------------------------------------------------------------------------
+class InstrumentRefs(NamedTuple):
+    """The library rows a new instrument's payload names, resolved once for the creation
+    check and again for the apply."""
+
+    level: Any
+    jurisdiction: Any
+    authority: Authority | None
+
+
+def _live_row(model: Any, key: str, what: str) -> Any:
+    row = model.objects.filter(key=key, active=True).first()  # ordering: a list holds one row per key
+    if row is None:
+        raise ValidationError(f"{key!r} is not {what} the library holds.", code="unknown_key")
+    return row
+
+
+def instrument_refs(*, level: str, jurisdiction: str, authority: str | None) -> InstrumentRefs:
+    """The live instrument level, jurisdiction and authority a new instrument names, or
+    422 `unknown_key` for the first one the library does not hold."""
+    from apps.library.models import Jurisdiction
+    from apps.taxonomy.models import InstrumentLevel
+
+    found = None
+    if authority:
+        found = Authority.objects.filter(key=authority).first()  # ordering: a unique key
+        if found is None:
+            raise ValidationError(f"{authority!r} is not an authority the library holds.", code="unknown_key")
+    return InstrumentRefs(
+        level=_live_row(InstrumentLevel, level, "an instrument level"),
+        jurisdiction=_live_row(Jurisdiction, jurisdiction, "a jurisdiction"),
+        authority=found,
+    )
+
+
+def shared_instrument(key: str) -> Instrument:
+    """The active shared instrument `key`, which a new obligation is broken out of, or 422
+    `unknown_key`. A bank's private instrument is never one (INV-07)."""
+    instrument = Instrument.objects.filter(stable_key=key, owner_tenant__isnull=True).first()  # ordering: a unique key
+    if instrument is None:
+        raise ValidationError(f"{key!r} is not an instrument the library holds.", code="unknown_key")
+    if instrument.status != RecordStatus.ACTIVE.value:
+        raise ValidationError(f"{key!r} is retired: propose the duty under an instrument in force.", code="unknown_key")
+    return instrument
+
+
+def live_duty_type(key: str) -> Any:
+    """The live duty type `key`, or 422 `unknown_key`."""
+    from apps.taxonomy.models import DutyType
+
+    return _live_row(DutyType, key, "a duty type")
+
+
+def stable_key_taken(subject: str, key: str) -> bool:
+    """Whether an instrument or obligation (`subject`) already carries `key`, whoever owns
+    it: a stable key is unique across the library and is never reused."""
+    from apps.library.models import SubjectType
+
+    model = Instrument if subject == SubjectType.INSTRUMENT.value else Obligation
+    return model.objects.filter(stable_key__iexact=key).exists()
 
 
 # ---------------------------------------------------------------------------------------

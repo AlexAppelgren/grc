@@ -38,8 +38,10 @@ def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
 class ProposalKind(enum.StrEnum):
     """What a proposal changes; apply() branches on it. Chunk 2: the vocabulary and term
     kinds. Chunk 4 adds `new_obligation_version`, a new summary in force from a date, with
-    the scope terms it changes. The remaining schema v0.3 kinds arrive with the agents of
-    chunk 5, which are the first thing that produces them."""
+    the scope terms it changes. R1 wave 2 adds `new_instrument` and `new_obligation`, which
+    create a record rather than change one and so name no target (PRO-01, INV-01, INV-03).
+    `update_obligation` and `retire_record` wait for a scenario that needs them, and a
+    watch link is never a proposal (D-64)."""
 
     VOCABULARY_CREATE = "vocabulary_create"
     VOCABULARY_RELABEL = "vocabulary_relabel"
@@ -49,6 +51,8 @@ class ProposalKind(enum.StrEnum):
     TERM_CREATE = "term_create"
     TERM_UPDATE = "term_update"
     NEW_OBLIGATION_VERSION = "new_obligation_version"
+    NEW_INSTRUMENT = "new_instrument"
+    NEW_OBLIGATION = "new_obligation"
 
 
 class ProposalStatus(enum.StrEnum):
