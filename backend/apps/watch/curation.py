@@ -54,7 +54,7 @@ from pydantic.alias_generators import to_camel
 
 from apps.agents import runs
 from apps.governance.ai_log import log_generation
-from apps.governance.models import AiGeneration, AiPurpose
+from apps.governance.models import AiPurpose
 from apps.library.models import DatePrecision
 from apps.proposals.models import OriginType
 from apps.shared.audit import Actor, record
@@ -653,10 +653,11 @@ def confirm_curation(
 def _decided_in(run: Any, change: keys.ChangeRow) -> bool:
     """Whether this run has already logged a decision on this change. A call that confirms
     nothing new and whose decision the run has already logged is a retry, and logging it
-    again would count one model call twice (D-80)."""
-    return AiGeneration.objects.filter(
-        agent_run_id=run.id, purpose=AiPurpose.AGENT_REVIEW.value, subject_type=SUBJECT_TYPE, subject_id=change.id
-    ).exists()
+    again would count one model call twice (D-80). It reads the run's own log rows and
+    never the log's model, which only apps/governance/ai_log.py writes (AUD-02)."""
+    return bool(
+        run.generations.filter(purpose=AiPurpose.AGENT_REVIEW.value, subject_type=SUBJECT_TYPE, subject_id=change.id).exists()
+    )
 
 
 def _decision_run(who: Principal, body: WatchCurationConfirmInput) -> Any:
