@@ -87,7 +87,8 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     # stay an admin's to change (playbook 15, INPUT_DELTAS §1).
     "TermDimensionKind": (
         "term_dimension_kind",
-        "FP-01: a scope dimension may restrict the footprint, a classification never does; matching branches on it",
+        "FP-01, D-36: a scope dimension may restrict the footprint, a classification never does, and an "
+        "opt-in dimension (standards) matches only the terms the footprint names; matching branches on it",
     ),
     "ChangeLifecycleKind": (
         "change_lifecycle_kind",

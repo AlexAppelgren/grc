@@ -62,8 +62,15 @@ class PillTone(enum.StrEnum):
 
 
 class TermDimensionKind(enum.StrEnum):
+    """What a dimension does to the footprint (FP-01, D-36). A scope dimension whose flag says
+    it restricts narrows the footprint once the footprint names a term in it; a
+    classification dimension never narrows it; an opt-in dimension (the standards a bank
+    follows) shows a record carrying one of its terms only when the footprint names that
+    term, even when it names none in the dimension, whatever the flag says."""
+
     SCOPE = "scope"
     CLASSIFICATION = "classification"
+    OPT_IN = "opt_in"
 
 
 class ChangeLifecycleKind(enum.StrEnum):
@@ -135,7 +142,8 @@ class SuggestionStatus(enum.StrEnum):
 class TermDimension(LibraryVocabulary):
     """A taxonomy dimension (schema v0.3 `term_dimension`): `restricts_footprint` says
     whether a record's terms in it narrow the footprint (FP-01); `kind` says whether it
-    describes scope or classifies."""
+    describes scope, classifies or is opted into (an opt-in dimension restricts whatever the
+    flag says, D-36)."""
 
     KIND_CHOICES = _choices(TermDimensionKind)
 

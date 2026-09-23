@@ -240,7 +240,8 @@ class ProposalRow(CamelSchema):
             "Why it was refused: the key of a row of the `rejection_reason` library list, which an admin "
             "may extend, so a client stores and compares the key and shows the label the list gives. The "
             "keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, "
-            "`not_relevant`, `poor_wording` and `other`. Empty unless the status is `rejected`."
+            "`not_relevant`, `outside_sector_scope`, `poor_wording` and `other`. Empty unless the status is "
+            "`rejected`."
         ),
     )
     review_note: str = Field(default="", description="The reviewer's own sentence to the proposer, on an approval or a rejection. A platform person's words; it is not part of the library record.")

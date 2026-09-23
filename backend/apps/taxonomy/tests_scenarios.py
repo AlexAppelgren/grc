@@ -1,7 +1,8 @@
 """Scenario tests for the taxonomy app (playbook 4.1, Appendix B): one method per
 `@integration` scenario in app.md, each carrying its ID. Chunk 2 un-skips VOC-S1 to S7,
 VOC-S11, VOC-S14, FP-S1 to S4 and I18N-S1, S2 (backend halves; screens follow in chunk 3).
-FP-S6 (one decision per request, one waiting request) came with the regulatory scope work.
+FP-S6 (one decision per request, one waiting request) came with the regulatory scope work,
+FP-S17 (the opt-in rule in both twins) with the standards dimension.
 VOC-S8, S9, S10, S12, S13 stay skipped (R2, R3). Never delete a scenario without updating
 app.md.
 
@@ -16,6 +17,7 @@ Prefixes hosted: FP, I18N, VOC.
 
 from __future__ import annotations
 
+import itertools
 import json
 import uuid
 from pathlib import Path
@@ -51,7 +53,9 @@ from apps.taxonomy.models import (
     FootprintHistory,
     FootprintTerm,
     Tagging,
+    TaxonomyTerm,
     TenantTag,
+    TermDimension,
     Urgency,
     WatchedMarket,
 )
@@ -563,25 +567,36 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         self._set_footprint(["service_type:custody", "service_type:portfolio_management", "regime:securities"])
         footprint = matching.footprint_of(self.tenant.id)
+        restricting = matching.restricting_dimensions()
         self.assertEqual(footprint["service_type"], {"custody", "portfolio_management"})
         self.assertNotIn("client_category", footprint)
         # An empty client category dimension in the footprint does not restrict.
-        self.assertTrue(matching.in_footprint({"service_type": {"custody"}, "client_category": {"retail"}}, footprint))
-        self.assertFalse(matching.in_footprint({"service_type": {"advice"}}, footprint))
+        self.assertTrue(matching.in_footprint({"service_type": {"custody"}, "client_category": {"retail"}}, footprint, restricting=restricting))
+        self.assertFalse(matching.in_footprint({"service_type": {"advice"}}, footprint, restricting=restricting))
         # No scope terms at all: matches every tenant ("Not client-specific").
-        self.assertTrue(matching.in_footprint({}, footprint))
+        self.assertTrue(matching.in_footprint({}, footprint, restricting=restricting))
         # A dimension that does not restrict the footprint is ignored (channel).
-        self.assertTrue(matching.in_footprint({"service_type": {"custody"}, "channel": {"branch"}}, footprint, restricting={"service_type"}))
+        self.assertNotIn("channel", restricting)
+        self.assertTrue(matching.in_footprint({"service_type": {"custody"}, "channel": {"branch"}}, footprint, restricting=restricting))
+        # A term of an opt-in dimension matches only a footprint that names it: the empty
+        # standards group hides it, where an empty scope group would not.
+        standard = {"standard": {"iso_iec_27001"}}
+        self.assertFalse(matching.in_footprint(standard, footprint, restricting=restricting))
+        self.assertTrue(matching.in_footprint(standard, {**footprint, **standard}, restricting=restricting))
         # The SQL function mirrors the Python rule against the real rows.
         custody = tenant_lists_logic.term_by_ref("service_type", "custody")
         advice = tenant_lists_logic.term_by_ref("service_type", "advice")
         retail = tenant_lists_logic.term_by_ref("client_category", "retail")
         branch = tenant_lists_logic.term_by_ref("channel", "branch")
+        # Seeded inactive until its doors guard it (tests_matching.HeldStandard); the rule
+        # ignores a term's state.
+        iso = TaxonomyTerm.objects.get(dimension__key="standard", key="iso_iec_27001")
         self.assertTrue(matching.in_footprint_sql(self.tenant.id, [custody.id, retail.id]))
         self.assertFalse(matching.in_footprint_sql(self.tenant.id, [advice.id]))
         self.assertTrue(matching.in_footprint_sql(self.tenant.id, []))
         self.assertTrue(matching.in_footprint_sql(self.tenant.id, [custody.id, branch.id]))
         self.assertFalse(matching.in_footprint_sql(self.tenant.id, [advice.id, branch.id]))
+        self.assertFalse(matching.in_footprint_sql(self.tenant.id, [custody.id, iso.id]))
         # The footprint read states the rule per dimension and shows the pending request slot.
         view = self._footprint(sign_in(self.reader, tenant=self.tenant))
         by_dimension = {d["dimension"]["key"]: d for d in view["dimensions"]}
@@ -590,6 +605,12 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertTrue(by_dimension["service_type"]["restrictsFootprint"])
         self.assertFalse(by_dimension["channel"]["restrictsFootprint"])
         self.assertFalse(by_dimension["service_type"]["allSelected"])
+        # Each dimension says its kind, so a reader can tell "no restriction" from "none followed".
+        self.assertEqual(
+            {key: by_dimension[key]["dimension"]["kind"] for key in ("service_type", "theme", "standard")},
+            {"service_type": "scope", "theme": "classification", "standard": "opt_in"},
+        )
+        self.assertEqual((by_dimension["standard"]["terms"], by_dimension["standard"]["restrictsFootprint"]), ([], True))
         self.assertIsNone(view["pendingRequest"])
         self.assertEqual(by_dimension["service_type"]["terms"][0]["kind"], None)
         reader = sign_in(self.reader, tenant=self.tenant)
@@ -789,7 +810,10 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(inside, {"custody", "unscoped"})
         outside = set(records) - inside
         self.assertEqual(outside, {"advice-only"})
-        self.assertEqual(matching.restricting_dimensions(), {"regime", "account_type", "legal_entity", "service_type", "client_category", "jurisdiction", "licensed_activity", "product_type"})
+        self.assertEqual(
+            matching.restricting_dimensions(),
+            {"regime", "account_type", "legal_entity", "service_type", "client_category", "jurisdiction", "licensed_activity", "product_type", "standard"},
+        )
 
         # The roadmap and the briefing: one dated change inside the scope and one outside it,
         # both sighted this week and both still open, so the only thing separating them is
@@ -1415,9 +1439,80 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         A standard shows only to tenants whose regulatory scope names it (FP-01, INV-08, AC-FP3).
         """
 
-    @skip("pending: FP-S17 (FP-01, chunk 3)")
     def test_fp_s17(self) -> None:
         """FP-S17
 
-        The pure rule and the SQL function agree on opt-in dimensions (FP-01).
+        The pure rule and the SQL function agree on opt-in dimensions, whatever the flag says (FP-01).
+
+        Over the seeded rows: the scope dimension "service_type" and the opt-in dimension
+        "standard", with a second standard beside ISO/IEC 27001 so that naming another standard
+        is never mistaken for naming this one. apps/taxonomy/tests_matching.py holds the pure
+        cases, the larger mirror and the retired dimension.
         """
+        from apps.taxonomy import matching
+
+        standard = TermDimension.objects.get(key="standard")
+        self.assertEqual((standard.kind, standard.restricts_footprint), ("opt_in", True))
+        with library_write("test"):
+            second = TaxonomyTerm.objects.create(dimension=standard, key="second_standard")
+        terms = {
+            "service_type:custody": tenant_lists_logic.term_by_ref("service_type", "custody"),
+            # Seeded inactive (tests_matching.HeldStandard); the rule ignores a term's state.
+            "standard:iso_iec_27001": TaxonomyTerm.objects.get(dimension=standard, key="iso_iec_27001"),
+            "standard:second_standard": second,
+        }
+        subsets = [combo for n in range(len(terms) + 1) for combo in itertools.combinations(terms, n)]
+
+        def as_dict(refs: tuple[str, ...]) -> dict[str, set[str]]:
+            result: dict[str, set[str]] = {}
+            for ref in refs:
+                dimension, key = ref.split(":")
+                result.setdefault(dimension, set()).add(key)
+            return result
+
+        def verdicts(footprint_refs: tuple[str, ...], record_refs: tuple[str, ...]) -> tuple[bool, bool]:
+            self.activate(self.tenant)
+            FootprintTerm.objects.filter(tenant=self.tenant).delete()
+            for ref in footprint_refs:
+                FootprintTerm.objects.create(tenant=self.tenant, term=terms[ref], added_by=self.admin)
+            pure = matching.in_footprint(as_dict(record_refs), matching.footprint_of(self.tenant.id), restricting=matching.restricting_dimensions())
+            return pure, matching.in_footprint_sql(self.tenant.id, [terms[ref].id for ref in record_refs])
+
+        def every_combination_agrees() -> None:
+            for footprint_refs in subsets:
+                for record_refs in subsets:
+                    pure, sql = verdicts(footprint_refs, record_refs)
+                    self.assertIs(sql, pure, f"record {record_refs} footprint {footprint_refs}")
+
+        every_combination_agrees()
+        iso = ("standard:iso_iec_27001",)
+        custody = ("service_type:custody",)
+        # A record carrying an opt-in term matches only when the scope names that term, also
+        # when the scope has no entry for the dimension at all.
+        self.assertEqual(verdicts(custody, iso), (False, False))
+        self.assertEqual(verdicts((), iso), (False, False))
+        self.assertEqual(verdicts(("standard:second_standard",), iso), (False, False))
+        self.assertEqual(verdicts(iso, iso), (True, True))
+        # An empty scope dimension still does not restrict.
+        self.assertEqual(verdicts(iso, custody + iso), (True, True))
+        # A record carrying no opt-in term is unaffected by the opt-in dimension.
+        self.assertEqual(verdicts(custody, custody), (True, True))
+        self.assertEqual(verdicts(custody + iso, custody), (True, True))
+        self.assertEqual(verdicts((), ()), (True, True))
+        # With the flag cleared both still treat the dimension as restricting.
+        with library_write("test"):
+            TermDimension.objects.filter(pk=standard.pk).update(restricts_footprint=False)
+        self.assertIn("standard", matching.restricting_dimensions())
+        every_combination_agrees()
+        self.assertEqual(verdicts(custody, iso), (False, False))
+        self.assertEqual(verdicts(iso, iso), (True, True))
+        # The regulatory scope read says so too, so a reader never offers "not restricted".
+        view = self._footprint(sign_in(self.reader, tenant=self.tenant))
+        read = next(d for d in view["dimensions"] if d["dimension"]["key"] == "standard")
+        self.assertEqual((read["dimension"]["kind"], read["restrictsFootprint"]), ("opt_in", True))
+        # Calling the pure rule without the opt-in dimensions is a TypeError: leaving the
+        # argument out, or handing it a plain set that cannot say which dimensions are opt-in.
+        with self.assertRaises(TypeError):
+            matching.in_footprint(as_dict(iso), {})  # type: ignore[call-arg]
+        with self.assertRaises(TypeError):
+            matching.in_footprint(as_dict(iso), {}, restricting={"service_type", "standard"})

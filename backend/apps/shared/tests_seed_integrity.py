@@ -65,7 +65,7 @@ from apps.shared.e2e_seed import (
 )
 from apps.shared.models import AuditEvent, Tenant
 from apps.watch.models import ChangeDocument, ChangeEvent, ChangeObligation, ChangeTerm, CheckStatus, RegulatoryChange, Source, SourceCheck, SourceCheckKind
-from apps.taxonomy.matching import footprint_of, in_footprint, restricting_dimensions
+from apps.taxonomy.matching import footprint_of, in_footprint, opt_in_dimensions, restricting_dimensions
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
@@ -623,3 +623,19 @@ class SeedIntegrityGuard(TestCase):
         self.assertEqual(ApiKey.objects.count(), keys)
         tenancy.activate(Tenant.objects.get(slug=TENANT_A_SLUG).id)
         self.assertEqual(ChangeCase.objects.count(), cases)
+
+    # --- FP-01, D-36: no seeded bank follows a standard -------------------------------------
+    def test_no_seeded_bank_follows_a_standard(self) -> None:
+        """No E2E tenant's regulatory scope holds a term of an opt-in dimension, so a
+        standard's records start outside every seeded bank's scope, and a journey that opts a
+        bank in starts from "none followed" (STD-06). Checked on the expected list and on the
+        stored rows."""
+        seed_e2e()
+        opt_in = opt_in_dimensions()
+        self.assertIn("standard", opt_in)
+        for slug, refs in EXPECTED_FOOTPRINTS.items():
+            with self.subTest(tenant=slug):
+                self.assertEqual([ref for ref in refs if ref.split(":")[0] in opt_in], [])
+                tenant = Tenant.objects.get(slug=slug)
+                tenancy.activate(tenant.id)
+                self.assertFalse(FootprintTerm.objects.filter(tenant=tenant, term__dimension__key__in=opt_in).exists())

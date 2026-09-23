@@ -40,9 +40,40 @@ class PersonRef(CamelSchema):
 
 
 class TaxonomyDimensionRef(CamelSchema):
-    key: str
-    kind: str | None = None
-    label: str
+    """A taxonomy dimension as a reference: the group a term or a regulatory scope group
+    belongs to (FP-01)."""
+
+    key: str = Field(
+        description=(
+            "The dimension's immutable key, such as `service_type` or `standard`, and the only part of this "
+            "reference to store, compare or send back. Dimensions are rows of the shared library's "
+            "`term_dimension` vocabulary, which an administrator may extend through an approved proposal, "
+            "so a key you have not seen before is new data and not an error; `GET /taxonomy/dimensions` "
+            "lists the live set."
+        ),
+        examples=["service_type"],
+    )
+    kind: str | None = Field(
+        default=None,
+        description=(
+            "How the dimension's terms act on a bank's regulatory scope, one of three fixed values. "
+            "`scope`: the dimension says who or what a rule covers, and a scope group with no term chosen "
+            "restricts nothing. `classification`: the dimension only describes a record and never narrows "
+            "the scope. `opt_in`: the standards a bank follows, where a record carrying one of the "
+            "dimension's terms shows only to a bank whose scope names that term, so a group with no term "
+            "chosen means none followed rather than no restriction. Every dimension carries a kind, so the "
+            "default of null never reaches a reader. It is a kind in code, so the rules branch on it; an "
+            "administrator never adds a value."
+        ),
+        examples=["scope"],
+    )
+    label: str = Field(
+        description=(
+            "The dimension's name in the reader's language, for display only. It is a phrase a person wrote "
+            "and may be reworded or translated at any time, so nothing may match on it."
+        ),
+        examples=["Service"],
+    )
 
 
 class JurisdictionRow(CamelSchema):
@@ -255,10 +286,47 @@ class FootprintPreview(CamelSchema):
 
 
 class FootprintDimension(CamelSchema):
-    dimension: TaxonomyDimensionRef
-    restricts_footprint: bool
-    terms: list[TermRef] = Field(default_factory=list)
-    all_selected: bool = False
+    """One group of the regulatory scope (FP-01): a taxonomy dimension, whether it narrows
+    the scope, and the terms this bank has chosen in it. The dimension's kind says how an
+    empty group reads: no restriction for a scope dimension, none followed for an opt-in one."""
+
+    dimension: TaxonomyDimensionRef = Field(
+        description=(
+            "The taxonomy dimension this group covers: its key, its kind and its label in the caller's "
+            "language. The kind is `scope` for a dimension that says who or what a rule covers, "
+            "`classification` for one that only describes a record and never narrows the scope, and "
+            "`opt_in` for the standards a bank follows, where a record carrying one of the dimension's "
+            "terms shows only when this group names that term, so an empty group means none followed "
+            "rather than no restriction. Dimensions are rows of the shared library's `term_dimension` "
+            "vocabulary, which an administrator may extend through an approved proposal; "
+            "`GET /taxonomy/dimensions` lists the live set."
+        )
+    )
+    restricts_footprint: bool = Field(
+        description=(
+            "True when the terms chosen in this group narrow what the bank sees. False for a dimension "
+            "that only describes records, which never hides anything. Always true for an `opt_in` "
+            "dimension, whatever its own flag says. A library fact, changed only through an approved "
+            "proposal."
+        )
+    )
+    terms: list[TermRef] = Field(
+        default_factory=list,
+        description=(
+            "The terms this bank has chosen in the group, each its key and its label in the caller's "
+            "language, in picker order; empty when it has chosen none. Terms are rows of the shared "
+            "library's taxonomy vocabulary, which an administrator may extend through an approved "
+            "proposal; `GET /taxonomy/terms` lists the live set. Changed only through a regulatory "
+            "scope change request with its preview, second person and step-up."
+        )
+    )
+    all_selected: bool = Field(
+        default=False,
+        description=(
+            "True when the bank has chosen every active term of the dimension, which the screen reads "
+            "as all selected. Defaults to false, also for a dimension that has no active terms."
+        ),
+    )
 
 
 class FootprintTermRef(TermRef):
