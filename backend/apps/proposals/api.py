@@ -453,11 +453,10 @@ def approve_proposal(
     approval leaves carry no assertion id for its decision. Either way the reviewer is
     never the proposer, the same key, or a key of the same agent definition: the widened
     proposal_four_eyes constraint refuses that row on its own, whichever principal wrote
-    it. An agent approves obligation versions only, the one record that can say an agent
-    confirmed it and never reads as a person's check; a translation it approves stays
-    labelled machine-made, and its correction may reword a summary but never move
-    `originalLanguage`, which answers `validation_error`. A vocabulary or term proposal
-    waits for a person (D-79).
+    it. An agent approves obligation versions only, and what it confirmed never reads as a
+    person's check; a translation it approves stays labelled machine-made, and its
+    correction may reword a summary but never move `originalLanguage`, which answers
+    `validation_error`. A vocabulary or term proposal waits for a person (D-79).
 
     Errors to branch on: `permission_denied` without `proposals.review` or
     `proposals:review`; `agent_not_bound` for a key holding the scope but bound to no agent

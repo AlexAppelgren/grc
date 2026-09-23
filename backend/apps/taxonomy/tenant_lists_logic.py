@@ -33,7 +33,7 @@ from django.utils.text import slugify
 
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
-from apps.taxonomy.reading import Labels, extra_of, label_of
+from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of, extra_of, label_of
 from apps.taxonomy.registry import REGISTRY, VocabularyList
 from apps.taxonomy.schemas import (
     PersonRef,
@@ -99,7 +99,9 @@ def _queryset(entry: VocabularyList, tenant_id: uuid.UUID | None) -> Any:
     count is one: without it a reordered list came back in whatever order Postgres chose
     (found by VOC-S3, 2026-09-19)."""
     queryset = entry.usage(entry.model._default_manager.all()).order_by(*(entry.model._meta.ordering or ()))
-    if not entry.is_library:
+    if entry.is_library:
+        queryset = queryset.select_related(*CONFIRMATION_JOINS)
+    else:
         if tenant_id is None:
             raise ValidationError("This list belongs to a tenant; sign in to one.", code="not_found")
         queryset = queryset.filter(tenant_id=tenant_id)
@@ -162,6 +164,7 @@ def _row(entry: VocabularyList, row: Any, labels: Labels, order: list[str]) -> V
         usage_count=getattr(row, "usage_count", 0),
         version=getattr(row, "version", 1),
         extra=extra_of(row, entry.extra_fields),
+        **confirmation_of(row),
     )
 
 

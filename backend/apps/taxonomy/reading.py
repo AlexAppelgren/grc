@@ -19,8 +19,12 @@ from django.http import HttpRequest
 from pydantic.alias_generators import to_camel
 
 from apps.shared.authentication import Principal, PrincipalKind
+from apps.taxonomy.schemas import AgentRef
 
 FALLBACK_LANGUAGE = "en"
+# What `confirmation_of()` reads, joined into the row's own query so a page of rows costs
+# no query per row (playbook 10). Only a library list or a term has these columns.
+CONFIRMATION_JOINS = ("verified_by_agent", "applied_by_proposal__proposed_by_agent")
 
 
 def language_order(request: HttpRequest, *, tenant: Any = None) -> list[str]:
@@ -100,3 +104,21 @@ def extra_of(row: Any, fields: tuple[str, ...]) -> dict[str, Any]:
             value = value.key
         values[to_camel(name)] = value
     return values
+
+
+def confirmation_of(row: Any) -> dict[str, Any]:
+    """Who confirmed the approval that wrote a library list row's or a term's current
+    wording, and which agent proposed it (INV-05, PRO-02, D-62), as stored: the three
+    provenance fields of `VocabularyRow` and `TaxonomyTermRow`, in the shape an obligation
+    version's `VersionConfirmation` has. A bank's own list has no such columns and answers
+    empty, as a seeded library row does. The label is the screen's to decide."""
+    proposal = getattr(row, "applied_by_proposal", None)
+    return {
+        "verified_origin": getattr(row, "verified_origin", ""),
+        "confirmed_by_agent": _agent_ref(getattr(row, "verified_by_agent", None)),
+        "proposed_by_agent": _agent_ref(None if proposal is None else proposal.proposed_by_agent),
+    }
+
+
+def _agent_ref(agent: Any) -> AgentRef | None:
+    return None if agent is None else AgentRef(id=agent.id, key=agent.key)

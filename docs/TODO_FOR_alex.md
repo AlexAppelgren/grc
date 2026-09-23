@@ -681,6 +681,30 @@ your own answer in chat to the session that merges it.
       this way. The alternative is machine-confirmed provenance columns on every library
       list and on terms, so an agent can confirm those too: say if you want that planned.
 
+## vocab-term-provenance (2026-09-23): the columns for D-79's alternative are built; the 409 waits for your yes
+
+- [ ] **Say, in your own words, whether an agent may now approve vocabulary and term
+      proposals.** The build plan records your 2026-09-23 answer to the box above as the
+      alternative (provenance columns), but it reached this work relayed through the plan,
+      not in your words, and the box above is still open. So only the half that changes
+      nothing about who may approve was built: every library list and every taxonomy term
+      now records who confirmed the approval that wrote its wording (`user` or `agent`), the
+      confirming agent, and the proposal, through which the proposing agent is named. Under
+      an agent's approval every translation it writes is stored machine-made, and an agent
+      never clears that label; a person's approval behaves exactly as before. The list and
+      term reads (`GET /vocab/{list}`, `GET /vocab/{list}/{key}`, `GET /taxonomy/terms`)
+      return it. The 409 `person_review_required` stays, and the confirming agent's
+      definition (`library-confirmer` v1) still leaves list and term proposals to a person.
+      Default if you say nothing: it stays so. If you say yes, one follow-up removes the 409
+      and its code, amends D-79, lets `library-confirmer` decide every kind, names the run on
+      the audit row of an agent's retire, restore or merge, and extends PRO-S13 and ID-S31
+      with a vocabulary kind.
+- [ ] **A risk to weigh with that yes.** After the lift, a list label an agent confirmed is
+      stored machine-made, but no bank-facing screen marks a machine-made list label on a
+      pill today, and the console's vocabulary screen shows a row's confirmation only from
+      the next wave. Until those screens show it, a bank reads an agent's Swedish label for a
+      flag exactly as it reads a person's.
+
 ## proposals-reads-agent-visible: which version a reviewer decides a proposal against (2026-09-23, PRO-02)
 
 - [ ] **An open proposal is compared with the version in force today; once approved, it is

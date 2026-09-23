@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import builtins
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -37,6 +37,65 @@ class PersonRef(CamelSchema):
 
     id: UUID
     name: str
+
+
+# Declared here beside `PersonRef`, not in apps/library/schemas.py, because that module
+# imports its references from this one: a list row and an obligation version name an agent
+# with the same shape, and importing it the other way round would be a cycle.
+class AgentRef(CamelSchema):
+    """One of the platform's research agents, named the way a screen may label it: its
+    definition key, which never changes, and never its internal id alone (AUD-02)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05", "key": "watch-sweeper"}]})
+
+    id: UUID = Field(description="The agent definition, as a UUID.")
+    key: str = Field(description="The agent definition's own key, stable and never changed, for example `watch-sweeper`.", examples=["watch-sweeper"])
+
+
+# Machine-confirmed provenance on a library list row or a taxonomy term (INV-05, PRO-02,
+# D-62, D-79): the three facts `VersionConfirmation` gives an obligation version, about the
+# approval that wrote the row's current wording. Declared once so the two row shapes cannot
+# describe the same fact two ways.
+RowVerifiedOrigin = Annotated[
+    str,
+    Field(
+        description=(
+            "Who confirmed the approval that wrote this row's current labels and usage note: "
+            "`agent` when a second, independent agent confirmed it, which a screen labels "
+            "machine-confirmed and never as a person's verification; `user` when a person "
+            "approved it, who is not named here. Empty for a row the library was seeded with "
+            "or last worded before this was recorded, which reads the same as `user`, and on "
+            "every row of a bank's own list, which its admin writes without a proposal. A "
+            "retire, restore or merge writes no wording and leaves it as it was. A fixed kind, "
+            "not a vocabulary: decide the machine-confirmed label from this field alone, never "
+            "from which agent fields are present."
+        ),
+        examples=["agent"],
+    ),
+]
+RowConfirmedByAgent = Annotated[
+    AgentRef | None,
+    Field(
+        description=(
+            "The independent agent that confirmed the approval, by its definition key, when "
+            "`verifiedOrigin` is `agent`. Null whenever a person approved it, on a seeded row "
+            "and on a bank's own list. It names a platform agent definition, never a person or "
+            "a bank."
+        )
+    ),
+]
+RowProposedByAgent = Annotated[
+    AgentRef | None,
+    Field(
+        description=(
+            "The agent that proposed the wording this row carries now, by its definition key, "
+            "read from the approved proposal. Null whenever the proposer was not a key bound to "
+            "an agent, which is every proposal a person made, whoever confirmed it, and on a "
+            "seeded row or a bank's own list. It is independent of `verifiedOrigin`: an agent's "
+            "proposal a person approved names the agent here beside `verifiedOrigin` `user`."
+        )
+    ),
+]
 
 
 class TaxonomyDimensionRef(CamelSchema):
@@ -125,6 +184,9 @@ class VocabularyRow(CamelSchema):
     usage_count: int = 0
     version: int = 1
     extra: dict[str, Any] = Field(default_factory=dict)  # schema: VocabularyExtra
+    verified_origin: RowVerifiedOrigin = ""
+    confirmed_by_agent: RowConfirmedByAgent = None
+    proposed_by_agent: RowProposedByAgent = None
 
 
 class VocabularyRowDetail(VocabularyRow):
@@ -278,6 +340,9 @@ class TaxonomyTermRow(CamelSchema):
         ),
         examples=[False],
     )
+    verified_origin: RowVerifiedOrigin = ""
+    confirmed_by_agent: RowConfirmedByAgent = None
+    proposed_by_agent: RowProposedByAgent = None
 
 
 class TaxonomyTermPage(CamelSchema):

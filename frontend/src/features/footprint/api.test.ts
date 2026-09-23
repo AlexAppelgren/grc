@@ -119,7 +119,7 @@ describe('footprint api', () => {
   });
 
   it('lists terms by the key of their dimension, and the dimensions with their footprint flag', async () => {
-    const term = { id: 't1', key: 'advice', label: 'Advice', dimension: { key: 'service_type', kind: null, label: 'Services we provide' }, active: true, isSystem: true, sortOrder: 0, usageNote: '', version: 1, mirrored: false };
+    const term = { id: 't1', key: 'advice', label: 'Advice', dimension: { key: 'service_type', kind: null, label: 'Services we provide' }, active: true, isSystem: true, sortOrder: 0, usageNote: '', version: 1, mirrored: false, verifiedOrigin: '' };
     const dimensions = [
       { key: 'regime', label: 'Regime', extra: { restrictsFootprint: true } },
       { key: 'theme', label: 'Theme', kind: 'classification', extra: { restrictsFootprint: false } },

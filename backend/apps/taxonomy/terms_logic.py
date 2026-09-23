@@ -26,7 +26,7 @@ from typing import Any
 from django.core.exceptions import ValidationError
 
 from apps.taxonomy.models import TaxonomyTerm, TermDimension
-from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of, label_of
 from apps.taxonomy.schemas import TaxonomyDimensionRef, TaxonomyTermRow, TermRef
 
 MAX_KEYS_IN_MESSAGE = 12
@@ -107,7 +107,9 @@ def term_by_id(term_id: Any) -> TaxonomyTerm:
 
 
 def terms_of(dimension_key: str | None, *, include_retired: bool = False) -> list[TaxonomyTerm]:
-    queryset = TaxonomyTerm.objects.select_related("dimension", "parent").order_by("dimension__sort_order", "sort_order", "key")
+    queryset = TaxonomyTerm.objects.select_related("dimension", "parent", *CONFIRMATION_JOINS).order_by(
+        "dimension__sort_order", "sort_order", "key"
+    )
     if dimension_key:
         queryset = queryset.filter(dimension=dimension_by_key(dimension_key))
     if not include_retired:
@@ -160,6 +162,7 @@ def term_rows(terms: list[TaxonomyTerm], order: list[str]) -> list[TaxonomyTermR
                 is_system=term.is_system,
                 version=term.version,
                 mirrored=term.dimension_id in mirrored,
+                **confirmation_of(term),
             )
         )
     return rows

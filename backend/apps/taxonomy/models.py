@@ -35,6 +35,7 @@ from django.db import models
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.tenancy import LibraryModel, TenantModel
 from apps.shared.vocabulary import (
+    ORIGIN_CHOICES,
     LibraryVocabulary,
     LibraryVocabularyLabel,
     TenantListVocabulary,
@@ -378,7 +379,12 @@ class TaxonomyTerm(LibraryModel):
 
     `jurisdiction` is set on the terms that mirror a jurisdiction row (FP-04, D-28,
     ADR 0026): the reference seed keeps them in step, and the rules that refuse a proposal
-    or a tagging in a mirrored dimension read this column rather than a dimension key."""
+    or a tagging in a mirrored dimension read this column rather than a dimension key.
+
+    `verified_origin`, `verified_by_agent` and `applied_by_proposal` are the term's
+    machine-confirmed provenance, exactly as on every library list (`LibraryVocabulary`,
+    INV-05, D-62, D-79): set by the proposal that wrote its current wording, blank and null
+    on a seeded term."""
 
     dimension = models.ForeignKey(TermDimension, on_delete=models.PROTECT, related_name="terms")
     key = models.SlugField(max_length=80)
@@ -389,6 +395,9 @@ class TaxonomyTerm(LibraryModel):
     active = models.BooleanField(default=True)
     is_system = models.BooleanField(default=False)
     version = models.PositiveIntegerField(default=1)
+    verified_origin = models.CharField(max_length=16, choices=ORIGIN_CHOICES, blank=True, default="")
+    verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

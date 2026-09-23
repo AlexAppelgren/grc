@@ -15,7 +15,7 @@ from django.conf import settings
 from pydantic import ConfigDict, Field, ModelWrapValidatorHandler, ValidationInfo, model_validator
 
 from apps.shared.schemas import CamelSchema, WriteBody
-from apps.taxonomy.schemas import PersonRef
+from apps.taxonomy.schemas import AgentRef, PersonRef
 
 # The longest `q` a list accepts: a phrase to look for, never a document.
 MAX_QUERY_LENGTH = 200
@@ -157,16 +157,6 @@ class PartialDate(LibraryResponse):
         ),
         examples=["day"],
     )
-
-
-class AgentRef(LibraryResponse):
-    """One of the platform's research agents, named the way a screen may label it: its
-    definition key, which never changes, and never its internal id alone (AUD-02)."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05", "key": "watch-sweeper"}]})
-
-    id: UUID = Field(description="The agent definition, as a UUID.")
-    key: str = Field(description="The agent definition's own key, stable and never changed, for example `watch-sweeper`.", examples=["watch-sweeper"])
 
 
 class VersionConfirmation(LibraryResponse):
