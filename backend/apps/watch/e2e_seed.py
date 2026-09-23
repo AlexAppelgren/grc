@@ -136,6 +136,7 @@ def seed_change(
     published_precision: DatePrecision = DatePrecision.DAY,
     key_date_precision: DatePrecision = DatePrecision.DAY,
     source_url: str = "https://www.fi.se/",
+    summary: str = "FI's board decided to amend rules in the securities area.",
 ) -> RegulatoryChange:
     """One reform, merged on `stableKey` exactly as a sweep's retry would merge it
     (AC-WAT1): a second run updates the seed's own row rather than writing a duplicate."""
@@ -150,7 +151,7 @@ def seed_change(
             "authority_label": authority_label,
             "published_on": published_on or key_date,
             "published_precision": published_precision.value,
-            "summary": "FI's board decided to amend rules in the securities area.",
+            "summary": summary,
             "so_what_draft": so_what_draft,
             "suggested_urgency": Urgency.objects.get(key=urgency),
             "key_date": key_date,

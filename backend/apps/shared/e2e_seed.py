@@ -130,6 +130,10 @@ EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
         "service_type:insurance_distribution",
         "client_category:retail",
         "client_category:professional",
+        # tax-watched-feed (FP-04): the bank operates in Sweden, as FP-S10, FP-S13 and FP-S15
+        # have it, so a Danish record is outside this scope and "Markets we watch" has
+        # something to add. Union rules reach Sweden, so none of them moves.
+        "jurisdiction:se",
     ),
     TENANT_B_SLUG: (
         "regime:securities",
@@ -1257,6 +1261,44 @@ def seed_outside_scope_terms() -> None:
     watch_e2e_seed.seed_scope_term_link(change, term_ref=EXPECTED_OUTSIDE_SCOPE.term)
 
 
+# --- tax-watched-feed (FP-04, FP-S15) ----------------------------------------------------
+# A Danish authority's change about custody: outside tenant A's scope, which operates in
+# Sweden only, and listed under "Markets we watch" because tenant A watches Denmark. Its
+# urgency is the lowest and it was first seen last week, so it moves neither HOM-S1's lead
+# nor this week's lists, and its cases come from the real fan-out, so tenant A's verdict is
+# the rule's own.
+EXPECTED_WATCHED_CHANGE = "chg-e2e-dk-custody"
+
+
+def seed_watched_market_change() -> None:
+    """The Danish change and every bank's case for it, fanned out only when this run
+    created it, so a reseed opens no second case. The fan-out enters each bank's zone, so
+    this clears the tenant it leaves active, as `seed_chunk5_cases()` does."""
+    is_new = not _regulatory_change_exists(EXPECTED_WATCHED_CHANGE)
+    week = timezone_now_last_week(TENANT_A.timezone)
+    change = watch_e2e_seed.seed_change(
+        stable_key=EXPECTED_WATCHED_CHANGE,
+        title="Finanstilsynet tightens the safekeeping rules for client financial instruments",
+        change_type="adopted",
+        authority="finanstilsynet-dk",
+        authority_label="Finanstilsynet (DK)",
+        published_on=week.date(),
+        key_date=week.date() + datetime.timedelta(days=150),
+        key_date_label="In force",
+        urgency="monitor",
+        first_seen_at=week,
+        so_what_draft="Check whether the custody set-up for Danish clients follows the new rules.",
+        source_url="https://www.dfsa.dk/",
+        summary="The Danish supervisor amended the rules on how firms keep their clients' financial instruments apart.",
+    )
+    watch_e2e_seed.seed_scope_term_link(change, term_ref="regime:securities", confidence=0.9)
+    watch_e2e_seed.seed_scope_term_link(change, term_ref="service_type:custody", confidence=0.84)
+    if is_new:
+        _register_and_fan_out(change)
+    tenancy.clear_tenant()
+# --- end tax-watched-feed ------------------------------------------------------------------
+
+
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
@@ -1295,6 +1337,7 @@ def seed_e2e() -> dict[str, int]:
         seed_chunk5_sources(closed_run)
         seed_chunk5_changes(closed_run)
         chunk5_cases = seed_chunk5_cases(tenants)
+        seed_watched_market_change()
     return {
         "tenants": len(tenants),
         "logins": logins,

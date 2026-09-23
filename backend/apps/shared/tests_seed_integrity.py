@@ -701,14 +701,17 @@ class SeedIntegrityGuard(TestCase):
 
         Proven to fail 2026-09-23 with the outside-scope change seeded without its scope
         term: that change matches every bank by the rule, while its case says false."""
+        from apps.cases.reading import scope_term_ids_of_each_case
+
         seed_e2e()
         verdicts: dict[tuple[str, str], bool] = {}
         for tenant in Tenant.objects.order_by("slug"):
             tenancy.activate(tenant.id)
-            for case in ChangeCase.objects.select_related("change"):
-                term_ids = list(ChangeTerm.objects.filter(change_id=case.change_id, term__isnull=False).values_list("term_id", flat=True))
+            # The change's whole scope, the jurisdictions its authority reaches included
+            # (FP-04), exactly as the recomputation hands it to the rule.
+            for case in ChangeCase.objects.select_related("change").annotate(term_ids=scope_term_ids_of_each_case()):
                 with self.subTest(tenant=tenant.slug, change=case.change.stable_key):
-                    self.assertEqual(case.footprint_match, in_footprint_sql(tenant.id, term_ids))
+                    self.assertEqual(case.footprint_match, in_footprint_sql(tenant.id, case.term_ids))
                 verdicts[(tenant.slug, case.change.stable_key)] = case.footprint_match
         self.assertIs(verdicts[(TENANT_A_SLUG, EXPECTED_HOME.outside_scope_change)], False)
         self.assertIs(verdicts[(TENANT_A_SLUG, EXPECTED_HOME.lead_change)], True)
@@ -769,6 +772,25 @@ class SeedIntegrityGuard(TestCase):
                 self.assertEqual(sorted(audited.values_list("subject_title", flat=True)), sorted(keys))
         self.assertEqual(EXPECTED_WATCHED_MARKETS[TENANT_A_SLUG], ("dk",))
         self.assertEqual(EXPECTED_WATCHED_MARKETS[TENANT_B_SLUG], ())
+
+    # --- tax-watched-feed (FP-04, FP-S15) ---------------------------------------------------
+    def test_the_danish_custody_change_is_outside_tenant_a_scope_and_from_a_market_it_watches(self) -> None:
+        """FP-S15, FP-04: tenant A operates in Sweden and watches Denmark, so the Danish
+        authority's custody change is outside its scope by jurisdiction alone, and its case,
+        opened by the real fan-out, says so. It moves neither the lead nor this week: the
+        lowest urgency, first seen last week. A reseed opens no second case."""
+        from apps.shared.e2e_seed import EXPECTED_WATCHED_CHANGE
+
+        seed_e2e()
+        seed_e2e()
+        change = RegulatoryChange.objects.select_related("authority__jurisdiction").get(stable_key=EXPECTED_WATCHED_CHANGE)
+        self.assertEqual(change.authority.jurisdiction.key if change.authority else None, "dk")
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        self.assertIn("se", footprint_of(tenant_a.id)["jurisdiction"])
+        case = ChangeCase.objects.get(change=change)
+        self.assertEqual((case.footprint_match, case.urgency.key, case.urgency_confirmed), (False, "monitor", False))
+        self.assertLess(change.first_seen_at, ChangeCase.objects.get(change__stable_key=EXPECTED_HOME.lead_change).change.first_seen_at)
 
     def test_the_library_holds_a_danish_and_a_norwegian_supervisor_and_act(self) -> None:
         """FP-04: the markets journeys need Danish and Norwegian rules. Each country has its
