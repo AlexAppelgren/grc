@@ -121,11 +121,17 @@ body{
   font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
 }
 img,svg{max-width:100%}
+[hidden]{display:none!important}
+/* artifact-skeleton-provides */ :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 a{color:inherit}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
 
 /* ---- shell ------------------------------------------------------------- */
-.wrap{max-width:1160px;margin-inline:auto;padding-inline:clamp(20px,4vw,48px)}
+.wrap{
+  max-width:1160px;margin-inline:auto;
+  padding-left:max(clamp(20px,4vw,48px),env(safe-area-inset-left,0px));
+  padding-right:max(clamp(20px,4vw,48px),env(safe-area-inset-right,0px));
+}
 .band--ink{background:var(--ink);color:var(--on-ink)}
 .band--sub{background:var(--paper-sub)}
 main{display:block}
@@ -173,11 +179,30 @@ h3.sub{font-family:var(--sans);font-size:var(--t-h3);font-weight:600;line-height
 .mark--foot{width:120px}
 
 /* ---- masthead ribbon --------------------------------------------------- */
-.masthead{display:flex;align-items:center;gap:20px;padding-block:14px;flex-wrap:wrap}
-.masthead nav{display:flex;gap:22px;flex-wrap:wrap;margin-left:auto}
+.masthead{display:flex;align-items:center;gap:20px;padding-block:14px}
+.navlinks{display:flex;gap:22px;flex-wrap:wrap;margin-left:auto}
 .navlink{font-size:.875rem;color:var(--on-ink-muted);text-decoration:none;padding-block:4px;border-bottom:1px solid transparent}
 .navlink:hover{color:var(--on-ink);border-bottom-color:var(--on-ink-line)}
 .mast-actions{display:flex;align-items:center;gap:10px}
+
+/* the menu button and its panel, below 880 px only */
+.mast-menu{
+  display:none;align-items:center;justify-content:center;
+  margin-left:auto;height:36px;min-width:72px;padding:0 12px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  background:transparent;color:var(--on-ink);border:1px solid var(--on-ink-line);
+  border-radius:6px;cursor:pointer;
+}
+.mast-menu:hover{background:var(--on-ink-wash)}
+.menu-panel{padding-bottom:16px;border-top:1px solid var(--on-ink-line);margin-top:2px}
+.menu-panel .row{
+  display:flex;align-items:center;min-height:44px;padding:0 8px;border-radius:6px;
+  color:var(--on-ink);text-decoration:none;font-size:1rem;
+}
+.menu-panel .row:hover{background:var(--on-ink-wash)}
+.menu-panel .acts{display:grid;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--on-ink-line)}
+.menu-panel .acts .btn{height:44px}
+.menu-panel .acts .theme-toggle{height:44px;justify-self:start;padding-inline:14px}
 
 /* ---- buttons and controls ---------------------------------------------- */
 .btn{
@@ -315,6 +340,16 @@ del{background:var(--del-bg);color:var(--del-fg);border-radius:3px;padding:0 2px
 .foot-bottom{display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between;padding-top:22px;border-top:1px solid var(--line);font-family:var(--mono);font-size:.75rem;color:var(--muted)}
 
 /* ---- responsive -------------------------------------------------------- */
+@media (min-width: 881px){
+  .menu-panel{display:none!important}
+}
+@media (max-width: 880px){
+  .ribbon{position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+  .navlinks,.mast-actions{display:none}
+  .mast-menu{display:inline-flex}
+  .masthead{padding-block:10px;gap:12px}
+  .section,#top{scroll-margin-top:76px}
+}
 @media (max-width: 1000px){
   .hero{grid-template-columns:minmax(0,1fr)}
   .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -330,7 +365,6 @@ del{background:var(--del-bg);color:var(--del-fg);border-radius:3px;padding:0 2px
   .door .meta{max-width:none}
   .defs,.qa{grid-template-columns:minmax(0,1fr)}
   .request{grid-template-columns:minmax(0,1fr)}
-  .masthead nav{order:3;margin-left:0;width:100%;gap:18px}
 }
 @media (max-width: 560px){
   .facts{grid-template-columns:minmax(0,1fr)}
@@ -351,13 +385,13 @@ del{background:var(--del-bg);color:var(--del-fg);border-radius:3px;padding:0 2px
 </svg>
 
 <!-- ============================ RIBBON ============================ -->
-<div class="band--ink">
+<div class="band--ink ribbon">
   <div class="wrap">
     <div class="masthead">
       <a href="#top" aria-label="bleqq, pronounced blek, home">
         <svg class="mark mark--nav" viewBox="0 0 4520 999" role="img" aria-label="bleqq"><use href="#wordmark"/></svg>
       </a>
-      <nav aria-label="Sections">
+      <nav class="navlinks" aria-label="Sections">
         <a class="navlink" href="#method">Method</a>
         <a class="navlink" href="#zones">Zones</a>
         <a class="navlink" href="#coverage">Coverage</a>
@@ -365,11 +399,25 @@ del{background:var(--del-bg);color:var(--del-fg);border-radius:3px;padding:0 2px
         <a class="navlink" href="#questions">Questions</a>
       </nav>
       <div class="mast-actions">
-        <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false">Dark</button>
+        <button type="button" class="theme-toggle" aria-pressed="false">Dark</button>
         <a class="btn btn--sm btn--quiet" href="#request">Sign in</a>
         <a class="btn btn--sm btn--plate" href="#request">Request access</a>
       </div>
+      <button type="button" class="mast-menu" id="menu-button" aria-expanded="false" aria-controls="menu-panel">Menu</button>
     </div>
+
+    <nav class="menu-panel" id="menu-panel" aria-label="Sections and account" hidden>
+      <a class="row" href="#method">Method</a>
+      <a class="row" href="#zones">Zones</a>
+      <a class="row" href="#coverage">Coverage</a>
+      <a class="row" href="#assurance">Assurance</a>
+      <a class="row" href="#questions">Questions</a>
+      <div class="acts">
+        <a class="btn btn--plate" href="#request">Request access</a>
+        <a class="btn btn--quiet" href="#request">Sign in</a>
+        <button type="button" class="theme-toggle" aria-pressed="false">Dark</button>
+      </div>
+    </nav>
   </div>
 </div>
 
@@ -689,7 +737,7 @@ del{background:var(--del-bg);color:var(--del-fg);border-radius:3px;padding:0 2px
 <script>
 (function () {
   var root = document.documentElement;
-  var toggle = document.getElementById('theme-toggle');
+  var toggles = document.querySelectorAll('.theme-toggle');
 
   function stored() {
     try { return window.localStorage.getItem('bleqq-theme'); } catch (e) { return null; }
@@ -708,21 +756,52 @@ del{background:var(--del-bg);color:var(--del-fg);border-radius:3px;padding:0 2px
   }
   function paint() {
     var dark = isDark();
-    toggle.textContent = dark ? 'Light' : 'Dark';
-    toggle.setAttribute('aria-pressed', dark ? 'true' : 'false');
-    toggle.setAttribute('aria-label', dark ? 'Switch to the light theme' : 'Switch to the dark theme');
+    Array.prototype.forEach.call(toggles, function (button) {
+      button.textContent = dark ? 'Light' : 'Dark';
+      button.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      button.setAttribute('aria-label', dark ? 'Switch to the light theme' : 'Switch to the dark theme');
+    });
   }
 
   var saved = stored();
   if (saved === 'dark' || saved === 'light') { root.setAttribute('data-theme', saved); }
   paint();
 
-  toggle.addEventListener('click', function () {
-    var next = isDark() ? 'light' : 'dark';
-    root.setAttribute('data-theme', next);
-    remember(next);
-    paint();
+  Array.prototype.forEach.call(toggles, function (button) {
+    button.addEventListener('click', function () {
+      var next = isDark() ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      remember(next);
+      paint();
+    });
   });
+
+  var menuButton = document.getElementById('menu-button');
+  var menuPanel = document.getElementById('menu-panel');
+
+  function setMenu(open) {
+    menuPanel.hidden = !open;
+    menuButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+    menuButton.textContent = open ? 'Close' : 'Menu';
+  }
+
+  menuButton.addEventListener('click', function () {
+    setMenu(menuPanel.hidden);
+  });
+  menuPanel.addEventListener('click', function (event) {
+    if (event.target.closest('a')) { setMenu(false); }
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && !menuPanel.hidden) {
+      setMenu(false);
+      menuButton.focus();
+    }
+  });
+  if (window.matchMedia) {
+    window.matchMedia('(min-width: 881px)').addEventListener('change', function (event) {
+      if (event.matches) { setMenu(false); }
+    });
+  }
 
   var form = document.getElementById('request-form');
   var status = document.getElementById('request-status');
