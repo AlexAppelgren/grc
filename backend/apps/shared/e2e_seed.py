@@ -1136,22 +1136,6 @@ def _sweeper_key() -> tuple[ApiKey, Any]:
 _CONFIRMER_SCOPES: tuple[str, ...] = ("agent-runs:write", "library:read", "proposals:review")
 
 
-def _confirmer_key() -> ApiKey:
-    """The library confirmer's platform key, found by its name or made once, bound to its
-    own agent definition: the key every confirmation in this seed names (D-74). Like the
-    sweeper's, nothing authenticates as it, so its plain value is dropped at once, and it is
-    written in `tenancy.platform_zone()` (H15)."""
-    seed_agent_definitions()
-    agent = _agent(CONFIRMING_AGENT)
-    _plain, prefix, key_hash = tokens.new_api_key()
-    with tenancy.platform_zone():
-        key, _created = ApiKey.objects.get_or_create(
-            name="Library confirmer (E2E)",
-            defaults={"tenant": None, "agent": agent, "key_prefix": prefix, "key_hash": key_hash, "scopes": list(_CONFIRMER_SCOPES)},
-        )
-    return key
-
-
 def seed_chunk5_sources(closed_run: AgentRun) -> None:
     """The registry's own variety (WAT-01), four sources across three of its four kinds
     (`tenant_private` is WAT-06, R3, and fits no shared row): a healthy one, one that has
@@ -1209,7 +1193,7 @@ def seed_chunk5_changes(closed_run: AgentRun) -> SeedChunk5Watch:
     confirm any suggestion left. It clears the tenant it is called with left active.
     """
     sweeper, _agent_row = _sweeper_key()
-    confirmer = _confirmer_key()
+    confirmer, _confirming_agent = _confirmer_key()
     tenancy.clear_tenant()
     week = timezone_now_this_week(TENANT_A.timezone)
     today = week.date()
@@ -1557,7 +1541,6 @@ MACHINE_CONFIRMED_RUNS: dict[str, tuple[uuid.UUID, uuid.UUID]] = {
 # The seed's stand-in for the passkey assertion a person's re-verification carries on its
 # audit row: the seed signs nobody in, and it refuses to run deployed (refuse_when_deployed).
 SEED_REVERIFICATION_STEP_UP = uuid.UUID("00000000-0000-4000-9000-000000000018")
-_CONFIRMER_SCOPES: tuple[str, ...] = ("agent-runs:write", "library:read", "proposals:review")
 _MACHINE_CONFIRMED_WORDING: dict[str, dict[str, str]] = {
     "obl-switch-documentation": {
         "sv": (
@@ -1590,7 +1573,7 @@ def _confirmer_key() -> tuple[ApiKey, Any]:
     it is bound to: a definition other than the sweeper's, holding the review scope and never
     the scope to propose. Its plain value is dropped, as the sweeper key's is (H15)."""
     seed_agent_definitions()
-    agent = _agent("library-confirmer")
+    agent = _agent(CONFIRMING_AGENT)
     _plain, prefix, key_hash = tokens.new_api_key()
     with tenancy.platform_zone():
         key, _created = ApiKey.objects.get_or_create(
@@ -1708,19 +1691,21 @@ EXPECTED_ASK = SeedAsk(
 
 
 def seed_ask_pending_link() -> None:
-    """The lead change's confirmed link to the research payment duty, confirmed by a library
-    editor this week as WAT-04 has one confirm it. A link is library-zone, so no tenant is
-    active; it adds a row to the roadmap's and the change page's obligations and changes
-    nothing a home or watch journey counts. Runs after `seed_logins()`, because the editor
-    must already exist."""
+    """The lead change's confirmed link to the research payment duty, the sweeper's
+    suggestion confirmed by the library confirmer this week, as WAT-04 has an agent of
+    another definition confirm it (D-74). A link is library-zone, so no tenant is active; it
+    adds a row to the roadmap's and the change page's obligations and changes nothing a home
+    or watch journey counts."""
     tenancy.clear_tenant()
-    editor = User.objects.get(email=CONFIRMING_EDITOR_EMAIL)
+    suggester, _sweeper = _sweeper_key()
+    confirmer, _confirming_agent = _confirmer_key()
     change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key=EXPECTED_ASK.pending_change)
     watch_e2e_seed.seed_obligation_link(
         change,
         _obligation(EXPECTED_ASK.pending_obligation),
         confidence=0.9,
-        confirmed_by_id=editor.id,
+        suggester=suggester,
+        confirmer=confirmer,
         confirmed_at=timezone_now_this_week(TENANT_A.timezone),
     )
 
