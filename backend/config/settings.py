@@ -586,6 +586,20 @@ SOURCE_STALE_AFTER_CHECKS = env_int("SOURCE_STALE_AFTER_CHECKS", 1)
 SOURCE_STALE_GRACE_HOURS = env_int("SOURCE_STALE_GRACE_HOURS", 24)
 
 # ---------------------------------------------------------------------------------------
+# ===== WAT-07 standards publishers nobody reads automatically (apps/watch/sources.py) ====
+# A source whose address is on one of these hosts, or a subdomain of one, is registered
+# with its automated checks off, like every source of the `standards_body` kind, and a run
+# may log no check of it. Comma-separated host names. The default names every standards
+# publisher whose terms docs/plans/Verification_Log.md ("PRD 0.3 standards facts") read, so
+# out of the box bleqq reads no publisher automatically; a host leaves the list only when a
+# lawyer has cleared its terms (D-45, docs/TODO_FOR_alex.md "Legal, before any standard is
+# seeded"). IAF is not on it: it publishes no standard's text.
+# ---------------------------------------------------------------------------------------
+STANDARDS_PUBLISHER_HOSTS = [host.lower() for host in env_list(
+        "STANDARDS_PUBLISHER_HOSTS", "iso.org,iec.ch,sis.se,ds.dk,standard.no,sfs.fi,pcisecuritystandards.org"
+    )]
+
+# ---------------------------------------------------------------------------------------
 # ===== HOM-01 how long Today's "Coming up" list is (apps/home/logic.py, c6-home-backend) =
 # Today shows the same short list on a 375 px phone and on a desktop, so its length is one
 # number rather than a breakpoint: the screen never decides how much of the roadmap it is

@@ -62,6 +62,7 @@ from apps.shared.e2e_seed import (
     EXPECTED_PENDING_REQUEST,
     EXPECTED_PROBLEM_REPORT,
     EXPECTED_PROPOSALS,
+    EXPECTED_STANDARD_CHANGE,
     EXPECTED_TENANT_A_ONLY,
     EXPECTED_TENANTS,
     EXPECTED_WATCHED_MARKETS,
@@ -680,7 +681,7 @@ class SeedIntegrityGuard(TestCase):
                 self.assertFalse(FootprintTerm.objects.filter(tenant=tenant, term__dimension__key__in=opt_in).exists())
 
     # --- lib-standard-e2e-seed (INV-S11, FP-S16) -------------------------------------------
-    def test_the_e2e_standard_is_public_facts_and_one_duty_on_a_held_term(self) -> None:
+    def test_the_e2e_standard_is_public_facts_and_one_duty_on_the_standards_term(self) -> None:
         """INV-08, D-35, D-36: seed_e2e files ISO/IEC 27001:2022 under International and
         ISO/IEC with no provision and exactly one duty, whose one term is the standard's.
         No seeded bank follows the term, so none sees the duty in its inventory. That the
@@ -1094,3 +1095,50 @@ class SeedIntegrityGuard(TestCase):
         self.assertTrue(in_footprint(_scope(obligation), footprint, restricting=restricting))
         self.assertTrue(in_footprint(_scope(obligation), without, restricting=restricting))
     # --- end pro-s13-journey -------------------------------------------------------------------
+
+    # --- watch-standards (WAT-S10) ---------------------------------------------------------
+    def test_the_standards_change_reaches_tenant_a_only_while_the_journey_has_it_follow(self) -> None:
+        """WAT-S10's journey data: the amendment is named by its reference alone, issued by
+        a standards body, and seen by no seeded bank until `e2e_follow_standard on`; `off`
+        puts tenant A's scope and the case's verdict back as seeded."""
+        seed_e2e()
+        spec = EXPECTED_STANDARD_CHANGE
+        change = RegulatoryChange.objects.select_related("authority__jurisdiction").get(stable_key=spec.stable_key)
+        self.assertEqual((change.title, change.key_date_label), (spec.title, spec.key_date_label))
+        assert change.authority is not None
+        self.assertEqual(change.authority.jurisdiction.kind, "international")
+        self.assertEqual(
+            sorted(
+                f"{dimension}:{key}"
+                for dimension, key in change.term_links.filter(term__isnull=False).values_list("term__dimension__key", "term__key")
+            ),
+            ["regime:ai_ict", spec.term],
+        )
+        self.assertEqual([event.label for event in change.events.order_by("sort_order")], ["Draft for comment", "Published"])
+
+        def verdicts() -> dict[str, bool]:
+            found = {}
+            for tenant in Tenant.objects.order_by("slug"):
+                tenancy.activate(tenant.id)
+                found[tenant.slug] = ChangeCase.objects.get(change=change).footprint_match
+            tenancy.clear_tenant()
+            return found
+
+        def follows() -> bool:
+            tenancy.activate(Tenant.objects.get(slug=TENANT_A_SLUG).id)
+            held = FootprintTerm.objects.filter(term__dimension__key="standard").exists()
+            tenancy.clear_tenant()
+            return held
+
+        self.assertEqual(verdicts(), {TENANT_A_SLUG: False, TENANT_B_SLUG: False})
+        call_command("e2e_follow_standard", "on", stdout=StringIO())
+        self.assertTrue(follows())
+        self.assertEqual(verdicts(), {TENANT_A_SLUG: True, TENANT_B_SLUG: False})
+        call_command("e2e_follow_standard", "off", stdout=StringIO())
+        self.assertFalse(follows())
+        self.assertEqual(verdicts(), {TENANT_A_SLUG: False, TENANT_B_SLUG: False})
+
+    @override_settings(IS_DEPLOYED_ENVIRONMENT=True, ENVIRONMENT="production")
+    def test_the_standard_toggle_refuses_a_deployed_environment(self) -> None:
+        with self.assertRaises(SeedRefused):
+            call_command("e2e_follow_standard", "on", stdout=StringIO())

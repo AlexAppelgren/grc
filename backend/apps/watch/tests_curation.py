@@ -207,6 +207,22 @@ class ChangeFacts(CurationCase):
         self.assertNotEqual(self.change.title, "A better title", "a refusal stores nothing at all")
         self.assertEqual(self.term_keys(), ["securities"])
 
+    def test_a_standards_term_on_a_supervisors_change_is_refused(self) -> None:
+        """WAT-07, D-38: a correction cannot tag FI's change with a standard, which would
+        hide it from every bank that follows none; a standards body's change takes one."""
+        terms = [str(watch_build.term("regime:ai_ict").id), str(watch_build.term("standard:iso_iec_27001").id)]
+        with as_agent():
+            response = self.patch_change({"termIds": terms})
+        self.assertEqual(response.status_code, 422, response.content)
+        self.assertEqual(response.json()["code"], "standard_term_only_on_standards")
+        self.assertEqual(self.term_keys(), ["securities"], "a refusal stores nothing")
+
+        library_build.authority(key="iso-iec", short_name="ISO/IEC", jurisdiction="intl")
+        standards_change = watch_build.change(authority="iso-iec", authority_label="ISO/IEC")
+        with as_agent():
+            response = self.patch_change({"termIds": terms}, change=standards_change)
+        self.assertEqual(response.status_code, 200, response.content)
+
     def test_a_call_that_leaves_the_terms_alone_needs_no_regime(self) -> None:
         with as_agent():
             response = self.patch_change({"flags": ["ai"]})

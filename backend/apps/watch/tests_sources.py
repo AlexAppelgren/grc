@@ -24,6 +24,7 @@ import datetime
 import uuid
 from typing import Any
 
+from django.conf import settings
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
@@ -422,3 +423,76 @@ class SourceCadence(TestCase):
 
     def test_every_cadence_the_model_allows_has_a_span(self) -> None:
         self.assertEqual(sorted(sources_logic.CADENCE), sorted(kind.value for kind in CheckFrequency))
+
+
+class StandardsPublishers(WatchSourceCase):
+    """A standards publisher's pages are not read automatically until a lawyer has read its
+    terms (WAT-07, D-45): a source of the `standards_body` kind, or one whose address is on
+    a host in `STANDARDS_PUBLISHER_HOSTS`, is registered with its checks off, and a run may
+    not log a check of a source whose checks are off."""
+
+    def test_out_of_the_box_no_standards_publisher_is_read(self) -> None:
+        """The default lists every publisher whose terms were read (D-45), and a source on
+        any of them is registered with its checks off."""
+        for host in settings.STANDARDS_PUBLISHER_HOSTS:
+            with self.subTest(host=host):
+                response = self.register({**NEW_SOURCE, "name": host, "url": f"https://www.{host}/"})
+                self.assertEqual(response.status_code, 201, response.content)
+                self.assertFalse(response.json()["active"])
+        self.assertTrue({"iso.org", "iec.ch"} <= set(settings.STANDARDS_PUBLISHER_HOSTS))
+
+    @override_settings(STANDARDS_PUBLISHER_HOSTS=[])
+    def test_an_ordinary_source_is_registered_with_its_checks_on(self) -> None:
+        response = self.register({**NEW_SOURCE, "url": "https://www.iso.org/news.html"})
+        self.assertTrue(response.json()["active"], "the list, not the address, holds a publisher back")
+
+    def test_a_standards_body_source_is_registered_with_its_checks_off(self) -> None:
+        response = self.register(
+            {**NEW_SOURCE, "name": "ISO news", "url": "https://www.iso.org/news.html", "kind": "standards_body"}
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertFalse(response.json()["active"])
+        event = AuditEvent.objects.get(action=sources_logic.REGISTERED)
+        self.assertFalse(event.after["active"], "the audit row records the state it was registered in")
+
+    @override_settings(STANDARDS_PUBLISHER_HOSTS=["iso.org", "iec.ch"])
+    def test_a_source_on_a_publisher_host_is_registered_with_its_checks_off_whatever_its_kind(self) -> None:
+        for name, url in (("ISO", "https://www.iso.org/news.html"), ("IEC", "https://iec.ch/news")):
+            with self.subTest(url=url):
+                response = self.register({**NEW_SOURCE, "name": name, "url": url})
+                self.assertEqual(response.status_code, 201, response.content)
+                self.assertFalse(response.json()["active"])
+
+    @override_settings(STANDARDS_PUBLISHER_HOSTS=["iso.org"])
+    def test_a_host_that_only_ends_like_a_publisher_is_not_one(self) -> None:
+        response = self.register({**NEW_SOURCE, "url": "https://notiso.org/news"})
+        self.assertTrue(response.json()["active"])
+
+    @override_settings(STANDARDS_PUBLISHER_HOSTS=["iso.org"])
+    def test_an_editor_cannot_switch_a_publishers_checks_on_or_move_a_source_onto_one(self) -> None:
+        publisher = watch_build.source(name="ISO news", url="https://www.iso.org/news.html", active=False)
+        ordinary = watch_build.source(name="fi.se news")
+        for source, body in ((publisher, {"active": True}), (ordinary, {"url": "https://www.iso.org/news.html"})):
+            with self.subTest(source=source.name), self.as_editor():
+                response = self.client.patch(
+                    f"{SOURCES}/{source.id}", data=body, content_type=JSON, **self.session_headers()
+                )
+            self.assertEqual(response.status_code, 422, response.content)
+            self.assertEqual(response.json()["code"], "validation_error")
+            source.refresh_from_db()
+            self.assertIs(source.active, source is ordinary, "a refusal stores nothing")
+        self.assertEqual(ordinary.url, "https://www.fi.se/", "nor moves the address")
+
+    def test_a_run_may_not_log_a_check_of_a_source_whose_checks_are_off(self) -> None:
+        source = watch_build.source(name="ISO news", active=False)
+        run = agent_build.platform_run(key=self.key)
+        for body in (
+            {"sourceName": source.name, "status": "ok", "itemsFound": 1},
+            {"sourceName": source.name, "status": "failed", "error": "403 from the publisher"},
+        ):
+            with self.subTest(status=body["status"]):
+                response = self.log_check(run, body)
+                self.assertEqual(response.status_code, 422, response.content)
+                self.assertEqual(response.json()["code"], "source_inactive")
+        self.assertEqual(source.checks.count(), 0, "a refusal logs nothing")
+        self.assertFalse(AuditEvent.objects.filter(action=sources_logic.CHECK_LOGGED).exists())

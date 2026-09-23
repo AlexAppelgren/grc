@@ -85,7 +85,7 @@ def _tag_rows() -> list[SystemRow]:
 # standards a bank follows, is opt-in (D-36): a record carrying one of its terms shows only to
 # a bank whose regulatory scope names that term, whatever its restricts_footprint flag says
 # (apps/taxonomy/matching.py). No E2E tenant holds one of its terms, so a standard's records
-# start outside every seeded bank's scope, and its one term is seeded inactive (below).
+# start outside every seeded bank's scope.
 _EXTRA_DIMENSIONS: list[SystemRow] = [
     SystemRow("jurisdiction", {"en": "Jurisdiction", "sv": "Jurisdiktion"}, "Where the rule applies: the Union or a country. Terms mirror the jurisdiction table.", TermDimensionKind.SCOPE.value, {"restricts_footprint": True}),
     SystemRow("theme", {"en": "Theme", "sv": "Tema"}, "What the rule is about, for browsing and briefings. Never narrows the regulatory scope.", TermDimensionKind.CLASSIFICATION.value, {"restricts_footprint": False}),
@@ -112,13 +112,12 @@ _EXTRA_DIMENSIONS: list[SystemRow] = [
 # The standards a bank may follow: one term per standard and never per edition, so a bank's
 # scope survives a new edition (D-36), and ISO/IEC 27001 alone for now (D-47). A standard is
 # named by its reference in every language, never by its title, and the library holds none
-# of its text (INV-08). ISO/IEC 27001 is seeded inactive, so no scope request, obligation
-# scope or change can name it (each resolves active terms only). Two doors must land before
-# it is switched on. The watch door must refuse a standard's term on a change from a national
-# supervisor (WAT-S11, 422 `standard_term_only_on_standards`): an agent's key registers a
-# change with no second person (D-64), and a law tagged with a standard would vanish from
-# every bank that follows none. The regulatory scope page must read an empty opt-in group as
-# "none followed", never "not restricted". apps/taxonomy/tests_matching.HeldStandard pins it.
+# of its text (INV-08). The watch door refuses a standard's term on a change whose authority
+# is not a standards body (WAT-S11, 422 `standard_term_only_on_standards`): an agent's key
+# registers a change with no second person (D-64), and a law tagged with a standard would
+# vanish from every bank that follows none. With that door in place the term is seeded
+# active; a database seeded while it was held keeps it inactive, because the seed creates
+# and never updates a term. apps/taxonomy/tests_matching.SeededStandard pins it.
 _EXTRA_TERMS: list[dict[str, Any]] = [
     {"dimension": "licensed_activity", "key": "card_issuing", "label_en": "Card issuing", "label_sv": "Kortutgivning", "sort_order": 1},
     {"dimension": "licensed_activity", "key": "card_acquiring", "label_en": "Card acquiring", "label_sv": "Kortinlösen", "sort_order": 2},
@@ -133,7 +132,6 @@ _EXTRA_TERMS: list[dict[str, Any]] = [
             "this term."
         ),
         "sort_order": 1,
-        "active": False,
     },
 ]
 

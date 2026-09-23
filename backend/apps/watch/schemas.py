@@ -1432,7 +1432,9 @@ class WatchChangePatch(WriteBody):
             "The whole set of taxonomy term ids for this change, each a UUID and at most 100 "
             "of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new "
             "set: one that names no term of the `regime` dimension answers 422 "
-            "`regime_required` with the regime keys in `validKeys`. A term `GET /taxonomy/terms` marks `mirrored` answers 422 "
+            "`regime_required` with the regime keys in `validKeys`. A standard's term is "
+            "accepted only when the change's authority is a standards body, whose jurisdiction "
+            "is international, else 422 `standard_term_only_on_standards`. A term `GET /taxonomy/terms` marks `mirrored` answers 422 "
             "`jurisdiction_term_mirrored`."
         ),
         examples=[["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"]],

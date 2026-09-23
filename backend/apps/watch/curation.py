@@ -126,6 +126,7 @@ def update_change_facts(
         terms = keys.resolve_terms(sent["term_ids"]) if "term_ids" in sent else None
         if terms is not None:
             keys.require_regime(terms)
+            keys.require_standards_body(terms, change.authority_id)
         superseded_by = _superseding(change, sent) if "superseded_by" in sent else None
         if change_type is not None and change_type.id != change.change_type_id and not change.change_type_suggested:
             _refuse_confirmed(who, "the type", step_up_assertion_id)

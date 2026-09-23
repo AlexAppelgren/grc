@@ -1,3 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './support/api-guard';
@@ -10,8 +13,9 @@ import { openChangeFromFeed } from './support/watch-facts';
 // the title is what scripts/requirements_coverage.py looks for. Never delete a
 // stub: un-fixme it when the journey is real.
 //
-// No step here reads a date relative to today. The dates asserted are the
-// source's own, seeded fixed (WAT-S2's March 2026, 15 June 2026 and Q1 2027),
+// Only WAT-S10 reads a date relative to today, and it derives it the way the
+// seed does (tenant A's today plus a fixed offset). The other dates asserted are
+// the source's own, seeded fixed (WAT-S2's March 2026, 15 June 2026 and Q1 2027),
 // and a confirmation's date is matched by its shape, so no answer changes as
 // the calendar moves past a seeded date such as 1 October 2026.
 
@@ -226,12 +230,59 @@ test.describe('watch journeys', () => {
   });
 });
 
-// PRD 0.3: a standard's revision is one watched change that reaches only the
-// tenants that follow it (WAT-07). It stays test.fixme until the task in
-// docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
+// WAT-S10 (watch-standards): a new edition of a standard reaches only the banks
+// that follow it (WAT-07, CAS-01, AC-FP3). Tenant A follows no standard as
+// seeded, because FP-S16 and INV-S11 start from that, so this journey switches
+// ISO/IEC 27001 on in tenant A's scope for its own run with the E2E-only
+// `manage.py e2e_follow_standard` (the seed's own footprint write and the
+// recompute an approval triggers; the E2E stack runs no beat to deliver it) and
+// back off afterwards, on failure too. Tenant B follows neither the standard nor
+// AI and ICT, so its half is weaker than the backend's WAT-S10 test, which holds
+// the regime in both banks. The dates are the seed's: tenant A's today plus 400
+// days for the end of the transition.
+const STANDARD_CHANGE = { stableKey: 'chg-e2e-iso-27001-amendment', title: 'ISO/IEC 27001 amendment', transitionOffsetDays: 400 };
+
+function followTheStandard(state: 'on' | 'off'): void {
+  // Forward slashes: bash opens the script by this path, and a Windows checkout hands path.join backslashes.
+  const script = path.join(test.info().project.testDir, 'support', 'start-backend.sh').split(path.sep).join('/');
+  execFileSync('bash', [script, 'manage', 'e2e_follow_standard', state], { encoding: 'utf8' });
+}
+
+/** A plain date the seed set as tenant A's today plus `offsetDays`, as the screen's `formatDate` renders it. */
+function seededDateText(offsetDays: number): string {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const [year, month, day] = today.split('-').map(Number);
+  const date = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, (day ?? 1) + offsetDays));
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(date);
+}
+
 test.describe('standards revisions', () => {
-  test.fixme("WAT-S10: A new edition of a standard is one change, and only tenants that follow it see it", async () => {
-    // pending: WAT-S10 (WAT-02, WAT-07, CAS-01, AC-FP3)
+  test("WAT-S10: A new edition of a standard is one change, and only tenants that follow it see it", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    const transitionEnds = seededDateText(STANDARD_CHANGE.transitionOffsetDays);
+    followTheStandard('on');
+    try {
+      // Tenant A follows ISO/IEC 27001: the change is in its feed, and the end
+      // of the transition is on its roadmap.
+      await signInAs(page, LOGINS.complianceOfficer);
+      await openFeed(page, '?tab=all');
+      await expect(page.locator(`[data-change="${STANDARD_CHANGE.stableKey}"]`)).toBeVisible();
+      await page.goto('/roadmap');
+      const card = page.locator('[data-roadmap-roster]').getByRole('button', { name: new RegExp(STANDARD_CHANGE.title) });
+      await expect(card).toBeVisible();
+      await expect(card.getByText(transitionEnds, { exact: true })).toBeVisible();
+      await signOut(page);
+
+      // Tenant B follows no standard: neither its feed nor its roadmap has it.
+      await signInAs(page, LOGINS.secondBankAdmin);
+      await openFeed(page, '?tab=all');
+      await expect(page.locator(`[data-change="${STANDARD_CHANGE.stableKey}"]`)).toHaveCount(0);
+      await page.goto('/roadmap');
+      await expect(page.locator('[data-roadmap-roster]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+      await expect(page.getByText(STANDARD_CHANGE.title)).toHaveCount(0);
+    } finally {
+      followTheStandard('off');
+    }
   });
 });
 

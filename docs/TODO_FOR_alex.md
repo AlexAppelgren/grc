@@ -1051,3 +1051,41 @@ Nothing waits for these; each has the default the build took.
 - [x] The regulatory scope page's opt-in group with "None followed" (listed among the design
       cards still to be drawn above) is drawn: `design/screens/admin-footprint.html`, state 20.
       New string `footprint.noneFollowed`: "None followed." / "Ingen följs.".
+
+
+## lib-standard-e2e-seed: the first standard exists for tests and E2E only (2026-09-23, INV-08, FP-01)
+
+- [ ] Default taken until you answer "Legal, before any standard is seeded" above:
+      ISO/IEC 27001:2022 and its one conformance duty live in
+      `backend/apps/library/fixtures/e2e_standard.json`, which only `seed_e2e`
+      loads. `prototype_data.json`, which `seed_demo` loads, holds no standard,
+      and `check_prototype_data.py` refuses one there. The edition is titled by
+      its reference alone, never its official title, and the duty's wording is
+      ours. When you answer yes, moving the rows into the prototype fixture is
+      the whole change.
+- [ ] The instrument's national-adoptions note names no adoption reference: the
+      Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
+      note says only that each national body adopts the edition under its own
+      reference. A person verifies them before the note names any.
+
+## watch-standards: a standard's term needs a standards body, and publishers are not read (2026-09-23, WAT-07, D-45)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **Which publishers no run reads.** `STANDARDS_PUBLISHER_HOSTS` defaults to every
+      standards publisher whose terms were read on 2026-09-19 (iso.org, iec.ch, sis.se,
+      ds.dk, standard.no, sfs.fi, pcisecuritystandards.org; not iaf.nu, which publishes no
+      standard's text). A source registered on one of them, or of the `standards_body`
+      kind, gets its automated checks switched off, and a run's check of it answers 422
+      `source_inactive`. Default: out of the box bleqq reads no publisher. When a lawyer
+      clears a publisher, take its host off the list in that environment.
+- [ ] **ISO/IEC 27001 is now seeded active on a new database only.** The watch door refuses
+      a standard's term on a change whose authority is not a standards body
+      (`standard_term_only_on_standards`), which was the reason the term was held. The
+      seed creates terms and never updates them, so a database seeded before this keeps
+      the term inactive until a vocabulary change switches it on. Default: left to you, since
+      switching it on in a deployed library is a library decision. The regulatory scope
+      page's "None followed" wording lands with std-journeys in the same wave.
+- [ ] **`licensed_text` has nothing to refuse.** No page bleqq stores keeps a snapshot, so
+      a body that sends one is refused by the schema (`validation_error`) like any field it
+      does not name. WAT-S11's step now says that. Say if you want a dedicated code.

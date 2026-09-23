@@ -29,7 +29,7 @@ from typing import Any, cast
 from django.core.exceptions import ValidationError
 from django.db.models import OuterRef, Subquery
 
-from apps.library.models import Authority, Obligation, RecordStatus
+from apps.library.models import Authority, JurisdictionKind, Obligation, RecordStatus
 from apps.library.reading import agent_ref, localized, vocabulary_refs
 from apps.shared.errors import ProblemError
 from apps.taxonomy.models import (
@@ -38,6 +38,7 @@ from apps.taxonomy.models import (
     SourceKindLabel,
     TaxonomyTerm,
     TaxonomyTermLabel,
+    TermDimensionKind,
     UrgencyLabel,
 )
 from apps.taxonomy.registry import REGISTRY
@@ -175,6 +176,29 @@ def require_regime(terms: Sequence[TaxonomyTerm]) -> None:
         "GET /taxonomy/terms gives their ids.",
         code="regime_required",
         extra={"dimension": REGIME_DIMENSION, "validKeys": valid},
+    )
+
+
+def require_standards_body(terms: Sequence[TaxonomyTerm], authority_id: uuid.UUID | None) -> None:
+    """422 `standard_term_only_on_standards` when an opt-in term — a standard a bank chooses
+    to follow — sits on a change whose authority is not a standards body, that is, names no
+    jurisdiction of the `international` kind (D-36, D-38, WAT-07). A law that cites a
+    standard is the supervisor's change and reaches every bank in its scope; tagged with the
+    standard, it would vanish from every bank that follows none. Kinds are read, never keys,
+    so a new standard or a new standards body needs no code. Called by registration for a
+    new change and by curation for a set that replaces a change's terms."""
+    if not any(term.dimension.kind == TermDimensionKind.OPT_IN.value for term in terms):
+        return
+    if (
+        authority_id is not None
+        and Authority.objects.filter(id=authority_id, jurisdiction__kind=JurisdictionKind.INTERNATIONAL.value).exists()
+    ):
+        return
+    raise ValidationError(
+        "A standard's term belongs only on a change a standards body issued, named in "
+        "`authorityCode` with an international jurisdiction. A law or a supervisor's rule "
+        "that cites a standard carries its regime, never the standard.",
+        code="standard_term_only_on_standards",
     )
 
 

@@ -594,8 +594,6 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         advice = tenant_lists_logic.term_by_ref("service_type", "advice")
         retail = tenant_lists_logic.term_by_ref("client_category", "retail")
         branch = tenant_lists_logic.term_by_ref("channel", "branch")
-        # Seeded inactive until its doors guard it (tests_matching.HeldStandard); the rule
-        # ignores a term's state.
         iso = TaxonomyTerm.objects.get(dimension__key="standard", key="iso_iec_27001")
         self.assertTrue(matching.in_footprint_sql(self.tenant.id, [custody.id, retail.id]))
         self.assertFalse(matching.in_footprint_sql(self.tenant.id, [advice.id]))
@@ -1851,7 +1849,6 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             second = TaxonomyTerm.objects.create(dimension=standard, key="second_standard")
         terms = {
             "service_type:custody": tenant_lists_logic.term_by_ref("service_type", "custody"),
-            # Seeded inactive (tests_matching.HeldStandard); the rule ignores a term's state.
             "standard:iso_iec_27001": TaxonomyTerm.objects.get(dimension=standard, key="iso_iec_27001"),
             "standard:second_standard": second,
         }
@@ -1920,11 +1917,9 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
 
 class HeldStandardInScope(ScenarioTestCase):
-    """FP-S16's integration half, with ISO/IEC 27001 switched on here and only here. The
-    seed holds the term inactive until its doors guard it (tests_matching.HeldStandard), and
-    every term door resolves active terms only, so a scope request naming it is refused as
-    seeded. This setUp switches it on the way the test builders write, never a seed or a
-    fixture."""
+    """FP-S16's integration half. The seed files ISO/IEC 27001 active
+    (tests_matching.SeededStandard); this setUp switches it on as well, so the scenario holds
+    on a database seeded while the term was held, where the seed never updates it."""
 
     def setUp(self) -> None:
         _seed_library()

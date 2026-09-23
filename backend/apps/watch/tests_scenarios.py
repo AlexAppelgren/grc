@@ -13,13 +13,14 @@ import datetime
 from typing import Any
 from unittest import skip
 
+from django.conf import settings
 from django.db import transaction
 from django.test import TestCase
 from django.utils import timezone
 
 from apps.agents import testing as agent_build
 from apps.cases import creation, testing as case_build
-from apps.cases.models import CaseObligationLink
+from apps.cases.models import CaseObligationLink, ChangeCase
 from apps.governance.models import AiGeneration
 from apps.library import testing as library_build
 from apps.shared import factories, outbox, permissions as perms, tenancy
@@ -33,7 +34,7 @@ from apps.shared.testing import (
     stub_session,
     user_principal,
 )
-from apps.taxonomy.models import ChangeType, TaxonomyTerm
+from apps.taxonomy.models import ChangeType, FootprintTerm, TaxonomyTerm
 from apps.watch import testing as watch_build
 from apps.proposals.models import Proposal
 from apps.watch.models import ChangeDocument, ChangeObligation, RegulatoryChange, SourceCheck
@@ -65,6 +66,8 @@ def _change() -> dict[str, Any]:
 # registration opens and the words a bank writes over the draft.
 _SECURITIES = "regime:securities"
 _AML = "regime:aml"
+_AI_ICT = "regime:ai_ict"
+_ISO_27001 = "standard:iso_iec_27001"
 _DRAFT = "Teams that pay for external research should confirm that documented criteria exist."
 
 # The model call a confirming agent reports with its decision (D-80), from the prototype's
@@ -638,21 +641,119 @@ class WatchScenarioTests(TestCase):
         A tenant requests a source and private sources stay private (WAT-06).
         """
 
-    @skip("pending: WAT-S10 (WAT-07, chunk 5)")
+    def _standards_change(self, run: Any, **overrides: Any) -> dict[str, Any]:
+        """A new edition of ISO/IEC 27001 as a sweep files it: the standards body as its
+        authority, the AI and ICT regime and the standard's own term, named by its reference
+        alone (INV-08)."""
+        return {
+            "stableKey": "iso-iec-27001-amd-1",
+            "title": "ISO/IEC 27001 amendment",
+            "changeType": "consultation",
+            "authorityCode": "iso-iec",
+            "authorityLabel": "ISO/IEC",
+            "summary": "An amendment to ISO/IEC 27001 is out as a draft for comment.",
+            "sourceLabel": "ISO/IEC",
+            "sourceUrl": "https://www.iso.org/",
+            "termIds": [str(watch_build.term(_AI_ICT).id), str(watch_build.term(_ISO_27001).id)],
+            "agentRunId": str(run.id),
+            **overrides,
+        }
+
     def test_wat_s10(self) -> None:
         """WAT-S10
 
         A new edition of a standard is one change, and only tenants that follow it see it (WAT-02, WAT-07, CAS-01).
-        """
+        Operations: `createChange`, `listChanges`, `getRoadmap`.
 
-    @skip("pending: WAT-S11 (WAT-07, the standard-term and snapshot steps, watch-standards)")
+        Case creation reads the same opt-in rule as the feed and the roadmap
+        (apps/taxonomy/matching.py), so tenant B's case exists and is marked outside its
+        scope rather than missing: CAS-01 opens one case per bank per change.
+        """
+        run, plain = self._run_with_a_key()
+        library_build.authority(key="iso-iec", short_name="ISO/IEC", jurisdiction="intl")
+        creation.register()
+        today = timezone.localdate()
+        transition_ends = today + datetime.timedelta(days=120)
+
+        # Given tenant A follows "ISO/IEC 27001" and tenant B follows no standard
+        follower = factories.tenant(slug="follows-iso", name="Example Bank AB")
+        other = factories.tenant(slug="follows-none", name="Second Bank A/S")
+        for tenant, refs in ((follower, (_AI_ICT, _ISO_27001)), (other, (_AI_ICT,))):
+            with transaction.atomic():
+                tenancy.activate(tenant.id)
+                for ref in refs:
+                    FootprintTerm.objects.create(tenant=tenant, term=watch_build.term(ref))
+        readers = {tenant: factories.member_user(tenant, roles=("reader",)) for tenant in (follower, other)}
+        tenancy.clear_tenant()
+
+        # When an agent registers the change "ISO/IEC 27001 amendment" with the authority
+        # "ISO/IEC", the term "ISO/IEC 27001", the regime "AI and ICT", a draft-for-comment
+        # timeline entry and a key date labelled "Transition ends"
+        draft = today - datetime.timedelta(days=30)
+        first = self._register(
+            plain,
+            self._standards_change(
+                run,
+                keyDate=transition_ends.isoformat(),
+                keyDateLabel="Transition ends",
+                events=[{"label": "Draft for comment", "eventDate": draft.isoformat(), "occurred": True, "sortOrder": 1}],
+            ),
+        )
+        self.assertEqual(first.status_code, 201, first.content)
+
+        # And later registers the same stable key with its publication date
+        again = self._register(
+            plain,
+            self._standards_change(
+                run,
+                changeType="adopted",
+                events=[{"label": "Published", "eventDate": today.isoformat(), "occurred": True, "sortOrder": 2}],
+            ),
+        )
+        self.assertEqual(again.status_code, 200, again.content)
+        _drain()
+
+        # Then one change exists with both timeline entries
+        change = RegulatoryChange.objects.get()
+        self.assertEqual(again.json()["id"], str(change.id))
+        self.assertEqual(
+            [(event.label, event.event_date) for event in change.events.order_by("sort_order")],
+            [("Draft for comment", draft), ("Published", today)],
+        )
+        self.assertEqual((change.key_date, change.key_date_label), (transition_ends, "Transition ends"))
+
+        # And each tenant has exactly one case for it, tenant A's matching its scope and tenant B's not
+        self.assertEqual(watch_build.cases_per_tenant(change, (follower, other)), {follower: 1, other: 1})
+        matches = {}
+        for tenant in (follower, other):
+            with transaction.atomic():
+                tenancy.activate(tenant.id)
+                matches[tenant] = ChangeCase.objects.get(change=change).footprint_match
+        self.assertEqual(matches, {follower: True, other: False})
+
+        # And the change and the transition date appear in tenant A's feed and roadmap and
+        # in neither of tenant B's
+        for tenant, expected in ((follower, True), (other, False)):
+            with self.subTest(tenant=tenant.slug):
+                headers = sign_in(readers[tenant], tenant=tenant)
+                feed = self.client.get("/api/v1/changes", **headers)
+                self.assertEqual(feed.status_code, 200, feed.content)
+                self.assertIs(str(change.id) in [row["id"] for row in feed.json()["items"]], expected)
+                roadmap = self.client.get("/api/v1/roadmap", **headers)
+                self.assertEqual(roadmap.status_code, 200, roadmap.content)
+                dated = [(item["title"], item["date"]) for item in roadmap.json()["items"]]
+                self.assertIs((change.title, transition_ends.isoformat()) in dated, expected, dated)
+
     def test_wat_s11(self) -> None:
         """WAT-S11
 
         Every change carries a regime, a standard term needs a standards body, and a publisher's page keeps no snapshot (WAT-01, WAT-03, WAT-07).
+        Operations: `createChange`, `createSource`, `recordSourceCheck`.
         """
         # Given an agent key with changes:write
         run, plain = self._run_with_a_key()
+        library_build.authority(key="iso-iec", short_name="ISO/IEC", jurisdiction="intl")
+        tenancy.clear_tenant()
 
         # When it registers a change with no regime term
         refused = self._register(plain, {**_change(), "agentRunId": str(run.id), "termIds": []})
@@ -665,9 +766,76 @@ class WatchScenarioTests(TestCase):
         self.assertEqual(sorted(problem["validKeys"]), regimes, "the refusal lists the regimes the agent may send")
         self.assertEqual(RegulatoryChange.objects.count(), 0, "a refusal stores nothing")
 
-        # The standard-term step (422 `standard_term_only_on_standards`), the snapshot steps
-        # and the inactive standards-body source land with watch-standards, which un-skips
-        # this scenario whole.
+        # When it registers a change carrying a standard's term whose authority is a national supervisor
+        # (and, the same refusal, one that names no authority at all)
+        for authority in ("fi", None):
+            with self.subTest(authority=authority):
+                body = self._standards_change(run, authorityCode=authority)
+                if authority is None:
+                    del body["authorityCode"]
+                refused = self._register(plain, body)
+
+                # Then the API answers 422 with code "standard_term_only_on_standards"
+                self.assertEqual(refused.status_code, 422, refused.content)
+                self.assertEqual(refused.json()["code"], "standard_term_only_on_standards")
+                self.assertEqual(RegulatoryChange.objects.count(), 0, "a refusal stores nothing")
+
+        # Given the open web sweep fetches a page on a host listed in the standards publisher setting
+        page = "https://www.iso.org/standard/27001"
+        self.assertIn("iso.org", settings.STANDARDS_PUBLISHER_HOSTS)
+        fetched_at = timezone.now().replace(microsecond=0)
+        filed = self._register(
+            plain,
+            self._standards_change(
+                run,
+                documents=[{"url": page, "isPrimary": True, "fetchedAt": fetched_at.isoformat(), "contentHash": "sha256:" + "a" * 64}],
+            ),
+        )
+        self.assertEqual(filed.status_code, 201, filed.content)
+
+        # Then the stored source document holds the URL, the date and a content hash and no snapshot
+        stored = ChangeDocument.objects.get(url=page)
+        self.assertEqual((stored.fetched_at, stored.content_hash), (fetched_at, "sha256:" + "a" * 64))
+        columns = {field.name for field in ChangeDocument._meta.get_fields()}
+        self.assertFalse(
+            columns & {"snapshot", "content", "text", "body", "html"}, "no column could hold the page's text"
+        )
+
+        # When a change carrying an opt-in term sends a document with a snapshot
+        refused = self._register(
+            plain,
+            self._standards_change(
+                run,
+                stableKey="iso-iec-27001-amd-2",
+                documents=[{"url": "https://www.iso.org/standard/27001-amd-2", "snapshot": "Clause 5.1 ..."}],
+            ),
+        )
+
+        # Then the API answers 422 with code "validation_error", because no document has a snapshot field
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "validation_error")
+        self.assertFalse(RegulatoryChange.objects.filter(stable_key="iso-iec-27001-amd-2").exists())
+
+        # And a source of kind "Standards body" registered inactive gets no automated check
+        person = factories.platform_user(email="library.editor@bleqq.example")
+        with stub_session(user_principal(permissions={perms.SOURCES_MANAGE}, subject_id=person.id)):
+            registered = self.client.post(
+                "/api/v1/sources",
+                data={"name": "ISO news", "url": "https://www.iso.org/news.html", "kind": "standards_body"},
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}",
+            )
+        self.assertEqual(registered.status_code, 201, registered.content)
+        self.assertFalse(registered.json()["active"])
+        checked = self.client.post(
+            f"/api/v1/agent-runs/{run.id}/source-checks",
+            data={"sourceName": "ISO news", "status": "ok", "itemsFound": 1},
+            content_type="application/json",
+            HTTP_X_API_KEY=plain,
+        )
+        self.assertEqual(checked.status_code, 422, checked.content)
+        self.assertEqual(checked.json()["code"], "source_inactive")
+        self.assertFalse(SourceCheck.objects.exists())
 
     def test_wat_s12(self) -> None:
         """WAT-S12

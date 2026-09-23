@@ -301,7 +301,11 @@ def create_source(request: HttpRequest, body: WatchSourceInput) -> Any:
     never edits it. There is no passkey step-up and no `If-Match`: a registry row carries no
     version, and adding a place to look at is not a decision about the law.
 
-    The source is registered with automated checks on. Nothing is checked in this call: the
+    The source is registered with automated checks on, except a standards publisher's: a
+    source whose `kind` is the standards body kind (key "standards_body"), or one whose `url` is on a host of the
+    `STANDARDS_PUBLISHER_HOSTS` setting or a subdomain of one, is registered with `active`
+    false, and no run may check it until a lawyer has read the publisher's terms (WAT-07,
+    D-45). Nothing is checked in this call: the
     first sweep is the next run's, and until one happens the coverage log says `never`. The
     row and its audit row, which names who registered it, are written in one transaction,
     and the keys are resolved first, so a refusal stores nothing.
@@ -353,7 +357,9 @@ def update_source(
     Errors to branch on: `not_found` (404) when no source has that id, answered the same way
     for a source that never existed so no id can be probed for; `validation_error` (422) for
     a body the schema refuses, including a `url` that is not http or https and a
-    `checkFrequency` outside `daily`, `weekly` and `monthly`; `permission_denied` (403)
+    `checkFrequency` outside `daily`, `weekly` and `monthly`, and when the source would be
+    checked automatically on a host of the `STANDARDS_PUBLISHER_HOSTS` setting, since no run
+    reads a standards publisher until its terms are cleared (WAT-07, D-45); `permission_denied` (403)
     without `sources.manage`; `unauthenticated` (401) without a session.
     """
     return sources.update_source(
@@ -400,7 +406,9 @@ def record_source_check(
     Errors to branch on: `run_not_open` (422) when the run named is closed, so nothing can
     be filed against it any more; `unknown_source` (422) when `sourceName` names no
     registered source — read `GET /sources` at run start and report against those names;
-    `validation_error` (422) when a failed check carries no `error`, when a successful one
+    `source_inactive` (422) when the source is registered with its automated checks off,
+    as a standards publisher's is until its terms allow an automated check (WAT-07, D-45),
+    so no run reads it and nothing is logged; `validation_error` (422) when a failed check carries no `error`, when a successful one
     carries an error, when a `recheck` names no `subjectType` and `subjectId`, or when a
     `sweep` names one; `not_found` (404) when the run belongs to another key or to nobody,
     answered alike so no run id can be probed for; `tenant_agents_not_available` (403) from
@@ -646,7 +654,10 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     with the valid keys listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a
     `termId` is a term that mirrors the jurisdiction list, since a change's market comes
     from its authority and never from a tag; `regime_required` (422) when a new change names
-    no regime term, with the regime keys listed in `validKeys`; `validation_error` (422) for
+    no regime term, with the regime keys listed in `validKeys`;
+    `standard_term_only_on_standards` (422) when a new change carries a standard's term (a
+    term of an opt-in dimension) and `authorityCode` names no standards body, that is no
+    authority whose jurisdiction is international, or none at all; `validation_error` (422) for
     a body the schema refuses, for the same obligation named twice, for two pages both marked primary,
     and for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;
     `tenant_agents_not_available` (403) from a key that belongs to a bank;
@@ -775,10 +786,12 @@ def update_change(
     that mirrors the jurisdiction list, since a change's market comes from its authority and
     never from a tag; `regime_required` (422) when `termIds` replaces the set with one that
     names no regime term, because every change carries a regime (D-39), with the regime keys
-    in `validKeys`; `editor_only_field` (422) when a key sends `status` or
-    `supersededBy`; `confirmed_fact` (422) when a key's call would drop a flag or a term, or
-    replace a type, that somebody confirmed; `step_up_required` (403) when a person's call
-    would do the same without a fresh passkey assertion; `validation_error` (422) for a field the
+    in `validKeys`; `standard_term_only_on_standards` (422) when that set carries a
+    standard's term (a term of an opt-in dimension) and the change's authority is not a
+    standards body, whose jurisdiction is international; `editor_only_field` (422) when a key
+    sends `status` or `supersededBy`; `confirmed_fact` (422) when a key's call would drop a
+    flag or a term, or replace a type, that somebody confirmed; `step_up_required` (403) when
+    a person's call would do the same without a fresh passkey assertion; `validation_error` (422) for a field the
     schema refuses, for a change asked to supersede itself, and for a `soWhat` whose words
     carry no model, no model version or no citation; `not_found` (404) when no
     change has that id; `tenant_agents_not_available` (403) from a key that belongs to a
