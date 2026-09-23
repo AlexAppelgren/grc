@@ -125,8 +125,10 @@ def _waiting_for(expected: SeedProposal) -> list[Proposal]:
 
 
 # The sweeper key's runs per status: chunk 5's closed run and its open run, plus the open
-# run each of the four agent proposals the seed files through that key is attached to.
-EXPECTED_SWEEPER_RUNS = Counter({"succeeded": 1, "running": 5})
+# run each of the five agent proposals the seed leaves waiting is attached to (PRO-S13's
+# among them), and the open run of each of INV-S14's two proposals the confirming agent
+# already approved (MACHINE_CONFIRMED_RUNS).
+EXPECTED_SWEEPER_RUNS = Counter({"succeeded": 1, "running": 8})
 
 
 @override_settings(E2E_MODE=True)
@@ -621,7 +623,7 @@ class SeedIntegrityGuard(TestCase):
         self.assertEqual(Counter(runs.values_list("status", flat=True)), EXPECTED_SWEEPER_RUNS)
         self.assertFalse(runs.filter(tenant_id__isnull=False).exists())
         proposal_runs = {expected.agent_run for expected in EXPECTED_PROPOSALS if expected.agent_run is not None}
-        self.assertEqual(len(proposal_runs), 4)
+        self.assertEqual(len(proposal_runs), 5)
         self.assertLessEqual(proposal_runs, set(runs.filter(status="running").values_list("id", flat=True)))
 
         recheck = SourceCheck.objects.get(kind=SourceCheckKind.RECHECK.value, source__name=EXPECTED_CHUNK5_WATCH.healthy_source)
@@ -724,12 +726,19 @@ class SeedIntegrityGuard(TestCase):
 
     # --- std-journeys (FP-S16) ------------------------------------------------------------
     def test_e2e_switches_the_standard_on_and_logs_it_once(self) -> None:
-        """FP-S16 (FP-01, INV-08, D-85): a scope request names active terms only,
-        so seed_e2e switches ISO/IEC 27001 on for E2E alone, with one version bump and one
-        audit row, and a second run changes nothing. The reference seed keeps it off
-        everywhere else (apps/taxonomy/tests_matching.HeldStandard)."""
+        """FP-S16 (FP-01, INV-08, D-85): a scope request names active terms only, so
+        ISO/IEC 27001 is on after seed_e2e. A new database files it active (watch-standards,
+        apps/taxonomy/tests_matching.SeededStandard); one seeded while it was held keeps it off,
+        because the reference seed never updates a term, so seed_e2e switches it on with one
+        version bump and one audit row, and a second run changes nothing."""
         seed_e2e()
         term = TaxonomyTerm.objects.get(dimension__key="standard", key="iso_iec_27001")
+        self.assertTrue(term.active)
+        # A database seeded while the term was held.
+        with tenancy.library_write("a database seeded while the standard was held"):
+            TaxonomyTerm.objects.filter(pk=term.pk).update(active=False)
+        seed_e2e()
+        term.refresh_from_db()
         self.assertTrue(term.active)
         events = AuditEvent.objects.filter(action="taxonomy.term_updated", subject_id=term.id)
         self.assertEqual([(e.before, e.after, e.actor_label) for e in events], [({"active": False}, {"active": True}, "seed_reference")])

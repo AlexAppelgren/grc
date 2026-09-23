@@ -33,9 +33,9 @@ const AUTOMATED_DECISIONS_OBLIGATION = 'Apply safeguards to solely automated dec
 // PRO-S13 (e2e_seed.py PRO_S13_OBLIGATION): the sweeper's proposal the confirming agent
 // decides through the API, and what that agent sends with its decision: the model call
 // behind it (D-80, AUD-02), citing the page the proposal cites.
-const PRODUCT_GOVERNANCE_TITLE = 'Add version 2 of the product governance obligation, with a yearly review of each target market';
-const PRODUCT_GOVERNANCE_SOURCE = 'Finansinspektionen, amended product governance rules';
-const PRODUCT_GOVERNANCE_URL = 'https://www.fi.se/';
+const PRO_S13_TITLE = 'Add version 2 of the demands and needs obligation, with the suitability assessment kept on file';
+const PRO_S13_SOURCE = 'Finansinspektionen, amended insurance distribution rules';
+const PRO_S13_URL = 'https://www.fi.se/';
 const CONFIRMER_MODEL = 'confirmer pipeline 1.0';
 const CONFIRMER_NOTE = 'The wording and the date match the amended rules the proposal cites.';
 const CONFIRMER_DECISION = {
@@ -44,7 +44,7 @@ const CONFIRMER_DECISION = {
   promptTemplate: 'library-confirmer/decide/v1',
   promptHash: 'e2e-pro-s13',
   output: 'Approve. The proposed wording and date match the amended rules at the cited page.',
-  citations: [{ label: PRODUCT_GOVERNANCE_SOURCE, url: PRODUCT_GOVERNANCE_URL }],
+  citations: [{ label: PRO_S13_SOURCE, url: PRO_S13_URL }],
 };
 const CONFIRMER_STATS = { modelCalls: 1, fetches: 1, sourcesChecked: 0, changesRegistered: 0, proposalsSubmitted: 0 };
 // The console's destinations, read from the registry (src/shared/navigation/registry.ts)
@@ -139,10 +139,10 @@ async function findSeededProposal(agent: ReturnType<typeof agentCalls>): Promise
   for (const status of ['open', 'approved']) {
     const page = await agent.get(`/proposals?status=${status}&kind=new_obligation_version&limit=100`);
     expect(page.status(), await page.text()).toBe(200);
-    const row = ((await page.json()) as { items: QueueDetail[] }).items.find((item) => item.title === PRODUCT_GOVERNANCE_TITLE);
+    const row = ((await page.json()) as { items: QueueDetail[] }).items.find((item) => item.title === PRO_S13_TITLE);
     if (row !== undefined) return row;
   }
-  throw new Error(`No proposal titled ${PRODUCT_GOVERNANCE_TITLE} waiting or approved.`);
+  throw new Error(`No proposal titled ${PRO_S13_TITLE} waiting or approved.`);
 }
 
 test.describe('proposals journeys', () => {
@@ -345,8 +345,8 @@ test.describe('proposals journeys', () => {
         expect(detail.status()).toBe(200);
         const body = (await detail.json()) as QueueDetail;
         expect([body.proposedByAgent?.key, body.isMine]).toEqual(['watch-sweeper', false]);
-        expect(body.sourceLabel).toBe(PRODUCT_GOVERNANCE_SOURCE);
-        expect(body.sources.map((source) => source.url)).toContain(PRODUCT_GOVERNANCE_URL);
+        expect(body.sourceLabel).toBe(PRO_S13_SOURCE);
+        expect(body.sources.map((source) => source.url)).toContain(PRO_S13_URL);
         expect(body.diff.length).toBeGreaterThan(0);
 
         // It approves through the same route, with the model call behind the decision and the run it made it in.
@@ -378,18 +378,18 @@ test.describe('proposals journeys', () => {
     await queueSettled(page);
     await page.getByRole('tab', { name: 'Approved' }).click();
     await queueSettled(page);
-    await page.getByRole('link', { name: new RegExp(PRODUCT_GOVERNANCE_TITLE) }).first().click();
-    await expect(page.getByRole('heading', { level: 1, name: new RegExp(PRODUCT_GOVERNANCE_TITLE) })).toBeVisible();
+    await page.getByRole('link', { name: new RegExp(PRO_S13_TITLE) }).first().click();
+    await expect(page.getByRole('heading', { level: 1, name: new RegExp(PRO_S13_TITLE) })).toBeVisible();
     const applied = page.locator('[data-proposal-applied]');
     await expect(applied).toContainText(/by the agent library-confirmer, machine-confirmed\./);
     await expect(applied).toContainText(CONFIRMER_NOTE);
-    await expect(page.locator('[data-proposal]')).toContainText(PRODUCT_GOVERNANCE_SOURCE);
+    await expect(page.locator('[data-proposal]')).toContainText(PRO_S13_SOURCE);
     await signOut(page);
 
     // The bank's reader finds version 2 on the obligation's card, labelled as the agents'
     // and never as a person's.
     await signInAs(page, LOGINS.reader);
-    await expectVersionOnCard(page, 'obl-product-governance', 2);
+    await expectVersionOnCard(page, 'obl-idd-demands-needs', 2);
     await expect(page.locator('[data-versions-panel] [data-version-row="2"] [data-machine-confirmed]')).toContainText(/proposed by watch-sweeper, confirmed by library-confirmer/);
   });
 });

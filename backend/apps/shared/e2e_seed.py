@@ -211,9 +211,9 @@ E2E_STANDARD_OBLIGATION = "iso-iec-27001-2022-conformance"
 
 # --- std-journeys (FP-S16) ----------------------------------------------------------------
 # A scope request names active terms only, so FP-S16 cannot follow the standard while its
-# term is off. E2E switches it on (D-85); the reference seed keeps it off until
-# Alex answers the legal question, and no E2E tenant follows it, so the duty stays hidden
-# until a journey adds the term and takes it out again.
+# term is off. The reference seed now files it active on a new database (watch-standards),
+# and E2E switches it on where a database was seeded while it was held (D-85). No E2E tenant
+# follows it, so the duty stays hidden until a journey adds the term and takes it out again.
 E2E_STANDARD_TERM = ("standard", "iso_iec_27001")
 # --- end std-journeys ---------------------------------------------------------------------
 
@@ -459,7 +459,9 @@ CLIENT_ASSETS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000003")
 # is version 1 only, reaches tenant A with or without Advice, and is named by no other spec,
 # seed constant or seeded proposal, so its version 2 is the confirming agent's and nobody
 # else's (tests_seed_integrity.py checks all three).
-PRO_S13_OBLIGATION = "obl-product-governance"
+# Not product governance, which J-4 owns (J4_OBLIGATION above): each journey that adds a
+# version needs a duty of its own.
+PRO_S13_OBLIGATION = "obl-idd-demands-needs"
 PRO_S13_RUN = uuid.UUID("00000000-0000-4000-9000-000000000013")
 # --- end pro-s13-journey ---------------------------------------------------------------------
 
@@ -743,21 +745,21 @@ def seed_proposals() -> int:
     _propose_obligation_version(
         obligation=PRO_S13_OBLIGATION,
         agent_run=PRO_S13_RUN,
-        title="Add version 2 of the product governance obligation, with a yearly review of each target market",
+        title="Add version 2 of the demands and needs obligation, with the suitability assessment kept on file",
         summaries={
             "sv": (
-                "Institutet ska för varje produkt som det tar fram eller distribuerar fastställa en "
-                "målgrupp och en distributionsstrategi som passar den, och se över båda minst en gång "
-                "om året och när något inträffar som kan påverka produktens risker för målgruppen."
+                "Innan ett avtal om en försäkringsbaserad investeringsprodukt ingås ska distributören "
+                "klargöra kundens krav och behov och, vid rådgivning, bedöma om produkten och dess "
+                "underliggande tillgångar är lämpliga, och spara bedömningen så länge avtalet gäller."
             ),
             "en": (
-                "For each product it manufactures or distributes, the institution defines a target "
-                "market and a distribution strategy suited to it, and reviews both at least once a year "
-                "and whenever an event could change the product's risks for that market."
+                "Before an insurance-based investment product is concluded, the distributor specifies "
+                "the customer's demands and needs and, when advising, assesses whether the product and "
+                "its underlying assets are suitable, and keeps the assessment for as long as the contract runs."
             ),
         },
         effective_from="2027-02-01",
-        source_label="Finansinspektionen, amended product governance rules",
+        source_label="Finansinspektionen, amended insurance distribution rules",
         source_url="https://www.fi.se/",
     )
     _propose_flag_relabel()
@@ -1477,13 +1479,14 @@ class SeedMachineConfirmed:
 
 EXPECTED_MACHINE_CONFIRMED = SeedMachineConfirmed(
     journey="INV-S14",
-    machine_confirmed="obl-product-governance",
+    # Not product governance, which J-4 owns, nor the demands and needs duty, PRO-S13's.
+    machine_confirmed="obl-switch-documentation",
     reverified="obl-isk-approved-assets",
     reverifier_email=LIBRARY_EDITOR_EMAIL,
 )
 # The runs behind each record's proposal and its decision, fixed so a reseed finds them.
 MACHINE_CONFIRMED_RUNS: dict[str, tuple[uuid.UUID, uuid.UUID]] = {
-    "obl-product-governance": (uuid.UUID("00000000-0000-4000-9000-000000000014"), uuid.UUID("00000000-0000-4000-9000-000000000015")),
+    "obl-switch-documentation": (uuid.UUID("00000000-0000-4000-9000-000000000014"), uuid.UUID("00000000-0000-4000-9000-000000000015")),
     "obl-isk-approved-assets": (uuid.UUID("00000000-0000-4000-9000-000000000016"), uuid.UUID("00000000-0000-4000-9000-000000000017")),
 }
 # The seed's stand-in for the passkey assertion a person's re-verification carries on its
@@ -1491,16 +1494,16 @@ MACHINE_CONFIRMED_RUNS: dict[str, tuple[uuid.UUID, uuid.UUID]] = {
 SEED_REVERIFICATION_STEP_UP = uuid.UUID("00000000-0000-4000-9000-000000000018")
 _CONFIRMER_SCOPES: tuple[str, ...] = ("agent-runs:write", "library:read", "proposals:review")
 _MACHINE_CONFIRMED_WORDING: dict[str, dict[str, str]] = {
-    "obl-product-governance": {
+    "obl-switch-documentation": {
         "sv": (
-            "För varje finansiellt instrument som produceras eller distribueras ska institutet fastställa en "
-            "målgrupp, säkerställa att distributionsstrategin passar den och regelbundet se över båda, minst "
-            "en gång om året och när något inträffar som kan påverka instrumentets risker."
+            "När rådgivningen innebär byte av underliggande placeringar ska distributören dokumentera varför "
+            "fördelarna med bytet överväger kostnaderna, och ge kunden en skriftlig förklaring av hur rådet "
+            "motsvarar kundens önskemål och mål innan bytet genomförs."
         ),
         "en": (
-            "For every financial instrument manufactured or distributed, the institution defines a target "
-            "market, checks that the distribution strategy fits it, and reviews both at least once a year and "
-            "whenever an event could affect the instrument's risks."
+            "When advice involves switching underlying investments, the distributor documents why the benefits "
+            "of the switch outweigh its costs, and gives the customer a written explanation of how the advice "
+            "meets their preferences and objectives before the switch is made."
         ),
     },
     "obl-isk-approved-assets": {

@@ -350,7 +350,7 @@ test.describe('standards in the library', () => {
 // the watch sweeper propose a new wording of two records and the library
 // confirmer, an independent agent, approve both; a library editor then
 // re-verified the second against its source. No other journey names either.
-const AGENT_CONFIRMED = 'obl-product-governance';
+const AGENT_CONFIRMED = 'obl-switch-documentation';
 const REVERIFIED = 'obl-isk-approved-assets';
 const REVERIFIER = 'Ida Holm';
 const BOTH_AGENTS = 'proposed by watch-sweeper, confirmed by library-confirmer';

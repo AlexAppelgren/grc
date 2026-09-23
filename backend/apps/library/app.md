@@ -76,7 +76,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 > green). Missing, so INV-01, INV-02 and INV-08 stay in progress: the
 > ISO/IEC 27001:2022 edition with its one conformance duty is seeded for tests and E2E only
 > (`fixtures/e2e_standard.json`, loaded by `seed_e2e` and never by `seed_demo`), linked to
-> the standard's term, which only `seed_e2e` switches on (D-85), until Alex
+> the standard's term, which a new database files active (watch-standards) and `seed_e2e`
+> switches on where it was held (D-85), until Alex
 > answers the legal question in `docs/TODO_FOR_alex.md`; and the proposal checks
 > of D-35 at creation, at a reviewer's correction and at apply (422 `licensed_text`,
 > `one_conformance_obligation`, `standard_term_required`, AC-INV2).
