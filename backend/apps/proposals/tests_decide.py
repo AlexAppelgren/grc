@@ -1,5 +1,5 @@
-"""Deciding a proposal (PRO-02, AC-PRO1, AC-PRO2): the row lock that lets one
-decision land, and the person's fresh passkey on approval.
+"""Deciding a proposal (PRO-02, AC-PRO1, AC-PRO2, INV-05): the row lock that lets one
+decision land, the person's fresh passkey on approval, and the kinds an agent may confirm.
 
 The races run two sessions at once, each on its own cw_app connection in its own thread and
 transaction, the way two requests reach production (the pattern of
@@ -35,6 +35,7 @@ from django.db import DEFAULT_DB_ALIAS, connection, connections, transaction
 from django.test import TransactionTestCase
 from django.utils import timezone
 
+from apps.agents import testing as agents_testing
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import logic
 from apps.proposals.models import Proposal, ProposalStatus
@@ -42,13 +43,14 @@ from apps.shared import factories, tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
-from apps.taxonomy.models import Flag
+from apps.taxonomy.models import Flag, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tests_footprint import LANDED, WAIT_SECONDS, _backend_pid, _hold_until_waiting_on_me
 
 V1 = "/api/v1"
 DECISIONS = ("proposal.approved", "proposal.rejected")
 FLAG = {"list": "flag", "key": "client_money", "labels": {"en": "Client money", "sv": "Kundmedel"}}
+TERM = {"dimension": "regime", "key": "crypto_assets", "labels": {"en": "Crypto-assets"}}
 
 
 def _seed() -> None:
@@ -201,3 +203,27 @@ class DecidingAProposal(ScenarioTestCase):
         # The same assertion inside the window approves: the refusal above was its age.
         approved = self._post(f"/proposals/{proposal_id}/approve", {}, headers)
         self.assertEqual(approved.status_code, 200, approved.content)
+
+    def test_an_agent_cannot_approve_a_vocabulary_or_term_proposal_which_waits_for_a_person(self) -> None:
+        """D-79: a vocabulary row and a taxonomy term have no machine-confirmed provenance
+        to carry, so an agent's approval of one would read as a person's (INV-05). It is
+        refused with its own code, applies nothing, and the proposal waits for a person."""
+        flag = self._proposed("vocabulary_create", "Add the flag Client money", FLAG)
+        term = self._proposed("term_create", "Add the regime Crypto-assets", TERM)
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        reviewer = {"HTTP_X_API_KEY": agents_testing.reviewer_api_key().plain_key}
+        for proposal_id in (flag, term):
+            with self.subTest(proposal=proposal_id):
+                refused = self._post(f"/proposals/{proposal_id}/approve", {}, reviewer)
+                self.assertEqual(refused.status_code, 409, refused.content)
+                self.assertEqual(refused.json()["code"], "person_review_required")
+        self._assert_untouched(flag)
+        self._assert_untouched(term)
+        self.assertFalse(TaxonomyTerm.objects.filter(dimension__key=TERM["dimension"], key=TERM["key"]).exists())
+        # An agent may still reject one: a rejection writes no library row.
+        rejected = self._post(f"/proposals/{term}/reject", {"rejectionCode": "duplicate", "note": "Covered by an existing regime."}, reviewer)
+        self.assertEqual(rejected.status_code, 200, rejected.content)
+        # A person approves the other, as before.
+        approved = self._post(f"/proposals/{flag}/approve", {}, sign_in(self.second_editor, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertTrue(Flag.objects.filter(key=FLAG["key"]).exists())

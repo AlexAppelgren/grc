@@ -259,14 +259,16 @@ class GovernanceScenarioTests(ScenarioTestCase):
         send = getattr(self.client, method.lower())  # POST and PATCH both carry a body
         return send(f"{V1}{path}", data=payload, content_type="application/json", **headers)
 
-    # The queue read, approve and reject are gated in the body (apps/proposals/api.py:
-    # require_reviewer), never by a decorator, because a session and a platform key need
-    # different checks and `has_permission`/`has_scope` are kind-exclusive (PRO-S13, D-62,
-    # ADR 0054). For a session principal that gate is still exactly `proposals.review`, which
-    # is what ADM-02 asks about here, so these three are named the same way
-    # `tests_library_fence.py`'s `WATCH_ROUTE_GATES` names its own body-gated routes.
+    # The queue read, the detail read, approve and reject are gated in the body
+    # (apps/proposals/api.py: require_reviewer), never by a decorator, because a session and
+    # a platform key need different checks and `has_permission`/`has_scope` are
+    # kind-exclusive (PRO-S13, D-62, ADR 0054). For a session principal that gate is still
+    # exactly `proposals.review`, which is what ADM-02 asks about here, so these four are
+    # named the same way `tests_library_fence.py`'s `WATCH_ROUTE_GATES` names its own
+    # body-gated routes.
     BODY_GATED_PLATFORM_OPERATIONS: ClassVar[dict[str, str]] = {
         "listProposals": perms.PROPOSALS_REVIEW,
+        "getProposal": perms.PROPOSALS_REVIEW,
         "approveProposal": perms.PROPOSALS_REVIEW,
         "rejectProposal": perms.PROPOSALS_REVIEW,
     }
@@ -437,6 +439,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         assertion, and append-only.
         """
         from apps.agents import testing as agents_testing
+        from apps.library import testing as build
         from apps.shared.audit import Actor
         from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 
@@ -445,6 +448,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         seed_library_vocabularies()
         seed_term_dimensions()
         seed_taxonomy_terms()
+        obligation = build.obligation(build.instrument(key="aud-s9-instrument"), key="obl-aud-s9")
         tenant = factories.tenant(slug="aud-s9")
         self.activate(tenant)
         ensure_tenant_vocabularies(tenant, actor=Actor.system("test"))
@@ -452,9 +456,18 @@ class GovernanceScenarioTests(ScenarioTestCase):
         proposer_key = factories.api_key(tenant, scopes=("proposals:write",))
         tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
         reviewer_key = agents_testing.reviewer_api_key()
+        # An obligation version, the record that can say an agent confirmed it: an agent
+        # may not approve a vocabulary row, which waits for a person (D-79).
         approved = self._post(
             "/proposals",
-            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}},
+            {
+                "kind": "new_obligation_version",
+                "title": "Refresh the wording against the source",
+                "targetType": "obligation",
+                "targetId": str(obligation.id),
+                "payload": {"summaries": {"en": "The duty as the source now reads it."}, "originalLanguage": "en", "isMachine": True},
+                "fieldSources": {"summaries.en": "https://www.fi.se/"},
+            },
             {"HTTP_X_API_KEY": proposer_key.plain_key},
         )
         self.assertEqual(approved.status_code, 201, approved.content)
@@ -466,7 +479,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
             f"/proposals/{approved.json()['id']}/approve", {"note": "Confirmed."}, {"HTTP_X_API_KEY": reviewer_key.plain_key}
         )
         self.assertEqual(decision.status_code, 200, decision.content)
-        self.assertTrue(Flag.objects.filter(key="client_money").exists())
+        self.assertEqual(sorted(obligation.versions.values_list("version_number", flat=True)), [1, 2])
 
         event = self._one("proposal.approved", uuid.UUID(approved.json()["id"]))
         self.assertEqual(event.actor_type, "agent")

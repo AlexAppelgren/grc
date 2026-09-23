@@ -43,6 +43,9 @@ CHUNK_STATUS_BY_CODE: dict[str, int] = {
     "idempotency_conflict": 409,
     "already_watching": 409,
     "forbidden": 403,
+    # An agent approved a kind that waits for a person (D-79): the proposal is fine, the
+    # reviewer is the wrong kind of principal for it.
+    "person_review_required": 409,
 }
 
 F = TypeVar("F", bound=Callable[..., Any])

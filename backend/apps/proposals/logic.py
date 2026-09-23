@@ -650,6 +650,12 @@ def approve(
     the audit trail keep both. `step_up_assertion_id` is null for an agent's decision: a key
     holds no passkey assertion (PRO-S13, D-62, ADR 0054).
 
+    An agent approves only a kind whose applied record can say an agent confirmed it, which
+    today is an obligation version (INV-05, D-79). A vocabulary row or a taxonomy term has
+    nowhere to carry machine-confirmed provenance, so an agent's approval of one would read
+    as a person's: it is refused with 409 `person_review_required` and waits for a person.
+    Rejecting one writes no library row, so an agent still may.
+
     `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
     older caller; `as_reviewer` normalizes either into the same shape below.
     """
@@ -657,6 +663,11 @@ def approve(
 
     reviewer = as_reviewer(reviewer, actor)
     _decidable(proposal, reviewer)
+    if reviewer.user is None and proposal.kind not in OBLIGATION_KINDS:
+        raise ValidationError(
+            "An agent cannot approve this kind of change yet: a person has to approve it.",
+            code="person_review_required",
+        )
     decided = ["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "applied_at", "review_note"]
     if payload_overrides:
         corrected(proposal, reviewer, payload_overrides)

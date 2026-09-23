@@ -218,14 +218,16 @@ def _obligation_version(
     )
     for language, text in payload.summaries.items():
         # The language it was written in is the original; the others are translations, and
-        # they stay labelled machine-made until a person confirms them (INV-05, AUD-02).
+        # they stay labelled machine-made until a person confirms them (INV-05, AUD-02). An
+        # agent's approval confirms nothing a person would, so under it a translation is
+        # machine-made whatever the payload claims.
         is_original = language == payload.original_language
         ObligationSummary.objects.create(
             version=version,
             language_id=language,
             text=text,
             is_original=is_original,
-            is_machine=payload.is_machine and not is_original,
+            is_machine=not is_original and (payload.is_machine or reviewer.user is None),
         )
     scope_before = scope_after = None
     if payload.terms is not None:
