@@ -1,0 +1,742 @@
+[
+ {
+  "key": "tax-watched-inventory",
+  "title": "The inventory's Scope filter adds 'Markets we watch'",
+  "goal": "TAX-11: footprint=in|all|watched on /obligations and /instruments with the row's jurisdiction.",
+  "requirement_ids": [
+   "FP-04",
+   "FP-03"
+  ],
+  "scenario_ids": [
+   "FP-S13",
+   "FP-S5",
+   "FP-S4"
+  ],
+  "files_owned": [
+   "backend/apps/library/schemas.py",
+   "backend/apps/library/tests_scenarios.py",
+   "frontend/src/features/library/hooks.ts",
+   "frontend/src/components/inventory/InventoryFilters.tsx",
+   "frontend/src/components/inventory/InventoryScreen.tsx",
+   "frontend/src/components/inventory/ObligationRow.tsx"
+  ],
+  "shared_files": [
+   "backend/apps/library/reading.py (list predicates)",
+   "backend/apps/library/api.py",
+   "backend/apps/taxonomy/tests_scenarios.py (test_fp_s13)",
+   "frontend/src/features/library/api.ts",
+   "frontend/src/features/library/types.ts",
+   "frontend/src/features/library/obligation-presentation.ts",
+   "frontend/src/components/inventory/InstrumentScreen.tsx",
+   "frontend/src/messages/inventory/en.json",
+   "frontend/src/messages/inventory/sv.json",
+   "frontend/src/messages/library/en.json",
+   "frontend/src/messages/library/sv.json",
+   "frontend/tests/e2e/taxonomy.journey.spec.ts (FP-S13, FP-S4/FP-S5 updates)",
+   "frontend/tests/e2e/library.journey.spec.ts",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "tax-jurisdiction-derivation",
+   "tax-nordic-seed",
+   "tax-fp-s4-journey",
+   "lib-instrument-card-fixes"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "One footprint parameter replaces outsideFootprint on /obligations and /instruments (library-updates decided and consistent); watched = not in scope, in scope over non-jurisdiction terms, derived jurisdiction among watched markets; SQL function unchanged; rows return jurisdiction; Scope filter, 'Market we watch: X' meta and library.empty.watched; test_fp_s13 and its journey; FP-S4/FP-S5 and library journeys updated; suites and gates green.",
+  "brief": "Replace the boolean outsideFootprint with footprint=in|all|watched on /obligations and /instruments; decide GET /library-updates' outsideFootprint for consistency and state it. Watched predicate: not in scope; in scope over the record's non-jurisdiction terms; derived jurisdiction (tax-jurisdiction-derivation) among the tenant's watched markets. taxonomy_in_footprint unchanged. Return each row's jurisdiction. Frontend per design/screens/tenant-inventory.html: three-value Scope filter, 'Market we watch: Denmark' as meta text, library.empty.watched; the instrument card's scope switch follows. Regenerate and document. Write test_fp_s13 and the FP-S13 journey on the seeded DK watch (tax-nordic-seed); update FP-S5's 'Show outside our scope' click, FP-S4 and library journeys. problem-reports-frontend edits InstrumentScreen in parallel (different region). CLAUDE.md section 11 applies in full. Rules: D-67 (library, taxonomy) plus frontend gates; no Co-Authored-By trailer.\n\nCARRY-OVER from earlier waves (fold into your work, each an explicit step with its own test):\n- [carried from tax-fp-s4-journey] ND2: FP-S4 Gherkin still says 'Given a regulatory scope without \"Advice\"' — Still there at taxonomy/app.md:280. tax-watched-inventory (wave 3, FP-S4 in its scenarios) reworks the 'Show outside our scope' step, so it should apply the suggested wording ('a regulatory scope that leaves a term out...'). The builder named r1-close-and-readiness as the fallback. Neither brief says it yet.\n- [carried from tax-fp-s4-journey] ND6: tax-watched-inventory must update FP-S4's inventory 'Show outside our scope' click — taxonomy.journey.spec.ts:563,579 click 'Show outside our scope'. tax-watched-inventory (wave 3) replaces that switch with a Scope filter and must name this journey in its brief.",
+  "wave2_deps": [
+   "tax-jurisdiction-derivation",
+   "tax-nordic-seed"
+  ]
+ },
+ {
+  "key": "tax-watched-feed",
+  "title": "A change's jurisdiction comes from its authority, and the feed has the watched-market view",
+  "goal": "TAX-12.",
+  "requirement_ids": [
+   "FP-04",
+   "FP-03"
+  ],
+  "scenario_ids": [
+   "FP-S15"
+  ],
+  "files_owned": [
+   "backend/apps/watch/reading.py",
+   "backend/apps/cases/reading.py",
+   "backend/apps/cases/creation.py",
+   "backend/apps/cases/matching.py",
+   "frontend/src/components/watch/WatchFeedScreen.tsx"
+  ],
+  "shared_files": [
+   "frontend/src/features/watch/api.ts (row market field only; watch-curation-confirm-frontend maps provenance fields in parallel)",
+   "backend/apps/watch/schemas.py (row market field)",
+   "backend/apps/taxonomy/tests_scenarios.py (test_fp_s15)",
+   "backend/apps/watch/e2e_seed.py",
+   "backend/apps/shared/e2e_seed.py",
+   "frontend/src/features/watch/change-presentation.ts",
+   "frontend/src/messages/watch/en.json",
+   "frontend/src/messages/watch/sv.json",
+   "frontend/tests/e2e/taxonomy.journey.spec.ts (FP-S15)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "tax-jurisdiction-derivation",
+   "tax-nordic-seed",
+   "tax-preview-cases"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Change scope ids include jurisdiction terms derived from authority.jurisdiction with the same derivation (none without an authority) in watch/reading._scope_term_ids, cases/reading.scope_term_ids_of_each_case (and the preview helper) and cases/creation; cached case verdict recomputed when the authority changes; footprint=watched served; rows carry market rendered as meta via watch.row.watchedMarket; no urgency or notification from a market; Danish Custody change seeded for tenant A (watching DK); test_fp_s15 and journey; suites green.",
+  "brief": "Use tax-jurisdiction-derivation's derivation (reading jurisdiction and parent only) for a change's authority.jurisdiction in all three places; recompute the cached verdict on an authority change. Replace watch/reading's footprint=watched queryset.none() (~286-291) with the watched view. Add a market field to the row, render it as meta text. Seed a Danish authority's Custody change (tax-nordic-seed's authority) and check it does not move HOM-S1's lead or WAT counts. search-index-changes reads watch/reading's scope helper in parallel: keep its signature. watch-standards relies on case creation following the opt-in rule through the matcher: keep that path intact. CLAUDE.md section 11 applies in full. Rules: D-67 (watch, cases, taxonomy) plus frontend gates; regenerate types; no Co-Authored-By trailer.",
+  "wave2_deps": [
+   "tax-jurisdiction-derivation",
+   "tax-nordic-seed",
+   "tax-preview-cases"
+  ]
+ },
+ {
+  "key": "tax-market-journeys",
+  "title": "Operating and watched markets are proven end to end, and J-8 covers what R1 has",
+  "goal": "FP-S8 and FP-S10 journeys and TEN-S7's R1 steps.",
+  "requirement_ids": [
+   "FP-04",
+   "AC-FP2",
+   "ADM-01",
+   "NFR-01"
+  ],
+  "scenario_ids": [
+   "FP-S8",
+   "FP-S10",
+   "TEN-S7"
+  ],
+  "files_owned": [
+   "frontend/tests/e2e/tenants.journey.spec.ts"
+  ],
+  "shared_files": [
+   "frontend/tests/e2e/taxonomy.journey.spec.ts (FP-S8, FP-S10)",
+   "frontend/tests/e2e/support/passkeys.ts",
+   "backend/apps/shared/e2e_logins.py",
+   "backend/apps/shared/e2e_seed.py",
+   "backend/apps/shared/tests_seed_integrity.py",
+   "backend/apps/tenants/app.md (TEN-S7 note)"
+  ],
+  "depends_on": [
+   "tax-jurisdiction-derivation",
+   "tax-markets-panel",
+   "tax-nordic-seed"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "FP-S10: watch Norway, audit row, reader's read-only view, unwatch; FP-S8: turn on Denmark in tenant B, preview, approve with a second tenant-B approver's passkey, inventory shows EU and DK only, restore — serial and on state no other journey reads; TEN-S7 proves B sees none of A's watched markets, terms, pending request, roles or vocabulary rows; seed integrity green.",
+  "brief": "Seed a second tenant-B login able to approve scope changes (four eyes) with its passkey in support/passkeys.ts. FP-S8 hides every Swedish obligation of its tenant while it waits: run it serially (test.describe.configure mode serial), in tenant B, restoring on failure too. FP-S10 on tenant A's markets panel. TEN-S7: B's /admin/footprint shows no market A watches (A watches DK from tax-nordic-seed), none of A's terms or pending request; B's roles and vocabulary screens show only B's rows; note in tenants/app.md that case, evidence, comment and participant steps come with chunks 9-10. CLAUDE.md section 11 applies in full. Rules: journeys in the batch; own block in shared seed files; no Co-Authored-By trailer.",
+  "wave2_deps": [
+   "tax-jurisdiction-derivation",
+   "tax-markets-panel",
+   "tax-nordic-seed"
+  ]
+ },
+ {
+  "key": "std-journeys",
+  "title": "A standard shows only to banks that follow it, end to end",
+  "goal": "TAX-09's screen state plus the INV-S11 and FP-S16 journeys.",
+  "requirement_ids": [
+   "FP-01",
+   "FP-02",
+   "INV-08",
+   "AC-FP3"
+  ],
+  "scenario_ids": [
+   "FP-S16",
+   "INV-S11"
+  ],
+  "files_owned": [
+   "design/screens/admin-footprint.html"
+  ],
+  "shared_files": [
+   "frontend/src/components/admin/FootprintScreen.tsx",
+   "frontend/src/features/footprint/footprint-presentation.ts",
+   "frontend/src/features/footprint/footprint-presentation.test.ts",
+   "frontend/src/messages/footprint/en.json",
+   "frontend/src/messages/footprint/sv.json",
+   "frontend/tests/e2e/taxonomy.journey.spec.ts (FP-S16)",
+   "frontend/tests/e2e/library.journey.spec.ts (INV-S11)",
+   "backend/apps/shared/e2e_seed.py"
+  ],
+  "depends_on": [
+   "lib-standard-e2e-seed",
+   "lib-standard-presentation",
+   "tax-markets-panel"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Card state drawn for an opt-in group reading 'None followed'; presentation renders it in read and edit states and narrowedGroups excludes opt-in groups; FP-S16 journey (absent, proposed, approved with passkey, visible, restored) and INV-S11 journey (header pills, licensed-text tree with link; conformance obligation via the outside view showing 'Standard') un-fixme'd; frontend gates green.",
+  "brief": "Draw the opt-in group state in admin-footprint.html (TODO_FOR_alex lists it among cards to draw; an agent may, as 4672b19 did). Presentation: empty opt-in group reads 'None followed' (new en/sv key) using the dimension kind the footprint read serves; narrowedGroups never lists an opt-in group. Un-fixme FP-S16 on tenant A (restore at the end, on failure too) and INV-S11 as the compliance officer (Instruments tab, header pills, licensed-text tree and link; the conformance obligation through the inventory's outside/all view because no E2E tenant follows the standard). watch-standards' WAT-S10 journey briefly makes tenant A follow the standard: both restore. CLAUDE.md section 11 applies in full. Rules: frontend gates; journeys in the batch; no Co-Authored-By trailer.\n\nCARRY-OVER from earlier waves (fold into your work, each an explicit step with its own test):\n- [carried from tax-opt-in-rule] ND1: 'None followed' wording for an empty opt-in group — No such key in frontend/src/messages/footprint/en.json (only footprint.notRestricted, l.8). The seeds/__init__.py:118-121 comment says the page must read an empty opt-in group as 'none followed'. The builder handed it to std-journeys (wave 3); its brief must name the key.",
+  "wave2_deps": [
+   "lib-standard-e2e-seed",
+   "lib-standard-presentation",
+   "tax-markets-panel"
+  ]
+ },
+ {
+  "key": "lib-machine-confirmed-journey",
+  "title": "An agent-confirmed record reads machine-confirmed in the seed, the journey and Library updates",
+  "goal": "LIB-MACHINE-CONFIRMED part 2: seed and INV-S14 journey.",
+  "requirement_ids": [
+   "INV-05",
+   "INV-06",
+   "PRO-02"
+  ],
+  "scenario_ids": [
+   "INV-S14"
+  ],
+  "files_owned": [],
+  "shared_files": [
+   "backend/apps/shared/e2e_seed.py",
+   "backend/apps/shared/tests_seed_integrity.py",
+   "frontend/tests/e2e/library.journey.spec.ts (INV-S14)",
+   "frontend/src/components/inventory/LibraryUpdatesScreen.tsx",
+   "frontend/src/features/library-updates/library-updates-presentation.ts",
+   "frontend/src/messages/library/en.json",
+   "frontend/src/messages/library/sv.json"
+  ],
+  "depends_on": [
+   "lib-machine-confirmed-read",
+   "proposals-agent-decision-log",
+   "agents-confirmer-definition"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Seed files one new_obligation_version by watch-sweeper and approves it through logic.approve with a key bound to library-confirmer (with a decision object and run); a second record the same way then re-verified by the seeded platform person; INV-S14 journey: first reads machine-confirmed with both agent keys and no person, second reads 'by <person>'; Library updates rows label agent-confirmed versions; seed integrity green.",
+  "brief": "In seed_e2e (own block, idempotent): file a new_obligation_version through proposals.logic.create with an agent Proposer (watch-sweeper, inside an open run) and approve it through logic.approve with a Reviewer key bound to library-confirmer (seed_agent_definitions loads both; e2e_seed may not write Agent rows) with an AgentDecision and run; a second record the same way, then re-verified by the seeded platform person via apply_reverification. Use obligations no other journey names. Un-fixme INV-S14. Render the machine-confirmed label on LibraryUpdatesScreen rows from LibraryUpdateRow's provenance fields. CLAUDE.md section 11 applies in full. Rules: journeys in the batch; frontend gates; no Co-Authored-By trailer.\n\nCARRY-OVER from earlier waves (fold into your work, each an explicit step with its own test):\n- [carried from lib-machine-confirmed-read] ND0: inventory list row (ObligationRow metaOf / api.ts versionOf) not labelled machine-confirmed (follow-up task_21d62e18) — ObligationRow.tsx:43 pushes verifiedLabel(lastVerifiedAt) with no machine-confirmed branch, and the list row carries no verifiedOrigin or verifiedBy. Under D-74 and CLAUDE.md section 5, an agent-confirmed record must never read as a person's verification, so this is an R1 invariant gap. The fix needs list-row provenance in the obligations read (backend) plus a presentation branch. Only a chip covers it today, not a package. Add it to lib-machine-confirmed-journey (wave 3). ObligationRow.tsx is owned by lib-standard-presentation in wave 2, so it lands after that package.\n- [carried from lib-machine-confirmed-read] ND1a: library-updates screen's machine-confirmed label — Nothing in frontend/src/features/library-updates or LibraryUpdatesScreen.tsx names an agent. The package title says 'machine-confirmed in the seed, the journey and Library updates' (explicit).\n- [carried from lib-machine-confirmed-read] ND1b: 'Show what changed' diff banner label — ObligationScreen.tsx:181 renders diffSentence() with no machine-confirmed branch. The package title does not name the diff banner, so its brief must add it.\n- [carried from lib-machine-confirmed-read] ND1c: INV-S14 E2E journey and E2E seed — Explicit (scenario INV-S14).",
+  "wave2_deps": [
+   "proposals-agent-decision-log"
+  ]
+ },
+ {
+  "key": "problem-reports-frontend",
+  "title": "A record shows its reported problems and who can close them",
+  "goal": "GOV-2: the section, the AUD-S5 journey and removal of the dead console surface.",
+  "requirement_ids": [
+   "AUD-03",
+   "INV-06",
+   "PRO-03"
+  ],
+  "scenario_ids": [
+   "AUD-S5",
+   "INV-S7",
+   "ADM-S4"
+  ],
+  "files_owned": [
+   "frontend/src/components/inventory/RecordProblemReports.tsx",
+   "frontend/src/components/inventory/ObligationScreen.tsx",
+   "frontend/src/features/problem-reports/api.ts",
+   "frontend/src/features/problem-reports/hooks.ts",
+   "frontend/src/features/problem-reports/types.ts",
+   "frontend/src/features/problem-reports/problem-report-presentation.ts",
+   "frontend/src/components/shell/shell.test.tsx",
+   "design/screens/console-problem-reports.html",
+   "design/screens/tenant-obligation.html"
+  ],
+  "shared_files": [
+   "frontend/src/features/shared/tone-by-kind.ts (problem-report kinds only; ai-log-screen adds its own in parallel)",
+   "frontend/src/components/inventory/InstrumentScreen.tsx",
+   "frontend/src/components/inventory/ObligationScreen.test.tsx",
+   "frontend/src/components/inventory/InstrumentScreen.test.tsx",
+   "frontend/src/messages/inventory/en.json",
+   "frontend/src/messages/inventory/sv.json",
+   "frontend/src/components/shell/NavIcon.tsx",
+   "frontend/tests/e2e/governance.journey.spec.ts (AUD-S5)",
+   "docs/plans/UI_Implementation_Plan.md",
+   "backend/apps/governance/app.md (AUD-03)"
+  ],
+  "depends_on": [
+   "problem-reports-backend",
+   "lib-standard-presentation"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Section on obligation and instrument screens with reporter, time, text, version and language, status Pill, close form for proposals.create holders and the reporter, empty/loading/error/denied, 409 in place, en/sv copy incl. that the watch corrects the library; AUD-S5 journey un-fixme'd (reader files, officer closes with note, reader sees closed, tenant B sees nothing); console-problem-reports leftovers deleted; ADM-S4 and PRO-S7 stay green; frontend gates green.",
+  "brief": "T21: RecordProblemReports.tsx and features/problem-reports (api, hooks, types, presentation; tones by kind via tone-by-kind.ts) on both screens as in acceptance. T23: un-fixme AUD-S5. T24b: delete NavIcon's 'console-problem-reports', its shell.test reference, design/screens/console-problem-reports.html and its UI plan rows (~70, ~289). Coverage floors and the AUD-03 status are readiness'. tax-watched-inventory edits InstrumentScreen in parallel (different region); ai-log-screen edits tone-by-kind.ts and NavIcon.tsx in parallel (own entries only). CLAUDE.md section 11 applies in full. Rules: frontend gates; journeys in the batch; no Co-Authored-By trailer.",
+  "wave2_deps": [
+   "problem-reports-backend",
+   "lib-standard-presentation"
+  ]
+ },
+ {
+  "key": "ai-log-screen",
+  "title": "An approver reads the AI log at /admin/ai-log",
+  "goal": "GOV-4: card, screen and the AUD-S4 journey.",
+  "requirement_ids": [
+   "AUD-02"
+  ],
+  "scenario_ids": [
+   "AUD-S4"
+  ],
+  "files_owned": [
+   "design/screens/admin-ai-log.html",
+   "frontend/src/app/(tenant)/admin/ai-log/page.tsx",
+   "frontend/src/components/admin/AiLogScreen.tsx",
+   "frontend/src/components/admin/AiLogScreen.test.tsx",
+   "frontend/src/features/governance/api.ts",
+   "frontend/src/features/governance/hooks.ts",
+   "frontend/src/features/governance/types.ts",
+   "frontend/src/features/governance/ai-log-presentation.ts",
+   "frontend/src/features/governance/ai-log-presentation.test.ts"
+  ],
+  "shared_files": [
+   "frontend/src/features/shared/tone-by-kind.ts (AI log kinds only)",
+   "frontend/src/shared/navigation/registry.ts",
+   "frontend/src/components/shell/NavIcon.tsx",
+   "frontend/src/messages/tenant-admin/en.json",
+   "frontend/src/messages/tenant-admin/sv.json",
+   "frontend/tests/e2e/governance.journey.spec.ts (AUD-S4)",
+   "frontend/tests/e2e/support/screen-budgets.ts (one row)",
+   "docs/plans/UI_Implementation_Plan.md"
+  ],
+  "depends_on": [
+   "ai-log-read",
+   "ask-screen",
+   "ask-feedback-and-limits",
+   "screen-budget-nfr-s7"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Card drawn; /admin/ai-log under ai_log.read with filters (purpose, review state, record), rows (purpose, model and version, subject, time, review state, citations, feedback), a row opening to output and citations with the AI label kept until confirmed, empty/loading/error/denied, both themes, three widths; registry entry and budget row; AUD-S4 journey (reader asks, marks wrong with a reason; approver sees the row) un-fixme'd; frontend gates green.",
+  "brief": "Draw design/screens/admin-ai-log.html, then build the screen, features/governance and one registry entry as in acceptance, with en/sv admin copy. Pills through Pill with tones chosen by kind (tone-by-kind.ts), never by a person. Add its ready-locator row to screen-budgets.ts (screen-budget-nfr-s7's completeness check requires it). Un-fixme AUD-S4's journey. CLAUDE.md section 11 applies in full. Rules: frontend gates; journeys in the batch; no Co-Authored-By trailer.",
+  "wave2_deps": [
+   "ai-log-read",
+   "ask-screen",
+   "ask-feedback-and-limits",
+   "screen-budget-nfr-s7"
+  ]
+ },
+ {
+  "key": "aud-s4-integration",
+  "title": "Every model output is logged with its review state",
+  "goal": "GOV-5: AUD-S4's integration half over its three producers.",
+  "requirement_ids": [
+   "AUD-02"
+  ],
+  "scenario_ids": [
+   "AUD-S4"
+  ],
+  "files_owned": [],
+  "shared_files": [
+   "backend/apps/governance/tests_scenarios.py (test_aud_s4)",
+   "backend/apps/governance/app.md (AUD-02 note)"
+  ],
+  "depends_on": [
+   "ai-log-read",
+   "proposals-agent-decision-log",
+   "watch-regime-required",
+   "ask-feedback-and-limits"
+  ],
+  "wave": 3,
+  "size": "S",
+  "acceptance": "test_aud_s4 un-skipped: So-what draft, agent classification (scope_suggestion) and Ask answer rows each carry purpose, model, version, input reference, output, citations and draft state; a person's confirmation shows person and time per ai-log-read's rule; a 'wrong' verdict stores feedback; an ai_log.read holder lists only their tenant's rows; AUD-02's cell left to r1-close-and-readiness; governance suite green.",
+  "brief": "Write and un-skip test_aud_s4 as in acceptance, using the producers already landed (watch/so_what_draft, watch-regime-required's scope_suggestion logging, Ask). Leave AUD-02's status cell to r1-close-and-readiness, which sets it once ai-log-screen's AUD-S4 journey is green in the batch run. Rules: D-67 (governance); no Co-Authored-By trailer.",
+  "wave2_deps": [
+   "ai-log-read",
+   "proposals-agent-decision-log",
+   "watch-regime-required",
+   "ask-feedback-and-limits"
+  ]
+ },
+ {
+  "key": "proposals-kind-provision-licensed",
+  "title": "Licensed text and extra obligations never enter a standard",
+  "goal": "PRO-5 part 2 and PRO-S10: provision kinds, the rest of the standards check, and the check wired into new_obligation (f03-T42).",
+  "requirement_ids": [
+   "INV-08",
+   "PRO-01",
+   "PRO-02",
+   "AC-INV2",
+   "AC-FP3"
+  ],
+  "scenario_ids": [
+   "PRO-S10",
+   "PRO-S11"
+  ],
+  "files_owned": [
+   "backend/apps/proposals/standards.py",
+   "backend/apps/proposals/migrations/0005_provision_kinds.py"
+  ],
+  "shared_files": [
+   "backend/apps/proposals/models.py",
+   "backend/apps/proposals/apply.py",
+   "backend/apps/proposals/logic.py",
+   "backend/apps/proposals/schemas.py",
+   "backend/apps/proposals/api.py (createProposal docstring, error list only)",
+   "backend/apps/proposals/tests_kinds.py",
+   "backend/apps/proposals/tests_scenarios.py (test_pro_s10)",
+   "backend/apps/proposals/app.md",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "proposals-standards-check",
+   "proposals-kind-instrument-obligation"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "new_provision and new_provision_version kinds with payload schemas, sources and apply; licensed_text at creation (POST /proposals and agent path) for provision kinds under a standard and for a non-URL field source on its conformance obligation, and over a correction at approval with nothing written; one_conformance_obligation for a second active obligation; standard_term_required for none or two opt-in terms; standard_term_only_on_standards now also refuses a new_obligation under a law, at creation, over a correction and at apply; test_pro_s10 un-skipped (DB refusal of a directly inserted provision comes from lib-standard-model); ProposalCreateBody stays documented; proposals suite green.",
+  "brief": "Add new_provision and new_provision_version (migration 0005) with named payloads and per-field sources, applied with version, audit row and reindex in one transaction. Extend standards.check with licensed_text, one_conformance_obligation and standard_term_required (read level kind and dimension kind, never keys), called at creation, over corrections and at apply. f03-T42: wire check() into new_obligation (proposals-kind-instrument-obligation left the seam), so a standard's term on a law's new obligation answers standard_term_only_on_standards and a standard's conformance obligation proposed as new_obligation meets one_conformance_obligation and standard_term_required; extend PRO-S11's test with the new_obligation case. Keep ProposalCreateBody and createProposal documented for the new kinds and codes. Un-skip test_pro_s10. Rules: D-67 (proposals); regenerate types; no Co-Authored-By trailer.\n\nCARRY-OVER from earlier waves (fold into your work, each an explicit step with its own test):\n- [carried from lib-standard-model] ND1c: D-35 proposal checks (licensed_text, one_conformance_obligation, standard_term_required) — proposals-standards-check (wave 2) builds check() so these rules can be appended, which its brief states. proposals-kind-provision-licensed (wave 3, PRO-S10/S11) adds them. Its brief is not drafted yet and must name all three.",
+  "wave2_deps": [
+   "proposals-standards-check",
+   "proposals-kind-instrument-obligation"
+  ]
+ },
+ {
+  "key": "pro-s13-journey",
+  "title": "An independent agent confirms a proposal from the same queue, end to end",
+  "goal": "PRO-S13's @e2e half.",
+  "requirement_ids": [
+   "PRO-01",
+   "PRO-02",
+   "PRO-03"
+  ],
+  "scenario_ids": [
+   "PRO-S13"
+  ],
+  "files_owned": [
+   "frontend/tests/e2e/proposals.journey.spec.ts"
+  ],
+  "shared_files": [
+   "backend/apps/shared/e2e_seed.py",
+   "backend/apps/shared/tests_seed_integrity.py",
+   "backend/apps/proposals/app.md"
+  ],
+  "depends_on": [
+   "console-proposals-frontend",
+   "proposals-agent-decision-log",
+   "console-agent-keys-screen"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Seeded agent proposals carry proposed_by_agent and a key as watch-sweeper's (not an agent_run Actor); journey mints a library-confirmer key via support/agent-key.ts, reads queue and detail, approves with a decision object and run through the request fixture; the editor sees it under Approved naming the agent and the obligation shows version 2; a key without the scope gets 403 (declared); seed integrity green.",
+  "brief": "Re-seed the E2E agent proposals (e2e_seed.py ~496-540) as watch-sweeper's with proposed_by_agent and a key. In the journey, mint a proposals:review key bound to library-confirmer through support/agent-key.ts, open a run with an agent-runs key, read GET /proposals and GET /proposals/{id}, approve with AgentDecision and agentRunId via Playwright's request context, close the run; then as editor@bleqq.test see the Approved row naming the agent and version 2 on the obligation; a key without the scope answers 403 (apiGuard.allow). Use a proposal no other journey consumes. CLAUDE.md section 11 applies in full. Rules: journeys in the batch; own seed block; no Co-Authored-By trailer.\n\nCARRY-OVER from earlier waves (fold into your work, each an explicit step with its own test):\n- [carried from proposals-decide-hardening] ND3b: PRO-S13 @e2e journey — Wave 3, scenario PRO-S13.\n- [carried from proposals-reads-agent-visible] ND4: PRO-S13 @e2e stays fixme — Wave 3. It needs the confirming agent in e2e_seed and console-proposals-frontend's agent-decision copy (wave 2).",
+  "wave2_deps": [
+   "console-proposals-frontend",
+   "proposals-agent-decision-log",
+   "console-agent-keys-screen"
+  ]
+ },
+ {
+  "key": "watch-curation-confirm-frontend",
+  "title": "The console confirms curation and every screen says a machine confirmed it",
+  "goal": "D-74's frontend, seed and journeys.",
+  "requirement_ids": [
+   "WAT-03",
+   "WAT-04"
+  ],
+  "scenario_ids": [
+   "WAT-S4",
+   "WAT-S6"
+  ],
+  "files_owned": [
+   "frontend/src/components/console/ChangeFactsDetail.tsx",
+   "frontend/src/components/console/ChangeFactsDetail.test.tsx",
+   "frontend/src/features/console-watch/change-facts-detail.ts",
+   "frontend/src/features/console-watch/presentation.test.ts",
+   "frontend/src/messages/console-change-facts/en.json",
+   "frontend/src/messages/console-change-facts/sv.json",
+   "frontend/src/components/watch/ChangeObligations.tsx"
+  ],
+  "shared_files": [
+   "frontend/src/features/watch/api.ts (provenance fields only; tax-watched-feed adds the market field in parallel)",
+   "frontend/src/features/watch/change-presentation.ts",
+   "frontend/src/messages/watch/en.json",
+   "frontend/src/messages/watch/sv.json",
+   "frontend/tests/e2e/watch.journey.spec.ts (WAT-S4, WAT-S6)",
+   "backend/apps/shared/e2e_seed.py (confirmed state ~935-942)",
+   "backend/apps/watch/e2e_seed.py"
+  ],
+  "depends_on": [
+   "watch-curation-confirm-backend",
+   "watch-case-controls-ui"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Confirm control on the console Change facts detail (held notice removed) with step-up for a person; machine-confirmed label naming both agents on console facts, tenant change page and feed pills; the seed's confirmed state made by a confirming agent key; WAT-S4 journey un-fixme'd; WAT-S6 journey finished incl. the second tenant still seeing both links; frontend gates green.",
+  "brief": "Replace the 'confirm held' notice (ChangeFactsDetail ~35-38, ~174-176) with the confirm control for a person with proposals.review (step-up), its mutation in features/console-watch/change-facts-detail.ts. Render machine-confirmed provenance (both agents) on console facts, the tenant change page and feed pills via change-presentation; never render an agent confirmation as a person's. Re-seed the confirmed state (CONFIRMING_EDITOR_EMAIL block) through an agent key of library-confirmer. Un-fixme WAT-S4; finish WAT-S6. CLAUDE.md section 11 applies in full. Rules: frontend gates; journeys in the batch; no Co-Authored-By trailer.\n\nCARRY-OVER from earlier waves (fold into your work, each an explicit step with its own test):\n- [carried from review-fixes] ND2b: stale not_built comments in watch.journey.spec.ts — watch.journey.spec.ts:70-76 (WAT-S4 fixme) still says a library editor gets not_built from PATCH /changes and names the held c5-watch-curation-confirm. watch-curation-confirm-backend (wave 2) replaces the 501s, and watch-curation-confirm-frontend (wave 3) un-fixmes WAT-S4 and should rewrite this block. Its brief must say so.\n- [carried from watch-case-controls-ui] ND3: mount ObligationRelatedChanges in ObligationScreen; restore WAT-S6 obligation-card step — ObligationRelatedChanges.tsx:57 is defined but used nowhere outside tests. watch-curation-confirm-frontend (wave 3) owns the WAT-S6 journey, which is where the obligation-card step comes back. Add it to its brief.\n- [carried from tax-fp-s4-journey] ND4: stale comment in watch.journey.spec.ts ~471 says FP-S4 'is still test.fixme' — watch.journey.spec.ts:470-471 still says FP-S4 is test.fixme, but FP-S4 is live (taxonomy.journey.spec.ts:541). The integrator did not reword it. watch-curation-confirm-frontend is the next package to edit watch.journey.spec.ts (WAT-S4/S6); add a one-line rewording.",
+  "wave2_deps": [
+   "watch-curation-confirm-backend"
+  ]
+ },
+ {
+  "key": "watch-standards",
+  "title": "A new edition of a standard is one change, seen only by its followers",
+  "goal": "WAT-07: WAT-S10 and WAT-S11 green.",
+  "requirement_ids": [
+   "WAT-07",
+   "WAT-03",
+   "WAT-02",
+   "CAS-01",
+   "AC-AGT1",
+   "AC-FP3"
+  ],
+  "scenario_ids": [
+   "WAT-S10",
+   "WAT-S11"
+  ],
+  "files_owned": [
+   "backend/apps/watch/sources.py",
+   "backend/apps/watch/tests_sources.py"
+  ],
+  "shared_files": [
+   "backend/apps/watch/registration.py",
+   "backend/apps/watch/curation.py",
+   "backend/apps/watch/keys.py",
+   "backend/apps/watch/tests_scenarios.py (test_wat_s10, test_wat_s11)",
+   "backend/apps/watch/app.md",
+   "backend/apps/watch/e2e_seed.py",
+   "backend/apps/shared/e2e_seed.py",
+   "backend/config/settings.py",
+   "./.env.example",
+   "docs/runbooks/RAILWAY_VARIABLES.md",
+   "backend/apps/library/fixtures/prototype_data.json (standards_body source kind)",
+   "frontend/tests/e2e/watch.journey.spec.ts (WAT-S10)"
+  ],
+  "depends_on": [
+   "watch-regime-required",
+   "lib-standard-e2e-seed",
+   "tax-opt-in-rule"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "422 standard_term_only_on_standards when an opt-in term sits on a change whose authority's jurisdiction kind is not international; STANDARDS_PUBLISHER_HOSTS setting documented and tested; standards_body source kind seeded inactive; automated checks on inactive sources refused; case creation follows the opt-in rule; test_wat_s10 and test_wat_s11 un-skipped; WAT-S10 journey with an E2E change naming only the standard's reference shows in tenant A's feed and roadmap and neither of tenant B's; WAT-07's cell left to r1-close-and-readiness; suites green.",
+  "brief": "Read docs/plans/briefs/PRIVATE_SOURCES_AND_EDITIONS.md (WAT-S10 part). 1. Refusal as in acceptance (read kinds, never keys); document the code on createChange/updateChange (shared/errors.py holds no registry). 2. STANDARDS_PUBLISHER_HOSTS with env override, .env.example, RAILWAY_VARIABLES, settings test; default reads no publisher (TODO_FOR_alex legal item). 3. standards_body source kind, inactive. 4. record_check refuses an inactive source. 5. licensed_text step: no snapshot field exists, so reword the step to the refusal the schema gives a body carrying one; state it in the commit. 6. Case creation follows the opt-in rule through the matcher (tax-opt-in-rule made it inherit; verify with a test, edit no cases file: tax-watched-feed owns them this wave). 7. Un-skip both scenarios (regime step from watch-regime-required). 8. WAT-S10 journey: E2E seed change using the reference only (no official title); tenant A must follow the standard for this journey (add the term to A's footprint in its own seed block or in the journey, restored after, on failure too) — std-journeys expects A not to follow it by default, so both restore. Leave WAT-07's cell to r1-close-and-readiness after the batch E2E run. CLAUDE.md section 11 applies in full. Rules: D-67 (watch); regenerate types; no Co-Authored-By trailer.\n\nCARRY-OVER from earlier waves (fold into your work, each an explicit step with its own test):\n- [carried from tax-opt-in-rule] ND0: watch guard 422 standard_term_only_on_standards (authority not international); flip the ISO seed flag and HeldStandard — Still pending. taxonomy/seeds/__init__.py:126-136 holds iso_iec_27001 with active False, tests_matching.py:266 pins it (HeldStandard), and watch/schemas.py:1217 documents the code ahead of the code. watch-regime-required (wave 2) writes only WAT-S11's regime step and leaves WAT-S11 skipped for watch-standards, so watch-standards (wave 3) must land the guard and flip the flag. Cross-package risk: lib-standard-e2e-seed (wave 2) seeds an obligation on standard:iso_iec_27001, and its test_fp_s16 needs the term in a scope request and preview. Every term door resolves active terms only, so that brief must say how the test activates the held term (in test setup, never in the seed).",
+  "wave2_deps": [
+   "watch-regime-required",
+   "lib-standard-e2e-seed"
+  ]
+ },
+ {
+  "key": "agent-j4-smoke",
+  "title": "J-4: an agent registers a change and a proposal, a person approves, the bank sees what changed",
+  "goal": "AGT-S10 @smoke.",
+  "requirement_ids": [
+   "AGT-01",
+   "WAT-02",
+   "PRO-02",
+   "INV-04",
+   "INV-05",
+   "ID-10"
+  ],
+  "scenario_ids": [
+   "AGT-S10"
+  ],
+  "files_owned": [
+   "frontend/tests/e2e/agents.journey.spec.ts"
+  ],
+  "shared_files": [
+   "backend/apps/shared/e2e_seed.py",
+   "backend/apps/agents/app.md"
+  ],
+  "depends_on": [
+   "console-agent-keys-screen",
+   "watch-regime-required",
+   "agent-flow-run-guards"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "AGT-S10 un-fixme'd and tagged @smoke: key minted through the console with step-up; run opened, change registered with a regime term, new_obligation_version with changeId, agentRunId and field sources filed, run closed; editor approves in /console/queue with step-up; officer sees the new version with 'Show what changed', Library updates lists it, the feed shows the change in Needs triage; assertions relative to the produced version; @smoke green twice.",
+  "brief": "Use support/agent-key.ts (console-agent-keys-screen) to mint a watch-sweeper key with agent-runs:write, changes:write, proposals:write. Drive the API with Playwright's request context and X-API-Key (an agent's key, minted through the UI; no session token or cookie is injected). Add a dedicated J-4 obligation to the E2E seed no other journey touches. Update the AGT-S10 note in agents/app.md. CLAUDE.md section 11 applies in full. Rules: journeys in the batch; own seed block; no Co-Authored-By trailer.",
+  "wave2_deps": [
+   "console-agent-keys-screen",
+   "watch-regime-required"
+  ]
+ },
+ {
+  "key": "ask-journeys",
+  "title": "J-7: search by identifier and concept, then Ask with citations and As of",
+  "goal": "SRC-S4, SRC-S5 and SRC-S10 journeys.",
+  "requirement_ids": [
+   "SRC-01",
+   "SRC-02",
+   "SRC-03",
+   "AC-SRC1",
+   "AC-SRC2"
+  ],
+  "scenario_ids": [
+   "SRC-S4",
+   "SRC-S5",
+   "SRC-S10"
+  ],
+  "files_owned": [
+   "frontend/tests/e2e/search.journey.spec.ts"
+  ],
+  "shared_files": [
+   "backend/apps/shared/e2e_seed.py",
+   "backend/apps/shared/tests_seed_integrity.py"
+  ],
+  "depends_on": [
+   "ask-screen",
+   "ask-feedback-and-limits"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Confirmed ChangeObligation link from EXPECTED_HOME.lead_change to obl-research-payments seeded without changing HOM or WAT journeys; an unsupported question proven to retrieve nothing; SRC-S4 (citations open the obligation, pending pill, feedback posts), SRC-S5 (no answer + Search instead), SRC-S10 @smoke un-fixme'd; @smoke green twice.",
+  "brief": "Extend seed_e2e (never mock) with the confirmed link; check the roadmap and change page (which list confirmed links) keep HOM/WAT expectations. Pick an unsupported question and prove it retrieves nothing in the E2E corpus ('crypto custody' may hit obl-client-assets). SRC-S10: search 'FFFS 2017:2', then 'nudging in onboarding', set As of, Ask; settle before branching; declare expected errors. CLAUDE.md section 11 applies in full. Rules: journeys in the batch; own seed block; no Co-Authored-By trailer.\n\nCARRY-OVER from earlier waves (fold into your work, each an explicit step with its own test):\n- [carried from search-ask-backend] ND0: SRC-S4, SRC-S5, SRC-S10 journeys stay fixme (no Ask panel) — ask-screen (wave 2) builds the panel (explicit), and ask-journeys (wave 3) owns SRC-S4, SRC-S5 and SRC-S10.",
+  "wave2_deps": [
+   "ask-screen",
+   "ask-feedback-and-limits"
+  ]
+ },
+ {
+  "key": "search-index-changes",
+  "title": "Registered changes are searchable",
+  "goal": "SRC-01's third source: change chunks with the change's own scope rule.",
+  "requirement_ids": [
+   "SRC-01",
+   "WAT-01",
+   "AGT-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/apps/search/sources.py",
+   "backend/apps/search/indexing.py",
+   "backend/apps/search/tasks.py",
+   "backend/apps/search/tests_index_changes.py"
+  ],
+  "shared_files": [
+   "backend/apps/search/hybrid.py (change-chunk scope)",
+   "backend/apps/shared/tests_seed_integrity.py"
+  ],
+  "depends_on": [
+   "tax-jurisdiction-derivation",
+   "search-ask-backend"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "One chunk per language per change (title + summary, authority, jurisdiction key, scope term ids, validity; owner_tenant_id NULL) found by both legs; a change event carrying a tenant owner is skipped with no chunk and no embedding request; reindex_change and reindex_all include changes; one outbox handler with no tenant for change.registered, change.updated, regulatory_change.facts_updated; withdrawn/superseded changes lose their chunk; replays idempotent; change chunks scoped by watch/reading's change scope helper; seed chunk counts updated; search_eval passes; search suite green.",
+  "brief": "Add sources.change_chunks/change_ids, indexing.reindex_change and include changes in reindex_all; register the handler in tasks.py running with no tenant active; index shared (platform) changes only, skipping a tenant-owned change with a test (CHUNK7_TASKS c7-index-changes). In hybrid, give change chunks the change's own scope via watch/reading's scope helper (tax-watched-feed adds derived jurisdiction to it in parallel; call, don't copy). ask-standard-no-answer edits passages() in parallel. Run search_eval.py (gate 9). Rules: D-67 (search); no Co-Authored-By trailer.",
+  "wave2_deps": [
+   "tax-jurisdiction-derivation"
+  ]
+ },
+ {
+  "key": "ask-standard-no-answer",
+  "title": "Ask gives no answer about a standard's control",
+  "goal": "SRC-S12 and AC-INV2's release-gate row.",
+  "requirement_ids": [
+   "SRC-03",
+   "SRC-05",
+   "INV-08",
+   "AC-INV2"
+  ],
+  "scenario_ids": [
+   "SRC-S12"
+  ],
+  "files_owned": [
+   "backend/eval/retrieval.jsonl"
+  ],
+  "shared_files": [
+   "backend/apps/search/ask.py",
+   "backend/apps/search/hybrid.py (passages filter)",
+   "backend/apps/search/tests_scenarios.py (test_src_s12)",
+   "backend/scripts/search_eval.py",
+   "docs/DECISIONS.md (row D-81)",
+   "docs/TODO_FOR_alex.md"
+  ],
+  "depends_on": [
+   "ask-feedback-and-limits",
+   "search-eval-gate",
+   "lib-standard-model"
+  ],
+  "wave": 3,
+  "size": "S",
+  "acceptance": "D-81 recorded: Ask never passes an obligation whose instrument's level kind is standard to the model; a question about a standard's control gets noAnswer with no model call while Search still finds the conformance duty; test_src_s12 un-skipped with an invented standard in the test (no real title); the no-answer row added to the eval set and scored against Ask's passages; baseline not re-recorded; search suite green.",
+  "brief": "Record D-81 in DECISIONS and a TODO line. Filter standard-level obligations out of hybrid.passages() (read the level kind, never a key). Write test_src_s12 with an invented standard fixture. Add the empty-expected row to retrieval.jsonl scored against Ask's passages. search-index-changes edits other parts of hybrid.py in parallel. Rules: D-67 (search); gate 9; no Co-Authored-By trailer.\n\nCARRY-OVER from earlier waves (fold into your work, each an explicit step with its own test):\n- [carried from search-eval-gate] ND3: no no-answer row in eval/retrieval.jsonl — Wave 3, SRC-S12 (f03-T49). Its brief must name the retrieval.jsonl no-answer row.",
+  "wave2_deps": [
+   "ask-feedback-and-limits"
+  ]
+ },
+ {
+  "key": "console-evaluation-screen",
+  "title": "Platform staff read and add evaluation questions in the console",
+  "goal": "The console evaluation screen and ADM-S4's R1 surface list.",
+  "requirement_ids": [
+   "ADM-02",
+   "SRC-05",
+   "ID-10"
+  ],
+  "scenario_ids": [
+   "ADM-S4"
+  ],
+  "files_owned": [
+   "design/screens/console-evaluation.html",
+   "frontend/src/app/(console)/console/evaluation/page.tsx",
+   "frontend/src/components/console/EvaluationScreen.tsx",
+   "frontend/src/components/console/EvaluationScreen.test.tsx",
+   "frontend/src/features/evaluation/api.ts",
+   "frontend/src/features/evaluation/hooks.ts"
+  ],
+  "shared_files": [
+   "frontend/src/shared/navigation/registry.ts",
+   "frontend/src/messages/console/en.json",
+   "frontend/src/messages/console/sv.json",
+   "frontend/tests/e2e/governance.journey.spec.ts (ADM-S4)",
+   "frontend/tests/e2e/support/screen-budgets.ts (one row)",
+   "backend/apps/governance/tests_scenarios.py (ADM-S4 note)",
+   "backend/apps/governance/app.md (ADM-S4, ADM-02)",
+   "docs/plans/UI_Implementation_Plan.md"
+  ],
+  "depends_on": [
+   "search-eval-sets",
+   "console-agent-keys-screen",
+   "screen-budget-nfr-s7"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "Card drawn; /console/evaluation under eval.manage with questions filterable by language, add form marked 'not yet in the release gate', baseline per metric reading 'unrecorded' never zero, past runs, all states in both themes at 390/820/1280 px; registry entry and budget row; ADM-S4 wording and journey extended; ADM-02 cell says which surfaces R1 built and which are R2/R3; frontend gates green.",
+  "brief": "Draw design/screens/console-evaluation.html and build the screen as in acceptance. Extend ADM-S4's journey block (identity-agent-keys-backend already removed its agent-keys 501 allow; confirm it is gone); drop 'evaluation sets (chunk 7)' from the ADM-S4 note; rewrite the ADM-02 cell (agent definitions ch11, support access ch8, languages and jurisdictions R2, plans and system health ch14); ADM-02 stays in_progress. Add its ready-locator row to screen-budgets.ts. CLAUDE.md section 11 applies in full. Rules: frontend gates; journeys in the batch; no Co-Authored-By trailer.",
+  "wave2_deps": [
+   "search-eval-sets",
+   "console-agent-keys-screen",
+   "screen-budget-nfr-s7"
+  ]
+ },
+ {
+  "key": "api-docs-taxonomy-scope",
+  "title": "Scope, term and jurisdiction operations explain themselves",
+  "goal": "Clear the 31 taxonomy scope lines plus TermRef.",
+  "requirement_ids": [
+   "FP-01",
+   "FP-02",
+   "FP-03",
+   "FP-04",
+   "I18N-01",
+   "SRC-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [],
+  "shared_files": [
+   "backend/apps/taxonomy/api.py (scope, term, jurisdiction routes)",
+   "backend/apps/taxonomy/schemas.py (Footprint*, Taxonomy*, JurisdictionRow, PersonRef, TermRef)",
+   "backend/scripts/api_docs_pending.txt",
+   "backend/scripts/api_docs_gate.py (VOCABULARY_PROPERTIES only if needed)",
+   "openapi.json",
+   "frontend/src/types/api.generated.ts"
+  ],
+  "depends_on": [
+   "tax-markets-panel",
+   "tax-preview-cases",
+   "tax-opt-in-rule",
+   "footprint-requests-paging-and-copy",
+   "tax-mirror-refusal"
+  ],
+  "wave": 3,
+  "size": "M",
+  "acceptance": "api_docs_gate.py --app taxonomy and --app search clean for these names; the remaining taxonomy scope lines (31 less any an earlier package deleted) and the search-labelled TermRef line deleted.",
+  "brief": "Document approveFootprintRequest, createFootprintRequest, getFootprint, listFootprintRequests, rejectFootprintRequest, withdrawFootprintRequest, createTerm, listJurisdictions, listTaxonomyDimensions, listTerms, updateTerm and FootprintDecisionBody, FootprintDimension, FootprintDryRun, FootprintPreview, FootprintPreviewCount, FootprintRequestBody, FootprintRequestPage, FootprintRequestQuery, FootprintRequestRow, FootprintTermRef, FootprintTermSelector, FootprintView, JurisdictionRow, PersonRef, TaxonomyDimensionPage, TaxonomyDimensionRef, TaxonomyTermCreateBody, TaxonomyTermPage, TaxonomyTermQuery, TaxonomyTermRow, TermRef (key: stable vocabulary key to match on; kind: the fixed kind or null with values named; label: display text in the reader's language, never matched). Skip any line an earlier package already deleted. Docstrings only. Rules: no Co-Authored-By trailer.",
+  "wave2_deps": [
+   "tax-markets-panel",
+   "tax-preview-cases"
+  ]
+ }
+]
