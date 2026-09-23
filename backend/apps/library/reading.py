@@ -48,7 +48,7 @@ from __future__ import annotations
 import datetime
 import uuid
 from collections.abc import Collection, Iterable, Mapping
-from typing import Any, NamedTuple, NoReturn, TypeVar
+from typing import Any, NamedTuple, TypeVar
 from zoneinfo import ZoneInfo
 
 from django.contrib.postgres.expressions import ArraySubquery
@@ -87,6 +87,8 @@ from apps.library.schemas import (
     InstrumentQuery,
     InstrumentRow,
     LibraryAuthority,
+    LibraryRecordSource,
+    LibraryRecordSources,
     LibraryRef,
     LocalizedText,
     ObligationAsOfQuery,
@@ -111,7 +113,6 @@ from apps.library.schemas import (
     VersionDiffQuery,
 )
 from apps.shared.models import Tenant
-from apps.shared.errors import ProblemError
 from apps.taxonomy import matching, terms_logic
 from apps.taxonomy.models import (
     DutyTypeLabel,
@@ -1017,19 +1018,44 @@ def list_authorities(order: list[str]) -> list[LibraryAuthority]:
 
 
 # ---------------------------------------------------------------------------------------
-# Declared ahead of its logic (chunk 5 plan rule 1)
+# GET /obligations/{id}/sources
 # ---------------------------------------------------------------------------------------
-def _not_built(detail: str) -> NoReturn:
-    raise ProblemError(status=501, code="not_built", detail=detail)
+def today_of(tenant_id: uuid.UUID | None) -> datetime.date:
+    """Today for the caller: where its tenant is, or the platform's day for a platform key,
+    which belongs to no tenant."""
+    tenant = None if tenant_id is None else Tenant.objects.filter(pk=tenant_id).first()  # ordering: pk lookup, at most one row
+    return timezone.localdate() if tenant is None else today_for(tenant)
 
 
-def get_record_sources() -> NoReturn:
+def get_record_sources(obligation_id: uuid.UUID, on: datetime.date) -> LibraryRecordSources:
     """`GET /obligations/{obligationId}/sources`, the citations a re-check compares against
-    (AGT-01, item 3). Built by `c5-library-recheck`.
+    (INV-06, AGT-01 item 3): one per field the approved proposal behind the version in force
+    on `on` sourced, or the record's own source as one `summary` citation for a version no
+    proposal wrote (a seeded one). A record whose versions all lie ahead is read by its
+    first.
 
     It resolves the obligation through `_visible()` above, as every other addressed read in
     this module does, and never through a lookup of its own: that one function is what makes
     a record the caller cannot see answer the same 404 as an id that never existed, so a
     second lookup would be a second chance to leak which of the two it was (INV-07).
     """
-    _not_built("A record's citations are not built yet.")
+    obligation = _visible(
+        Obligation.objects.prefetch_related(Prefetch("versions", queryset=ObligationVersion.objects.select_related("applied_by_proposal"))),
+        obligation_id,
+    )
+    versions = list(obligation.versions.all())
+    # Every obligation is created with its first version, so there is always one to read.
+    version = in_force(versions, on) or min(versions, key=lambda v: v.version_number)
+    proposal = version.applied_by_proposal
+    if proposal is None:
+        cited = [("summary", obligation.source_url, obligation.source_label)]
+    else:
+        cited = [(field, source, proposal.source_label or source) for field, source in proposal.field_sources.items()]
+    return LibraryRecordSources(
+        obligation_id=obligation.id,
+        version_number=version.version_number,
+        items=[
+            LibraryRecordSource(field=field, url=url, label=label, content_hash=None, fetched_at=None, document_id=None)
+            for field, url, label in cited
+        ],
+    )

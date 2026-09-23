@@ -48,6 +48,8 @@ _EXAMPLE_STATS: dict[str, JsonValue] = {
     "changesRegistered": 2,
     "proposalsSubmitted": 5,
     "outOfScope": 3,
+    "recordsRechecked": 12,
+    "correctionsProposed": 1,
 }
 _EXAMPLE_FINISHED_RUN: dict[str, JsonValue] = {
     "id": _EXAMPLE_RUN_ID,
@@ -126,6 +128,30 @@ class AgentRunStats(CamelSchema):
             "and nothing is registered or proposed from it: it never reaches the watch feed or "
             "the proposal queue. Read it beside `sourcesChecked`, because a source that offered "
             "only such documents was still watched that night. Defaults to 0; a negative "
+            "number is refused with `validation_error`."
+        ),
+    )
+    records_rechecked: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "How many library records the run re-checked against the pages they cite, a whole "
+            "number with a minimum of 0 and no maximum: one per record, each also logged as a "
+            "`recheck` source check naming it, so the coverage log shows which records were "
+            "compared beside the documents fetched. A record found unchanged still counts, "
+            "because a quiet re-check is still a check. Defaults to 0; a negative number is "
+            "refused with `validation_error`."
+        ),
+    )
+    corrections_proposed: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "How many of those re-checked records had drifted from their source and became a "
+            "`new_obligation_version` proposal, a whole number with a minimum of 0 and no "
+            "maximum. A correction is a request and never an edit: the record says what it "
+            "said before until a second and independent principal approves it. These "
+            "proposals are also counted in `proposalsSubmitted`. Defaults to 0; a negative "
             "number is refused with `validation_error`."
         ),
     )

@@ -56,7 +56,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, require_library_read
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, principal, require_library_read
 from apps.taxonomy.reading import language_order
 from apps.taxonomy.schemas import PersonRef
 
@@ -631,13 +631,10 @@ def get_record_sources(
     from. Errors: `not_found` when no obligation has that id or the caller may not see it;
     `permission_denied` without `library.read` or `library:read`; `unauthenticated` without a
     credential.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-06, AGT-01).
     require_library_read(request)
-    return reading.get_record_sources()
+    return reading.get_record_sources(obligation_id, reading.today_of(principal(request).tenant_id))
 
 
 @router.post(

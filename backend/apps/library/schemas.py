@@ -2252,17 +2252,29 @@ class LibraryRecordSource(LibraryResponse):
 
     field: str = Field(
         description=(
-            "Which field of the record this citation backs — `summary`, `key_date`, "
-            "`duty_type` and so on, the record's own column names. Free text rather than a "
-            "vocabulary because the set is the schema's, not an admin's."
+            "Which field of the record this citation backs, as the approved proposal that "
+            "wrote the version named it: `summaries.en` for the summary in one language, "
+            "`effectiveFrom` for the date it applies from, `terms` for its scope. A version no "
+            "proposal wrote carries one `summary` citation, the record's own source. Free text "
+            "rather than a vocabulary because the set is the proposal schema's, not an admin's."
         ),
         examples=["summary"],
     )
     url: str = Field(
-        description="The public page the fact came from, so a re-check can fetch it again and a reviewer can open it.",
+        description=(
+            "The public page the fact came from, as an https link, so a re-check can fetch it "
+            "again and a reviewer can open it; or, where the fact came from a provision the "
+            "library already holds, that provision's stable key."
+        ),
         examples=["https://www.fi.se/en/published/regulations/2017/fffs-20172/"],
     )
-    label: str = Field(description="What that page is called, in words a reader recognises.", examples=["FFFS 2017:2"])
+    label: str = Field(
+        description=(
+            "What that page is called, in words a reader recognises: the source label the "
+            "proposal gave, or the link itself when it gave none."
+        ),
+        examples=["FFFS 2017:2"],
+    )
     content_hash: str | None = Field(
         description=(
             "A hash of the page as we last read it, so a re-check can tell whether it moved "

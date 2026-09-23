@@ -35,6 +35,7 @@ from apps.shared.testing import (
 )
 from apps.taxonomy.models import ChangeType
 from apps.watch import testing as watch_build
+from apps.proposals.models import Proposal
 from apps.watch.models import ChangeDocument, ChangeObligation, RegulatoryChange, SourceCheck
 
 # The reform WAT-S3 names, held apart from the field that carries it. A stable key and the
@@ -646,9 +647,106 @@ class WatchScenarioTests(TestCase):
         Every change carries a regime, a standard term needs a standards body, and a publisher's page keeps no snapshot (WAT-01, WAT-03, WAT-07).
         """
 
-    @skip("pending: WAT-S12 (WAT-01, AUD-03, chunk 5)")
     def test_wat_s12(self) -> None:
         """WAT-S12
 
         A run re-checks the library records of the sources it checked and proposes the correction (WAT-01, AUD-03).
+        Operations: `recordSourceCheck`, `getRecordSources`, `createProposal`, `approveProposal`, `finishAgentRun`.
         """
+        watch_build.seed_watch_reference()
+        tenancy.clear_tenant()
+        fi = watch_build.source(name="fi.se")
+        fffs = library_build.instrument(key="fffs-recheck", short_name="FFFS 2017:2", regime=_SECURITIES)
+        # Given a library obligation whose source page now states a different date, and one
+        # whose page still says what the record says
+        drifted = library_build.obligation(fffs, key="obl-recheck-drifted", versions=((datetime.date(2025, 1, 1), {"en": "Report within ten days."}),))
+        steady = library_build.obligation(fffs, key="obl-recheck-steady", versions=((datetime.date(2025, 1, 1), {"en": "Keep a register."}),))
+        key = agent_build.agent_key(scopes=(*agent_build.WATCH_SCOPES, perms.SCOPE_PROPOSALS_WRITE))
+        run = agent_build.platform_run(key=key)
+        as_agent: dict[str, Any] = {"HTTP_X_API_KEY": key.plain_key}
+
+        def check(body: dict[str, Any]) -> None:
+            logged = self.client.post(
+                f"/api/v1/agent-runs/{run.id}/source-checks",
+                data={"sourceName": "fi.se", "status": "ok", **body},
+                content_type="application/json",
+                **as_agent,
+            )
+            self.assertEqual(logged.status_code, 204, logged.content)
+
+        # When a watch run checks that source and re-checks the records citing it
+        check({"itemsFound": 4})
+        cited: dict[Any, list[dict[str, Any]]] = {}
+        for obligation in (drifted, steady):
+            sources = self.client.get(f"/api/v1/obligations/{obligation.id}/sources", **as_agent)
+            self.assertEqual(sources.status_code, 200, sources.content)
+            cited[obligation.id] = sources.json()["items"]
+            check({"kind": "recheck", "subjectType": "obligation", "subjectId": str(obligation.id)})
+        self.assertEqual([item["field"] for item in cited[drifted.id]], ["summary"])
+
+        # And the drift becomes a proposal carrying the source per changed field
+        page = cited[drifted.id][0]["url"]
+        proposed = self.client.post(
+            "/api/v1/proposals",
+            data={
+                "kind": "new_obligation_version",
+                "title": "The reporting deadline moved from ten days to five",
+                "targetType": "obligation",
+                "targetId": str(drifted.id),
+                "payload": {
+                    "summaries": {"en": "Report within five days."},
+                    "originalLanguage": "en",
+                    "isMachine": True,
+                    "effectiveFrom": "2026-01-01",
+                    "effectiveFromPrecision": "day",
+                },
+                "fieldSources": {"summaries.en": page, "effectiveFrom": page},
+                "sourceLabel": cited[drifted.id][0]["label"],
+                "sourceUrl": page,
+                "agentRunId": str(run.id),
+            },
+            content_type="application/json",
+            **as_agent,
+        )
+        self.assertEqual(proposed.status_code, 201, proposed.content)
+        closed = self.client.patch(
+            f"/api/v1/agent-runs/{run.id}",
+            data={
+                "status": "succeeded",
+                "stats": {"sourcesChecked": 1, "proposalsSubmitted": 1, "recordsRechecked": 2, "correctionsProposed": 1},
+            },
+            content_type="application/json",
+            **as_agent,
+        )
+        self.assertEqual(closed.status_code, 200, closed.content)
+        self.assertEqual((closed.json()["stats"]["recordsRechecked"], closed.json()["stats"]["correctionsProposed"]), (2, 1))
+
+        # Then the run's coverage log names the records it re-checked beside the sweep
+        lines = SourceCheck.objects.filter(agent_run_id=run.id)
+        self.assertEqual(sorted(lines.values_list("kind", flat=True)), ["recheck", "recheck", "sweep"])
+        self.assertEqual({line.subject_id for line in lines.filter(kind="recheck")}, {drifted.id, steady.id})
+        self.assertEqual({line.source_id for line in lines}, {fi.id})
+
+        # And exactly one proposal, for the drift, with a source per changed field, never an edit
+        filed = list(Proposal.objects.filter(agent_run_id=run.id))
+        self.assertEqual([(row.kind, row.target_id) for row in filed], [("new_obligation_version", drifted.id)])
+        self.assertEqual(filed[0].field_sources, {"summaries.en": page, "effectiveFrom": page})
+        self.assertEqual(drifted.versions.count(), 1, "the record says what it said until the proposal is approved")
+        # When nothing has drifted, the re-check writes no proposal
+        self.assertFalse(Proposal.objects.filter(target_id=steady.id).exists())
+
+        # When a second library editor, independent of the proposing agent, approves it
+        editor = factories.platform_user(roles=("library_editor",), email="editor2@bleqq.test")
+        approved = self.client.post(
+            f"/api/v1/proposals/{filed[0].id}/approve", data={}, content_type="application/json", **sign_in(editor, step_up=True)
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+        # Then the library holds the corrected version, written by that proposal and no other door
+        latest = drifted.versions.order_by("-version_number").first()
+        assert latest is not None
+        self.assertEqual((latest.version_number, latest.applied_by_proposal_id), (2, filed[0].id))
+        self.assertEqual(latest.effective_from, datetime.date(2026, 1, 1))
+        self.assertEqual(steady.versions.count(), 1)
+        after = self.client.get(f"/api/v1/obligations/{drifted.id}/sources", **as_agent)
+        self.assertEqual(sorted(item["field"] for item in after.json()["items"]), ["effectiveFrom", "summaries.en"])
