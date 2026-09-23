@@ -830,6 +830,12 @@ class MailLeavesThroughTheWorker(TestCase):
     Celery task after commit; the mock outbox lives in the cache so another process can
     read it."""
 
+    # Celery's import hook runs Django's model checks, which read the server version of
+    # every connection, the row-level-security alias `app` included. Whether that read hit
+    # the database depended on whether an earlier test had already opened `app`, so the
+    # first test here passed or failed by suite order.
+    databases = {"default", "app"}
+
     def setUp(self) -> None:
         MockMailer.reset()
 
