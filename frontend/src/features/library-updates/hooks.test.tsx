@@ -13,10 +13,10 @@ describe('library-updates hooks', () => {
   });
 
   it('reads the feed for one query', async () => {
-    const sent = installAdapter(() => ({ status: 200, data: { since: '2026-09-12', days: [], total: 0 } }));
+    const sent = installAdapter(() => ({ status: 200, data: { since: '2026-09-12T07:00:00Z', days: [], total: 0 } }));
     const { wrapper } = queryWrapper();
     const feed = renderHook(() => useLibraryUpdates({}), { wrapper });
-    await waitFor(() => expect(feed.result.current.data?.since).toBe('2026-09-12'));
+    await waitFor(() => expect(feed.result.current.data?.since).toBe('2026-09-12T07:00:00Z'));
     expect(sent[0]?.path).toBe('/api/v1/library-updates');
   });
 
