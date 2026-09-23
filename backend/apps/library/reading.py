@@ -743,7 +743,10 @@ def _lineage(instrument: Instrument, order: list[str]) -> list[InstrumentLineage
     amends it in turn (INV-01): both directions of `InstrumentRelation`, so the designed
     `GET /instruments/{instrumentId}/relations` is served here instead. Row-level security
     runs the same join either way, so a relation to an instrument the caller cannot see
-    drops the row entirely rather than answering it with a null (INV-07, R3)."""
+    drops the row entirely rather than answering it with a null (INV-07, R3).
+
+    `to_ref` always names the place in the other instrument: the relation's own `to_ref`
+    when this instrument is the one relating, and its `from_ref` when the other one is."""
     outgoing = list(InstrumentRelation.objects.filter(from_instrument=instrument).select_related("to_instrument", "relation_type"))
     incoming = list(InstrumentRelation.objects.filter(to_instrument=instrument).select_related("from_instrument", "relation_type"))
     relation_refs = vocabulary_refs(RelationTypeLabel, (relation.relation_type for relation in (*outgoing, *incoming)), order)
@@ -763,7 +766,7 @@ def _lineage(instrument: Instrument, order: list[str]) -> list[InstrumentLineage
             direction="incoming",
             instrument=ObligationInstrumentRef(key=relation.from_instrument.stable_key, short_name=relation.from_instrument.short_name),
             note=relation.note,
-            to_ref=relation.to_ref,
+            to_ref=relation.from_ref,
         )
         for relation in incoming
     )

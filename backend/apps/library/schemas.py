@@ -1734,9 +1734,10 @@ class InstrumentLineageRef(LibraryResponse):
         description=(
             "Whether this instrument is the one doing the relating (`outgoing`, this "
             "instrument implements, elaborates or amends the other) or the one being "
-            "related to (`incoming`, the other does so to this one). A card reads "
-            "`outgoing` under headings such as \"Implements\" and \"incoming\" under "
-            "\"Amended by\"."
+            "related to (`incoming`, the other does so to this one). One of the two words, "
+            "never anything else. The card groups the lineage by relation and direction: "
+            "`outgoing` under the relation's label (\"Implements\"), `incoming` under the "
+            "label said of this instrument (\"Amends this instrument\")."
         ),
         examples=["incoming"],
     )
@@ -1747,10 +1748,13 @@ class InstrumentLineageRef(LibraryResponse):
     )
     to_ref: str = Field(
         description=(
-            "Where in the related instrument this points, in the words the source uses "
-            "(\"Article 25(3) and (4)\"), whichever side of the relation this instrument "
-            "is on. An empty string when the relation names no specific place, which is "
-            "most of them: a whole-instrument amendment needs none."
+            "The place in the other instrument, the one named in `instrument`, in the words "
+            "the source uses (\"Article 25(3) and (4)\"). For an `outgoing` relation that is "
+            "where this instrument points in the other; for an `incoming` one it is the part "
+            "of the other instrument that does the relating, never a place in this one. The "
+            "name is kept for the published contract. An empty string when the relation "
+            "names no specific place, which is most of them: a whole-instrument amendment "
+            "needs none."
         ),
         examples=[""],
     )

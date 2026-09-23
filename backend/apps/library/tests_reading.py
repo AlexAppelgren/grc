@@ -26,6 +26,7 @@ from django.db import DEFAULT_DB_ALIAS, connection, connections, transaction
 from django.test import TestCase, TransactionTestCase
 from pydantic import ValidationError
 
+from apps.agents import testing as agents_build
 from apps.identity.models import User
 from apps.library import reading
 from apps.library import testing as build
@@ -810,8 +811,9 @@ INSTRUMENT_DETAIL_QUERIES = 2 + 6 + 2 + 1 + 1 + 3 + 3
 
 
 def seed_instruments() -> tuple[Instrument, Instrument, Instrument]:
-    """Two Swedish instruments under the securities regime, one amending the other, and
-    an insurance instrument outside tenant A's footprint (INV-01, FP-03)."""
+    """Two Swedish instruments under the securities regime, one amending the other at a
+    named place in each, and an insurance instrument outside tenant A's footprint with an
+    obligation of its own, whose service alone would be inside it (INV-01, FP-03)."""
     fffs = build.instrument(
         key="fffs-instruments",
         short_name="FFFS 2017:2",
@@ -830,10 +832,13 @@ def seed_instruments() -> tuple[Instrument, Instrument, Instrument]:
         authority="fi",
         in_force_from=D(2026, 10, 1),
     )
-    build.relate_instruments(amendment, fffs, relation="amends", note="Amends FFFS 2017:2, in force 1 October 2026.")
+    build.relate_instruments(
+        amendment, fffs, relation="amends", note="Amends FFFS 2017:2, in force 1 October 2026.", from_ref="1 §", to_ref="9 kap. 6 §"
+    )
     insurance = build.instrument(key="lfd-instruments", short_name="LFD", regime="regime:insurance", level="act")
     build.obligation(fffs, key="obl-instruments-inside", terms=("service_type:non_advised",))
     build.obligation(fffs, key="obl-instruments-outside", terms=("service_type:advice",))
+    build.obligation(insurance, key="obl-instruments-insurance", terms=("service_type:non_advised",))
     return fffs, amendment, insurance
 
 
@@ -899,15 +904,44 @@ class InstrumentListTests(TestCase):
         insurance_row = next(row for row in everything["items"] if row["stableKey"] == "lfd-instruments")
         self.assertFalse(insurance_row["inFootprint"])
 
+    def obligations(self, params: dict[str, Any]) -> list[dict[str, Any]]:
+        response = self.client.get("/api/v1/obligations", params, **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual(response.status_code, 200, response.content)
+        return list(response.json()["items"])
+
     def test_the_instrument_and_obligation_footprint_verdicts_agree(self) -> None:
-        # One rule, pinned across both reads (chunk3-rest-T13): a regime-restricted
-        # footprint hides the same instruments and the obligations under them alike.
-        instrument_verdicts = {row["stableKey"]: row["inFootprint"] for row in self.get({"outsideFootprint": "true"}).json()["items"]}
-        obligations = self.client.get(
-            "/api/v1/obligations", {"instrument": "lfd-instruments", "outsideFootprint": "true"}, **sign_in(self.reader, tenant=self.tenant)
-        ).json()
-        self.assertFalse(instrument_verdicts["lfd-instruments"])
-        self.assertTrue(all(not row["inFootprint"] for row in obligations["items"]))
+        # One rule, pinned across both reads and both ways (chunk3-rest-T13): an instrument
+        # the footprint hides hides every obligation under it, even one whose own service is
+        # inside, and every obligation the footprint shows sits under an instrument it shows,
+        # which counts exactly the obligations the list filtered by it answers.
+        instruments = {row["stableKey"]: row for row in self.get({"outsideFootprint": "true"}).json()["items"]}
+        shown_instruments = {row["stableKey"]: row for row in self.get({}).json()["items"]}
+
+        hidden = self.obligations({"instrument": "lfd-instruments", "outsideFootprint": "true"})
+        self.assertFalse(instruments["lfd-instruments"]["inFootprint"])
+        self.assertEqual([row["stableKey"] for row in hidden], ["obl-instruments-insurance"], "an empty list would prove nothing")
+        self.assertEqual([row["inFootprint"] for row in hidden], [False])
+        self.assertEqual(self.obligations({"instrument": "lfd-instruments"}), [])
+        self.assertEqual(instruments["lfd-instruments"]["obligationCount"], len(hidden))
+
+        shown = self.obligations({})
+        self.assertTrue(shown, "an empty list would prove nothing")
+        self.assertTrue({row["instrument"]["key"] for row in shown} <= set(shown_instruments))
+        for key, row in shown_instruments.items():
+            with self.subTest(instrument=key):
+                self.assertTrue(row["inFootprint"])
+                self.assertEqual(row["obligationCount"], len(self.obligations({"instrument": key})))
+
+    def test_a_platform_run_key_belongs_to_no_bank_and_reads_no_instrument(self) -> None:
+        # The instrument reads are made against one bank's footprint and date, so a key
+        # of bleqq's own watch agents, which holds library:read but belongs to no bank,
+        # answers 404 as the routes document, never an unfiltered list.
+        with tenancy.platform_zone():
+            key = agents_build.agent_key()
+        for url in ("/api/v1/instruments", f"/api/v1/instruments/{self.fffs.id}", f"/api/v1/instruments/{self.fffs.id}/provisions"):
+            with self.subTest(url=url):
+                response = self.client.get(url, HTTP_X_API_KEY=key.plain_key)
+                self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"))
 
     def test_every_filter(self) -> None:
         self.assertEqual({row["stableKey"] for row in self.get({"regime": "securities", "outsideFootprint": "true"}).json()["items"]}, {"fffs-instruments", "fffs-amendment-instruments"})
@@ -997,6 +1031,11 @@ class InstrumentDetailTests(TestCase):
             [("amends", "incoming", "fffs-amendment-instruments")],
         )
         self.assertEqual(incoming["lineage"][0]["note"], "Amends FFFS 2017:2, in force 1 October 2026.")
+        # `toRef` is the place in the other instrument either way: where the amendment
+        # reaches into FFFS 2017:2 on the amendment's card, and the part of the amendment
+        # that does it on FFFS 2017:2's own card, never a place in the card's own text.
+        self.assertEqual(outgoing["lineage"][0]["toRef"], "9 kap. 6 §")
+        self.assertEqual(incoming["lineage"][0]["toRef"], "1 §")
 
     def test_an_address_with_nothing_at_it_answers_404_and_a_malformed_one_422(self) -> None:
         missing = self.client.get(f"/api/v1/instruments/{uuid.uuid4()}", **sign_in(self.reader, tenant=self.tenant))
