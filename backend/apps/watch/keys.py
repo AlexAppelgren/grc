@@ -42,6 +42,7 @@ from apps.taxonomy.models import (
 )
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_lists_logic import VocabularyProblem
+from apps.taxonomy.terms_logic import refuse_mirrored
 from apps.watch.models import (
     ChangeDocument,
     ChangeEvent,
@@ -127,6 +128,10 @@ def resolve_terms(term_ids: Sequence[uuid.UUID]) -> list[TaxonomyTerm]:
     The terms are not listed back the way a vocabulary's keys are: the taxonomy is the one
     list a bank may extend to hundreds of rows, so the refusal points at
     `GET /taxonomy/terms`, which an agent reads at run start anyway (AGT-02).
+
+    422 `jurisdiction_term_mirrored` when one is a term of a mirrored dimension (FP-S12): a
+    change's market comes from its authority (FP-S15), never from a tag. Registration and
+    curation both resolve their terms here, so neither can store one.
     """
     wanted = list(dict.fromkeys(term_ids))
     found = {
@@ -143,6 +148,7 @@ def resolve_terms(term_ids: Sequence[uuid.UUID]) -> list[TaxonomyTerm]:
             f"Not a taxonomy term: {', '.join(unknown)}. GET /taxonomy/terms lists the terms of every dimension.",
             code="unknown_key",
         )
+    refuse_mirrored(term.dimension_id for term in found.values())
     return [found[term_id] for term_id in term_ids]
 
 

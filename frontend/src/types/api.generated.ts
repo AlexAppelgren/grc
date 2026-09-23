@@ -894,7 +894,9 @@ export interface paths {
          *     Errors to branch on: `run_not_open` (422) when `agentRunId` names a run that is closed;
          *     `unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an
          *     `obligationId` or `authorityCode` names a row the library does not hold or has retired,
-         *     with the valid keys listed for a vocabulary; `validation_error` (422) for a body the
+         *     with the valid keys listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a
+         *     `termId` is a term that mirrors the jurisdiction list, since a change's market comes
+         *     from its authority and never from a tag; `validation_error` (422) for a body the
          *     schema refuses, for the same obligation named twice, for two pages both marked primary,
          *     and for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;
          *     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
@@ -988,7 +990,9 @@ export interface paths {
          *
          *     Errors to branch on: `unknown_key` (422) when `changeType`, a flag key, a term id or
          *     `supersededBy` names a row the library does not hold or has retired, with the valid keys
-         *     listed for a vocabulary; `editor_only_field` (422) when a key sends `status` or
+         *     listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a term id is a term
+         *     that mirrors the jurisdiction list, since a change's market comes from its authority and
+         *     never from a tag; `editor_only_field` (422) when a key sends `status` or
          *     `supersededBy`; `confirmed_fact` (422) when a key's new set would drop a flag or a term
          *     a library editor confirmed; `not_built` (501) when an editor's call would do the same,
          *     which is the confirmation half of this feature; `validation_error` (422) for a field the
@@ -2198,8 +2202,10 @@ export interface paths {
          *     answers, since nothing is ever applied twice; `source_missing` when a correction
          *     introduces a field the proposal never sourced; `validation_error` when a correction is
          *     offered on a kind that cannot be corrected or does not fit its payload; `unknown_key`
-         *     when the payload names a row the library does not hold; `not_found` when there is no
-         *     such proposal.
+         *     when the payload names a row the library does not hold; `jurisdiction_term_mirrored`
+         *     (422) when the payload adds or renames a term of a dimension that mirrors the
+         *     jurisdiction list, or scopes an obligation with one, which a proposal filed before that
+         *     rule may still ask for; `not_found` when there is no such proposal.
          */
         post: operations["approveProposal"];
         delete?: never;
@@ -2659,7 +2665,26 @@ export interface paths {
         /** List Terms */
         get: operations["listTerms"];
         put?: never;
-        /** Create Term */
+        /**
+         * Create Term
+         * @description Ask for a new taxonomy term in the shared library (VOC-07). Nothing is written to the
+         *     library here: the answer is 202 with the proposal this call put in the queue, and the
+         *     term exists only once a second person approves it in the console. The proposal's
+         *     creation is recorded in the audit log.
+         *
+         *     Needs `proposals.create` in the caller's bank or `library_vocab.manage` in the console.
+         *
+         *     The terms of a dimension that mirrors the jurisdiction list belong to the reference
+         *     seed, which keeps them in step with that list, so no call adds one (FP-S12).
+         *
+         *     Errors to branch on: `jurisdiction_term_mirrored` (422) when the dimension's terms
+         *     mirror the jurisdiction list, whatever key is sent; `unknown_key` (422) for a dimension
+         *     that is not one, a label in a language the platform does not hold, or a parent that is
+         *     not a term of the dimension; `duplicate_key` (409) when the key is taken in the
+         *     dimension, a retired term's included; `validation_error` (422) for a key that is not a
+         *     slug or a body the schema refuses; `permission_denied` (403) without either permission;
+         *     `unauthenticated` (401) without a session.
+         */
         post: operations["createTerm"];
         delete?: never;
         options?: never;
@@ -2680,7 +2705,27 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Term */
+        /**
+         * Update Term
+         * @description Ask for a change to a taxonomy term's labels, usage note or place in the list
+         *     (VOC-07). Nothing is written to the library here: the answer is 202 with the proposal
+         *     this call put in the queue, and the term changes only once a second person approves it
+         *     in the console. Send `If-Match` with the version last read to be told when someone
+         *     changed the term first. The proposal's creation is recorded in the audit log.
+         *
+         *     Needs `proposals.create` in the caller's bank or `library_vocab.manage` in the console.
+         *
+         *     A term that mirrors the jurisdiction list, and every other term of its dimension,
+         *     belongs to the reference seed and is never renamed here (FP-S12).
+         *
+         *     Errors to branch on: `jurisdiction_term_mirrored` (422) for a term of a dimension that
+         *     mirrors the jurisdiction list; `stale_write` (409) when `If-Match` names a version that
+         *     is no longer the term's; `unknown_key` (422) for a label in a language the platform
+         *     does not hold; `validation_error` (422) for an `If-Match` that is not a version or a
+         *     body the schema refuses; `not_found` (404) when no term has that id, and for anything
+         *     that is not a UUID; `permission_denied` (403) without either permission;
+         *     `unauthenticated` (401) without a session.
+         */
         patch: operations["updateTerm"];
         trace?: never;
     };
@@ -9599,6 +9644,13 @@ export interface components {
             labels?: {
                 [key: string]: string;
             };
+            /**
+             * Mirrored
+             * @description True for a term of the dimension that mirrors the markets the platform covers: the reference data keeps those terms in step with the jurisdiction list, so none is proposed, renamed or put on a change or an obligation, and a write that names one answers 422 `jurisdiction_term_mirrored`. A record's market comes from its instrument or its authority instead. False for every other term.
+             * @default false
+             * @example false
+             */
+            mirrored: boolean;
             /** Parentkey */
             parentKey?: string | null;
             /**
@@ -11401,7 +11453,7 @@ export interface components {
             summary: string;
             /**
              * Termids
-             * @description Taxonomy terms that scope the change — its regime, market, product or service — each a UUID, at most 100 of them. Terms are library rows an admin may extend; the ids come from `GET /taxonomy/terms`, which an agent reads at run start. Every change needs at least one regime term or the call answers 422 `regime_required`, and a standard's term is accepted only when the authority's jurisdiction is international, else 422 `standard_term_only_on_standards` (AC-AGT1).
+             * @description Taxonomy terms that scope the change — its regime, product or service — each a UUID, at most 100 of them. Terms are library rows an admin may extend; the ids come from `GET /taxonomy/terms`, which an agent reads at run start. Every change needs at least one regime term or the call answers 422 `regime_required`, and a standard's term is accepted only when the authority's jurisdiction is international, else 422 `standard_term_only_on_standards` (AC-AGT1). A term that list marks `mirrored` answers 422 `jurisdiction_term_mirrored`: a change's market comes from `authorityCode`, never from a term.
              * @example [
              *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
              *     ]
@@ -11573,7 +11625,7 @@ export interface components {
             supersededBy?: string | null;
             /**
              * Termids
-             * @description The whole set of taxonomy term ids for this change, each a UUID and at most 100 of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new set.
+             * @description The whole set of taxonomy term ids for this change, each a UUID and at most 100 of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new set, and a term `GET /taxonomy/terms` marks `mirrored` answers 422 `jurisdiction_term_mirrored`.
              * @example [
              *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
              *     ]

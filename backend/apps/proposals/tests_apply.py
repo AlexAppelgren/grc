@@ -18,10 +18,13 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.test import Client
 
+from apps.library import testing as library_build
 from apps.library.models import (
     Instrument,
     Jurisdiction,
     Obligation,
+    ObligationTerm,
+    ObligationVersion,
     SubjectType,
     Verification,
     VerificationOutcome,
@@ -385,6 +388,108 @@ class ApprovalCorrectionsAndTheAssertion(ScenarioTestCase):
                 # The decision and the library change it made, and nothing without an assertion.
                 self.assertGreaterEqual(len(rows), 2)
                 self.assertEqual([row.action for row in rows if row.step_up_assertion_id is None], [])
+
+
+class MirroredTermsAtApproval(ScenarioTestCase):
+    """FP-S12, FP-S9: the terms that mirror the jurisdiction rows are the reference seed's,
+    so no approval may add one, rename one or scope an obligation with one.
+
+    Creation refuses all three today, but a proposal filed before that rule existed may
+    still wait in the queue. Each proposal below is stored the way such a proposal was
+    stored, without today's creation checks, and approving it answers 422
+    `jurisdiction_term_mirrored`, leaves it open and writes nothing: no term, no label, no
+    version, no scope link, no audit row, not even the decision.
+    """
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        self.reviewer = factories.platform_user(roles=("library_editor",), email="reviewer@bleqq.test")
+        instrument = library_build.instrument(key="fffs-2017-2", regime="regime:securities")
+        self.obligation = library_build.obligation(instrument, key="fffs-2017-2-9-6", terms=("service_type:advice",))
+
+    def _post(self, path: str, body: dict[str, Any], headers: dict[str, Any]) -> Any:
+        return self.client.post(f"{V1}{path}", data=body, content_type="application/json", **headers)
+
+    def _filed_before_the_rule(self, kind: str, payload: dict[str, Any], *, versions: bool = False) -> Proposal:
+        return Proposal.objects.create(
+            kind=kind,
+            title="Filed before the mirror rule",
+            payload=payload,
+            origin="user",
+            proposed_by_user=self.editor,
+            target_type="obligation" if versions else "",
+            target_id=self.obligation.id if versions else None,
+        )
+
+    def _refused_at_approval(self, proposal: Proposal) -> None:
+        reviewer = sign_in(self.reviewer, step_up=True)  # signing in is its own audited act
+        written = AuditEvent.objects.count()
+        refused = self._post(f"/proposals/{proposal.id}/approve", {}, reviewer)
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "jurisdiction_term_mirrored")
+        self.assertEqual(Proposal.objects.get(pk=proposal.pk).status, ProposalStatus.OPEN.value)
+        self.assertEqual(AuditEvent.objects.count(), written, "nothing was written, not even the decision")
+
+    def _scope(self) -> list[str]:
+        links = ObligationTerm.objects.filter(obligation=self.obligation).select_related("term__dimension")
+        return sorted(f"{link.term.dimension.key}:{link.term.key}" for link in links)
+
+    def test_a_new_term_in_a_mirrored_dimension_is_refused_at_approval(self) -> None:
+        proposal = self._filed_before_the_rule("term_create", {"dimension": "jurisdiction", "key": "is", "labels": {"en": "Iceland"}})
+        self._refused_at_approval(proposal)
+        self.assertFalse(TaxonomyTerm.objects.filter(dimension__key="jurisdiction", key="is").exists())
+
+    def test_renaming_a_mirrored_term_is_refused_at_approval(self) -> None:
+        sweden = TaxonomyTerm.objects.get(dimension__key="jurisdiction", key="se")
+        proposal = self._filed_before_the_rule(
+            "term_update", {"dimension": "jurisdiction", "key": "se", "labels": {"en": "Kingdom of Sweden"}, "sortOrder": 99}
+        )
+        self._refused_at_approval(proposal)
+        kept = TaxonomyTerm.objects.get(pk=sweden.pk)
+        self.assertEqual((kept.version, kept.sort_order), (sweden.version, sweden.sort_order))
+        self.assertEqual(kept.labels.get(language="en").text, "Sweden")
+
+    def test_an_obligation_version_scoped_to_a_market_is_refused_at_approval(self) -> None:
+        proposal = self._filed_before_the_rule(
+            "new_obligation_version",
+            {
+                "summaries": {"en": "The firm assesses suitability before it advises."},
+                "originalLanguage": "en",
+                "effectiveFromPrecision": "day",
+                "terms": ["service_type:custody", "jurisdiction:no"],
+            },
+            versions=True,
+        )
+        self._refused_at_approval(proposal)
+        self.assertEqual(ObligationVersion.objects.filter(obligation=self.obligation).count(), 1)
+        self.assertEqual(self._scope(), ["service_type:advice"])
+
+    def test_an_empty_scope_clears_the_scope_and_links_no_term(self) -> None:
+        """The scope is resolved before the version is written, and an empty list is
+        never handed to the resolver, whose empty filter matches every term: an approved
+        empty scope reads "Not client-specific", never "every term there is"."""
+        created = self._post(
+            "/proposals",
+            {
+                "kind": "new_obligation_version",
+                "title": "Version 2, no longer client-specific",
+                "targetType": "obligation",
+                "targetId": str(self.obligation.id),
+                "payload": {"summaries": {"en": "Every firm keeps this record."}, "originalLanguage": "en", "terms": []},
+                "fieldSources": {"summaries.en": "https://www.fi.se/", "terms": "https://www.fi.se/"},
+            },
+            sign_in(self.editor),
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        approved = self._post(f"/proposals/{created.json()['id']}/approve", {}, sign_in(self.reviewer, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertEqual(self._scope(), [])
+        self.assertEqual(ObligationVersion.objects.filter(obligation=self.obligation).count(), 2)
 
 
 class ReverificationStamp(ScenarioTestCase):

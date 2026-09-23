@@ -1204,13 +1204,15 @@ class WatchChangeInput(WriteBody):
         default_factory=list,
         max_length=100,
         description=(
-            "Taxonomy terms that scope the change — its regime, market, product or service — "
-            "each a UUID, at most 100 of them. Terms are library rows an admin may extend; the "
-            "ids come from "
+            "Taxonomy terms that scope the change — its regime, product or service — each a "
+            "UUID, at most 100 of them. Terms are library rows an admin may extend; the ids "
+            "come from "
             "`GET /taxonomy/terms`, which an agent reads at run start. Every change needs at "
             "least one regime term or the call answers 422 `regime_required`, and a standard's "
             "term is accepted only when the authority's jurisdiction is international, else 422 "
-            "`standard_term_only_on_standards` (AC-AGT1)."
+            "`standard_term_only_on_standards` (AC-AGT1). A term that list marks `mirrored` "
+            "answers 422 `jurisdiction_term_mirrored`: a change's market comes from "
+            "`authorityCode`, never from a term."
         ),
         examples=[["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"]],
     )
@@ -1316,7 +1318,8 @@ class WatchChangePatch(WriteBody):
         description=(
             "The whole set of taxonomy term ids for this change, each a UUID and at most 100 "
             "of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new "
-            "set."
+            "set, and a term `GET /taxonomy/terms` marks `mirrored` answers 422 "
+            "`jurisdiction_term_mirrored`."
         ),
         examples=[["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"]],
     )

@@ -7,13 +7,10 @@ the stack, override 9) and through the client where the runner keeps them.
 from __future__ import annotations
 
 import copy
-import importlib
 import json
 import logging
-import os
 import sys
 from typing import Any, cast
-from unittest import mock
 
 from django.db import IntegrityError
 from django.http import HttpRequest, HttpResponse
@@ -24,6 +21,7 @@ from sentry_sdk.utils import event_from_exception
 
 from apps.shared import middleware, sentry_scrub
 from apps.shared.logging import JsonFormatter
+from apps.shared.testing import sentry_init_kwargs
 
 
 class RequestId(TestCase):
@@ -210,7 +208,7 @@ class SentryScrubbers(SimpleTestCase):
             self.assertEqual(crumbs[1]["data"]["request"], sentry_scrub.REDACTED)
 
     def test_settings_initialise_sentry_with_the_safe_flags_only_when_a_dsn_is_set(self) -> None:
-        kwargs = _sentry_init_kwargs()
+        kwargs = sentry_init_kwargs()
         self.assertFalse(kwargs["send_default_pii"])
         self.assertEqual(kwargs["max_request_body_size"], "never")
         self.assertFalse(kwargs["include_local_variables"])
@@ -226,7 +224,7 @@ class SentryScrubbers(SimpleTestCase):
         untouched. The type, module and frames stay: they say where, never what."""
         secret = "tenant-" + "secret-row"  # built, so no source line the frames quote holds it
         options = {
-            "include_local_variables": _sentry_init_kwargs()["include_local_variables"],
+            "include_local_variables": sentry_init_kwargs()["include_local_variables"],
             "include_source_context": True,
             "max_value_length": 1024,
         }
@@ -251,19 +249,3 @@ class SentryScrubbers(SimpleTestCase):
             self.assertTrue(all(value["stacktrace"]["frames"] for value in values))
             self.assertEqual(scrubbed["logentry"], {"message": "Task %s raised: %r"})
 
-
-def _sentry_init_kwargs() -> dict[str, Any]:
-    """Boots the settings with a DSN and returns what they pass to `sentry_sdk.init`."""
-    # The ignored set is process-global; start without the entry so the reload has to add it.
-    sentry_logging.unignore_logger("gunicorn.access")
-    env = {"SENTRY_DSN": "https://public@sentry.example.invalid/1", "ENVIRONMENT": "test", "DEBUG": "true"}
-    import config.settings as base
-
-    try:
-        with mock.patch.dict(os.environ, env), mock.patch("sentry_sdk.init") as init:
-            importlib.reload(base)
-    finally:
-        # Reload once more without the DSN so later tests see the runner's settings module.
-        with mock.patch.dict(os.environ, {"SENTRY_DSN": "", "ENVIRONMENT": "test", "DEBUG": "false"}):
-            importlib.reload(base)
-    return dict(init.call_args.kwargs)

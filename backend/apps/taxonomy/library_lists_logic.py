@@ -9,7 +9,8 @@ the console applies it (apps/proposals/apply.py).
 The same checks a tenant write makes run here before the proposal exists: the labels are
 in real languages, the kind is one the list knows, the key is not taken, the value is not a
 near-duplicate, a system row is not retired. A proposal the reviewer could only reject for
-a reason the proposer could have been told at once wastes both people's time.
+a reason the proposer could have been told at once wastes both people's time. A term of a
+mirrored dimension is not proposed at all (FP-S12): the reference seed owns those.
 
 This module writes proposals, never library rows, and names no `LibraryModel` class.
 """
@@ -191,7 +192,9 @@ def propose_term_create(
     usage_note: str = "",
     parent: str | None = None,
 ) -> Proposal:
-    terms_logic.dimension_by_key(dimension)
+    # First, so a key the mirror already holds is refused for what the dimension is rather
+    # than answered `duplicate_key`, as if another key would do (FP-S12).
+    terms_logic.refuse_mirrored([terms_logic.dimension_by_key(dimension).id])
     cleaned = lists.validated_labels(labels)
     term_key = lists.key_for(cleaned, key)
     if terms_logic.term_exists(dimension, term_key):
@@ -218,6 +221,7 @@ def propose_term_update(
     expected_version: int | None,
 ) -> Proposal:
     term = terms_logic.term_by_id(term_id)
+    terms_logic.refuse_mirrored([term.dimension_id])
     if expected_version is not None and expected_version != term.version:
         raise ValidationError("Someone changed this first. Reload and try again.", code="stale_write")
     cleaned = lists.validated_labels(labels) if labels else {}

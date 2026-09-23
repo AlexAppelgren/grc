@@ -203,6 +203,17 @@ class TaxonomyTermRow(CamelSchema):
     active: bool = True
     is_system: bool = False
     version: int = 1
+    mirrored: bool = Field(
+        default=False,
+        description=(
+            "True for a term of the dimension that mirrors the markets the platform covers: "
+            "the reference data keeps those terms in step with the jurisdiction list, so none "
+            "is proposed, renamed or put on a change or an obligation, and a write that names "
+            "one answers 422 `jurisdiction_term_mirrored`. A record's market comes from its "
+            "instrument or its authority instead. False for every other term."
+        ),
+        examples=[False],
+    )
 
 
 class TaxonomyTermPage(CamelSchema):

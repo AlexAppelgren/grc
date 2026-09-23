@@ -56,6 +56,7 @@ from apps.shared.tenancy import library_write
 from apps.taxonomy.models import TaxonomyTerm, TaxonomyTermLabel, TermDimension
 from apps.taxonomy.registry import REGISTRY, VocabularyList
 from apps.taxonomy.tenant_lists_logic import extra_columns
+from apps.taxonomy.terms_logic import refuse_mirrored
 
 ORIGINAL_LANGUAGE = "en"
 
@@ -193,6 +194,12 @@ def _obligation_version(
     # now, because the obligation may have been retired while the proposal waited.
     assert proposal.target_id is not None
     obligation = active_obligation(proposal.target_id)
+    # The scope is resolved and checked before anything is written: a mirrored jurisdiction
+    # term is refused here too, for a proposal that entered the queue before the rule did
+    # (FP-S12). An empty list clears the scope; `terms_of` is never handed one, because an
+    # empty filter matches every term.
+    terms = terms_of(payload.terms) if payload.terms else []
+    refuse_mirrored(term.dimension_id for term in terms)
     highest = (
         ObligationVersion.objects.filter(obligation=obligation)
         .order_by("-version_number")
@@ -231,7 +238,7 @@ def _obligation_version(
     if payload.terms is not None:
         scope_before = _scope(obligation)
         ObligationTerm.objects.filter(obligation=obligation).delete()
-        for term in terms_of(payload.terms):
+        for term in terms:
             ObligationTerm.objects.create(obligation=obligation, term=term)
         scope_after = _scope(obligation)
     reindex(obligation.id)
@@ -426,6 +433,7 @@ def _term_labels(term: TaxonomyTerm, labels: dict[str, str]) -> None:
 
 def _term_create(payload: ProposalTermCreatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
     dimension = _dimension(payload.dimension)
+    refuse_mirrored([dimension.id])
     if TaxonomyTerm.objects.filter(dimension=dimension, key__iexact=payload.key).exists():
         raise ValidationError(f"{payload.key!r} already exists in {payload.dimension!r}.", code="duplicate_key")
     parent = None
@@ -461,6 +469,7 @@ def _term_create(payload: ProposalTermCreatePayload, proposal: Proposal, actor: 
 
 def _term_update(payload: ProposalTermUpdatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
     dimension = _dimension(payload.dimension)
+    refuse_mirrored([dimension.id])
     term = TaxonomyTerm.objects.filter(dimension=dimension, key=payload.key).order_by("sort_order", "key").first()
     if term is None:
         raise ValidationError(f"{payload.key!r} is not a term of {payload.dimension!r}.", code="not_found")

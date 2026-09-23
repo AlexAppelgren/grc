@@ -352,8 +352,10 @@ def approve_proposal(
     answers, since nothing is ever applied twice; `source_missing` when a correction
     introduces a field the proposal never sourced; `validation_error` when a correction is
     offered on a kind that cannot be corrected or does not fit its payload; `unknown_key`
-    when the payload names a row the library does not hold; `not_found` when there is no
-    such proposal.
+    when the payload names a row the library does not hold; `jurisdiction_term_mirrored`
+    (422) when the payload adds or renames a term of a dimension that mirrors the
+    jurisdiction list, or scopes an obligation with one, which a proposal filed before that
+    rule may still ask for; `not_found` when there is no such proposal.
     """
     reviewer = require_reviewer(request)
     step_up_assertion_id = enforce_step_up(request) if reviewer.user is not None else None

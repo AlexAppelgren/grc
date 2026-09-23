@@ -1069,12 +1069,138 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(markets_logic.level_of(self.tenant.id, finland), markets_logic.NOT_FOLLOWED)
         self.assertFalse(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction=finland).exists())
 
-    @skip("pending: FP-S12 (FP-04, R1)")
     def test_fp_s12(self) -> None:
         """FP-S12
 
         Jurisdiction terms mirror the jurisdiction rows and cannot be proposed (FP-04).
+
+        Exercises `createTerm`, `updateTerm`, `createProposal` and `updateChange` answering
+        422 `jurisdiction_term_mirrored`, a rule keyed on the link a mirrored term carries
+        and never on a dimension key, so its sentence names no dimension and no country.
         """
+        import re
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from apps.library import testing as library_build
+        from apps.taxonomy.models import TaxonomyTerm
+        from apps.taxonomy.seeds import MIRRORED_JURISDICTION_KINDS
+
+        # A jurisdiction no bank operates in, as standards bodies issue under: whichever
+        # seed files it, it gets no term (D-38).
+        Jurisdiction.objects.get_or_create(
+            key="intl",
+            defaults={"kind": "international", "default_language": Language.objects.get(key="en"), "sort_order": 99, "is_system": True},
+        )
+        # As a deploy runs it: no tenant activated, so it sees every tenant.
+        tenancy.clear_tenant()
+        call_command("seed_reference", stdout=StringIO())
+        self.activate(self.tenant)
+
+        def labels(row: Any) -> dict[str, str]:
+            return {label.language: label.text for label in row.labels.all()}
+
+        # Given the seeded jurisdictions, the mirror is exact both ways.
+        rows = {
+            row.key: row
+            for row in Jurisdiction.objects.filter(active=True, kind__in=MIRRORED_JURISDICTION_KINDS).prefetch_related("labels")
+        }
+        mirrored = {
+            term.key: term
+            for term in TaxonomyTerm.objects.exclude(jurisdiction=None).select_related("dimension", "parent").prefetch_related("labels")
+        }
+        self.assertEqual(set(rows), {"eu", "se", "dk", "no", "fi"})
+        self.assertEqual(set(mirrored), set(rows), "every mirrored jurisdiction has a term, and no term invents one")
+        dimension = mirrored["eu"].dimension
+        self.assertEqual({term.dimension_id for term in mirrored.values()}, {dimension.id}, "one dimension holds the mirror")
+        self.assertEqual(set(TaxonomyTerm.objects.filter(dimension=dimension, active=True).values_list("key", flat=True)), set(rows))
+        for key, term in mirrored.items():
+            self.assertEqual((term.jurisdiction_id, labels(term)), (rows[key].id, labels(rows[key])), key)
+        self.assertEqual(
+            {key: term.parent.key if term.parent else None for key, term in mirrored.items()},
+            {"eu": None, "se": "eu", "dk": "eu", "no": "eu", "fi": "eu"},
+            "each country's term has the Union's as parent, Norway's included",
+        )
+        self.assertFalse(TaxonomyTerm.objects.filter(jurisdiction__key="intl").exists())
+        self.assertFalse(TaxonomyTerm.objects.filter(dimension=dimension, key="intl").exists())
+
+        # The regulatory scope lists the five terms, all of them when all are chosen.
+        self._set_footprint(["regime:securities", *(f"{dimension.key}:{key}" for key in rows)])
+        listed = next(
+            entry for entry in self._footprint(sign_in(self.reader, tenant=self.tenant))["dimensions"] if entry["dimension"]["key"] == dimension.key
+        )
+        self.assertEqual(
+            [(term["key"], term["label"]) for term in listed["terms"]],
+            [("eu", "European Union"), ("se", "Sweden"), ("dk", "Denmark"), ("no", "Norway"), ("fi", "Finland")],
+        )
+        self.assertTrue(listed["allSelected"])
+
+        # The term list marks exactly the mirrored terms, so an agent or a picker leaves them
+        # out before sending anything, rather than learning the rule from a refusal.
+        term_list = self._get("/taxonomy/terms", sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual(term_list.status_code, 200, term_list.content)
+        self.assertEqual(
+            {(row["dimension"]["key"], row["key"]) for row in term_list.json()["items"] if row["mirrored"]},
+            {(dimension.key, key) for key in rows},
+        )
+
+        # When a proposal adds or renames a term of the mirrored dimension, or tags a record
+        # with one, it answers 422 and nothing reaches the queue or the library.
+        norway = mirrored["no"]
+        instrument = library_build.instrument(key="fp-s12-instrument", regime="regime:securities")
+        obligation = library_build.obligation(instrument, key="fp-s12-obligation", terms=("service_type:custody",))
+        change = watch_build.change()
+        editor = sign_in(self.editor)
+        queued = Proposal.objects.count()
+        refusals = {
+            "a new term": self._post("/taxonomy/terms", {"dimension": dimension.key, "labels": {"en": "Iceland"}}, editor),
+            "a key the mirror holds": self._post("/taxonomy/terms", {"dimension": dimension.key, "key": "se", "labels": {"en": "Sweden"}}, editor),
+            "a rename": self._patch(f"/taxonomy/terms/{norway.id}", {"labels": {"en": "Kingdom of Norway"}}, editor),
+            "a new term filed directly": self._post(
+                "/proposals", {"kind": "term_create", "title": "Add Iceland", "payload": {"dimension": dimension.key, "key": "is", "labels": {"en": "Iceland"}}}, editor
+            ),
+            "a rename filed directly": self._post(
+                "/proposals", {"kind": "term_update", "title": "Rename Norway", "payload": {"dimension": dimension.key, "key": "no", "labels": {"en": "Kingdom of Norway"}}}, editor
+            ),
+            "an obligation tagged with a market": self._post(
+                "/proposals",
+                {
+                    "kind": "new_obligation_version",
+                    "title": "Version 2, in Norway",
+                    "targetType": "obligation",
+                    "targetId": str(obligation.id),
+                    "payload": {"summaries": {"en": "The firm keeps client assets apart."}, "originalLanguage": "en", "terms": ["service_type:custody", f"{dimension.key}:no"]},
+                    "fieldSources": {"summaries.en": "https://www.fi.se/", "terms": "https://www.fi.se/"},
+                },
+                editor,
+            ),
+            "a change tagged with a market": self._patch(f"/changes/{change.id}", {"termIds": [str(norway.id)]}, editor),
+        }
+        named = {dimension.key, *rows, *(text for row in rows.values() for text in labels(row).values())}
+        for what, response in refusals.items():
+            with self.subTest(what):
+                self.assertEqual((response.status_code, response.json()["code"]), (422, "jurisdiction_term_mirrored"), response.content)
+                detail = response.json()["detail"]
+                for word in named:
+                    self.assertIsNone(re.search(rf"\b{re.escape(word)}\b", detail, re.IGNORECASE), f"the refusal names {word!r}")
+        self.assertEqual(Proposal.objects.count(), queued, "nothing reached the queue")
+        self.assertFalse(TaxonomyTerm.objects.filter(dimension=dimension, key="is").exists())
+        self.assertEqual(TaxonomyTerm.objects.get(pk=norway.pk).version, norway.version)
+        self.assertFalse(change.term_links.exists())
+
+        # When seed_reference runs a second time, nothing changes and nothing is recorded.
+        def mirror_state() -> list[tuple[Any, ...]]:
+            terms = TaxonomyTerm.objects.filter(dimension=dimension).prefetch_related("labels")
+            return sorted((t.id, t.key, t.jurisdiction_id, t.parent_id, t.active, t.sort_order, t.version, sorted(labels(t).items())) for t in terms)
+
+        self.activate(self.tenant)  # the bank's own rows and the library's, read the same way before and after
+        before, recorded = mirror_state(), set(AuditEvent.objects.values_list("id", flat=True))
+        tenancy.clear_tenant()
+        call_command("seed_reference", stdout=StringIO())
+        self.activate(self.tenant)
+        self.assertEqual(mirror_state(), before)
+        self.assertEqual(list(AuditEvent.objects.exclude(id__in=recorded).values_list("action", "subject_title")), [])
 
     @skip("pending: FP-S13 (FP-04, chunk 3)")
     def test_fp_s13(self) -> None:
@@ -1083,12 +1209,197 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         The watched-market view of the inventory shows only what watching adds (FP-04).
         """
 
-    @skip("pending: FP-S14 (FP-04, R1)")
     def test_fp_s14(self) -> None:
         """FP-S14
 
         Markets stay inside the tenant and out of logs and error reports (FP-04, NFR-01).
+
+        The watch list is a bank's own judgement, so it lives under row-level security and
+        its keys travel in the body, never in a path or a query. The second half drives a
+        watch and an unwatch through the WSGI entry point gunicorn calls, with the Sentry
+        SDK started from the arguments settings.py passes it and the loggers at their
+        deployed levels, and reads what each channel would have carried off the machine:
+        the transactions and the error events, which pass through before_send.
         """
+        import logging
+        import os
+        import re
+        from pathlib import Path
+
+        import sentry_sdk
+        from django.conf import settings
+        from django.core.handlers.wsgi import WSGIHandler
+        from django.core.signals import request_finished, request_started
+        from django.db import close_old_connections
+        from django.test import RequestFactory, override_settings
+        from sentry_sdk.integrations.logging import LoggingIntegration
+        from sentry_sdk.transport import Transport
+
+        from apps.shared.logging import JsonFormatter
+        from apps.shared.middleware import RequestIdLogFilter
+        from apps.shared.testing import sentry_init_kwargs
+
+        # Given tenant A watches Norway, with a regulatory scope and a request waiting, and
+        # tenant B watches nothing.
+        self._set_footprint(["regime:securities", "jurisdiction:se"])
+        a = sign_in(self.admin, tenant=self.tenant)
+        self.assertEqual(self._post("/tenant/footprint/watching", {"jurisdiction": "no"}, a).status_code, 200)
+        waiting = self._post(
+            "/tenant/footprint/requests",
+            {"adds": [{"dimension": "jurisdiction", "key": "no"}], "removes": []},
+            sign_in(self.officer, tenant=self.tenant),
+        )
+        self.assertEqual(waiting.status_code, 201, waiting.content)
+        self.activate(self.tenant)
+        watched = WatchedMarket.objects.get(tenant=self.tenant, jurisdiction__key="no")
+        a_rows = {
+            str(self.tenant.id),
+            str(watched.id),
+            waiting.json()["id"],
+            *(str(pk) for pk in FootprintTerm.objects.filter(tenant=self.tenant).values_list("id", flat=True)),
+        }
+        other = factories.tenant(slug="other-bank")
+        b = sign_in(factories.member(other, roles=("admin",), user_row=factories.user(name="Lena Berg")).user, tenant=other)
+
+        # When tenant B reads its footprint, Norway is not watched and nothing of A's is there.
+        seen = self._get("/tenant/footprint", b)
+        self.assertEqual(seen.status_code, 200, seen.content)
+        norway = next(market for market in seen.json()["markets"] if market["jurisdiction"]["key"] == "no")
+        self.assertEqual((norway["operating"], norway["watching"]), (False, False))
+        self.assertIsNone(seen.json()["pendingRequest"])
+        for row_id in a_rows:
+            self.assertNotIn(row_id, seen.content.decode())
+
+        # When tenant B asks to stop watching Norway, the answer is 404 and A's row stands.
+        refused = self._post("/tenant/footprint/watching/remove", {"jurisdiction": "no"}, b)
+        self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"))
+        self.activate(self.tenant)
+        self.assertEqual(
+            WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction__key="no").values_list("id", "added_by_id").get(),
+            (watched.id, self.admin.id),
+        )
+
+        # When tenant A watches and stops watching a market, what leaves the machine holds
+        # no jurisdiction key: the access line, the application log and the Sentry events.
+        entrypoint = (Path(settings.BASE_DIR) / "docker-entrypoint.sh").read_text(encoding="utf-8")
+        access_format = re.search(r"--access-logformat '([^']*)'", entrypoint)
+        assert access_format is not None, "the entrypoint names gunicorn's access format"
+
+        def access_line(environ: dict[str, Any], status: str, headers: list[tuple[str, str]], sent: int) -> str:
+            """The line gunicorn 26.2.0 prints for this request: its `Logger.atoms()`
+            restated, every atom it offers and not only the safe ones, because gunicorn
+            itself cannot be imported on every machine the suite runs on (`import grp`)."""
+            atoms = {
+                "h": environ.get("REMOTE_ADDR", "-"), "l": "-", "u": "-", "t": "[23/Sep/2026:09:00:00 +0000]",
+                "r": f"{environ['REQUEST_METHOD']} {environ['RAW_URI']} {environ['SERVER_PROTOCOL']}",
+                "s": status.split(None, 1)[0], "m": environ["REQUEST_METHOD"], "U": environ["PATH_INFO"],
+                "q": environ.get("QUERY_STRING"), "H": environ["SERVER_PROTOCOL"], "b": str(sent), "B": sent,
+                "f": environ.get("HTTP_REFERER", "-"), "a": environ.get("HTTP_USER_AGENT", "-"),
+                "T": 0, "D": 12000, "M": 12, "L": "0.012000", "p": f"<{os.getpid()}>",
+                **{f"{{{name[5:].replace('_', '-').lower()}}}i": value for name, value in environ.items() if name.startswith("HTTP_")},
+                **{f"{{{name.lower()}}}o": value for name, value in headers},
+                **{f"{{{name.lower()}}}e": value for name, value in environ.items()},
+            }
+            return access_format.group(1) % {name: atoms.get(name, "-") for name in re.findall(r"%\((.*?)\)s", access_format.group(1))}
+
+        def served(path: str, key: str) -> tuple[int, str]:
+            """One request through the WSGI application, as gunicorn hands it over, and its
+            access line. The test client's own handler would bypass the WSGI entry point
+            Sentry wraps; database connections stay open as the test client keeps them."""
+            request = RequestFactory().post(f"{V1}{path}", data={"jurisdiction": key}, content_type="application/json", **a)
+            environ = {**request.environ, "RAW_URI": request.environ["PATH_INFO"]}
+            started: list[Any] = []
+
+            def start_response(status: str, headers: list[tuple[str, str]], exc_info: Any = None) -> Any:
+                started.extend([status, headers])
+                return lambda chunk: None
+
+            request_started.disconnect(close_old_connections)
+            request_finished.disconnect(close_old_connections)
+            try:
+                response = WSGIHandler()(environ, start_response)
+                sent = len(b"".join(response))
+                response.close()
+            finally:
+                request_started.connect(close_old_connections)
+                request_finished.connect(close_old_connections)
+            return int(started[0].split()[0]), access_line(environ, started[0], started[1], sent)
+
+        class Captured(Transport):
+            def __init__(self) -> None:
+                super().__init__()
+                self.events: list[dict[str, Any]] = []
+
+            def capture_envelope(self, envelope: Any) -> None:
+                self.events.extend(item.payload.json for item in envelope.items if item.payload.json)
+
+        class Lines(logging.Handler):
+            def __init__(self) -> None:
+                super().__init__()
+                self.lines: list[str] = []
+                self.setFormatter(JsonFormatter())
+                self.addFilter(RequestIdLogFilter())
+
+            def emit(self, record: logging.LogRecord) -> None:
+                self.lines.append(self.format(record))
+
+        transport, app_log, access = Captured(), Lines(), []
+        # The deployed levels (settings.LOGGING before test_settings quietens it), and an
+        # over-budget line per request, so the log is known to hold something.
+        deployed = {logging.getLogger(): "INFO", logging.getLogger("apps"): "INFO", logging.getLogger("django"): "INFO", logging.getLogger("django.request"): "WARNING"}
+        quiet = {logger: logger.level for logger in deployed}
+        for logger, level in deployed.items():
+            logger.addHandler(app_log)
+            logger.setLevel(level)
+        # What settings.py itself passes, read by booting it with a DSN, so this proof follows
+        # it. Four things are replaced: the transport, so nothing leaves; every trace is
+        # kept; every warning becomes an error event, so the over-budget line of each request
+        # passes through before_send as an error would; and the host's name and the build's
+        # release, which differ from machine to machine and are nobody's content.
+        deployed_sentry = sentry_init_kwargs()
+        sentry_sdk.init(
+            **{
+                **deployed_sentry,
+                "transport": transport,
+                "traces_sample_rate": 1.0,
+                "integrations": [*deployed_sentry["integrations"], LoggingIntegration(event_level=logging.WARNING)],
+                "server_name": "api",
+                "release": "fp-s14",
+            }
+        )
+        try:
+            with override_settings(API_BUDGET_MS=0):
+                for path in ("/tenant/footprint/watching", "/tenant/footprint/watching/remove"):
+                    status, line = served(path, "dk")
+                    self.assertEqual(status, 200, line)
+                    access.append(line)
+            sentry_sdk.flush()
+        finally:
+            sentry_sdk.get_client().close()
+            sentry_sdk.get_global_scope().set_client(None)
+            for logger, previous in quiet.items():
+                logger.removeHandler(app_log)
+                logger.setLevel(previous)
+
+        self.activate(self.tenant)
+        self.assertEqual(AuditEvent.objects.filter(action__in=("markets.watch_added", "markets.watch_removed"), subject_title="dk").count(), 2)
+        transactions = [event for event in transport.events if event.get("type") == "transaction"]
+        self.assertEqual(len(transactions), 2, "one transaction per request reached the transport")
+        errors = [event for event in transport.events if event.get("type") != "transaction" and "logentry" in event]
+        self.assertEqual(
+            [event["logentry"]["message"] for event in errors].count("request over budget"),
+            2,
+            "each request's over-budget warning reached the transport as an error event, through before_send",
+        )
+        self.assertTrue(app_log.lines, "each request logged over budget")
+        denmark = Jurisdiction.objects.prefetch_related("labels").get(key="dk")
+        keys = set(Jurisdiction.objects.values_list("key", flat=True))
+        for channel, text in (("access log", "\n".join(access)), ("application log", "\n".join(app_log.lines)), ("Sentry", json.dumps(transport.events, default=str))):
+            with self.subTest(channel):
+                for key in keys:
+                    self.assertIsNone(re.search(rf"(?<![A-Za-z0-9]){key}(?![A-Za-z0-9])", text), f"{channel} holds the key {key!r}")
+                for word in (str(denmark.id), *(label.text for label in denmark.labels.all())):
+                    self.assertNotIn(word, text, channel)
 
     @skip("pending: FP-S15 (FP-04, chunk 5)")
     def test_fp_s15(self) -> None:
