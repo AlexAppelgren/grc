@@ -255,12 +255,11 @@ describe('library api', () => {
     ]);
   });
 
-  it('reads a record with no regime, no version in force, no lineage and nobody named as verifier', async () => {
+  it('reads a record with no version in force, no lineage and nobody named as verifier', async () => {
     installAdapter(() => ({
       status: 200,
       data: {
         ...serverDetail,
-        regime: null,
         summary: null,
         translations: undefined,
         version: null,
@@ -273,7 +272,6 @@ describe('library api', () => {
       },
     }));
     expect(await library.getObligation('ob-1')).toMatchObject({
-      regime: null,
       summary: null,
       translations: [],
       version: null,
@@ -400,13 +398,13 @@ describe('library instruments api', () => {
     expect(sent.map((s) => [s.method, s.path, s.params])).toEqual([['get', '/api/v1/instruments', { regime: 'securities', outsideFootprint: true, limit: 20, offset: 0 }]]);
   });
 
-  it('reads a row with no name, no authority and no regime', async () => {
+  it('reads a row with no name and no authority', async () => {
     installAdapter(() => ({
       status: 200,
-      data: { items: [{ ...serverInstrumentRow, name: null, authority: null, regime: null }], total: 1 },
+      data: { items: [{ ...serverInstrumentRow, name: null, authority: null }], total: 1 },
     }));
     const page = await library.listInstruments();
-    expect(page.items[0]).toMatchObject({ name: null, authority: null, regime: null });
+    expect(page.items[0]).toMatchObject({ name: null, authority: null });
   });
 
   it('reads one instrument with its ELI, its authority and its lineage', async () => {

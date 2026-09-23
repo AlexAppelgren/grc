@@ -22,9 +22,10 @@ export function factsOf(instrument: Instrument): InstrumentFacts {
   return {
     instrument: { key: instrument.stableKey, label: instrument.shortName },
     level: { key: instrument.level.key, label: instrument.level.label },
+    levelKind: instrument.level.kind,
     binding: instrument.binding,
     jurisdiction: { key: instrument.jurisdiction.key, label: instrument.jurisdiction.label },
-    ...(instrument.regime === null ? {} : { regime: { key: instrument.regime.key, label: instrument.regime.label } }),
+    regime: { key: instrument.regime.key, label: instrument.regime.label },
   };
 }
 

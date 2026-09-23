@@ -125,8 +125,9 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
   const header = presentObligation(
     {
       instrument: { key: record.instrument.key, label: record.instrument.shortName },
-      regime: record.regime === null ? undefined : { key: record.regime.key, label: record.regime.label },
+      regime: { key: record.regime.key, label: record.regime.label },
       binding: record.binding,
+      levelKind: record.bindingLevel.kind,
     },
     'header',
     t,

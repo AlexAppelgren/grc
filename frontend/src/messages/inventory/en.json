@@ -101,5 +101,8 @@
   "inventory.instrument.provisionsErrorTitle": "Could not load the provisions",
   "inventory.instrument.provisionsEmpty.title": "No provisions yet",
   "inventory.instrument.provisionsEmpty.body": "The provision tree appears here once the library holds it.",
+  "inventory.instrument.provisionsLicensed.title": "The text is licensed",
+  "inventory.instrument.provisionsLicensed.body": "The text of this standard is licensed and not held here.",
+  "inventory.instrument.provisionsLicensed.link": "See it in the publisher's catalogue",
   "inventory.instrument.provisionMachineTranslation": "Machine translation. The original is authoritative."
 }

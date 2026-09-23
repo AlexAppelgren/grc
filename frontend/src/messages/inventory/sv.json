@@ -101,5 +101,8 @@
   "inventory.instrument.provisionsErrorTitle": "Kunde inte hämta bestämmelserna",
   "inventory.instrument.provisionsEmpty.title": "Inga bestämmelser ännu",
   "inventory.instrument.provisionsEmpty.body": "Bestämmelseträdet visas här när biblioteket har det.",
+  "inventory.instrument.provisionsLicensed.title": "Texten är licensierad",
+  "inventory.instrument.provisionsLicensed.body": "Texten i den här standarden är licensierad och finns inte här.",
+  "inventory.instrument.provisionsLicensed.link": "Se den i utgivarens katalog",
   "inventory.instrument.provisionMachineTranslation": "Maskinöversättning. Originalet gäller."
 }
