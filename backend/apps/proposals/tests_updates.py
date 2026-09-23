@@ -201,6 +201,8 @@ class LibraryUpdates(ScenarioTestCase):
             "targetId": str(by_agents.id),
             "payload": {"summaries": {"sv": "Institutet bedömer kunden varje år."}, "originalLanguage": "sv", "isMachine": True},
             "fieldSources": {"summaries.sv": SOURCE},
+            # An agent files under an open run of its own (AGT-01).
+            "agentRunId": str(agents_testing.platform_run(key=proposer).id),
         }
         created = self.client.post(f"{V1}/proposals", data=body, content_type="application/json", HTTP_X_API_KEY=proposer.plain_key)
         self.assertEqual(created.status_code, 201, created.content)

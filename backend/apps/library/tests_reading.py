@@ -772,6 +772,8 @@ class MachineConfirmedVersionTests(TestCase):
                 "effectiveFromPrecision": "day",
             },
             "fieldSources": {"summaries.en": build.SOURCE_URL, "effectiveFrom": build.SOURCE_URL},
+            # An agent files under an open run of its own (AGT-01).
+            "agentRunId": str(agents_testing.platform_run(key=proposer).id),
         }
         created = self.client.post("/api/v1/proposals", body, content_type="application/json", HTTP_X_API_KEY=proposer.plain_key)
         self.assertEqual(created.status_code, 201, created.content)
