@@ -1,0 +1,212 @@
+[
+ {
+  "key": "vocab-agent-confirm",
+  "title": "An agent of another definition may confirm vocabulary and term proposals, and the rows say a machine confirmed them",
+  "goal": "Lift D-79's interim refusal (409 person_review_required on agent approval of vocabulary_* and term_* kinds) now that every library list and taxonomy term carries machine-confirmed provenance, as Alex decided on 2026-09-23.",
+  "requirement_ids": [
+   "PRO-02",
+   "PRO-03",
+   "VOC-02",
+   "AGT-01",
+   "INV-05"
+  ],
+  "scenario_ids": [
+   "PRO-S13",
+   "ID-S31"
+  ],
+  "files_owned": [],
+  "shared_files": [
+   "backend/apps/proposals/logic.py",
+   "backend/apps/proposals/apply.py",
+   "backend/agents/",
+   "docs/DECISIONS.md",
+   "docs/TODO_FOR_alex.md"
+  ],
+  "depends_on": [],
+  "wave": 4,
+  "size": "M",
+  "wave2_deps": [],
+  "acceptance": "An agent key with proposals:review, of a definition different from the proposer's, approves every vocabulary_* and term_* kind through the real path; the written rows carry verified_origin=agent, verified_by_agent and applied_by_proposal, and every label it writes is stored machine-made; the same principal twice is still refused by the four-eyes check constraint; a person's later approval confirms only the labels it writes; the reads and the console show machine-confirmed, never verified by a person; the H16 app-role proofs still cover every kind; D-79 records the lift quoting Alex's answer; the TODO_FOR_alex box is ticked; the proposals, taxonomy, identity, agents and shared suites green.",
+  "brief": "Base: start from origin/claude/r1-int-w23-done (main plus every wave-2 and wave-3 package, integrated and green) instead of origin/main: `git checkout -b claude/r1w4-KEY origin/claude/r1-int-w23-done`. If that commit is already on origin/main, start from origin/main. Alex's decision, given in chat on 2026-09-23 to the session orchestrating the R1 build, in answer to the question 'An agent can now approve proposals (D-62), but vocabulary lists and taxonomy terms have no column to record machine-confirmed provenance. How should agent approval of those proposal kinds work?': he chose 'Add provenance columns now', whose text reads 'Every library list row and taxonomy term gains the machine-confirmed provenance an obligation version has, so agents can confirm them too. More migrations and screens in wave 2, but no human bottleneck on vocabulary.' He declined the alternative 'Refuse until provenance exists'. vocab-term-provenance built the columns and kept the refusal only because this answer had not reached the repository in his words; this brief is that record. Do: in proposals/logic.approve widen the agent-approval rule from OBLIGATION_KINDS to every kind that now carries machine-confirmed provenance (vocabulary_* and term_* kinds), keeping the rule keyed on provenance-capable kinds so a future kind without provenance still waits for a person; keep the four-eyes check constraint and the independence rule (a different definition and key than the proposer, D-62, ADR 0054) exactly as they are; make the library-confirmer agent definition (backend/agents/) able to decide these kinds (bump its version per the agents convention, and log every model call through the AI log); stamp the provenance through the existing vocab-term-provenance code path. Tests first: approval by an independent agent for each vocabulary and term kind as cw_app through the real path (extend the H16 proof if it names kinds), refusal of the same principal twice, the stored labels machine-made, reads and console showing machine-confirmed; un-skip or extend PRO-S13 and ID-S31 with a vocabulary kind. Update D-79's row: the refusal is lifted, quote Alex's answer above with its date and how it reached the repository; tick the vocab-term-provenance box in docs/TODO_FOR_alex.md with the same quote. Rules: CLAUDE.md section 5 (four eyes, AI output labelled, machine-confirmed never reads as a person's), D-67; no Co-Authored-By trailer."
+ },
+ {
+  "key": "security-review-c3-f03",
+  "title": "Chunk 3 and PRD 0.3 features security review",
+  "goal": "Recorded review of the library reads, standards and the regulatory-scope features, with chunk 2's residue and H16 decided.",
+  "requirement_ids": [
+   "INV-01",
+   "INV-02",
+   "INV-08",
+   "FP-01",
+   "FP-02",
+   "FP-03",
+   "FP-04",
+   "VOC-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "docs/security/CHUNK3_F03_REVIEW_2026-09-2x.md"
+  ],
+  "shared_files": [
+   "docs/plans/briefs/HARDENING.md",
+   "docs/TODO_FOR_alex.md (H16 line)",
+   "library/taxonomy code (fixes only)"
+  ],
+  "depends_on": [
+   "tax-watched-inventory",
+   "tax-watched-feed",
+   "std-journeys",
+   "vocab-usage-and-merge",
+   "library-recheck-loop"
+  ],
+  "wave": 4,
+  "size": "M",
+  "acceptance": "Verdict and evidence per area incl. chunk 2's footprint request flow and vocabulary writes; H16 either fixed with a test or named as a chunk 14 cut awaiting Alex; medium+ findings fixed with tests or handed to the orchestrator as named fix tasks; lower ones as HARDENING rows; guard suites green.",
+  "brief": "Base: start from origin/claude/r1-int-w23-done (main plus every wave-2 and wave-3 package, integrated and green) instead of origin/main: `git checkout -b claude/r1w4-KEY origin/claude/r1-int-w23-done`. If that commit is already on origin/main, start from origin/main. Review chunk 3's commits and the f03 features on main: instrument/provision reads and record sources, the standard level and provision trigger, the E2E-only standard, opt-in rule and SQL twin, jurisdiction mirror refusal and derivation, watched views, markets watch/unwatch privacy, vocabulary usage and merge re-pointing (fences, history kept), RLS and query counts. No chunk 2 report is on record in docs/security: record a verdict for chunk 2's footprint request flow (four eyes, step-up, audit per term) and library vocabulary writes too. HARDENING H16 (medium: instrument and obligation still check writes with the read rule, so only the application fence stops a bank session changing a shared record): size the fix (library_write() naming the zone; seeds and test builders) and either do it with a test or hand it to the orchestrator as a named task; if it waits, write a TODO_FOR_alex line naming it a chunk 14 cut for Alex to accept. Run tests_rls, tests_tenant_isolation, tests_library_fence, tests_route_permissions, tests_audit_on_write, tests_four_eyes with the library and taxonomy suites. Rules: D-67; no Co-Authored-By trailer. Since this brief was written, H16 landed (ADR 0058, D-83: a database trigger refuses library writes outside a named door, with app-role proofs per proposal kind and watch step); review it as built instead of sizing it, and confirm the proofs cover every ProposalKind and watch write module after the wave 2-3 merge.",
+  "wave2_deps": []
+ },
+ {
+  "key": "security-review-c4",
+  "title": "Chunk 4 security review, including the agent approver and the problem-report tail",
+  "goal": "CHUNK4 T15 and T22 verdicts on record.",
+  "requirement_ids": [
+   "AC-PRO1",
+   "AC-PRO2",
+   "AC-AUD1",
+   "AC-NFR1",
+   "AUD-03"
+  ],
+  "scenario_ids": [
+   "PRO-S2",
+   "PRO-S3",
+   "PRO-S5",
+   "PRO-S7",
+   "PRO-S13",
+   "PRO-S14",
+   "AUD-S5",
+   "AUD-S7",
+   "ADM-S4",
+   "ADM-S6"
+  ],
+  "files_owned": [
+   "docs/security/CHUNK4_REVIEW_2026-09-2x.md"
+  ],
+  "shared_files": [
+   "docs/plans/briefs/HARDENING.md",
+   "proposals/governance code (fixes only)"
+  ],
+  "depends_on": [
+   "proposals-kind-provision-licensed",
+   "pro-s13-journey",
+   "problem-reports-frontend"
+  ],
+  "wave": 4,
+  "size": "M",
+  "acceptance": "Verdict and evidence per area; medium+ fixed with tests or handed on as named fix tasks; HARDENING rows for the rest; guard suites green.",
+  "brief": "Base: start from origin/claude/r1-int-w23-done (main plus every wave-2 and wave-3 package, integrated and green) instead of origin/main: `git checkout -b claude/r1w4-KEY origin/claude/r1-int-w23-done`. If that commit is already on origin/main, start from origin/main. Areas: four eyes and the widened agent clauses incl. corrections and the new lock; the D-79 refusal of agent approvals on vocabulary and term kinds; source checks; the standards checks on every obligation kind; the library fence and its 2492f80 edits; step-up on approvals and none for keys; the review scope's platform-only enforcement and unbound keys; agent decision logging and run ids; proposal_tenant RLS and GET /tenant/proposals; the audit read's row rule; the proposer withheld from the console; GET /library-updates; POST /me/visit; console tenant creation (slug); bootstrap_platform --role; the problem-report tail (T22) incl. its tests_rls edit. Rules: D-67; no Co-Authored-By trailer. D-79's refusal is being lifted by package vocab-agent-confirm on Alex's answer (agents may confirm vocabulary and term proposals, with machine-confirmed provenance from vocab-term-provenance). Review the lifted rule as built: merge origin/claude/r1w4-vocab-agent-confirm-done right after creating your branch; your prompt says whether it exists yet.",
+  "wave2_deps": []
+ },
+ {
+  "key": "security-review-c5",
+  "title": "Chunk 5 security review",
+  "goal": "Agents, keys, runs and the watch door reviewed on record.",
+  "requirement_ids": [
+   "NFR-01",
+   "AUD-01",
+   "WAT-01",
+   "AGT-01"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "docs/security/CHUNK5_REVIEW_2026-09-2x.md"
+  ],
+  "shared_files": [
+   "docs/plans/briefs/HARDENING.md",
+   "watch/agents/identity code (fixes only)"
+  ],
+  "depends_on": [
+   "watch-curation-confirm-frontend",
+   "watch-standards",
+   "agent-j4-smoke",
+   "library-recheck-loop"
+  ],
+  "wave": 4,
+  "size": "M",
+  "acceptance": "Verdict and evidence per area incl. the two gaps found earlier (bank key with changes:write; unvalidated agentRunId) shown closed; medium+ fixed or handed on; HARDENING rows; guard suites green.",
+  "brief": "Base: start from origin/claude/r1-int-w23-done (main plus every wave-2 and wave-3 package, integrated and green) instead of origin/main: `git checkout -b claude/r1w4-KEY origin/claude/r1-int-w23-done`. If that commit is already on origin/main, start from origin/main. Areas: the agent API, agent-key minting and tenant-key scopes (strip at use), the D-78 tests_tenancy allowlist, run provenance, the watch door, curation confirmation resting on scope separation (D-74) and its fence edit, So what, fetched content screening, the standards watch and inactive sources, the re-check loop. Run the guard suites with the watch, agents and identity suites. Rules: D-67; no Co-Authored-By trailer.",
+  "wave2_deps": []
+ },
+ {
+  "key": "security-review-c7",
+  "title": "Chunk 7 security review",
+  "goal": "Search, Ask, eval tables and the AI log reviewed on record.",
+  "requirement_ids": [
+   "SRC-01",
+   "SRC-03",
+   "SRC-05",
+   "AUD-02"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "docs/security/CHUNK7_REVIEW_2026-09-2x.md"
+  ],
+  "shared_files": [
+   "docs/plans/briefs/HARDENING.md",
+   "search/governance/tenants code (fixes only)"
+  ],
+  "depends_on": [
+   "ask-journeys",
+   "search-index-changes",
+   "ask-standard-no-answer",
+   "console-evaluation-screen",
+   "ai-log-screen",
+   "aud-s4-integration",
+   "ask-switch-route"
+  ],
+  "wave": 4,
+  "size": "M",
+  "acceptance": "Verdict and evidence per area; medium+ fixed or handed on; HARDENING rows; library fence byte-for-byte unchanged by chunk 7; guard suites green.",
+  "brief": "Base: start from origin/claude/r1-int-w23-done (main plus every wave-2 and wave-3 package, integrated and green) instead of origin/main: `git checkout -b claude/r1w4-KEY origin/claude/r1-int-w23-done`. If that commit is already on origin/main, start from origin/main. Areas: H7; no tenant text in logs or prompts beyond the typed question; the switch read only with a tenant active; aiEnabled step-up with the assertion id; logging of aborted streams; platform-only eval tables and the tests_rls edit; change chunks carry no tenant data; AI log visibility per tenant; rate limits. Run the guard suites with the search and governance suites. Rules: D-67; no Co-Authored-By trailer.",
+  "wave2_deps": []
+ },
+ {
+  "key": "r1-perf",
+  "title": "R1's budgets are measured against next start",
+  "goal": "Every R1 route and screen has a recorded baseline within budget.",
+  "requirement_ids": [
+   "NFR-02",
+   "SRC-01",
+   "SRC-03"
+  ],
+  "scenario_ids": [
+   "NFR-S6",
+   "NFR-S7",
+   "SRC-S9"
+  ],
+  "files_owned": [
+   "backend/perf/routes.py",
+   "backend/perf/baseline.json"
+  ],
+  "shared_files": [
+   "docs/plans/UI_Implementation_Plan.md (measurement column)",
+   "docs/plans/IMPLEMENTATION_STATUS.md",
+   "backend/apps/shared/app.md (NFR-02 note)"
+  ],
+  "depends_on": [
+   "perf-harness",
+   "screen-budget-nfr-s7",
+   "nfr-integration-scenarios",
+   "tax-watched-inventory",
+   "tax-watched-feed",
+   "ask-journeys",
+   "console-evaluation-screen",
+   "ai-log-screen",
+   "problem-reports-frontend"
+  ],
+  "wave": 4,
+  "size": "M",
+  "acceptance": "routes.py covers every R1 operation for session and key principals; perf_report --record baseline committed; NFR-S7 green twice from a fresh seed against next start with medians in the UI plan; no route over 250 ms (search 800/1500 ms, Ask first token 2 s) and no N+1 left; NFR-02's R1 part ready for r1-close-and-readiness with a chunk 14 note.",
+  "brief": "Base: start from origin/claude/r1-int-w23-done (main plus every wave-2 and wave-3 package, integrated and green) instead of origin/main: `git checkout -b claude/r1w4-KEY origin/claude/r1-int-w23-done`. If that commit is already on origin/main, start from origin/main. Fill routes.py, run perf_report --record on a seeded slot, run NFR-S7 twice against next start, fix any route or screen over budget or N+1 (hand larger fixes to the orchestrator), commit baseline.json, record numbers in the UI plan and IMPLEMENTATION_STATUS. Real-model and real-embedder timings wait for the D-07/D-09 keys (say so). Rules: D-67; no Co-Authored-By trailer. Known over budget (measured by tax-jurisdiction-derivation on a slot with 3016 obligations, 8050 chunks, 44 terms): GET /obligations 600-850 ms and search _candidates about 2 s, almost all in the per-row `taxonomy_in_footprint` SQL call (about 0.2-0.25 ms per row, growing with the number of terms); the new jurisdiction derivation adds about 10% on the list and 30% on search. Make footprint evaluation set-based (for example compute the tenant's in-scope term set once per request and filter with it, or a join against a per-request scope relation) without changing the rule's meaning, keep the FP-S9 and footprint scenarios green, prove it with query plans and the perf harness, and state the before and after numbers.",
+  "wave2_deps": []
+ }
+]
