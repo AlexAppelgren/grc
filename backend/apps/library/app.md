@@ -71,8 +71,12 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 > cannot see; an instrument holding provisions moved onto a standard level; and an existing
 > level given the kind `standard` while provisions sit under it. Missing, so INV-01, INV-02
 > and INV-08 stay in progress:
-> the seeded ISO/IEC 27001:2022 edition with its one conformance duty and the screens that
-> read "Standard" in the binding slot and "licensed" in the tree (INV-S11); the instrument
+> the screens that read "Standard" in the binding slot and "licensed" in the tree
+> (INV-S11's journey; its integration half is green on the library test builders). The
+> ISO/IEC 27001:2022 edition with its one conformance duty is seeded for tests and E2E only
+> (`fixtures/e2e_standard.json`, loaded by `seed_e2e` and never by `seed_demo`), linked to
+> the standard's term without switching it on, until Alex answers the legal question in
+> `docs/TODO_FOR_alex.md`; the instrument
 > proposal's apply refusing a regime from another dimension with 422 `not_a_regime`
 > (INV-S12's second half, which is why test_inv_s12 stays skipped); and the proposal checks
 > of D-35 at creation, at a reviewer's correction and at apply (422 `licensed_text`,

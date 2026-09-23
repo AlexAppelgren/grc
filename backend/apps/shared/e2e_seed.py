@@ -24,6 +24,7 @@ import datetime
 from typing import Any
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from django.apps import apps as django_apps
@@ -173,13 +174,25 @@ class SeedLibrary:
 # FFFS 2017:2's own provision tree has something that amends it), the obligation whose
 # second version is still ahead, and the one sample obligation whose only service is
 # advice, which J-6's switch-off hides (the prototype's 15 obligations plus that one).
+# Plus the one standard below (E2E_STANDARD): ISO/IEC 27001:2022 and its conformance duty.
 EXPECTED_LIBRARY = SeedLibrary(
-    instruments=16,
-    obligations=16,
+    instruments=16 + 1,
+    obligations=16 + 1,
     research_obligation=RESEARCH_OBLIGATION,
     advice_only_obligation="obl-suitability-statement",
     anchor_date=datetime.date(2026, 9, 16),
 )
+
+
+# --- lib-standard-e2e-seed (INV-S11, FP-S16) ------------------------------------------
+# ISO/IEC 27001:2022 with its one conformance duty, for E2E only: seed_demo never loads it
+# until Alex answers TODO_FOR_alex.md "Legal, before any standard is seeded". The duty links
+# to the standard's term, which stays inactive (apps/taxonomy/seeds), and no E2E tenant
+# follows it, so every tenant's inventory hides it until a journey adds it to a scope.
+E2E_STANDARD = Path(__file__).resolve().parents[1] / "library" / "fixtures" / "e2e_standard.json"
+E2E_STANDARD_INSTRUMENT = "iso-iec-27001-2022"
+E2E_STANDARD_OBLIGATION = "iso-iec-27001-2022-conformance"
+# --- end lib-standard-e2e-seed -----------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -1245,6 +1258,9 @@ def seed_e2e() -> dict[str, int]:
         seed_taxonomy_terms()
         seed_authorities()
         library = load_library()
+        # lib-standard-e2e-seed: the one standard, added to the counts the command prints.
+        for name, count in load_library(E2E_STANDARD).items():
+            library[name] += count
         # Chunk 6's sources and changes: library-zone rows, written here — before any
         # tenant is activated — for the same reason `seed_authorities()` and
         # `load_library()` run here rather than after `seed_tenants()` (WAT-06).
