@@ -263,9 +263,11 @@ class DecidingAProposal(ScenarioTestCase):
         self.assertEqual(approved.status_code, 200, approved.content)
 
     def test_an_agent_cannot_approve_a_vocabulary_or_term_proposal_which_waits_for_a_person(self) -> None:
-        """D-79: a vocabulary row and a taxonomy term have no machine-confirmed provenance
-        to carry, so an agent's approval of one would read as a person's (INV-05). It is
-        refused with its own code, applies nothing, and the proposal waits for a person."""
+        """D-79: an agent approves obligation versions only until the owner opens the list
+        and term kinds to it. The rows now record who confirmed them (taxonomy 0007,
+        apps/proposals/tests_provenance.py), but that decision is not taken: an agent's
+        approval is refused with its own code, applies nothing, and the proposal waits for a
+        person."""
         flag = self._proposed("vocabulary_create", "Add the flag Client money", FLAG)
         term = self._proposed("term_create", "Add the regime Crypto-assets", TERM)
         tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)

@@ -19,8 +19,12 @@ from django.http import HttpRequest
 from pydantic.alias_generators import to_camel
 
 from apps.shared.authentication import Principal, PrincipalKind
+from apps.taxonomy.schemas import AgentRef
 
 FALLBACK_LANGUAGE = "en"
+# What `confirmation_of()` reads, joined into the row's own query so a page of rows costs
+# no query per row (playbook 10). Only a library list or a term has these columns.
+CONFIRMATION_JOINS = ("verified_by_agent", "applied_by_proposal__proposed_by_agent")
 
 
 def language_order(request: HttpRequest, *, tenant: Any = None) -> list[str]:
@@ -100,3 +104,30 @@ def extra_of(row: Any, fields: tuple[str, ...]) -> dict[str, Any]:
             value = value.key
         values[to_camel(name)] = value
     return values
+
+
+def confirmation_of(row: Any) -> dict[str, Any]:
+    """Who confirmed the approval that wrote a library list row's or a term's wording, and
+    which agent proposed it (INV-05, PRO-02, D-62), as stored: the three provenance fields
+    of `VocabularyRow` and `TaxonomyTermRow`, in the shape an obligation version's
+    `VersionConfirmation` has. A bank's own list has no such columns and answers empty, as
+    a seeded library row does. The label is the screen's to decide."""
+    return {
+        "verified_origin": getattr(row, "verified_origin", ""),
+        "confirmed_by_agent": agent_ref(getattr(row, "verified_by_agent", None)),
+        "proposed_by_agent": proposing_agent(getattr(row, "applied_by_proposal", None)),
+    }
+
+
+def agent_ref(agent: Any) -> AgentRef | None:
+    """An agent as a screen names it: by its definition key (AUD-02)."""
+    return None if agent is None else AgentRef(id=agent.id, key=agent.key)
+
+
+def proposing_agent(proposal: Any) -> AgentRef | None:
+    """The agent that proposed what an applied proposal wrote, as a read of the shared
+    library names it. Withheld when the proposal was made inside a bank, as the queue
+    withholds it (PRO-03): a shared read never names who proposed on a bank's behalf."""
+    if proposal is None or proposal.proposed_in_tenant:
+        return None
+    return agent_ref(proposal.proposed_by_agent)

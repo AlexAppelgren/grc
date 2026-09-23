@@ -721,11 +721,12 @@ def approve(
     the audit trail keep both. `step_up_assertion_id` is null for an agent's decision: a key
     holds no passkey assertion (PRO-S13, D-62, ADR 0054).
 
-    An agent approves only a kind whose applied record can say an agent confirmed it, which
-    today is an obligation version (INV-05, D-79). A vocabulary row or a taxonomy term has
-    nowhere to carry machine-confirmed provenance, so an agent's approval of one would read
-    as a person's: it is refused with 409 `person_review_required` and waits for a person.
-    Rejecting one writes no library row, so an agent still may.
+    An agent approves an obligation version only (INV-05, D-79). A vocabulary row and a
+    taxonomy term record who confirmed them too since taxonomy 0007, and `apply` marks
+    every label an agent writes machine-made, but opening those kinds to an agent is the
+    owner's decision and is not taken yet: an agent's approval of one is refused with 409
+    `person_review_required` and waits for a person. Rejecting one writes no library row,
+    so an agent still may.
 
     `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
     older caller; `as_reviewer` normalizes either into the same shape below.

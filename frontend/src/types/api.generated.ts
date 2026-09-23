@@ -2821,11 +2821,10 @@ export interface paths {
          *     approval leaves carry no assertion id for its decision. Either way the reviewer is
          *     never the proposer, the same key, or a key of the same agent definition: the widened
          *     proposal_four_eyes constraint refuses that row on its own, whichever principal wrote
-         *     it. An agent approves obligation versions only, the one record that can say an agent
-         *     confirmed it and never reads as a person's check; a translation it approves stays
-         *     labelled machine-made, and its correction may reword a summary but never move
-         *     `originalLanguage`, which answers `validation_error`. A vocabulary or term proposal
-         *     waits for a person (D-79).
+         *     it. An agent approves obligation versions only, and what it confirmed never reads as a
+         *     person's check; a translation it approves stays labelled machine-made, and its
+         *     correction may reword a summary but never move `originalLanguage`, which answers
+         *     `validation_error`. A vocabulary or term proposal waits for a person (D-79).
          *
          *     Errors to branch on: `permission_denied` without `proposals.review` or
          *     `proposals:review`; `agent_not_bound` for a key holding the scope but bound to no agent
@@ -9058,7 +9057,7 @@ export interface components {
              * @example 2026-06-30T07:12:44Z
              */
             lastVerifiedAt: string | null;
-            /** @description The agent that proposed the version in force, by definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it. It is independent of `verifiedOrigin`: `agent` with this null means an agent confirmed what a person, or a key bound to no agent, proposed, and `user` with this set means a person approved an agent's proposal. */
+            /** @description The agent that proposed the version in force, by definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it, and whenever a bank made the proposal, since who proposed on a bank's behalf is never shown. It is independent of `verifiedOrigin`: `agent` with this null means an agent confirmed what a person, a bank or a key bound to no agent proposed, and `user` with this set means a person approved an agent's proposal. */
             proposedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Sourcelabel
@@ -9255,7 +9254,7 @@ export interface components {
             confirmedByAgent: components["schemas"]["AgentRef"] | null;
             /** @description The legal date this version starts binding the bank, at the precision the source gave it. Null means the version has been in force since the obligation entered the library, never that the date is unknown. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved. */
             effectiveFrom: components["schemas"]["PartialDate"] | null;
-            /** @description The agent that proposed this version, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`. */
+            /** @description The agent that proposed this version, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it, and whenever a bank made the proposal, since who proposed on a bank's behalf is never shown. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`. */
             proposedByAgent: components["schemas"]["AgentRef"] | null;
             /**
              * Verifiedorigin
@@ -9291,7 +9290,7 @@ export interface components {
             effectiveFrom: components["schemas"]["PartialDate"] | null;
             /** @description The last day this version was in force, worked out as the day before the next version took effect: nothing is stored, because a version row is written once and never touched afterwards. Null on the version still in force, on one whose successor carries no date, and on one corrected the same day it took effect. */
             effectiveTo: components["schemas"]["PartialDate"] | null;
-            /** @description The agent that proposed this version, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`. */
+            /** @description The agent that proposed this version, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it, and whenever a bank made the proposal, since who proposed on a bank's behalf is never shown. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`. */
             proposedByAgent: components["schemas"]["AgentRef"] | null;
             /**
              * Verifiedorigin
@@ -11582,6 +11581,8 @@ export interface components {
              * @default true
              */
             active: boolean;
+            /** @description The independent agent that confirmed the approval `verifiedOrigin` describes, by its definition key, when `verifiedOrigin` is `agent`: the latest agent approval that reworded the row. Null whenever `verifiedOrigin` is not `agent`, which is a row a person approved, a seeded row and every row of a bank's own list. It names a platform agent definition, never a person or a bank. */
+            confirmedByAgent?: components["schemas"]["AgentRef"] | null;
             dimension: components["schemas"]["TaxonomyDimensionRef"];
             /**
              * Id
@@ -11612,6 +11613,8 @@ export interface components {
             mirrored: boolean;
             /** Parentkey */
             parentKey?: string | null;
+            /** @description The agent that proposed the approval `verifiedOrigin` describes, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it; whenever a bank made the proposal, since who proposed on a bank's behalf is never shown; and on a seeded row or a bank's own list. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`. */
+            proposedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Sortorder
              * @default 0
@@ -11622,6 +11625,13 @@ export interface components {
              * @default
              */
             usageNote: string;
+            /**
+             * Verifiedorigin
+             * @description Who confirmed the wording this row carries, its labels and its usage note. `agent` while any of it is wording a second, independent agent confirmed, which a screen labels machine-confirmed and never as a person's verification. `user` when a person approved the last change to its wording and nothing an agent confirmed is left on it; the person is not named here. A row is reworded a piece at a time, so a person's approval of part of the agents' wording leaves `agent` standing until a person has approved every label they wrote and the usage note; on a list row, each label an agent wrote is also in `machineLanguages` (`GET /vocab/{list}/{key}`) until a person confirms it. Empty for a row the library was seeded with or last worded before this was recorded, which reads the same as `user`, and on every row of a bank's own list, which its admin writes without a proposal. An approval that changes no wording, such as a new sort order, a retire, a restore or a merge, leaves it as it was. A fixed kind, not a vocabulary: decide the machine-confirmed label from this field alone, never from which agent fields are present.
+             * @default
+             * @example agent
+             */
+            verifiedOrigin: string;
             /**
              * Version
              * @default 1
@@ -11918,7 +11928,7 @@ export interface components {
         VersionConfirmation: {
             /** @description The independent agent that confirmed the approval, by its definition key, when `verifiedOrigin` is `agent`. Null whenever a person approved it. It names a platform agent definition, never a person or a bank. */
             confirmedByAgent: components["schemas"]["AgentRef"] | null;
-            /** @description The agent that proposed this version, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`. */
+            /** @description The agent that proposed this version, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it, and whenever a bank made the proposal, since who proposed on a bank's behalf is never shown. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`. */
             proposedByAgent: components["schemas"]["AgentRef"] | null;
             /**
              * Verifiedorigin
@@ -12198,6 +12208,8 @@ export interface components {
              * @default true
              */
             active: boolean;
+            /** @description The independent agent that confirmed the approval `verifiedOrigin` describes, by its definition key, when `verifiedOrigin` is `agent`: the latest agent approval that reworded the row. Null whenever `verifiedOrigin` is not `agent`, which is a row a person approved, a seeded row and every row of a bank's own list. It names a platform agent definition, never a person or a bank. */
+            confirmedByAgent?: components["schemas"]["AgentRef"] | null;
             /** Extra */
             extra?: {
                 [key: string]: unknown;
@@ -12222,6 +12234,8 @@ export interface components {
             labels?: {
                 [key: string]: string;
             };
+            /** @description The agent that proposed the approval `verifiedOrigin` describes, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it; whenever a bank made the proposal, since who proposed on a bank's behalf is never shown; and on a seeded row or a bank's own list. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`. */
+            proposedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Sortorder
              * @default 0
@@ -12238,6 +12252,13 @@ export interface components {
              */
             usageNote: string;
             /**
+             * Verifiedorigin
+             * @description Who confirmed the wording this row carries, its labels and its usage note. `agent` while any of it is wording a second, independent agent confirmed, which a screen labels machine-confirmed and never as a person's verification. `user` when a person approved the last change to its wording and nothing an agent confirmed is left on it; the person is not named here. A row is reworded a piece at a time, so a person's approval of part of the agents' wording leaves `agent` standing until a person has approved every label they wrote and the usage note; on a list row, each label an agent wrote is also in `machineLanguages` (`GET /vocab/{list}/{key}`) until a person confirms it. Empty for a row the library was seeded with or last worded before this was recorded, which reads the same as `user`, and on every row of a bank's own list, which its admin writes without a proposal. An approval that changes no wording, such as a new sort order, a retire, a restore or a merge, leaves it as it was. A fixed kind, not a vocabulary: decide the machine-confirmed label from this field alone, never from which agent fields are present.
+             * @default
+             * @example agent
+             */
+            verifiedOrigin: string;
+            /**
              * Version
              * @default 1
              */
@@ -12246,7 +12267,9 @@ export interface components {
         /**
          * VocabularyRowDetail
          * @description `GET /vocab/{list}/{key}`: the row plus which label is the original and which are
-         *     machine translations (I18N-01, D-12).
+         *     machine-made (I18N-01, D-12): a translation no person confirmed, and every label an
+         *     agent's approval wrote, the original included, until a person's approval rewrites it
+         *     (INV-05, D-62).
          */
         VocabularyRowDetail: {
             /**
@@ -12254,6 +12277,8 @@ export interface components {
              * @default true
              */
             active: boolean;
+            /** @description The independent agent that confirmed the approval `verifiedOrigin` describes, by its definition key, when `verifiedOrigin` is `agent`: the latest agent approval that reworded the row. Null whenever `verifiedOrigin` is not `agent`, which is a row a person approved, a seeded row and every row of a bank's own list. It names a platform agent definition, never a person or a bank. */
+            confirmedByAgent?: components["schemas"]["AgentRef"] | null;
             /** Extra */
             extra?: {
                 [key: string]: unknown;
@@ -12282,6 +12307,8 @@ export interface components {
             machineLanguages?: string[];
             /** Originallanguage */
             originalLanguage?: string | null;
+            /** @description The agent that proposed the approval `verifiedOrigin` describes, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it; whenever a bank made the proposal, since who proposed on a bank's behalf is never shown; and on a seeded row or a bank's own list. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`. */
+            proposedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Sortorder
              * @default 0
@@ -12297,6 +12324,13 @@ export interface components {
              * @default
              */
             usageNote: string;
+            /**
+             * Verifiedorigin
+             * @description Who confirmed the wording this row carries, its labels and its usage note. `agent` while any of it is wording a second, independent agent confirmed, which a screen labels machine-confirmed and never as a person's verification. `user` when a person approved the last change to its wording and nothing an agent confirmed is left on it; the person is not named here. A row is reworded a piece at a time, so a person's approval of part of the agents' wording leaves `agent` standing until a person has approved every label they wrote and the usage note; on a list row, each label an agent wrote is also in `machineLanguages` (`GET /vocab/{list}/{key}`) until a person confirms it. Empty for a row the library was seeded with or last worded before this was recorded, which reads the same as `user`, and on every row of a bank's own list, which its admin writes without a proposal. An approval that changes no wording, such as a new sort order, a retire, a restore or a merge, leaves it as it was. A fixed kind, not a vocabulary: decide the machine-confirmed label from this field alone, never from which agent fields are present.
+             * @default
+             * @example agent
+             */
+            verifiedOrigin: string;
             /**
              * Version
              * @default 1

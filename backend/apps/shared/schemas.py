@@ -9,7 +9,15 @@ from typing import Annotated, Any
 
 from django.conf import settings
 from ninja import Schema
-from pydantic import AfterValidator, ConfigDict, Field, RootModel
+from pydantic import (
+    AfterValidator,
+    ConfigDict,
+    Field,
+    ModelWrapValidatorHandler,
+    RootModel,
+    ValidationInfo,
+    model_validator,
+)
 from pydantic.alias_generators import to_camel
 
 # A pill's tone follows its slot or its row's kind, never a person's choice (NFR-03), so a
@@ -27,6 +35,24 @@ class WriteBody(CamelSchema):
     (NFR-S10). Response schemas stay open, so a new field never breaks an older client."""
 
     model_config = ConfigDict(extra="forbid")
+
+
+class LibraryResponse(CamelSchema):
+    """A response the server builds from plain values, never from an ORM object, and
+    pydantic validates natively when it is built. Ninja's own root validator wraps every
+    value in its Django getter, one Python call per field of every nested object, which was
+    most of a page's server time (NFR-02, measured 2026-09-19). Ninja answers a validated
+    instance of the route's response type as it is, without validating it again.
+
+    Declared here rather than in apps/library/schemas.py because `AgentRef`, which the
+    taxonomy's list and term reads share with the library's, is built on it too, and the
+    library's schemas import the taxonomy's."""
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _run_root_validator(cls, values: Any, handler: ModelWrapValidatorHandler[Any], info: ValidationInfo) -> Any:
+        # Replaces ninja.Schema's validator of the same name, which wraps `values` in its getter.
+        return handler(values)
 
 
 def _no_chosen_tone(extra: dict[str, Any]) -> dict[str, Any]:

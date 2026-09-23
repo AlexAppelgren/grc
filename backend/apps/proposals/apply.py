@@ -27,6 +27,7 @@ import uuid
 from typing import Any
 
 from django.core.exceptions import ValidationError
+from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.library.models import (
@@ -78,10 +79,10 @@ def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_
     with library_write(f"proposal:{proposal.id}", door="proposal"):
         if proposal.kind == ProposalKind.VOCABULARY_CREATE.value:
             assert isinstance(payload, ProposalVocabularyCreatePayload)
-            _vocabulary_create(payload, proposal, actor, step_up)
+            _vocabulary_create(payload, proposal, actor, reviewer, step_up)
         elif proposal.kind == ProposalKind.VOCABULARY_RELABEL.value:
             assert isinstance(payload, ProposalVocabularyRelabelPayload)
-            _vocabulary_relabel(payload, proposal, actor, step_up)
+            _vocabulary_relabel(payload, proposal, actor, reviewer, step_up)
         elif proposal.kind == ProposalKind.VOCABULARY_RETIRE.value:
             assert isinstance(payload, ProposalVocabularyRetirePayload)
             _vocabulary_active(payload, proposal, actor, step_up, active=False)
@@ -93,10 +94,10 @@ def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_
             _vocabulary_merge(payload, proposal, actor, step_up)
         elif proposal.kind == ProposalKind.TERM_CREATE.value:
             assert isinstance(payload, ProposalTermCreatePayload)
-            _term_create(payload, proposal, actor, step_up)
+            _term_create(payload, proposal, actor, reviewer, step_up)
         elif proposal.kind == ProposalKind.TERM_UPDATE.value:
             assert isinstance(payload, ProposalTermUpdatePayload)
-            _term_update(payload, proposal, actor, step_up)
+            _term_update(payload, proposal, actor, reviewer, step_up)
         elif proposal.kind == ProposalKind.NEW_OBLIGATION_VERSION.value:
             assert isinstance(payload, ProposalObligationVersionPayload)
             _obligation_version(payload, proposal, actor, reviewer, step_up)
@@ -288,7 +289,49 @@ def _row(entry: VocabularyList, key: str) -> Any:
     return row
 
 
-def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str]) -> None:
+def _confirmation(proposal: Proposal, reviewer: Reviewer) -> dict[str, Any]:
+    """Who confirmed the wording an approval writes on a list row or a term (INV-05, PRO-02,
+    D-62, D-79), as the columns `LibraryVocabulary` and `TaxonomyTerm` hold it: `agent` and
+    the confirming agent when an independent agent approved, `user` and no agent when a
+    person did. The proposing agent is read through the proposal, as an obligation
+    version's is."""
+    return {
+        "verified_origin": (OriginType.AGENT if reviewer.agent_id is not None else OriginType.USER).value,
+        "verified_by_agent_id": reviewer.agent_id,
+        "applied_by_proposal": proposal,
+    }
+
+
+def _restamp(
+    row: Any, proposal: Proposal, reviewer: Reviewer, labels: QuerySet[Any], *, usage_note_written: bool
+) -> None:
+    """Stamp an existing list row or term with the approval that just wrote some of its
+    wording (INV-05, D-62). Only a relabel or a term update that writes labels or a usage
+    note calls this: a sort order, a retire, a restore or a merge writes no wording, and the
+    row keeps the stamp it had.
+
+    A row is reworded in place, a piece at a time, so a person's approval stamps `user`
+    only once nothing the agents confirmed is left on it. While a label is still
+    machine-made, or the row keeps a usage note this approval did not rewrite (the row
+    cannot tell who wrote it), an agent-stamped row keeps naming the agents and the
+    proposal they confirmed, so their wording never reads as a person's check. `labels` is
+    the row's label queryset, read after this approval wrote its labels."""
+    if (
+        reviewer.agent_id is None
+        and row.verified_origin == OriginType.AGENT.value
+        and (labels.filter(is_machine=True).exists() or (row.usage_note and not usage_note_written))
+    ):
+        return
+    for name, value in _confirmation(proposal, reviewer).items():
+        setattr(row, name, value)
+
+
+def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str], reviewer: Reviewer) -> None:
+    """Write `labels` onto a list row. Every label an agent's approval writes, the original
+    included, is machine-made, and an agent never clears the mark; a person's approval
+    confirms exactly the labels it writes (INV-05, D-12, D-62). A row is relabelled in
+    place, so each label carries its own mark rather than leaning on the row's stamp."""
+    machine = reviewer.agent_id is not None
     existing = {label.language: label for label in entry.label_model._default_manager.filter(vocabulary=row)}
     original = None
     if not any(label.is_original for label in existing.values()):
@@ -297,15 +340,17 @@ def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str]) -> No
         label = existing.get(language)
         if label is not None:
             label.text = text
-            label.is_machine = False
+            label.is_machine = machine
             label.save(update_fields=["text", "is_machine"])
         else:
             entry.label_model._default_manager.create(
-                vocabulary=row, language=language, text=text, is_original=language == original
+                vocabulary=row, language=language, text=text, is_original=language == original, is_machine=machine
             )
 
 
-def _vocabulary_create(payload: ProposalVocabularyCreatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
+def _vocabulary_create(
+    payload: ProposalVocabularyCreatePayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
+) -> None:
     entry = _entry(payload.list)
     if entry.model._default_manager.filter(key__iexact=payload.key).exists():
         raise ValidationError(f"{payload.key!r} already exists on {payload.list!r}.", code="duplicate_key")
@@ -318,10 +363,11 @@ def _vocabulary_create(payload: ProposalVocabularyCreatePayload, proposal: Propo
         "active": True,
         "is_system": False,
         "is_default": False,
+        **_confirmation(proposal, reviewer),
     }
     fields.update(extra_columns(entry, payload.extra))
     row = entry.model._default_manager.create(**fields)
-    _write_labels(entry, row, payload.labels)
+    _write_labels(entry, row, payload.labels, reviewer)
     record(
         action="vocabulary.created",
         actor=actor,
@@ -335,18 +381,28 @@ def _vocabulary_create(payload: ProposalVocabularyCreatePayload, proposal: Propo
     )
 
 
-def _vocabulary_relabel(payload: ProposalVocabularyRelabelPayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
+def _vocabulary_relabel(
+    payload: ProposalVocabularyRelabelPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
+) -> None:
     entry = _entry(payload.list)
     row = _row(entry, payload.key)
     before = {label.language: label.text for label in entry.label_model._default_manager.filter(vocabulary=row)}
     if payload.labels:
-        _write_labels(entry, row, payload.labels)
+        _write_labels(entry, row, payload.labels, reviewer)
     if payload.usage_note is not None:
         row.usage_note = payload.usage_note
     if payload.sort_order is not None:
         row.sort_order = payload.sort_order
     for name, value in extra_columns(entry, payload.extra).items():
         setattr(row, name, value)
+    if payload.labels or payload.usage_note is not None:
+        _restamp(
+            row,
+            proposal,
+            reviewer,
+            entry.label_model._default_manager.filter(vocabulary=row),
+            usage_note_written=payload.usage_note is not None,
+        )
     row.version += 1
     row.save()
     record(
@@ -423,7 +479,9 @@ def _dimension(key: str) -> TermDimension:
     return dimension
 
 
-def _term_labels(term: TaxonomyTerm, labels: dict[str, str]) -> None:
+def _term_labels(term: TaxonomyTerm, labels: dict[str, str], reviewer: Reviewer) -> None:
+    """A term's labels, marked exactly as a list row's are (`_write_labels`)."""
+    machine = reviewer.agent_id is not None
     existing = {label.language: label for label in TaxonomyTermLabel.objects.filter(term=term)}
     original = None
     if not any(label.is_original for label in existing.values()):
@@ -432,13 +490,17 @@ def _term_labels(term: TaxonomyTerm, labels: dict[str, str]) -> None:
         label = existing.get(language)
         if label is not None:
             label.text = text
-            label.is_machine = False
+            label.is_machine = machine
             label.save(update_fields=["text", "is_machine"])
         else:
-            TaxonomyTermLabel.objects.create(term=term, language=language, text=text, is_original=language == original)
+            TaxonomyTermLabel.objects.create(
+                term=term, language=language, text=text, is_original=language == original, is_machine=machine
+            )
 
 
-def _term_create(payload: ProposalTermCreatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
+def _term_create(
+    payload: ProposalTermCreatePayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
+) -> None:
     dimension = _dimension(payload.dimension)
     refuse_mirrored([dimension.id])
     if TaxonomyTerm.objects.filter(dimension=dimension, key__iexact=payload.key).exists():
@@ -459,8 +521,9 @@ def _term_create(payload: ProposalTermCreatePayload, proposal: Proposal, actor: 
         sort_order=0 if highest is None else highest + 1,
         active=True,
         is_system=False,
+        **_confirmation(proposal, reviewer),
     )
-    _term_labels(term, payload.labels)
+    _term_labels(term, payload.labels, reviewer)
     record(
         action="taxonomy.term_created",
         actor=actor,
@@ -474,7 +537,9 @@ def _term_create(payload: ProposalTermCreatePayload, proposal: Proposal, actor: 
     )
 
 
-def _term_update(payload: ProposalTermUpdatePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
+def _term_update(
+    payload: ProposalTermUpdatePayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
+) -> None:
     dimension = _dimension(payload.dimension)
     refuse_mirrored([dimension.id])
     term = TaxonomyTerm.objects.filter(dimension=dimension, key=payload.key).order_by("sort_order", "key").first()
@@ -482,11 +547,15 @@ def _term_update(payload: ProposalTermUpdatePayload, proposal: Proposal, actor: 
         raise ValidationError(f"{payload.key!r} is not a term of {payload.dimension!r}.", code="not_found")
     before = {label.language: label.text for label in TaxonomyTermLabel.objects.filter(term=term)}
     if payload.labels:
-        _term_labels(term, payload.labels)
+        _term_labels(term, payload.labels, reviewer)
     if payload.usage_note is not None:
         term.usage_note = payload.usage_note
     if payload.sort_order is not None:
         term.sort_order = payload.sort_order
+    if payload.labels or payload.usage_note is not None:
+        _restamp(
+            term, proposal, reviewer, TaxonomyTermLabel.objects.filter(term=term), usage_note_written=payload.usage_note is not None
+        )
     term.version += 1
     term.save()
     record(

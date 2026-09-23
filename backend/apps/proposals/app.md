@@ -24,11 +24,15 @@ whose user, key or agent matches on both sides. A person approving still steps
 up with a passkey; a key cannot step up, so for an agent the scope and the
 constraint are the whole gate. A record applied from a proposal an agent
 confirmed carries machine-confirmed provenance (INV-05), never a person's
-verification. Only an obligation version can carry it, so an agent approves
-obligation versions only; a vocabulary or term proposal answers it 409
-`person_review_required` and waits for a person, though an agent may reject one
-(D-79). A key bound to no agent definition is refused at the queue's gate with
-403 `agent_not_bound`.
+verification. An obligation version carries it, and since taxonomy 0007 so do a
+library list row and a taxonomy term: the approval that writes their wording
+records `user` or `agent`, the confirming agent and the proposal. Every label an
+agent's approval writes is stored machine-made, and the row keeps naming the
+agents until a person has approved all the wording they left. An agent still
+approves obligation versions only until the owner opens the list and term kinds
+to it; a vocabulary or term proposal answers it 409 `person_review_required` and
+waits for a person, though an agent may reject one (D-79). A key bound to no agent definition is
+refused at the queue's gate with 403 `agent_not_bound`.
 
 The prototype shows the tenant's compliance officer approving agent
 proposals. That is the one place the prototype is wrong: the queue lives in
