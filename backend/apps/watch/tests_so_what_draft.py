@@ -208,6 +208,15 @@ class ADraftIsNeverFiledUnattributably(SoWhatFilingCase):
         self.assertEqual(self.stored().so_what_draft, "")
         self.assertEqual(self.generations(), [])
 
+    def test_a_second_sighting_that_brings_the_first_draft_logs_it_in_its_own_run(self) -> None:
+        """security-review-c5: the merge path stores a draft the change lacks, and the run
+        the sighting named was checked on the way in, so the log row names it too."""
+        self.register(body(agentRunId=str(self.platform_run.id)))
+        response = self.register()
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(self.stored().so_what_draft, DRAFT)
+        self.assertEqual([row.agent_run_id for row in self.generations()], [self.platform_run.id])
+
 
 class ALaterRunImprovesTheDraft(SoWhatFilingCase):
     def test_a_patch_replaces_the_draft_and_writes_a_second_log_row(self) -> None:
