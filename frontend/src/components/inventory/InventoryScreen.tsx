@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-import { InstrumentFilterBar, InventoryFilterBar, REGIME, SERVICE, type InstrumentFilters, type InventoryFilters } from '@/components/inventory/InventoryFilters';
+import { InstrumentFilterBar, InventoryFilterBar, REGIME, SCOPE_VALUES, SERVICE, type InstrumentFilters, type InventoryFilters } from '@/components/inventory/InventoryFilters';
 import { InstrumentRow } from '@/components/inventory/InstrumentRow';
 import { ObligationRow } from '@/components/inventory/ObligationRow';
 import { Button } from '@/components/ui/Button';
@@ -14,7 +14,7 @@ import { ErrorState, LoadingState } from '@/components/ui/States';
 import { TabPanel, Tabs } from '@/components/ui/Tabs';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useInstruments, useObligations } from '@/features/library/hooks';
-import type { InstrumentQuery, ObligationQuery } from '@/features/library/types';
+import type { InstrumentQuery, ObligationQuery, ScopeFilter } from '@/features/library/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { findDestination, unlocks } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';
@@ -33,6 +33,11 @@ export function tabFrom(params: { get(name: string): string | null }): Inventory
   return params.get('tab') === 'instruments' ? 'instruments' : 'obligations';
 }
 
+/** The URL's scope; anything but one of the three values reads as the default, "In our scope". */
+function scopeFrom(value: string | null): ScopeFilter {
+  return SCOPE_VALUES.find((scope) => scope === value) ?? 'in';
+}
+
 /** The URL's filters. Unknown or missing parameters read as "not filtered". */
 export function filtersFrom(params: { get(name: string): string | null }): InventoryFilters {
   return {
@@ -41,7 +46,7 @@ export function filtersFrom(params: { get(name: string): string | null }): Inven
     service: params.get('service') ?? '',
     dutyType: params.get('dutyType') ?? '',
     asOf: params.get('asOf') ?? '',
-    outsideFootprint: params.get('outside') === 'true',
+    scope: scopeFrom(params.get('scope')),
   };
 }
 
@@ -54,7 +59,7 @@ export function searchOf(tab: InventoryTab, filters: InventoryFilters): string {
   if (filters.service !== '') search.set('service', filters.service);
   if (filters.dutyType !== '') search.set('dutyType', filters.dutyType);
   if (filters.asOf !== '') search.set('asOf', filters.asOf);
-  if (filters.outsideFootprint) search.set('outside', 'true');
+  if (filters.scope !== 'in') search.set('scope', filters.scope);
   return search.toString();
 }
 
@@ -69,15 +74,15 @@ export function queryOf(filters: InventoryFilters): ObligationQuery {
   if (term.length > 0) query.term = term;
   if (filters.dutyType !== '') query.dutyType = filters.dutyType;
   if (filters.asOf !== '') query.asOf = filters.asOf;
-  if (filters.outsideFootprint) query.outsideFootprint = true;
+  if (filters.scope !== 'in') query.footprint = filters.scope;
   return query;
 }
 
-/** The instruments read's query: regime, q and outsideFootprint only (chunk3-rest default). */
+/** The instruments read's query: regime, q and footprint only (chunk3-rest default). */
 export function instrumentQueryOf(filters: InstrumentFilters): InstrumentQuery {
   const query: InstrumentQuery = {};
   if (filters.regime !== '') query.regime = filters.regime;
-  if (filters.outsideFootprint) query.outsideFootprint = true;
+  if (filters.scope !== 'in') query.footprint = filters.scope;
   return query;
 }
 
@@ -93,11 +98,11 @@ function ObligationsTab({ filters, apply, pathname }: { filters: InventoryFilter
   const obligations = useObligations(queryOf(filters));
   const items = obligations.data?.items ?? [];
   const total = obligations.data?.total ?? 0;
-  const outsideHref = `${pathname}?${searchOf('obligations', { ...filters, outsideFootprint: true })}`;
+  const outsideHref = `${pathname}?${searchOf('obligations', { ...filters, scope: 'all' })}`;
   // The way to the regulatory scope shows only to someone the scope page opens for.
-  const scope = findDestination('admin-footprint');
+  const scopePage = findDestination('admin-footprint');
   const scopeAction =
-    scope !== undefined && unlocks(scope.anyOfPermissions, permissions ?? []) ? { label: t('inventory.empty.inScope.action'), href: scope.href } : undefined;
+    scopePage !== undefined && unlocks(scopePage.anyOfPermissions, permissions ?? []) ? { label: t('inventory.empty.inScope.action'), href: scopePage.href } : undefined;
 
   return (
     <>
@@ -117,11 +122,13 @@ function ObligationsTab({ filters, apply, pathname }: { filters: InventoryFilter
       ) : obligations.isError ? (
         <ErrorState title={t('inventory.errorTitle')} onRetry={() => void obligations.refetch()} />
       ) : items.length === 0 ? (
-        isNarrowed(filters) ? (
+        filters.scope === 'watched' ? (
+          <EmptyState title={t('library.empty.watched.title')} body={t('library.empty.watched.body')} />
+        ) : isNarrowed(filters) ? (
           <EmptyState
             title={t('inventory.empty.noMatch.title')}
             body={t('inventory.empty.noMatch.body')}
-            action={filters.outsideFootprint ? undefined : { label: t('inventory.showOutside'), href: outsideHref }}
+            action={filters.scope === 'all' ? undefined : { label: t('inventory.showOutside'), href: outsideHref }}
           />
         ) : (
           <EmptyState title={t('inventory.empty.inScope.title')} body={t('inventory.empty.inScope.body')} action={scopeAction} />
@@ -129,7 +136,7 @@ function ObligationsTab({ filters, apply, pathname }: { filters: InventoryFilter
       ) : (
         <div className="grid gap-2" data-obligation-rows="">
           {items.map((obligation) => (
-            <ObligationRow key={obligation.id} obligation={obligation} />
+            <ObligationRow key={obligation.id} obligation={obligation} watched={filters.scope === 'watched'} />
           ))}
         </div>
       )}
@@ -144,7 +151,7 @@ function InstrumentsTab({ filters, apply, pathname }: { filters: InventoryFilter
   const instruments = useInstruments(instrumentQueryOf(filters));
   const items = instruments.data?.items ?? [];
   const narrowed = filters.regime !== '';
-  const outsideHref = `${pathname}?${searchOf('instruments', { ...filters, outsideFootprint: true })}`;
+  const outsideHref = `${pathname}?${searchOf('instruments', { ...filters, scope: 'all' })}`;
 
   return (
     <>
@@ -155,11 +162,15 @@ function InstrumentsTab({ filters, apply, pathname }: { filters: InventoryFilter
       ) : instruments.isError ? (
         <ErrorState title={t('inventory.errorTitle')} onRetry={() => void instruments.refetch()} />
       ) : items.length === 0 ? (
-        <EmptyState
-          title={t('inventory.empty.noInstrumentMatch.title')}
-          body={t('inventory.empty.noInstrumentMatch.body')}
-          action={narrowed || filters.outsideFootprint ? undefined : { label: t('inventory.showOutside'), href: outsideHref }}
-        />
+        filters.scope === 'watched' ? (
+          <EmptyState title={t('library.empty.watched.title')} body={t('library.empty.watchedInstruments.body')} />
+        ) : (
+          <EmptyState
+            title={t('inventory.empty.noInstrumentMatch.title')}
+            body={t('inventory.empty.noInstrumentMatch.body')}
+            action={narrowed || filters.scope === 'all' ? undefined : { label: t('inventory.showOutside'), href: outsideHref }}
+          />
+        )
       ) : (
         <div className="grid gap-2" data-instrument-rows="">
           {items.map((instrument) => (

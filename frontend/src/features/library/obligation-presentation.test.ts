@@ -11,6 +11,7 @@ import {
   presentChangePending,
   presentObligation,
   presentScope,
+  watchedMarketLabel,
   type ObligationFacts,
 } from './obligation-presentation';
 import type { ObligationVersionRow } from './types';
@@ -202,6 +203,13 @@ describe('presentScope', () => {
     expect(presentScope({ dimension: 'service_type', terms: [], allSelected: true }, t)).toEqual({ pills: [], plainText: 'Not service-specific' });
     expect(presentScope({ dimension: 'theme', terms: [], allSelected: false }, t).plainText).toBe('Not specific');
     expect(presentScope({ dimension: 'theme', terms: [], allSelected: false }, sv).plainText).toBe('Inte specifik');
+  });
+});
+
+describe('watchedMarketLabel', () => {
+  it('names the market the row comes from, in the reader\'s language', () => {
+    expect(watchedMarketLabel({ key: 'dk', label: 'Denmark' }, t)).toBe('Market we watch: Denmark');
+    expect(watchedMarketLabel({ key: 'dk', label: 'Danmark' }, sv)).toBe('Marknad vi bevakar: Danmark');
   });
 });
 

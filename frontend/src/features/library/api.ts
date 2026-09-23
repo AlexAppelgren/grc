@@ -104,6 +104,7 @@ export function obligationOf(raw: Schemas['ObligationRow']): Obligation {
     scope: (raw.scope ?? []).map(scopeOf),
     version: versionOf(raw.version),
     upcomingVersion: versionOf(raw.upcomingVersion),
+    jurisdiction: refOf(raw.jurisdiction),
     inFootprint: raw.inFootprint,
     outsideReason: (raw.outsideReason ?? []).map(reasonOf),
     lastVerifiedAt: raw.lastVerifiedAt,

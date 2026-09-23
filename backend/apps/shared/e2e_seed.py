@@ -104,8 +104,10 @@ SEED_ACTOR = Actor.system("seed_e2e")
 
 # Footprints as "dimension:key" (chunk 2, FP-01, J-6). Tenant A's is the prototype's
 # `footprint{regimes, accounts, entities, services, clients}` less pension accounts, the one
-# term FP-S4 needs left out (`EXPECTED_OUTSIDE_SCOPE`); tenant B's is a smaller, different
-# bank so J-8 can prove the footprint is per tenant.
+# term FP-S4 needs left out (`EXPECTED_OUTSIDE_SCOPE`), and operating in Sweden, so the
+# Danish rules are what watching Denmark adds (tax-watched-inventory, FP-S13); tenant B's is
+# a smaller, different bank that names no jurisdiction, so J-8 can prove the footprint is
+# per tenant and every rule reaches it.
 EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
     TENANT_A_SLUG: (
         "regime:securities",
@@ -131,6 +133,7 @@ EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
         "service_type:insurance_distribution",
         "client_category:retail",
         "client_category:professional",
+        "jurisdiction:se",
     ),
     TENANT_B_SLUG: (
         "regime:securities",
@@ -1255,6 +1258,12 @@ def seed_watched_markets(tenants: list[Tenant]) -> None:
             if not WatchedMarket.objects.filter(tenant=tenant, jurisdiction__key=key).exists():
                 markets_logic.watch(tenant=tenant, actor=SEED_ACTOR, key=key)
 # --- end tax-nordic-seed -------------------------------------------------------------------
+
+# --- tax-watched-inventory (FP-04, FP-S13) -------------------------------------------------
+# The Danish custody duty: tenant A operates in Sweden and watches Denmark, so it is what
+# "Markets we watch" adds, and the default inventory hides it.
+WATCHED_MARKET_OBLIGATION = "obl-dk-csd-registration"
+# --- end tax-watched-inventory -------------------------------------------------------------
 
 
 # The journey cannot narrow the scope itself: FP-S5 (J-6) changes tenant A's scope, and

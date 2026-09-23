@@ -1104,7 +1104,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         # Then the EU and Norwegian obligations match and the Swedish one does not, and the
         # Swedish one says it is outside by its jurisdiction.
         self.assertEqual(self._inventory(reader), {built["eu"].stable_key, built["no"].stable_key})
-        everything = self._get("/obligations?outsideFootprint=true", reader).json()["items"]
+        everything = self._get("/obligations?footprint=all", reader).json()["items"]
         swedish = next(row for row in everything if row["stableKey"] == built["se"].stable_key)
         self.assertEqual(
             [(reason["dimension"]["key"], [term["key"] for term in reason["terms"]]) for reason in swedish["outsideReason"]],
@@ -1420,12 +1420,76 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(mirror_state(), before)
         self.assertEqual(list(AuditEvent.objects.exclude(id__in=recorded).values_list("action", "subject_title")), [])
 
-    @skip("pending: FP-S13 (FP-04, chunk 3)")
     def test_fp_s13(self) -> None:
         """FP-S13
 
         The watched-market view of the inventory shows only what watching adds (FP-04).
+
+        `footprint=watched` on `GET /obligations` and `GET /instruments` lists a record the
+        scope hides, whose other dimensions the scope allows, and whose derived jurisdiction
+        is one the bank watches: the same database function, called unchanged, answers each
+        half. Each row names its jurisdiction, which the screen's "Market we watch" reads.
         """
+        from apps.library import testing as library_build
+
+        # Given a tenant operating in Sweden with the service "Custody" and watching Denmark,
+        # and Danish obligations scoped to "Custody" and to "Advice".
+        built = self._obligation_per_jurisdiction("fp-s13", ("eu", "se", "dk", "no"))
+        danish_act = built["dk"].instrument
+        advice = library_build.obligation(danish_act, key=f"{danish_act.stable_key}-advice", terms=("service_type:advice",))
+        self._set_footprint(["regime:securities", "service_type:custody", "jurisdiction:se"])
+        watched = self._post("/tenant/footprint/watching", {"jurisdiction": "dk"}, sign_in(self.admin, tenant=self.tenant))
+        self.assertEqual(watched.status_code, 200, watched.content)
+        reader = sign_in(self.reader, tenant=self.tenant)
+
+        # When a user chooses "Markets we watch" in the inventory.
+        response = self._get("/obligations?footprint=watched", reader)
+        self.assertEqual(response.status_code, 200, response.content)
+        rows = {row["stableKey"]: row for row in response.json()["items"]}
+
+        # Then the Danish "Custody" obligation is listed, naming Denmark as its jurisdiction,
+        # and it is outside the scope by its jurisdiction alone.
+        danish = rows[built["dk"].stable_key]
+        self.assertEqual(danish["jurisdiction"], {"key": "dk", "kind": "country", "label": "Denmark"})
+        self.assertFalse(danish["inFootprint"])
+        self.assertEqual([reason["dimension"]["key"] for reason in danish["outsideReason"]], ["jurisdiction"])
+        # And the Danish "Advice" obligation is absent, because the other dimensions still
+        # apply, and no EU, Swedish or unwatched Norwegian one is listed.
+        self.assertNotIn(advice.stable_key, rows)
+        for key in ("eu", "se", "no"):
+            self.assertNotIn(built[key].stable_key, rows, key)
+        self.assertEqual({row["jurisdiction"]["key"] for row in rows.values()}, {"dk"})
+
+        # The default view is unchanged by watching, and "all" is the whole library, each row
+        # naming its own jurisdiction.
+        self.assertNotIn(built["dk"].stable_key, self._inventory(reader))
+        self.assertIn(built["se"].stable_key, self._inventory(reader))
+        everything = {row["stableKey"]: row["jurisdiction"]["key"] for row in self._get("/obligations?footprint=all", reader).json()["items"]}
+        self.assertEqual(
+            {key: everything[obligation.stable_key] for key, obligation in built.items()},
+            {"eu": "eu", "se": "se", "dk": "dk", "no": "no"},
+        )
+        self.assertIn(advice.stable_key, everything)
+
+        # The Instruments tab answers the same way: the Danish instrument alone, counting the
+        # one obligation this view lists from it.
+        instruments = self._get("/instruments?footprint=watched", reader)
+        self.assertEqual(instruments.status_code, 200, instruments.content)
+        listed = {row["stableKey"]: row for row in instruments.json()["items"]}
+        self.assertEqual(listed[built["dk"].instrument.stable_key]["obligationCount"], 1)
+        self.assertEqual({row["jurisdiction"]["key"] for row in listed.values()}, {"dk"})
+
+        # And the list takes one footprint filter value, so no contradictory pair can be sent:
+        # the retired boolean and an unknown value answer 422, and the published parameter is
+        # one value of three, never a list.
+        for path in ("/obligations", "/instruments"):
+            for query in ("outsideFootprint=true", "outsideFootprint=false", "footprint=outside"):
+                with self.subTest(path=path, query=query):
+                    refused = self._get(f"{path}?{query}", reader)
+                    self.assertEqual((refused.status_code, refused.json()["code"]), (422, "validation_error"), refused.content)
+            parameters = {parameter["name"]: parameter for parameter in api.get_openapi_schema()["paths"][f"{V1}{path}"]["get"]["parameters"]}
+            self.assertEqual(parameters["footprint"]["schema"]["enum"], ["in", "all", "watched"])
+            self.assertTrue(parameters["outsideFootprint"]["deprecated"])
 
     def test_fp_s14(self) -> None:
         """FP-S14

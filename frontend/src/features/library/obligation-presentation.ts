@@ -199,6 +199,12 @@ export function outsideFootprintLabel(terms: readonly VocabularyRef[], t: Transl
   return t('library.outsideFootprint', { terms: terms.map((term) => term.label).join(', ') });
 }
 
+// "Market we watch: Denmark" in the meta line of a row under "Markets we
+// watch" (FP-04): the row's own jurisdiction, as text and never a pill.
+export function watchedMarketLabel(jurisdiction: VocabularyRef, t: Translate): string {
+  return t('library.watchedMarket', { jurisdiction: jurisdiction.label });
+}
+
 // "Change pending: in force 1 Oct" on a scope facet whose applicability is
 // waiting for approval. The caller formats the date with formatDate().
 export function presentChangePending(formattedDate: string, t: Translate): PresentedPill {

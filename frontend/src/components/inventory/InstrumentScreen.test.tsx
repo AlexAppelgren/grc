@@ -65,6 +65,7 @@ const researchObligation: Obligation = {
   scope: [],
   version: { versionNumber: 1, effectiveFrom: null },
   upcomingVersion: null,
+  jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' },
   inFootprint: true,
   outsideReason: [],
   lastVerifiedAt: null,
@@ -239,8 +240,9 @@ describe('InstrumentScreen', () => {
     await screen.findByText('Pay for third-party research only under the permitted models');
     const read = sent.filter((s) => s.path === '/api/v1/obligations');
     expect(read[0]?.params).toMatchObject({ instrument: 'fffs-2017-2' });
-    expect(read[0]?.params).not.toHaveProperty('outsideFootprint');
+    expect(read[0]?.params).not.toHaveProperty('footprint');
     const panel = document.querySelector('[data-obligations-panel]') as HTMLElement;
+    expect(within(panel).getByRole('button', { name: 'In our scope' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(panel).getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
     expect(panel.querySelector('[data-obligations-total]')).toHaveTextContent('34 obligations');
     expect(within(panel).getByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2');
@@ -252,9 +254,21 @@ describe('InstrumentScreen', () => {
     await screen.findByText('Pay for third-party research only under the permitted models');
     const panel = document.querySelector('[data-obligations-panel]') as HTMLElement;
     fireEvent.click(within(panel).getByRole('button', { name: 'Show outside our scope' }));
-    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/obligations').at(-1)?.params).toMatchObject({ instrument: 'fffs-2017-2', outsideFootprint: true }));
+    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/obligations').at(-1)?.params).toMatchObject({ instrument: 'fffs-2017-2', footprint: 'all' }));
     expect(within(panel).getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'true');
-    expect(await within(panel).findByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2&outside=true');
+    expect(await within(panel).findByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2&scope=all');
+  });
+
+  it('asks for what the watched markets add, names each row\'s market, and the link follows', async () => {
+    const sent = serve(fffs, [{ ...researchObligation, inFootprint: false, jurisdiction: { key: 'dk', kind: 'country', label: 'Denmark' } }]);
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    await screen.findByText('Pay for third-party research only under the permitted models');
+    const panel = document.querySelector('[data-obligations-panel]') as HTMLElement;
+    fireEvent.click(within(panel).getByRole('button', { name: 'Markets we watch' }));
+    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/obligations').at(-1)?.params).toMatchObject({ instrument: 'fffs-2017-2', footprint: 'watched' }));
+    expect(await within(panel).findByText('Market we watch: Denmark')).toBeVisible();
+    expect(panel.querySelector('[data-outside-footprint]')).toBeNull();
+    expect(within(panel).getByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2&scope=watched');
   });
 
   it('shows the ELI when the instrument carries one, and "by <name>" when someone verified it', async () => {
