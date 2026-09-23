@@ -25,6 +25,14 @@ Rules (each has a suppression id for the inline form `# compliance: <id> <reason
                   space and through quotes, because PostgreSQL folds a setting name and
                   `CW.MAINTENANCE` and `"CW"."MAINTENANCE"` are the same hatch. Any line
                   counts, comments included. This rule takes no suppression.
+  library-door    The door the library-zone trigger reads (`cw.library_door`, the constant
+                  LIBRARY_DOOR_SETTING that holds it, and `library_door()` that sets it; one
+                  token names all three) is named only in apps/shared/tenancy.py, the index
+                  door apps/search/indexing.py, apps/shared/migration_helpers.py, under
+                  migrations/ and in tests_*.py (H16, ADR 0058). The app role can set the
+                  setting itself, so a write that names a door is a write the database lets
+                  through; this keeps opening one to the doors. Case-insensitive, through
+                  quotes, comments included; no suppression.
 
 Suppression: append `# compliance: <id> <reason>` to the offending line, or the line that
 opens the offending statement; the reason must be non-empty. A suppression with no reason
@@ -33,7 +41,9 @@ is itself a finding.
 Proven to fail 2026-09-19 by adding `models.JSONField()` without a schema comment to
 apps/home/models.py (exit 1, one finding named), then restored. maintenance-hatch proven
 to fail 2026-09-19 by adding `SET LOCAL cw.maintenance = 'on'` to apps/library/logic.py
-(exit 1, one finding named), then restored.
+(exit 1, one finding named), then restored. library-door proven to fail 2026-09-23 by adding
+`with tenancy.library_door("proposal"):` to apps/watch/curation.py (exit 1, one finding
+named), then restored.
 """
 
 from __future__ import annotations
@@ -66,6 +76,17 @@ SUPPRESSION = re.compile(r"#\s*compliance:\s*(?P<id>[a-z-]+)(?P<reason>.*)$")
 # `"CW"."MAINTENANCE"` are all the same hatch (H12, then the H-B review).
 MAINTENANCE_HATCH = re.compile(r'"?cw"?\s*\.\s*"?maintenance"?|maintenance_setting', re.IGNORECASE)
 HATCH_HOME = "apps/shared/migration_helpers.py"
+# The library door (H16, ADR 0058): the setting, its constant and the context manager that
+# sets it share the token `library_door`, so one pattern finds all three in any letter case,
+# around a dot and through quotes (`"CW"."LIBRARY_DOOR"`).
+LIBRARY_DOOR = re.compile(r"library_door", re.IGNORECASE)
+LIBRARY_DOOR_HOMES = frozenset(
+    {
+        "apps/shared/tenancy.py",  # the setting, library_door() and library_write()
+        "apps/search/indexing.py",  # index_write(), the index door
+        "apps/shared/migration_helpers.py",  # the trigger that reads it
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -92,6 +113,7 @@ class Checker:
         self.is_security = bool(SECURITY_MODULE.search(rel))
         self.is_test = path.name.startswith("tests_") or path.name == "testing.py"
         self.may_name_hatch = rel == HATCH_HOME or "/migrations/" in rel or path.name.startswith("tests_")
+        self.may_name_door = rel in LIBRARY_DOOR_HOMES or "/migrations/" in rel or path.name.startswith("tests_")
 
     def suppressed(self, line: int, rule: str) -> bool:
         for candidate in (line, line - 1):
@@ -124,6 +146,8 @@ class Checker:
                 self.check_function(node)
         if not self.may_name_hatch:
             self.check_maintenance_hatch()
+        if not self.may_name_door:
+            self.check_library_door()
         return self.findings
 
     def check_maintenance_hatch(self) -> None:
@@ -131,6 +155,13 @@ class Checker:
             if MAINTENANCE_HATCH.search(line):  # appended directly: no suppression
                 self.findings.append(
                     Finding(self.path, number, "maintenance-hatch", f"the append-only escape hatch is named outside {HATCH_HOME}, migrations and tests")
+                )
+
+    def check_library_door(self) -> None:
+        for number, line in enumerate(self.lines, start=1):
+            if LIBRARY_DOOR.search(line):  # appended directly: no suppression
+                self.findings.append(
+                    Finding(self.path, number, "library-door", "the library door is named outside the doors, the migration helpers, migrations and tests")
                 )
 
     @staticmethod
