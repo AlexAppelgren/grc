@@ -21,8 +21,11 @@ from django.test import Client
 from apps.library import testing as library_build
 from apps.library.models import (
     Instrument,
+    InstrumentRelation,
     Jurisdiction,
     Obligation,
+    ObligationRelation,
+    ObligationTag,
     ObligationTerm,
     ObligationVersion,
     SubjectType,
@@ -36,9 +39,11 @@ from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
 from apps.shared.tenancy import LibraryWriteRefused, library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
-from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, ProvisionKind, TaxonomyTerm, Urgency
+from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, LibraryTag, ProvisionKind, RelationType, TaxonomyTerm, Urgency
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
+from apps.watch import testing as watch_build
+from apps.watch.models import ChangeTerm
 
 V1 = "/api/v1"
 # The obligation was last verified here, months before any test runs: a stamp is proven by
@@ -610,3 +615,133 @@ class ReverificationStamp(ScenarioTestCase):
         # Outside library_write() the same write is refused by the fence itself (PRO-01).
         with self.assertRaises(LibraryWriteRefused):
             self.obligation.save(update_fields=["last_verified_at"])
+
+
+class LibraryMergeRepoints(ScenarioTestCase):
+    """VOC-02, VOC-07, VOC-S5 for a library list: an approved merge moves every current
+    library and watch row that carries the merged-away value, in the approval's own
+    transaction, and drops a row whose twin already carries the target. The merged-away row
+    stays, retired, with its labels, so history still resolves; the number the preview
+    promised is the number that moved, and the audit row says so per table."""
+
+    def setUp(self) -> None:
+        watch_build.seed_watch_reference()
+        seed_term_dimensions()
+        self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        self.reviewer = factories.platform_user(roles=("library_editor",), email="reviewer@bleqq.test")
+
+    def _post(self, path: str, body: dict[str, Any], headers: dict[str, Any]) -> Any:
+        return self.client.post(f"{V1}{path}", data=body, content_type="application/json", **headers)
+
+    def _approved(self, response: Any) -> Any:
+        self.assertEqual(response.status_code, 202, response.content)
+        return self._post(f"/proposals/{response.json()['proposal']['id']}/approve", {}, sign_in(self.reviewer, step_up=True))
+
+    def _new(self, list_name: str, key: str, label: str, extra: dict[str, Any] | None = None) -> None:
+        body: dict[str, Any] = {"key": key, "labels": {"en": label}, **({"extra": extra} if extra else {})}
+        approved = self._approved(self._post(f"/vocab/{list_name}", body, sign_in(self.editor)))
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+    def _preview(self, list_name: str, key: str, into: str) -> dict[str, Any]:
+        response = Client().post(
+            f"{V1}/vocab/{list_name}/{key}/merge?dryRun=true", data={"into": into}, content_type="application/json", **sign_in(self.editor)
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        preview: dict[str, Any] = response.json()
+        return preview
+
+    def _merge(self, list_name: str, key: str, into: str) -> Any:
+        return self._approved(self._post(f"/vocab/{list_name}/{key}/merge", {"into": into}, sign_in(self.editor)))
+
+    def _merged_audit(self, row: Any) -> AuditEvent:
+        return AuditEvent.objects.get(action="vocabulary.merged", subject_id=row.id)
+
+    def test_a_used_flags_merge_moves_its_change_term_rows_and_counts_what_moved(self) -> None:
+        self._new("flag", "client_money", "Client money")
+        self._new("flag", "client_funds", "Client funds held")
+        funds = Flag.objects.get(key="client_funds")
+        both = watch_build.change()
+        watch_build.term_link(both, flag_key="client_funds")
+        watch_build.term_link(both, flag_key="client_money")
+        only = watch_build.change()
+        watch_build.term_link(only, flag_key="client_funds")
+
+        preview = self._preview("flag", "client_funds", "client_money")
+        # Two changes carry it; one already carries the target, so one link moves.
+        self.assertEqual((preview["usageCount"], preview["repointed"]), (2, 1))
+        self.assertEqual(self._merge("flag", "client_funds", "client_money").status_code, 200)
+
+        self.assertFalse(ChangeTerm.objects.filter(flag=funds).exists())
+        self.assertEqual(list(ChangeTerm.objects.filter(change=both).values_list("flag__key", flat=True)), ["client_money"])
+        self.assertEqual(list(ChangeTerm.objects.filter(change=only).values_list("flag__key", flat=True)), ["client_money"])
+        retired = Flag.objects.get(pk=funds.pk)
+        self.assertFalse(retired.active)
+        self.assertEqual(retired.labels.get(language="en").text, "Client funds held")
+        audit = self._merged_audit(funds)
+        self.assertEqual((audit.before["from"], audit.after["into"]), ("client_funds", "client_money"))
+        self.assertEqual(audit.after["repointed"], preview["repointed"])
+        self.assertEqual(audit.after["moved"], {ChangeTerm._meta.db_table: 1})
+
+    def test_a_tag_merge_moves_obligation_tags_inside_the_approval(self) -> None:
+        self._new("library_tag", "retrocessions", "Retrocessions")
+        self._new("library_tag", "inducement_payments", "Inducement payments")
+        charges = LibraryTag.objects.get(key="inducement_payments")
+        on = library_build.instrument(key="lvfs-2026-1", regime="regime:securities")
+        both = library_build.obligation(on, key="obl-both", tags=("retrocessions", "inducement_payments"))
+        only = library_build.obligation(on, key="obl-only", tags=("inducement_payments",))
+        versions = list(ObligationVersion.objects.filter(obligation__in=(both, only)).values_list("id", "version_number"))
+
+        preview = self._preview("library_tag", "inducement_payments", "retrocessions")
+        self.assertEqual(self._merge("library_tag", "inducement_payments", "retrocessions").status_code, 200)
+
+        for obligation in (both, only):
+            with self.subTest(obligation=obligation.stable_key):
+                self.assertEqual(list(ObligationTag.objects.filter(obligation=obligation).values_list("tag__key", flat=True)), ["retrocessions"])
+        self.assertFalse(LibraryTag.objects.get(pk=charges.pk).active)
+        # A merge moves link rows and never writes a version.
+        self.assertEqual(list(ObligationVersion.objects.filter(obligation__in=(both, only)).values_list("id", "version_number")), versions)
+        audit = self._merged_audit(charges)
+        self.assertEqual((preview["repointed"], audit.after["repointed"]), (1, 1))
+        self.assertEqual(audit.after["moved"], {ObligationTag._meta.db_table: 1})
+
+    def test_a_relation_merge_drops_the_duplicate_of_an_instrument_relation_and_moves_the_rest(self) -> None:
+        self._new("relation_type", "amends_in_part", "Amends in part")
+        in_part = RelationType.objects.get(key="amends_in_part")
+        amended = library_build.instrument(key="fffs-2017-2", regime="regime:securities")
+        twice = library_build.instrument(key="fffs-2026-11", regime="regime:securities")
+        once = library_build.instrument(key="fffs-2026-12", regime="regime:securities")
+        library_build.relate_instruments(twice, amended, relation="amends")
+        library_build.relate_instruments(twice, amended, relation="amends_in_part")
+        library_build.relate_instruments(once, amended, relation="amends_in_part")
+        first = library_build.obligation(amended, key="obl-first")
+        second = library_build.obligation(amended, key="obl-second")
+        library_build.relate(first, second, relation="amends_in_part")
+
+        preview = self._preview("relation_type", "amends_in_part", "amends")
+        self.assertEqual((preview["usageCount"], preview["repointed"]), (3, 2))
+        self.assertEqual(self._merge("relation_type", "amends_in_part", "amends").status_code, 200)
+
+        relations = InstrumentRelation.objects.filter(to_instrument=amended)
+        self.assertEqual(sorted(relations.values_list("from_instrument__stable_key", "relation_type__key")), [("fffs-2026-11", "amends"), ("fffs-2026-12", "amends")])
+        self.assertEqual(self._merged_audit(in_part).after["moved"], {InstrumentRelation._meta.db_table: 1, ObligationRelation._meta.db_table: 1})
+
+    def test_a_merge_the_database_refuses_leaves_nothing_changed(self) -> None:
+        self._new("instrument_level", "national_act", "National act", {"bindingDefault": True, "rank": 41})
+        national = InstrumentLevel.objects.get(key="national_act")
+        bare = library_build.instrument(key="sfs-2026-1", regime="regime:securities", level="national_act")
+        with_text = library_build.instrument(key="sfs-2026-2", regime="regime:securities", level="national_act")
+        library_build.provision(with_text, key="sfs-2026-2-1-kap")
+        proposal = self._post("/vocab/instrument_level/national_act/merge", {"into": "standard"}, sign_in(self.editor))
+        self.assertEqual(proposal.status_code, 202, proposal.content)
+
+        # A standard's text is never held here, so the instrument with provisions refuses
+        # the level, and the approval stops after the merge began.
+        refused = self._post(f"/proposals/{proposal.json()['proposal']['id']}/approve", {}, sign_in(self.reviewer, step_up=True))
+        self.assertEqual(refused.status_code, 409, refused.content)
+        self.assertEqual(refused.json()["code"], "invalid_transition")
+
+        self.assertEqual(sorted(Instrument.objects.filter(pk__in=(bare.pk, with_text.pk)).values_list("level__key", flat=True)), ["national_act", "national_act"])
+        self.assertTrue(InstrumentLevel.objects.get(pk=national.pk).active)
+        self.assertEqual(Proposal.objects.get(pk=proposal.json()["proposal"]["id"]).status, ProposalStatus.OPEN.value)
+        self.assertFalse(AuditEvent.objects.filter(action="vocabulary.merged").exists())
+        self.assertFalse(AuditEvent.objects.filter(action="proposal.approved", subject_id=proposal.json()["proposal"]["id"]).exists())

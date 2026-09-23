@@ -129,3 +129,18 @@ def upsert(model: type[Any], reason: str, *, lookup: dict[str, Any], defaults: d
     with tenancy.platform_zone(), watch_write(reason):
         row, _ = model.objects.update_or_create(**lookup, defaults=defaults)
         return row
+
+
+def repoint(moving: Any, twins: Any, field: str, target: Any) -> int:
+    """Re-point a watch table's rows from a merged-away library value to its target (VOC-02,
+    VOC-07), for an approved merge proposal. apps/proposals/apply.py already holds the
+    fence open for that approval, so this adds the watch door's own refusal and nothing
+    else: the statements reach the watch tables and no inventory table. It opens no second
+    `library_write()` of its own, so the approval route still reaches one writer, `apply()`
+    (apps/shared/tests_library_fence.py).
+
+    `twins` already carry `target` beside the row they would duplicate (a unique
+    constraint), so they are dropped rather than moved, and only the moved rows count."""
+    with connections[DEFAULT_DB_ALIAS].execute_wrapper(_refuse_writes_outside_the_watch_zone):
+        twins.delete()
+        return int(moving.update(**{field: target}))

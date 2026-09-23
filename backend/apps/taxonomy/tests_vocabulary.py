@@ -17,9 +17,13 @@ from unittest import mock
 
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
+from django.db import connection, transaction
+from django.test.utils import CaptureQueriesContext
 
+from apps.cases import testing as cases_build
 from apps.identity.models import User
-from apps.library.models import Jurisdiction, Language
+from apps.library import testing as library_build
+from apps.library.models import Jurisdiction, Language, Obligation
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories
 from apps.shared.audit import Actor
@@ -31,8 +35,10 @@ from apps.taxonomy.models import (
     CaseSubStatus,
     ChangeLifecycleKind,
     ChangeType,
+    DutyType,
     EffortSize,
     RejectionReason,
+    RelationType,
     RiskRating,
     TaxonomyTerm,
     TaxonomyTermLabel,
@@ -48,7 +54,10 @@ from apps.taxonomy.seeds import (
     seed_term_dimensions,
     taxonomy_term_specs,
 )
+from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS, SystemRow, ensure_tenant_vocabularies
+from apps.watch import testing as watch_build
+from apps.watch import write as watch_door
 from config.api import api
 
 V1 = "/api/v1"
@@ -606,3 +615,74 @@ class JurisdictionTermMirror(ScenarioTestCase):
         self.assertEqual(refused.exception.code, "system_key_taken")
         self.assertIsNone(self._terms()["se"].jurisdiction_id, "the stray term is left as its author wrote it")
         self.assertEqual(TaxonomyTerm.objects.filter(dimension__key=JURISDICTION_DIMENSION, key="se").count(), 1)
+
+
+class LibraryListUsage(ScenarioTestCase):
+    """VOC-02, AC-VOC2: a library list counts the library and watch records that really
+    carry each value, so the screen shows the count before a retire and a merge preview
+    names what would move. Before this, eight library lists read 0 for every row, and
+    "Amends" read 0 while FFFS 2026:11's relation to FFFS 2017:2 carried it."""
+
+    # The value each list's records below carry, one per list that something references.
+    USED = {
+        "instrument_level": "act",
+        "relation_type": "amends",
+        "provision_kind": "chapter",
+        "duty_type": "conduct",
+        "library_tag": "costs",
+        "change_type": "adopted",
+        "urgency": "act_now",
+        "source_kind": "authority_site",
+        "flag": "ai",
+    }
+
+    def setUp(self) -> None:
+        watch_build.seed_watch_reference()
+        seed_term_dimensions()
+        self.editor = sign_in(factories.platform_user(roles=("library_editor",), email="editor@bleqq.test"))
+        amended = library_build.instrument(key="fffs-2017-2", regime="regime:securities")
+        amending = library_build.instrument(key="fffs-2026-11", regime="regime:securities")
+        library_build.relate_instruments(amending, amended, relation="amends")
+        chapter = library_build.provision(amended, key="fffs-2017-2-9-kap", kind="chapter")
+        first = library_build.obligation(amended, key="obl-costs", tags=("costs",), cites=(chapter,))
+        second = library_build.obligation(amended, key="obl-disclose", duty_type="disclosure")
+        library_build.relate(first, second, relation="related")
+        self.change = watch_build.change(change_type="adopted", urgency="act_now")
+        watch_build.term_link(self.change, flag_key="ai")
+        watch_build.source(kind="authority_site")
+
+    def _counts(self, list_name: str) -> dict[str, int]:
+        response = self.client.get(f"{V1}/vocab/{list_name}", **self.editor)
+        self.assertEqual(response.status_code, 200, response.content)
+        return {row["key"]: row["usageCount"] for row in response.json()["items"]}
+
+    def test_every_library_list_something_references_counts_its_real_uses(self) -> None:
+        for list_name, key in self.USED.items():
+            with self.subTest(list=list_name):
+                self.assertGreater(self._counts(list_name)[key], 0)
+        # Both instruments sit at the act level; each relation counts on its own list row.
+        self.assertEqual(self._counts("instrument_level")["act"], 2)
+        relations = self._counts("relation_type")
+        self.assertEqual((relations["amends"], relations["related"], relations["implements"]), (1, 1, 0))
+        self.assertEqual(self._counts("duty_type")["governance"], 0)
+
+    def test_urgency_counts_the_librarys_suggestions_and_never_a_banks_case(self) -> None:
+        tenant = factories.tenant(slug="bank")
+        cases_build.case(tenant, self.change, urgency="monitor")
+        counts = self._counts("urgency")
+        self.assertEqual((counts["act_now"], counts["monitor"]), (1, 0))
+
+    def test_a_list_read_counts_every_linked_table_in_one_query(self) -> None:
+        entry = REGISTRY["relation_type"]
+        with CaptureQueriesContext(connection) as queries:
+            rows = {row.key: row.usage_count for row in entry.usage(RelationType.objects.all())}
+        self.assertEqual(len(queries), 1)
+        self.assertEqual(rows["amends"], 1)
+
+    def test_the_watch_doors_re_point_writes_watch_tables_and_no_inventory_table(self) -> None:
+        # A merge hands each table to the door that may write it; were an inventory table
+        # ever handed to the watch door, the door refuses it inside the approval's fence.
+        conduct = Obligation.objects.filter(duty_type__key="conduct")
+        with self.assertRaises(watch_door.WatchWriteRefused), transaction.atomic(), library_write("test"):
+            watch_door.repoint(conduct, conduct.none(), "duty_type", DutyType.objects.get(key="disclosure"))
+        self.assertTrue(conduct.exists())
