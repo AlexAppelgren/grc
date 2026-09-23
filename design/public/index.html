@@ -129,20 +129,27 @@ a{color:inherit}
 /* ---- shell ------------------------------------------------------------- */
 .wrap{
   max-width:1160px;margin-inline:auto;
-  padding-left:max(clamp(20px,4vw,48px),env(safe-area-inset-left,0px));
-  padding-right:max(clamp(20px,4vw,48px),env(safe-area-inset-right,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
 }
 .band--ink{background:var(--ink);color:var(--on-ink)}
 .band--sub{background:var(--paper-sub)}
 main{display:block}
+@media (min-width: 768px){
+  .wrap{
+    padding-left:max(32px,env(safe-area-inset-left,0px));
+    padding-right:max(32px,env(safe-area-inset-right,0px));
+  }
+}
 
 .section{
   display:grid;grid-template-columns:150px minmax(0,1fr);
   gap:clamp(20px,4vw,56px);
   padding-block:clamp(44px,6.5vw,84px);
   border-top:1px solid var(--line);
-  scroll-margin-top:16px;
+  scroll-margin-top:76px;
 }
+#top{scroll-margin-top:76px}
 .margin{font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--muted)}
 .margin .sec{display:block;font-size:15px;font-weight:500;color:var(--brass);letter-spacing:.02em;margin-bottom:8px}
 .col{min-width:0}
@@ -179,30 +186,14 @@ h3.sub{font-family:var(--sans);font-size:var(--t-h3);font-weight:600;line-height
 .mark--foot{width:120px}
 
 /* ---- masthead ribbon --------------------------------------------------- */
-.masthead{display:flex;align-items:center;gap:20px;padding-block:14px}
+/* Sticky at every width: the two actions are the one thing on the page that
+   must stay in reach, and Sign in is the primary of the pair. */
+.ribbon{position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+.masthead{display:flex;align-items:center;gap:12px;padding-block:12px;flex-wrap:wrap}
 .navlinks{display:flex;gap:22px;flex-wrap:wrap;margin-left:auto}
 .navlink{font-size:.875rem;color:var(--on-ink-muted);text-decoration:none;padding-block:4px;border-bottom:1px solid transparent}
 .navlink:hover{color:var(--on-ink);border-bottom-color:var(--on-ink-line)}
-.mast-actions{display:flex;align-items:center;gap:10px}
-
-/* the menu button and its panel, below 880 px only */
-.mast-menu{
-  display:none;align-items:center;justify-content:center;
-  margin-left:auto;height:36px;min-width:72px;padding:0 12px;
-  font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
-  background:transparent;color:var(--on-ink);border:1px solid var(--on-ink-line);
-  border-radius:6px;cursor:pointer;
-}
-.mast-menu:hover{background:var(--on-ink-wash)}
-.menu-panel{padding-bottom:16px;border-top:1px solid var(--on-ink-line);margin-top:2px}
-.menu-panel .row{
-  display:flex;align-items:center;min-height:44px;padding:0 8px;border-radius:6px;
-  color:var(--on-ink);text-decoration:none;font-size:1rem;
-}
-.menu-panel .row:hover{background:var(--on-ink-wash)}
-.menu-panel .acts{display:grid;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--on-ink-line)}
-.menu-panel .acts .btn{height:44px}
-.menu-panel .acts .theme-toggle{height:44px;justify-self:start;padding-inline:14px}
+.mast-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
 
 /* ---- buttons and controls ---------------------------------------------- */
 .btn{
@@ -223,10 +214,10 @@ h3.sub{font-family:var(--sans);font-size:var(--t-h3);font-weight:600;line-height
 .btn--outline:hover{background:var(--paper-sub)}
 .theme-toggle{
   font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
-  background:transparent;color:var(--on-ink-muted);border:1px solid var(--on-ink-line);
+  background:transparent;color:var(--muted);border:1px solid var(--line);
   border-radius:6px;height:32px;padding:0 10px;cursor:pointer;
 }
-.theme-toggle:hover{color:var(--on-ink);background:var(--on-ink-wash)}
+.theme-toggle:hover{color:var(--text);background:var(--paper-sub)}
 
 /* ---- hero -------------------------------------------------------------- */
 .hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(32px,5vw,64px);align-items:start;padding-block:clamp(40px,6vw,76px) clamp(36px,5vw,60px)}
@@ -337,18 +328,21 @@ del{background:var(--del-bg);color:var(--del-fg);border-radius:3px;padding:0 2px
 .foot a{font-size:.9375rem;color:var(--muted);text-decoration:none}
 .foot a:hover{color:var(--text);text-decoration:underline;text-underline-offset:3px}
 .pronounce{font-family:var(--mono);font-size:.8125rem;color:var(--muted);margin:14px 0 0}
-.foot-bottom{display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between;padding-top:22px;border-top:1px solid var(--line);font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.foot-bottom{display:flex;flex-wrap:wrap;align-items:center;gap:12px 28px;justify-content:space-between;padding-top:22px;border-top:1px solid var(--line);font-family:var(--mono);font-size:.75rem;color:var(--muted)}
 
 /* ---- responsive -------------------------------------------------------- */
 @media (min-width: 881px){
-  .menu-panel{display:none!important}
+  .masthead{gap:20px;padding-block:14px}
+  .navlinks{margin-right:12px}
+  .mast-actions{margin-left:0}
 }
 @media (max-width: 880px){
-  .ribbon{position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
-  .navlinks,.mast-actions{display:none}
-  .mast-menu{display:inline-flex}
-  .masthead{padding-block:10px;gap:12px}
-  .section,#top{scroll-margin-top:76px}
+  .navlinks{display:none}
+}
+@media (max-width: 420px){
+  .mark--nav{width:80px}
+  .mast-actions{gap:6px}
+  .mast-actions .btn{padding:0 10px;font-size:.8125rem}
 }
 @media (max-width: 1000px){
   .hero{grid-template-columns:minmax(0,1fr)}
@@ -399,25 +393,10 @@ del{background:var(--del-bg);color:var(--del-fg);border-radius:3px;padding:0 2px
         <a class="navlink" href="#questions">Questions</a>
       </nav>
       <div class="mast-actions">
-        <button type="button" class="theme-toggle" aria-pressed="false">Dark</button>
-        <a class="btn btn--sm btn--quiet" href="#request">Sign in</a>
-        <a class="btn btn--sm btn--plate" href="#request">Request access</a>
+        <a class="btn btn--sm btn--quiet" href="#request">Request access</a>
+        <a class="btn btn--sm btn--plate" href="#request">Sign in</a>
       </div>
-      <button type="button" class="mast-menu" id="menu-button" aria-expanded="false" aria-controls="menu-panel">Menu</button>
     </div>
-
-    <nav class="menu-panel" id="menu-panel" aria-label="Sections and account" hidden>
-      <a class="row" href="#method">Method</a>
-      <a class="row" href="#zones">Zones</a>
-      <a class="row" href="#coverage">Coverage</a>
-      <a class="row" href="#assurance">Assurance</a>
-      <a class="row" href="#questions">Questions</a>
-      <div class="acts">
-        <a class="btn btn--plate" href="#request">Request access</a>
-        <a class="btn btn--quiet" href="#request">Sign in</a>
-        <button type="button" class="theme-toggle" aria-pressed="false">Dark</button>
-      </div>
-    </nav>
   </div>
 </div>
 
@@ -730,6 +709,7 @@ del{background:var(--del-bg);color:var(--del-fg);border-radius:3px;padding:0 2px
     <div class="foot-bottom">
       <span>bleqq, Stockholm &middot; org. no. [to be set] &middot; &copy; 2026</span>
       <span>Set in Libre Caslon Display and Hanken Grotesk, with Noto Sans Mono for legal references.</span>
+      <button type="button" class="theme-toggle" aria-pressed="false">Dark</button>
     </div>
   </div>
 </footer>
@@ -775,33 +755,6 @@ del{background:var(--del-bg);color:var(--del-fg);border-radius:3px;padding:0 2px
       paint();
     });
   });
-
-  var menuButton = document.getElementById('menu-button');
-  var menuPanel = document.getElementById('menu-panel');
-
-  function setMenu(open) {
-    menuPanel.hidden = !open;
-    menuButton.setAttribute('aria-expanded', open ? 'true' : 'false');
-    menuButton.textContent = open ? 'Close' : 'Menu';
-  }
-
-  menuButton.addEventListener('click', function () {
-    setMenu(menuPanel.hidden);
-  });
-  menuPanel.addEventListener('click', function (event) {
-    if (event.target.closest('a')) { setMenu(false); }
-  });
-  document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape' && !menuPanel.hidden) {
-      setMenu(false);
-      menuButton.focus();
-    }
-  });
-  if (window.matchMedia) {
-    window.matchMedia('(min-width: 881px)').addEventListener('change', function (event) {
-      if (event.matches) { setMenu(false); }
-    });
-  }
 
   var form = document.getElementById('request-form');
   var status = document.getElementById('request-status');
