@@ -63,6 +63,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import (
     BooleanField,
     Case,
+    Exists,
     F,
     FloatField,
     Func,
@@ -98,6 +99,7 @@ from apps.shared.adapters import embedder, reranker
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy import matching
+from apps.taxonomy.models import InstrumentLevelKind
 
 # Which chunk a caller means by a hit kind, and which kind a chunk answers as. One mapping,
 # read both ways, so a `types` filter and a hit can never disagree about what a chunk is.
@@ -188,6 +190,12 @@ def passages(
     an obligation version. A row carries the chunk's whole `body` rather than a snippet,
     since that is the text the model is given. It spends no search bucket: `POST /ask`
     spends its own (`limits.ask_bucket`).
+
+    Never an obligation under a standard (INV-08, D-81). The library holds a standard's
+    conformance duty and never its clauses, so a model given that duty for a question about
+    a control would answer from what it remembers of licensed text and cite the duty for
+    it. Leaving those rows out before anything is ranked is what makes such a question "no
+    answer" with no model asked, while `POST /search` still finds the duty.
     """
     found = _candidates(
         question,
@@ -197,6 +205,7 @@ def passages(
         tenant=tenant,
         as_of=as_of,
         limit=depth,
+        standards=False,
     )
     return _best_per_record(_reranked(question, found))[:depth]
 
@@ -213,10 +222,11 @@ def _candidates(
     tenant: Tenant | None,
     as_of: datetime.date,
     limit: int,
+    standards: bool = True,
 ) -> list[dict[str, Any]]:
     """The rows either leg found, best fused first. One query, however many hits."""
     asked = _asked(text, configurations)
-    rows = _filtered(types=types, filters=filters, tenant=tenant, as_of=as_of)
+    rows = _filtered(types=types, filters=filters, tenant=tenant, as_of=as_of, standards=standards)
     rows = rows.annotate(
         keyword_score=SearchRank(F("tsv"), asked),
         similarity=_similarity(text),
@@ -269,10 +279,17 @@ def _asked(text: str, configurations: tuple[str, ...]) -> SearchQuery:
 
 
 def _filtered(
-    *, types: list[SearchHitType], filters: SearchFilters, tenant: Tenant | None, as_of: datetime.date
+    *,
+    types: list[SearchHitType],
+    filters: SearchFilters,
+    tenant: Tenant | None,
+    as_of: datetime.date,
+    standards: bool = True,
 ) -> QuerySet[SearchChunk]:
     """Everything the caller may see and asked for, before a single row is ranked. A filter
-    applied after ranking would answer a short page of a long list and call it the answer."""
+    applied after ranking would answer a short page of a long list and call it the answer.
+    `standards=False` leaves out every chunk whose instrument sits at a level of the kind
+    `standard`: the kind decides, never the level's key (D-81)."""
     rows = SearchChunk.objects.filter(owner_tenant__isnull=True)
     rows = rows.filter(Q(valid_from__isnull=True) | Q(valid_from__lte=as_of))
     rows = rows.filter(Q(valid_to__isnull=True) | Q(valid_to__gte=as_of))
@@ -288,6 +305,14 @@ def _filtered(
         rows = rows.filter(metadata__binding=filters.binding)
     if filters.term_ids:
         rows = rows.filter(metadata__term_ids__contains=[str(term_id) for term_id in filters.term_ids])
+    if not standards:
+        rows = rows.exclude(
+            Exists(
+                Instrument.objects.filter(
+                    id=_outer_metadata_uuid("instrument_id"), level__kind=InstrumentLevelKind.STANDARD.value
+                )
+            )
+        )
     if tenant is None:
         # The agents' read. An API key belongs to no bank, so there is no regulatory scope
         # to apply — not a wider read, because `owner_tenant_id IS NULL` above has already

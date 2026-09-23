@@ -31,7 +31,7 @@ from apps.governance.models import AiGeneration, AiPurpose
 from apps.identity.models import User
 from apps.library.models import ProblemReport, SubjectType
 from apps.library.seeds import seed_languages
-from apps.search import ask, hybrid
+from apps.search import ask, hybrid, indexing
 from apps.search.eval import SPEC, Retriever
 from apps.search.indexing import index_write
 from apps.search.models import SearchChunk, SearchSource
@@ -44,19 +44,22 @@ from apps.search.tests_hybrid import (
     EU_REPORTING_SUMMARY,
     EU_REPORTING_TITLE,
     FFFS,
+    FIRST_DAY,
     REPORTING_SUMMARY_V1,
     REPORTING_SUMMARY_V2,
     REPORTING_TITLE,
     WARNINGS_SUMMARY,
     WARNINGS_TITLE,
     CorpusMixin,
+    _instrument,
+    _obligation,
 )
 from apps.shared import ai, factories, tenancy
 from apps.shared.adapters import llm, reranker
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.tenancy import library_write
 from apps.shared.testing import sign_in
-from apps.taxonomy.models import DutyType
+from apps.taxonomy.models import DutyType, InstrumentLevel, InstrumentLevelKind
 from apps.watch import testing as watch
 from apps.watch.models import ChangeObligation
 from apps.watch.write import watch_write
@@ -211,13 +214,6 @@ class SearchScenarioTests(TestCase):
             ["change", "obligation_version", "provision_version"],
             "a source type outside the library would be a way in for a tenant's own words",
         )
-
-    @skip("pending: SRC-S12 (INV-08, chunk 7)")
-    def test_src_s12(self) -> None:
-        """SRC-S12
-
-        A question about a standard's control gets "no answer" (SRC-03, SRC-05, INV-08).
-        """
 
     @skip("pending: SRC-S13 (REG-08, chunk 8)")
     def test_src_s13(self) -> None:
@@ -503,11 +499,16 @@ LIBRARY_SUMMARIES = {
     REPORTING_SUMMARY_V2,
     EU_REPORTING_SUMMARY,
 }
+# SRC-S12's conformance duty: an invented standard, named by an invented title, with no
+# clause text, which is all the library ever holds of a standard (INV-08, D-35).
+STANDARD_CONFORMANCE_SUMMARY = (
+    "The institution conforms to the Example Security Standard and meets what it requires of every control it applies."
+)
 PASSAGE_LINE = re.compile(r"^\[(\d+)\] (.+) \(([^()]+)\)$")
 
 
 class AskScenarioTests(CorpusMixin, TestCase):
-    """SRC-S4, SRC-S5 and SRC-S6, through `POST /ask` against the indexed corpus, on the mock
+    """SRC-S4, SRC-S5, SRC-S6 and SRC-S12, through `POST /ask` against the indexed corpus, on the mock
     model that answers one cited sentence per passage it is given.
 
     An answer is a read that asks a model: it writes the one AI log row every model call
@@ -682,3 +683,71 @@ class AskScenarioTests(CorpusMixin, TestCase):
         model.assert_not_called()
         retrieval.assert_not_called()
         self.assertEqual(AiGeneration.objects.count(), logged)
+
+    def test_src_s12(self) -> None:
+        """SRC-S12
+
+        A question about a standard's control gets "no answer" (SRC-03, SRC-05, INV-08).
+
+        Given the library holds an invented standard's edition with its conformance duty and
+        no clause text, filed under a level whose kind is `standard` and whose key is its
+        own, when a reader searches what one of its controls requires, Search finds the
+        conformance duty; when they ask the same question, the answer is `noAnswer`, no
+        statement, no citation, no model asked and nothing logged, because Ask never gives
+        a model an obligation under a standard (D-81). The kind decides and never the key,
+        which is why the level here is not the seeded `standard` row. The evaluation set
+        holds a question about a standard's control expecting no answer, scored against
+        Ask's passages, and it gates the release with every other row.
+
+        Operations: `ask`, `search`.
+        """
+        question = "What does the Example Security Standard require of a control?"
+        with library_write("SRC-S12: an invented standard's edition and its conformance duty"):
+            tier = InstrumentLevel.objects.create(
+                key="src-s12-standards-tier", kind=InstrumentLevelKind.STANDARD.value, binding_default=False, rank=900
+            )
+            edition = _instrument(
+                key="example-security-standard-2031",
+                official_ref="EXS 9999:2031",
+                jurisdiction="intl",
+                binding=False,
+                level=tier.key,
+            )
+            conformance = _obligation(
+                edition,
+                key="obl-example-security-standard-conformance",
+                ref_label="Conformance",
+                duty_type="governance",
+                titles={"en": "Conform to the Example Security Standard"},
+                versions=((FIRST_DAY, {"en": STANDARD_CONFORMANCE_SUMMARY}),),
+            )
+        indexing.reindex_all()
+        indexing.embed_backlog()
+
+        found = Client().post(
+            SEARCH, data={"q": question, "lang": "en"}, content_type="application/json", **self.headers
+        )
+        self.assertEqual(found.status_code, 200, found.content)
+        self.assertIn(
+            str(conformance.id),
+            [hit["id"] for hit in found.json()["items"]],
+            "Search still finds the conformance duty, so the question does reach it",
+        )
+
+        with mock.patch.object(llm.MockLlm, "stream", autospec=True) as model:
+            events = self.events({"question": question, "lang": "en"})
+
+        model.assert_not_called()
+        self.assertEqual([event["event"] for event in events], ["start", "answer"])
+        answer = events[-1]["answer"]
+        self.assertTrue(answer["noAnswer"])
+        self.assertEqual((answer["statements"], answer["citations"]), ([], []))
+        self.assertFalse(AiGeneration.objects.exists(), "no model was asked, so nothing is logged as if one had been")
+
+        gate = load_search_eval()
+        rows = [row for row in gate.load_jsonl(gate.EVAL / "retrieval.jsonl") if row.get("via") == "ask"]
+        self.assertTrue(rows, "the evaluation set holds a question Ask must not answer")
+        for row in rows:
+            with self.subTest(row=row["id"]):
+                self.assertEqual(row["expected"], [], "a question about a standard's control expects no answer")
+                self.assertRegex(row["query"], "(?i)control")

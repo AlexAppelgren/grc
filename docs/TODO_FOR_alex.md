@@ -860,3 +860,15 @@ Nothing waits for these; each has the default the build took.
       only this bank's sessions. Default if you say nothing: it stays as built, and the
       published description of `GET /me/sessions` says a person sees only this bank's
       sessions there.
+
+## ask-standard-no-answer: Ask answers nothing about a standard (2026-09-23, D-81, SRC-S12)
+
+- [ ] **Ask now answers "no answer" to any question whose only support is a standard's
+      conformance duty** (D-81): the library holds no clause text, so a model given the duty
+      could only answer about a control from memory. Search still finds the duty. Nothing to
+      do unless you want Ask to answer questions about conformance itself one day. Worth
+      knowing: the evaluation row that gates this (`r-en-17`) asks about an invented
+      standard, and the sample library holds no standard until `f03-T35` adds the first one,
+      so until then the row scores right against any retriever and proves the harness path,
+      not the filter; `test_src_s12` proves the filter over an invented standard of its own.
+      Default if you say nothing: stays as built.
