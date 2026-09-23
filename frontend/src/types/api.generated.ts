@@ -324,7 +324,38 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Audit Events */
+        /**
+         * See who changed what in the bank, when, and what it looked like before and after
+         * @description The bank's audit log, newest first: every change made in this bank by a person, an
+         *     agent or the system, with the record it touched as it was titled at the time, a
+         *     one-line summary, the record's fields before and after, and whether a passkey step-up
+         *     confirmed it. Call it to answer an auditor's “who did this, when, and what did it
+         *     change”, to show one record's history beside the record (`subjectType` and
+         *     `subjectId`), or to list everything one person or agent did (`actorId`).
+         *
+         *     The log also carries the changes to the shared library that reach every bank: a change
+         *     to an authority, instrument, provision, obligation, vocabulary or taxonomy term made by
+         *     an agent, the system or bleqq's platform staff. It never carries another bank's rows,
+         *     which row-level security in the database keeps out rather than a filter here, and never
+         *     a proposal's own rows or a platform sign-in or code request, which can name a person
+         *     from another bank.
+         *
+         *     Append-only: a row is written in the same transaction as the change it records and is
+         *     never updated, so a correction is a new row and never an edit of an old one. This call
+         *     is a read: it changes nothing and writes no audit row of its own. A person's session
+         *     holding `audit.read`, which every role seeded for a bank carries; an agent's key is not
+         *     accepted.
+         *
+         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no
+         *     rows, or filters matching none, is a 200 with an empty `items` and a `total` of 0.
+         *
+         *     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
+         *     `audit.read`, with `requiredPermission` named; `not_found` (404) for a session with no
+         *     bank, such as the platform console's, because the audit log is a bank's own;
+         *     `validation_error` (422) when `subjectId` or `actorId` is not a UUID, `from` or `to` is
+         *     not a timestamp, `subjectType` is longer than 64 characters, or `limit` or `offset` is
+         *     out of range.
+         */
         get: operations["listAuditEvents"];
         put?: never;
         post?: never;
@@ -4317,63 +4348,222 @@ export interface components {
          * @description Who did it: a user, an agent or the system. `id` is empty for the system.
          */
         AuditActorRef: {
-            /** Id */
+            /**
+             * Id
+             * @description Who acted, as a UUID: a person's user id, or for an agent the agent its key is bound to (the key's own id for a key bound to no agent). Null for the system, which has no identity of its own. Pass it as `actorId` to list everything this actor did.
+             * @example 8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30
+             */
             id: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description The actor's name as it stood when the row was written, at most 200 characters, for display: a person's name, an agent's name with its version where the row records one (such as `library-confirmer v1`), or the job's name for the system (`system` when it gave none). A snapshot that is never updated, so a person renamed later keeps the old name here: match on `id`, never on the label.
+             * @example Erik Holm
+             */
             label: string;
-            /** Type */
+            /**
+             * Type
+             * @description What kind of actor made the change, a fixed kind: `user` (a person, either a member of this bank or bleqq's platform staff changing the shared library), `agent` (an agent working through its key; it cannot step up, so its rows always carry `steppedUp` false, and a proposal it confirmed is machine-confirmed and never a person's decision) and `system` (the product itself, such as a seed or a scheduled job). Fixed in code: an admin adds no fourth kind.
+             * @example user
+             */
             type: string;
         };
-        /** AuditEventPage */
+        /**
+         * AuditEventPage
+         * @description One page of the bank's audit log, newest change first.
+         * @example {
+         *       "items": [
+         *         {
+         *           "action": "member.updated",
+         *           "actor": {
+         *             "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *             "label": "Erik Holm",
+         *             "type": "user"
+         *           },
+         *           "after": {
+         *             "roles": [
+         *               "contributor",
+         *               "owner"
+         *             ],
+         *             "title": "Obligation owner, digital investing"
+         *           },
+         *           "before": {
+         *             "roles": [
+         *               "contributor"
+         *             ],
+         *             "title": "Obligation owner, digital investing"
+         *           },
+         *           "createdAt": "2026-09-16T08:14:00Z",
+         *           "id": "5d0e8c2a-91b4-4f6e-a3d7-0c8b2e6f4a19",
+         *           "steppedUp": true,
+         *           "subjectId": "b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70",
+         *           "subjectTitle": "Johan Berg",
+         *           "subjectType": "membership",
+         *           "summary": "Member roles or title changed."
+         *         },
+         *         {
+         *           "action": "obligation.version_applied",
+         *           "actor": {
+         *             "id": "3c5e7a9b-1d2f-4a6c-8e0b-2f4a6c8e0d13",
+         *             "label": "library-confirmer v1",
+         *             "type": "agent"
+         *           },
+         *           "after": {
+         *             "effectiveFrom": "2027-01-01",
+         *             "effectiveFromPrecision": "day",
+         *             "languages": [
+         *               "en",
+         *               "sv"
+         *             ],
+         *             "proposal": "9d4f2b6a-0c8e-4a1f-b3d5-6e8a0c2f4b17",
+         *             "terms": null,
+         *             "versionId": "0a2c4e6f-8b1d-4f3a-9c5e-7b9d1f3a5c68",
+         *             "versionNumber": 2
+         *           },
+         *           "before": {
+         *             "terms": null,
+         *             "versionNumber": 1
+         *           },
+         *           "createdAt": "2026-09-16T07:40:00Z",
+         *           "id": "e7a1c3f5-4b2d-4e8f-8a6c-1d3f5b7e9c02",
+         *           "steppedUp": false,
+         *           "subjectId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
+         *           "subjectTitle": "obl-research-payments",
+         *           "subjectType": "obligation",
+         *           "summary": "Filed version 2 of obl-research-payments (proposal 9d4f2b6a-0c8e-4a1f-b3d5-6e8a0c2f4b17)."
+         *         }
+         *       ],
+         *       "total": 2
+         *     }
+         */
         AuditEventPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The rows of this page, newest first, with rows written in the same instant ordered by `id`. Empty when nothing matches, which is a 200 and never an error.
+             */
             items: components["schemas"]["AuditEventRow"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many rows match the filters in total, counted at the moment of the call and not only on this page, so a screen can say “n of m” and know when to stop paging.
+             * @example 2
+             */
             total: number;
         };
         /**
          * AuditEventQuery
-         * @description Filters of the audit log, each optional. A record is `subjectType` and `subjectId`;
-         *     `from` is inclusive and `to` exclusive.
+         * @description Filters of the audit log, each optional and combined with AND. A record is `subjectType`
+         *     and `subjectId`; `from` is inclusive and `to` exclusive.
          */
         AuditEventQuery: {
-            /** Actorid */
+            /**
+             * Actorid
+             * @description Show only what one person or agent did, by the UUID a row carries in `actor.id`: a person's user id, or for an agent the agent its key is bound to (the key's own id for a key bound to no agent). The system has no id, so its rows cannot be picked out this way. A value that is not a UUID is refused with `validation_error` (422); an actor who did nothing here answers 200 with an empty page.
+             * @example 8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30
+             */
             actorId?: string | null;
-            /** From */
+            /**
+             * From
+             * @description Show only rows written at or after this moment (inclusive), as an ISO 8601 timestamp such as `2026-09-16T00:00:00+02:00`. Give the offset: a value without one, or a date alone, is read as UTC (a date as midnight UTC) and not as the bank's local time. In the query string write the offset's `+` as `%2B` (or use `Z`): a bare `+` arrives as a space. A value that is not a timestamp is refused with `validation_error` (422). A `from` later than `to` matches nothing and answers 200 with an empty page.
+             * @example 2026-09-16T00:00:00+02:00
+             */
             from?: string | null;
-            /** Subjectid */
+            /**
+             * Subjectid
+             * @description Show only the rows about one record, by its UUID: the same id the record carries everywhere else in the API. A value that is not a UUID is refused with `validation_error` (422); an id no row names answers 200 with an empty page.
+             * @example b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70
+             */
             subjectId?: string | null;
-            /** Subjecttype */
+            /**
+             * Subjecttype
+             * @description Show only the rows about one kind of record, by the kind key a row carries in `subjectType`, such as `membership`, `footprint_change_request` or `obligation`; pair it with `subjectId` to read one record's history. Matched exactly, at most 64 characters; a longer value is refused with `validation_error` (422). A kind no row carries matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+             * @example membership
+             */
             subjectType?: string | null;
-            /** To */
+            /**
+             * To
+             * @description Show only rows written before this moment (exclusive), so `from` one midnight and `to` the next is exactly one day and back-to-back windows never count a row twice. An ISO 8601 timestamp such as `2026-09-17T00:00:00+02:00`, read like `from`: without an offset it is UTC, the `+` is sent as `%2B`, and a value that is not a timestamp is refused with `validation_error` (422).
+             * @example 2026-09-17T00:00:00+02:00
+             */
             to?: string | null;
         };
-        /** AuditEventRow */
+        /**
+         * AuditEventRow
+         * @description One change in the bank's audit log (AUD-01): who made it, what happened to which record,
+         *     and the record's fields before and after. Written in the same transaction as the change and
+         *     never edited afterwards; a later change to the same record is a new row.
+         */
         AuditEventRow: {
-            /** Action */
+            /**
+             * Action
+             * @description What happened, as a machine key of the form `<record>.<event>` of at most 100 characters, such as `member.updated`, `footprint.change_approved`, `library.problem_reported` or `obligation.version_applied`. Written by the code that made the change, and the set grows as the product records new kinds of change, so show a key you do not know rather than fail on it. It is a key to compare and filter on, not a sentence: `summary` is the sentence.
+             * @example member.updated
+             */
             action: string;
+            /** @description Who made the change: a person, an agent or the system, with the id to filter on and the name as it stood at the time. */
             actor: components["schemas"]["AuditActorRef"];
+            /**
+             * @description The record's fields after the change, in the same shape as `before`: compare the two field by field, and a field present on one side only was added or removed. An empty object (`{}`) when the change left nothing to show.
+             * @example {
+             *       "roles": [
+             *         "contributor",
+             *         "owner"
+             *       ],
+             *       "title": "Obligation owner, digital investing"
+             *     }
+             */
             after: components["schemas"]["AuditSnapshot"];
+            /**
+             * @description The record's fields before the change, keyed by field name, as the code that made the change chose to record them: usually only what changed, sometimes with context such as a version number. Values are JSON as stored. An empty object (`{}`) when there was nothing before, such as a creation. The keys differ by `subjectType` and are not a fixed schema, so show them rather than branch on them.
+             * @example {
+             *       "roles": [
+             *         "contributor"
+             *       ],
+             *       "title": "Obligation owner, digital investing"
+             *     }
+             */
             before: components["schemas"]["AuditSnapshot"];
             /**
              * Createdat
              * Format: date-time
+             * @description When the change was committed, as an RFC 3339 timestamp in UTC (`2026-09-16T08:14:00Z`), set by the server in the change's own transaction. The log is ordered by it, newest first, and `from` and `to` compare against it.
+             * @example 2026-09-16T08:14:00Z
              */
             createdAt: string;
             /**
              * Id
              * Format: uuid
+             * @description The audit row's identifier, as a UUID. A row is written once and never changed, so the id names the same facts for good.
+             * @example 5d0e8c2a-91b4-4f6e-a3d7-0c8b2e6f4a19
              */
             id: string;
-            /** Steppedup */
+            /**
+             * Steppedup
+             * @description True when the person who made the change confirmed it with a fresh passkey step-up, which the product demands for approvals, sign-off, footprint changes, exports, key creation, role and security changes and re-enrolment. Always false for an agent or the system, neither of which can step up: a decision an agent confirmed is machine-confirmed and never reads as a person's passkey-backed one.
+             * @example true
+             */
             steppedUp: boolean;
-            /** Subjectid */
+            /**
+             * Subjectid
+             * @description The record that changed, as a UUID: the id it carries everywhere else in the API, so a screen can link to it and `subjectId` can filter on it. Null for a change about no single record.
+             * @example b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70
+             */
             subjectId: string | null;
-            /** Subjecttitle */
+            /**
+             * Subjecttitle
+             * @description The record's name as it read when the change was made, at most 500 characters, such as a member's name or an obligation's stable key. A snapshot: a record renamed later keeps its old title here, which is what an audit trail is for. Empty when the record has no name.
+             * @example Johan Berg
+             */
             subjectTitle: string;
-            /** Subjecttype */
+            /**
+             * Subjecttype
+             * @description What kind of record changed, as a snake_case kind key of at most 64 characters, such as `membership`, `tenant_role` or `footprint_change_request` for the bank's own records. The shared library's kinds are `authority`, `instrument`, `provision`, `obligation`, `vocabulary` and `taxonomy_term`: a row about one of those is either the bank's own act on that record, such as a problem it reported, or a change to the library itself made by an agent, the system or bleqq's platform staff, which every bank sees; `action` says which. Written by the code, and the set grows as features ship. Filter on it with `subjectType`.
+             * @example membership
+             */
             subjectType: string;
-            /** Summary */
+            /**
+             * Summary
+             * @description One sentence saying what happened, at most 1000 characters, written in English by the code that made the change and not translated. Read it as the row's caption; `before` and `after` hold the detail.
+             * @example Member roles or title changed.
+             */
             summary: string;
         };
         /**
@@ -13062,10 +13252,30 @@ export interface operations {
     listAuditEvents: {
         parameters: {
             query?: {
+                /**
+                 * @description Show only the rows about one kind of record, by the kind key a row carries in `subjectType`, such as `membership`, `footprint_change_request` or `obligation`; pair it with `subjectId` to read one record's history. Matched exactly, at most 64 characters; a longer value is refused with `validation_error` (422). A kind no row carries matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+                 * @example membership
+                 */
                 subjectType?: string | null;
+                /**
+                 * @description Show only the rows about one record, by its UUID: the same id the record carries everywhere else in the API. A value that is not a UUID is refused with `validation_error` (422); an id no row names answers 200 with an empty page.
+                 * @example b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70
+                 */
                 subjectId?: string | null;
+                /**
+                 * @description Show only what one person or agent did, by the UUID a row carries in `actor.id`: a person's user id, or for an agent the agent its key is bound to (the key's own id for a key bound to no agent). The system has no id, so its rows cannot be picked out this way. A value that is not a UUID is refused with `validation_error` (422); an actor who did nothing here answers 200 with an empty page.
+                 * @example 8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30
+                 */
                 actorId?: string | null;
+                /**
+                 * @description Show only rows written at or after this moment (inclusive), as an ISO 8601 timestamp such as `2026-09-16T00:00:00+02:00`. Give the offset: a value without one, or a date alone, is read as UTC (a date as midnight UTC) and not as the bank's local time. In the query string write the offset's `+` as `%2B` (or use `Z`): a bare `+` arrives as a space. A value that is not a timestamp is refused with `validation_error` (422). A `from` later than `to` matches nothing and answers 200 with an empty page.
+                 * @example 2026-09-16T00:00:00+02:00
+                 */
                 from?: string | null;
+                /**
+                 * @description Show only rows written before this moment (exclusive), so `from` one midnight and `to` the next is exactly one day and back-to-back windows never count a row twice. An ISO 8601 timestamp such as `2026-09-17T00:00:00+02:00`, read like `from`: without an offset it is UTC, the `+` is sent as `%2B`, and a value that is not a timestamp is refused with `validation_error` (422).
+                 * @example 2026-09-17T00:00:00+02:00
+                 */
                 to?: string | null;
                 /**
                  * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.

@@ -21,9 +21,46 @@ from apps.shared.schemas import PageQuery
 router = Router(tags=["Governance"])
 
 
-@router.get("/audit-events", response=AuditEventPage, auth=SessionAuth(), operation_id="listAuditEvents", by_alias=True)
+@router.get(
+    "/audit-events",
+    response=AuditEventPage,
+    auth=SessionAuth(),
+    operation_id="listAuditEvents",
+    by_alias=True,
+    summary="See who changed what in the bank, when, and what it looked like before and after",
+)
 @requires_permission(perms.AUDIT_READ)
 def list_audit_events(request: HttpRequest, filters: Query[AuditEventQuery], page: PageQuery = Query(...)) -> AuditEventPage:
+    """The bank's audit log, newest first: every change made in this bank by a person, an
+    agent or the system, with the record it touched as it was titled at the time, a
+    one-line summary, the record's fields before and after, and whether a passkey step-up
+    confirmed it. Call it to answer an auditor's “who did this, when, and what did it
+    change”, to show one record's history beside the record (`subjectType` and
+    `subjectId`), or to list everything one person or agent did (`actorId`).
+
+    The log also carries the changes to the shared library that reach every bank: a change
+    to an authority, instrument, provision, obligation, vocabulary or taxonomy term made by
+    an agent, the system or bleqq's platform staff. It never carries another bank's rows,
+    which row-level security in the database keeps out rather than a filter here, and never
+    a proposal's own rows or a platform sign-in or code request, which can name a person
+    from another bank.
+
+    Append-only: a row is written in the same transaction as the change it records and is
+    never updated, so a correction is a new row and never an edit of an old one. This call
+    is a read: it changes nothing and writes no audit row of its own. A person's session
+    holding `audit.read`, which every role seeded for a bank carries; an agent's key is not
+    accepted.
+
+    Pages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no
+    rows, or filters matching none, is a 200 with an empty `items` and a `total` of 0.
+
+    Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
+    `audit.read`, with `requiredPermission` named; `not_found` (404) for a session with no
+    bank, such as the platform console's, because the audit log is a bank's own;
+    `validation_error` (422) when `subjectId` or `actorId` is not a UUID, `from` or `to` is
+    not a timestamp, `subjectType` is longer than 64 characters, or `limit` or `offset` is
+    out of range.
+    """
     tenant_id = cast(Principal, request.auth).tenant_id  # type: ignore[attr-defined]
     events, total = logic.audit_events(tenant_id, filters, limit=page.limit, offset=page.offset)
     return AuditEventPage(items=[logic.audit_row(event) for event in events], total=total)
