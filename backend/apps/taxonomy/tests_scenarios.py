@@ -49,6 +49,7 @@ from apps.watch import testing as watch_build
 from apps.taxonomy import tenant_lists_logic
 from apps.taxonomy.models import (
     ApprovalStatus,
+    CaseStatusCategory,
     FootprintChangeRequest,
     FootprintHistory,
     FootprintTerm,
@@ -627,6 +628,20 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         seed_authorities()
         load_library()
         self._set_footprint(["service_type:advice", "service_type:custody", "regime:securities"])
+        # This bank's cases: one open on an advice-only change, which removing Advice hides;
+        # one open on a custody change, which it keeps; one closed on another advice change,
+        # which is finished work and not counted; and one open on an insurance change, which
+        # the scope hides today and widening the regimes reveals.
+        watch_build.seed_watch_reference()
+        for title, scope, status in (
+            ("Advice-only guidance on suitability", "service_type:advice", CaseStatusCategory.NEW),
+            ("Custody reconciliation rules amended", "service_type:custody", CaseStatusCategory.NEW),
+            ("Advice disclosures, withdrawn draft", "service_type:advice", CaseStatusCategory.CLOSED),
+            ("Insurance distribution guidance", "regime:insurance", CaseStatusCategory.ASSESSING),
+        ):
+            change = watch_build.change(title=title)
+            watch_build.term_link(change, term_ref=scope)
+            ChangeCase.objects.filter(pk=cases_build.case(self.tenant, change).pk).update(status=status.value)
         officer = sign_in(self.officer, tenant=self.tenant)
         body = {"adds": [{"dimension": "client_category", "key": "retail"}], "removes": [{"dimension": "service_type", "key": "advice"}]}
         # Dry run first (playbook 15: dry run, preview, commit): the same preview, nothing written.
@@ -638,10 +653,14 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         # Four of the six obligations in scope are advised business the change would hide;
         # adding retail hides none, because the client category group was empty before.
         self.assertEqual(dry.json()["preview"]["obligations"], {"hidden": 4, "revealed": 0, "available": True})
-        # The other direction: widening the regimes reveals two insurance obligations it hid.
+        # Of this bank's open cases, only the advice-only one would be hidden.
+        self.assertEqual(dry.json()["preview"]["cases"], {"hidden": 1, "revealed": 0, "available": True})
+        # The other direction: widening the regimes reveals two insurance obligations it hid,
+        # and the open insurance case.
         widen = {"adds": [{"dimension": "regime", "key": "insurance"}], "removes": []}
         wider = self._preview("/tenant/footprint/requests?dryRun=true", widen, officer)
         self.assertEqual(wider.json()["preview"]["obligations"], {"hidden": 0, "revealed": 2, "available": True})
+        self.assertEqual(wider.json()["preview"]["cases"], {"hidden": 0, "revealed": 1, "available": True})
         self.assertEqual((AuditEvent.objects.count(), FootprintChangeRequest.objects.count()), writes_before)
         self.assertIsNone(self._footprint(officer)["pendingRequest"])
         self.assertEqual(self._preview("/tenant/footprint/requests?dryRun=true", body, sign_in(self.reader, tenant=self.tenant)).status_code, 403)
@@ -652,10 +671,9 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(request["requestedBy"]["name"], "Sara Lindqvist")
         self.assertEqual([t["key"] for t in request["removes"]], ["advice"])
         self.assertEqual(request["removes"][0]["label"], "Advice")
-        # The preview lists what would be hidden and revealed per record kind; the kinds that
-        # have no table yet say so instead of pretending.
+        # The preview lists what would be hidden and revealed per record kind.
         self.assertEqual(request["preview"]["obligations"], {"hidden": 4, "revealed": 0, "available": True})
-        self.assertEqual(request["preview"]["cases"], {"hidden": 0, "revealed": 0, "available": False})
+        self.assertEqual(request["preview"]["cases"], {"hidden": 1, "revealed": 0, "available": True})
         self.assertEqual(self._footprint(officer)["pendingRequest"]["id"], request["id"])
         # The library changes while the request waits: the suitability statement now covers
         # custody too, so removing Advice no longer hides it. A waiting request is counted
@@ -702,6 +720,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         # request was sent: the request shows what its audit row says.
         decision = AuditEvent.objects.get(action="footprint.change_approved", tenant=self.tenant)
         self.assertEqual(decision.after["preview"]["obligations"], today)
+        self.assertEqual(decision.after["preview"]["cases"], {"hidden": 1, "revealed": 0, "available": True})
         self.assertEqual(approved.json()["preview"], decision.after["preview"])
         self.assertEqual(FootprintChangeRequest.objects.get(pk=request["id"]).preview, decision.after["preview"])
         # Nothing else can happen to a decided request.

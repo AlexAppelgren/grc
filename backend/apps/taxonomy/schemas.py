@@ -302,13 +302,43 @@ class TaxonomyDimensionPage(CamelSchema):
 # Footprint (FP-01, FP-02, FP-03)
 # ---------------------------------------------------------------------------------------
 class FootprintPreviewCount(CamelSchema):
-    """What a change would hide and reveal for one record kind. `available` is false while
-    the table does not exist yet (chunk 2 has no obligations or cases): zeros with
-    `available:false` say "not counted", never "none" (playbook 4.4)."""
+    """What a regulatory scope change would hide and reveal for one record kind: the
+    obligations this bank can see, or this bank's open cases. Zeros with `available:false`
+    say "not counted", never "none" (playbook 4.4)."""
 
-    hidden: int = 0
-    revealed: int = 0
-    available: bool = False
+    hidden: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "How many records of this kind are inside the bank's regulatory scope today and would fall "
+            "outside it once the change is approved. For obligations these are the library obligations "
+            "the bank can see; for cases, the bank's own open cases (every case not closed or dismissed), "
+            "judged by the scope of the regulatory change each case follows. Computed by the server with "
+            "the same scope rule every list uses, including the opt-in rule for the standards a bank "
+            "follows. A hidden record is not deleted and a case keeps its owner and its decisions; it only "
+            "leaves the screens filtered by the scope. Never negative; 0 when nothing would be hidden."
+        ),
+    )
+    revealed: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "How many records of this kind are outside the bank's regulatory scope today and would come "
+            "inside it once the change is approved, counted over the same records and by the same rule "
+            "as `hidden`. A record with no scope terms is inside every scope, so it is never hidden or "
+            "revealed. Never negative; 0 when nothing would appear."
+        ),
+    )
+    available: bool = Field(
+        default=False,
+        description=(
+            "Whether the server counted this record kind at all. True: `hidden` and `revealed` are real "
+            "counts, and zeros mean none. False: nothing was counted and the zeros say nothing, which a "
+            "screen shows as not counted rather than as none. Obligations and cases are both counted "
+            "today; a request decided before cases were counted keeps the counts it was decided against, "
+            "so its cases may still read false."
+        ),
+    )
 
 
 class FootprintPreview(CamelSchema):

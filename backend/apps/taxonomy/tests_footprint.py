@@ -13,8 +13,9 @@ decision races both decisions landed, and the second request never waited on the
 two requests would have waited at once.
 
 The third class pins the other thing only the app role can prove: a scope change's preview
-counts what the organisation may see and nothing else (INV-07, AC-FP1). The last pins what a
-person reads when a request is refused or logged: "regulatory scope", the screen's name.
+counts what the organisation may see and nothing else (INV-07, AC-FP1). The fourth pins how
+the preview counts a bank's open cases. The last pins what a person reads when a request is
+refused or logged: "regulatory scope", the screen's name.
 """
 
 from __future__ import annotations
@@ -29,6 +30,8 @@ from django.core.exceptions import ValidationError
 from django.db import DEFAULT_DB_ALIAS, IntegrityError, connection, connections, transaction
 from django.test import TestCase, TransactionTestCase
 
+from apps.cases import testing as cases_build
+from apps.cases.models import ChangeCase
 from apps.identity.models import User
 from apps.library import testing as build
 from apps.library.seeds import seed_jurisdictions, seed_languages
@@ -38,8 +41,9 @@ from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
 from apps.shared.testing import LANDED, RACE_WAIT_SECONDS, backend_pid, hold_until_waiting_on_me
 from apps.taxonomy import footprint_logic, terms_logic
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintHistory
+from apps.taxonomy.models import ApprovalStatus, CaseStatusCategory, FootprintChangeRequest, FootprintHistory
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+from apps.watch import testing as watch_build
 
 TERM_EVENTS = ("footprint.term_added", "footprint.term_removed")
 DECISION_EVENTS = ("footprint.change_approved", "footprint.change_rejected", "footprint.change_withdrawn")
@@ -223,19 +227,69 @@ class PreviewIsolation(TransactionTestCase):
                 tenancy.activate(tenant.id)
                 footprint_logic.seed_terms(tenant=tenant, actor=Actor.system("test"), terms=[self.advice, custody])
 
-    def _hidden_by_removing_advice(self, tenant_id: uuid.UUID) -> int:
-        """What removing Advice would hide, counted on the app role's own connection."""
+    def _hidden_by_removing_advice(self, tenant_id: uuid.UUID) -> tuple[int, int]:
+        """The obligations and the cases removing Advice would hide, counted on the app
+        role's own connection."""
         with as_app_role(), transaction.atomic():
             tenancy.activate(tenant_id)
             with connection.cursor() as cursor:
                 cursor.execute("SELECT current_user")
                 assert cursor.fetchone()[0] == connections.settings["app"]["USER"], "the count must read as cw_app"
-            return footprint_logic.preview_of(tenant_id, [], [self.advice]).obligations.hidden
+            preview = footprint_logic.preview_of(tenant_id, [], [self.advice])
+            return preview.obligations.hidden, preview.cases.hidden
 
     def test_another_tenants_private_obligation_never_enters_the_counts(self) -> None:
-        self.assertEqual(self._hidden_by_removing_advice(self.tenant_a.id), 1, "the shared obligation only")
+        self.assertEqual(self._hidden_by_removing_advice(self.tenant_a.id)[0], 1, "the shared obligation only")
         # The owner counts its own beside the shared one, so the proof above is not vacuous.
-        self.assertEqual(self._hidden_by_removing_advice(self.tenant_b.id), 2)
+        self.assertEqual(self._hidden_by_removing_advice(self.tenant_b.id)[0], 2)
+
+    def test_another_tenants_case_never_enters_the_counts(self) -> None:
+        # One advice-only change, and a case on it in each bank: each counts its own alone.
+        with transaction.atomic():
+            change = watch_build.change(authority=None)
+            watch_build.term_link(change, term_ref="service_type:advice")
+        for tenant in (self.tenant_a, self.tenant_b):
+            cases_build.case(tenant, change)
+        self.assertEqual(self._hidden_by_removing_advice(self.tenant_a.id)[1], 1)
+        self.assertEqual(self._hidden_by_removing_advice(self.tenant_b.id)[1], 1)
+
+
+class PreviewCountsOpenCases(TestCase):
+    """The preview counts this bank's open cases by the one scope rule (AC-FP1): the opt-in
+    rule included, and finished work left out."""
+
+    def setUp(self) -> None:
+        _seed_library()
+        self.tenant = factories.tenant(slug="cases")
+        self.advice = terms_logic.term_by_ref("service_type", "advice")
+        custody = terms_logic.term_by_ref("service_type", "custody")
+        tenancy.activate(self.tenant.id)
+        # Custody stays, so removing Advice narrows the service group rather than emptying it.
+        footprint_logic.seed_terms(tenant=self.tenant, actor=Actor.system("test"), terms=[self.advice, custody])
+
+    def _case(self, scope: str, status: CaseStatusCategory) -> None:
+        change = watch_build.change(authority=None)
+        watch_build.term_link(change, term_ref=scope)
+        ChangeCase.objects.filter(pk=cases_build.case(self.tenant, change).pk).update(status=status.value)
+
+    def _cases(self, adds: list[Any], removes: list[Any]) -> tuple[int, int, bool]:
+        counted = footprint_logic.preview_of(self.tenant.id, adds, removes).cases
+        return counted.hidden, counted.revealed, counted.available
+
+    def test_an_opt_in_term_reveals_a_case_only_when_the_scope_names_it(self) -> None:
+        # A standard's change sits outside a scope that names no standard, so following
+        # the standard reveals its case (D-36).
+        self._case("standard:iso_iec_27001", CaseStatusCategory.NEW)
+        iso = watch_build.term("standard:iso_iec_27001")
+        self.assertEqual(self._cases([iso], []), (0, 1, True))
+        self.assertEqual(self._cases([], [self.advice]), (0, 0, True))
+
+    def test_a_closed_or_dismissed_case_is_not_counted(self) -> None:
+        self._case("service_type:advice", CaseStatusCategory.CLOSED)
+        self._case("service_type:advice", CaseStatusCategory.DISMISSED)
+        self.assertEqual(self._cases([], [self.advice]), (0, 0, True))
+        self._case("service_type:advice", CaseStatusCategory.SIGNOFF)
+        self.assertEqual(self._cases([], [self.advice]), (1, 0, True))
 
 
 class RefusalsSayRegulatoryScope(TestCase):
