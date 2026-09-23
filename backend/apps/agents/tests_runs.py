@@ -34,10 +34,11 @@ from django.test import TestCase
 
 from apps.agents import runs, testing as agent_build
 from apps.agents.models import AgentRun, RunStatus
+from apps.agents.schemas import AgentRunInput
 from apps.identity.api_keys_logic import resolve_api_key
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms, tenancy
-from apps.shared.authentication import Principal
+from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.testing import ScenarioTestCase, stub_session, user_principal
@@ -132,13 +133,22 @@ class OpeningARun(AgentRunCase):
         self.assertEqual(AgentRun.objects.count(), 1)
 
     def test_a_tenant_bound_key_is_refused_with_the_reason_named(self) -> None:
-        """Item 14: bleqq's agents are platform-owned, so a bank's key opens no run in R1."""
+        """Item 14: bleqq's agents are platform-owned, so a bank's key opens no run in R1.
+        A bank's key never holds `agent-runs:write` (D-61, PLATFORM_ONLY_SCOPES), so one that
+        was given it before that rule meets the scope gate first; the logic's own refusal
+        stands behind it for a principal that somehow carries the scope."""
         tenant = factories.tenant(slug="opens-nothing")
         tenancy.clear_tenant()
         bank = agent_build.tenant_key(tenant, scopes=(perms.SCOPE_AGENT_RUNS_WRITE,))
         response = self.post(open_body(self.agent.key), plain=bank.plain_key)
         self.assertEqual(response.status_code, 403, response.content)
-        self.assertEqual(response.json()["code"], "tenant_agents_not_available")
+        self.assertEqual(response.json()["requiredPermission"], perms.SCOPE_AGENT_RUNS_WRITE)
+        carrying = Principal(
+            kind=PrincipalKind.AGENT, subject_id=bank.id, tenant_id=tenant.id, scopes=frozenset({perms.SCOPE_AGENT_RUNS_WRITE})
+        )
+        with self.assertRaises(ProblemError) as refused:
+            runs.open_run(who=carrying, body=AgentRunInput.model_validate(open_body(self.agent.key)), idempotency_key=None)
+        self.assertEqual(refused.exception.code, "tenant_agents_not_available")
         self.assertEqual(AgentRun.objects.count(), 0, "a refusal writes nothing")
 
     def test_a_tenant_session_never_reaches_the_logic(self) -> None:

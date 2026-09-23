@@ -709,8 +709,9 @@ class IdentityScenarioTests(ScenarioTestCase):
         An API key is shown once, stored hashed and revocable (ID-10).
         Operations: `createApiKey`, `revokeApiKey`, `createAgentKey`, `revokeAgentKey`.
         """
+        wanted = [perms.SCOPE_LIBRARY_READ, perms.SCOPE_PROPOSALS_WRITE]
         headers = sign_in(self.admin, tenant=self.tenant, step_up=True)
-        created = self._post("/tenant/api-keys", {"name": "Research agent", "scopes": [perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_WRITE]}, **headers)
+        created = self._post("/tenant/api-keys", {"name": "Research agent", "scopes": wanted}, **headers)
         self.assertEqual(created.status_code, 201, created.content)
         body = created.json()
         plain = body["plainKey"]
@@ -719,19 +720,19 @@ class IdentityScenarioTests(ScenarioTestCase):
         row = ApiKey.objects.get(pk=body["id"])
         self.assertEqual(row.key_hash, tokens.hash_token(plain.split("_", 2)[2]))
         self.assertNotIn(plain, str(ApiKey.objects.filter(pk=row.pk).values()))
-        self.assertEqual(sorted(row.scopes), sorted([perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_WRITE]))
+        self.assertEqual(sorted(row.scopes), sorted(wanted))
         self.assertIsNotNone(row.created_at)
         self.assertIsNone(row.last_used_at)
         listed = self.client.get("/api/v1/tenant/api-keys", **headers).json()
-        self.assertEqual(listed["total"], 1)
-        self.assertNotIn("plainKey", listed["items"][0])
+        mine = next(item for item in listed["items"] if item["id"] == str(row.id))
+        self.assertNotIn("plainKey", mine)
         self.assertNotIn(plain, created.content.decode().replace(plain, "", 1), "the plain key appears once")
         # Used: the principal carries the scopes, last used updates, the log records it.
         self.assertIsNone(ApiKeyAuth()(RequestFactory().get("/")), "no header, no principal")
         principal = api_keys_logic.resolve_api_key(plain)
         assert principal is not None
         self.assertEqual(principal.tenant_id, self.tenant.id)
-        self.assertEqual(principal.scopes, frozenset({perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_WRITE}))
+        self.assertEqual(principal.scopes, frozenset(wanted))
         row.refresh_from_db()
         self.assertIsNotNone(row.last_used_at)
         self.assertTrue(LoginEvent.objects.filter(api_key=row, event=LoginEventKind.KEY_USED.value).exists())
@@ -741,9 +742,69 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(revoked.status_code, 204)
         self.assertIsNone(api_keys_logic.resolve_api_key(plain))
         self.assertTrue(LoginEvent.objects.filter(api_key=row, event=LoginEventKind.KEY_REVOKED.value).exists())
-        # Creating a key without step-up is refused; an unknown scope is a 422.
-        self.assertEqual(self._post("/tenant/api-keys", {"name": "x", "scopes": [perms.SCOPE_CHANGES_WRITE]}, **sign_in(self.admin, tenant=self.tenant)).json()["code"], "step_up_required")
-        self.assertEqual(self._post("/tenant/api-keys", {"name": "x", "scopes": ["library:write"]}, **headers).json()["code"], "unknown_key")
+        # Creating a key without step-up is refused; an unknown scope is a 422, and so is
+        # each of the watch writes, which belong to the platform's own agents (D-61).
+        self.assertEqual(self._post("/tenant/api-keys", {"name": "x", "scopes": wanted}, **sign_in(self.admin, tenant=self.tenant)).json()["code"], "step_up_required")
+        for scope in ("library:write", perms.SCOPE_AGENT_RUNS_WRITE, perms.SCOPE_SOURCES_WRITE, perms.SCOPE_CHANGES_WRITE):
+            with self.subTest(scope=scope):
+                refused = self._post("/tenant/api-keys", {"name": "x", "scopes": [scope]}, **headers)
+                self.assertEqual(refused.status_code, 422, refused.content)
+                self.assertEqual(refused.json()["code"], "unknown_key")
+                for allowed in perms.TENANT_KEY_SCOPES:
+                    self.assertIn(allowed, refused.json()["detail"], "the refusal names what a bank's key may hold")
+        # A bank's key that already held a watch write works without it, and the log says so.
+        legacy = factories.api_key(self.tenant, scopes=(perms.SCOPE_LIBRARY_READ, perms.SCOPE_CHANGES_WRITE))
+        stripped = api_keys_logic.resolve_api_key(legacy.plain_key)
+        assert stripped is not None
+        self.assertEqual(stripped.scopes, frozenset({perms.SCOPE_LIBRARY_READ}))
+        self.activate(self.tenant)
+        withheld = LoginEvent.objects.get(api_key=legacy.row, event=LoginEventKind.KEY_SCOPES_WITHHELD.value)
+        self.assertEqual((withheld.tenant_id, withheld.success, withheld.failure_reason), (self.tenant.id, False, perms.SCOPE_CHANGES_WRITE))
+
+        # The platform half: a key bound to an agent, minted in the console behind a passkey.
+        from apps.agents import testing as agents_testing
+        from apps.identity.models import StepUpAssertion
+
+        tenancy.clear_tenant()
+        sweeper = agents_testing.agent()
+        platform_admin = factories.platform_user(roles=("platform_admin",))
+        console = sign_in(platform_admin, step_up=True)
+        agent_scopes = [perms.SCOPE_AGENT_RUNS_WRITE, perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_REVIEW]
+        minted = self._post("/agent-keys", {"name": "Watch sweeper, nightly", "agentId": str(sweeper.id), "scopes": agent_scopes}, **console)
+        self.assertEqual(minted.status_code, 201, minted.content)
+        agent_plain = minted.json()["plainKey"]
+        tenancy.clear_tenant()
+        agent_row = ApiKey.objects.get(pk=minted.json()["id"])
+        self.assertEqual((agent_row.tenant_id, agent_row.agent_id, agent_row.created_by_id), (None, sweeper.id, platform_admin.id))
+        self.assertEqual(agent_row.key_hash, tokens.hash_token(agent_plain.split("_", 2)[2]))
+        self.assertEqual(sorted(agent_row.scopes), sorted(agent_scopes))
+        audit = AuditEvent.objects.get(action="agent_key.created", subject_id=agent_row.id)
+        self.assertIsNone(audit.tenant_id)
+        self.assertEqual(audit.step_up_assertion_id, StepUpAssertion.objects.get(session__user=platform_admin).id)
+        self.assertNotIn(agent_plain.split("_", 2)[2], str(audit.after) + audit.summary, "the secret is never audited")
+        self.assertTrue(LoginEvent.objects.filter(api_key=agent_row, event=LoginEventKind.KEY_CREATED.value, user=platform_admin, tenant__isnull=True).exists())
+        on_list = self.client.get("/api/v1/agent-keys", **console).json()["items"]
+        listed_key = next(item for item in on_list if item["id"] == str(agent_row.id))
+        self.assertNotIn("plainKey", listed_key)
+        self.assertEqual(listed_key["agent"]["key"], sweeper.key)
+        # Used: it keeps every scope it was given, the review scope included (D-62).
+        used = api_keys_logic.resolve_api_key(agent_plain)
+        assert used is not None
+        self.assertEqual((used.tenant_id, used.agent_id, used.scopes), (None, sweeper.id, frozenset(agent_scopes)))
+        self.assertTrue(LoginEvent.objects.filter(api_key=agent_row, event=LoginEventKind.KEY_USED.value, tenant__isnull=True).exists())
+        # Revoked: the next call answers 401.
+        stopped = self._post(f"/agent-keys/{agent_row.id}/revoke", **console)
+        self.assertEqual(stopped.status_code, 200, stopped.content)
+        self.assertIsNotNone(stopped.json()["revokedAt"])
+        self.assertEqual(self.client.get("/api/v1/proposals", HTTP_X_API_KEY=agent_plain).status_code, 401)
+        tenancy.clear_tenant()
+        self.assertTrue(LoginEvent.objects.filter(api_key=agent_row, event=LoginEventKind.KEY_REVOKED.value, user=platform_admin).exists())
+        self.assertTrue(AuditEvent.objects.filter(action="agent_key.revoked", subject_id=agent_row.id, tenant__isnull=True).exists())
+        # Minting one needs the passkey too.
+        self.assertEqual(
+            self._post("/agent-keys", {"name": "x", "agentId": str(sweeper.id), "scopes": agent_scopes}, **sign_in(platform_admin)).json()["code"],
+            "step_up_required",
+        )
 
     def test_id_s21(self) -> None:
         """ID-S21

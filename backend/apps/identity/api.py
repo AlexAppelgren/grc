@@ -8,7 +8,7 @@ from typing import cast
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
-from ninja import Query, Router
+from ninja import Path, Query, Router
 
 from apps.identity import (
     api_keys_logic,
@@ -21,7 +21,7 @@ from apps.identity import (
     security_log,
     session_logic,
 )
-from apps.identity.models import User
+from apps.identity.models import ApiKey, User
 from apps.identity.schemas import (
     AgentKeyCreate,
     AgentKeyCreated,
@@ -53,6 +53,7 @@ from apps.identity.schemas import (
     RefreshResult,
     RoleCreate,
     RoleOut,
+    RoleRef,
     RolePatch,
     SecurityEventOut,
     SecurityLogPage,
@@ -510,28 +511,155 @@ def revoke_api_key(request: HttpRequest, key_id: uuid.UUID) -> tuple[int, None]:
 
 # ---------------------------------------------------------------------------------------
 # Platform agent keys (ID-10, AGT-01, chunk 5): keys bound to an agent, under
-# `agent_definitions.manage` and a fresh passkey assertion. They are the platform's alone —
-# bleqq's agents are platform-owned and platform-run — so a tenant session holds no
-# permission that reaches them and no tenant route creates a key bound to an agent.
-# `c5-platform-agent-keys` serves all three; until then each answers 501 behind its gate.
+# `agent_definitions.manage` and, to create one, a fresh passkey assertion. They are the
+# platform's alone — bleqq's agents are platform-owned and platform-run — so a tenant
+# session holds no permission that reaches them and no tenant route creates a key bound to
+# an agent. Each docstring is the route's published description (API_DOCUMENTATION.md).
 # ---------------------------------------------------------------------------------------
-@router.get("/agent-keys", response=AgentKeysPage, auth=SessionAuth(), operation_id="listAgentKeys", by_alias=True)
+def _agent_key_out(key: ApiKey) -> AgentKeyOut:
+    agent = key.agent
+    return AgentKeyOut(
+        id=key.id,
+        name=key.name,
+        key_prefix=key.key_prefix,
+        scopes=sorted(key.scopes),
+        agent_id=key.agent_id,
+        # The label names the version, as a reviewing agent's audit label does (proposals/api.py).
+        agent=RoleRef(key=agent.key, kind=None, label=f"{agent.key} v{agent.current_version}") if agent is not None else None,
+        created_at=key.created_at,
+        expires_at=key.expires_at,
+        revoked_at=key.revoked_at,
+        last_used_at=key.last_used_at,
+    )
+
+
+@router.get(
+    "/agent-keys",
+    response=AgentKeysPage,
+    auth=SessionAuth(),
+    operation_id="listAgentKeys",
+    by_alias=True,
+    summary="See every key the platform's agents run on",
+)
 @requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
 def list_agent_keys(request: HttpRequest, page: PageQuery = Query(...)) -> AgentKeysPage:
-    return api_keys_logic.list_agent_keys()
+    """Returns the platform's own API keys, newest first, one page at a time: which agent
+    each is bound to, what it may do, when it was last used and whether it still works.
+    Call it from the platform console to see which keys are live before creating another
+    or revoking one; revoked and expired keys stay in the list, so it is the whole history.
+
+    A person's session only, holding the platform permission `agent_definitions.manage`,
+    which only a platform administrator holds; no session inside a bank can reach it, and
+    no API key can. A bank's own keys are never here, and the secret of a key is never
+    shown again after creation: a row carries its eight-character prefix and nothing more.
+    It changes nothing and writes nothing to the audit log. An empty list is a 200 with
+    `total` 0.
+
+    Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
+    depth; `permission_denied` without `agent_definitions.manage`; `unauthenticated`
+    without a session.
+    """
+    keys, total = api_keys_logic.list_agent_keys(limit=page.limit, offset=page.offset)
+    return AgentKeysPage(items=[_agent_key_out(key) for key in keys], total=total)
 
 
-@router.post("/agent-keys", response={201: AgentKeyCreated}, auth=SessionAuth(), operation_id="createAgentKey", by_alias=True)
+@router.post(
+    "/agent-keys",
+    response={201: AgentKeyCreated},
+    auth=SessionAuth(),
+    operation_id="createAgentKey",
+    by_alias=True,
+    summary="Mint a key for one of the platform's agents",
+)
 @requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
 @requires_step_up
 def create_agent_key(request: HttpRequest, body: AgentKeyCreate) -> tuple[int, AgentKeyCreated]:
-    return api_keys_logic.create_agent_key()
+    """Creates an API key bound to one agent definition and answers it once. Call it when
+    an agent's runner needs a key, and put `plainKey` straight into the runner's secret
+    store: the server keeps only a hash of the secret and never shows it again, so a lost
+    key is revoked and replaced, never recovered.
+
+    Needs the platform permission `agent_definitions.manage` and a fresh passkey step-up
+    on the session; an API key cannot create a key. The key belongs to no bank. Everything
+    it writes is recorded as the agent it is bound to, and it runs that agent and no other.
+    It may hold any scope, `proposals:review` included, which makes the agent a second,
+    independent reviewer of proposals someone else filed; no scope writes a library
+    record. Give it the least its agent needs.
+
+    The creation is recorded in the audit log as `agent_key.created` with the prefix, the
+    agent, the scopes and the expiry, never the secret, and with the step-up assertion
+    that confirmed it; the security log records the event "key_created". Answers 201 with
+    the key.
+
+    Errors: `step_up_required` without a fresh passkey assertion, which the console answers
+    by opening the passkey prompt and retrying; `unknown_key` when `agentId` names no agent
+    definition or a scope does not exist, the message naming the valid scopes;
+    `name_required` for a name of spaces alone; `expiry_in_past` for an expiry that is not
+    in the future; `validation_error` for a field the schema refuses, a field it does not
+    name among them; `permission_denied` without `agent_definitions.manage`;
+    `unauthenticated` without a session.
+    """
+    actor_user = _actor_user(request)
+    key, plain = api_keys_logic.create_agent_key(
+        actor=session_logic.actor_of(actor_user),
+        created_by=actor_user,
+        agent_id=body.agent_id,
+        name=body.name,
+        scopes=body.scopes,
+        expires_at=body.expires_at,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+    return 201, AgentKeyCreated(
+        id=key.id,
+        name=key.name,
+        key_prefix=key.key_prefix,
+        scopes=list(key.scopes),
+        agent_id=body.agent_id,
+        created_at=key.created_at,
+        expires_at=key.expires_at,
+        plain_key=plain,
+    )
 
 
-@router.post("/agent-keys/{key_id}/revoke", response=AgentKeyOut, auth=SessionAuth(), operation_id="revokeAgentKey", by_alias=True)
+@router.post(
+    "/agent-keys/{key_id}/revoke",
+    response=AgentKeyOut,
+    auth=SessionAuth(),
+    operation_id="revokeAgentKey",
+    by_alias=True,
+    summary="Stop one of the platform's agent keys working, for good",
+)
 @requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
-def revoke_agent_key(request: HttpRequest, key_id: uuid.UUID) -> AgentKeyOut:
-    return api_keys_logic.revoke_agent_key()
+def revoke_agent_key(
+    request: HttpRequest,
+    key_id: uuid.UUID = Path(
+        ...,
+        description=(
+            "The identifier of the platform key to revoke, the UUID `GET /agent-keys` lists as "
+            "`id`, never the key itself. A bank's key or an identifier that names nothing "
+            "answers `not_found`."
+        ),
+    ),
+) -> AgentKeyOut:
+    """Revokes a platform key at once: from this moment every call made with it answers
+    `unauthenticated`, so a run its agent has open can no longer be closed with it. Call it
+    when a key may have leaked, when an agent is retired, or when a key is replaced. There
+    is no way to turn a revoked key back on; create a new one instead.
+
+    Needs the platform permission `agent_definitions.manage`, and no step-up: stopping a
+    key only takes power away. A bank's own keys are revoked from the bank's own API keys
+    screen and never here. The revocation is recorded in the audit log as
+    `agent_key.revoked` and in the security log as the event "key_revoked", and the key
+    stays listed with its revocation time. Revoking a key that is already revoked changes
+    nothing and answers the key as it stands.
+
+    Answers 200 with the key. Errors: `not_found` when no platform key has that identifier;
+    `permission_denied` without `agent_definitions.manage`; `unauthenticated` without a
+    session.
+    """
+    actor_user = _actor_user(request)
+    key = api_keys_logic.revoke_agent_key(actor=session_logic.actor_of(actor_user), revoked_by=actor_user, key_id=key_id)
+    return _agent_key_out(key)
 
 
 @router.get("/tenant/security-log", response=SecurityLogPage, auth=SessionAuth(), operation_id="listSecurityLog", by_alias=True)

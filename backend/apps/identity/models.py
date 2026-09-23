@@ -83,6 +83,12 @@ class LoginEventKind(enum.StrEnum):
     REENROLMENT_ISSUED = "reenrolment_issued"
     KEY_USED = "key_used"
     KEY_REVOKED = "key_revoked"
+    # A platform key bound to an agent was minted (ID-10, AGT-01): the key that can write to
+    # the shared watch feed is logged from its first moment, not only from its first use.
+    KEY_CREATED = "key_created"
+    # A bank's key presented a scope only a platform key may hold (PLATFORM_ONLY_SCOPES) and
+    # worked without it; `failure_reason` names the scopes. Throttled with `key_used`.
+    KEY_SCOPES_WITHHELD = "key_scopes_withheld"
     # A calendar client fetched a subscribed feed with its token (HOM-04, D-52, ADR 0045).
     # The only credential in the product that is not a passkey, a session or a key, so its
     # use belongs in the same log; throttled like `key_used` and recording no address.

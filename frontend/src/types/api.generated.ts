@@ -4,6 +4,39 @@
  */
 
 export interface paths {
+    "/api/v1/agent-definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See which agents the platform ships, to bind a key to one
+         * @description Returns the platform's agent definitions, ordered by key, one page at a time: each
+         *     one's identifier, stable key, what it does, the version this build loaded and whether
+         *     it is released. Call it from the platform console before creating an agent key, to
+         *     pick the agent the key will act as; `POST /agent-keys` takes the `id` as `agentId`.
+         *
+         *     A person's session only, holding the platform permission `agent_definitions.manage`,
+         *     which only a platform administrator holds; no session inside a bank and no API key can
+         *     read it. The definitions are the platform's own versioned files, loaded on deploy, and
+         *     this call only reads them: it changes nothing and writes nothing to the audit log. An
+         *     empty list is a 200 with `total` 0.
+         *
+         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
+         *     depth; `permission_denied` without `agent_definitions.manage`; `unauthenticated`
+         *     without a session.
+         */
+        get: operations["listAgentDefinitions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/agent-keys": {
         parameters: {
             query?: never;
@@ -11,10 +44,53 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Agent Keys */
+        /**
+         * See every key the platform's agents run on
+         * @description Returns the platform's own API keys, newest first, one page at a time: which agent
+         *     each is bound to, what it may do, when it was last used and whether it still works.
+         *     Call it from the platform console to see which keys are live before creating another
+         *     or revoking one; revoked and expired keys stay in the list, so it is the whole history.
+         *
+         *     A person's session only, holding the platform permission `agent_definitions.manage`,
+         *     which only a platform administrator holds; no session inside a bank can reach it, and
+         *     no API key can. A bank's own keys are never here, and the secret of a key is never
+         *     shown again after creation: a row carries its eight-character prefix and nothing more.
+         *     It changes nothing and writes nothing to the audit log. An empty list is a 200 with
+         *     `total` 0.
+         *
+         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
+         *     depth; `permission_denied` without `agent_definitions.manage`; `unauthenticated`
+         *     without a session.
+         */
         get: operations["listAgentKeys"];
         put?: never;
-        /** Create Agent Key */
+        /**
+         * Mint a key for one of the platform's agents
+         * @description Creates an API key bound to one agent definition and answers it once. Call it when
+         *     an agent's runner needs a key, and put `plainKey` straight into the runner's secret
+         *     store: the server keeps only a hash of the secret and never shows it again, so a lost
+         *     key is revoked and replaced, never recovered.
+         *
+         *     Needs the platform permission `agent_definitions.manage` and a fresh passkey step-up
+         *     on the session; an API key cannot create a key. The key belongs to no bank. Everything
+         *     it writes is recorded as the agent it is bound to, and it runs that agent and no other.
+         *     It may hold any scope, `proposals:review` included, which makes the agent a second,
+         *     independent reviewer of proposals someone else filed; no scope writes a library
+         *     record. Give it the least its agent needs.
+         *
+         *     The creation is recorded in the audit log as `agent_key.created` with the prefix, the
+         *     agent, the scopes and the expiry, never the secret, and with the step-up assertion
+         *     that confirmed it; the security log records the event "key_created". Answers 201 with
+         *     the key.
+         *
+         *     Errors: `step_up_required` without a fresh passkey assertion, which the console answers
+         *     by opening the passkey prompt and retrying; `unknown_key` when `agentId` names no agent
+         *     definition or a scope does not exist, the message naming the valid scopes;
+         *     `name_required` for a name of spaces alone; `expiry_in_past` for an expiry that is not
+         *     in the future; `validation_error` for a field the schema refuses, a field it does not
+         *     name among them; `permission_denied` without `agent_definitions.manage`;
+         *     `unauthenticated` without a session.
+         */
         post: operations["createAgentKey"];
         delete?: never;
         options?: never;
@@ -31,7 +107,24 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Revoke Agent Key */
+        /**
+         * Stop one of the platform's agent keys working, for good
+         * @description Revokes a platform key at once: from this moment every call made with it answers
+         *     `unauthenticated`, so a run its agent has open can no longer be closed with it. Call it
+         *     when a key may have leaked, when an agent is retired, or when a key is replaced. There
+         *     is no way to turn a revoked key back on; create a new one instead.
+         *
+         *     Needs the platform permission `agent_definitions.manage`, and no step-up: stopping a
+         *     key only takes power away. A bank's own keys are revoked from the bank's own API keys
+         *     screen and never here. The revocation is recorded in the audit log as
+         *     `agent_key.revoked` and in the security log as the event "key_revoked", and the key
+         *     stays listed with its revocation time. Revoking a key that is already revoked changes
+         *     nothing and answers the key as it stands.
+         *
+         *     Answers 200 with the key. Errors: `not_found` when no platform key has that identifier;
+         *     `permission_denied` without `agent_definitions.manage`; `unauthenticated` without a
+         *     session.
+         */
         post: operations["revokeAgentKey"];
         delete?: never;
         options?: never;
@@ -97,7 +190,8 @@ export interface paths {
          *     answers 201 with the run that key already opened. Errors: `tenant_agents_not_available`
          *     when the key belongs to a bank rather than to the platform, because in this release the
          *     agents that feed the shared library are part of the base package and a bank opens no run
-         *     of its own; `permission_denied` when the key lacks `agent-runs:write`, or when `agent`
+         *     of its own; `permission_denied` when the key lacks `agent-runs:write`, which a bank's key
+         *     never holds and so meets first, or when `agent`
          *     is not the definition this key is bound to — a key runs exactly one definition, so a
          *     name this build does not ship and a name that belongs to another key are the same
          *     refusal, and trying names tells a caller nothing about which definitions exist;
@@ -3364,84 +3458,291 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AgentKeyCreate */
+        /**
+         * AgentDefinitionOut
+         * @description One agent definition as the platform ships it, loaded from its versioned folder.
+         * @example {
+         *       "active": false,
+         *       "currentVersion": 1,
+         *       "description": "Checks registered sources for new or changed regulatory documents, registers one change per reform with a stable key, and proposes obligation links.",
+         *       "id": "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953",
+         *       "key": "watch-sweeper"
+         *     }
+         */
+        AgentDefinitionOut: {
+            /**
+             * Active
+             * @description Whether the definition is released for scheduled runs. True for an active definition; false while it is a draft or after it is retired. A key can be bound to a draft so that its runner can be tried before release.
+             */
+            active: boolean;
+            /**
+             * Currentversion
+             * @description The version of the definition this build loaded — its prompt, tools and budgets — counting from 1. Runs started from now on run it; an earlier run keeps the version it ran.
+             */
+            currentVersion: number;
+            /**
+             * Description
+             * @description What the agent does, in the words of its definition file. It says what the agent is for and grants nothing: what a key bound to it may do is the key's scopes.
+             */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The definition's permanent identifier, a UUID. It is what `POST /agent-keys` takes as `agentId` to bind a key to this agent.
+             */
+            id: string;
+            /**
+             * Key
+             * @description The definition's stable key, such as `watch-sweeper`: what a run names in `POST /agent-runs` and what the audit trail records as the actor. It is issued once and never changes; a new version keeps the key and raises `currentVersion`.
+             */
+            key: string;
+        };
+        /**
+         * AgentDefinitionPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "active": false,
+         *           "currentVersion": 1,
+         *           "description": "Checks registered sources for new or changed regulatory documents, registers one change per reform with a stable key, and proposes obligation links.",
+         *           "id": "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953",
+         *           "key": "watch-sweeper"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        AgentDefinitionPage: {
+            /**
+             * Items
+             * @description The definitions on this page, ordered by key. They are the platform's own agents, the same for every bank; a bank's own agents are not listed here. An empty list is a 200 and means no definition has been loaded yet.
+             */
+            items: components["schemas"]["AgentDefinitionOut"][];
+            /**
+             * Total
+             * @description How many definitions exist in total, not how many are on this page; use it to size a pager.
+             */
+            total: number;
+        };
+        /**
+         * AgentKeyCreate
+         * @description `POST /agent-keys`: a field the schema does not name is refused, never dropped.
+         * @example {
+         *       "agentId": "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953",
+         *       "expiresAt": "2027-09-10T23:59:59Z",
+         *       "name": "Watch sweeper, nightly",
+         *       "scopes": [
+         *         "agent-runs:write",
+         *         "sources:write",
+         *         "changes:write",
+         *         "library:read"
+         *       ]
+         *     }
+         */
         AgentKeyCreate: {
             /**
              * Agentid
              * Format: uuid
+             * @description The identifier of the agent definition the key will act as, a UUID taken from `GET /agent-definitions`. Everything the key writes is recorded as that agent, and a key runs that one agent and no other. An identifier that names no definition is refused with `unknown_key`.
              */
             agentId: string;
-            /** Expiresat */
+            /**
+             * Expiresat
+             * @description When the key should stop working on its own, as a UTC timestamp in ISO 8601 that must lie in the future, or `expiry_in_past` is answered. Leave it out or send null for a key that lives until it is revoked.
+             */
             expiresAt?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description A name to tell the key apart on screen, between 1 and 200 characters, such as `Watch sweeper, nightly`. Surrounding spaces are trimmed, and a name of spaces alone is refused with `name_required`.
+             */
             name: string;
-            /** Scopes */
+            /**
+             * Scopes
+             * @description What the key may do: at least one and at most 9 scope keys, each counted once. Give the key the least its agent needs. `agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources a run checked; `changes:write` registers a regulatory change and writes its facts on the watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` reads the proposal queue and approves, corrects or rejects a proposal someone else filed, as the independent second pair of eyes; `search:read` searches the library; `library:read` reads its records and vocabularies; `upcoming:read` reads the public dates coming up; `tenant:read` reads a bank's profile, of which a key that belongs to no bank has none. No scope writes a library record: a finding becomes a change or a proposal, never an edit. Any other value is refused with `unknown_key`, and the message lists the valid scopes.
+             */
             scopes: string[];
         };
         /**
          * AgentKeyCreated
          * @description The secret appears here and nowhere else: no log, no audit value, no outbox payload.
+         * @example {
+         *       "agentId": "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953",
+         *       "createdAt": "2026-09-10T08:00:00Z",
+         *       "expiresAt": "2027-09-10T23:59:59Z",
+         *       "id": "0b6f4c8e-2d1a-4e7b-9c35-7a1e5d2f9b40",
+         *       "keyPrefix": "5e0c9a41",
+         *       "name": "Watch sweeper, nightly",
+         *       "plainKey": "cw_5e0c9a41_<secret-shown-once>",
+         *       "scopes": [
+         *         "agent-runs:write",
+         *         "changes:write",
+         *         "library:read",
+         *         "sources:write"
+         *       ]
+         *     }
          */
         AgentKeyCreated: {
             /**
              * Agentid
              * Format: uuid
+             * @description The identifier of the agent definition the key acts as; everything it writes is recorded as that agent.
              */
             agentId: string;
             /**
              * Createdat
              * Format: date-time
+             * @description When the key was created, as a UTC timestamp in ISO 8601, set by the server.
              */
             createdAt: string;
-            /** Expiresat */
+            /**
+             * Expiresat
+             * @description When the key stops working on its own, as a UTC timestamp in ISO 8601, or null for a key with no expiry.
+             */
             expiresAt: string | null;
             /**
              * Id
              * Format: uuid
+             * @description The new key's permanent identifier, a UUID: the handle to revoke it by, never the key itself.
              */
             id: string;
-            /** Keyprefix */
+            /**
+             * Keyprefix
+             * @description The eight hexadecimal characters the key begins with after `cw_`, kept in the clear so the key can be recognised in the list later without the secret.
+             */
             keyPrefix: string;
-            /** Name */
+            /**
+             * Name
+             * @description The name the key was given, trimmed, exactly as it will be listed.
+             */
             name: string;
-            /** Plainkey */
+            /**
+             * Plainkey
+             * @description The key itself, `cw_<prefix>_<secret>`, to be sent as `X-Api-Key` or as a bearer token. This answer is the only time it exists outside the caller: the server keeps only a hash of the secret, never logs it and never shows it again, so put it straight into the agent runner's secret store. A lost key is revoked and replaced, not recovered.
+             */
             plainKey: string;
-            /** Scopes */
+            /**
+             * Scopes
+             * @description What the key may do, as scope keys, sorted. `agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources a run checked; `changes:write` registers a regulatory change and writes its facts on the watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` reads the proposal queue and approves, corrects or rejects a proposal someone else filed, as the independent second pair of eyes; `search:read` searches the library; `library:read` reads its records and vocabularies; `upcoming:read` reads the public dates coming up; `tenant:read` reads a bank's profile, of which a key that belongs to no bank has none. No scope writes a library record: a finding becomes a change or a proposal, never an edit.
+             */
             scopes: string[];
         };
-        /** AgentKeyOut */
+        /**
+         * AgentKeyOut
+         * @description One platform key as the console lists it. The secret is never here, only its prefix.
+         * @example {
+         *       "agent": {
+         *         "key": "watch-sweeper",
+         *         "kind": null,
+         *         "label": "watch-sweeper v1"
+         *       },
+         *       "agentId": "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953",
+         *       "createdAt": "2026-09-10T08:00:00Z",
+         *       "expiresAt": "2027-09-10T23:59:59Z",
+         *       "id": "0b6f4c8e-2d1a-4e7b-9c35-7a1e5d2f9b40",
+         *       "keyPrefix": "5e0c9a41",
+         *       "lastUsedAt": "2026-09-19T02:00:03Z",
+         *       "name": "Watch sweeper, nightly",
+         *       "revokedAt": null,
+         *       "scopes": [
+         *         "agent-runs:write",
+         *         "changes:write",
+         *         "library:read",
+         *         "sources:write"
+         *       ]
+         *     }
+         */
         AgentKeyOut: {
+            /** @description The bound agent definition as its stable key, such as `watch-sweeper`, with a label naming its current version to show on screen, such as `watch-sweeper v1`. The kind is null because the field already says what the key points at. Agent definitions are platform rows loaded from versioned definition folders, not a vocabulary an admin may extend or add to. Null exactly when `agentId` is. */
             agent: components["schemas"]["RoleRef"] | null;
-            /** Agentid */
+            /**
+             * Agentid
+             * @description The identifier of the agent definition the key is bound to, a UUID from `GET /agent-definitions`. Everything the key writes is recorded as that agent, so the audit trail names the agent rather than the key. Null only for a platform key bound to no agent, which is listed so that it can be seen and revoked; this API never creates one, and the review queue refuses one.
+             */
             agentId: string | null;
             /**
              * Createdat
              * Format: date-time
+             * @description When the key was created, as a UTC timestamp in ISO 8601, set by the server.
              */
             createdAt: string;
-            /** Expiresat */
+            /**
+             * Expiresat
+             * @description When the key stops working on its own, as a UTC timestamp in ISO 8601; from that moment every call with it answers `unauthenticated`. Null for a key that does not expire, which stays live until it is revoked.
+             */
             expiresAt: string | null;
             /**
              * Id
              * Format: uuid
+             * @description The key's permanent identifier, a UUID the server issues. Pass it to `POST /agent-keys/{key_id}/revoke`; it is not the key itself and cannot sign a request.
              */
             id: string;
-            /** Keyprefix */
+            /**
+             * Keyprefix
+             * @description The first part of the key, eight hexadecimal characters such as `5e0c9a41`, kept in the clear so a key found in a log or a vault can be matched to this row. It is not a secret and is not enough to call the API: the rest of the key was shown once, at creation, and only its hash is stored.
+             */
             keyPrefix: string;
-            /** Lastusedat */
+            /**
+             * Lastusedat
+             * @description When the key last authenticated a call, as a UTC timestamp in ISO 8601. It moves at most once a minute by default, so it says a key is in use rather than counting its calls. Null for a key that has never been used.
+             */
             lastUsedAt: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description The name a platform administrator gave the key, such as `Watch sweeper, nightly`, to tell keys apart on screen. It is a label and nothing reads it: the agent the key acts as is `agent`, not this name.
+             */
             name: string;
-            /** Revokedat */
+            /**
+             * Revokedat
+             * @description When a platform administrator revoked the key, as a UTC timestamp in ISO 8601; from that moment every call with it answers `unauthenticated`. A revoked key stays listed and in the security log, and cannot be turned back on. Null while it is live.
+             */
             revokedAt: string | null;
-            /** Scopes */
+            /**
+             * Scopes
+             * @description What the key may do, as scope keys, sorted. `agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources a run checked; `changes:write` registers a regulatory change and writes its facts on the watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` reads the proposal queue and approves, corrects or rejects a proposal someone else filed, as the independent second pair of eyes; `search:read` searches the library; `library:read` reads its records and vocabularies; `upcoming:read` reads the public dates coming up; `tenant:read` reads a bank's profile, of which a key that belongs to no bank has none. No scope writes a library record: a finding becomes a change or a proposal, never an edit.
+             */
             scopes: string[];
         };
-        /** AgentKeysPage */
+        /**
+         * AgentKeysPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "agent": {
+         *             "key": "watch-sweeper",
+         *             "kind": null,
+         *             "label": "watch-sweeper v1"
+         *           },
+         *           "agentId": "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953",
+         *           "createdAt": "2026-09-10T08:00:00Z",
+         *           "expiresAt": "2027-09-10T23:59:59Z",
+         *           "id": "0b6f4c8e-2d1a-4e7b-9c35-7a1e5d2f9b40",
+         *           "keyPrefix": "5e0c9a41",
+         *           "lastUsedAt": "2026-09-19T02:00:03Z",
+         *           "name": "Watch sweeper, nightly",
+         *           "revokedAt": null,
+         *           "scopes": [
+         *             "agent-runs:write",
+         *             "changes:write",
+         *             "library:read",
+         *             "sources:write"
+         *           ]
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
         AgentKeysPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The platform's keys on this page, newest first, revoked and expired ones included so that the list is the whole history. A bank's own keys are never here. An empty list is a 200 and means no platform key exists yet.
+             */
             items: components["schemas"]["AgentKeyOut"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many platform keys exist in total, not how many are on this page; use it to size a pager.
+             */
             total: number;
         };
         /**
@@ -4093,7 +4394,10 @@ export interface components {
             expiresAt?: string | null;
             /** Name */
             name: string;
-            /** Scopes */
+            /**
+             * Scopes
+             * @description What the new key may do, at least one scope key, each counted once. A bank's key may hold only these: `library:read` reads the shared library's instruments, provisions and obligations; `search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; `tenant:read` reads the bank's own profile; and `proposals:write` files a proposal to the shared library, which changes nothing until someone independent approves it. No scope writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and `proposals:review` belong to the platform's own agents and are refused on a bank's key. Anything else is refused with `unknown_key`, and the message lists the valid scopes.
+             */
             scopes: string[];
         };
         /** ApiKeyCreated */
@@ -4116,7 +4420,10 @@ export interface components {
             name: string;
             /** Plainkey */
             plainKey: string;
-            /** Scopes */
+            /**
+             * Scopes
+             * @description What the new key may do, as scope keys, sorted. `library:read` reads the shared library's instruments, provisions and obligations; `search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; `tenant:read` reads the bank's own profile; and `proposals:write` files a proposal to the shared library, which changes nothing until someone independent approves it. No scope writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and `proposals:review` belong to the platform's own agents and are refused on a bank's key.
+             */
             scopes: string[];
         };
         /** ApiKeyOut */
@@ -4141,7 +4448,10 @@ export interface components {
             name: string;
             /** Revokedat */
             revokedAt: string | null;
-            /** Scopes */
+            /**
+             * Scopes
+             * @description What this key may do, as scope keys. A bank's key holds only these: `library:read` reads the shared library's instruments, provisions and obligations; `search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; `tenant:read` reads the bank's own profile; and `proposals:write` files a proposal to the shared library, which changes nothing until someone independent approves it. No scope writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and `proposals:review` belong to the platform's own agents and are refused on a bank's key. A key created before that rule may still list a platform scope here; it works without it, and the security log records `key_scopes_withheld` when it is used.
+             */
             scopes: string[];
         };
         /** ApiKeysPage */
@@ -12774,6 +13084,37 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listAgentDefinitions: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentDefinitionPage"];
+                };
+            };
+        };
+    };
     listAgentKeys: {
         parameters: {
             query?: {
@@ -12834,6 +13175,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The identifier of the platform key to revoke, the UUID `GET /agent-keys` lists as `id`, never the key itself. A bank's key or an identifier that names nothing answers `not_found`. */
                 key_id: string;
             };
             cookie?: never;

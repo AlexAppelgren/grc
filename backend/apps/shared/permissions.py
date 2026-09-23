@@ -236,10 +236,21 @@ ALL_SCOPES: frozenset[str] = frozenset(
         SCOPE_PROPOSALS_REVIEW,
     }
 )
-# A scope a tenant's own key may never hold, however it is granted (ID-10, D-62): the
-# review queue is the platform's, never a bank's, and this is the one place that rule is
-# a set membership test rather than a sentence.
-PLATFORM_ONLY_SCOPES: frozenset[str] = frozenset({SCOPE_PROPOSALS_REVIEW})
+# A scope a tenant's own key may never hold, however it is granted (ID-10, D-61, D-62): the
+# review queue is the platform's, never a bank's, and so is the watch feed. Opening a run,
+# logging a source check and writing a change's facts are what bleqq's own agents do for
+# every bank at once, and D-61 says a bank's agent never writes the facts every other bank
+# reads; a bank's own agents are R2 and write only in its zone, through routes that do not
+# exist yet. A bank's key is refused these at creation (422,
+# apps/identity/api_keys_logic.py), and a key that already holds one works without it, with
+# a `key_scopes_withheld` row in the security log. This is the one place the rule is a set
+# membership test rather than a sentence.
+PLATFORM_ONLY_SCOPES: frozenset[str] = frozenset(
+    {SCOPE_PROPOSALS_REVIEW, SCOPE_AGENT_RUNS_WRITE, SCOPE_SOURCES_WRITE, SCOPE_CHANGES_WRITE}
+)
+# What a bank's own key may be given: reads, and filing a proposal, which changes nothing
+# until someone independent approves it (AC-PRO1).
+TENANT_KEY_SCOPES: frozenset[str] = ALL_SCOPES - PLATFORM_ONLY_SCOPES
 
 # ---------------------------------------------------------------------------------------
 # The permission catalogue for the role editor (`GET /reference/permissions`, ID-09):

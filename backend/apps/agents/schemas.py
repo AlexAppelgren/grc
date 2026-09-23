@@ -26,6 +26,8 @@ from pydantic import ConfigDict, JsonValue
 from apps.shared.schemas import CamelSchema, WriteBody
 
 __all__ = [
+    "AgentDefinitionOut",
+    "AgentDefinitionPage",
     "AgentRunFinish",
     "AgentRunInput",
     "AgentRunOut",
@@ -319,4 +321,77 @@ class AgentRunPage(CamelSchema):
             "it to size a pager. It counts only what this caller is allowed to read, so two "
             "banks asking the same question will get different totals for the same platform."
         )
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# The platform's agent definitions, read-only (ID-10, AGT-01): what a platform
+# administrator binds an agent key to. Publishing a definition is AGT-03, R2.
+# ---------------------------------------------------------------------------------------
+_EXAMPLE_DEFINITION: dict[str, JsonValue] = {
+    "id": "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953",
+    "key": "watch-sweeper",
+    "description": (
+        "Checks registered sources for new or changed regulatory documents, registers one "
+        "change per reform with a stable key, and proposes obligation links."
+    ),
+    "currentVersion": 1,
+    "active": False,
+}
+
+
+class AgentDefinitionOut(CamelSchema):
+    """One agent definition as the platform ships it, loaded from its versioned folder."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_DEFINITION]})
+
+    id: uuid.UUID = Field(
+        description=(
+            "The definition's permanent identifier, a UUID. It is what `POST /agent-keys` takes "
+            "as `agentId` to bind a key to this agent."
+        )
+    )
+    key: str = Field(
+        description=(
+            "The definition's stable key, such as `watch-sweeper`: what a run names in "
+            "`POST /agent-runs` and what the audit trail records as the actor. It is issued once "
+            "and never changes; a new version keeps the key and raises `currentVersion`."
+        )
+    )
+    description: str = Field(
+        description=(
+            "What the agent does, in the words of its definition file. It says what the agent is "
+            "for and grants nothing: what a key bound to it may do is the key's scopes."
+        )
+    )
+    current_version: int = Field(
+        description=(
+            "The version of the definition this build loaded — its prompt, tools and budgets — "
+            "counting from 1. Runs started from now on run it; an earlier run keeps the version "
+            "it ran."
+        )
+    )
+    active: bool = Field(
+        description=(
+            "Whether the definition is released for scheduled runs. True for an active "
+            "definition; false while it is a draft or after it is retired. A key can be bound to "
+            "a draft so that its runner can be tried before release."
+        )
+    )
+
+
+class AgentDefinitionPage(CamelSchema):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_DEFINITION], "total": 1}]})
+
+    items: list[AgentDefinitionOut] = Field(
+        description=(
+            "The definitions on this page, ordered by key. They are the platform's own agents, "
+            "the same for every bank; a bank's own agents are not listed here. An empty list is a "
+            "200 and means no definition has been loaded yet."
+        )
+    )
+    total: int = Field(
+        description="How many definitions exist in total, not how many are on this page; use it to size a pager."
     )

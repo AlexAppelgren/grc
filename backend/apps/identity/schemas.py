@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from apps.shared import permissions as perms
 from apps.shared.schemas import CamelSchema, WriteBody
@@ -389,11 +389,30 @@ class PermissionOut(CamelSchema):
     description: str
 
 
+# What a bank's key may hold, in words, beside the set that enforces it
+# (perms.TENANT_KEY_SCOPES). Shared by the three ApiKey* shapes so the list cannot drift.
+_TENANT_KEY_SCOPES_TEXT = (
+    "`library:read` reads the shared library's instruments, provisions and obligations; "
+    "`search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; "
+    "`tenant:read` reads the bank's own profile; and `proposals:write` files a proposal to the "
+    "shared library, which changes nothing until someone independent approves it. No scope "
+    "writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and "
+    "`proposals:review` belong to the platform's own agents and are refused on a bank's key."
+)
+
+
 class ApiKeyOut(CamelSchema):
     id: uuid.UUID
     name: str
     key_prefix: str
-    scopes: list[str]
+    scopes: list[str] = Field(
+        description=(
+            "What this key may do, as scope keys. A bank's key holds only these: "
+            + _TENANT_KEY_SCOPES_TEXT
+            + " A key created before that rule may still list a platform scope here; it works "
+            "without it, and the security log records `key_scopes_withheld` when it is used."
+        )
+    )
     created_at: datetime
     expires_at: datetime | None
     revoked_at: datetime | None
@@ -407,7 +426,15 @@ class ApiKeysPage(CamelSchema):
 
 class ApiKeyCreate(CamelSchema):
     name: str = Field(max_length=200)
-    scopes: list[str] = Field(min_length=1)
+    scopes: list[str] = Field(
+        min_length=1,
+        description=(
+            "What the new key may do, at least one scope key, each counted once. A bank's key "
+            "may hold only these: "
+            + _TENANT_KEY_SCOPES_TEXT
+            + " Anything else is refused with `unknown_key`, and the message lists the valid scopes."
+        ),
+    )
     expires_at: datetime | None = None
 
 
@@ -415,7 +442,7 @@ class ApiKeyCreated(CamelSchema):
     id: uuid.UUID
     name: str
     key_prefix: str
-    scopes: list[str]
+    scopes: list[str] = Field(description="What the new key may do, as scope keys, sorted. " + _TENANT_KEY_SCOPES_TEXT)
     created_at: datetime
     expires_at: datetime | None
     plain_key: str
@@ -424,44 +451,207 @@ class ApiKeyCreated(CamelSchema):
 # ---------------------------------------------------------------------------------------
 # Platform agent keys (ID-10, AGT-01). A key bound to an agent is the platform's: bleqq's
 # agents are platform-owned and platform-run, so `agentId` sits on this request and never
-# on the tenant's `POST /tenant/api-keys` (chunk 5 plan rule 13).
+# on the tenant's `POST /tenant/api-keys` (chunk 5 plan rule 13). Every example is the
+# prototype's nightly watch sweeper, never a real key.
 # ---------------------------------------------------------------------------------------
+_AGENT_KEY_SCOPES_TEXT = (
+    "`agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources "
+    "a run checked; `changes:write` registers a regulatory change and writes its facts on the "
+    "watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` "
+    "reads the proposal queue and approves, corrects or rejects a proposal someone else filed, "
+    "as the independent second pair of eyes; `search:read` searches the library; `library:read` "
+    "reads its records and vocabularies; `upcoming:read` reads the public dates coming up; "
+    "`tenant:read` reads a bank's profile, of which a key that belongs to no bank has none. No "
+    "scope writes a library record: a finding becomes a change or a proposal, never an edit."
+)
+_EXAMPLE_AGENT_ID = "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953"
+_EXAMPLE_AGENT_KEY: dict[str, Any] = {
+    "id": "0b6f4c8e-2d1a-4e7b-9c35-7a1e5d2f9b40",
+    "name": "Watch sweeper, nightly",
+    "keyPrefix": "5e0c9a41",
+    "scopes": ["agent-runs:write", "changes:write", "library:read", "sources:write"],
+    "agentId": _EXAMPLE_AGENT_ID,
+    "agent": {"key": "watch-sweeper", "kind": None, "label": "watch-sweeper v1"},
+    "createdAt": "2026-09-10T08:00:00Z",
+    "expiresAt": "2027-09-10T23:59:59Z",
+    "revokedAt": None,
+    "lastUsedAt": "2026-09-19T02:00:03Z",
+}
+_EXAMPLE_AGENT_KEY_CREATED: dict[str, Any] = {
+    key: value for key, value in _EXAMPLE_AGENT_KEY.items() if key not in ("agent", "revokedAt", "lastUsedAt")
+} | {"plainKey": "cw_5e0c9a41_<secret-shown-once>"}
+
+
 class AgentKeyOut(CamelSchema):
-    id: uuid.UUID
-    name: str
-    key_prefix: str
-    scopes: list[str]
-    agent_id: uuid.UUID | None
-    agent: RoleRef | None
-    created_at: datetime
-    expires_at: datetime | None
-    revoked_at: datetime | None
-    last_used_at: datetime | None
+    """One platform key as the console lists it. The secret is never here, only its prefix."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_AGENT_KEY]})
+
+    id: uuid.UUID = Field(
+        description=(
+            "The key's permanent identifier, a UUID the server issues. Pass it to "
+            "`POST /agent-keys/{key_id}/revoke`; it is not the key itself and cannot sign a request."
+        )
+    )
+    name: str = Field(
+        description=(
+            "The name a platform administrator gave the key, such as `Watch sweeper, nightly`, to "
+            "tell keys apart on screen. It is a label and nothing reads it: the agent the key acts "
+            "as is `agent`, not this name."
+        )
+    )
+    key_prefix: str = Field(
+        description=(
+            "The first part of the key, eight hexadecimal characters such as `5e0c9a41`, kept in "
+            "the clear so a key found in a log or a vault can be matched to this row. It is not "
+            "a secret and is not enough to call the API: the rest of the key was shown once, at "
+            "creation, and only its hash is stored."
+        )
+    )
+    scopes: list[str] = Field(description="What the key may do, as scope keys, sorted. " + _AGENT_KEY_SCOPES_TEXT)
+    agent_id: uuid.UUID | None = Field(
+        description=(
+            "The identifier of the agent definition the key is bound to, a UUID from "
+            "`GET /agent-definitions`. Everything the key writes is recorded as that agent, so the "
+            "audit trail names the agent rather than the key. Null only for a platform key bound to "
+            "no agent, which is listed so that it can be seen and revoked; this API never creates "
+            "one, and the review queue refuses one."
+        )
+    )
+    agent: RoleRef | None = Field(
+        description=(
+            "The bound agent definition as its stable key, such as `watch-sweeper`, with a label "
+            "naming its current version to show on screen, such as `watch-sweeper v1`. The kind is "
+            "null because the field already says what the key points at. Agent definitions are "
+            "platform rows loaded from versioned definition folders, not a vocabulary an admin "
+            "may extend or add to. Null exactly when `agentId` is."
+        )
+    )
+    created_at: datetime = Field(description="When the key was created, as a UTC timestamp in ISO 8601, set by the server.")
+    expires_at: datetime | None = Field(
+        description=(
+            "When the key stops working on its own, as a UTC timestamp in ISO 8601; from that "
+            "moment every call with it answers `unauthenticated`. Null for a key that does not "
+            "expire, which stays live until it is revoked."
+        )
+    )
+    revoked_at: datetime | None = Field(
+        description=(
+            "When a platform administrator revoked the key, as a UTC timestamp in ISO 8601; from "
+            "that moment every call with it answers `unauthenticated`. A revoked key stays listed "
+            "and in the security log, and cannot be turned back on. Null while it is live."
+        )
+    )
+    last_used_at: datetime | None = Field(
+        description=(
+            "When the key last authenticated a call, as a UTC timestamp in ISO 8601. It moves at "
+            "most once a minute by default, so it says a key is in use rather than counting its "
+            "calls. Null for a key that has never been used."
+        )
+    )
 
 
 class AgentKeysPage(CamelSchema):
-    items: list[AgentKeyOut]
-    total: int
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_AGENT_KEY], "total": 1}]})
+
+    items: list[AgentKeyOut] = Field(
+        description=(
+            "The platform's keys on this page, newest first, revoked and expired ones included so "
+            "that the list is the whole history. A bank's own keys are never here. An empty list "
+            "is a 200 and means no platform key exists yet."
+        )
+    )
+    total: int = Field(
+        description="How many platform keys exist in total, not how many are on this page; use it to size a pager."
+    )
 
 
 class AgentKeyCreate(WriteBody):
-    name: str = Field(min_length=1, max_length=200)
-    agent_id: uuid.UUID
-    scopes: list[str] = Field(min_length=1, max_length=len(perms.ALL_SCOPES))
-    expires_at: datetime | None = None
+    """`POST /agent-keys`: a field the schema does not name is refused, never dropped."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "Watch sweeper, nightly",
+                    "agentId": _EXAMPLE_AGENT_ID,
+                    "scopes": ["agent-runs:write", "sources:write", "changes:write", "library:read"],
+                    "expiresAt": "2027-09-10T23:59:59Z",
+                }
+            ]
+        }
+    )
+
+    name: str = Field(
+        min_length=1,
+        max_length=200,
+        description=(
+            "A name to tell the key apart on screen, between 1 and 200 characters, such as "
+            "`Watch sweeper, nightly`. Surrounding spaces are trimmed, and a name of spaces alone "
+            "is refused with `name_required`."
+        ),
+    )
+    agent_id: uuid.UUID = Field(
+        description=(
+            "The identifier of the agent definition the key will act as, a UUID taken from "
+            "`GET /agent-definitions`. Everything the key writes is recorded as that agent, and a "
+            "key runs that one agent and no other. An identifier that names no definition is "
+            "refused with `unknown_key`."
+        )
+    )
+    scopes: list[str] = Field(
+        min_length=1,
+        max_length=len(perms.ALL_SCOPES),
+        description=(
+            f"What the key may do: at least one and at most {len(perms.ALL_SCOPES)} scope keys, "
+            "each counted once. Give the key the least its agent needs. "
+            + _AGENT_KEY_SCOPES_TEXT
+            + " Any other value is refused with `unknown_key`, and the message lists the valid scopes."
+        ),
+    )
+    expires_at: datetime | None = Field(
+        default=None,
+        description=(
+            "When the key should stop working on its own, as a UTC timestamp in ISO 8601 that must "
+            "lie in the future, or `expiry_in_past` is answered. Leave it out or send null for a "
+            "key that lives until it is revoked."
+        ),
+    )
 
 
 class AgentKeyCreated(CamelSchema):
     """The secret appears here and nowhere else: no log, no audit value, no outbox payload."""
 
-    id: uuid.UUID
-    name: str
-    key_prefix: str
-    scopes: list[str]
-    agent_id: uuid.UUID
-    created_at: datetime
-    expires_at: datetime | None
-    plain_key: str
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_AGENT_KEY_CREATED]})
+
+    id: uuid.UUID = Field(
+        description="The new key's permanent identifier, a UUID: the handle to revoke it by, never the key itself."
+    )
+    name: str = Field(description="The name the key was given, trimmed, exactly as it will be listed.")
+    key_prefix: str = Field(
+        description=(
+            "The eight hexadecimal characters the key begins with after `cw_`, kept in the clear "
+            "so the key can be recognised in the list later without the secret."
+        )
+    )
+    scopes: list[str] = Field(description="What the key may do, as scope keys, sorted. " + _AGENT_KEY_SCOPES_TEXT)
+    agent_id: uuid.UUID = Field(
+        description="The identifier of the agent definition the key acts as; everything it writes is recorded as that agent."
+    )
+    created_at: datetime = Field(description="When the key was created, as a UTC timestamp in ISO 8601, set by the server.")
+    expires_at: datetime | None = Field(
+        description="When the key stops working on its own, as a UTC timestamp in ISO 8601, or null for a key with no expiry."
+    )
+    plain_key: str = Field(
+        description=(
+            "The key itself, `cw_<prefix>_<secret>`, to be sent as `X-Api-Key` or as a bearer "
+            "token. This answer is the only time it exists outside the caller: the server keeps "
+            "only a hash of the secret, never logs it and never shows it again, so put it straight "
+            "into the agent runner's secret store. A lost key is revoked and replaced, not recovered."
+        )
+    )
 
 
 class SecurityEventOut(CamelSchema):
