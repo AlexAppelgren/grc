@@ -79,7 +79,8 @@ class SearchChunkMetadata(CamelSchema):
     snake_case like every other column. `instrument_id` and `obligation_id` are the
     records the chunk belongs to, `regime` and `term_ids` its taxonomy scope, `binding`
     whether the instrument binds, and `jurisdiction` and `duty_type` the vocabulary keys
-    `SearchFilters` sends. Every one of them is a key or an id, never a label, so
+    `SearchFilters` sends; `authority` is the issuing authority's key on a registered
+    change's chunk. Every one of them is a key or an id, never a label, so
     relabelling a vocabulary row rewrites no chunk.
     """
 
@@ -90,6 +91,7 @@ class SearchChunkMetadata(CamelSchema):
     term_ids: list[UUID] = Field(default_factory=list)
     jurisdiction: str | None = None
     duty_type: str | None = None
+    authority: str | None = None
 
 
 class SearchHitType(enum.StrEnum):

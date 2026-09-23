@@ -903,10 +903,10 @@ def seed_home_cases(tenants: list[Tenant], home: SeedHome) -> int:
 def seed_search_index() -> dict[str, int]:
     """SRC-01, J-7 (c7-e2e-seed): the search index over the seeded library, rebuilt and
     embedded with the mock embedder inside the same transaction as the seed, so a journey
-    never races the outbox worker for a vector that has not arrived yet. Runs after
-    `load_library()` and `seed_watch_changes()`, once every shared row the index can read
-    exists, and before any tenant is activated (`index_write()` writes in the shared zone,
-    the same reason `seed_authorities()` and `load_library()` run there too).
+    never races the outbox worker for a vector that has not arrived yet. Runs last, once
+    every shared row the index can read exists, registered changes included, with no
+    tenant active (`index_write()` writes in the shared zone and the rebuild's audit row
+    belongs to it).
 
     The chunk count is read through `django_apps.get_model()`, never through a `SearchChunk`
     import: the index fence's guard (`apps/search/tests_index_fence.py`) flags any module
@@ -1250,9 +1250,6 @@ def seed_e2e() -> dict[str, int]:
         # `load_library()` run here rather than after `seed_tenants()` (WAT-06).
         home = seed_watch_changes()
         seed_outside_scope_terms()
-        # SRC-01: the index reads every shared row load_library() and seed_watch_changes()
-        # just wrote, and is itself a shared-zone write, so it runs here too.
-        search_index = seed_search_index()
         roles_logic.ensure_platform_roles()
         tenants = seed_tenants()
         logins = seed_logins(tenants)
@@ -1269,6 +1266,11 @@ def seed_e2e() -> dict[str, int]:
         seed_chunk5_sources(closed_run)
         seed_chunk5_changes(closed_run)
         chunk5_cases = seed_chunk5_cases(tenants)
+        # SRC-01: last, once every shared row the index reads exists — chunk 5's changes
+        # included, whose registrations reach the index through the outbox without a vector
+        # (search-index-changes) — and in the shared zone, where its audit row belongs.
+        tenancy.clear_tenant()
+        search_index = seed_search_index()
     return {
         "tenants": len(tenants),
         "logins": logins,

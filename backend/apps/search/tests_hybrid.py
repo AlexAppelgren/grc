@@ -598,7 +598,7 @@ class SearchTieBreakTests(TestCase):
 
 class SearchRecordKeyTests(CorpusMixin, TestCase):
     """search-eval-gate: every kind of chunk breaks a tie on its own record's stable key, a
-    change's too, although nothing indexes changes yet. A kind added to `SearchSource`
+    change's too. A kind added to `SearchSource`
     without a branch in the tie-break fails here rather than tying on nothing."""
 
     change: ClassVar[RegulatoryChange]

@@ -105,6 +105,7 @@ from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy import matching
 from apps.watch.models import RegulatoryChange
+from apps.watch.reading import _scope_term_ids as change_scope_term_ids  # the feed's own rule, never a copy
 
 # Which chunk a caller means by a hit kind, and which kind a chunk answers as. One mapping,
 # read both ways, so a `types` filter and a hit can never disagree about what a chunk is.
@@ -317,15 +318,18 @@ def _in_footprint(tenant: Tenant) -> Func:
     use, over the scope the inventory hands it: `library.reading`'s SQL twins, read for the
     chunk's own record and never copied here. An obligation's chunk is judged by the
     obligation's own terms plus its instrument's scope; a provision's, which has no terms of
-    its own, by its instrument's scope alone; a chunk that names neither carries no scope
-    and matches every bank, as it did before. So the regime and the jurisdictions an
+    its own, by its instrument's scope alone; a registered change's by the scope the watch
+    feed judges it by (`watch.reading`); a chunk that names none of them carries no scope
+    and matches every bank. So the regime and the jurisdictions an
     instrument's rules reach (D-28, D-29) narrow a search exactly as they narrow the
     inventory."""
     obligation = Obligation.objects.filter(id=_outer_metadata_uuid("obligation_id")).values(scope=scope_term_ids())
     instrument = Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id")).values(scope=instrument_scope_term_ids())
+    change = RegulatoryChange.objects.filter(id=OuterRef("source_id")).values(scope=change_scope_term_ids())
     scope = Coalesce(
         Subquery(obligation[:1]),
         Subquery(instrument[:1]),
+        Subquery(change[:1]),
         Value([], output_field=ArrayField(UUIDField())),
         output_field=ArrayField(UUIDField()),
     )
@@ -486,9 +490,9 @@ def _hit(row: dict[str, Any], query: str) -> SearchHit:
         valid_from=row["valid_from"],
         valid_to=row["valid_to"],
         # The library's own view of how soon a record deserves attention lives on a
-        # registered change (`watch.RegulatoryChange.suggested_urgency`), and a change is
-        # not an indexed source until `c7-index-changes` lands. An obligation and a
-        # provision carry none, so saying so is the whole truth here.
+        # registered change (`watch.RegulatoryChange.suggested_urgency`). An obligation
+        # and a provision carry none; a change hit does not carry its label yet, which
+        # needs the reader's language here, so the change it opens is where it is shown.
         urgency=None,
     )
 
