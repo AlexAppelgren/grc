@@ -490,6 +490,13 @@ section 5 guards, and (a) carries a CLAUDE.md paragraph, which no agent may edit
 When either lands, its decision rows take the numbers `docs/DECISIONS.md` reserves
 for them, matched by title and never by arithmetic.
 
+- [ ] **Keep the branch that holds them.** Main has only the summaries below. The full
+      designs are the commits `cee7cf2` and `b5b70c5`, and only
+      `origin/claude/r1-integration` holds both. If that branch is deleted, both are
+      eventually lost. Keep it until both have landed or you have declined them. Or tag
+      the two commits yourself (for example `parked/agent-access` and `parked/d75`) and
+      push the tags, and then the branch can go.
+
 ### (a) PRD 0.5: agent access, the agents a bank runs itself (commit `cee7cf2`)
 
 A bank registers its own agents (a coding agent, a product agent, a procurement
@@ -578,13 +585,35 @@ covers. D-75 instead lets one holder of `applicability.approve` set it directly
 after a confirmation dialog, with one audit event naming the person, the value
 before and after and the reason: no request, no second approver, no step-up, and a
 pasted batch is one confirmed call with an audit event per row. Risk acceptance
-keeps its four eyes, and "applies" and "we comply" stay separate facts. It amends
-PRD REG-01 and J-10 and the register spec's REG-S1, REG-S2, REG-S12 and REG-S14.
-Nothing in REG is built (chunk 8, R2), so it changes what gets built, not what
-exists.
+keeps its four eyes, and "applies" and "we comply" stay separate facts. Nothing in
+REG is built (chunk 8, R2), so it changes what gets built, not what exists.
 
-- [ ] Confirm D-75 in chat to the session that merges the build. The change is ready
-      as its own commit and lands as D-75; until then REG-01 stays as the PRD says.
+Everything it changes, all in the documents:
+
+- PRD: REG-01, J-10 and AC-REG1 (today "an approver with a fresh step-up decides 93
+  pending unit requests" and a request the caller filed answers 409
+  `four_eyes_violation`), plus a version row. That row is 0.6, because 0.5 is held
+  for (a).
+- The register spec (`backend/apps/register/app.md`): its context, the REG-01 row,
+  AC-REG1 and the acceptance bullet on requests, and REG-S1, REG-S2, REG-S12, REG-S13
+  and REG-S14, with their test stubs and journey titles.
+- Decisions: D-44 and its ADR 0038 ("many pending applicability requests are decided
+  in one call, with four eyes on every row") are superseded. D-41 and D-42 and their
+  ADRs 0035 and 0036 lose the applicability request table they extend, and D-42's
+  "an approved 'applies'" becomes a confirmed one.
+- The four-eyes guard (`backend/apps/shared/tests_four_eyes.py`) no longer lists
+  applicability among the tables it must grow to cover. The chunk 8 rows of
+  `docs/plans/UI_Implementation_Plan.md` lose their request, approve and decide
+  routes.
+- `applicability.request` retires when chunk 8 builds REG-01.
+
+This is prepared as one commit on the local branch `wt/r1w1-lost-content-d75`.
+`b5b70c5` is the pushed original, and it covers only REG-01, J-10 and the four
+register scenarios.
+
+- [ ] Confirm or decline D-75 in chat to the session that merges the build. That
+      session ticks this item in its own merge commit, with the date and your words.
+      Until then REG-01 keeps its four eyes as the PRD says.
 
 ## The calendar feed carries every roadmap date, whatever the date's precision (2026-09-21, HOM-04)
 

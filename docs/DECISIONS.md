@@ -79,17 +79,21 @@ the PRD version bumps if behaviour changes.
 | D-74 | Who confirms a watch item's curation, now that bleqq staffs no editor at all (Alex, 2026-09-21: "the bleqq staff part, that's optional as I will probably have agents managing the library"; closes `q-editor-confirm`, his item 16) | An agent of a different definition and key confirms, and the item reads **machine-confirmed**, naming the suggesting and the confirming agent, exactly as an applied library record does under D-62. It is the same separation the proposal door uses, applied where there is no proposal: the confirming key holds the review scope, reaches the curation routes and no library row, and the one write path copies the agent from the key so two keys of one agent cannot confirm each other and an unbound key cannot pass on a null. What a curation confirmation still is not: it is not four eyes, because a check constraint guards a proposal row and there is no proposal here, and it is not a person's verification, so no screen may render it as one. Unblocks WAT-S4, WAT-S6, INV-S14 and PRO-S13 | Alex's own answer, and the only one consistent with the rest: item 19 left the role unstaffed, so "a library editor confirms it alone" named nobody, and a suggestion nobody can ever confirm would leave every bank re-deciding the same obligation link for itself. The machine-confirmed label is what keeps the widening honest — the confirmation gets cheaper, and the record says so, rather than borrowing the weight of a person's verification | That a curation confirmation carries no four eyes behind it. The proposal door is unchanged and still constrained; this is the one confirmation in the product that rests on the scope separation alone. If that proves too thin in the first assurance review, the way back is to make curation a proposal like everything else, which costs a queue and nothing else |
 
 **Numbering.** D-70 to D-73, D-76 and D-77 are reserved for PRD 0.5's agent-access
-decisions, and D-75 for the applicability decision. Both are parked in commits
-`cee7cf2` and `b5b70c5` on `origin/claude/r1-integration`, waiting for Alex
-(`docs/TODO_FOR_alex.md`, "Parked for your review"). They land with these numbers,
-matched by title and never by arithmetic: that branch numbers agent access D-68 to
-D-73, and because main took D-68 and D-69 first, its "What a bank's own agent may
-read" becomes D-76 and "How a bank's own agent authenticates" becomes D-77, while
-D-70 to D-73 keep their titles and numbers. D-78 to D-81 are pre-assigned to work in
-flight: D-78 `identity-agent-keys-backend`, D-79 `proposals-decide-hardening`, D-80
-`agents-confirmer-definition` and D-81 `ask-standard-no-answer`. Any later row asks the
-orchestrating session for its number before it is written, rather than counting the
-table.
+decisions, as are PRD version 0.5 and ADRs 0055 to 0057, and D-75 for the
+applicability decision. Both are parked in commits `cee7cf2` and `b5b70c5` on
+`origin/claude/r1-integration`, waiting for Alex (`docs/TODO_FOR_alex.md`, "Parked for
+your review"). Main holds only their summary, so that branch is kept until both have
+landed or Alex has declined them. They land with these numbers, matched by title and
+never by arithmetic: that branch numbers agent access D-68 to D-73, and because main
+took D-68 and D-69 first, its "What a bank's own agent may read" becomes D-76 and "How
+a bank's own agent authenticates" becomes D-77, while D-70 to D-73 keep their titles
+and numbers. D-78 to D-81 are pre-assigned to work in flight: D-78
+`identity-agent-keys-backend`, D-79 `proposals-decide-hardening`, D-80
+`agents-confirmer-definition` and D-81 `ask-standard-no-answer`. A later row written on
+a branch is numbered D-8x with its package named in it. The session that merges it
+into main gives it the lowest number that is neither used nor reserved in this note.
+It checks that number against this note, and does not work it out by counting rows.
+The next new ADR is 0058.
 
 D-18 to D-34 are PRD 0.3's My work, participants and markets decisions
 (`docs/plans/briefs/MY_WORK_AND_MARKETS.md`); D-35 to D-47 are its standards

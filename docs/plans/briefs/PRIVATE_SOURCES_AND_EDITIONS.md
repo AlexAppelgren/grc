@@ -11,7 +11,7 @@ Where each half goes:
 
 | Half | Scenario | Where it is built | What this page is to it |
 |---|---|---|---|
-| A new edition of a standard is one change, and only its followers see it | WAT-S10 (WAT-02, WAT-07, CAS-01, AC-FP3) | R1: `tax-opt-in-rule` (FP-01's opt-in rule, FP-S16, FP-S17), then `watch-standards` (WAT-S10, WAT-S11) | Input. Those packages' briefs win where they differ |
+| A new edition of a standard is one change, and only its followers see it | WAT-S10 (WAT-02, WAT-07, CAS-01, AC-FP3) | R1, in this order: FP-01's opt-in rule (FP-S17; `FEATURES_0_3_TASKS.md` f03-T25 to f03-T28), the first standard in the fixture (FP-S16's integration half; f03-T35), then the watch rules for regime and standards (WAT-S10 and WAT-S11; f03-T43, chunk 5) | Input. Those tasks win where they differ |
 | A tenant requests a source, and private sources stay private | WAT-S8 (WAT-06) | **R3**, chunk 13: `c13-private-sources`, `c13-private-source-visibility`, `c13-private-source-runs` and their screens in `CHUNK13_TASKS.md` | Input. Not R1 work: WAT-06 is an R3 Should, and its runs wait on Alex (chunk 13's open question 1) |
 
 ## WAT-S10: a standard's new edition, seen only by the banks that follow it
@@ -54,10 +54,19 @@ and FP-S17 were still skipped).
 ## WAT-S8: a bank asks for a source, and a private source stays in the bank
 
 D-57 and owner item 10 apply. **R3 (WAT-06, chunk 13).** The design below differs
-from `CHUNK13_TASKS.md` in two places, and chunk 13's tasks must settle both before
-any code: this design makes the private `source` row itself the request, where
-chunk 13 plans a `SourceRequest` with a chosen visibility, and this design serves
-`/private-sources`, where chunk 13 serves `/source-requests`.
+from `CHUNK13_TASKS.md` in three places, and chunk 13's tasks must settle all three
+before any code:
+
+- **The request.** This design makes the private `source` row itself the request.
+  Chunk 13 plans a `SourceRequest` with a chosen visibility, private or shared.
+- **Who decides.** In this design, as in WAT-S8, the private source exists as soon as
+  the bank asks and the address passes its checks. Chunk 13's
+  `c13-private-source-visibility` creates the owned `Source` only from an approved
+  private request, and it names no approver.
+- **The route.** This design serves `/private-sources`, and chunk 13 serves
+  `/source-requests`.
+
+The design itself:
 
 - **One row, no second table.** The request is the private `source` row itself:
   `owner_tenant` set, kind `tenant_private`, and `source`'s existing mixed
