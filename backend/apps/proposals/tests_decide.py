@@ -37,14 +37,17 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 
 from apps.agents import testing as agents_testing
+from apps.governance.models import AiGeneration, AiPurpose
 from apps.library import testing as build
 from apps.library.models import ObligationVersion
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import logic
 from apps.proposals.models import Proposal, ProposalStatus
 from apps.shared import factories, tenancy
+from apps.shared import permissions as perms
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
+from apps.shared.schemas import AgentDecision
 from apps.shared.testing import LANDED, RACE_WAIT_SECONDS, ScenarioTestCase, backend_pid, hold_until_waiting_on_me, sign_in
 from apps.taxonomy.models import Flag, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
@@ -65,6 +68,10 @@ def _seed() -> None:
 
 def _actor(user: Any) -> Actor:
     return Actor(kind=ActorType.USER, id=user.id, label=user.name)
+
+
+def _agent_actor(key: Any) -> Actor:
+    return Actor(kind=ActorType.AGENT, id=key.agent.id, label=key.agent.key)
 
 
 def _platform_session(work: Callable[[], object]) -> str:
@@ -222,6 +229,117 @@ class ObligationVersionRaces(TransactionTestCase):
             )
 
 
+class DecidingOutsideARequest(TransactionTestCase):
+    """PRO-02: `logic.approve` and `logic.reject` own their transaction, so a caller with no
+    request around them, a worker or a shell, gets the whole decision or none of it, and a
+    retry after a failure writes the version once.
+
+    A request runs under ATOMIC_REQUESTS, which hid that neither opened a transaction of its
+    own. Outside one, `_decidable`'s row lock refused to run at all; inside a caller's own
+    transaction that carried on past a failure, an apply that failed part way kept the
+    version it had written, and the retry wrote a second one. Proven to fail 2026-09-23
+    without the `transaction.atomic()` in `approve`: the call with no transaction raised
+    TransactionManagementError at the row lock, every retry included, and the caller that
+    carried on was left with versions 2 and 3 for one approval."""
+
+    databases = {DEFAULT_DB_ALIAS}
+
+    def setUp(self) -> None:
+        with transaction.atomic():
+            _seed()
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.obligation = build.obligation(build.instrument(key="shell-instrument", regime="regime:securities"), key="obl-shell")
+            filer = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+            self.proposal, _ = logic.create(
+                kind="new_obligation_version",
+                title="Reword the duty",
+                payload={"summaries": {"en": "The duty, reworded."}, "originalLanguage": "en"},
+                field_sources={"summaries.en": "https://www.fi.se/"},
+                target_type="obligation",
+                target_id=self.obligation.id,
+                proposer=logic.Proposer(actor=_agent_actor(filer), api_key_id=filer.id, agent_id=filer.agent.id),
+                agent_run_id=agents_testing.platform_run(key=filer).id,
+            )
+            confirmer = agents_testing.reviewer_api_key()
+            self.review_run = agents_testing.platform_run(key=confirmer)
+            self.reviewer = logic.Reviewer(
+                actor=_agent_actor(confirmer), api_key_id=confirmer.id, agent_id=confirmer.agent.id, api_key_prefix=confirmer.row.key_prefix
+            )
+
+    def _decide(self, verb: str) -> Proposal:
+        common: dict[str, Any] = {
+            "proposal": logic.by_id(self.proposal.id),
+            "reviewer": self.reviewer,
+            "actor": self.reviewer.actor,
+            "decision": AgentDecision.model_validate(
+                agents_testing.DECISION if verb == "approve" else agents_testing.REJECTION_DECISION
+            ),
+            "agent_run_id": self.review_run.id,
+        }
+        if verb == "approve":
+            return logic.approve(**common, note="", step_up_assertion_id=None)
+        return logic.reject(**common, rejection_code="duplicate", note="Version 2 already says this.")
+
+    def _written(self) -> tuple[list[int], str, int, int]:
+        """The versions, the proposal's status, its decisions' audit rows and its logged
+        model calls, read in a transaction of the test's own."""
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            return (
+                sorted(ObligationVersion.objects.filter(obligation=self.obligation).values_list("version_number", flat=True)),
+                Proposal.objects.get(pk=self.proposal.id).status,
+                AuditEvent.objects.filter(subject_id=self.proposal.id, action__in=DECISIONS).count(),
+                AiGeneration.objects.filter(subject_id=self.proposal.id, purpose=AiPurpose.AGENT_REVIEW.value).count(),
+            )
+
+    def test_an_approval_that_fails_part_way_writes_nothing_and_a_retry_writes_one_version(self) -> None:
+        self.assertFalse(connection.in_atomic_block, "a worker or a shell calls with no transaction open")
+        # The search index fails after the version and its summaries are written.
+        with mock.patch("apps.proposals.apply.reindex", side_effect=RuntimeError("the search index is down")):
+            with self.assertRaises(RuntimeError):
+                self._decide("approve")
+        self.assertEqual(self._written(), ([1], ProposalStatus.OPEN.value, 0, 0), "nothing of the failed approval was kept")
+        self._decide("approve")
+        self.assertEqual(self._written(), ([1, 2], ProposalStatus.APPROVED.value, 1, 1), "the retry wrote the version once")
+
+    def test_a_caller_that_carries_on_after_a_failed_approval_keeps_none_of_it(self) -> None:
+        """A worker deciding in one transaction of its own, which catches a failure and
+        retries: what the failed approval wrote is not kept beside what the retry writes."""
+        with transaction.atomic():
+            with mock.patch("apps.proposals.apply.reindex", side_effect=RuntimeError("the search index is down")):
+                with self.assertRaises(RuntimeError):
+                    self._decide("approve")
+            self._decide("approve")
+        self.assertEqual(self._written(), ([1, 2], ProposalStatus.APPROVED.value, 1, 1), "one approval, one version")
+
+    def test_a_rejection_outside_a_request_lands_whole(self) -> None:
+        self.assertFalse(connection.in_atomic_block, "a worker or a shell calls with no transaction open")
+        self._decide("reject")
+        self.assertEqual(self._written(), ([1], ProposalStatus.REJECTED.value, 1, 1))
+
+    def test_a_decision_whose_audit_row_fails_keeps_no_logged_model_call(self) -> None:
+        """AUD-02, D-80: the model call is logged inside the decision's transaction, not
+        beside it. The audit row is the decision's last write, so a failure there comes after
+        the call was logged; the log row goes with the rest, and the retry logs one. Proven
+        to fail 2026-09-23 with the call logged and committed on a connection of its own: both
+        failed decisions kept their log rows."""
+        logged_before_the_failure: list[int] = []
+
+        def audit_row_fails(**fields: Any) -> None:
+            logged_before_the_failure.append(AiGeneration.objects.filter(subject_id=self.proposal.id).count())
+            raise RuntimeError("the audit write failed")
+
+        with mock.patch("apps.proposals.logic.record", side_effect=audit_row_fails):
+            for verb in ("approve", "reject"):
+                with self.subTest(verb=verb), self.assertRaises(RuntimeError):
+                    self._decide(verb)
+        self.assertEqual(logged_before_the_failure, [1, 1], "each decision had logged its model call when its audit row failed")
+        self.assertEqual(self._written(), ([1], ProposalStatus.OPEN.value, 0, 0), "and neither kept it")
+        self._decide("approve")
+        self.assertEqual(self._written(), ([1, 2], ProposalStatus.APPROVED.value, 1, 1), "the retry logged one")
+
+
 class DecidingAProposal(ScenarioTestCase):
     def setUp(self) -> None:
         _seed()
@@ -269,17 +387,23 @@ class DecidingAProposal(ScenarioTestCase):
         flag = self._proposed("vocabulary_create", "Add the flag Client money", FLAG)
         term = self._proposed("term_create", "Add the regime Crypto-assets", TERM)
         tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
-        reviewer = {"HTTP_X_API_KEY": agents_testing.reviewer_api_key().plain_key}
+        key = agents_testing.reviewer_api_key()
+        reviewer = {"HTTP_X_API_KEY": key.plain_key}
+        # With the model call behind its decision and an open run of its own (D-80), so the
+        # refusal is D-79's and nothing else's.
+        decided = agents_testing.decision(key)
         for proposal_id in (flag, term):
             with self.subTest(proposal=proposal_id):
-                refused = self._post(f"/proposals/{proposal_id}/approve", {}, reviewer)
+                refused = self._post(f"/proposals/{proposal_id}/approve", decided, reviewer)
                 self.assertEqual(refused.status_code, 409, refused.content)
                 self.assertEqual(refused.json()["code"], "person_review_required")
         self._assert_untouched(flag)
         self._assert_untouched(term)
         self.assertFalse(TaxonomyTerm.objects.filter(dimension__key=TERM["dimension"], key=TERM["key"]).exists())
         # An agent may still reject one: a rejection writes no library row.
-        rejected = self._post(f"/proposals/{term}/reject", {"rejectionCode": "duplicate", "note": "Covered by an existing regime."}, reviewer)
+        rejected = self._post(
+            f"/proposals/{term}/reject", {"rejectionCode": "duplicate", "note": "Covered by an existing regime.", **decided, "decision": agents_testing.REJECTION_DECISION}, reviewer
+        )
         self.assertEqual(rejected.status_code, 200, rejected.content)
         # A person approves the other, as before.
         approved = self._post(f"/proposals/{flag}/approve", {}, sign_in(self.second_editor, step_up=True))

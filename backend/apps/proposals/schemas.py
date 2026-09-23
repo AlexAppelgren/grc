@@ -16,7 +16,7 @@ from django.conf import settings
 from pydantic import ConfigDict, Field, RootModel
 
 from apps.library.schemas import AgentRef, DiffSegment, LibraryRef, LocalizedText, OutsideReason, PartialDate
-from apps.shared.schemas import CamelSchema, WriteBody
+from apps.shared.schemas import AgentDecision, CamelSchema, WriteBody
 
 __all__ = ["CamelSchema"]
 
@@ -1046,6 +1046,45 @@ class ProposalCreateBody(WriteBody):
     effective_from: date | None = None
 
 
+# What a confirming agent's approve and reject bodies carry beside its verdict (D-80,
+# AUD-02, AGT-01), said once for both.
+_DECISION_DESCRIPTION = (
+    "The model call behind an agent's decision, as the agent reports it: the model and its version, the "
+    "prompt's name and hash, what it concluded and at least one public page the conclusion rests on. "
+    "Required from a key, whose decision without it answers 422 `validation_error`: every model call is "
+    "logged, and one nobody reported cannot be. It becomes one entry of the AI output log under the purpose "
+    "`agent_review`, in the same transaction as the decision, marked as the agent's own report rather than "
+    "bleqq's measurement and labelled as AI output, so a reader must not take it for a person's review. No "
+    "bank reads that entry. A person's decision is not a model call, so a person's body never carries it "
+    "and one that does answers 422 `validation_error`."
+)
+_RUN_DESCRIPTION = (
+    "The run this decision was made in, as the UUID `POST /agent-runs` returned: a run the calling key "
+    "opened and has not closed, so every decision a confirming agent makes is counted in the run that made "
+    "it, as a sweep's registrations are, and the decision's audit row names it. Required from a key: "
+    "naming none, or a run that is closed, answers 422 `run_not_open`, and a run another key opened, "
+    "another agent's included, answers 404 `not_found` exactly as a run that never existed does. A person's "
+    "body never names one, and one that does answers 422 `validation_error`."
+)
+_DECISION_EXAMPLE: dict[str, Any] = {
+    "model": "claude-opus-5",
+    "modelVersion": "2026-05-01",
+    "promptTemplate": "library-confirmer/decide/v1",
+    "promptHash": "9f2a1c7d4b8e05f3",
+    "output": (
+        "Approve. The proposed wording matches the board decision as Finansinspektionen publishes it, and "
+        "the date it applies from is the one the decision states."
+    ),
+    "citations": [
+        {
+            "label": "Finansinspektionen, board decision 15 September 2026",
+            "url": "https://www.fi.se/en/published/news/2026/research-payments/",
+        }
+    ],
+}
+_RUN_EXAMPLE = "3c2a9f1e-6b7d-4e58-a1c4-0f9d8e7b6a52"
+
+
 class ProposalApproveBody(WriteBody):
     """The body of `POST /proposals/{proposalId}/approve`: the reviewer's word that this
     change may enter the shared library, and the corrections they made first.
@@ -1059,8 +1098,13 @@ class ProposalApproveBody(WriteBody):
     a decided proposal answers 409 `invalid_transition` rather than applying anything
     twice. The audit and outbox rows the approval writes are append-only.
 
-    The whole call is platform work in the shared zone. Neither field ever names the bank
-    a proposal came from, because a bank member's identity does not reach the console, and
+    A confirming agent approves with the platform-only scope `proposals:review` instead of
+    a step-up, and sends two more fields a person never sends: `decision`, the model call
+    behind its approval, and `agentRunId`, the open run of its own key it was made in
+    (D-80). The first example is a person's approval, the second an agent's.
+
+    The whole call is platform work in the shared zone. No field ever names the bank a
+    proposal came from, because a bank member's identity does not reach the console, and
     nothing a bank wrote about its own compliance is touched by an approval.
     """
 
@@ -1092,6 +1136,8 @@ class ProposalApproveBody(WriteBody):
             "the library now holds."
         ),
     )
+    decision: AgentDecision | None = Field(default=None, description=_DECISION_DESCRIPTION)
+    agent_run_id: UUID | None = Field(default=None, description=_RUN_DESCRIPTION, examples=[_RUN_EXAMPLE])
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -1105,15 +1151,72 @@ class ProposalApproveBody(WriteBody):
                         },
                         "effectiveFrom": "2026-10-01",
                     },
-                }
+                },
+                {"note": "Confirmed against the board decision.", "decision": _DECISION_EXAMPLE, "agentRunId": _RUN_EXAMPLE},
             ]
         }
     )
 
 
-class ProposalRejectBody(CamelSchema):
-    rejection_code: str = ""
-    note: str = ""
+class ProposalRejectBody(WriteBody):
+    """The body of `POST /proposals/{proposalId}/reject`: why a reviewer turned a proposal
+    down, as a reason the proposer's screen can branch on and a sentence the proposer reads.
+
+    Nothing in the library changes. The proposal is closed as `rejected` for good, with the
+    reason and the note stored on it, and the proposer is told through the notification the
+    rejection's audit row triggers. A field the body does not name answers 422
+    `validation_error` rather than being dropped.
+
+    A confirming agent rejects with the platform-only scope `proposals:review` and sends two
+    more fields a person never sends: `decision`, the model call behind its rejection, and
+    `agentRunId`, the open run of its own key it was made in (D-80). The first example is a
+    person's rejection, the second an agent's.
+    """
+
+    rejection_code: str = Field(
+        default="",
+        description=(
+            "Why the proposal is refused, as the key of a live row of the `rejection_reason` vocabulary, a "
+            "library list: for example `duplicate`, `wrong_scope`, `poor_wording` or `outside_sector_scope`. "
+            "Its rows are data an admin may extend, relabel or retire without a deploy, never a closed set, "
+            "and `GET /vocab/rejection_reason` returns the live ones; compare the key, never the label. "
+            "Required: left empty, or naming a key the list does not hold or has retired, the call answers "
+            "422 `reason_required` and nothing is decided."
+        ),
+        examples=["duplicate"],
+    )
+    note: str = Field(
+        default="",
+        description=(
+            "The reviewer's own sentence to the proposer, saying what is wrong in words they can act on, "
+            "stored on the proposal and sent to them with the decision. Required, unlike on an approval: "
+            "left empty or blank, the call answers 422 `reason_required`. It is the reviewer's comment on "
+            "the request and never part of any library record's text."
+        ),
+        examples=["Version 2 already says this; the board decision changes nothing further."],
+    )
+    decision: AgentDecision | None = Field(default=None, description=_DECISION_DESCRIPTION)
+    agent_run_id: UUID | None = Field(default=None, description=_RUN_DESCRIPTION, examples=[_RUN_EXAMPLE])
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"rejectionCode": "duplicate", "note": "Version 2 already says this; the board decision changes nothing further."},
+                {
+                    "rejectionCode": "wrong_scope",
+                    "note": "The board decision applies to retail clients only; the proposed scope names professional clients too.",
+                    "decision": {
+                        **_DECISION_EXAMPLE,
+                        "output": (
+                            "Reject. The board decision limits the rule to retail clients, and the proposal widens "
+                            "its scope to professional clients, which the cited decision does not support."
+                        ),
+                    },
+                    "agentRunId": _RUN_EXAMPLE,
+                },
+            ]
+        }
+    )
 
 
 class ProposalQuery(CamelSchema):

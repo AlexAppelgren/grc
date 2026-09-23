@@ -206,8 +206,12 @@ class LibraryUpdates(ScenarioTestCase):
         }
         created = self.client.post(f"{V1}/proposals", data=body, content_type="application/json", HTTP_X_API_KEY=proposer.plain_key)
         self.assertEqual(created.status_code, 201, created.content)
+        # The confirming agent sends the model call behind its decision, in a run of its own (D-80).
         approved = self.client.post(
-            f"{V1}/proposals/{created.json()['id']}/approve", data={}, content_type="application/json", HTTP_X_API_KEY=confirmer.plain_key
+            f"{V1}/proposals/{created.json()['id']}/approve",
+            data=agents_testing.decision(confirmer),
+            content_type="application/json",
+            HTTP_X_API_KEY=confirmer.plain_key,
         )
         self.assertEqual(approved.status_code, 200, approved.content)
         by_person = self._obligation("obl-person", "service_type:advice")

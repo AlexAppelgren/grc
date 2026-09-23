@@ -62,8 +62,10 @@ key's id (ID-10).
 The flow of AGT-S1 is proven over the real routes (`tests_flow.py`): every
 change and proposal from a key bound to an agent names an open run of that key,
 a step naming another key's run is not found, and a bank's key writes nothing to
-the watch. AGT-01 stays `in_progress` until AGT-S10 (the J-4 journey) and AGT-S15
-(the confirming agent) are green as well.
+the watch. AGT-S15 (the confirming agent) is green: `library-confirmer` decides
+the sweeper's proposals inside a run of its own, and a key of the proposing
+definition is refused by four eyes. AGT-01 stays `in_progress` until AGT-S10
+(the J-4 journey) is green as well.
 
 Two definitions ship: `watch-sweeper` (kind `watch`), which proposes, and
 `library-confirmer` (kind `review`, D-62, D-80), which decides what another
@@ -73,7 +75,13 @@ as key, kind, label and usage note on its active rows, submits those keys only,
 and brings a new term as a proposal (AGT-02). A confirming agent's decision
 carries the model call behind it (`AgentDecision`), logged in `ai_generation`
 under the purpose `agent_review` as that agent's own report, naming its run and the
-record decided, and read by the platform alone (D-80).
+record decided, and read by the platform alone (D-80). The approve and reject
+routes of the proposal queue take it in `decision`, beside `agentRunId`: a key's
+decision without either is refused (422), and the run must be an open run of the
+deciding key itself, so another agent's run answers 404 as one that never existed
+does. The decision, its logged model call and its audit row, which names the run,
+commit in one transaction, and the run's `ai_generation` rows are what count the
+proposals it decided.
 
 PRD 0.5 (Alex, 2026-09-20; D-70 to D-73, D-76 and D-77, ADRs 0055 to 0057) adds a
 third thing called an agent, and it is not one of the two above. **Agent access** is
