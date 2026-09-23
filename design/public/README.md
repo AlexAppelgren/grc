@@ -85,6 +85,16 @@ person, and that is the one place the page claims a person decides.
 
 ## Behaviour
 
+Below 880 px the top bar is one line: the wordmark and a Menu button. Menu
+opens a panel under the ribbon holding the five sections as 44 px rows, then
+both actions and the theme toggle. It closes on a choice, on Escape, and when
+the viewport grows past 880 px. Only there is the ribbon sticky, so the way
+back is always one tap away, and it clears the notch through
+`top: env(safe-area-inset-top)`; sections carry a 76 px `scroll-margin-top`
+so an anchor never lands under it. The page gutter takes the larger of its own
+step and the safe-area inset at each side, as `foundations.md` asks. On a wide
+screen the bar keeps the five links inline and scrolls away with the page.
+
 Light, dark and the unset system theme are all designed; the toggle stamps
 `data-theme` and remembers the choice per device, and every colour is a custom
 property declared in the light block first. The form is inert and says so on
