@@ -2472,8 +2472,8 @@
   {
    "obligation": "obl-no-suitability",
    "version_no": 1,
-   "summary_en": "When giving investment advice or managing a portfolio, the firm obtains the information it needs about the client's knowledge and experience of the relevant investment area, financial situation including the ability to bear losses, and investment objectives including risk tolerance. It recommends only the services and financial instruments that suit the client, in particular in light of that risk tolerance and ability to bear losses.",
-   "summary_sv": "Vid investeringsrådgivning eller portföljförvaltning ska företaget inhämta de uppgifter det behöver om kundens kunskap och erfarenhet på det aktuella investeringsområdet, ekonomiska situation inklusive förmåga att bära förluster och investeringsmål inklusive risktolerans. Det ska bara rekommendera tjänster och finansiella instrument som passar kunden, särskilt med hänsyn till just den risktoleransen och förmågan att bära förluster.",
+   "summary_en": "When giving investment advice or managing a portfolio, the firm obtains the information it needs about the client's knowledge and experience of the relevant investment area, financial situation including the ability to bear losses, and investment objectives including risk tolerance. It recommends only the services and financial instruments that are suitable for the client, in particular in light of that risk tolerance and ability to bear losses.",
+   "summary_sv": "Vid investeringsrådgivning eller portföljförvaltning ska företaget inhämta de uppgifter det behöver om kundens kunskap och erfarenhet på det aktuella investeringsområdet, ekonomiska situation inklusive förmåga att bära förluster och investeringsmål inklusive risktolerans. Det ska bara rekommendera tjänster och finansiella instrument som är lämpliga för kunden, särskilt med hänsyn till just den risktoleransen och förmågan att bära förluster.",
    "original_language": "en",
    "effective_from": null,
    "effective_to": null,

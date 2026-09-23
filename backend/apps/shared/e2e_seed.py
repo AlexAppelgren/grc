@@ -47,6 +47,7 @@ from apps.identity.models import (
     PasskeyDeviceType,
     PlatformRole,
     PlatformRoleAssignment,
+    TenantRole,
     User,
     UserStatus,
     WebAuthnCredential,
@@ -67,7 +68,7 @@ from apps.taxonomy.models import CaseStatusCategory
 from apps.watch import e2e_seed as watch_e2e_seed
 from apps.watch.models import CheckFrequency, CheckStatus
 from apps.shared.models import Tenant
-from apps.taxonomy import footprint_logic, markets_logic, terms_logic
+from apps.taxonomy import footprint_logic, markets_logic, tenant_lists_logic, terms_logic
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintTerm, WatchedMarket
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
@@ -1269,6 +1270,77 @@ WATCHED_MARKET_OBLIGATION = "obl-dk-csd-registration"
 # --- end tax-watched-inventory -------------------------------------------------------------
 
 
+# --- tax-market-journeys (FP-S8, TEN-S7) ---------------------------------------------------
+@dataclass(frozen=True)
+class SeedMarketJourney:
+    """FP-S8's tenant, its two people and one in-scope obligation per jurisdiction."""
+
+    tenant_slug: str
+    requester_email: str
+    approver_email: str
+    union_obligation: str
+    home_obligation: str
+    country_obligation: str
+    country: str
+
+
+# FP-S8 turns on Denmark in tenant B, whose scope names no jurisdiction, and restores it.
+# Each obligation is inside B's scope as seeded: the ESMA guidance (EU) keeps showing, the
+# Swedish duty hides, the Danish one stays. No other journey reads tenant B's inventory.
+EXPECTED_MARKET_JOURNEY = SeedMarketJourney(
+    tenant_slug=TENANT_B_SLUG,
+    requester_email="admin@second-bank.test",
+    approver_email="approver@second-bank.test",
+    union_obligation="obl-esma-warnings",
+    home_obligation="obl-appropriateness",
+    country_obligation="obl-dk-csd-registration",
+    country="dk",
+)
+
+
+@dataclass(frozen=True)
+class SeedTenantOnlyRows:
+    tenant_slug: str
+    role_key: str
+    role_labels: dict[str, str]
+    tag_list: str
+    tag_key: str
+    tag_labels: dict[str, str]
+
+
+# TEN-S7 (J-8): one custom role and one tenant tag tenant A has and tenant B must never see.
+# Labels far from every label a vocabulary journey adds, so no near-duplicate check trips.
+EXPECTED_TENANT_A_ONLY = SeedTenantOnlyRows(
+    tenant_slug=TENANT_A_SLUG,
+    role_key="sanctions_lead",
+    role_labels={"en": "Sanctions lead", "sv": "Sanktionsansvarig"},
+    tag_list="tenant_tag",
+    tag_key="whistleblowing",
+    tag_labels={"en": "Whistleblowing", "sv": "Visselblåsning"},
+)
+
+
+def seed_tenant_only_rows(tenants: list[Tenant]) -> None:
+    """Through the logic the admin screens call, so each row leaves its audit event; a
+    reseed finds them and writes nothing."""
+    spec = EXPECTED_TENANT_A_ONLY
+    tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
+    tenancy.activate(tenant.id)
+    if not TenantRole.objects.filter(tenant=tenant, key=spec.role_key).exists():
+        roles_logic.create_role(
+            tenant=tenant,
+            actor=SEED_ACTOR,
+            key=spec.role_key,
+            labels=spec.role_labels,
+            usage_note="Owns the sanctions screening duties.",
+            permissions=["register.read"],
+            step_up_assertion_id=None,
+        )
+    if not tenant_lists_logic.entry_for(spec.tag_list).model._default_manager.filter(tenant=tenant, key=spec.tag_key).exists():
+        tenant_lists_logic.create_row(list_name=spec.tag_list, tenant=tenant, actor=SEED_ACTOR, labels=spec.tag_labels, key=spec.tag_key)
+# --- end tax-market-journeys ---------------------------------------------------------------
+
+
 # The journey cannot narrow the scope itself: FP-S5 (J-6) changes tenant A's scope, and
 # every home and watch journey reads it in parallel. So tenant A holds the prototype's scope
 # less pension accounts, which leaves exactly one library obligation outside it (the
@@ -1363,6 +1435,7 @@ def seed_e2e() -> dict[str, int]:
         footprint_terms = seed_footprints(tenants)
         seed_pending_footprint_request(tenants)
         seed_watched_markets(tenants)
+        seed_tenant_only_rows(tenants)
         proposals = seed_proposals()
         problem_reports = seed_problem_report(tenants)
         home_cases = seed_home_cases(tenants, home)

@@ -56,7 +56,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict, except an opt-in dimension (standards), which matches only what the scope names; an obligation also needs its instrument's regime | M | R1 | in_progress |
 | FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, one audit event per term | M | R1 | built |
 | FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it | M | R1 | in_progress |
-| FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | pending |
+| FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | in_progress |
 | I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
 | ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | pending |
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -414,6 +414,18 @@ When they read the footprint
 Then they see which markets are operating and which are watched
 And watching one answers 403 with requiredPermission "footprint.request"
 ```
+
+> **Note — the journeys (tax-market-journeys).** FP-S8's `@e2e` half runs in tenant B,
+> whose scope names no jurisdiction: its admin turns Denmark on, the preview counts what it
+> hides, B's approver approves with a passkey, and the inventory keeps the EU and Danish
+> obligations and drops the Swedish one; it runs serially and restores B's scope on failure
+> too. The preview shows counts only, so "hides no EU obligation" and the one audit event
+> and history row per term stay with the `@integration` half. FP-S10's `@e2e` half watches
+> Norway in tenant A, finds the `markets.watch_added` row holding the key only in the audit
+> log, and unwatches. Its read-only view is the approver's, who holds `footprint.approve`
+> and not `footprint.request`: a Reader holds neither, so the screen is closed to them
+> (FP-S7), and the Reader's 403 on a watch stays with the `@integration` half, as does the
+> 409 `already_watching`. FP-04 stays `in_progress` until FP-S13 and FP-S15 land.
 
 ### FP-S11 — A market's level is computed, and operating comes first `@integration` (FP-04)
 ```gherkin
