@@ -1,10 +1,11 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { framesOf, sseResponse, stubFetch } from '@/features/search/ask-testing';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
-import { tokenStore } from '@/shared/utils/api-client';
+import { api, tokenStore } from '@/shared/utils/api-client';
 
 import { EMPTY_SEARCH_FILTERS, SearchScreen, filtersFrom, requestOf, searchOf } from './SearchScreen';
 
@@ -97,13 +98,14 @@ beforeEach(() => {
   resetApiForTests();
   tokenStore.set('tok');
   nav.search = '';
-  nav.replace.mockClear();
+  nav.replace.mockReset();
 });
 
 describe('the search URL', () => {
   it('reads every filter but the typed query, and an unknown value is not a filter', () => {
     const params = new URLSearchParams('type=change&jurisdiction=se&dutyType=reporting&binding=true&lang=sv&asOf=2026-06-30&outside=true');
     expect(filtersFrom(params)).toEqual({
+      mode: 'search',
       type: 'change',
       jurisdiction: 'se',
       dutyType: 'reporting',
@@ -114,6 +116,12 @@ describe('the search URL', () => {
     });
     expect(filtersFrom(new URLSearchParams('type=nonsense&binding=nonsense')).type).toBe('');
     expect(filtersFrom(new URLSearchParams('type=nonsense&binding=nonsense')).binding).toBe('');
+  });
+
+  it('reads Ask as the second mode, and anything else as search', () => {
+    expect(filtersFrom(new URLSearchParams('mode=ask&asOf=2026-06-01')).mode).toBe('ask');
+    expect(filtersFrom(new URLSearchParams('mode=nonsense')).mode).toBe('search');
+    expect(searchOf({ ...EMPTY_SEARCH_FILTERS, mode: 'ask', asOf: '2026-06-01' })).toBe('mode=ask&asOf=2026-06-01');
   });
 
   it('leaves out a filter that is not set, and never carries the typed query', () => {
@@ -262,3 +270,57 @@ describe('SearchScreen', () => {
     expect(nav.replace).toHaveBeenCalledWith('/search?jurisdiction=se');
   });
 });
+
+describe('SearchScreen in Ask mode', () => {
+  beforeEach(() => {
+    // A browser resolves the relative route against the page; Node needs an origin.
+    api.defaults.baseURL = 'http://app.test';
+  });
+
+  afterEach(() => {
+    api.defaults.baseURL = '';
+    vi.unstubAllGlobals();
+  });
+
+  it('switches to Ask through the URL, keeping "as of"', () => {
+    nav.search = 'asOf=2026-06-01';
+    serve(() => ({ status: 200, data: { items: [], asOf: '2026-09-20' } }));
+    renderScreen();
+    fireEvent.click(screen.getByRole('tab', { name: 'Ask a question' }));
+    expect(nav.replace).toHaveBeenCalledWith('/search?mode=ask&asOf=2026-06-01');
+  });
+
+  it('asks with the carried "as of", and the question never reaches the URL', async () => {
+    nav.search = 'mode=ask&asOf=2026-06-01';
+    serve(() => ({ status: 200, data: { items: [], asOf: '2026-09-20' } }));
+    const requests = stubFetch(() => sseResponse(framesOf([{ event: 'start', id: 'ans-1' }])));
+    renderScreen();
+    expect(screen.getByRole('tab', { name: 'Ask a question' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Showing the versions in force on 1 Jun 2026.')).toBeVisible();
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Question' }), { target: { value: 'What about research payments?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
+
+    await waitFor(() => expect(requests).toHaveLength(1));
+    expect(await requests[0]?.json()).toEqual({ question: 'What about research payments?', asOf: '2026-06-01' });
+    for (const [href] of nav.replace.mock.calls) expect(String(href)).not.toContain('research');
+  });
+
+  it('"Search instead" searches the question, in search mode, with the same "as of"', async () => {
+    nav.search = 'mode=ask&asOf=2026-06-01';
+    nav.replace.mockImplementation((href: string) => {
+      nav.search = href.split('?')[1] ?? '';
+    });
+    const sent = serve(() => ({ status: 200, data: { items: [], asOf: '2026-06-01' } }));
+    stubFetch(() => sseResponse(framesOf([{ event: 'start', id: 'ans-1' }, { event: 'answer', answer: { id: 'ans-1', question: 'q', asOf: '2026-06-01', statements: [], citations: [], noAnswer: true, model: '', aiGenerated: true, createdAt: '2026-06-01T09:00:00Z' }, stopReason: null }])));
+    renderScreen();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Question' }), { target: { value: 'crypto custody' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ask' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Search instead' }));
+
+    expect(nav.replace).toHaveBeenLastCalledWith('/search?asOf=2026-06-01');
+    await waitFor(() => expect(sent.find((call) => call.path === '/api/v1/search')?.body).toEqual({ q: 'crypto custody', limit: 20, asOf: '2026-06-01' }));
+    expect(screen.getByRole('searchbox', { name: 'Search' })).toHaveValue('crypto custody');
+  });
+});
+
