@@ -51,13 +51,12 @@ from apps.library.models import Authority, DatePrecision, Instrument, Obligation
 from apps.proposals.logic import parsed_payload, sourced_fields
 from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
 from apps.search import ask, hybrid
-from apps.search.models import SearchChunk, SearchSource
+from apps.search.models import TEXT_SEARCH_CONFIGS, SearchChunk, SearchSource
 from apps.search.schemas import Answer, AskAnswerEvent, AskRequest
 from apps.shared.e2e_seed import (
     CONFIRMED_LINK_OBLIGATION,
     E2E_STANDARD_INSTRUMENT,
     E2E_STANDARD_OBLIGATION,
-
     EXPECTED_ASK,
     EXPECTED_CHUNK5_WATCH,
     EXPECTED_FOOTPRINTS,
@@ -86,6 +85,7 @@ from apps.shared.e2e_seed import (
 )
 from apps.shared.models import AuditEvent, Tenant
 from apps.watch.models import ChangeDocument, ChangeEvent, ChangeObligation, ChangeTerm, CheckStatus, RegulatoryChange, Source, SourceCheck, SourceCheckKind
+from apps.watch.models import ChangeStatus
 from apps.taxonomy.matching import footprint_of, in_footprint, in_footprint_sql, opt_in_dimensions, restricting_dimensions
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
@@ -309,13 +309,19 @@ class SeedIntegrityGuard(TestCase):
         arrived: SRC-S1's concept leg ("nudging in onboarding") only ever hits because every
         seeded chunk already carries its mock vector. FFFS 2017:2's provision tree (T8) now
         carries its own text versions, so both the obligation and the provision source types
-        are indexed; every chunk is shared library data (D-10, H7): `owner_tenant_id` is
-        NULL, never a bank's."""
+        are indexed, and so is every active registered change, once per content language
+        (search-index-changes); every chunk is shared library data (D-10, H7):
+        `owner_tenant_id` is NULL, never a bank's."""
         counts = seed_e2e()
         self.assertGreater(counts["search_chunks"], 0)
         self.assertEqual(SearchChunk.objects.count(), counts["search_chunks"])
         self.assertGreater(SearchChunk.objects.filter(source_type=SearchSource.OBLIGATION_VERSION.value).count(), 0)
         self.assertGreater(SearchChunk.objects.filter(source_type=SearchSource.PROVISION_VERSION.value).count(), 0)
+        change_chunks = SearchChunk.objects.filter(source_type=SearchSource.CHANGE.value)
+        active = set(RegulatoryChange.objects.filter(status=ChangeStatus.ACTIVE.value).values_list("id", flat=True))
+        self.assertTrue(active, "the seed registers changes a reader can search for")
+        self.assertEqual(set(change_chunks.values_list("source_id", flat=True)), active)
+        self.assertEqual(change_chunks.count(), len(active) * len(TEXT_SEARCH_CONFIGS))
         self.assertFalse(
             SearchChunk.objects.filter(embedding__isnull=True).exists(),
             "a journey must never race an embedding that has not arrived yet",

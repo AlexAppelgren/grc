@@ -503,7 +503,8 @@ class TheBeatEntryRunsTheCursor(OutboxCursorCase):
 class TheRegistryHoldsOnlyItsConsumers(TestCase):
     """The cursor registers nothing of its own: a consumer registers its handler from its
     app's `ready()`. Two consumers exist — chunk 5's case creation (rulings 9 and 32) and
-    chunk 7's search index, which fills the embeddings a library change left owing — so a
+    chunk 7's search index, which fills the embeddings a library change left owing and
+    rebuilds a registered change's chunks from the watch events — so a
     second relay, or a handler registered anywhere but in an app's `ready()`, shows up
     here."""
 
@@ -513,12 +514,17 @@ class TheRegistryHoldsOnlyItsConsumers(TestCase):
 
         self.assertEqual(
             sorted(outbox._HANDLERS),
-            sorted([creation.CHANGE_REGISTERED, *search.INDEX_TOPICS]),
+            sorted({creation.CHANGE_REGISTERED, *search.INDEX_TOPICS, *search.CHANGE_TOPICS}),
         )
-        self.assertEqual(outbox.handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases,))
+        self.assertEqual(
+            outbox.handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases, search.index_change)
+        )
         for topic in search.INDEX_TOPICS:
             with self.subTest(topic=topic):
                 self.assertEqual(outbox.handlers_for(topic), (search.embed_rebuilt_chunks,))
+        for topic in set(search.CHANGE_TOPICS) - {creation.CHANGE_REGISTERED}:
+            with self.subTest(topic=topic):
+                self.assertEqual(outbox.handlers_for(topic), (search.index_change,))
 
 
 class RegistrationHappensWhenTheAppIsReady(TestCase):
@@ -562,11 +568,12 @@ class RegistrationHappensWhenTheAppIsReady(TestCase):
         for label, topics, handler in (
             ("cases", (creation.CHANGE_REGISTERED,), creation.create_cases),
             ("search", search.INDEX_TOPICS, search.embed_rebuilt_chunks),
+            ("search", search.CHANGE_TOPICS, search.index_change),
         ):
             installed.get_app_config(label).ready()
             for topic in topics:
                 with self.subTest(app=label, topic=topic):
-                    self.assertEqual(outbox.handlers_for(topic), (handler,))
+                    self.assertIn(handler, outbox.handlers_for(topic))
 
 
 class _ImportTimeCalls(ast.NodeVisitor):
