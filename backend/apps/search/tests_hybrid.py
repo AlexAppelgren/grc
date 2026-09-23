@@ -58,6 +58,8 @@ from apps.shared.tenancy import library_write
 from apps.shared.testing import sign_in
 from apps.taxonomy.models import DutyType, FootprintTerm, InstrumentLevel, ProvisionKind, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+from apps.watch import testing as watch
+from apps.watch.models import RegulatoryChange
 
 # The corpus is the prototype's own data (design/prototype), so the identifiers, the stems
 # and the concepts are the ones a reader will actually type.
@@ -592,6 +594,42 @@ class SearchTieBreakTests(TestCase):
 
         self.assertEqual(before, ["obl-tie-a", "obl-tie-b"], "the stable key breaks the tie")
         self.assertEqual(self.keys(), before)
+
+
+class SearchRecordKeyTests(CorpusMixin, TestCase):
+    """search-eval-gate: every kind of chunk breaks a tie on its own record's stable key, a
+    change's too, although nothing indexes changes yet. A kind added to `SearchSource`
+    without a branch in the tie-break fails here rather than tying on nothing."""
+
+    change: ClassVar[RegulatoryChange]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.build_corpus()
+        cls.change = watch.change(authority=None)
+        with tenancy.platform_zone(), indexing.index_write("test: a change, indexed the way a change chunk will be"):
+            SearchChunk.objects.create(
+                source_type=SearchSource.CHANGE.value, source_id=cls.change.id, language_id="en", title=cls.change.title, body=cls.change.summary
+            )
+
+    def test_every_kind_of_chunk_carries_its_records_stable_key(self) -> None:
+        keys: dict[str, set[str | None]] = {kind.value: set() for kind in SearchSource}
+        for source_type, record_key in SearchChunk.objects.annotate(record_key=hybrid._record_key()).values_list("source_type", "record_key"):
+            keys[source_type].add(record_key)
+
+        self.assertEqual(
+            keys,
+            {
+                SearchSource.OBLIGATION_VERSION.value: {
+                    self.costs.stable_key,
+                    self.warnings.stable_key,
+                    self.reporting.stable_key,
+                    self.eu_reporting.stable_key,
+                },
+                SearchSource.PROVISION_VERSION.value: {self.provision.stable_key},
+                SearchSource.CHANGE.value: {self.change.stable_key},
+            },
+        )
 
 
 class SearchCallerTests(CorpusMixin, TestCase):

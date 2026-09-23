@@ -104,6 +104,7 @@ from apps.shared.adapters import embedder, reranker
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy import matching
+from apps.watch.models import RegulatoryChange
 
 # Which chunk a caller means by a hit kind, and which kind a chunk answers as. One mapping,
 # read both ways, so a `types` filter and a hit can never disagree about what a chunk is.
@@ -390,7 +391,8 @@ def _record_id() -> Case:
 
 def _record_key() -> Case:
     """The stable key of the record the chunk was built from, the first thing a tie is
-    broken on (`TIE_BREAK`). A change has none here until changes are indexed at all."""
+    broken on (`TIE_BREAK`): one branch per kind of chunk, a change's included, so ties
+    stay broken the day changes are indexed."""
     return Case(
         When(
             source_type=SearchSource.OBLIGATION_VERSION.value,
@@ -399,6 +401,10 @@ def _record_key() -> Case:
         When(
             source_type=SearchSource.PROVISION_VERSION.value,
             then=Subquery(Provision.objects.filter(versions__id=OuterRef("source_id")).values("stable_key")[:1]),
+        ),
+        When(
+            source_type=SearchSource.CHANGE.value,
+            then=Subquery(RegulatoryChange.objects.filter(id=OuterRef("source_id")).values("stable_key")[:1]),
         ),
         output_field=TextField(),
     )
