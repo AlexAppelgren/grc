@@ -551,7 +551,12 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
             with transaction.atomic():
                 tenancy.clear_tenant()
                 curation.update_change_facts(
-                    who=who, actor=actor, order=ORDER, change_id=registered.id, body=WatchChangePatch.model_validate({"keyDateLabel": "Applies from"})
+                    who=who,
+                    actor=actor,
+                    order=ORDER,
+                    change_id=registered.id,
+                    body=WatchChangePatch.model_validate({"keyDateLabel": "Applies from"}),
+                    step_up_assertion_id=None,
                 )
                 curation.add_event(
                     actor=actor,
