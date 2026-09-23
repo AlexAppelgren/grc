@@ -320,6 +320,7 @@ class ContractDocumentationTests(TestCase):
                 "EvalQuestionPage",
                 "EvalRunOut",
                 "EvalRunPage",
+                "EvalBaselineOut",
             },
         )
 

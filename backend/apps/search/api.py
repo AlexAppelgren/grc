@@ -18,7 +18,7 @@ call before the first byte still does: the session, the permission, the question
 the bank's AI switch, the rate limit and the language are checked before the stream
 opens, and each answers a status with a problem body.
 
-The evaluation set's three routes at the end are the platform console's (SRC-05,
+The evaluation set's four routes at the end are the platform console's (SRC-05,
 ADM-02): `eval.manage` only, and the one write, adding a question, is audited.
 
 Who may call what: a person searching, asking or rating an answer holds `search.use`
@@ -40,6 +40,7 @@ from apps.search.schemas import (
     AnswerFeedbackBody,
     AskEvent,
     AskRequest,
+    EvalBaselineOut,
     EvalQuestionInput,
     EvalQuestionOut,
     EvalQuestionPage,
@@ -352,3 +353,31 @@ def list_eval_runs(request: HttpRequest, page: Query[PageQuery]) -> EvalRunPage:
     """
     items, total = eval_sets.list_runs(limit=page.limit, offset=page.offset)
     return EvalRunPage(items=items, total=total)
+
+
+@router.get(
+    "/eval/baseline",
+    response=EvalBaselineOut,
+    auth=SESSION,
+    operation_id="getEvalBaseline",
+    by_alias=True,
+    summary="See the retrieval scores the release gate holds search to",
+)
+@requires_permission(perms.EVAL_MANAGE)
+def get_eval_baseline(request: HttpRequest) -> EvalBaselineOut:
+    """Returns the release gate's accepted retrieval scores in this build, recall at 10 and
+    MRR, read from `backend/eval/baseline.json`: the numbers a new build may not drop below
+    beyond its tolerance. Call it from the platform console's evaluation page to set a
+    run's scores beside them.
+
+    Until a real evaluator has scored the retrieval track, `recorded` is false and every
+    score is null, never zero: a zero would claim search found nothing. The baseline changes
+    only through a reviewed commit that re-records it, never through this API.
+
+    A person's session only, holding the platform permission `eval.manage`, which a library
+    editor holds; no session inside a bank and no API key can read it. It changes nothing and
+    writes nothing to the audit log.
+
+    Errors: `permission_denied` without `eval.manage`; `unauthenticated` without a session.
+    """
+    return eval_sets.retrieval_baseline()

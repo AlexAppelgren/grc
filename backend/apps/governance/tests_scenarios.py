@@ -13,8 +13,9 @@ GET /audit-events (chunk 4).
 Operations exercised (the audit-on-write guard reads these names): createProposal,
 approveProposal, createConsoleTenant, updateTenant, createFootprintRequest, closeProblemReport,
 createChange, confirmSoWhat, rateAnswer. ADM-S4 also drives the console routes other apps
-register — the source registry, the platform agent keys and the agent definitions they bind
-to — by their gate alone; what each one then does is its own app's scenario.
+register — the source registry, the search evaluation set, the platform agent keys and the
+agent definitions they bind to — by their gate alone; what each one then does is its own
+app's scenario.
 
 Prefixes hosted: ACC, ADM, AUD.
 """
@@ -136,6 +137,7 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
         {"key": "r-en-90", "lang": "en", "question": "costs and charges", "expected": [], "matchKind": "concept"},
     ),
     "listEvalRuns": ("GET", "/eval/runs", None),
+    "getEvalBaseline": ("GET", "/eval/baseline", None),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a

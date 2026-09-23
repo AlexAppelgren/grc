@@ -1,5 +1,5 @@
-"""The console's evaluation routes (SRC-05, ADM-02): GET and POST /eval/questions and
-GET /eval/runs, for platform staff holding `eval.manage` and nobody else, paged, and the one
+"""The console's evaluation routes (SRC-05, ADM-02): GET and POST /eval/questions,
+GET /eval/runs and GET /eval/baseline, for platform staff holding `eval.manage` and nobody else, paged, and the one
 write audited.
 
 The routes are driven through the real session and the audit-asserting client, so a 2xx
@@ -8,7 +8,11 @@ write that left no audit row fails here as well as in the guard.
 
 from __future__ import annotations
 
+import json
+import tempfile
+from pathlib import Path
 from typing import Any
+from unittest import mock
 
 from apps.library.seeds import seed_languages
 from apps.search import eval_sets
@@ -116,6 +120,28 @@ class EvalRouteTests(ScenarioTestCase):
         self.assertEqual(run["metrics"]["perLanguage"], {"en": {"recallAt10": 0.5, "mrr": 0.25}})
         self.assertEqual(run["results"][0]["questionKey"], "r-en-01")
 
+    def test_the_baseline_reads_an_unrecorded_metric_as_null_never_zero(self) -> None:
+        committed = json.loads(eval_sets.BASELINE.read_text(encoding="utf-8"))
+        recorded = json.loads(json.dumps(committed))
+        recorded["tracks"]["retrieval"].update(recorded=True, recorded_at="2026-09-20T08:00:00+00:00")
+        recorded["metrics"].update(retrieval_recall_at_10=0.0, retrieval_mrr=0.8123)
+        unrecorded = json.loads(json.dumps(committed))
+        unrecorded["tracks"]["retrieval"].update(recorded=False, recorded_at=None)
+        unrecorded["metrics"].update(retrieval_recall_at_10=None, retrieval_mrr=None)
+        cases: list[tuple[dict[str, Any], dict[str, Any]]] = [
+            (unrecorded, {"recorded": False, "recordedAt": None, "recallAt10": None, "mrr": None}),
+            # A recorded zero is a score, and stays a zero.
+            (recorded, {"recorded": True, "recordedAt": "2026-09-20T08:00:00Z", "recallAt10": 0.0, "mrr": 0.8123}),
+        ]
+        for baseline, expected in cases:
+            with self.subTest(recorded=expected["recorded"]), tempfile.TemporaryDirectory() as folder:
+                path = Path(folder) / "baseline.json"
+                path.write_text(json.dumps(baseline), encoding="utf-8")
+                with mock.patch.object(eval_sets, "BASELINE", path):
+                    response = self.client.get(f"{V1}/eval/baseline", **self.editor)
+                self.assertEqual(response.status_code, 200, response.content)
+                self.assertEqual(response.json(), expected)
+
     def test_an_empty_list_is_a_200(self) -> None:
         response = self.client.get(f"{V1}/eval/runs", **self.editor)
 
@@ -130,7 +156,7 @@ class EvalRouteTests(ScenarioTestCase):
 
     def test_nobody_without_eval_manage_reaches_a_route(self) -> None:
         admin = sign_in(factories.platform_user(roles=("platform_admin",)))
-        requests = [("get", "/eval/questions"), ("post", "/eval/questions"), ("get", "/eval/runs")]
+        requests = [("get", "/eval/questions"), ("post", "/eval/questions"), ("get", "/eval/runs"), ("get", "/eval/baseline")]
         for method, path in requests:
             with self.subTest(method=method, path=path):
                 refused = getattr(self.client, method)(

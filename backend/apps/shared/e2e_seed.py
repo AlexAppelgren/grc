@@ -62,6 +62,7 @@ from apps.proposals.logic import Proposer, Reviewer
 from apps.proposals.logic import approve as approve_proposal
 from apps.proposals.logic import create as create_proposal
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
+from apps.search import eval_sets
 from apps.shared import outbox, tenancy
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.audit import Actor, ActorType, record
@@ -1679,6 +1680,11 @@ def seed_e2e() -> dict[str, int]:
         # `load_library()` run here rather than after `seed_tenants()` (WAT-06).
         home = seed_watch_changes()
         seed_outside_scope_terms()
+        # SRC-05: the release gate's own questions, so the console's evaluation page has the
+        # set it will have on a deployed platform. Platform rows, refused to any session with a
+        # tenant active, so they are written in the platform's zone even on a re-seed.
+        with tenancy.platform_zone():
+            eval_questions = eval_sets.seed_questions(actor=SEED_ACTOR)
         roles_logic.ensure_platform_roles()
         tenants = seed_tenants()
         logins = seed_logins(tenants)
@@ -1717,6 +1723,7 @@ def seed_e2e() -> dict[str, int]:
         "home_cases": home_cases,
         "chunk5_cases": chunk5_cases,
         "machine_confirmed": machine_confirmed,
+        "eval_questions": eval_questions,
         **library,
         **search_index,
     }
