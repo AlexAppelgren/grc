@@ -286,7 +286,9 @@ export interface paths {
          *     Errors to branch on: `run_not_open` (422) when the run named is closed, so nothing can
          *     be filed against it any more; `unknown_source` (422) when `sourceName` names no
          *     registered source — read `GET /sources` at run start and report against those names;
-         *     `validation_error` (422) when a failed check carries no `error`, when a successful one
+         *     `source_inactive` (422) when the source is registered with its automated checks off,
+         *     as a standards publisher's is until its terms allow an automated check (WAT-07, D-45),
+         *     so no run reads it and nothing is logged; `validation_error` (422) when a failed check carries no `error`, when a successful one
          *     carries an error, when a `recheck` names no `subjectType` and `subjectId`, or when a
          *     `sweep` names one; `not_found` (404) when the run belongs to another key or to nobody,
          *     answered alike so no run id can be probed for; `tenant_agents_not_available` (403) from
@@ -329,10 +331,19 @@ export interface paths {
          *     own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs
          *     its own agent against the write routes, which is the agent-access work in R2.
          *
+         *     Call it with `subjectId` to list every call about one record, such as each drafted
+         *     “So what?” of one change. Each row carries its review state, who stood behind it
+         *     and when, and, on an Ask answer, the reader's verdict and note. A shared “So
+         *     what?” is one row every bank reads and none may move, so its review state here is this
+         *     bank's own, computed from this bank's case for the change; another bank's confirmation
+         *     never shows, and reading it writes nothing.
+         *
          *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no
          *     rows, or a filter matching none, is a 200 with an empty `items` and a `total` of 0.
-         *     Errors: `permission_denied` without `ai_log.read`, with `requiredPermission` named;
-         *     `unauthenticated` without a session.
+         *     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
+         *     `ai_log.read`, with `requiredPermission` named; `validation_error` (422) when
+         *     `subjectId` is not a UUID, `purpose` is longer than 32 characters, `status` longer than
+         *     16, or `limit` or `offset` is out of range.
          */
         get: operations["listAiGenerations"];
         put?: never;
@@ -368,8 +379,15 @@ export interface paths {
          *
          *     Shape of the call: the one write in this contract. It goes through the audit trail
          *     like any other write, and it needs no idempotency key because it is idempotent by
-         *     nature: the same verdict on the same answer twice leaves one row. Neither the
-         *     question nor the answer nor the note reaches the audit summary.
+         *     nature: the same verdict and note on the same answer twice leaves one row and one
+         *     audit row. A different verdict replaces the earlier one, and the audit trail keeps
+         *     both. Neither the question nor the answer nor the note reaches the audit row.
+         *
+         *     Errors: `not_found` (404) for an answer that is not one of the bank's own, or a
+         *     session that belongs to no bank; `validation_error` (422) for a verdict other than
+         *     `helpful` or `wrong`, a note over the cap or a field the contract does not name;
+         *     `permission_denied` (403) without `search.use`; `unauthenticated` (401) without a
+         *     session.
          */
         post: operations["rateAnswer"];
         delete?: never;
@@ -1247,8 +1265,8 @@ export interface paths {
          *     A read: it changes nothing and writes no audit row. A person's session holding
          *     `watch.read` in their own bank; no API key reaches it, because every row joins that
          *     bank's own case. What the reader sees is filtered by the bank's footprint by default,
-         *     which `footprint=all` lifts and `footprint=watched` widens to the markets the bank
-         *     watches; the library half of every row is the same for every bank and the `case` half
+         *     which `footprint=all` lifts and `footprint=watched` turns to what the markets the bank
+         *     watches add, each such row naming its `market`; the library half of every row is the same for every bank and the `case` half
          *     never leaves this one.
          *
          *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. An empty feed is a
@@ -1258,9 +1276,9 @@ export interface paths {
          *     value the schema refuses — including the designed `inFootprint`, which this build
          *     replaced with the single `footprint` value.
          *
-         *     `footprint=watched` is answered and empty for now: a change's jurisdiction is derived
-         *     from its authority, which the market view is still waiting for, and an empty answer is
-         *     the honest one until it lands.
+         *     A change's jurisdiction comes from its authority at match time and is never stored; a
+         *     change with no authority is not restricted by jurisdiction. Watching a market sets no
+         *     urgency and opens no triage: `footprint=watched` only reads.
          */
         get: operations["listChanges"];
         put?: never;
@@ -1292,6 +1310,19 @@ export interface paths {
          *     terms and its obligation links — is stored as a suggestion, with nobody named as having
          *     confirmed it, whoever sent it. A reader must not treat any of it as checked.
          *
+         *     **A new change names at least one regime term** in `termIds` (D-39): the regime is the
+         *     sector boundary, and a change with none would reach every bank whatever its scope. A
+         *     call that names none answers `regime_required` with the valid regime keys; the terms'
+         *     ids are on `GET /taxonomy/terms`. A merge adds no scope, so it needs none.
+         *
+         *     **A run's classification is logged as AI output** (AUD-02, D-66). When a key registers a
+         *     new change, its type, flags, scope terms and urgency are recorded as one row in the AI
+         *     output log with the purpose "scope_suggestion", under the run that filed it. bleqq made no
+         *     model call, so the model and version on that row are the run's own report: the ones in
+         *     `soWhat` when the call carries one, else the model and pipeline version the run was
+         *     opened with, and the row says so (`modelMetadataReportedByAgent`). A library editor's
+         *     registration is a person's classification and logs no row.
+         *
          *     **The drafted “So what?” comes from the run that read the source** (D-66). Send
          *     it in `soWhat` with the model and the model version that wrote it and the public pages
          *     it rests on; the words are stored on the shared change, copied unconfirmed into every
@@ -1321,8 +1352,12 @@ export interface paths {
          *     `obligationId` or `authorityCode` names a row the library does not hold or has retired,
          *     with the valid keys listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a
          *     `termId` is a term that mirrors the jurisdiction list, since a change's market comes
-         *     from its authority and never from a tag; `validation_error` (422) for a body the
-         *     schema refuses, for the same obligation named twice, for two pages both marked primary,
+         *     from its authority and never from a tag; `regime_required` (422) when a new change names
+         *     no regime term, with the regime keys listed in `validKeys`;
+         *     `standard_term_only_on_standards` (422) when a new change carries a standard's term (a
+         *     term of an opt-in dimension) and `authorityCode` names no standards body, that is no
+         *     authority whose jurisdiction is international, or none at all; `validation_error` (422) for
+         *     a body the schema refuses, for the same obligation named twice, for two pages both marked primary,
          *     and for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;
          *     `tenant_agents_not_available` (403) from a key that belongs to a bank;
          *     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
@@ -1425,10 +1460,14 @@ export interface paths {
          *     `supersededBy` names a row the library does not hold or has retired, with the valid keys
          *     listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a term id is a term
          *     that mirrors the jurisdiction list, since a change's market comes from its authority and
-         *     never from a tag; `editor_only_field` (422) when a key sends `status` or
-         *     `supersededBy`; `confirmed_fact` (422) when a key's call would drop a flag or a term, or
-         *     replace a type, that somebody confirmed; `step_up_required` (403) when a person's call
-         *     would do the same without a fresh passkey assertion; `validation_error` (422) for a field the
+         *     never from a tag; `regime_required` (422) when `termIds` replaces the set with one that
+         *     names no regime term, because every change carries a regime (D-39), with the regime keys
+         *     in `validKeys`; `standard_term_only_on_standards` (422) when that set carries a
+         *     standard's term (a term of an opt-in dimension) and the change's authority is not a
+         *     standards body, whose jurisdiction is international; `editor_only_field` (422) when a key
+         *     sends `status` or `supersededBy`; `confirmed_fact` (422) when a key's call would drop a
+         *     flag or a term, or replace a type, that somebody confirmed; `step_up_required` (403) when
+         *     a person's call would do the same without a fresh passkey assertion; `validation_error` (422) for a field the
          *     schema refuses, for a change asked to supersede itself, and for a `soWhat` whose words
          *     carry no model, no model version or no citation; `not_found` (404) when no
          *     change has that id; `tenant_agents_not_available` (403) from a key that belongs to a
@@ -2005,6 +2044,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/eval/baseline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the retrieval scores the release gate holds search to
+         * @description Returns the release gate's accepted retrieval scores in this build, recall at 10 and
+         *     MRR, read from `backend/eval/baseline.json`: the numbers a new build may not drop below
+         *     beyond its tolerance. Call it from the platform console's evaluation page to set a
+         *     run's scores beside them.
+         *
+         *     Until a real evaluator has scored the retrieval track, `recorded` is false and every
+         *     score is null, never zero: a zero would claim search found nothing. The baseline changes
+         *     only through a reviewed commit that re-records it, never through this API.
+         *
+         *     A person's session only, holding the platform permission `eval.manage`, which a library
+         *     editor holds; no session inside a bank and no API key can read it. It changes nothing and
+         *     writes nothing to the audit log.
+         *
+         *     Errors: `permission_denied` without `eval.manage`; `unauthenticated` without a session.
+         */
+        get: operations["getEvalBaseline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/eval/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See the questions the release gate scores search with
+         * @description Returns the search evaluation set, ordered by key, one page at a time: each labelled
+         *     question, the language it is asked in, the library records a good answer contains by
+         *     stable key, what it expects to win it, and whether the release gate of this build scores
+         *     it (`inGate`). Retired questions stay in the list with `active` false. Call it from the
+         *     platform console's evaluation page.
+         *
+         *     A person's session only, holding the platform permission `eval.manage`, which a library
+         *     editor holds; no session inside a bank and no API key can read it. It changes nothing and
+         *     writes nothing to the audit log. An empty set is a 200 with `total` 0.
+         *
+         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
+         *     depth; `permission_denied` without `eval.manage`; `unauthenticated` without a session.
+         */
+        get: operations["listEvalQuestions"];
+        put?: never;
+        /**
+         * Add a question to the search evaluation set
+         * @description Adds one labelled question to the evaluation set and answers it as stored. Call it
+         *     when search missed something a reader needed, or to cover a language or a phrasing the
+         *     set does not test yet.
+         *
+         *     The question is not yet in the gate: the release gate reads
+         *     `backend/eval/retrieval.jsonl`, so the answer says `inGate` false until someone runs the
+         *     dump_eval_questions command, reviews the diff and ships it. Until then the
+         *     record_eval_run command scores it, but no build fails on it.
+         *
+         *     A person's session only, holding the platform permission `eval.manage`, which a library
+         *     editor holds. No passkey step-up and no `If-Match`: a question is a test of search, not a
+         *     decision about the law, and it is never edited, only added. The row and its audit row,
+         *     which names who added it and the key but not the question's text, are written in one
+         *     transaction, and every refusal comes first, so a refused call stores nothing.
+         *
+         *     Errors: `duplicate_key` (409) when the set already has a question with that `key`;
+         *     `unknown_key` (422) when `lang` names no language row; `validation_error` (422) for a
+         *     body the schema refuses, including a key that breaks its pattern, a question over the
+         *     cap or a field the schema does not name; `permission_denied` (403) without
+         *     `eval.manage`; `unauthenticated` (401) without a session.
+         */
+        post: operations["createEvalQuestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/eval/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See how search scored on the evaluation set, run by run
+         * @description Returns the recorded runs of the evaluation set, newest first, one page at a time:
+         *     which retrieval chain each scored and whether it was a stand-in, recall at 10 and MRR
+         *     overall, per language and per match kind, and what every question got back. Call it
+         *     from the platform console to see whether search got better or worse. Runs are recorded
+         *     by the record_eval_run command; the release gate's own verdict is in CI, against its
+         *     baseline.
+         *
+         *     A person's session only, holding the platform permission `eval.manage`, which a library
+         *     editor holds; no session inside a bank and no API key can read it. It changes nothing and
+         *     writes nothing to the audit log. No run recorded yet is a 200 with `total` 0.
+         *
+         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
+         *     depth; `permission_denied` without `eval.manage`; `unauthenticated` without a session.
+         */
+        get: operations["listEvalRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/home": {
         parameters: {
             query?: never;
@@ -2072,8 +2230,9 @@ export interface paths {
          *     for every bank and changed only through an approved proposal.
          *
          *     Paginated: 20 rows by default and 100 at most, ordered by stable key so paging is
-         *     repeatable. `obligationCount` counts the obligations this bank would see under each
-         *     instrument, inside its footprint by default. Jurisdiction, level, authority and
+         *     repeatable. `footprint` is one value: `in` by default, `all` for every instrument, or
+         *     `watched` for only what the markets the bank watches add. `obligationCount` counts the
+         *     obligations this bank would see under each instrument under the same value. Jurisdiction, level, authority and
          *     `asOf` filters are deferred: "as of" applies to obligations only, and the Instruments
          *     tab lists every visible instrument with its own in-force dates.
          *
@@ -2081,6 +2240,7 @@ export interface paths {
          *     (403) without library.read or the library:read scope, which is checked first, so a
          *     platform key without the scope gets this; `not_found` (404) when the caller is a
          *     platform key carrying the scope, since it belongs to no bank; `validation_error` (422)
+         *     when footprint is not in, all or watched, when the retired outsideFootprint is sent,
          *     when the phrase is longer than 200 characters or the page size or offset is out of
          *     range.
          */
@@ -2502,12 +2662,14 @@ export interface paths {
          *     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
          *     quietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing
          *     matching the filters is a 200 with an empty items list and a total of 0, never a 404.
-         *     Setting outsideFootprint to true adds the duties the footprint hides and says in
-         *     outsideReason why each of them would have been hidden.
+         *     Setting footprint to all adds the duties the footprint hides and says in outsideReason
+         *     why each of them would have been hidden; setting it to watched lists only what the
+         *     markets the bank watches add, each row naming its jurisdiction.
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
          *     (403) without library.read or the library:read scope; `validation_error` (422) when a
-         *     term filter is not written dimension:key, when the phrase is longer than 200 characters
+         *     term filter is not written dimension:key, when footprint is not in, all or watched,
+         *     when the retired outsideFootprint is sent, when the phrase is longer than 200 characters
          *     or when the page size or offset is out of range; `unknown_key` (422) when a term filter
          *     names no active term, listing every one that was not found.
          */
@@ -2701,9 +2863,6 @@ export interface paths {
          *     from. Errors: `not_found` when no obligation has that id or the caller may not see it;
          *     `permission_denied` without `library.read` or `library:read`; `unauthenticated` without a
          *     credential.
-         *
-         *     Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-         *     ships.
          */
         get: operations["getRecordSources"];
         put?: never;
@@ -2742,6 +2901,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/problem-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what your colleagues reported as looking wrong in the library, and how each report was closed
+         * @description The bank's “this looks wrong” reports on library records, newest first: what was reported, on which record, by whom, and, once closed, who closed it, when and why. Call it to work the bank's open reports (`status=open`), or to show the reports on one record beside it (`subjectType` with `subjectId`).
+         *
+         *     Who sees what: a member holding `proposals.create` (the compliance officer) reaches every report of their own bank; every other member reaches only the reports they filed. Both need `problems.report`, which every member of a bank holds and no platform role does, so bleqq's own staff are refused. Another bank's report is never reached: row-level security in the database hides it, so it reads as not found. A report is the bank's own content, and neither its text nor a closing note reaches the audit log, an outbox event, a log line or a model.
+         *
+         *     A read: it changes nothing and writes no audit row. Pages with `limit` and `offset`, 20 rows by default and 100 at most. No report, or filters matching none, is a 200 with an empty `items` and a `total` of 0.
+         *
+         *     Errors: `unauthenticated` (401) without a session, an agent's key included; `permission_denied` (403) without `problems.report`, with `requiredPermission` named, which is what a platform console session gets; `not_found` (404) for a session in no bank; `validation_error` (422) when `subjectId` is not a UUID, a filter is too long, or `limit` or `offset` is out of range.
+         */
+        get: operations["listProblemReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/problem-reports/{report_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Close a problem report with a note saying what you found
+         * @description Close one of the bank's problem reports as `answered`, `fixed` or `rejected`, with a note for the reporter. The reporter closes their own; a colleague holding `proposals.create` closes any of the bank's. A report closes once, and nothing but its state, the note, who closed it and when is ever written: the reporter's words, the record it names and the bank it belongs to never change. Closing a report does not change the library: a wrong record is corrected through the watch agents' re-check and a proposal. The reporter is not notified; they see the close on the report.
+         *
+         *     Who sees what: a member holding `proposals.create` (the compliance officer) reaches every report of their own bank; every other member reaches only the reports they filed. Both need `problems.report`, which every member of a bank holds and no platform role does, so bleqq's own staff are refused. Another bank's report is never reached: row-level security in the database hides it, so it reads as not found. A report is the bank's own content, and neither its text nor a closing note reaches the audit log, an outbox event, a log line or a model.
+         *
+         *     Records `problem_report.closed` in the audit log, with the states before and after and never the words, and emits the outbox event of the same name. No passkey step-up and no second person: the close changes nothing outside the report. Answers the closed report.
+         *
+         *     Errors: `unauthenticated` (401) without a session, an agent's key included; `permission_denied` (403) without `problems.report`, or on a colleague's report without `proposals.create`, with `requiredPermission` naming the one missing; `not_found` (404) for an id this bank has no report under; `already_closed` (409) for a report that is closed already; `validation_error` (422) for a status other than the three or a note that is missing or too long, and `note_required` (422) for a note that is only whitespace.
+         */
+        patch: operations["closeProblemReport"];
+        trace?: never;
+    };
     "/api/v1/proposals": {
         parameters: {
             query?: never;
@@ -2768,8 +2979,10 @@ export interface paths {
          *     Nothing here changes a record and nothing is written to the audit trail: it is a read.
          *
          *     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
-         *     quietly trimmed, oldest first so paging is repeatable, and `total` counting every
-         *     proposal matching the filters across every page. Nothing matching is a 200 with an empty
+         *     quietly trimmed, and `total` counting every proposal matching the filters across every
+         *     page. Oldest filed first by default, the order the Waiting tab is worked in; `order=newest`
+         *     turns it round for the Approved and Rejected tabs. Either way the id breaks a tie, so
+         *     paging is repeatable. Nothing matching is a 200 with an empty
          *     items list and a total of 0, never a 404.
          *
          *     Needs the platform permission `proposals.review` from a person, or the platform-only
@@ -2778,7 +2991,9 @@ export interface paths {
          *
          *     Errors to branch on: `unauthenticated` (401) without a session or a key;
          *     `permission_denied` (403) without `proposals.review` or `proposals:review`;
-         *     `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`;
+         *     `agent_not_bound` (403) for a key holding the scope but bound to no agent definition;
+         *     `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`, or
+         *     `order` one that is neither `oldest` nor `newest`;
          *     `validation_error` (422) when the page size or offset is out of range.
          */
         get: operations["listProposals"];
@@ -2790,9 +3005,13 @@ export interface paths {
          *     until then. Call it when a run has read new wording for a duty at the authority's own
          *     page, and when a person asks for a value on a shared list. `kind` says what is asked
          *     for: "new_obligation_version" (a new summary of one duty in force from a date, with its
-         *     scope terms); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire",
-         *     "vocabulary_restore" or "vocabulary_merge" (a row of a shared list); or "term_create"
-         *     or "term_update" (a taxonomy term).
+         *     scope terms); "new_instrument" (a law, regulation, guideline or standard edition the
+         *     library does not hold yet, with its regime); "new_obligation" (a duty the library does
+         *     not hold yet, under an instrument it does, with its first summary and scope);
+         *     "new_provision" (a node of a law's text, with its first verbatim text);
+         *     "new_provision_version" (a provision's text in force from a date); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire", "vocabulary_restore" or
+         *     "vocabulary_merge" (a row of a shared list); or "term_create" or "term_update" (a
+         *     taxonomy term).
          *
          *     Who may call it: a bank's member with `proposals.create`, a platform editor with
          *     `library_vocab.manage`, or an API key with the scope `proposals:write`. A key bound to
@@ -2805,7 +3024,15 @@ export interface paths {
          *
          *     A new obligation version carries a source for every value it changes, in
          *     `fieldSources`: a link to the authority's page or a provision of the library, and none
-         *     for a value it leaves alone. The proposal is linked to the bank it was filed in, and
+         *     for a value it leaves alone. A new instrument or obligation names no `targetType` or
+         *     `targetId`, carries a source for every fact it sets, each an https link since the record
+         *     has no provision of its own yet, and gives `sourceUrl`, the link the new record keeps
+         *     as its own source. An instrument's `regime` is a term of the regime dimension, written
+         *     `regime:<key>`. A new provision is sourced like a new record, and a provision version
+         *     like an obligation version. A standard's text is licensed, so nothing of it enters: no
+         *     provision under a standard, and only https links as sources on a standard's one
+         *     conformance obligation, which carries exactly one standard term. The proposal is
+         *     linked to the bank it was filed in, and
          *     the platform's reviewers see only that it came from a bank, never who asked. The
          *     proposal and its audit row are written in one transaction.
          *
@@ -2817,12 +3044,22 @@ export interface paths {
          *
          *     Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or
          *     a closed one; `not_found` (404) when the run named is not one this key opened;
-         *     `source_missing` (422) when a changed value carries no source; `unknown_key` (422) for a
-         *     kind, a list, a language, a term or a target obligation the library does not hold;
+         *     `source_missing` (422) when a changed value carries no source, or a new record no
+         *     `sourceUrl`; `unknown_key` (422) for a kind, a list, a language, a term, a target
+         *     obligation or provision, an instrument, a parent provision, a provision kind, a level, a jurisdiction, an authority or a duty type the
+         *     library does not hold; `not_a_regime` (422) when a new instrument's regime is not a
+         *     term of the regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes
+         *     an obligation with a term of a dimension that mirrors the jurisdiction list;
+         *     `duplicate_key` (409) when a new record's key is already a record's;
          *     `validation_error` (422) for a body the schema or the kind's payload refuses;
-         *     `idempotency_conflict` (409) when the same `Idempotency-Key` arrives with a different
-         *     body; `permission_denied` (403) without the permission or the scope;
-         *     `unauthenticated` (401) without a credential.
+         *     `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
+         *     obligation whose instrument is not a standard; `licensed_text` (422) for a provision or
+         *     provision version under a standard, or a source on a standard's obligation that is not
+         *     an https link; `one_conformance_obligation` (422) for a new obligation under a standard
+         *     that already holds one; `standard_term_required` (422) when a standard's obligation
+         *     would carry no standard term, or more than one; `idempotency_conflict` (409) when the
+         *     same `Idempotency-Key` arrives with a different body; `permission_denied` (403) without
+         *     the permission or the scope; `unauthenticated` (401) without a credential.
          */
         post: operations["createProposal"];
         delete?: never;
@@ -2931,10 +3168,13 @@ export interface paths {
          *     introduces a field the proposal never sourced; `validation_error` when a key sends no
          *     `decision` or a person sends one or names a run, and when a correction is offered on a
          *     kind that cannot be corrected or does not fit its payload; `unknown_key` when the
-         *     payload names a row the library does not hold; `jurisdiction_term_mirrored` (422) when
-         *     the payload adds or renames a term of a dimension that mirrors the jurisdiction list,
-         *     or scopes an obligation with one, which a proposal filed before that rule may still ask
-         *     for.
+         *     payload names a row the library does not hold; `not_a_regime` when a new instrument's
+         *     regime is not a term of the regime dimension; `duplicate_key` when a new record's key
+         *     was taken while the proposal waited; `jurisdiction_term_mirrored` (422) when the payload
+         *     adds or renames a term of a dimension that mirrors the jurisdiction list, or scopes an
+         *     obligation with one, which a proposal filed before that rule may still ask for;
+         *     `standard_term_only_on_standards` (422) when the payload, as proposed or as corrected,
+         *     puts a standard's term on an obligation whose instrument is not a standard.
          */
         post: operations["approveProposal"];
         delete?: never;
@@ -3043,7 +3283,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Jurisdictions */
+        /**
+         * See the jurisdictions the library covers
+         * @description Every active jurisdiction, in the library's order: the European Union, the Nordic
+         *     countries and the international standards bodies, each with its kind, the jurisdiction
+         *     whose rules also reach it and the language its legal texts are written in. Call it to
+         *     fill a jurisdiction picker or to label a record's jurisdiction key.
+         *
+         *     A reference read: a plain array, not a page, because the list is short and fixed; it
+         *     never paginates. Labels read in the caller's language.
+         *
+         *     A read: it changes nothing and writes no audit event. Open to any person's session with
+         *     no permission beyond it; an API key is refused.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session.
+         */
         get: operations["listJurisdictions"];
         put?: never;
         post?: never;
@@ -3094,7 +3348,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Permissions */
+        /**
+         * See every permission a role of your bank can grant
+         * @description Every permission a bank's role can grant, sorted by key, each with its area and a
+         *     sentence saying what it lets a person do. The set is fixed by the product; a bank composes
+         *     roles from it and cannot add to it. The platform's own permissions are not listed.
+         *
+         *     Any signed-in session may read it, with no permission; API keys cannot. It changes
+         *     nothing and writes no audit event.
+         *
+         *     Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
+         *     enrolment session.
+         */
         get: operations["listPermissions"];
         put?: never;
         post?: never;
@@ -3314,7 +3579,11 @@ export interface paths {
          *     never edits it. There is no passkey step-up and no `If-Match`: a registry row carries no
          *     version, and adding a place to look at is not a decision about the law.
          *
-         *     The source is registered with automated checks on. Nothing is checked in this call: the
+         *     The source is registered with automated checks on, except a standards publisher's: a
+         *     source whose `kind` is the standards body kind (key "standards_body"), or one whose `url` is on a host of the
+         *     `STANDARDS_PUBLISHER_HOSTS` setting or a subdomain of one, is registered with `active`
+         *     false, and no run may check it until a lawyer has read the publisher's terms (WAT-07,
+         *     D-45). Nothing is checked in this call: the
          *     first sweep is the next run's, and until one happens the coverage log says `never`. The
          *     row and its audit row, which names who registered it, are written in one transaction,
          *     and the keys are resolved first, so a refusal stores nothing.
@@ -3407,7 +3676,9 @@ export interface paths {
          *     Errors to branch on: `not_found` (404) when no source has that id, answered the same way
          *     for a source that never existed so no id can be probed for; `validation_error` (422) for
          *     a body the schema refuses, including a `url` that is not http or https and a
-         *     `checkFrequency` outside `daily`, `weekly` and `monthly`; `permission_denied` (403)
+         *     `checkFrequency` outside `daily`, `weekly` and `monthly`, and when the source would be
+         *     checked automatically on a host of the `STANDARDS_PUBLISHER_HOSTS` setting, since no run
+         *     reads a standards publisher until its terms are cleared (WAT-07, D-45); `permission_denied` (403)
          *     without `sources.manage`; `unauthenticated` (401) without a session.
          */
         patch: operations["updateSource"];
@@ -3420,7 +3691,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Taxonomy Dimensions */
+        /**
+         * See the groups a regulatory scope and a record's tags are organised in
+         * @description Every active dimension of the shared library's taxonomy, such as the regime, the
+         *     service or the client category, in picker order, with its kind and whether its terms
+         *     narrow what a bank sees. Call it to build a scope editor or a filter, then
+         *     `GET /taxonomy/terms?dimension=<key>` for the terms of one. Dimensions are library facts:
+         *     new ones arrive through an approved proposal, never through this route.
+         *
+         *     A short reference list that never paginates: `total` is the length of `items`, and an
+         *     empty taxonomy is a 200 with an empty list. Labels read in the caller's language.
+         *
+         *     A read: it changes nothing and writes no audit event. Open to any person's session and
+         *     to an agent's API key with the `library:read` scope.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session or a valid key;
+         *     `permission_denied` (403) for an API key without `library:read`.
+         */
         get: operations["listTaxonomyDimensions"];
         put?: never;
         post?: never;
@@ -3437,11 +3724,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Terms */
+        /**
+         * See the terms we can choose in our regulatory scope and tag records with
+         * @description The terms of the shared library's taxonomy, of one dimension or of all, in picker
+         *     order: what a regulatory scope is built from and what a record is tagged with. Retired
+         *     terms are left out unless `includeRetired=true`. Each term carries every label it has,
+         *     and `mirrored` marks the jurisdiction terms that follow the jurisdiction list and are
+         *     never proposed or renamed. New terms arrive through `POST /taxonomy/terms`, a proposal.
+         *
+         *     A short reference list that never paginates: `total` is the length of `items`, and a
+         *     dimension with no terms is a 200 with an empty list.
+         *
+         *     A read: it changes nothing and writes no audit event. Open to any person's session and
+         *     to an agent's API key with the `library:read` scope.
+         *
+         *     Errors to branch on: `unknown_key` (422) for a `dimension` that is not an active
+         *     dimension, with the valid keys in `detail`; `unauthenticated` (401) without a session or
+         *     a valid key; `permission_denied` (403) for an API key without `library:read`.
+         */
         get: operations["listTerms"];
         put?: never;
         /**
-         * Create Term
+         * Propose a new taxonomy term for the shared library
          * @description Ask for a new taxonomy term in the shared library (VOC-07). Nothing is written to the
          *     library here: the answer is 202 with the proposal this call put in the queue, and the
          *     term exists only once a second person approves it in the console. The proposal's
@@ -3481,7 +3785,7 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Update Term
+         * Propose a change to a taxonomy term's labels, note or order
          * @description Ask for a change to a taxonomy term's labels, usage note or place in the list
          *     (VOC-07). Nothing is written to the library here: the answer is 202 with the proposal
          *     this call put in the queue, and the term changes only once a second person approves it
@@ -3555,6 +3859,46 @@ export interface paths {
         patch: operations["updateTenant"];
         trace?: never;
     };
+    "/api/v1/tenant/ai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Switch your bank's AI features on or off
+         * @description Switches the bank's own AI features off or back on and returns the profile as it now
+         *     stands, with `aiEnabled` showing the new state. Call it from the bank's Organisation
+         *     screen when an administrator decides that no question or text of the bank's should go
+         *     to a model, or that it may again.
+         *
+         *     Off means Ask and the drafts a model writes for the bank's members answer
+         *     `feature_off` (403) before any model is reached. It does not stop the research agents
+         *     that keep the shared library and the watch feed current: they run for every bank, read
+         *     only public sources and never see this bank's own words. The profile edit,
+         *     `PATCH /tenant`, never changes this switch.
+         *
+         *     Needs the `security.manage` permission and a fresh passkey step-up, because deciding
+         *     whether the bank's words may leave it for a model is a security change. The change is
+         *     recorded in the audit log as `tenant.ai_switched` with the state before and after and
+         *     the step-up assertion, in the same transaction as the switch. Sending the state the
+         *     bank already has leaves it as it is and is still recorded.
+         *
+         *     Errors: `validation_error` (422) for a body without a boolean `enabled` or with any
+         *     other field; `step_up_required` (403) without a fresh passkey assertion;
+         *     `permission_denied` (403) without `security.manage`, naming it in
+         *     `requiredPermission`; `unauthenticated` (401) without a session.
+         */
+        put: operations["setTenantAi"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tenant/api-keys": {
         parameters: {
             query?: never;
@@ -3562,10 +3906,48 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Api Keys */
+        /**
+         * See your bank's API keys and whether each still works
+         * @description Returns the bank's own API keys one page at a time, newest first: what each may do,
+         *     when it was last used, and whether it has expired or been revoked. Revoked and expired
+         *     keys stay in the list, so it is the whole history. The secret of a key is never shown
+         *     again after creation: a row carries its eight-character prefix and nothing more. The
+         *     platform's agent keys are never here.
+         *
+         *     Needs `integrations.manage` on a person's session in the bank; an API key cannot list
+         *     keys. It changes nothing and writes no audit event. An empty page is a 200 with `total` 0.
+         *
+         *     Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
+         *     depth; `permission_denied` (403) without `integrations.manage`; `unauthenticated` (401)
+         *     without a live session.
+         */
         get: operations["listApiKeys"];
         put?: never;
-        /** Create Api Key */
+        /**
+         * Create an API key for one of your bank's integrations
+         * @description Creates an API key that belongs to the bank and answers it once, with 201. Put
+         *     `plainKey` straight into the integration's secret store: the server keeps only a hash of
+         *     the secret and never shows it again, so a lost key is revoked and replaced, never
+         *     recovered. Everything the key does is recorded against it and the bank.
+         *
+         *     A bank's key may hold only the reading scopes and `proposals:write`, which files a
+         *     proposal that changes nothing until someone independent approves it. `proposals:review`
+         *     and the agent scopes `agent-runs:write`, `sources:write` and `changes:write` belong to
+         *     the platform's own agents and are refused here; no scope writes a library record. Give
+         *     the key the least its integration needs.
+         *
+         *     Needs `integrations.manage` and a passkey step-up on this session younger than
+         *     5 minutes; an API key cannot create a key. Records the audit event
+         *     `api_key.created` with the prefix, scopes and expiry, never the secret, and with the
+         *     step-up assertion.
+         *
+         *     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
+         *     opening the passkey prompt and retrying; `unknown_key` (422) for a scope a bank's key may
+         *     not hold, the message naming the valid scopes; `name_required` (422) for a name of spaces
+         *     alone; `expiry_in_past` (422) for an expiry that is not in the future; `validation_error`
+         *     (422) for an empty scope list or a name over 200 characters; `permission_denied` (403)
+         *     without `integrations.manage`; `unauthenticated` (401) without a live session.
+         */
         post: operations["createApiKey"];
         delete?: never;
         options?: never;
@@ -3583,7 +3965,25 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Revoke Api Key */
+        /**
+         * Stop one of your bank's API keys working for good; a repeat revoke answers 204 again
+         * @description Revokes one of the bank's own keys at once: from this moment every call made with it
+         *     answers `unauthenticated`. Call it when a key may have leaked, when an integration is
+         *     retired, or when a key is replaced. There is no way to turn a revoked key back on; create
+         *     a new one instead. The key stays listed with its revocation time.
+         *
+         *     Revoking a key that is already revoked changes nothing and answers 204 again, so a retry
+         *     is safe; the retry is recorded in the audit log too, but writes no second security-log
+         *     entry.
+         *
+         *     Needs `integrations.manage`, and no step-up: stopping a key only takes power away. Writes
+         *     "key_revoked" to the security log the first time and the audit event `api_key.revoked`
+         *     each time.
+         *
+         *     Errors: `not_found` (404) when the bank has no key with that identifier;
+         *     `permission_denied` (403) without `integrations.manage`; `unauthenticated` (401) without
+         *     a live session.
+         */
         delete: operations["revokeApiKey"];
         options?: never;
         head?: never;
@@ -3597,7 +3997,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Footprint */
+        /**
+         * See our regulatory scope and the markets we operate in and watch
+         * @description The organisation's regulatory scope as it stands: for every taxonomy dimension, the
+         *     terms it has chosen, which decide what every list, the watch feed and search show it.
+         *     Also the change waiting for a second person, if one waits, and every active country
+         *     with whether the organisation operates there, watches it or does neither. Call it for
+         *     the Regulatory scope screen; `GET /tenant/footprint/requests` carries the history.
+         *
+         *     An organisation that has chosen nothing still gets a 200 with every dimension and empty
+         *     term lists, which means no restriction, or none followed in an opt-in dimension.
+         *
+         *     A read: it changes nothing and writes no audit event. Any member may call it, because
+         *     every member sees what the scope hides; it needs a person's session and no permission
+         *     beyond membership, and an API key is refused. The path says `footprint`, the code's name
+         *     for what the screens call the regulatory scope.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
+         *     principal in no organisation.
+         */
         get: operations["getFootprint"];
         put?: never;
         post?: never;
@@ -3644,7 +4062,28 @@ export interface paths {
          */
         get: operations["listFootprintRequests"];
         put?: never;
-        /** Create Footprint Request */
+        /**
+         * Preview a change to our regulatory scope, or send it for approval
+         * @description Ask for terms to be put into or taken out of the organisation's regulatory scope.
+         *     Nothing in the scope changes here: the change waits for a second person, who approves it
+         *     with a passkey (`POST /tenant/footprint/requests/{requestId}/approve`) or rejects it.
+         *
+         *     With `dryRun=true` it only previews: a 200 with what the change would hide and reveal
+         *     among the obligations and the open cases, with nothing stored, no audit event and no
+         *     approval started. Without it, a 201 with the new pending request, its preview counted
+         *     now, and one `footprint.change_requested` audit event naming every term added and
+         *     removed. An organisation has one pending request at a time; withdraw or decide it first.
+         *
+         *     Needs `footprint.request` in the caller's organisation and a person's session; an API
+         *     key is refused. No passkey step-up: the approval carries it.
+         *
+         *     Errors to branch on: `request_pending` (409) when a change already waits for a decision;
+         *     `unknown_key` (422) for a dimension or term that is not an active one, with the valid
+         *     keys in `detail`; `validation_error` (422) for a change with no term, a term both added
+         *     and removed, or a body the schema refuses; `permission_denied` (403) without
+         *     `footprint.request`; `unauthenticated` (401) without a session; `not_found` (404) for a
+         *     principal in no organisation.
+         */
         post: operations["createFootprintRequest"];
         delete?: never;
         options?: never;
@@ -3661,7 +4100,30 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Approve Footprint Request */
+        /**
+         * Approve a change to our regulatory scope as the second person
+         * @description Approve a pending change: its terms enter and leave the regulatory scope at once, and
+         *     every list, the watch feed and search follow from the next read. The approver must be
+         *     someone other than the requester, which the database enforces too. The answer is the
+         *     request, now `approved`, with the counts it was approved against.
+         *
+         *     Needs `footprint.approve` in the caller's organisation and a passkey step-up younger
+         *     than the configured freshness window (`POST /auth/step-up/options`, then
+         *     `POST /auth/step-up/verify`); an API key is refused. Send `If-Match` with the version
+         *     last read to be told when the request moved on.
+         *
+         *     Writes one `footprint.change_approved` audit event with the note and the counts, and one
+         *     `footprint.term_added` or `footprint.term_removed` event per term that changed, each
+         *     carrying the step-up that authorised it.
+         *
+         *     Errors to branch on: `four_eyes_violation` (409) when the requester approves their own
+         *     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
+         *     `stale_write` (409) when `If-Match` names an old version; `step_up_required` (403)
+         *     without a fresh passkey step-up; `permission_denied` (403) without `footprint.approve`;
+         *     `not_found` (404) for a request that is not here; `validation_error` (422) for an
+         *     `If-Match` that is not a version or a body the schema refuses; `unauthenticated` (401)
+         *     without a session.
+         */
         post: operations["approveFootprintRequest"];
         delete?: never;
         options?: never;
@@ -3678,7 +4140,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reject Footprint Request */
+        /**
+         * Turn down a change to our regulatory scope
+         * @description Reject a pending change: the regulatory scope stays as it is and the request is
+         *     final. The note says why, for the requester and the history. The person rejecting must
+         *     be someone other than the requester, who withdraws their own change instead. The answer
+         *     is the request, now `rejected`, with the counts it was rejected against.
+         *
+         *     Needs `footprint.approve` in the caller's organisation and a person's session; an API
+         *     key is refused. No passkey step-up, because nothing in the scope changes. Send
+         *     `If-Match` with the version last read to be told when the request moved on. Writes one
+         *     `footprint.change_rejected` audit event with the note and the counts.
+         *
+         *     Errors to branch on: `four_eyes_violation` (409) when the requester rejects their own
+         *     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
+         *     `stale_write` (409) when `If-Match` names an old version; `permission_denied` (403)
+         *     without `footprint.approve`; `not_found` (404) for a request that is not here;
+         *     `validation_error` (422) for an `If-Match` that is not a version or a body the schema
+         *     refuses; `unauthenticated` (401) without a session.
+         */
         post: operations["rejectFootprintRequest"];
         delete?: never;
         options?: never;
@@ -3695,7 +4175,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Withdraw Footprint Request */
+        /**
+         * Take back our own change to the regulatory scope before it is decided
+         * @description Withdraw a pending change you asked for: the regulatory scope stays as it is, the
+         *     request is final, and a new change can be sent. Only the requester may withdraw, since
+         *     withdrawing is not a decision and never a way around the second person. The answer is
+         *     the request, now `withdrawn`, with no decider. No body.
+         *
+         *     Needs `footprint.request` in the caller's organisation and a person's session; an API
+         *     key is refused. Send `If-Match` with the version last read to be told when the request
+         *     moved on. Writes one `footprint.change_withdrawn` audit event.
+         *
+         *     Errors to branch on: `permission_denied` (403) without `footprint.request`, and for a
+         *     request someone else sent; `invalid_transition` (409) when it was already approved,
+         *     rejected or withdrawn; `stale_write` (409) when `If-Match` names an old version;
+         *     `not_found` (404) for a request that is not here; `validation_error` (422) for an
+         *     `If-Match` that is not a version; `unauthenticated` (401) without a session.
+         */
         post: operations["withdrawFootprintRequest"];
         delete?: never;
         options?: never;
@@ -3767,7 +4263,20 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Invitations */
+        /**
+         * See the invitations your bank has sent and where each stands
+         * @description Returns the bank's invitations and re-issued enrolments one page at a time, newest
+         *     first, in every status: `pending`, `accepted`, `revoked` and `expired`. Call it to see
+         *     who has not enrolled yet and to resend or withdraw a link. The link's token is never
+         *     listed. Role labels come in the caller's language.
+         *
+         *     Needs `members.manage`. It changes nothing and writes no audit event. An empty page is a
+         *     200 with an empty list.
+         *
+         *     Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
+         *     depth; `permission_denied` (403) without `members.manage`; `unauthenticated` (401)
+         *     without a live session.
+         */
         get: operations["listInvitations"];
         put?: never;
         post?: never;
@@ -3787,7 +4296,18 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Revoke Invitation */
+        /**
+         * Withdraw an invitation so its link stops working
+         * @description Withdraws an invitation or re-issued enrolment at once: its link stops working and it
+         *     is listed as `revoked`. An invitation already revoked, or already accepted, is left as it
+         *     is and still answers 204, so a retry is safe; revoking an accepted invitation does not
+         *     remove the member, which is `DELETE /tenant/members/{user_id}`.
+         *
+         *     Needs `members.manage`. Records the audit event `invitation.revoked`, the retry included.
+         *
+         *     Errors: `not_found` (404) when this bank has no such invitation; `permission_denied`
+         *     (403) without `members.manage`; `unauthenticated` (401) without a live session.
+         */
         delete: operations["revokeInvitation"];
         options?: never;
         head?: never;
@@ -3803,7 +4323,20 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Resend Invitation */
+        /**
+         * Send an invitation again with a fresh link
+         * @description Emails the invitation again with a new link, which works for 72 hours
+         *     from now; the link sent before stops working. A pending invitation and an expired one
+         *     can both be resent, and the answer shows it `pending` with its new expiry. The roles and
+         *     title stay as they were: to change them, revoke it and invite again.
+         *
+         *     Needs `members.manage`. Records the audit event `invitation.resent` with the new expiry;
+         *     the token is never recorded.
+         *
+         *     Errors: `invitation_closed` (409) when the invitation was already accepted or revoked;
+         *     `not_found` (404) when this bank has no such invitation; `permission_denied` (403)
+         *     without `members.manage`; `unauthenticated` (401) without a live session.
+         */
         post: operations["resendInvitation"];
         delete?: never;
         options?: never;
@@ -3818,10 +4351,43 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Members */
+        /**
+         * See everyone who belongs to your bank
+         * @description Returns the bank's members one page at a time, the earliest to join first: each
+         *     person's name, address, roles and title, whether they can still sign in, how many
+         *     passkeys they hold and how many sessions they have open in this bank. Deactivated
+         *     members stay in the list with the status `deactivated`; people invited who have not
+         *     enrolled yet are in `GET /tenant/invitations`. Role labels come in the caller's language.
+         *
+         *     Needs `members.manage` on a person's session in the bank; API keys cannot reach it. It
+         *     changes nothing and writes no audit event. An empty page is a 200 with an empty list.
+         *
+         *     Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
+         *     depth; `permission_denied` (403) without `members.manage`; `unauthenticated` (401)
+         *     without a live session; `enrolment_only` (403) from an enrolment session.
+         */
         get: operations["listMembers"];
         put?: never;
-        /** Invite Member */
+        /**
+         * Invite a person to your bank with the roles they will hold
+         * @description Sends an invitation to a work email address and answers it with the status
+         *     `pending`. The mail carries a link that works for 72 hours; opening it
+         *     emails a one-time code, and the person enrols a passkey with it. Only when that first
+         *     passkey is stored do they become a member, with the roles and title given here. An open
+         *     invitation already sent to the same address by this bank is replaced and stops working.
+         *     A deactivated member can be invited back this way and returns with the new roles.
+         *
+         *     Needs `members.manage` on a person's session in the bank. Records the audit event
+         *     `invitation.created` with the roles and the expiry; the token is never recorded.
+         *
+         *     Errors: `already_member` (409) when the address belongs to a current member;
+         *     `unknown_key` (422) for a role key the bank does not have or has retired;
+         *     `invalid_email` (422) for an address without an `@`; `platform_account` (422) when the
+         *     address belongs to platform staff, who never hold a bank membership;
+         *     `validation_error` (422) for an empty role list or a field over its length;
+         *     `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
+         *     live session.
+         */
         post: operations["inviteMember"];
         delete?: never;
         options?: never;
@@ -3839,11 +4405,49 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Deactivate Member */
+        /**
+         * Remove a person from your bank
+         * @description Deactivates a member: every session they have open in this bank ends at once, any
+         *     invitation or re-issued enrolment still open for their address here is closed, and they
+         *     can no longer sign in to this bank. Nothing is deleted: the member stays listed with the
+         *     status `deactivated` and everything they did stays in the audit trail. Their account and
+         *     passkeys are left alone, because the same person may belong to another bank. To let them
+         *     back in, invite them again.
+         *
+         *     Needs `members.manage`. A bank always keeps at least one member holding
+         *     `members.manage`, so the last one cannot be removed. Writes a "session_revoked" entry to
+         *     the security log for each ended session, and the audit events `session.revoked` for each
+         *     and `member.deactivated` with how many sessions and invitations were closed. Answers 204.
+         *     Removing someone already removed answers `not_found`.
+         *
+         *     Errors: `last_admin` (409) for the last member holding `members.manage`; `not_found`
+         *     (404) when the person is not a current member; `permission_denied` (403) without
+         *     `members.manage`; `unauthenticated` (401) without a live session.
+         */
         delete: operations["deactivateMember"];
         options?: never;
         head?: never;
-        /** Update Member */
+        /**
+         * Change a member's roles or title
+         * @description Changes what a member may do in this bank, their job title, or both, and answers the
+         *     member as they now stand. `roleKeys` replaces the whole set of roles; what is left out
+         *     of the body is kept. The change applies from the member's next call: their open sessions
+         *     carry the new permissions at once.
+         *
+         *     Needs `members.manage`, and, when `roleKeys` is sent, a passkey step-up on this session
+         *     younger than 5 minutes; changing only the title needs none. A bank always
+         *     keeps at least one member holding `members.manage`, so no change may take it from the
+         *     last one. Records the audit event `member.updated` with the roles and title before and
+         *     after, and the step-up assertion when there was one.
+         *
+         *     Errors: `step_up_required` (403) when `roleKeys` is sent without a fresh step-up, which
+         *     the screen answers by opening the passkey prompt and retrying; `last_admin` (409) when
+         *     the change would leave nobody holding `members.manage`; `roles_required` (422) for an
+         *     empty role list; `unknown_key` (422) for a role the bank does not have or has retired;
+         *     `not_found` (404) when the person is not a current member; `validation_error` (422) for
+         *     a title over 200 characters; `permission_denied` (403) without `members.manage`;
+         *     `unauthenticated` (401) without a live session.
+         */
         patch: operations["updateMember"];
         trace?: never;
     };
@@ -3856,7 +4460,28 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reissue Enrolment */
+        /**
+         * Let a member who lost their passkeys enrol again
+         * @description The only way back in for a member who lost every passkey, and the way to lock out a
+         *     passkey that may be compromised. It retires every passkey the person holds, ends every
+         *     session they have, in this bank and in any other, sets them back to `invited`, and
+         *     emails them a re-enrolment link that works for 72 hours, keeping their
+         *     roles and title. Every other member holding `members.manage`, apart from the caller, is
+         *     told by email. The person enrols a new passkey through the link exactly as at their first
+         *     enrolment. Answers 202 with `{}` once the mails are queued.
+         *
+         *     Needs `members.manage` and a passkey step-up on this session younger than
+         *     5 minutes. Writes "reenrolment_issued" and a "session_revoked" entry per
+         *     ended session to the security log, and the audit events `session.revoked`,
+         *     `enrolment.reissued` for the new invitation and `member.enrolment_reissued` with how many
+         *     sessions and passkeys were affected and the step-up assertion.
+         *
+         *     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
+         *     opening the passkey prompt and retrying; `not_found` (404) when the person is not a
+         *     current member; `platform_account` (422) when the address belongs to platform staff;
+         *     `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
+         *     live session.
+         */
         post: operations["reissueEnrolment"];
         delete?: never;
         options?: never;
@@ -3871,11 +4496,39 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Member Sessions */
+        /**
+         * See where a member is signed in to your bank
+         * @description Every live signed-in session a member has in this bank, most recently active first:
+         *     when it began, when it last refreshed, and the network address and browser it came from.
+         *     Call it before signing a member out, for instance when a device is reported lost. Their
+         *     sessions in any other bank are not listed and cannot be reached from here; enrolment
+         *     sessions and ended ones are not listed either. `current` is always false in this list.
+         *     An empty answer is a 200 with an empty list.
+         *
+         *     Needs `members.manage`. It changes nothing and writes no audit event.
+         *
+         *     Errors: `not_found` (404) when the person is not a current member; `permission_denied`
+         *     (403) without `members.manage`; `unauthenticated` (401) without a live session.
+         */
         get: operations["listMemberSessions"];
         put?: never;
         post?: never;
-        /** Revoke Member Sessions */
+        /**
+         * Sign a member out of your bank on every device
+         * @description Ends every session the member has open in this bank at once: each access token stops
+         *     working on its next call and no refresh token can renew it. Their passkeys and
+         *     membership stay, so they can sign in again; to stop that too, remove the member or
+         *     re-issue their enrolment. Sessions they hold in another bank are not touched. Answers 204
+         *     also when there was nothing to end.
+         *
+         *     Needs `members.manage`, and no step-up: ending sessions only takes access away. Writes a
+         *     "session_revoked" entry to the security log for each session with the reason
+         *     "revoked_by_admin", the audit event `session.revoked` for each, and
+         *     `member.sessions_revoked` with how many there were.
+         *
+         *     Errors: `not_found` (404) when the person is not a current member; `permission_denied`
+         *     (403) without `members.manage`; `unauthenticated` (401) without a live session.
+         */
         delete: operations["revokeMemberSessions"];
         options?: never;
         head?: never;
@@ -3927,10 +4580,41 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Roles */
+        /**
+         * See the roles your bank gives its members
+         * @description Every active role of the bank, in the bank's order: the seven system roles and any the
+         *     bank added, each with its labels, usage note and permissions. Retired roles are not
+         *     listed. Call it to fill a role picker or the role editor; labels come in the caller's
+         *     language.
+         *
+         *     Any member's session in the bank may read it, with no permission, because every screen
+         *     that names a role needs its label; API keys cannot. It changes nothing and writes no audit
+         *     event.
+         *
+         *     Errors: `not_found` (404) from a platform session, which belongs to no bank;
+         *     `unauthenticated` (401) without a live session; `enrolment_only` (403) from an enrolment
+         *     session.
+         */
         get: operations["listRoles"];
         put?: never;
-        /** Create Role */
+        /**
+         * Add a role of your own, composed from the product's permissions
+         * @description Creates a role the bank can then give its members, placed after its existing roles,
+         *     and answers it with 201. A role is a named set of the permissions
+         *     `GET /reference/permissions` lists; the bank chooses the key once and may reword the
+         *     labels at any time.
+         *
+         *     Needs `roles.manage` and a passkey step-up on this session younger than 5
+         *     minutes. Records the audit event `role.created` with the key, labels and permissions and
+         *     the step-up assertion.
+         *
+         *     Errors: `step_up_required` (403) without a fresh step-up; `duplicate_key` (409) for a
+         *     key the bank already has, retired roles included; `key_required` (422) for a blank key;
+         *     `label_required` (422) when no label is given; `unknown_key` (422) for a language the
+         *     product does not offer or a key that is not a bank permission; `validation_error` (422)
+         *     for a field over its length; `permission_denied` (403) without `roles.manage`;
+         *     `unauthenticated` (401) without a live session.
+         */
         post: operations["createRole"];
         delete?: never;
         options?: never;
@@ -3951,7 +4635,26 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Role */
+        /**
+         * Rename a role or change what it grants
+         * @description Changes a role's labels, usage note or permissions and answers the role as it now
+         *     stands; what is left out of the body is kept, and the key never changes. A change of
+         *     permissions reaches every member holding the role from their next call. A system role
+         *     can be relabelled and its note rewritten, but its permissions follow the product.
+         *
+         *     Needs `roles.manage`, and, when `permissions` is sent, a passkey step-up on this session
+         *     younger than 5 minutes; relabelling needs none. Records the audit event
+         *     `role.updated` with the permissions, note and labels before and after, and the step-up
+         *     assertion when there was one.
+         *
+         *     Errors: `step_up_required` (403) when `permissions` is sent without a fresh step-up;
+         *     `system_role` (422) for a change of a system role's permissions; `label_required` (422)
+         *     when every label sent is blank; `unknown_key` (422) for a language the product does not
+         *     offer or a key that is not a bank permission; `not_found` (404) when the bank has no
+         *     role with that key; `validation_error` (422) for a note over 1000 characters;
+         *     `permission_denied` (403) without `roles.manage`; `unauthenticated` (401) without a live
+         *     session.
+         */
         patch: operations["updateRole"];
         trace?: never;
     };
@@ -3964,7 +4667,22 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Retire Role */
+        /**
+         * Retire a role your bank no longer uses
+         * @description Retires one of the bank's own roles and answers it with `active` false: it leaves the
+         *     role list and the pickers and can no longer be given to anyone. Nothing is deleted, and
+         *     its key stays taken, so it is never reused for a different role. Only a role no current
+         *     member holds can be retired: reassign them first. The seven system roles cannot be
+         *     retired.
+         *
+         *     Needs `roles.manage`, and no step-up: a role nobody holds grants nothing. Records the
+         *     audit event `role.retired`.
+         *
+         *     Errors: `role_in_use` (409) while a current member holds the role, the message saying
+         *     how many; `system_role` (422) for a system role; `not_found` (404) when the bank has no
+         *     role with that key; `permission_denied` (403) without `roles.manage`; `unauthenticated`
+         *     (401) without a live session.
+         */
         post: operations["retireRole"];
         delete?: never;
         options?: never;
@@ -3979,7 +4697,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Security Log */
+        /**
+         * Read your bank's security log of sign-ins, failures and key use
+         * @description Returns the bank's security log one page at a time, newest first: every enrolment code
+         *     sent or refused, every passkey sign-in and step-up with its failures, every session ended
+         *     early, every re-issued enrolment, and the use and revocation of the bank's API keys and
+         *     calendar feeds. Call it to investigate a suspicious sign-in or to show a reviewer who got
+         *     in and how. Only this bank's entries appear. The log is append-only: nothing in it is ever
+         *     edited or removed.
+         *
+         *     Needs `security.manage` on a person's session in the bank; API keys cannot read it.
+         *     Reading it changes nothing and writes no audit event. An empty page is a 200 with an
+         *     empty list.
+         *
+         *     Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
+         *     depth; `permission_denied` (403) without `security.manage`; `unauthenticated` (401)
+         *     without a live session; `enrolment_only` (403) from an enrolment session.
+         */
         get: operations["listSecurityLog"];
         put?: never;
         post?: never;
@@ -4042,7 +4776,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Vocabularies */
+        /**
+         * See every list whose values can be picked and managed
+         * @description Every vocabulary list the caller can read, with how many active and retired values
+         *     each holds and which fixed kinds its values may carry, so an admin screen's index or an
+         *     integrator's setup needs no call per list. The shared library's lists come first; a
+         *     caller signed in to an organisation also gets its own lists, and a platform session
+         *     outside any organisation gets the library's only.
+         *
+         *     Not paginated: the set of lists is short and fixed by the product, so it always arrives
+         *     whole. A read: it changes nothing and writes no audit event. Any signed-in person may
+         *     call it; an API key is refused, and an agent reads the lists it needs by name with
+         *     `GET /vocab/{list}`.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a person's session.
+         */
         get: operations["listVocabularies"];
         put?: never;
         post?: never;
@@ -4059,10 +4807,59 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Vocabulary Rows */
+        /**
+         * Read the values of one list, for a picker, a filter or an agent
+         * @description The values of one list in list order, each with its key, its fixed kind, its label
+         *     in the caller's language, how many records carry it and the version to send back as
+         *     `If-Match`. Store and compare the key, show the label, and never match on a label: it
+         *     may be reworded or translated at any time. Retired values are left out unless
+         *     `includeRetired` is true.
+         *
+         *     A library list is read by any person's session and by an API key with the
+         *     `library:read` scope, which is how an agent reads the values it may submit. An
+         *     organisation's own list is read the same ways from inside that organisation only.
+         *
+         *     Not paginated: a list is short enough to arrive whole, and a list with no values is a
+         *     200 with an empty list. A read: it changes nothing and writes no audit event.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session or a key;
+         *     `permission_denied` (403) for a key without `library:read`, or an organisation's list
+         *     read from outside any organisation; `not_found` (404) for a name that is not a
+         *     vocabulary list, with the valid names in `detail`; `validation_error` (422) when
+         *     `includeRetired` is not a boolean.
+         */
         get: operations["listVocabularyRows"];
         put?: never;
-        /** Create Vocabulary Row */
+        /**
+         * Add a value to a list
+         * @description Adds a value without a deploy: it appears in pickers, filters, pills and the agents'
+         *     reads from the same row. On one of the organisation's own lists the value exists at once
+         *     and the answer is 201 with it; every suggestion waiting for the same key is answered as
+         *     accepted. On a shared library list nothing changes yet: the answer is 202 with a
+         *     proposal, and the value exists only when a second, independent person or agent approves
+         *     it in the console.
+         *
+         *     Checked before either: the labels are in content languages, the key is free in any
+         *     letter case, the kind is one the list takes, the list's own columns in `extra` are
+         *     valid, and the label is not a near match of a value the list has, unless `force` is
+         *     true.
+         *
+         *     An organisation's list needs `vocab.manage` in it; a library list needs
+         *     `proposals.create` in the caller's organisation or `library_vocab.manage` in the
+         *     console. A person's session is needed and an API key is refused. Records
+         *     `vocabulary.created` in the organisation's audit, or the proposal's `proposal.created`
+         *     for a library list.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without the permission above, which `requiredPermission` names; `not_found` (404)
+         *     for a name that is not a vocabulary list; `duplicate_key` (409) when the key exists,
+         *     with the value in `candidates`; `near_duplicate` (422) when the label is close to an
+         *     existing value's, with the close matches in `candidates`; `unknown_key` (422) for an
+         *     unknown language, a kind the list does not take or a missing required kind, or a
+         *     reference in `extra` to a value that does not exist; `validation_error` (422) for no
+         *     label, a key that normalises to nothing, a bad `extra` value, a library list that is
+         *     reference data, or a field the body does not name.
+         */
         post: operations["createVocabularyRow"];
         delete?: never;
         options?: never;
@@ -4079,7 +4876,26 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reorder Vocabulary */
+        /**
+         * Put the values of one of our lists in the order people should see them
+         * @description What a drag on the vocabulary screen saves: the values named come first, in the order
+         *     given, and every value not named keeps its order after them. Pickers and filters follow
+         *     the new `sortOrder` at once. Only the organisation's own lists are reordered here; a
+         *     library list is shared by every organisation, so its order changes only through a
+         *     proposal (`PATCH /vocab/{list}/{key}` with `sortOrder`), and a reorder of one answers
+         *     403.
+         *
+         *     Answers the list's active values in their new order. No key, label or version changes
+         *     and no record changes what it carries. Needs `vocab.manage` in the caller's organisation
+         *     and a person's session; an API key is refused. Records one audit event,
+         *     `vocabulary.reordered`, with every value's place before and after.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without `vocab.manage`, or on a library list, with `library_vocab.manage` as the
+         *     permission it would need; `not_found` (404) for a name that is not a vocabulary list;
+         *     `unknown_key` (422) when a key is not on the list, and then nothing moves;
+         *     `validation_error` (422) for a field the body does not name.
+         */
         post: operations["reorderVocabulary"];
         delete?: never;
         options?: never;
@@ -4096,7 +4912,32 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Suggest Vocabulary Row */
+        /**
+         * Ask for a value a list does not have yet
+         * @description For a member without `vocab.manage` who types a value a picker does not offer. On one
+         *     of the organisation's own lists the suggestion waits in the admin's inbox
+         *     (`GET /vocab/{list}/suggestions`) and answers 201 with `status` `pending`; the list itself
+         *     does not change until an admin creates the value, which answers the suggestion, or
+         *     declines it. On a shared library list the suggestion becomes a proposal and answers 202:
+         *     the platform decides it, and nothing changes until a second person or agent approves it.
+         *
+         *     Checked like a create before anything is stored: the labels are in content languages,
+         *     the key is not taken, and the label is not a near match of a value the list has. There
+         *     is no `force` here: a member offered a near match picks it, or asks an admin.
+         *
+         *     Any signed-in person may suggest; a person's session is needed and an API key is
+         *     refused. Records `vocabulary.suggested` in the organisation's audit, or the proposal's
+         *     `proposal.created` for a library list.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
+         *     name that is not a vocabulary list, or an organisation's list from a session outside
+         *     any organisation; `duplicate_key` (409) when the key exists, with the value in
+         *     `candidates`; `near_duplicate` (422) when the label is close to an existing value's,
+         *     with the close matches in `candidates`; `unknown_key` (422) for a label in a language
+         *     that is not a content language; `validation_error` (422) for no label, a key that
+         *     normalises to nothing, a library list that is reference data, or a field the body does
+         *     not name.
+         */
         post: operations["suggestVocabularyRow"];
         delete?: never;
         options?: never;
@@ -4156,7 +4997,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Decline Vocabulary Suggestion */
+        /**
+         * Turn down a value a member suggested
+         * @description Answers a waiting suggestion with no: it leaves the inbox with `status` `declined`
+         *     and the list does not change. The suggestion itself is kept, with the member's words.
+         *     To say yes instead, create the value with `POST /vocab/{list}` and the suggestion's key,
+         *     which answers it as accepted.
+         *
+         *     Needs `vocab.manage` in the caller's organisation and a person's session; an API key is
+         *     refused. Records one audit event, `vocabulary.suggestion_declined`.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without `vocab.manage`; `not_found` (404) for a name that is not a vocabulary list
+         *     or a suggestion that is not waiting on this list in the caller's organisation;
+         *     `invalid_transition` (409) when the suggestion was already accepted or declined.
+         */
         post: operations["declineVocabularySuggestion"];
         delete?: never;
         options?: never;
@@ -4171,14 +5026,55 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Vocabulary Row */
+        /**
+         * Open one value of a list, with where its labels came from
+         * @description One value as a list row gives it, plus which language its labels were first written
+         *     in and which labels a machine translated and no person has confirmed since, so an edit
+         *     screen can mark them. A retired value is found too, so a record that still carries one
+         *     can show what it was.
+         *
+         *     Read like the list: a library value by any person's session or an API key with
+         *     `library:read`, an organisation's value from inside that organisation only. A read: it
+         *     changes nothing and writes no audit event.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session or a key;
+         *     `permission_denied` (403) for a key without `library:read`; `not_found` (404) for a name
+         *     that is not a vocabulary list, a key the list does not hold, or an organisation's list
+         *     read from outside any organisation.
+         */
         get: operations["getVocabularyRow"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Vocabulary Row */
+        /**
+         * Rename a value, or change its note, its place or its own columns
+         * @description Changes only what the body sends; the key never changes, so every record that carries
+         *     the value shows the new label and none of them is rewritten. A retired value can be
+         *     relabelled too. Send `If-Match` with the `version` you last read, quoted or not: a value
+         *     changed in between answers 409 `stale_write` instead of being overwritten. Without it the
+         *     change applies to whatever is current.
+         *
+         *     On one of the organisation's own lists the change is made at once and the answer is 200
+         *     with the value at its new version. On a shared library list nothing changes yet: the
+         *     answer is 202 with a proposal naming the value, applied only when a second, independent
+         *     person or agent approves it.
+         *
+         *     An organisation's list needs `vocab.manage` in it; a library list needs
+         *     `proposals.create` in the caller's organisation or `library_vocab.manage` in the
+         *     console. A person's session is needed and an API key is refused. Records
+         *     `vocabulary.updated` with the labels and usage note before and after, or the proposal's
+         *     `proposal.created` for a library list.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without the permission above; `not_found` (404) for an unknown list or key;
+         *     `stale_write` (409) when `If-Match` is not the current version; `unknown_key` (422) for
+         *     an unknown language or a reference in `extra` to a value that does not exist;
+         *     `validation_error` (422) for an `If-Match` that is not a version, labels whose every
+         *     text is empty, a bad `extra` value, a library list that is reference data, or a field
+         *     the body does not name.
+         */
         patch: operations["updateVocabularyRow"];
         trace?: never;
     };
@@ -4191,7 +5087,32 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Merge Vocabulary Row */
+        /**
+         * Fold a duplicate value into the one to keep
+         * @description Moves every record that carries the value in the path to the value named in `into`,
+         *     then retires the value in the path, in one transaction. Preview it first with
+         *     `dryRun=true`: a 200 with how many records carry the value and how many would move,
+         *     which changes nothing and writes no audit event, on a library list as on the
+         *     organisation's own. Today only the organisation's tags have records to move; on the
+         *     other lists `repointed` is 0 and the merge retires the value.
+         *
+         *     Without `dryRun`, on one of the organisation's own lists the merge is made at once: 200
+         *     with the counts and `dryRun` false. On a shared library list nothing changes yet: 202
+         *     with a proposal, applied only when a second, independent person or agent approves it. A
+         *     system value is never merged away, though another value may be merged into one.
+         *
+         *     An organisation's list needs `vocab.manage` in it; a library list needs
+         *     `proposals.create` in the caller's organisation or `library_vocab.manage` in the
+         *     console. A person's session is needed and an API key is refused. Records
+         *     `vocabulary.merged` with the counts, or the proposal's `proposal.created` for a library
+         *     list.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without the permission above; `not_found` (404) for an unknown list, or a key or
+         *     `into` the list does not hold; `system_row` (409) when the value in the path is a system
+         *     value; `validation_error` (422) when `into` is the value itself, for a library list that
+         *     is reference data, or for a field the body does not name.
+         */
         post: operations["mergeVocabularyRow"];
         delete?: never;
         options?: never;
@@ -4208,7 +5129,26 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Restore Vocabulary Row */
+        /**
+         * Offer a retired value again
+         * @description The inverse of a retire: pickers offer the value again, under the same key, and the
+         *     records that kept it all along are untouched. A value merged away can be restored too,
+         *     but the records the merge moved stay with the value they moved to. No request body.
+         *
+         *     On one of the organisation's own lists the value is restored at once: 200, with how
+         *     many records carry it. On a shared library list nothing changes yet: 202 with a
+         *     proposal, applied only when a second, independent person or agent approves it.
+         *
+         *     An organisation's list needs `vocab.manage` in it; a library list needs
+         *     `proposals.create` in the caller's organisation or `library_vocab.manage` in the
+         *     console. A person's session is needed and an API key is refused. Records
+         *     `vocabulary.restored`, or the proposal's `proposal.created` for a library list.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without the permission above; `not_found` (404) for an unknown list or key;
+         *     `invalid_transition` (409) when the value is not retired; `validation_error` (422) for a
+         *     library list that is reference data.
+         */
         post: operations["restoreVocabularyRow"];
         delete?: never;
         options?: never;
@@ -4225,7 +5165,30 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Retire Vocabulary Row */
+        /**
+         * Stop offering a value, keeping every record that carries it
+         * @description Retire, never delete: pickers stop offering the value, and every record that carries
+         *     it keeps it and still shows its label. A value records carry is retired only with
+         *     `confirm` true, so the person decides knowing how many records keep it. A system value
+         *     is never retired. `POST /vocab/{list}/{key}/restore` brings a retired value back.
+         *
+         *     On one of the organisation's own lists the value is retired at once: 200, with how many
+         *     records carry it. On a shared library list nothing changes yet: 202 with a proposal,
+         *     applied only when a second, independent person or agent approves it.
+         *
+         *     An organisation's list needs `vocab.manage` in it; a library list needs
+         *     `proposals.create` in the caller's organisation or `library_vocab.manage` in the
+         *     console. A person's session is needed and an API key is refused. Records
+         *     `vocabulary.retired` with the usage count, or the proposal's `proposal.created` for a
+         *     library list.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without the permission above; `not_found` (404) for an unknown list or key;
+         *     `system_row` (409) for a system value; `in_use` (409) when records carry the value and
+         *     `confirm` is not true, with the count in `usageCount`; `invalid_transition` (409) when
+         *     the value is already retired; `validation_error` (422) for a library list that is
+         *     reference data or a field the body does not name.
+         */
         post: operations["retireVocabularyRow"];
         delete?: never;
         options?: never;
@@ -4621,10 +5584,12 @@ export interface components {
          *       "outputRef": "runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl",
          *       "stats": {
          *         "changesRegistered": 2,
+         *         "correctionsProposed": 1,
          *         "fetches": 118,
          *         "modelCalls": 42,
          *         "outOfScope": 3,
          *         "proposalsSubmitted": 5,
+         *         "recordsRechecked": 12,
          *         "sourcesChecked": 31
          *       },
          *       "status": "succeeded"
@@ -4692,10 +5657,12 @@ export interface components {
          *       "startedAt": "2026-09-20T02:00:03Z",
          *       "stats": {
          *         "changesRegistered": 2,
+         *         "correctionsProposed": 1,
          *         "fetches": 118,
          *         "modelCalls": 42,
          *         "outOfScope": 3,
          *         "proposalsSubmitted": 5,
+         *         "recordsRechecked": 12,
          *         "sourcesChecked": 31
          *       },
          *       "status": "succeeded"
@@ -4769,10 +5736,12 @@ export interface components {
          *           "startedAt": "2026-09-20T02:00:03Z",
          *           "stats": {
          *             "changesRegistered": 2,
+         *             "correctionsProposed": 1,
          *             "fetches": 118,
          *             "modelCalls": 42,
          *             "outOfScope": 3,
          *             "proposalsSubmitted": 5,
+         *             "recordsRechecked": 12,
          *             "sourcesChecked": 31
          *           },
          *           "status": "succeeded"
@@ -4799,10 +5768,12 @@ export interface components {
          *     defaults of its definition (`backend/agents/<agent>/v<n>/definition.yaml`).
          * @example {
          *       "changesRegistered": 2,
+         *       "correctionsProposed": 1,
          *       "fetches": 118,
          *       "modelCalls": 42,
          *       "outOfScope": 3,
          *       "proposalsSubmitted": 5,
+         *       "recordsRechecked": 12,
          *       "sourcesChecked": 31
          *     }
          */
@@ -4813,6 +5784,12 @@ export interface components {
              * @default 0
              */
             changesRegistered: number;
+            /**
+             * Correctionsproposed
+             * @description How many of those re-checked records had drifted from their source and became a `new_obligation_version` proposal, a whole number with a minimum of 0 and no maximum. A correction is a request and never an edit: the record says what it said before until a second and independent principal approves it. These proposals are also counted in `proposalsSubmitted`. Defaults to 0; a negative number is refused with `validation_error`.
+             * @default 0
+             */
+            correctionsProposed: number;
             /**
              * Fetches
              * @description How many documents the run fetched from the outside world, counted against the fetch budget in the agent's definition. Fetched content is untrusted: it is screened for embedded instructions before it is read and never executed, so a high count measures work done and never facts established. Defaults to 0.
@@ -4837,6 +5814,12 @@ export interface components {
              * @default 0
              */
             proposalsSubmitted: number;
+            /**
+             * Recordsrechecked
+             * @description How many library records the run re-checked against the pages they cite, a whole number with a minimum of 0 and no maximum: one per record, each also logged as a `recheck` source check naming it, so the coverage log shows which records were compared beside the documents fetched. A record found unchanged still counts, because a quiet re-check is still a check. Defaults to 0; a negative number is refused with `validation_error`.
+             * @default 0
+             */
+            recordsRechecked: number;
             /**
              * Sourceschecked
              * @description How many registered sources the run visited, one per source per run, counting the sources where nothing had changed. A quiet source is still a check, and that is what lets a bank show that a source was watched on a given night rather than only that something was found. Defaults to 0.
@@ -4890,8 +5873,8 @@ export interface components {
         };
         /**
          * AiGenerationQuery
-         * @description Filters of the AI output log, each optional and combined with AND. Leaving both out
-         *     lists everything the reader may see.
+         * @description Filters of the AI output log, each optional and combined with AND. Leaving all three
+         *     out lists everything the reader may see.
          */
         AiGenerationQuery: {
             /**
@@ -4902,10 +5885,40 @@ export interface components {
             purpose?: string | null;
             /**
              * Status
-             * @description Show only rows in one review state, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. At most 16 characters. A value that is not one of them matches nothing and answers 200 with an empty page.
+             * @description Show only rows in one review state, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. At most 16 characters. It reads the state as this bank sees it (see `status` on a row), so `confirmed` lists a shared “So what?” this bank stood behind and not one only another bank did. A value that is not one of them matches nothing and answers 200 with an empty page.
              * @example draft
              */
             status?: string | null;
+            /**
+             * Subjectid
+             * @description Show only the calls about one record, by the UUID a row carries in `subjectId`: for a “So what?” the regulatory change's id, so a change's screen can list every draft of what it means. A value that is not a UUID is refused with `validation_error` (422); an id no row names answers 200 with an empty page.
+             * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
+             */
+            subjectId?: string | null;
+        };
+        /**
+         * AiGenerationReviewer
+         * @description The person who stood behind a model's output: id and name, the only personal data
+         *     the log carries about them (playbook 4.7).
+         * @example {
+         *       "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *       "name": "Anna Lindqvist"
+         *     }
+         */
+        AiGenerationReviewer: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The person's user id, as a UUID.
+             * @example 8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30
+             */
+            id: string;
+            /**
+             * Name
+             * @description The person's name as it stands now, at most 200 characters, for display.
+             * @example Anna Lindqvist
+             */
+            name: string;
         };
         /**
          * AiGenerationRow
@@ -4918,6 +5931,8 @@ export interface components {
          *         }
          *       ],
          *       "createdAt": "2026-09-16T06:02:00Z",
+         *       "feedback": "",
+         *       "feedbackNote": "",
          *       "id": "1f6c3b70-2a48-4e91-9d05-7b2c8f4a1e63",
          *       "inputTokens": 1840,
          *       "model": "claude-opus-5",
@@ -4929,6 +5944,7 @@ export interface components {
          *       "promptTemplate": "watch-sweeper/so-what/v1",
          *       "purpose": "so_what",
          *       "reviewedAt": null,
+         *       "reviewedBy": null,
          *       "status": "draft",
          *       "stopReason": "",
          *       "subjectId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -4949,6 +5965,18 @@ export interface components {
              * @example 2026-09-16T06:02:00Z
              */
             createdAt: string;
+            /**
+             * Feedback
+             * @description A reader's verdict on an Ask answer, at most 16 characters: `helpful` or `wrong`, as `POST /answers/{answerId}/feedback` stored it, and the latest verdict when it was given more than once. Empty when nobody gave one, and always empty on a row that is not an Ask answer. Source: a person in this bank.
+             * @example
+             */
+            feedback: string;
+            /**
+             * Feedbacknote
+             * @description What the reader wrote with the verdict, as they wrote it, at most 2000 characters, the limit `POST /answers/{answerId}/feedback` accepts. Empty when they wrote nothing or gave no verdict. It is this bank's own text and appears only on this bank's own row.
+             * @example
+             */
+            feedbackNote: string;
             /**
              * Id
              * Format: uuid
@@ -5012,13 +6040,18 @@ export interface components {
             purpose: string;
             /**
              * Reviewedat
-             * @description When a person moved the row out of `draft`, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`). Null while nobody has.
+             * @description When a person moved the row out of `draft`, as an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`), computed for the reading bank as `status` is. Null while nobody has.
              * @example null
              */
             reviewedAt: string | null;
             /**
+             * @description Who moved the row out of `draft`, computed for the reading bank as `status` is: on a shared “So what?” the person at this bank who confirmed or rewrote it on the case. Null while `status` is `draft`.
+             * @example null
+             */
+            reviewedBy: components["schemas"]["AiGenerationReviewer"] | null;
+            /**
              * Status
-             * @description How far a person has got with it, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently.
+             * @description How far a person has got with it, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. Computed for the reading bank. On a bank's own row it is that row's state. A shared “So what?” (`tenantScoped` false) is one row every bank reads and no bank may move, so its state here is this bank's own, taken from this bank's case for the change and never written to the shared row: `confirmed` when someone here confirmed the draft as it stands, `edited` when they rewrote it, and `draft` otherwise. A case settles the newest draft of the change logged by the time it was confirmed, so an earlier draft, or one logged after the confirmation, reads `draft` because nobody here stood behind those words. Another bank's decision never shows.
              * @example draft
              */
             status: string;
@@ -5264,11 +6297,28 @@ export interface components {
              */
             text: string;
         };
-        /** ApiKeyCreate */
+        /**
+         * ApiKeyCreate
+         * @description `POST /tenant/api-keys`: a new key for one of the bank's integrations.
+         * @example {
+         *       "expiresAt": "2027-09-15T23:59:59Z",
+         *       "name": "Policy portal sync",
+         *       "scopes": [
+         *         "library:read",
+         *         "search:read"
+         *       ]
+         *     }
+         */
         ApiKeyCreate: {
-            /** Expiresat */
+            /**
+             * Expiresat
+             * @description When the key should stop working on its own, as a UTC timestamp in ISO 8601 that must lie in the future, or `expiry_in_past` is answered. Leave it out or send null (the default) for a key that lives until it is revoked.
+             */
             expiresAt?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description A name to tell the key apart on screen, at most 200 characters, such as `Policy portal sync`. Surrounding spaces are trimmed, and a name of spaces alone is refused with `name_required`.
+             */
             name: string;
             /**
              * Scopes
@@ -5276,25 +6326,54 @@ export interface components {
              */
             scopes: string[];
         };
-        /** ApiKeyCreated */
+        /**
+         * ApiKeyCreated
+         * @description The secret appears here and nowhere else: no log, no audit value, no outbox payload.
+         * @example {
+         *       "createdAt": "2026-09-15T09:30:00Z",
+         *       "expiresAt": "2027-09-15T23:59:59Z",
+         *       "id": "c4a81e5f-3b92-4d07-8e6a-2f1b9d5c7a30",
+         *       "keyPrefix": "9a1f3c7e",
+         *       "name": "Policy portal sync",
+         *       "plainKey": "cw_9a1f3c7e_<secret-shown-once>",
+         *       "scopes": [
+         *         "library:read",
+         *         "search:read"
+         *       ]
+         *     }
+         */
         ApiKeyCreated: {
             /**
              * Createdat
              * Format: date-time
+             * @description When the key was created, as a UTC timestamp in ISO 8601, set by the server.
              */
             createdAt: string;
-            /** Expiresat */
+            /**
+             * Expiresat
+             * @description When the key stops working on its own, as a UTC timestamp in ISO 8601, or null for a key with no expiry.
+             */
             expiresAt: string | null;
             /**
              * Id
              * Format: uuid
+             * @description The new key's permanent identifier, a UUID: the handle to revoke it by, never the key itself.
              */
             id: string;
-            /** Keyprefix */
+            /**
+             * Keyprefix
+             * @description The eight hexadecimal characters the key begins with after `cw_`, kept in the clear so the key can be recognised in the list later without the secret.
+             */
             keyPrefix: string;
-            /** Name */
+            /**
+             * Name
+             * @description The name the key was given, trimmed, exactly as it will be listed.
+             */
             name: string;
-            /** Plainkey */
+            /**
+             * Plainkey
+             * @description The key itself, `cw_<prefix>_<secret>`, to be sent as `X-API-Key` or as a bearer token. This answer is the only time it exists outside the caller: the server keeps only a hash of the secret, never logs it and never shows it again, so put it straight into the integration's secret store. A lost key is revoked and replaced, not recovered.
+             */
             plainKey: string;
             /**
              * Scopes
@@ -5302,27 +6381,61 @@ export interface components {
              */
             scopes: string[];
         };
-        /** ApiKeyOut */
+        /**
+         * ApiKeyOut
+         * @description One of the bank's own API keys as the keys screen lists it. The secret is never here,
+         *     only its prefix.
+         * @example {
+         *       "createdAt": "2026-09-15T09:30:00Z",
+         *       "expiresAt": "2027-09-15T23:59:59Z",
+         *       "id": "c4a81e5f-3b92-4d07-8e6a-2f1b9d5c7a30",
+         *       "keyPrefix": "9a1f3c7e",
+         *       "lastUsedAt": "2026-09-22T05:00:12Z",
+         *       "name": "Policy portal sync",
+         *       "revokedAt": null,
+         *       "scopes": [
+         *         "library:read",
+         *         "search:read"
+         *       ]
+         *     }
+         */
         ApiKeyOut: {
             /**
              * Createdat
              * Format: date-time
+             * @description When the key was created, as a UTC timestamp in ISO 8601, set by the server.
              */
             createdAt: string;
-            /** Expiresat */
+            /**
+             * Expiresat
+             * @description When the key stops working on its own, as a UTC timestamp in ISO 8601; from that moment every call with it answers `unauthenticated`. Null for a key that does not expire, which stays live until it is revoked.
+             */
             expiresAt: string | null;
             /**
              * Id
              * Format: uuid
+             * @description The key's permanent identifier, a UUID the server issues. Pass it to `DELETE /tenant/api-keys/{key_id}`; it is not the key itself and cannot sign a request.
              */
             id: string;
-            /** Keyprefix */
+            /**
+             * Keyprefix
+             * @description The first part of the key, eight hexadecimal characters such as `9a1f3c7e`, kept in the clear so a key found in a log or a vault can be matched to this row. It is not a secret and is not enough to call the API: the rest was shown once, at creation, and only its hash is stored.
+             */
             keyPrefix: string;
-            /** Lastusedat */
+            /**
+             * Lastusedat
+             * @description When the key last authenticated a call, as a UTC timestamp in ISO 8601. It moves at most once every 60 seconds by default (a setting), so it says a key is in use rather than counting its calls. Null for a key that has never been used.
+             */
             lastUsedAt: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description The name an administrator gave the key, such as `Policy portal sync`, to tell keys apart on screen. A label only; nothing reads it.
+             */
             name: string;
-            /** Revokedat */
+            /**
+             * Revokedat
+             * @description When an administrator revoked the key, as a UTC timestamp in ISO 8601; from that moment every call with it answers `unauthenticated`. A revoked key stays listed and cannot be turned back on. Null while it is live.
+             */
             revokedAt: string | null;
             /**
              * Scopes
@@ -5330,11 +6443,38 @@ export interface components {
              */
             scopes: string[];
         };
-        /** ApiKeysPage */
+        /**
+         * ApiKeysPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "createdAt": "2026-09-15T09:30:00Z",
+         *           "expiresAt": "2027-09-15T23:59:59Z",
+         *           "id": "c4a81e5f-3b92-4d07-8e6a-2f1b9d5c7a30",
+         *           "keyPrefix": "9a1f3c7e",
+         *           "lastUsedAt": "2026-09-22T05:00:12Z",
+         *           "name": "Policy portal sync",
+         *           "revokedAt": null,
+         *           "scopes": [
+         *             "library:read",
+         *             "search:read"
+         *           ]
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
         ApiKeysPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The bank's own keys on this page, newest first, revoked and expired ones included so that the list is the whole history. The platform's agent keys are never here. An empty list is a 200 and means the bank has no key yet.
+             */
             items: components["schemas"]["ApiKeyOut"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many keys the bank has in total, not how many are on this page; use it to size a pager.
+             */
             total: number;
         };
         /**
@@ -5373,7 +6513,8 @@ export interface components {
          *           }
          *         ]
          *       },
-         *       "event": "answer"
+         *       "event": "answer",
+         *       "stopReason": "end_turn"
          *     }
          */
         AskAnswerEvent: {
@@ -5386,6 +6527,11 @@ export interface components {
              * @constant
              */
             event: "answer";
+            /**
+             * Stopreason
+             * @description How the model finished writing, in the provider's own word, exactly as the answer's AI log row stores it (`stopReason` there, D-82): `end_turn` when the model finished the answer, `max_tokens` when it was cut off at the length limit (`ASK_MAX_TOKENS`, 1024 tokens), and any other word the provider gives passed on unchanged. Empty when no model was asked, because no passage supported an answer. Source: the model's provider. Do not read `max_tokens` as a wrong answer: every statement sent is still cited, but the answer may stop before its last point, so the screen says it was cut short and a narrower question may get the rest.
+             */
+            stopReason?: string | null;
         };
         /**
          * AskProblemEvent
@@ -6104,11 +7250,505 @@ export interface components {
          * @description `{}`: the neutral answer of the code request and the accepted re-issue.
          */
         Empty: Record<string, never>;
-        /** FootprintDecisionBody */
+        /**
+         * EvalBaselineOut
+         * @description The release gate's accepted retrieval scores in this build, each null until recorded.
+         * @example {
+         *       "mrr": null,
+         *       "recallAt10": null,
+         *       "recorded": false,
+         *       "recordedAt": null
+         *     }
+         */
+        EvalBaselineOut: {
+            /**
+             * Mrr
+             * @description The accepted mean reciprocal rank, from 0 to 1, or null while nobody has recorded it. Source: the baseline file. Do not read null as zero: a recorded 0 is a score, null is the absence of one.
+             */
+            mrr: number | null;
+            /**
+             * Recallat10
+             * @description The accepted mean recall at 10, from 0 to 1, or null while nobody has recorded it. Source: the baseline file. Do not read null as zero: a recorded 0 is a score, null is the absence of one.
+             */
+            recallAt10: number | null;
+            /**
+             * Recorded
+             * @description True once a real evaluator has scored the retrieval track and its scores were recorded as the baseline the release gate compares every build with; false while none has, and then each score is null. Source: `backend/eval/baseline.json` in this build. Do not read false as search failing: an unrecorded track fails no build.
+             */
+            recorded: boolean;
+            /**
+             * Recordedat
+             * @description When the baseline was recorded, as an ISO 8601 date-time in UTC, or null while it is not. Source: the baseline file. Do not read it as when this build shipped.
+             */
+            recordedAt: string | null;
+        };
+        /**
+         * EvalQuestionInput
+         * @description `POST /eval/questions`: one labelled question. A field the schema does not name is
+         *     refused, never dropped.
+         * @example {
+         *       "expected": [
+         *         "obl-costs-charges"
+         *       ],
+         *       "key": "r-sv-17",
+         *       "lang": "sv",
+         *       "matchKind": "concept",
+         *       "notes": "Swedish phrasing of the cost disclosure, won by meaning.",
+         *       "question": "kostnader och avgifter före tjänsten"
+         *     }
+         */
+        EvalQuestionInput: {
+            /**
+             * Asof
+             * @description The legal date the question is asked on, as an ISO date: the version in force that day is the one expected. Absent means the sample corpus's own anchor day. Source: platform staff. Do not read it as the day the question was written.
+             */
+            asOf?: string | null;
+            /**
+             * Expected
+             * @description The library records a good answer contains, each by its stable key (an obligation's `obl-costs-charges`, a provision's `sfs-2007-528/9`, a change's key), every one of them relevant. Recall at 10 is the share of them found in the first ten hits and MRR the reciprocal rank of the first. An empty list is a question the library has no answer to: it scores right only when search returns nothing. At most 100 keys, the widest page the gate's search asks for, each 1 to 200 characters; more answers 422. Source: platform staff; the keys are not checked against the library, because the gate scores the sample corpus and not this database's records. Do not read a key here as a record this deployment holds.
+             */
+            expected?: string[];
+            /**
+             * Key
+             * @description The question's stable key, which never changes: lower-case letters, digits and hyphens, starting with a letter or digit, 1 to 40 characters, by convention `r-<language>-<number>` as in `r-sv-17`. A key already in the set answers 409 `duplicate_key`; one that breaks the pattern answers 422. Source: platform staff. Do not reuse a retired question's key: a key names one question for good.
+             */
+            key: string;
+            /**
+             * Lang
+             * @description The content language the question is asked in, as a language key: one of the library's language rows (`en`, `sv`, `da`, `nb`, `fi` on day one), read from `GET /reference/languages`. A key that names no row answers 422 `unknown_key`. Source: platform staff. Do not send a label such as `Svenska`: only the key is accepted.
+             */
+            lang: string;
+            /** @description What the question expects to win it, which is what AC-SRC1 checks: `keyword` when an identifier such as `FFFS 2017:2` must be found by its words, `concept` when a phrasing such as `nudging in onboarding` must be found by meaning, `both` when one query needs the two legs fused. The gate reports its scores per match kind, so a regression in one leg shows on its own. Source: platform staff. Do not read it as how any hit was actually found: that is the `matchKind` of a search hit. */
+            matchKind: components["schemas"]["SearchMatchKind"];
+            /**
+             * Notes
+             * @description Why the question is in the set and what it proves, for the next person who reads it. At most 2000 characters; longer answers 422. Source: platform staff. Do not put a bank's own text or a client's data in it: the set is written to a file in the code repository.
+             * @default
+             */
+            notes: string;
+            /**
+             * Question
+             * @description What a reader would type into search, exactly as asked, 1 to 500 characters, the most search itself accepts; longer answers 422. Source: platform staff. Do not put a bank's own text in it: the set is the platform's and is written to a file in the code repository.
+             */
+            question: string;
+            /**
+             * @description Which read of the library the question is scored on: `search`, the default, scores the hits the search page returns; `ask` scores the passages Ask would give a model, so a question Ask must not answer expects none. Source: platform staff. Do not read `ask` as a question to a model: no model is called when scoring.
+             * @default search
+             */
+            via: components["schemas"]["EvalVia"];
+        };
+        /**
+         * EvalQuestionOut
+         * @description One question of the evaluation set as the console shows it.
+         * @example {
+         *       "active": true,
+         *       "asOf": null,
+         *       "expected": [
+         *         "obl-costs-charges",
+         *         "obl-research-payments",
+         *         "obl-product-governance",
+         *         "obl-client-assets"
+         *       ],
+         *       "id": "0b6f3c1e-5d7a-4a54-9c2e-7f1d8e2a4b90",
+         *       "inGate": true,
+         *       "key": "r-en-01",
+         *       "lang": "en",
+         *       "matchKind": "keyword",
+         *       "notes": "An identifier is won by keyword. Every obligation under the instrument is relevant.",
+         *       "question": "FFFS 2017:2",
+         *       "via": "search"
+         *     }
+         */
+        EvalQuestionOut: {
+            /**
+             * Active
+             * @description True while the question belongs to the set; false once it has been retired, which keeps it here for the record but leaves it out of every run and out of the file the gate reads. Source: platform staff. Do not read false as the question having failed.
+             */
+            active: boolean;
+            /**
+             * Asof
+             * @description The legal date the question is asked on, or null for the sample corpus's own anchor day. Source: platform staff. Do not read it as the day the question was written.
+             */
+            asOf: string | null;
+            /**
+             * Expected
+             * @description The library records a good answer contains, each by its stable key (an obligation's `obl-costs-charges`, a provision's `sfs-2007-528/9`, a change's key), every one of them relevant. Recall at 10 is the share of them found in the first ten hits and MRR the reciprocal rank of the first. An empty list is a question the library has no answer to: it scores right only when search returns nothing. At most 100 keys, the widest page the gate's search asks for, each 1 to 200 characters; more answers 422. Source: platform staff; the keys are not checked against the library, because the gate scores the sample corpus and not this database's records. Do not read a key here as a record this deployment holds.
+             */
+            expected: string[];
+            /**
+             * Id
+             * Format: uuid
+             * @description The question's identifier in this database, a UUID. Source: the server. Do not use it to name the question elsewhere: the stable `key` is what the gate's file and every run use, and the id differs in every database.
+             */
+            id: string;
+            /**
+             * Ingate
+             * @description True when the release gate that built this deployment scores the question: its key is a line of `backend/eval/retrieval.jsonl` in this build. False for a question added in the console and not yet written to that file with the dump_eval_questions command and shipped: it is kept, and scored by the record_eval_run command, but a drop on it fails no build yet. Source: the server. Do not read true as the question passing.
+             */
+            inGate: boolean;
+            /**
+             * Key
+             * @description The question's stable key, for example `r-en-01`, which never changes and is the `id` of its line in the release gate's file. Source: platform staff. Do not read it as a library record's stable key.
+             */
+            key: string;
+            /**
+             * Lang
+             * @description The content language the question is asked in, as a key of the library's language rows (`en`, `sv`, `da`, `nb`, `fi` on day one). Source: platform staff. Do not read it as the language of the records it expects: a Swedish question may expect an EU obligation.
+             */
+            lang: string;
+            /** @description What the question expects to win it, which is what AC-SRC1 checks: `keyword` when an identifier such as `FFFS 2017:2` must be found by its words, `concept` when a phrasing such as `nudging in onboarding` must be found by meaning, `both` when one query needs the two legs fused. The gate reports its scores per match kind, so a regression in one leg shows on its own. Source: platform staff. Do not read it as how any hit was actually found: that is the `matchKind` of a search hit. */
+            matchKind: components["schemas"]["SearchMatchKind"];
+            /**
+             * Notes
+             * @description Why the question is in the set and what it proves; empty when nobody wrote why. Source: platform staff. Do not read an empty note as a question nobody checked.
+             */
+            notes: string;
+            /**
+             * Question
+             * @description What is typed into search, exactly as asked, for example `FFFS 2017:2`. Source: platform staff. Do not read it as a bank's question: the set is the platform's own.
+             */
+            question: string;
+            /** @description Which read of the library the question is scored on: `search` scores the hits the search page returns; `ask` scores the passages Ask would give a model. Source: platform staff. Do not read `ask` as a question to a model: no model is called when scoring. */
+            via: components["schemas"]["EvalVia"];
+        };
+        /**
+         * EvalQuestionPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "active": true,
+         *           "asOf": null,
+         *           "expected": [
+         *             "obl-costs-charges",
+         *             "obl-research-payments",
+         *             "obl-product-governance",
+         *             "obl-client-assets"
+         *           ],
+         *           "id": "0b6f3c1e-5d7a-4a54-9c2e-7f1d8e2a4b90",
+         *           "inGate": true,
+         *           "key": "r-en-01",
+         *           "lang": "en",
+         *           "matchKind": "keyword",
+         *           "notes": "An identifier is won by keyword. Every obligation under the instrument is relevant.",
+         *           "question": "FFFS 2017:2",
+         *           "via": "search"
+         *         }
+         *       ],
+         *       "total": 53
+         *     }
+         */
+        EvalQuestionPage: {
+            /**
+             * Items
+             * @description The questions on this page, ordered by key, retired ones included. An empty list is a 200 and means the set holds no question yet. Source: platform staff and the gate's file. Do not read a short page as the end unless `total` agrees.
+             */
+            items: components["schemas"]["EvalQuestionOut"][];
+            /**
+             * Total
+             * @description How many questions the set holds in total, retired ones included; use it to size a pager. Source: the server. Do not read it as how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * EvalQuestionResult
+         * @description What one question got back in a run, and how it scored.
+         * @example {
+         *       "mrr": 1,
+         *       "questionKey": "r-en-01",
+         *       "recallAt10": 1,
+         *       "returned": [
+         *         "obl-costs-charges",
+         *         "obl-client-assets",
+         *         "obl-product-governance",
+         *         "obl-research-payments"
+         *       ]
+         *     }
+         */
+        EvalQuestionResult: {
+            /**
+             * Mrr
+             * @description The reciprocal rank of this question's first expected record, from 0 (not found) to 1 (first): 0.5 means it came second. Source: the server. Do not read it as how many expected records were found.
+             */
+            mrr: number;
+            /**
+             * Questionkey
+             * @description The stable key of the question asked, for example `r-en-01`. Source: the evaluation set. Do not read it as a library record's key.
+             */
+            questionKey: string;
+            /**
+             * Recallat10
+             * @description This question's share of expected records found in the first ten hits, from 0 to 1; a question with no answer scores 1 only when nothing came back. Source: the server. Do not read 1 as every hit being relevant.
+             */
+            recallAt10: number;
+            /**
+             * Returned
+             * @description The stable keys of the first ten hits search returned, best first; empty when it returned nothing. Source: the server. Do not read a key missing from here as missing from the library: only the first ten are kept.
+             */
+            returned: string[];
+        };
+        /**
+         * EvalRunConfig
+         * @description What a run scored: which retrieval chain, and over how many questions.
+         * @example {
+         *       "isMock": false,
+         *       "questions": 53,
+         *       "retriever": "apps.search.eval:Retriever (embedder none, reranker none)"
+         *     }
+         */
+        EvalRunConfig: {
+            /**
+             * Ismock
+             * @description True when any adapter in the chain was a stand-in (a mock embedder or reranker), so the scores say nothing about a real model; false when every adapter was real or absent. Source: the server. Do not compare a mock run's scores with a real one's.
+             */
+            isMock: boolean;
+            /**
+             * Questions
+             * @description How many active questions were asked in the run, 0 or more. Source: the server. Do not read it as the size of the set: inactive questions are not asked.
+             */
+            questions: number;
+            /**
+             * Retriever
+             * @description The retrieval chain that answered, naming its embedder and reranker, for example `apps.search.eval:Retriever (embedder none, reranker none)`. Source: the server. Do not read it as the chain this deployment serves searches with: the run scores the sample corpus in a database of its own.
+             */
+            retriever: string;
+        };
+        /**
+         * EvalRunMetrics
+         * @description A run's scores overall, per content language and per match kind.
+         * @example {
+         *       "overall": {
+         *         "mrr": 0.81,
+         *         "recallAt10": 0.92
+         *       },
+         *       "perLanguage": {
+         *         "en": {
+         *           "mrr": 0.81,
+         *           "recallAt10": 0.92
+         *         },
+         *         "sv": {
+         *           "mrr": 0.79,
+         *           "recallAt10": 0.88
+         *         }
+         *       },
+         *       "perMatchKind": {
+         *         "concept": {
+         *           "mrr": 0.66,
+         *           "recallAt10": 0.8
+         *         },
+         *         "keyword": {
+         *           "mrr": 0.97,
+         *           "recallAt10": 1
+         *         }
+         *       }
+         *     }
+         */
+        EvalRunMetrics: {
+            /** @description The scores over every question asked. Source: the server. Do not read them as the release gate's verdict: the gate compares them with a recorded baseline. */
+            overall: components["schemas"]["EvalScores"];
+            /**
+             * Perlanguage
+             * @description The scores per content language of the questions, keyed by language key (`en`, `sv`, `da`, `nb`, `fi`, the library's language rows). Source: the server. Do not read a language that is absent as scoring zero: no question in it was asked.
+             */
+            perLanguage: {
+                [key: string]: components["schemas"]["EvalScores"];
+            };
+            /**
+             * Permatchkind
+             * @description The scores per expected match kind, keyed `keyword`, `concept` or `both`, so a regression in the keyword or the vector leg shows on its own. Source: the server. Do not read a kind that is absent as scoring zero: no question of it was asked.
+             */
+            perMatchKind: {
+                [key: string]: components["schemas"]["EvalScores"];
+            };
+        };
+        /**
+         * EvalRunOut
+         * @description One recorded run of the evaluation set: which chain, the scores, and each answer.
+         * @example {
+         *       "config": {
+         *         "isMock": false,
+         *         "questions": 53,
+         *         "retriever": "apps.search.eval:Retriever (embedder none, reranker none)"
+         *       },
+         *       "id": "5e2d9a47-1c3b-4f6e-8a0d-2b7c9e4f1a36",
+         *       "metrics": {
+         *         "overall": {
+         *           "mrr": 0.81,
+         *           "recallAt10": 0.92
+         *         },
+         *         "perLanguage": {
+         *           "en": {
+         *             "mrr": 0.81,
+         *             "recallAt10": 0.92
+         *           },
+         *           "sv": {
+         *             "mrr": 0.79,
+         *             "recallAt10": 0.88
+         *           }
+         *         },
+         *         "perMatchKind": {
+         *           "concept": {
+         *             "mrr": 0.66,
+         *             "recallAt10": 0.8
+         *           },
+         *           "keyword": {
+         *             "mrr": 0.97,
+         *             "recallAt10": 1
+         *           }
+         *         }
+         *       },
+         *       "results": [
+         *         {
+         *           "mrr": 1,
+         *           "questionKey": "r-en-01",
+         *           "recallAt10": 1,
+         *           "returned": [
+         *             "obl-costs-charges",
+         *             "obl-client-assets",
+         *             "obl-product-governance",
+         *             "obl-research-payments"
+         *           ]
+         *         }
+         *       ],
+         *       "runAt": "2026-09-23T06:00:00Z"
+         *     }
+         */
+        EvalRunOut: {
+            /** @description Which retrieval chain the run scored, and over how many questions. Source: the server. Do not compare two runs whose chains differ as if only search changed. */
+            config: components["schemas"]["EvalRunConfig"];
+            /**
+             * Id
+             * Format: uuid
+             * @description The run's identifier, a UUID, which the audit row of the run names too. Source: the server. Do not read its order as the order of the runs: use `runAt`.
+             */
+            id: string;
+            /** @description The run's scores overall, per language and per match kind. Source: the server. Do not read them as the release gate's verdict, which is in CI against its baseline. */
+            metrics: components["schemas"]["EvalRunMetrics"];
+            /**
+             * Results
+             * @description One entry per question asked, in the order asked: what came back and how it scored. Source: the server. Do not read a question here as still active: one retired since stays here, as it ran.
+             */
+            results: components["schemas"]["EvalQuestionResult"][];
+            /**
+             * Runat
+             * Format: date-time
+             * @description When the run was recorded, as an ISO 8601 date-time in UTC. Source: the server. Do not read it as when the questions were last changed.
+             */
+            runAt: string;
+        };
+        /**
+         * EvalRunPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "config": {
+         *             "isMock": false,
+         *             "questions": 53,
+         *             "retriever": "apps.search.eval:Retriever (embedder none, reranker none)"
+         *           },
+         *           "id": "5e2d9a47-1c3b-4f6e-8a0d-2b7c9e4f1a36",
+         *           "metrics": {
+         *             "overall": {
+         *               "mrr": 0.81,
+         *               "recallAt10": 0.92
+         *             },
+         *             "perLanguage": {
+         *               "en": {
+         *                 "mrr": 0.81,
+         *                 "recallAt10": 0.92
+         *               },
+         *               "sv": {
+         *                 "mrr": 0.79,
+         *                 "recallAt10": 0.88
+         *               }
+         *             },
+         *             "perMatchKind": {
+         *               "concept": {
+         *                 "mrr": 0.66,
+         *                 "recallAt10": 0.8
+         *               },
+         *               "keyword": {
+         *                 "mrr": 0.97,
+         *                 "recallAt10": 1
+         *               }
+         *             }
+         *           },
+         *           "results": [
+         *             {
+         *               "mrr": 1,
+         *               "questionKey": "r-en-01",
+         *               "recallAt10": 1,
+         *               "returned": [
+         *                 "obl-costs-charges",
+         *                 "obl-client-assets",
+         *                 "obl-product-governance",
+         *                 "obl-research-payments"
+         *               ]
+         *             }
+         *           ],
+         *           "runAt": "2026-09-23T06:00:00Z"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
+        EvalRunPage: {
+            /**
+             * Items
+             * @description The runs on this page, newest first. An empty list is a 200 and means no run has been recorded yet. Source: the server. Do not read an empty list as search being unscored: the release gate scores it in CI either way.
+             */
+            items: components["schemas"]["EvalRunOut"][];
+            /**
+             * Total
+             * @description How many runs are recorded in total; use it to size a pager. Source: the server. Do not read it as how many are on this page.
+             */
+            total: number;
+        };
+        /**
+         * EvalScores
+         * @description Two retrieval scores over a set of questions, each a mean between 0 and 1.
+         * @example {
+         *       "mrr": 0.81,
+         *       "recallAt10": 0.92
+         *     }
+         */
+        EvalScores: {
+            /**
+             * Mrr
+             * @description The mean reciprocal rank of the first expected record, from 0 (never found) to 1 (always first). Source: the server, computed by the release gate's own scoring. Do not read it as a share of questions answered.
+             */
+            mrr: number;
+            /**
+             * Recallat10
+             * @description The mean share of the expected records found in the first ten hits, from 0 (none found) to 1 (all found). Source: the server, computed by the release gate's own scoring. Do not read it as precision: extra hits cost nothing here.
+             */
+            recallAt10: number;
+        };
+        /**
+         * EvalVia
+         * @description Tier-one kind: which read of the library a question of the evaluation set is scored
+         *     on (SRC-05, SRC-S12, D-81), as the release gate's file says in `via`.
+         *
+         *     - `search`: the hits the search page returns, the default.
+         *     - `ask`: the passages Ask would give a model; a question Ask must not answer expects
+         *       none, and is scored right only when nothing comes back.
+         * @enum {string}
+         */
+        EvalVia: "search" | "ask";
+        /**
+         * FootprintDecisionBody
+         * @description What the second person sends with an approval or a rejection.
+         * @example {
+         *       "note": "Matches the new insurance distribution licence."
+         *     }
+         */
         FootprintDecisionBody: {
             /**
              * Note
+             * @description Why the change was approved or rejected, kept on the request and in its audit event for whoever reads the history; empty by default. The organisation's own text, never shared outside it.
              * @default
+             * @example Matches the new insurance distribution licence.
              */
             note: string;
         };
@@ -6144,17 +7784,57 @@ export interface components {
          *     commit): what the change would hide and reveal, with nothing persisted, no audit event
          *     and no approval started. The same `adds`, `removes` and `preview` the created request
          *     would carry, so the screen renders the preview and the request from one shape.
+         * @example {
+         *       "adds": [
+         *         {
+         *           "dimension": "service_type",
+         *           "key": "insurance_distribution",
+         *           "kind": null,
+         *           "label": "Insurance distribution"
+         *         }
+         *       ],
+         *       "dryRun": true,
+         *       "preview": {
+         *         "cases": {
+         *           "available": true,
+         *           "hidden": 0,
+         *           "revealed": 1
+         *         },
+         *         "obligations": {
+         *           "available": true,
+         *           "hidden": 2,
+         *           "revealed": 2
+         *         }
+         *       },
+         *       "removes": [
+         *         {
+         *           "dimension": "service_type",
+         *           "key": "advice",
+         *           "kind": null,
+         *           "label": "Advice"
+         *         }
+         *       ]
+         *     }
          */
         FootprintDryRun: {
-            /** Adds */
+            /**
+             * Adds
+             * @description The terms the change would put into the regulatory scope, as sent, each with its label and dimension; empty by default. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.
+             */
             adds?: components["schemas"]["FootprintTermRef"][];
             /**
              * Dryrun
+             * @description Always true, the default: this answer is a preview, and no request, approval or audit event exists because of it.
              * @default true
+             * @example true
              */
             dryRun: boolean;
+            /** @description What the change would hide and reveal if it were approved now, counted by the server with the same rule every list uses. Nothing is stored; a request sent afterwards is counted again. */
             preview: components["schemas"]["FootprintPreview"];
-            /** Removes */
+            /**
+             * Removes
+             * @description The terms the change would take out of the regulatory scope, as sent, each with its label and dimension; empty by default. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.
+             */
             removes?: components["schemas"]["FootprintTermRef"][];
         };
         /**
@@ -6162,37 +7842,66 @@ export interface components {
          * @description The named schema behind `footprint_change_request.preview` (JSONField).
          */
         FootprintPreview: {
+            /** @description What the change would hide and reveal among this bank's own open cases, judged by the scope of the regulatory change each follows. Computed by the server; by default nothing counted. Hiding a case never closes it or takes it from its owner. */
             cases?: components["schemas"]["FootprintPreviewCount"];
+            /** @description What the change would hide and reveal among the shared library's obligations this bank can see. Computed by the server; by default nothing counted. */
             obligations?: components["schemas"]["FootprintPreviewCount"];
         };
         /**
          * FootprintPreviewCount
-         * @description What a change would hide and reveal for one record kind. `available` is false while
-         *     the table does not exist yet (chunk 2 has no obligations or cases): zeros with
-         *     `available:false` say "not counted", never "none" (playbook 4.4).
+         * @description What a regulatory scope change would hide and reveal for one record kind: the
+         *     obligations this bank can see, or this bank's open cases. Zeros with `available:false`
+         *     say "not counted", never "none" (playbook 4.4).
          */
         FootprintPreviewCount: {
             /**
              * Available
+             * @description Whether the server counted this record kind at all. True: `hidden` and `revealed` are real counts, and zeros mean none. False: nothing was counted and the zeros say nothing, which a screen shows as not counted rather than as none. Obligations and cases are both counted today; a request decided before cases were counted keeps the counts it was decided against, so its cases may still read false.
              * @default false
              */
             available: boolean;
             /**
              * Hidden
+             * @description How many records of this kind are inside the bank's regulatory scope today and would fall outside it once the change is approved. For obligations these are the library obligations the bank can see; for cases, the bank's own open cases (every case not closed or dismissed), judged by the scope of the regulatory change each case follows. Computed by the server with the same scope rule every list uses, including the opt-in rule for the standards a bank follows. A hidden record is not deleted and a case keeps its owner and its decisions; it only leaves the screens filtered by the scope. Never negative; 0 when nothing would be hidden.
              * @default 0
              */
             hidden: number;
             /**
              * Revealed
+             * @description How many records of this kind are outside the bank's regulatory scope today and would come inside it once the change is approved, counted over the same records and by the same rule as `hidden`. A record with no scope terms is inside every scope, so it is never hidden or revealed. Never negative; 0 when nothing would appear.
              * @default 0
              */
             revealed: number;
         };
-        /** FootprintRequestBody */
+        /**
+         * FootprintRequestBody
+         * @description `POST /tenant/footprint/requests`: the terms to put into and take out of the
+         *     organisation's regulatory scope, previewed with `dryRun=true` or sent for approval.
+         * @example {
+         *       "adds": [
+         *         {
+         *           "dimension": "service_type",
+         *           "key": "insurance_distribution"
+         *         }
+         *       ],
+         *       "removes": [
+         *         {
+         *           "dimension": "service_type",
+         *           "key": "advice"
+         *         }
+         *       ]
+         *     }
+         */
         FootprintRequestBody: {
-            /** Adds */
+            /**
+             * Adds
+             * @description The terms to put into the regulatory scope; empty by default. A term already in the scope changes nothing when approved. With `removes`, at least one term in all, and no term in both; otherwise 422 `validation_error`.
+             */
             adds?: components["schemas"]["FootprintTermSelector"][];
-            /** Removes */
+            /**
+             * Removes
+             * @description The terms to take out of the regulatory scope; empty by default. A term not in the scope changes nothing when approved. With `adds`, at least one term in all, and no term in both; otherwise 422 `validation_error`.
+             */
             removes?: components["schemas"]["FootprintTermSelector"][];
         };
         /**
@@ -6310,67 +8019,272 @@ export interface components {
              */
             dryRun: boolean;
         };
-        /** FootprintRequestRow */
+        /**
+         * FootprintRequestRow
+         * @description One request to change the organisation's regulatory scope (FP-02): what it adds and
+         *     removes, what that would hide and reveal, who asked and who decided. The scope changes
+         *     only when a second person approves it with a passkey.
+         * @example {
+         *       "adds": [
+         *         {
+         *           "dimension": "service_type",
+         *           "key": "insurance_distribution",
+         *           "kind": null,
+         *           "label": "Insurance distribution"
+         *         }
+         *       ],
+         *       "decidedAt": null,
+         *       "decidedBy": null,
+         *       "decisionNote": "",
+         *       "id": "5b0c7e1a-3f2d-4c8e-9a61-2d7f0e4b9c13",
+         *       "preview": {
+         *         "cases": {
+         *           "available": true,
+         *           "hidden": 0,
+         *           "revealed": 1
+         *         },
+         *         "obligations": {
+         *           "available": true,
+         *           "hidden": 2,
+         *           "revealed": 2
+         *         }
+         *       },
+         *       "removes": [
+         *         {
+         *           "dimension": "service_type",
+         *           "key": "advice",
+         *           "kind": null,
+         *           "label": "Advice"
+         *         }
+         *       ],
+         *       "requestedAt": "2026-09-18T07:40:00Z",
+         *       "requestedBy": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Sara Lindqvist"
+         *       },
+         *       "status": "pending",
+         *       "version": 1
+         *     }
+         */
         FootprintRequestRow: {
-            /** Adds */
+            /**
+             * Adds
+             * @description The terms the change puts into the regulatory scope, each with its dimension; empty by default, when it only removes. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.
+             */
             adds?: components["schemas"]["FootprintTermRef"][];
-            /** Decidedat */
+            /**
+             * Decidedat
+             * @description When the request was approved, rejected or withdrawn, a UTC timestamp set by the server; null by default, while it is pending.
+             * @example null
+             */
             decidedAt?: string | null;
+            /** @description The second person who approved or rejected the request, by id and name; never the requester, which the database itself refuses. Null by default: while the request is pending, and when it was withdrawn, since withdrawing is not a decision. */
             decidedBy?: components["schemas"]["PersonRef"] | null;
             /**
              * Decisionnote
+             * @description What the person deciding wrote about it, such as why a change was turned down; empty by default, when they wrote nothing and always for a withdrawn request. The organisation's own text, never shared outside it.
              * @default
+             * @example
              */
             decisionNote: string;
             /**
              * Id
              * Format: uuid
+             * @description The request's identifier, a UUID that never changes; the approve, reject and withdraw calls take it in their path.
+             * @example 5b0c7e1a-3f2d-4c8e-9a61-2d7f0e4b9c13
              */
             id: string;
+            /** @description What the change hides and reveals, computed by the server. A pending request is counted again on every read, against today's library, so the approver decides on the effect now; a decided request keeps the counts it was decided against, the same ones its audit event holds. */
             preview: components["schemas"]["FootprintPreview"];
-            /** Removes */
+            /**
+             * Removes
+             * @description The terms the change takes out of the regulatory scope, each with its dimension; empty by default, when it only adds. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.
+             */
             removes?: components["schemas"]["FootprintTermRef"][];
             /**
              * Requestedat
              * Format: date-time
+             * @description When the request was sent, a UTC timestamp set by the server.
+             * @example 2026-09-18T07:40:00Z
              */
             requestedAt: string;
+            /** @description The member who asked for the change, by id and name. Every request has one, so the default of null never reaches a reader. */
             requestedBy?: components["schemas"]["PersonRef"] | null;
-            /** Status */
+            /**
+             * Status
+             * @description Where the request stands, one of four fixed values. `pending`: waiting for a second person; the scope is unchanged, and an organisation has at most one pending request. `approved`: a second person approved it with a passkey and the scope changed at that moment. `rejected`: a second person turned it down and the scope is unchanged. `withdrawn`: the requester took it back before anyone decided and the scope is unchanged. Only `pending` can still change; the other three are final. A kind in code, never extended by an administrator.
+             * @example pending
+             */
             status: string;
             /**
              * Version
+             * @description The request's version: 1 while pending, 2 once decided. Send it as `If-Match` when approving, rejecting or withdrawing to be told with 409 `stale_write` if the request moved on since you read it.
              * @default 1
+             * @example 1
              */
             version: number;
         };
-        /** FootprintTermRef */
+        /**
+         * FootprintTermRef
+         * @description A taxonomy term in a regulatory scope change: the term as a reference, plus the key of
+         *     the dimension it belongs to, since a term key is unique only within its dimension.
+         */
         FootprintTermRef: {
-            /** Dimension */
+            /**
+             * Dimension
+             * @description The key of the term's dimension, such as `service_type`; with `key` it names the term. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists them.
+             * @example service_type
+             */
             dimension: string;
-            /** Key */
+            /**
+             * Key
+             * @description The value's immutable key, such as `advice` for a taxonomy term, `no` for Norway or `sv` for Swedish, and the only part of this reference to store, compare or send back. It is a row of a vocabulary: a taxonomy term (the shared library's terms, which an administrator may extend through an approved proposal; `GET /taxonomy/terms`), a jurisdiction (which the platform's library editors may add; `GET /reference/jurisdictions`), a language (the platform's own list, which no bank admin can extend) or an urgency (the shared library's `urgency` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/urgency`). A key you have not seen before is new data, not an error. A key never changes once issued.
+             * @example advice
+             */
             key: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description The fixed kind of the value, when its list has one, so a screen can branch or pick a pill tone without reading the label; null by default, when the list has no kind. By list: a taxonomy term is always null, because its dimension is its kind; a language is always null; a jurisdiction is `supranational` (the European Union, whose rules reach its members and the EEA), `country` (one national market, such as Sweden) or `international` (a standards body such as ISO/IEC, which is no bank's market); an urgency is its pill tone, one of `information`, `notice`, `positive`, `warning`, `negative` and `brand`. Kinds are fixed in code and never added by an administrator.
+             * @example null
+             */
             kind?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description The value's name in the reader's language: the caller's own language first, then the organisation's default language, then English, then any label the value has, and the key itself when it has none. A language is the exception and reads in itself, such as `Svenska`. For display only: a person wrote it and may reword or translate it at any time, so nothing may match on it.
+             * @example Advice
+             */
             label: string;
         };
-        /** FootprintTermSelector */
+        /**
+         * FootprintTermSelector
+         * @description One taxonomy term named by its dimension and key, as a scope change sends it.
+         */
         FootprintTermSelector: {
-            /** Dimension */
+            /**
+             * Dimension
+             * @description The key of the term's dimension, such as `service_type`. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists them. An unknown or retired one answers 422 `unknown_key` with the valid keys.
+             * @example service_type
+             */
             dimension: string;
-            /** Key */
+            /**
+             * Key
+             * @description The key of the term within that dimension, such as `insurance_distribution`. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/terms?dimension=…` lists them. An unknown or retired term answers 422 `unknown_key` with the valid keys.
+             * @example insurance_distribution
+             */
             key: string;
         };
-        /** FootprintView */
+        /**
+         * FootprintView
+         * @description `GET /tenant/footprint`: the organisation's regulatory scope, group by group, the
+         *     change waiting for a second person, and the markets it operates in and watches (FP-01,
+         *     FP-04).
+         * @example {
+         *       "dimensions": [
+         *         {
+         *           "allSelected": false,
+         *           "dimension": {
+         *             "key": "service_type",
+         *             "kind": "scope",
+         *             "label": "Service"
+         *           },
+         *           "restrictsFootprint": true,
+         *           "terms": [
+         *             {
+         *               "key": "advice",
+         *               "kind": null,
+         *               "label": "Advice"
+         *             },
+         *             {
+         *               "key": "custody",
+         *               "kind": null,
+         *               "label": "Custody"
+         *             }
+         *           ]
+         *         },
+         *         {
+         *           "allSelected": false,
+         *           "dimension": {
+         *             "key": "standard",
+         *             "kind": "opt_in",
+         *             "label": "Standards followed"
+         *           },
+         *           "restrictsFootprint": true,
+         *           "terms": []
+         *         }
+         *       ],
+         *       "markets": [
+         *         {
+         *           "jurisdiction": {
+         *             "key": "se",
+         *             "kind": "country",
+         *             "label": "Sweden"
+         *           },
+         *           "level": "operating"
+         *         },
+         *         {
+         *           "jurisdiction": {
+         *             "key": "no",
+         *             "kind": "country",
+         *             "label": "Norway"
+         *           },
+         *           "level": "watching"
+         *         }
+         *       ],
+         *       "pendingRequest": {
+         *         "adds": [
+         *           {
+         *             "dimension": "service_type",
+         *             "key": "insurance_distribution",
+         *             "kind": null,
+         *             "label": "Insurance distribution"
+         *           }
+         *         ],
+         *         "decidedAt": null,
+         *         "decidedBy": null,
+         *         "decisionNote": "",
+         *         "id": "5b0c7e1a-3f2d-4c8e-9a61-2d7f0e4b9c13",
+         *         "preview": {
+         *           "cases": {
+         *             "available": true,
+         *             "hidden": 0,
+         *             "revealed": 1
+         *           },
+         *           "obligations": {
+         *             "available": true,
+         *             "hidden": 2,
+         *             "revealed": 2
+         *           }
+         *         },
+         *         "removes": [
+         *           {
+         *             "dimension": "service_type",
+         *             "key": "advice",
+         *             "kind": null,
+         *             "label": "Advice"
+         *           }
+         *         ],
+         *         "requestedAt": "2026-09-18T07:40:00Z",
+         *         "requestedBy": {
+         *           "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *           "name": "Sara Lindqvist"
+         *         },
+         *         "status": "pending",
+         *         "version": 1
+         *       }
+         *     }
+         */
         FootprintView: {
-            /** Dimensions */
+            /**
+             * Dimensions
+             * @description One group per active taxonomy dimension, in picker order, each with the terms this organisation has chosen in it. Every active dimension is here, also one with no term chosen, which reads as no restriction, or as none followed for an opt-in dimension.
+             */
             dimensions: components["schemas"]["FootprintDimension"][];
             /**
              * Markets
              * @description Every active country's operating and watching level, one row per country, in jurisdiction sort order (FP-04).
              */
             markets?: components["schemas"]["MarketRow"][];
+            /** @description The change to the scope waiting for a second person, with a preview counted against today's library; null by default, when none waits. There is at most one at a time, and the scope above does not include it until it is approved. */
             pendingRequest?: components["schemas"]["FootprintRequestRow"] | null;
         };
         /**
@@ -6389,6 +8303,7 @@ export interface components {
          *         {
          *           "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
          *           "date": "2026-10-01",
+         *           "datePrecision": "day",
          *           "id": "change_date:9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
          *           "itemType": "change_date",
          *           "kind": "regulatory",
@@ -6428,6 +8343,7 @@ export interface components {
          *           "ownerId": null,
          *           "soWhatConfirmed": false,
          *           "soWhatConfirmedAt": null,
+         *           "soWhatConfirmedByName": null,
          *           "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
          *           "urgency": {
          *             "key": "act_now",
@@ -6573,6 +8489,7 @@ export interface components {
          *         {
          *           "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
          *           "date": "2026-10-01",
+         *           "datePrecision": "day",
          *           "id": "change_date:9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
          *           "itemType": "change_date",
          *           "kind": "regulatory",
@@ -6613,6 +8530,7 @@ export interface components {
          *             "ownerId": null,
          *             "soWhatConfirmed": false,
          *             "soWhatConfirmedAt": null,
+         *             "soWhatConfirmedByName": null,
          *             "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
          *             "urgency": {
          *               "key": "act_now",
@@ -6703,6 +8621,7 @@ export interface components {
          *           "ownerId": null,
          *           "soWhatConfirmed": false,
          *           "soWhatConfirmedAt": null,
+         *           "soWhatConfirmedByName": null,
          *           "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
          *           "urgency": {
          *             "key": "act_now",
@@ -6917,6 +8836,7 @@ export interface components {
          *         {
          *           "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
          *           "date": "2026-10-01",
+         *           "datePrecision": "day",
          *           "id": "change_date:9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
          *           "itemType": "change_date",
          *           "kind": "regulatory",
@@ -6979,6 +8899,7 @@ export interface components {
          * @example {
          *       "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
          *       "date": "2026-10-01",
+         *       "datePrecision": "day",
          *       "id": "change_date:9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
          *       "itemType": "change_date",
          *       "kind": "regulatory",
@@ -7015,10 +8936,17 @@ export interface components {
             /**
              * Date
              * Format: date
-             * @description The day the item falls on, as a plain calendar date (`2026-10-01`) and never a timestamp, because a legal date is a date and not a moment. The roadmap shows today and the future; a date that has passed leaves the roadmap and stays on the change itself.
+             * @description The day the item falls on, as a plain calendar date (`2026-10-01`) and never a timestamp, because a legal date is a date and not a moment, and only as exact as `datePrecision` says. The roadmap shows today and the future; a date that has passed leaves the roadmap and stays on the change itself.
              * @example 2026-10-01
              */
             date: string;
+            /**
+             * Dateprecision
+             * @description How exactly the source stated `date`, a fixed kind: `day` renders as 1 October 2026, `month` as October 2026, `quarter` as Q4 2026 and `year` as 2026. A date stated less exactly than a day is still stored on a day so it can be ordered, and a reader must render it by this and never print a day, or count the days left to one, that the source did not state (HOM-03, INV-S10).
+             * @example day
+             * @enum {string}
+             */
+            datePrecision: "day" | "month" | "quarter" | "year";
             /**
              * Id
              * @description The item's own identifier, built by the server from the item's type and the record behind it and at most 300 characters. Stable for as long as that record is on the roadmap, so a screen may key a list on it; it is not a database id, it is not the change's id (`changeId` is), and nothing may be looked up by it.
@@ -7573,12 +9501,20 @@ export interface components {
          */
         InstrumentQuery: {
             /**
-             * Outsidefootprint
-             * @description Whether to include the instruments the bank's footprint would otherwise hide. False by default, which is the working inventory: only the instruments whose own scope overlaps the footprint. It also lifts the footprint filter `obligationCount` counts obligations against.
-             * @default false
-             * @example false
+             * Footprint
+             * @description Which records to show against the bank's footprint, a fixed kind and a single value, so no contradictory pair can be sent: `in` (the default, the working inventory: only what matches the footprint), `all` (everything the library holds, each record the footprint would hide saying why in `outsideReason`) or `watched` (only what the markets the bank watches add: a record the footprint hides, that matches every dimension but jurisdiction, and whose instrument's rules reach a watched market, FP-04). A Union rule never appears under `watched` once the bank operates anywhere it reaches. A record shown under `all` or `watched` is not one the bank has decided applies to it. An instrument is judged by its own scope, and `obligationCount` counts under the same value.
+             * @default in
+             * @example in
+             * @enum {string}
              */
-            outsideFootprint: boolean;
+            footprint: "in" | "all" | "watched";
+            /**
+             * Outsidefootprint
+             * @deprecated
+             * @description Not accepted: send `footprint` instead. This boolean was replaced by the single `footprint` value, which adds the watched markets. Any value answers 422 `validation_error`, because ignoring it would hand a client that asked for everything the working inventory without a word. Declared only so that refusal happens, and named in the published contract so a client sees what to send.
+             * @example null
+             */
+            outsideFootprint?: null;
             /**
              * Q
              * @description Find the instruments whose name, short name or official reference contains these words, ignoring case: a phrase to look for, never a document. At most 200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`.
@@ -7595,8 +9531,7 @@ export interface components {
         /**
          * InstrumentRow
          * @description One row of `GET /instruments` (INV-01). `obligationCount` counts the obligations
-         *     this row's reader would see: inside the footprint, or every one when
-         *     `outsideFootprint` is set.
+         *     this row's reader would see under the same `footprint` value.
          * @example {
          *       "authority": {
          *         "key": "fi",
@@ -7688,7 +9623,7 @@ export interface components {
             name: components["schemas"]["LocalizedText"] | null;
             /**
              * Obligationcount
-             * @description How many duties this instrument carries that this read would show: inside the bank's footprint by default, or every one when `outsideFootprint=true` is set. It is not the instrument's whole duty count when the footprint hides some of them.
+             * @description How many duties this instrument carries that `GET /obligations` would list under the same `footprint` value: inside the bank's footprint by default, every one under `all`, and only what the watched markets add under `watched`. It is not the instrument's whole duty count when the footprint hides some of them.
              * @example 2
              */
             obligationCount: number;
@@ -7755,39 +9690,107 @@ export interface components {
              */
             token: string;
         };
-        /** InvitationOut */
+        /**
+         * InvitationOut
+         * @description One invitation or re-issued enrolment for this bank. The link's token is never here:
+         *     it exists only in the mail the person received.
+         * @example {
+         *       "createdAt": "2026-09-22T08:15:00Z",
+         *       "email": "anna@example-bank.test",
+         *       "expiresAt": "2026-09-25T08:15:00Z",
+         *       "id": "7d2e9b14-6a3c-4f58-b1d0-3e8c5a7f2b96",
+         *       "kind": "invite",
+         *       "roles": [
+         *         {
+         *           "key": "reader",
+         *           "kind": null,
+         *           "label": "Reader"
+         *         }
+         *       ],
+         *       "status": "pending",
+         *       "title": "Compliance analyst"
+         *     }
+         */
         InvitationOut: {
             /**
              * Createdat
              * Format: date-time
+             * @description When the invitation was first sent, as a UTC timestamp set by the server.
              */
             createdAt: string;
-            /** Email */
+            /**
+             * Email
+             * @description The lowercased address the invitation was sent to, the only address its code will go to.
+             */
             email: string;
             /**
              * Expiresat
              * Format: date-time
+             * @description When the link stops working, as a UTC timestamp: 72 hours after it was sent or last resent (a setting). Resending moves it forward.
              */
             expiresAt: string;
             /**
              * Id
              * Format: uuid
+             * @description The invitation's identifier, a UUID. Pass it to `POST /tenant/invitations/{invitation_id}/resend` or `DELETE /tenant/invitations/{invitation_id}`; it is not the token in the link and cannot open it.
              */
             id: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description Why the invitation exists, one of two values. `invite` is a first invitation to join the bank. `reenrolment` is an administrator's re-issued enrolment for an existing member whose passkeys were retired; enrolling with it keeps their membership and roles rather than creating new ones.
+             */
             kind: string;
-            /** Roles */
+            /**
+             * Roles
+             * @description The roles the person receives when they enrol with this invitation, each as its stable key with a label in the reader's language. Role keys come from the bank's own role list, a vocabulary its administrators extend with `POST /tenant/roles`: the system roles seeded on day one are `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`, and a bank may have added more. Read `GET /tenant/roles` for the live set and store keys, never labels.
+             */
             roles: components["schemas"]["RoleRef"][];
-            /** Status */
+            /**
+             * Status
+             * @description Where the invitation stands, computed by the server at the moment of the call, one of four values. `pending` means the link still works and nobody has enrolled with it; `accepted` means the person enrolled their first passkey with it; `revoked` means an administrator withdrew it, a newer invitation to the same address replaced it, or the member was removed; `expired` means nobody used the link within its lifetime. Only a pending or expired invitation can be resent.
+             */
             status: string;
-            /** Title */
+            /**
+             * Title
+             * @description The job title the person will carry in this bank once they enrol, empty when none was given.
+             */
             title: string;
         };
-        /** InvitationsPage */
+        /**
+         * InvitationsPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "createdAt": "2026-09-22T08:15:00Z",
+         *           "email": "anna@example-bank.test",
+         *           "expiresAt": "2026-09-25T08:15:00Z",
+         *           "id": "7d2e9b14-6a3c-4f58-b1d0-3e8c5a7f2b96",
+         *           "kind": "invite",
+         *           "roles": [
+         *             {
+         *               "key": "reader",
+         *               "kind": null,
+         *               "label": "Reader"
+         *             }
+         *           ],
+         *           "status": "pending",
+         *           "title": "Compliance analyst"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
         InvitationsPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The bank's invitations on this page, newest first, in every status, re-issued enrolments included, so the list is the whole history. An empty list is a 200.
+             */
             items: components["schemas"]["InvitationOut"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many invitations the bank has sent in total, not how many are on this page.
+             */
             total: number;
         };
         /**
@@ -7796,14 +9799,31 @@ export interface components {
          *     never paginates, like `GET /reference/languages` (INPUT_DELTAS §7).
          */
         JurisdictionRow: {
+            /** @description The language this jurisdiction's legal texts are written in, such as Swedish (`sv`) for Sweden and English (`en`) for the European Union: the original a translation is made from. Its key is a row of the platform's language vocabulary (`en`, `sv`, `da`, `nb`, `fi` on day one), which only the platform adds to and no bank admin can extend; its kind is always null. Every jurisdiction names one, so the default of null never reaches a reader. */
             defaultLanguage?: components["schemas"]["TermRef"] | null;
-            /** Key */
+            /**
+             * Key
+             * @description The jurisdiction's immutable key, the lowercased code a record, a market and a filter carry: seeded on day one are `eu` (the European Union), `se`, `dk`, `no`, `fi` and `intl` (international standards bodies). Jurisdictions are rows of the shared library's `jurisdiction` vocabulary, which the platform's library editors may extend without a deploy; a bank's admin cannot add one. This endpoint lists the live set, and a key never changes.
+             * @example se
+             */
             key: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description What sort of jurisdiction this is, one of three fixed values: `supranational` for the European Union, whose rules reach its member states and, through the EEA Agreement, Norway; `country` for one national market, the only kind a bank can operate in or watch; `international` for the issuer of a standard such as ISO/IEC, which is no bank's market and never appears among the markets. Every jurisdiction carries a kind, so the default of null never reaches a reader. A kind in code; an administrator never adds one.
+             * @example country
+             */
             kind?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description The jurisdiction's name in the reader's language, such as `Sweden` or `Sverige`, for display only. It may be reworded or translated at any time, so nothing may match on it.
+             * @example Sweden
+             */
             label: string;
-            /** Parentkey */
+            /**
+             * Parentkey
+             * @description The key of the jurisdiction whose rules also reach this one, such as `eu` for Sweden and for Norway, which is outside the Union but bound by its financial rules through the EEA Agreement. It says whose law reaches here, not membership. Null by default, for a jurisdiction nothing reaches (`eu`, `intl`). A row of the same `jurisdiction` vocabulary, which the platform's library editors may extend and a bank's admin may not.
+             * @example eu
+             */
             parentKey?: string | null;
         };
         /**
@@ -7892,19 +9912,19 @@ export interface components {
             fetchedAt: string | null;
             /**
              * Field
-             * @description Which field of the record this citation backs — `summary`, `key_date`, `duty_type` and so on, the record's own column names. Free text rather than a vocabulary because the set is the schema's, not an admin's.
+             * @description Which field of the record this citation backs, as the approved proposal that wrote the version named it: `summaries.en` for the summary in one language, `effectiveFrom` for the date it applies from, `terms` for its scope. A version no proposal wrote carries one `summary` citation, the record's own source. Free text rather than a vocabulary because the set is the proposal schema's, not an admin's.
              * @example summary
              */
             field: string;
             /**
              * Label
-             * @description What that page is called, in words a reader recognises.
+             * @description What that page is called, in words a reader recognises: the source label the proposal gave, or the link itself when it gave none.
              * @example FFFS 2017:2
              */
             label: string;
             /**
              * Url
-             * @description The public page the fact came from, so a re-check can fetch it again and a reviewer can open it.
+             * @description The public page the fact came from, as an https link, so a re-check can fetch it again and a reviewer can open it; or, where the fact came from a provision the library already holds, that provision's stable key.
              * @example https://www.fi.se/en/published/regulations/2017/fffs-20172/
              */
             url: string;
@@ -8072,7 +10092,7 @@ export interface components {
             inFootprint: boolean;
             /**
              * Kind
-             * @description What kind of change it was, and therefore which of the fields below are filled. A fixed kind: `new_obligation_version` is a new wording of a duty, and `vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore`, `vocabulary_merge`, `term_create` and `term_update` are changes to a shared list or to the taxonomy every bank reads.
+             * @description What kind of change it was, and therefore which of the fields below are filled. A fixed kind: `new_obligation_version` is a new wording of a duty, `new_obligation` is a duty new to the library with its first wording, `new_instrument` is an instrument new to the library, which names no duty and no list, `new_provision` and `new_provision_version` are a law's verbatim text, new or amended, which name no duty and no list either, and `vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore`, `vocabulary_merge`, `term_create` and `term_update` are changes to a shared list or to the taxonomy every bank reads.
              */
             kind: string;
             /**
@@ -8082,7 +10102,7 @@ export interface components {
             outsideReason?: components["schemas"]["OutsideReason"][];
             /** @description The agent that proposed the change, by its definition key. Null whenever the proposer was not a key bound to an agent, which is every change a person asked for, whoever confirmed it; that person is never named. It is independent of `verifiedOrigin`: a person may have approved an agent's proposal, and an agent may have confirmed a person's. */
             proposedByAgent: components["schemas"]["AgentRef"] | null;
-            /** @description The duty that changed, named by the library's own wording. Null on a change to a shared list, which names no single record; `vocabularyList` then says which list it was. */
+            /** @description The duty that changed, or the duty that arrived, named by the library's own wording. Null on a change to a shared list, which names no single record, when `vocabularyList` says which list it was, and null on a new instrument. */
             target?: components["schemas"]["LibraryUpdateTarget"] | null;
             /**
              * Verifiedorigin
@@ -8100,7 +10120,7 @@ export interface components {
             vocabulary?: components["schemas"]["LibraryRef"] | null;
             /**
              * Vocabularylist
-             * @description Which shared list or taxonomy dimension changed, by its key, for example `flag`. The lists are themselves rows an admin may extend or retire, and `GET /vocabularies` returns the live set. Null on a change to a duty.
+             * @description Which shared list or taxonomy dimension changed, by its key, for example `flag`. The lists are themselves rows an admin may extend or retire, and `GET /vocabularies` returns the live set. Null on a change to a duty and on a new instrument.
              * @example flag
              */
             vocabularyList?: string | null;
@@ -8266,7 +10286,7 @@ export interface components {
             body: string;
             /**
              * Subject
-             * @description The subject line as sent, in plain text, for example the sign-in code mail or an invitation naming the bank. It is written for a person to read, so a test should find its mail by address and read the code or link from the body rather than match on this wording.
+             * @description The subject line as sent, in plain text, for example the enrolment code mail or an invitation naming the bank. It is written for a person to read, so a test should find its mail by address and read the code or link from the body rather than match on this wording.
              */
             subject: string;
             /**
@@ -8278,23 +10298,32 @@ export interface components {
         /**
          * MarketRow
          * @description One active country's market level (FP-04), computed fresh on every read and never
-         *     stored: operating when the jurisdiction's mirrored term sits in the tenant's footprint,
-         *     set only through a footprint change request (FP-02); watching when a `watched_market`
-         *     row names it, a direct write that hides nothing. Both false reads as not followed.
+         *     stored, so it cannot drift from the two facts it is read from: the tenant's regulatory
+         *     scope, which only a footprint change request changes (FP-02), and the tenant's watch
+         *     list, a direct write that hides nothing.
+         * @example {
+         *       "jurisdiction": {
+         *         "key": "no",
+         *         "kind": "country",
+         *         "label": "Norway"
+         *       },
+         *       "level": "watching"
+         *     }
          */
         MarketRow: {
             /** @description The country: its key, kind (always `country`) and label in the caller's language. A row of the jurisdiction vocabulary; an admin may add more without a deploy, and `GET /reference/jurisdictions` lists the live set. */
             jurisdiction: components["schemas"]["TermRef"];
             /**
-             * Operating
-             * @description True when this country's mirrored jurisdiction term is in the tenant's footprint. Changes only through a footprint change request with its preview, second person and step-up.
+             * Level
+             * @description How closely the tenant follows this country, computed by the server on every read and never stored. Operating comes first, then watching:
+             *     - `operating`: the country's mirrored jurisdiction term is in the tenant's regulatory scope, so its rules are part of what applies. Changes only through a footprint change request with its preview, second person and step-up.
+             *     - `watching`: not operating, and the tenant has a `watched_market` row naming the country, set directly with `POST /tenant/footprint/watching` with no second person and no step-up, because watching hides nothing. A country watched before it started operating reads as `watching` again once operating stops.
+             *     - `not_followed`: neither; approving or reversing a scope change never writes a watch row, so a country never watched drops back here when operating stops.
+             *     Operating or watching says nothing about whether the tenant complies with anything there.
+             * @example operating
+             * @enum {string}
              */
-            operating: boolean;
-            /**
-             * Watching
-             * @description True when the tenant has a `watched_market` row naming this country. Set directly with `POST /tenant/footprint/watching`, with no preview, no second person and no step-up, because watching hides nothing.
-             */
-            watching: boolean;
+            level: "operating" | "watching" | "not_followed";
         };
         /**
          * MarketWatchBody
@@ -8522,54 +10551,163 @@ export interface components {
              */
             name: string;
         };
-        /** MemberInvite */
+        /**
+         * MemberInvite
+         * @description `POST /tenant/members`: invite a person by work email with the roles they will hold.
+         * @example {
+         *       "email": "anna@example-bank.test",
+         *       "roleKeys": [
+         *         "reader"
+         *       ],
+         *       "title": "Compliance analyst"
+         *     }
+         */
         MemberInvite: {
-            /** Email */
+            /**
+             * Email
+             * @description The work email address to invite, at most 254 characters. Surrounding spaces are trimmed and it is lowercased; an address without an `@` is refused with `invalid_email`. The invitation link goes to this address and nowhere else.
+             */
             email: string;
-            /** Rolekeys */
+            /**
+             * Rolekeys
+             * @description The roles the person will hold once they enrol, at least one key, each counted once. Role keys come from the bank's own role list, a vocabulary its administrators extend with `POST /tenant/roles`: the system roles seeded on day one are `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`, and a bank may have added more. Read `GET /tenant/roles` for the live set and store keys, never labels. A key the bank does not have, or a role it retired, is refused with `unknown_key`.
+             */
             roleKeys: string[];
             /**
              * Title
+             * @description The person's job title in this bank, at most 200 characters, surrounding spaces trimmed. Leave it out or send an empty string (the default) for none.
              * @default
              */
             title: string;
         };
-        /** MemberOut */
+        /**
+         * MemberOut
+         * @description One person in this bank as the members screen lists them: who they are, what they
+         *     may do here, and whether they can still sign in.
+         * @example {
+         *       "activeSessions": 1,
+         *       "email": "compliance_officer@example-bank.test",
+         *       "lastSeenAt": "2026-09-22T06:58:04Z",
+         *       "name": "Sara Lindqvist",
+         *       "passkeyCount": 2,
+         *       "roles": [
+         *         {
+         *           "key": "compliance_officer",
+         *           "kind": null,
+         *           "label": "Compliance officer"
+         *         }
+         *       ],
+         *       "status": "active",
+         *       "title": "Head of Regulatory Compliance",
+         *       "userId": "00000000-0000-4000-8000-000000000102"
+         *     }
+         */
         MemberOut: {
-            /** Activesessions */
+            /**
+             * Activesessions
+             * @description How many signed-in sessions the person has open in this bank right now; their sessions in any other bank are not counted and not visible here. See them with `GET /tenant/members/{user_id}/sessions`.
+             */
             activeSessions: number;
-            /** Email */
+            /**
+             * Email
+             * @description The person's work email address, lowercased, where their enrolment mail went. It is their identity across the platform and cannot be changed here.
+             */
             email: string;
-            /** Lastseenat */
+            /**
+             * Lastseenat
+             * @description When the person last enrolled or signed in with a passkey, to any bank, as a UTC timestamp. Null for someone who has never enrolled. It moves at sign-in, not on every call, so it says whether the account is in use rather than what they did.
+             */
             lastSeenAt: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description The person's display name, as they set it on their own profile. Until they set one it is the part of the email address before the `@`.
+             */
             name: string;
-            /** Passkeycount */
+            /**
+             * Passkeycount
+             * @description How many live passkeys the person holds. Zero means they cannot sign in until they enrol, which is the state after an invitation or a re-issued enrolment.
+             */
             passkeyCount: number;
-            /** Roles */
+            /**
+             * Roles
+             * @description The roles the person holds in this bank, each as its stable key with a label in the reader's language; what they may do is the union of the permissions of these roles. Role keys come from the bank's own role list, a vocabulary its administrators extend with `POST /tenant/roles`: the system roles seeded on day one are `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`, and a bank may have added more. Read `GET /tenant/roles` for the live set and store keys, never labels.
+             */
             roles: components["schemas"]["RoleRef"][];
-            /** Status */
+            /**
+             * Status
+             * @description Where the person stands in this bank, one of three values. `invited` means an administrator re-issued the person's enrolment and they have not enrolled a new passkey yet, so they cannot sign in until they do; `active` means they hold a passkey and can sign in; `deactivated` means the bank removed them, their sessions here were ended and they can no longer sign in to this bank, though the record stays for the audit trail. Deactivated members stay in the list so the bank can see who was removed.
+             */
             status: string;
-            /** Title */
+            /**
+             * Title
+             * @description The person's job title in this bank, such as `Head of Regulatory Compliance`, shown beside their name. Free text, empty when none was given, and never read by any rule.
+             */
             title: string;
             /**
              * Userid
              * Format: uuid
+             * @description The person's permanent account identifier, a UUID. Pass it to the member routes under `/tenant/members/{user_id}`. One account may belong to several banks; the identifier is the same in each, while everything else here is this bank's alone.
              */
             userId: string;
         };
-        /** MemberPatch */
+        /**
+         * MemberPatch
+         * @description `PATCH /tenant/members/{user_id}`: send only what changes.
+         * @example {
+         *       "roleKeys": [
+         *         "compliance_officer",
+         *         "approver"
+         *       ]
+         *     }
+         */
         MemberPatch: {
-            /** Rolekeys */
+            /**
+             * Rolekeys
+             * @description The member's complete new set of roles, which replaces the old set rather than adding to it; leave it out, or send null (the default), to keep the roles as they are. Sending it needs a fresh passkey step-up. Role keys come from the bank's own role list, a vocabulary its administrators extend with `POST /tenant/roles`: the system roles seeded on day one are `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`, and a bank may have added more. Read `GET /tenant/roles` for the live set and store keys, never labels. An empty list is refused with `roles_required` and a key the bank does not have with `unknown_key`; a change that would leave the bank with nobody holding `members.manage` is refused with `last_admin`.
+             */
             roleKeys?: string[] | null;
-            /** Title */
+            /**
+             * Title
+             * @description The member's new job title in this bank, at most 200 characters, surrounding spaces trimmed; an empty string clears it. Leave it out, or send null (the default), to keep it as it is. Changing only the title needs no step-up.
+             */
             title?: string | null;
         };
-        /** MembersPage */
+        /**
+         * MembersPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "activeSessions": 1,
+         *           "email": "compliance_officer@example-bank.test",
+         *           "lastSeenAt": "2026-09-22T06:58:04Z",
+         *           "name": "Sara Lindqvist",
+         *           "passkeyCount": 2,
+         *           "roles": [
+         *             {
+         *               "key": "compliance_officer",
+         *               "kind": null,
+         *               "label": "Compliance officer"
+         *             }
+         *           ],
+         *           "status": "active",
+         *           "title": "Head of Regulatory Compliance",
+         *           "userId": "00000000-0000-4000-8000-000000000102"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
         MembersPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The bank's members on this page, the earliest to join first, deactivated members included. People who were invited but have not enrolled yet are listed under `GET /tenant/invitations` instead.
+             */
             items: components["schemas"]["MemberOut"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many members the bank has in total, not how many are on this page; use it to size a pager.
+             */
             total: number;
         };
         /**
@@ -8929,7 +11067,7 @@ export interface components {
             instrument: components["schemas"]["ObligationInstrumentSummary"];
             /**
              * Outsidereason
-             * @description Why the default list would have hidden this record: one entry per dimension in which the duty's terms and the bank's footprint have nothing in common. Empty on a record inside the footprint, and so filled only on the records `outsideFootprint=true` reveals.
+             * @description Why the default list would have hidden this record: one entry per dimension in which the duty's terms and the bank's footprint have nothing in common. Empty on a record inside the footprint, and so filled only on the records `footprint=all` or `footprint=watched` reveals.
              */
             outsideReason: components["schemas"]["OutsideReason"][];
             /**
@@ -9085,6 +11223,11 @@ export interface components {
          *           "instrument": {
          *             "key": "fffs-2017-2",
          *             "shortName": "FFFS 2017:2"
+         *           },
+         *           "jurisdiction": {
+         *             "key": "se",
+         *             "kind": "country",
+         *             "label": "Sweden"
          *           },
          *           "lastVerifiedAt": "2026-06-30T07:12:44Z",
          *           "openChangeCount": 0,
@@ -9257,6 +11400,7 @@ export interface components {
          *             "text": "Pay for third-party research only under the permitted models"
          *           },
          *           "upcomingVersion": {
+         *             "approvedAt": "2026-09-15T14:02:11Z",
          *             "confirmedByAgent": {
          *               "id": "2f7a9c14-3b8e-4d61-9a05-c8e1f4b27d93",
          *               "key": "library-confirmer"
@@ -9272,7 +11416,9 @@ export interface components {
          *             "verifiedOrigin": "agent",
          *             "versionNumber": 2
          *           },
+         *           "verifiedBy": null,
          *           "version": {
+         *             "approvedAt": null,
          *             "confirmedByAgent": null,
          *             "effectiveFrom": null,
          *             "proposedByAgent": null,
@@ -9398,8 +11544,9 @@ export interface components {
          * ObligationQuery
          * @description The filters of `GET /obligations`. `instrument` and `dutyType` are keys; `term` is
          *     `dimension:key` and repeats, every term must be in the obligation's scope. `asOf`
-         *     defaults to today in the tenant's time zone. `outsideFootprint=true` lifts the
-         *     footprint filter and reports why each hidden row would be hidden.
+         *     defaults to today in the tenant's time zone. `footprint` is one value: `in`, `all`, which
+         *     lifts the footprint filter and reports why each hidden row would be hidden, or
+         *     `watched`, which lists only what the watched markets add (FP-03, FP-04).
          */
         ObligationQuery: {
             /**
@@ -9415,6 +11562,14 @@ export interface components {
              */
             dutyType?: string | null;
             /**
+             * Footprint
+             * @description Which records to show against the bank's footprint, a fixed kind and a single value, so no contradictory pair can be sent: `in` (the default, the working inventory: only what matches the footprint), `all` (everything the library holds, each record the footprint would hide saying why in `outsideReason`) or `watched` (only what the markets the bank watches add: a record the footprint hides, that matches every dimension but jurisdiction, and whose instrument's rules reach a watched market, FP-04). A Union rule never appears under `watched` once the bank operates anywhere it reaches. A record shown under `all` or `watched` is not one the bank has decided applies to it.
+             * @default in
+             * @example in
+             * @enum {string}
+             */
+            footprint: "in" | "all" | "watched";
+            /**
              * Instrument
              * @description Only the duties broken out of this instrument, by the instrument's stable key: `fffs-2017-2` for FFFS 2017:2. A key no instrument has is not an error — it matches nothing, and the call answers 200 with an empty page.
              * @example fffs-2017-2
@@ -9422,11 +11577,11 @@ export interface components {
             instrument?: string | null;
             /**
              * Outsidefootprint
-             * @description Whether to include the duties the bank's footprint would otherwise hide, each saying in `outsideReason` why it would be hidden. It is false by default, which is the working inventory: only the duties whose scope overlaps the footprint. Set it to true to review the boundary itself — a duty that appears only this way is not one the bank has decided applies to it.
-             * @default false
-             * @example false
+             * @deprecated
+             * @description Not accepted: send `footprint` instead. This boolean was replaced by the single `footprint` value, which adds the watched markets. Any value answers 422 `validation_error`, because ignoring it would hand a client that asked for everything the working inventory without a word. Declared only so that refusal happens, and named in the published contract so a client sees what to send.
+             * @example null
              */
-            outsideFootprint: boolean;
+            outsideFootprint?: null;
             /**
              * Q
              * @description Find the duties whose title or citation contains these words, ignoring case: a phrase to look for, never a document. At most 200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`. It narrows this list and is not the product's search: ranking, synonyms and the text of the summaries belong to `GET /search`.
@@ -9478,6 +11633,8 @@ export interface components {
             inFootprint: boolean;
             /** @description The instrument this duty was broken out of, by key and short name. The card adds the instrument's official reference and what it implements; this row carries only what a column shows. */
             instrument: components["schemas"]["ObligationInstrumentRef"];
+            /** @description The jurisdiction of the instrument this duty was broken out of, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`. It is what `footprint=watched` names as the market a row comes from; the jurisdictions the duty reaches are in `scope`, derived from this one. */
+            jurisdiction: components["schemas"]["LibraryRef"];
             /**
              * Lastverifiedat
              * @description When a bleqq library editor last read this record against its public source and found it unchanged, as a UTC timestamp; a screen shows it as "Verified <date>" in the bank's own time zone. Null on a record nobody has confirmed that way. It is not the date the record last changed, and it is not the bank's own review date.
@@ -9492,7 +11649,7 @@ export interface components {
             openChangeCount: number;
             /**
              * Outsidereason
-             * @description Why the default list would have hidden this record: one entry per dimension in which the duty's terms and the bank's footprint have nothing in common. Empty on a record inside the footprint, and so filled only on the records `outsideFootprint=true` reveals.
+             * @description Why the default list would have hidden this record: one entry per dimension in which the duty's terms and the bank's footprint have nothing in common. Empty on a record inside the footprint, and so filled only on the records `footprint=all` or `footprint=watched` reveals.
              */
             outsideReason: components["schemas"]["OutsideReason"][];
             /**
@@ -9526,6 +11683,8 @@ export interface components {
             title: components["schemas"]["LocalizedText"] | null;
             /** @description The next version due to take effect after the date the list was read, so a row can say new wording is coming. Null when none is waiting. Its presence is not work the bank owes: what to do about a change belongs to the watch feed and the case, never to the library record. */
             upcomingVersion: components["schemas"]["ObligationVersionRef"] | null;
+            /** @description The bleqq platform person who made the `lastVerifiedAt` check, by id and name, or null when no named person has. Never a member of a bank: re-verifying a shared fact is bleqq's own check. */
+            verifiedBy: components["schemas"]["PersonRef"] | null;
             /** @description The version of the summary in force on the date the list was read, by number and effective date. Null when every version of this duty starts after that date, which is a duty recorded before it begins to bind anyone. */
             version: components["schemas"]["ObligationVersionRef"] | null;
         };
@@ -9537,6 +11696,12 @@ export interface components {
          *     an independent agent, rather than a person, confirmed that wording (INV-05).
          */
         ObligationVersionRef: {
+            /**
+             * Approvedat
+             * @description When the proposal that wrote this version was approved, as a UTC timestamp, by a person or by an independent agent: `verifiedOrigin` says which. Null on a version the library was seeded with rather than proposed. A row compares it with `lastVerifiedAt`: wording an agent confirmed reads machine-confirmed until a named person re-verifies the record after this moment.
+             * @example 2026-09-15T14:02:11Z
+             */
+            approvedAt: string | null;
             /** @description The independent agent that confirmed the approval, by its definition key, when `verifiedOrigin` is `agent`. Null whenever a person approved it. It names a platform agent definition, never a person or a bank. */
             confirmedByAgent: components["schemas"]["AgentRef"] | null;
             /** @description The legal date this version starts binding the bank, at the precision the source gave it. Null means the version has been in force since the obligation entered the library, never that the date is unknown. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved. */
@@ -9974,13 +12139,30 @@ export interface components {
              */
             type: string;
         };
-        /** PermissionOut */
+        /**
+         * PermissionOut
+         * @description One permission a bank's role can grant.
+         * @example {
+         *       "description": "Sign off a case worked by someone else.",
+         *       "group": "cases",
+         *       "key": "cases.signoff"
+         *     }
+         */
         PermissionOut: {
-            /** Description */
+            /**
+             * Description
+             * @description What holding the permission lets a person do, in one English sentence for the role editor to show.
+             */
             description: string;
-            /** Group */
+            /**
+             * Group
+             * @description The area the permission belongs to, the part of its key before the first dot, such as `cases`, so a role editor can group the list.
+             */
             group: string;
-            /** Key */
+            /**
+             * Key
+             * @description The permission's stable key, such as `cases.signoff`: what a role's `permissions` lists and what every route checks. The set is fixed by the product, not a vocabulary a bank extends; a new release may add keys.
+             */
             key: string;
         };
         /**
@@ -9992,9 +12174,15 @@ export interface components {
             /**
              * Id
              * Format: uuid
+             * @description The person's identifier, a UUID that never changes, the same one a member list and the audit log carry. Store and compare this, never the name.
+             * @example 8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description The person's name as they gave it, for display only. It may change when they edit their profile and two people may share it, so nothing may match on it. A person's name and id are the only personal data a record carries about them.
+             * @example Sara Lindqvist
+             */
             name: string;
         };
         /**
@@ -10027,6 +12215,30 @@ export interface components {
             versionNumber?: number | null;
         };
         /**
+         * ProblemReportClose
+         * @description Closing a problem report: the state it ends in and why. A report closes once, and
+         *     only the reporter or a colleague holding `proposals.create` closes it.
+         * @example {
+         *       "resolutionNote": "Version 2 says ten years; the screen showed version 1, which said five.",
+         *       "status": "answered"
+         *     }
+         */
+        ProblemReportClose: {
+            /**
+             * Resolutionnote
+             * @description Why it is closed, for the reporter to read. Required: a note that is missing, empty or only whitespace is refused. At most 4000 characters (`LIBRARY_REPORT_TEXT_MAX_CHARS`); a longer one is refused. Surrounding whitespace is trimmed. The bank's own content: it stays in the report and reaches no audit row, outbox event, log line or model.
+             * @example Version 2 says ten years; the screen showed version 1, which said five.
+             */
+            resolutionNote: string;
+            /**
+             * Status
+             * @description The state the report ends in, a fixed kind: `answered` (explained, the record needs no correction), `fixed` (the record was wrong; its correction reaches the library through the watch agents' re-check and a proposal) or `rejected` (the record is right as it stands). `open` and any other value are refused with `validation_error` (422).
+             * @example answered
+             * @enum {string}
+             */
+            status: "answered" | "fixed" | "rejected";
+        };
+        /**
          * ProblemReportCreated
          * @description The acknowledgement the reader sees: the report exists, it is open, and this is when
          *     it was filed. What they wrote is not sent back; it is in the row, and the screen it was
@@ -10057,6 +12269,184 @@ export interface components {
             status: string;
         };
         /**
+         * ProblemReportPage
+         * @description One page of the bank's problem reports, newest report first.
+         * @example {
+         *       "items": [],
+         *       "total": 0
+         *     }
+         */
+        ProblemReportPage: {
+            /**
+             * Items
+             * @description The reports of this page, newest first. Empty when nothing matches, which is a 200 and never an error.
+             */
+            items: components["schemas"]["ProblemReportRow"][];
+            /**
+             * Total
+             * @description How many reports match the filters in total, not only on this page, so a screen can say “n of m”.
+             * @example 0
+             */
+            total: number;
+        };
+        /**
+         * ProblemReportPerson
+         * @description A member of this bank on a report: id and name, the only personal data a report
+         *     carries about them (playbook 4.7).
+         */
+        ProblemReportPerson: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The person's user id, as a UUID. Match on this, never on the name.
+             * @example 8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30
+             */
+            id: string;
+            /**
+             * Name
+             * @description The person's display name as it stands now, for display only.
+             * @example Erik Holm
+             */
+            name: string;
+        };
+        /**
+         * ProblemReportQuery
+         * @description Filters of the bank's problem reports, each optional and combined with AND. Leaving
+         *     them all out lists every report the caller may see.
+         */
+        ProblemReportQuery: {
+            /**
+             * Status
+             * @description Show only reports in one state, a fixed kind: `open` (filed and not yet looked at, which is how every report starts), `answered` (a colleague explained what the reader saw, and the record needs no correction), `fixed` (the record was wrong and has been or is being corrected; the correction itself reaches the library through the watch agents' re-check and a proposal, never through the report) and `rejected` (the record is right as it stands). Fixed in code: an admin adds no fifth state. At most 16 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+             * @example open
+             */
+            status?: string | null;
+            /**
+             * Subjectid
+             * @description Show only reports on one library record, by its UUID as the library routes return it (an obligation's or an instrument's `id`). A value that is not a UUID is refused with `validation_error` (422); an id no report names answers 200 with an empty page.
+             * @example 3f1d6a52-8c47-4b0e-9e21-6a4f0c8d2b17
+             */
+            subjectId?: string | null;
+            /**
+             * Subjecttype
+             * @description Show only reports on one kind of library record, a fixed kind: `obligation` (a duty), `instrument` (a law, regulation or guideline; a provision is reported through the instrument whose card shows it) and `provision` (reserved for a provision reported on its own, which no route files today). Pair it with `subjectId` to list the reports on one record, which is what the record's own screen does. At most 32 characters; a value that is not one of them matches nothing and answers 200 with an empty page.
+             * @example obligation
+             */
+            subjectType?: string | null;
+        };
+        /**
+         * ProblemReportRow
+         * @description One problem report of this bank: what a member said looks wrong with a library
+         *     record, and, once closed, who closed it, when and why. Everything here is the bank's
+         *     own content and never leaves the bank: bleqq does not read it, and nothing here reaches
+         *     the audit log, an outbox event, a log line or a model.
+         * @example {
+         *       "closedAt": "2026-09-21T13:02:10Z",
+         *       "closedBy": {
+         *         "id": "b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70",
+         *         "name": "Erik Holm"
+         *       },
+         *       "createdAt": "2026-09-20T09:14:22Z",
+         *       "description": "The retention line says five years, but FFFS 2017:2 9 kap. 6 § says ten.",
+         *       "id": "6f4c1f3e-9a21-4c8e-9a2f-2b0d5c7a1e44",
+         *       "language": "sv",
+         *       "reporter": {
+         *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+         *         "name": "Johan Berg"
+         *       },
+         *       "resolutionNote": "Version 2 says ten years; the screen showed version 1, which said five.",
+         *       "status": "answered",
+         *       "subjectId": "3f1d6a52-8c47-4b0e-9e21-6a4f0c8d2b17",
+         *       "subjectReference": "FFFS 2017:2, 9 kap. 6 §",
+         *       "subjectTitle": "Keep records of client orders for ten years",
+         *       "subjectType": "obligation",
+         *       "versionNumber": 2
+         *     }
+         */
+        ProblemReportRow: {
+            /**
+             * Closedat
+             * @description When the report was closed, as an RFC 3339 timestamp in UTC. Null while it is open.
+             * @example 2026-09-21T13:02:10Z
+             */
+            closedAt: string | null;
+            /** @description The member who closed the report: the reporter, or a colleague holding `proposals.create`. Null while it is open. */
+            closedBy: components["schemas"]["ProblemReportPerson"] | null;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the report was filed, as an RFC 3339 timestamp in UTC.
+             * @example 2026-09-20T09:14:22Z
+             */
+            createdAt: string;
+            /**
+             * Description
+             * @description What the reporter believes is wrong, in their own words, as they filed it; never edited afterwards. The bank's own content: it reaches nobody outside the bank.
+             * @example The retention line says five years, but FFFS 2017:2 9 kap. 6 § says ten.
+             */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             * @description The report's identifier, as a UUID. Pass it to `PATCH /problem-reports/{report_id}` to close it.
+             * @example 6f4c1f3e-9a21-4c8e-9a2f-2b0d5c7a1e44
+             */
+            id: string;
+            /**
+             * Language
+             * @description Which content language the reporter was reading, as a language key such as `sv` or `en` (a row of the library's language vocabulary). Null when none was recorded.
+             * @example sv
+             */
+            language: string | null;
+            /** @description The member who filed the report. */
+            reporter: components["schemas"]["ProblemReportPerson"];
+            /**
+             * Resolutionnote
+             * @description Why it was closed, in the closer's words; the bank's own content, like the report. Null while it is open, and never empty once it is closed.
+             * @example Version 2 says ten years; the screen showed version 1, which said five.
+             */
+            resolutionNote: string | null;
+            /**
+             * Status
+             * @description Where the report stands, a fixed kind: `open` (filed and not yet looked at, which is how every report starts), `answered` (a colleague explained what the reader saw, and the record needs no correction), `fixed` (the record was wrong and has been or is being corrected; the correction itself reaches the library through the watch agents' re-check and a proposal, never through the report) and `rejected` (the record is right as it stands). Fixed in code: an admin adds no fifth state.
+             * @example answered
+             * @enum {string}
+             */
+            status: "open" | "answered" | "fixed" | "rejected";
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The UUID of the library record the report is about, as the library routes return it.
+             * @example 3f1d6a52-8c47-4b0e-9e21-6a4f0c8d2b17
+             */
+            subjectId: string;
+            /**
+             * Subjectreference
+             * @description The record's public reference, for display beside the title: for an obligation, its instrument's short name and its place in it (`FFFS 2017:2, 9 kap. 6 §`); for an instrument, its official reference. Empty when the record is no longer visible.
+             * @example FFFS 2017:2, 9 kap. 6 §
+             */
+            subjectReference: string;
+            /**
+             * Subjecttitle
+             * @description The record's own title in the caller's content language order: an obligation's title, or an instrument's short name. A library fact, read now and not when the report was filed. Empty when the record is no longer visible to this bank.
+             * @example Keep records of client orders for ten years
+             */
+            subjectTitle: string;
+            /**
+             * Subjecttype
+             * @description What kind of library record the report is about, a fixed kind: `obligation` (a duty), `instrument` (a law, regulation or guideline; a provision is reported through the instrument whose card shows it) and `provision` (reserved for a provision reported on its own, which no route files today).
+             * @example obligation
+             * @enum {string}
+             */
+            subjectType: "instrument" | "provision" | "obligation";
+            /**
+             * Versionnumber
+             * @description Which version of the record's summary the reporter had on screen, numbered from 1, so a colleague opens the same words. Null when the screen showed no particular version.
+             * @example 2
+             */
+            versionNumber: number | null;
+        };
+        /**
          * ProductInfo
          * @description What a sign-in page needs before anyone has signed in: the product's own name.
          * @example {
@@ -10072,9 +12462,53 @@ export interface components {
         };
         /**
          * ProposalAccepted
-         * @description 202 from a library-list write (VOC-07): nothing changed, a proposal is waiting.
+         * @description The 202 a write to a shared library list or taxonomy term answers (VOC-07): nothing in the library
+         *     changed, and a proposal now waits for a second person or agent to decide it.
+         * @example {
+         *       "proposal": {
+         *         "agentRunId": null,
+         *         "appliedAt": null,
+         *         "changeId": null,
+         *         "correctedBy": null,
+         *         "correctedByAgent": null,
+         *         "createdAt": "2026-09-18T09:40:00Z",
+         *         "effectiveFrom": null,
+         *         "fieldSources": {},
+         *         "fromOrganisation": true,
+         *         "id": "2c7a5e91-4d3b-4f08-a6e2-9b1c0d8f7e35",
+         *         "kind": "vocabulary_create",
+         *         "model": "",
+         *         "origin": "user",
+         *         "payload": {
+         *           "extra": {},
+         *           "key": "supervisory_statement",
+         *           "kind": "supervisory",
+         *           "labels": {
+         *             "en": "Supervisory statement",
+         *             "sv": "Tillsynsuttalande"
+         *           },
+         *           "list": "change_type",
+         *           "usageNote": "An authority's published view on how a rule is applied."
+         *         },
+         *         "proposedBy": null,
+         *         "proposedByAgent": null,
+         *         "rejectionCode": "",
+         *         "reviewNote": "",
+         *         "reviewedAt": null,
+         *         "reviewedBy": null,
+         *         "reviewedByAgent": null,
+         *         "scopeSuggestion": [],
+         *         "sourceLabel": "",
+         *         "sourceUrl": "",
+         *         "status": "open",
+         *         "targetId": null,
+         *         "targetType": "change_type",
+         *         "title": "Add Supervisory statement to change_type"
+         *       }
+         *     }
          */
         ProposalAccepted: {
+            /** @description The proposal the write became, waiting in the platform's review queue with `status` `open`. Nothing has changed yet: the shared list or taxonomy still says what it said, and it changes only when a second, independent person or agent approves the proposal in the console, never the one who made it. A proposal made inside a bank names no proposer (`fromOrganisation` is true); the bank follows it in `GET /tenant/proposals`. */
             proposal: components["schemas"]["ProposalRow"];
         };
         /**
@@ -10221,13 +12655,23 @@ export interface components {
             note: string;
             /**
              * Payloadoverrides
-             * @description The reviewer's corrections, merged field by field over the proposal's own payload before it is applied; the fields left out keep what was proposed. Accepted only for the `new_obligation_version` kind, since the vocabulary kinds carry a label a person wrote rather than a sourced fact; on any other kind the call answers 422 `validation_error`. The fields a reviewer may correct are the ones that kind's payload names: `summaries` (the whole set of texts per language, which replaces the proposed set), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (one of `day`, `month`, `quarter` and `year`, which says how exactly the date is known) and `terms` (the scope facets as `dimension:key`, at most 20, which replace the obligation's scope). The merged payload must still carry a source for every field it changes, so a correction that introduces a field the proposal never sourced answers 422 `source_missing` and applies nothing. What is applied is kept beside what was proposed, as the reviewer's own correction: a reader must not take the proposal's payload as the text the library now holds.
+             * @description The reviewer's corrections, merged field by field over the proposal's own payload before it is applied; the fields left out keep what was proposed. Accepted only for the `new_obligation_version`, `new_instrument` and `new_obligation` kinds, since the vocabulary kinds carry a label a person wrote rather than a sourced fact; on any other kind the call answers 422 `validation_error`. A new record's corrections are checked exactly as the proposal was, so a regime that is not a term of the regime dimension answers 422 `not_a_regime`. For an obligation version the fields a reviewer may correct are the ones that kind's payload names: `summaries` (the whole set of texts per language, which replaces the proposed set), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (one of `day`, `month`, `quarter` and `year`, which says how exactly the date is known) and `terms` (the scope facets as `dimension:key`, at most 20, which replace the obligation's scope). The merged payload must still carry a source for every field it changes, so a correction that introduces a field the proposal never sourced answers 422 `source_missing` and applies nothing. What is applied is kept beside what was proposed, as the reviewer's own correction: a reader must not take the proposal's payload as the text the library now holds.
              */
             payloadOverrides?: {
                 [key: string]: unknown;
             } | null;
         };
-        /** ProposalCreateBody */
+        /**
+         * ProposalCreateBody
+         * @description The body of `POST /proposals`: one change somebody wants made to the shared library,
+         *     with the source behind every value it would write. Nothing in the library changes when
+         *     this is accepted; the proposal waits for a second, independent reviewer.
+         *
+         *     Fields the schema does not name are refused with 422 `validation_error` rather than
+         *     dropped, so nothing rides along unseen. The whole body is library data that every bank
+         *     will read once approved: it must never carry a bank's own judgement, its people's names
+         *     or its internal documents.
+         */
         ProposalCreateBody: {
             /**
              * Agentrunid
@@ -10235,43 +12679,80 @@ export interface components {
              * @example 5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21
              */
             agentRunId?: string | null;
-            /** Changeid */
+            /**
+             * Changeid
+             * @description The regulatory change that prompted this, as a UUID, when a watch run found one. Optional; leaving it out says nobody linked one, not that no change exists.
+             * @example b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33
+             */
             changeId?: string | null;
-            /** Effectivefrom */
+            /**
+             * Effectivefrom
+             * @description The legal date the change starts binding, as a plain date without a time. For an obligation version or a new obligation it must equal the payload's `effectiveFrom`, else 422 `validation_error`; left out, it takes the payload's. Optional, and null means the proposal names no date.
+             * @example 2026-10-01
+             */
             effectiveFrom?: string | null;
-            /** Fieldsources */
+            /**
+             * Fieldsources
+             * @description Per field the payload sets, where its value came from, keyed as the queue names the field (`summaries.sv`, `texts.sv`, `effectiveFrom`, `terms`, `regime`). Each source is at most 2000 characters and is an https link, or for an obligation or provision version also the stable key of a provision the library holds. A new instrument, obligation or provision takes https links only, since it has no provision of its own yet, and so does every obligation of a standard: anything else there answers 422 `licensed_text`. A field without a source answers 422 `source_missing`; a source that is neither, or one given for a field the proposal does not set, answers 422 `validation_error`. The vocabulary kinds need none, since a person writes their wording.
+             * @example {
+             *       "summaries.sv": "https://www.fi.se/en/published/news/2026/research-payments/"
+             *     }
+             */
             fieldSources?: {
                 [key: string]: string;
             };
-            /** Kind */
+            /**
+             * Kind
+             * @description What is asked for, which decides the shape of `payload`. A fixed kind, not a vocabulary: `new_obligation_version` is a new summary of one duty in force from a date, with its scope terms; `new_instrument` is a law, regulation, guideline or standard edition the library does not hold yet; `new_obligation` is a duty the library does not hold yet, under an instrument it does, with its first summary; `new_provision` is a node of a law's text with its first verbatim text, and `new_provision_version` a provision's text in force from a date, neither ever under a standard (422 `licensed_text`); `vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore` and `vocabulary_merge` add, reword, turn off, turn on again or fold together a row of a shared list; `term_create` and `term_update` add or reword a taxonomy term. Any other value answers 422 `unknown_key` naming the valid ones.
+             * @example new_obligation_version
+             */
             kind: string;
             /**
              * Model
+             * @description The model or pipeline that drafted the proposal, as the agent names it, at most 200 characters (AUD-02). Empty for a proposal a person wrote. What it drafted stays labelled machine-made until a person confirms it.
              * @default
+             * @example agent pipeline 0.4
              */
             model: string;
-            /** Payload */
+            /**
+             * Payload
+             * @description What the library should hold, in the shape `kind` names, with camelCase field names. A field the kind does not name, or a value it does not accept, answers 422 `validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (`day`, `month`, `quarter` or `year`) and `terms` (scope as `dimension:key`, at most 20). `new_instrument`: `key` (a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), `titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, `eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, `regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), `inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: `key`, `instrument` (the stable key of a shared instrument in force), `titles` and `summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, `effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one conformance obligation, carrying exactly one standard term (else 422 `one_conformance_obligation` or `standard_term_required`), and a law's obligation carries none (422 `standard_term_only_on_standards`). `new_provision`: `key`, `instrument`, `parent` (the stable key of a provision of the same instrument, left out at the top), `provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. `new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. The vocabulary and term kinds name a `list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and term keys are library rows that change only through proposals; `GET /vocabularies` and `GET /taxonomy/terms` return the live sets.
+             */
             payload?: {
                 [key: string]: unknown;
             };
             /**
              * Sourcelabel
+             * @description The source in words, as a reviewer and a reader see it beside a link, at most 500 characters, for example the authority and the decision. A new obligation keeps it as its own source label; left empty, it reads the instrument's reference and the duty's.
              * @default
+             * @example Finansinspektionen, board decision 15 September 2026
              */
             sourceLabel: string;
             /**
              * Sourceurl
+             * @description The authority's page the proposal was read from, at most 2000 characters. Required for a new instrument, obligation or provision, as an https link (a new instrument or obligation keeps it as its own source): without one it answers 422 `source_missing`. Optional on the other kinds.
              * @default
+             * @example https://www.fi.se/en/published/news/2026/research-payments/
              */
             sourceUrl: string;
-            /** Targetid */
+            /**
+             * Targetid
+             * @description The record changed, as a UUID, with `targetType`. For `new_obligation_version` it must be an obligation, and for `new_provision_version` a provision, the library holds and has not retired, else 422 `unknown_key`. Null for every other kind.
+             * @example 7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44
+             */
             targetId?: string | null;
             /**
              * Targettype
+             * @description What the proposal changes, when it changes a record that exists: `obligation` for `new_obligation_version` and `provision` for `new_provision_version`, at most 64 characters. Empty for every other kind; a new instrument, obligation or provision that names a target answers 422 `validation_error`, since the record does not exist until the proposal is approved.
              * @default
+             * @example obligation
              */
             targetType: string;
-            /** Title */
+            /**
+             * Title
+             * @description The request in one line, as the reviewer reads it in the queue, at most 500 characters and never blank. It describes the request and is never the library record's own title, which comes from the payload.
+             * @example Version 2 of the research assessment duty, in force 1 October 2026
+             */
             title: string;
         };
         /**
@@ -10404,7 +12885,7 @@ export interface components {
             isMine: boolean;
             /**
              * Kind
-             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
              */
             kind: string;
             /**
@@ -10594,7 +13075,7 @@ export interface components {
         ProposalPage: {
             /**
              * Items
-             * @description This page of proposals, oldest first, so the queue reads in the order they arrived and paging is repeatable: 20 rows by default and 100 at most. Nothing matching the filters is an empty list, never a 404.
+             * @description This page of proposals, oldest first unless `order` asks for the newest first, by when each was filed with the id breaking a tie, so paging is repeatable: 20 rows by default and 100 at most. Nothing matching the filters is an empty list, never a 404.
              */
             items: components["schemas"]["ProposalQueueRow"][];
             /**
@@ -10622,6 +13103,12 @@ export interface components {
              * @example true
              */
             notMine: boolean;
+            /**
+             * Order
+             * @description Which end of the queue comes first, by when each proposal was filed, with the id breaking a tie so paging is repeatable. The values are `oldest` (the default: the order proposals arrived in, which is how the Waiting tab is worked) and `newest` (the latest filed first, which is how the Approved and Rejected tabs read). Those are the only two values; anything else is refused with 422 `unknown_key`. Left out, the queue reads oldest first.
+             * @example newest
+             */
+            order?: string | null;
             /**
              * Origin
              * @description Keep only the proposals filed by one sort of proposer: `agent` for a watch or research agent's, `user` for a person's. Those are the only two values; anything else is refused with 422 `unknown_key` rather than answered with an empty queue. Left out, both are returned.
@@ -10753,7 +13240,7 @@ export interface components {
             isMine: boolean;
             /**
              * Kind
-             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
              */
             kind: string;
             /**
@@ -11013,7 +13500,7 @@ export interface components {
             id: string;
             /**
              * Kind
-             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
              */
             kind: string;
             /**
@@ -11346,52 +13833,141 @@ export interface components {
              */
             outcome: string;
         };
-        /** RoleCreate */
+        /**
+         * RoleCreate
+         * @description `POST /tenant/roles`: a new role the bank composes from the product's permissions.
+         * @example {
+         *       "key": "dora_reviewer",
+         *       "labels": {
+         *         "en": "DORA reviewer",
+         *         "sv": "DORA-granskare"
+         *       },
+         *       "permissions": [
+         *         "cases.contribute",
+         *         "cases.read",
+         *         "library.read",
+         *         "register.read"
+         *       ],
+         *       "usageNote": "Reads the register and works the ICT-risk cases it is asked to help with."
+         *     }
+         */
         RoleCreate: {
-            /** Key */
+            /**
+             * Key
+             * @description The new role's stable key, at most 80 characters, such as `dora_reviewer`; surrounding spaces are trimmed and it is lowercased. Use lowercase letters, digits and underscores. It can never be changed afterwards. A blank key is refused with `key_required`, and a key the bank already has, retired roles included, with `duplicate_key`.
+             */
             key: string;
-            /** Labels */
+            /**
+             * Labels
+             * @description The role's name per content language, keyed by language key such as `en` or `sv`, at least one non-blank. Blank entries are dropped; a map with none left is refused with `label_required`, and a language the product does not offer with `unknown_key`.
+             */
             labels: {
                 [key: string]: string;
             };
-            /** Permissions */
+            /**
+             * Permissions
+             * @description The permission keys the role grants, from `GET /reference/permissions`; duplicates count once and an empty list makes a role that grants nothing. A key that is not a bank permission is refused with `unknown_key`.
+             */
             permissions: string[];
             /**
              * Usagenote
+             * @description A sentence telling administrators who the role is for, at most 1000 characters, surrounding spaces trimmed; empty (the default) for none.
              * @default
              */
             usageNote: string;
         };
-        /** RoleOut */
+        /**
+         * RoleOut
+         * @description One role of this bank: a named set of permissions a member can be given.
+         * @example {
+         *       "active": true,
+         *       "isSystem": false,
+         *       "key": "dora_reviewer",
+         *       "kind": null,
+         *       "label": "DORA reviewer",
+         *       "labels": {
+         *         "en": "DORA reviewer",
+         *         "sv": "DORA-granskare"
+         *       },
+         *       "permissions": [
+         *         "cases.contribute",
+         *         "cases.read",
+         *         "library.read",
+         *         "register.read"
+         *       ],
+         *       "usageNote": "Reads the register and works the ICT-risk cases it is asked to help with."
+         *     }
+         */
         RoleOut: {
-            /** Active */
+            /**
+             * Active
+             * @description True while the role can be given to members. A retired role is false; it is no longer listed or offered, and it cannot be brought back through the API.
+             */
             active: boolean;
-            /** Issystem */
+            /**
+             * Issystem
+             * @description True for one of the seven roles the product seeds in every bank. A system role can be relabelled and its usage note rewritten, but its permissions follow the product and it cannot be retired. False for a role the bank added.
+             */
             isSystem: boolean;
-            /** Key */
+            /**
+             * Key
+             * @description The role's stable key, lowercase, such as `compliance_officer`: a row of the bank's role vocabulary, which its administrators extend. The system roles seeded on day one are `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`; any other key is one the bank added. It never changes once issued, so store and compare it and never the label. Nothing in the product decides anything by a role's key: what counts is its `permissions`.
+             */
             key: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description The kind of row within the role list. Roles have no kinds, so it is null for every role today.
+             */
             kind: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description The role's name in the reader's language: the label in their own language if the role has one, then in the bank's default language, then in English, then the original, then the key itself. For display only.
+             */
             label: string;
-            /** Labels */
+            /**
+             * Labels
+             * @description Every label the role has, keyed by content-language key such as `en` or `sv`, so a role editor can show and change each one. The bank may reword them freely.
+             */
             labels: {
                 [key: string]: string;
             };
-            /** Permissions */
+            /**
+             * Permissions
+             * @description The permission keys the role grants, sorted, such as `cases.signoff`. The complete set, each with its meaning, is `GET /reference/permissions`; the set is fixed by the product and a bank cannot add to it. A person's permissions are the union of their roles' permissions.
+             */
             permissions: string[];
-            /** Usagenote */
+            /**
+             * Usagenote
+             * @description A sentence telling an administrator who the role is for, shown in the role picker, such as `Reads everything, changes nothing.` Empty when none was written.
+             */
             usageNote: string;
         };
-        /** RolePatch */
+        /**
+         * RolePatch
+         * @description `PATCH /tenant/roles/{key}`: send only what changes. The key never changes.
+         * @example {
+         *       "labels": {
+         *         "sv": "DORA-granskare"
+         *       }
+         *     }
+         */
         RolePatch: {
-            /** Labels */
+            /**
+             * Labels
+             * @description Labels to set, keyed by language key such as `sv`. Each language sent replaces that language's label and the others are kept; blank entries are ignored. Leave it out, or send null (the default), to keep every label. A map with only blank labels is refused with `label_required`, and a language the product does not offer with `unknown_key`.
+             */
             labels?: {
                 [key: string]: string;
             } | null;
-            /** Permissions */
+            /**
+             * Permissions
+             * @description The role's complete new set of permission keys, which replaces the old set. Sending it needs a fresh passkey step-up, and a system role refuses it with `system_role`, because its permissions follow the product. A key that is not a bank permission is refused with `unknown_key`. Leave it out, or send null (the default), to keep them.
+             */
             permissions?: string[] | null;
-            /** Usagenote */
+            /**
+             * Usagenote
+             * @description The new usage note, at most 1000 characters, surrounding spaces trimmed; an empty string clears it. Leave it out, or send null (the default), to keep it.
+             */
             usageNote?: string | null;
         };
         /**
@@ -11708,37 +14284,119 @@ export interface components {
              */
             items: components["schemas"]["SearchHit"][];
         };
-        /** SecurityEventOut */
+        /**
+         * SecurityEventOut
+         * @description One entry of the bank's security log: a sign-in, a failure, an enrolment, a recovery
+         *     or the use of a key. Entries are append-only and are never edited or removed.
+         * @example {
+         *       "email": "compliance_officer@example-bank.test",
+         *       "event": "signin",
+         *       "failureReason": "",
+         *       "id": 48213,
+         *       "ip": "192.0.2.41",
+         *       "method": "passkey",
+         *       "occurredAt": "2026-09-22T06:58:04Z",
+         *       "success": true,
+         *       "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+         *       "userId": "00000000-0000-4000-8000-000000000102"
+         *     }
+         */
         SecurityEventOut: {
-            /** Email */
+            /**
+             * Email
+             * @description The email address the event concerns: the person's address, or for a code event the address that was typed, which may belong to nobody. Empty for a key's events.
+             */
             email: string;
-            /** Event */
+            /**
+             * Event
+             * @description What happened, one of these values. `code_sent`: an enrolment code was emailed. `code_refused_enrolled`: a code was asked for an address that already holds a passkey, and none was sent. `code_failed`: a code did not verify. `code_locked`: too many wrong codes, so the code stopped working. `enrolled`: a person registered their first passkey. `signin` and `signin_failed`: a passkey sign-in succeeded or failed. `step_up` and `step_up_failed`: a passkey confirmation of a protected action succeeded or failed. `refresh_replay`: a used refresh token was presented again, so the session was ended as possibly stolen. `session_revoked`: a session ended before its time. `reenrolment_issued`: an administrator re-issued a member's enrolment. `key_used`: an API key authenticated a call, logged at most once every 60 seconds per key by default (a setting). `key_revoked`: an API key was revoked. `key_created`: a platform agent key was created, which never appears in a bank's log. `key_scopes_withheld`: a key created before the platform-only scopes rule presented one and worked without it. `feed_used`: a calendar client fetched a person's subscribed feed. A new release may add events, so treat an unfamiliar value as new data and not an error.
+             */
             event: string;
-            /** Failurereason */
+            /**
+             * Failurereason
+             * @description A short snake_case reason, empty when there is none. On a failure it says why, such as `wrong_code`, `too_many_attempts`, `no_open_code`, `already_consumed`, `no_open_invitation`, `unknown_credential` or `passkey_enrolled`. On `session_revoked` it says why the session ended: `sign_out`, `idle`, `revoked_by_user`, `revoked_by_admin`, `member_deactivated`, `reenrolment`, `enrolment_completed` or `refresh_replay`. On `key_scopes_withheld` it lists the scopes that were withheld, comma-separated.
+             */
             failureReason: string;
-            /** Id */
+            /**
+             * Id
+             * @description The entry's number, issued by the server in increasing order across the platform. Numbers are not contiguous within one bank, since other banks' entries sit between.
+             */
             id: number;
-            /** Ip */
+            /**
+             * Ip
+             * @description The network address the request came from, IPv4 or IPv6 as text, or null when the event had no request of its own, such as a key's use or revocation.
+             */
             ip: string | null;
-            /** Method */
+            /**
+             * Method
+             * @description Which credential the event concerned, one of three values. `email_code` is the one-time enrolment code sent by email, and an enrolment session ending; `passkey` is a passkey sign-in, step-up or enrolment, and a signed-in session ending; `api_key` is one of the bank's API keys or a person's calendar feed link.
+             */
             method: string;
             /**
              * Occurredat
              * Format: date-time
+             * @description When the event happened, as a UTC timestamp set by the server.
              */
             occurredAt: string;
-            /** Success */
+            /**
+             * Success
+             * @description True when the event is something that worked, false for a failure or a refusal. `key_scopes_withheld` is false: the key worked, but without the scopes it listed.
+             */
             success: boolean;
-            /** Useragent */
+            /**
+             * Useragent
+             * @description The browser's own description of itself (its User-Agent header), stored up to 500 characters and empty when there was none. It is the browser's claim and proves nothing about the device.
+             */
             userAgent: string;
-            /** Userid */
+            /**
+             * Userid
+             * @description The account identifier of the person the event concerns, a UUID, or null when no known person was involved, such as an API key's use or a code typed for an unknown address.
+             */
             userId: string | null;
         };
-        /** SecurityLogPage */
+        /**
+         * SecurityLogPage
+         * @description `{items, total}` with `limit` and `offset` (playbook 10).
+         * @example {
+         *       "items": [
+         *         {
+         *           "email": "compliance_officer@example-bank.test",
+         *           "event": "signin",
+         *           "failureReason": "",
+         *           "id": 48213,
+         *           "ip": "192.0.2.41",
+         *           "method": "passkey",
+         *           "occurredAt": "2026-09-22T06:58:04Z",
+         *           "success": true,
+         *           "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+         *           "userId": "00000000-0000-4000-8000-000000000102"
+         *         },
+         *         {
+         *           "email": "anna@example-bank.test",
+         *           "event": "code_failed",
+         *           "failureReason": "wrong_code",
+         *           "id": 48207,
+         *           "ip": "198.51.100.7",
+         *           "method": "email_code",
+         *           "occurredAt": "2026-09-22T06:41:39Z",
+         *           "success": false,
+         *           "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1",
+         *           "userId": "9f3b2c1d-4e5a-4b6c-8d7e-0a1b2c3d4e5f"
+         *         }
+         *       ],
+         *       "total": 2
+         *     }
+         */
         SecurityLogPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The bank's security log entries on this page, newest first. Only this bank's entries appear; the platform's own entries and other banks' never do. An empty list is a 200.
+             */
             items: components["schemas"]["SecurityEventOut"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many entries the bank's security log holds in total, not how many are on this page.
+             */
             total: number;
         };
         /**
@@ -11872,11 +14530,64 @@ export interface components {
              */
             expiresAt: string;
         };
-        /** TaxonomyDimensionPage */
+        /**
+         * TaxonomyDimensionPage
+         * @description `GET /taxonomy/dimensions`: every active dimension of the taxonomy, in picker order.
+         *     A reference list, not a page: it is short and never paginates.
+         * @example {
+         *       "items": [
+         *         {
+         *           "active": true,
+         *           "extra": {
+         *             "restrictsFootprint": true
+         *           },
+         *           "isDefault": false,
+         *           "isSystem": true,
+         *           "key": "service_type",
+         *           "kind": "scope",
+         *           "label": "Service",
+         *           "labels": {
+         *             "en": "Service",
+         *             "sv": "Tjänst"
+         *           },
+         *           "sortOrder": 4,
+         *           "usageCount": 6,
+         *           "usageNote": "The investment or insurance service offered.",
+         *           "version": 1
+         *         },
+         *         {
+         *           "active": true,
+         *           "extra": {
+         *             "restrictsFootprint": false
+         *           },
+         *           "isDefault": false,
+         *           "isSystem": true,
+         *           "key": "theme",
+         *           "kind": "classification",
+         *           "label": "Theme",
+         *           "labels": {
+         *             "en": "Theme",
+         *             "sv": "Tema"
+         *           },
+         *           "sortOrder": 9,
+         *           "usageCount": 0,
+         *           "usageNote": "What the rule is about, for browsing and briefings. Never narrows the footprint.",
+         *           "version": 1
+         *         }
+         *       ],
+         *       "total": 2
+         *     }
+         */
         TaxonomyDimensionPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The dimensions, each a row of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal. Its `kind` is `scope` (the dimension says who or what a rule covers), `classification` (it only describes a record and never narrows a regulatory scope) or `opt_in` (the standards a bank follows: a record carrying one shows only to a bank whose scope names it). `extra.restrictsFootprint` says whether the terms chosen in it narrow what a bank sees. Only active dimensions, in picker order.
+             */
             items: components["schemas"]["VocabularyRow"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many dimensions `items` holds: the whole answer, since this list never paginates.
+             */
             total: number;
         };
         /**
@@ -11904,68 +14615,197 @@ export interface components {
              */
             label: string;
         };
-        /** TaxonomyTermCreateBody */
+        /**
+         * TaxonomyTermCreateBody
+         * @description `POST /taxonomy/terms`: what a new term should be. Sending it files a proposal and
+         *     changes nothing in the library until a second person approves it (VOC-07).
+         * @example {
+         *       "dimension": "service_type",
+         *       "key": "investment_research",
+         *       "labels": {
+         *         "en": "Investment research",
+         *         "sv": "Investeringsanalys"
+         *       },
+         *       "parent": null,
+         *       "usageNote": "Research and recommendations published to clients at large, not personal advice."
+         *     }
+         */
         TaxonomyTermCreateBody: {
-            /** Dimension */
+            /**
+             * Dimension
+             * @description The key of the dimension the term joins, such as `service_type` or `client_category`. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists the live set. An unknown or retired dimension answers 422 `unknown_key`, and the `jurisdiction` dimension, whose terms mirror the jurisdiction list, answers 422 `jurisdiction_term_mirrored`.
+             * @example service_type
+             */
             dimension: string;
-            /** Key */
+            /**
+             * Key
+             * @description The key the term should have, lowercase words joined by underscores such as `investment_research`; anything else is turned into that form. Leave it out, the default, and the key is made the same way from the English label, or from the first label given. A key already taken in the dimension, by a retired term too, answers 409 `duplicate_key`; one that makes no key answers 422 `validation_error`. Once approved the key never changes.
+             * @example investment_research
+             */
             key?: string | null;
-            /** Labels */
+            /**
+             * Labels
+             * @description The term's name by language key, at least one: `en`, `sv`, `da`, `nb` or `fi`, the platform's content languages. Blank labels are dropped; none left answers 422 `validation_error`, and a language the platform does not hold answers 422 `unknown_key` with the valid ones.
+             * @example {
+             *       "en": "Investment research",
+             *       "sv": "Investeringsanalys"
+             *     }
+             */
             labels: {
                 [key: string]: string;
             };
-            /** Parent */
+            /**
+             * Parent
+             * @description The key of an existing active term of the same dimension to sit under, for a term that narrows a broader one; null by default, for a term at the top. Anything else answers 422 `unknown_key` with the valid keys.
+             * @example null
+             */
             parent?: string | null;
             /**
              * Usagenote
+             * @description When to use the term, a sentence or two for whoever tags a record or sets a scope; empty by default. Surrounding whitespace is trimmed.
              * @default
+             * @example Research and recommendations published to clients at large, not personal advice.
              */
             usageNote: string;
         };
-        /** TaxonomyTermPage */
+        /**
+         * TaxonomyTermPage
+         * @description `GET /taxonomy/terms`: every term asked for, in picker order. A reference list, not a
+         *     page: it is short and never paginates.
+         * @example {
+         *       "items": [
+         *         {
+         *           "active": true,
+         *           "dimension": {
+         *             "key": "service_type",
+         *             "kind": "scope",
+         *             "label": "Service"
+         *           },
+         *           "id": "3f6a2c18-9b4d-4e27-8c51-7d0e2a9b6f34",
+         *           "isSystem": true,
+         *           "key": "advice",
+         *           "kind": null,
+         *           "label": "Advice",
+         *           "labels": {
+         *             "en": "Advice",
+         *             "sv": "Rådgivning"
+         *           },
+         *           "mirrored": false,
+         *           "parentKey": null,
+         *           "sortOrder": 1,
+         *           "usageNote": "",
+         *           "version": 1
+         *         },
+         *         {
+         *           "active": true,
+         *           "dimension": {
+         *             "key": "service_type",
+         *             "kind": "scope",
+         *             "label": "Service"
+         *           },
+         *           "id": "a81d4f60-2c7e-4b93-9e05-6f3b1c8d2a47",
+         *           "isSystem": true,
+         *           "key": "execution_only",
+         *           "kind": null,
+         *           "label": "Execution only",
+         *           "labels": {
+         *             "en": "Execution only",
+         *             "sv": "Endast utförande"
+         *           },
+         *           "mirrored": false,
+         *           "parentKey": null,
+         *           "sortOrder": 3,
+         *           "usageNote": "",
+         *           "version": 1
+         *         }
+         *       ],
+         *       "total": 2
+         *     }
+         */
         TaxonomyTermPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The terms, ordered by dimension, then by each term's place in its picker, then by key; only active ones unless `includeRetired=true`. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal, so the set grows without a deploy. Empty when the dimension has no terms.
+             */
             items: components["schemas"]["TaxonomyTermRow"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many terms `items` holds: the whole answer, since this list never paginates.
+             */
             total: number;
         };
         /** TaxonomyTermQuery */
         TaxonomyTermQuery: {
-            /** Dimension */
+            /**
+             * Dimension
+             * @description Only the terms of this dimension, by its key, such as `service_type`; left out by default, every dimension's terms. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists them. An unknown or retired dimension answers 422 `unknown_key` with the valid keys.
+             */
             dimension?: string | null;
             /**
              * Includeretired
+             * @description True also returns retired terms, marked `active: false`, for an editor or for reading an old record. False, the default, returns only the terms a scope or a record can use today.
              * @default false
              */
             includeRetired: boolean;
         };
-        /** TaxonomyTermRow */
+        /**
+         * TaxonomyTermRow
+         * @description One term of the shared library's taxonomy (FP-01): the values a bank chooses in its
+         *     regulatory scope and a record is tagged with, one dimension each. A library fact,
+         *     changed only through an approved proposal (VOC-07).
+         */
         TaxonomyTermRow: {
             /**
              * Active
+             * @description True, the default, for a term a scope or a record can use today. False for a retired term, which only `includeRetired=true` returns: it stays on the records that carry it and in history, is offered in no picker, and its key is never reused.
              * @default true
+             * @example true
              */
             active: boolean;
             /** @description The independent agent that confirmed the approval `verifiedOrigin` describes, by its definition key, when `verifiedOrigin` is `agent`: the latest agent approval that reworded the row. Null whenever `verifiedOrigin` is not `agent`, which is a row a person approved, a seeded row and every row of a bank's own list. It names a platform agent definition, never a person or a bank. */
             confirmedByAgent?: components["schemas"]["AgentRef"] | null;
+            /** @description The dimension the term belongs to: its key, its kind (`scope`, `classification` or `opt_in`) and its label. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists the live set. */
             dimension: components["schemas"]["TaxonomyDimensionRef"];
             /**
              * Id
              * Format: uuid
+             * @description The term's identifier, a UUID that never changes; `PATCH /taxonomy/terms/{termId}` takes it. Filters, scopes and records name a term by its dimension and key instead.
+             * @example 3f6a2c18-9b4d-4e27-8c51-7d0e2a9b6f34
              */
             id: string;
             /**
              * Issystem
+             * @description True for a term the platform seeded with the reference data; false, the default, for one added later through an approved proposal. Either way the key never changes.
              * @default false
+             * @example true
              */
             isSystem: boolean;
-            /** Key */
+            /**
+             * Key
+             * @description The term's immutable key, unique within its dimension, such as `advice` in `service_type`: the part to store, compare and send back, together with the dimension's key. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal (`POST /taxonomy/terms`); this list is the live set. A key never changes and is never reused, a retired term's included.
+             * @example advice
+             */
             key: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description Always null by default and in every row: a term carries no kind of its own, because its dimension is its kind (`dimension.kind`). Present so one pill component reads a term like any other vocabulary value.
+             * @example null
+             */
             kind?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description The term's name in the reader's language (the caller's language, the organisation's default language, then English), for display only. It may be reworded or translated at any time, so nothing may match on it.
+             * @example Advice
+             */
             label: string;
-            /** Labels */
+            /**
+             * Labels
+             * @description Every label the term has, by language key (`en`, `sv`, `da`, `nb`, `fi`), for an editor showing all translations at once. A language with no label is absent rather than empty; defaults to an empty map only for a term nobody labelled.
+             * @example {
+             *       "en": "Advice",
+             *       "sv": "Rådgivning"
+             *     }
+             */
             labels?: {
                 [key: string]: string;
             };
@@ -11976,18 +14816,26 @@ export interface components {
              * @example false
              */
             mirrored: boolean;
-            /** Parentkey */
+            /**
+             * Parentkey
+             * @description The key of the broader term this one sits under, in the same dimension, for a picker that shows a tree; null by default, for a term at the top. A row of the same taxonomy vocabulary, which an administrator may extend through an approved proposal.
+             * @example null
+             */
             parentKey?: string | null;
             /** @description The agent that proposed the approval `verifiedOrigin` describes, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it; whenever a bank made the proposal, since who proposed on a bank's behalf is never shown; and on a seeded row or a bank's own list. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`. */
             proposedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Sortorder
+             * @description The term's place in its dimension's picker, ascending, with the key settling a tie; 0 by default. The list already comes back in this order.
              * @default 0
+             * @example 1
              */
             sortOrder: number;
             /**
              * Usagenote
+             * @description When to use the term, one or two sentences an editor wrote for whoever tags a record or sets a scope; empty when there is none. Guidance only, never a rule the server applies.
              * @default
+             * @example Personal recommendations on financial instruments.
              */
             usageNote: string;
             /**
@@ -11999,14 +14847,32 @@ export interface components {
             verifiedOrigin: string;
             /**
              * Version
+             * @description The term's version, 1 when created and one higher with every approved change. Send it as `If-Match` on `PATCH /taxonomy/terms/{termId}` to be told with 409 `stale_write` when someone changed the term first.
              * @default 1
+             * @example 1
              */
             version: number;
+        };
+        /**
+         * TenantAiBody
+         * @description Switch this bank's own AI features on or off. The body holds the one field and
+         *     nothing else; any other field is refused.
+         * @example {
+         *       "enabled": false
+         *     }
+         */
+        TenantAiBody: {
+            /**
+             * Enabled
+             * @description `false` switches this bank's AI features off: Ask and the drafts a model writes for the bank's members answer `feature_off` from then on. `true` switches them back on. A JSON boolean, never a string. Sending the value the bank already has changes nothing and is still recorded in the audit log.
+             */
+            enabled: boolean;
         };
         /**
          * TenantOut
          * @description The bank's own profile, as a member of that bank reads it.
          * @example {
+         *       "aiEnabled": true,
          *       "contentLanguages": [
          *         {
          *           "key": "sv",
@@ -12057,6 +14923,11 @@ export interface components {
          *     }
          */
         TenantOut: {
+            /**
+             * Aienabled
+             * @description Whether this bank's own AI features are on: `true` means its members may use Ask and have a model draft text for them, `false` means every such call is refused with `feature_off` before any model is reached. It starts `true`. Only `PUT /tenant/ai` changes it, with `security.manage` and a passkey step-up; the profile edit ignores it. It covers this bank's own features only: the research agents that keep the shared library current run for every bank and are not switched here.
+             */
+            aiEnabled: boolean;
             /**
              * Contentlanguages
              * @description Every language this bank keeps content in, in the order its administrators put them, the default usually first. It decides which translations a reader is offered and which languages an import or an export covers; it does not limit what the shared library holds, which stays whole whatever a bank picks here. Each entry points at a language row by key, and those rows are library reference data rather than a vocabulary an admin may extend.
@@ -12209,7 +15080,7 @@ export interface components {
             id: string;
             /**
              * Kind
-             * @description What this bank asked to change. A fixed kind, not a vocabulary row: `vocabulary_create` adds a row to a shared list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. `new_obligation_version` adds a version to a duty.
+             * @description What this bank asked to change. A fixed kind, not a vocabulary row: `vocabulary_create` adds a row to a shared list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term. `new_obligation_version` adds a version to a duty, and `new_instrument`, `new_obligation`, `new_provision` and `new_provision_version` bring a record or a text the library does not hold yet.
              */
             kind: string;
             /**
@@ -12223,13 +15094,29 @@ export interface components {
              */
             title: string;
         };
-        /** TermRef */
+        /**
+         * TermRef
+         * @description A vocabulary value as every picker, pill and filter reads it: the key to store and
+         *     compare, the kind when the value's list has one, and a label to show (playbook 15).
+         */
         TermRef: {
-            /** Key */
+            /**
+             * Key
+             * @description The value's immutable key, such as `advice` for a taxonomy term, `no` for Norway or `sv` for Swedish, and the only part of this reference to store, compare or send back. It is a row of a vocabulary: a taxonomy term (the shared library's terms, which an administrator may extend through an approved proposal; `GET /taxonomy/terms`), a jurisdiction (which the platform's library editors may add; `GET /reference/jurisdictions`), a language (the platform's own list, which no bank admin can extend) or an urgency (the shared library's `urgency` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/urgency`). A key you have not seen before is new data, not an error. A key never changes once issued.
+             * @example advice
+             */
             key: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description The fixed kind of the value, when its list has one, so a screen can branch or pick a pill tone without reading the label; null by default, when the list has no kind. By list: a taxonomy term is always null, because its dimension is its kind; a language is always null; a jurisdiction is `supranational` (the European Union, whose rules reach its members and the EEA), `country` (one national market, such as Sweden) or `international` (a standards body such as ISO/IEC, which is no bank's market); an urgency is its pill tone, one of `information`, `notice`, `positive`, `warning`, `negative` and `brand`. Kinds are fixed in code and never added by an administrator.
+             * @example null
+             */
             kind?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description The value's name in the reader's language: the caller's own language first, then the organisation's default language, then English, then any label the value has, and the key itself when it has none. A language is the exception and reads in itself, such as `Svenska`. For display only: a person wrote it and may reword or translate it at any time, so nothing may match on it.
+             * @example Advice
+             */
             label: string;
         };
         /**
@@ -12419,73 +15306,215 @@ export interface components {
         };
         /**
          * VocabularyCreateBody
-         * @description `key` is optional: it is slugified from the English label when absent, because a
-         *     person types a label and never a key. `force` is how a holder of vocab.manage insists
-         *     past the near-duplicate hint (VOC-03, AC-VOC3).
+         * @description The body of `POST /vocab/{list}`: a new value for a list. `key` is optional because a
+         *     person types a label and never a key; `force` is how a holder of vocab.manage insists
+         *     past the near-duplicate hint (VOC-03, AC-VOC3). A field this body does not name answers
+         *     422 rather than being dropped.
+         * @example {
+         *       "force": false,
+         *       "labels": {
+         *         "en": "Custody services",
+         *         "sv": "Förvaringstjänster"
+         *       },
+         *       "usageNote": "Safekeeping of client assets, including sub-custody arrangements."
+         *     }
          */
         VocabularyCreateBody: {
-            /** Extra */
+            /**
+             * Extra
+             * @description The list's own columns for the new value, where the list has any: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale. Every other list has none. Keyed as a row's `extra` reads them (`slaDays`) or by column name (`sla_days`); a key the list does not have is ignored, never stored. Each value is checked like the column it fills, so a wrong one answers 422 `validation_error`, and a reference to a row that does not exist answers 422 `unknown_key` with the valid keys. `tone`, `colour` and `color` are refused with 422 `validation_error`: a value's tone follows its kind and is never chosen.
+             * @example {
+             *       "ordinal": 2,
+             *       "slaDays": 30
+             *     }
+             */
             extra?: {
                 [key: string]: unknown;
             };
             /**
              * Force
+             * @description True creates the value even though its label is close to one the list already holds. False, the default, refuses such a value with 422 `near_duplicate` and the close matches in `candidates`, so a typo like `Custdy` beside `Custody` is caught before it splits the records. It never overrides `duplicate_key`: two values never share a key.
              * @default false
+             * @example false
              */
             force: boolean;
-            /** Key */
+            /**
+             * Key
+             * @description The new value's stable key, which every record, filter, saved search and export will store. Optional: left out, the server makes it from the English label, or from the first label given, as lower-case words joined by underscores (`Custody services` becomes `custody_services`), and a key you give is normalised the same way; one that normalises to nothing answers 422 `validation_error`. A key the list already holds in any letter case, retired values included, answers 409 `duplicate_key` with the existing value in `candidates`. The key never changes once the value exists. The values are rows of the vocabulary the path names, which an admin may extend, so `GET /vocab/{list}` gives the live set.
+             * @example custody_services
+             */
             key?: string | null;
-            /** Kind */
+            /**
+             * Kind
+             * @description The fixed kind the new value belongs to, on the lists whose values carry one. A kind in code and not a vocabulary value: an admin may add values to a list but never a kind, and `kinds` on the list's entry in `GET /vocab` gives the set. Per list, `term_dimension` takes `scope`, `classification` or `opt_in`; `instrument_level` `standard` or none; `provision_kind` `division`, `unit` or `annex`; `change_type` `pre_adoption`, `adopted`, `in_force`, `supervisory` or `recurring`; `urgency` the tone its pill shows, `information`, `notice`, `positive`, `warning`, `negative` or `brand`; `jurisdiction` `supranational`, `country` or `international`; `compliance_status` `compliant`, `partly`, `gap` or `not_assessed`; `case_sub_status` the case category it sits inside, `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed` or `dismissed`; and `close_reason` `signed_off`, `not_applicable` or `no_action`. Every other list's rows carry no kind. A list with kinds needs one, except `instrument_level`, and leaving it out or naming another answers 422 `unknown_key` with the valid values; a list without kinds ignores this field.
+             * @example supervisory
+             */
             kind?: string | null;
-            /** Labels */
+            /**
+             * Labels
+             * @description The value's name per content language, as a map from language key to text, such as `{"en": "Custody", "sv": "Förvaring"}`. The keys are the platform's content languages, `en`, `sv`, `da`, `nb` and `fi`, a set a bank's admin cannot extend (`GET /reference/languages` lists it); any other key answers 422 `unknown_key` with the valid ones. Surrounding spaces are trimmed and an empty text is ignored, and at least one label must be left or the write answers 422 `validation_error`. The first labels a value gets name its original language: English when English is among them, otherwise the one given.
+             * @example {
+             *       "en": "Custody services",
+             *       "sv": "Förvaringstjänster"
+             *     }
+             */
             labels: {
                 [key: string]: string;
             };
-            /** Sortorder */
+            /**
+             * Sortorder
+             * @description Where to place the value in the list, lowest first. Left out, it goes last, one after the highest place the list holds.
+             * @example 3
+             */
             sortOrder?: number | null;
             /**
              * Usagenote
+             * @description When to use the new value, in the writer's words, shown beside the picker; surrounding spaces are trimmed. The default "" leaves it without one.
              * @default
+             * @example Safekeeping of client assets, including sub-custody arrangements.
              */
             usageNote: string;
         };
         /**
          * VocabularyListEntry
-         * @description One row of `GET /vocab`: the list of lists the admin screens and the agents read.
+         * @description One row of `GET /vocab`: one list a picker, a filter or an agent reads its values
+         *     from, with how many values it holds. The list itself is fixed by the product; its rows
+         *     are the data.
+         * @example {
+         *       "count": 4,
+         *       "kind": "pill_tone",
+         *       "kinds": [
+         *         "information",
+         *         "notice",
+         *         "positive",
+         *         "warning",
+         *         "negative",
+         *         "brand"
+         *       ],
+         *       "list": "urgency",
+         *       "proposable": true,
+         *       "retiredCount": 0,
+         *       "tier": 2
+         *     }
          */
         VocabularyListEntry: {
-            /** Count */
+            /**
+             * Count
+             * @description How many of the list's values are active now and offered by pickers, counting only the caller's bank for a bank's own list. Retired values are counted in `retiredCount` instead.
+             * @example 4
+             */
             count: number;
-            /** Kind */
+            /**
+             * Kind
+             * @description The name of the fixed kind the list's values carry, such as `change_lifecycle_kind` for `change_type` or `pill_tone` for `urgency`, and null for a list whose values carry none. It names the set that `kinds` spells out.
+             * @example pill_tone
+             */
             kind?: string | null;
-            /** Kinds */
+            /**
+             * Kinds
+             * @description Every value a row of this list may carry in its `kind`, and so the full set for this release: kinds are fixed in code and an admin never adds one. Empty for a list whose values carry no kind. Per list, `term_dimension` takes `scope`, `classification` or `opt_in`; `instrument_level` `standard` or none; `provision_kind` `division`, `unit` or `annex`; `change_type` `pre_adoption`, `adopted`, `in_force`, `supervisory` or `recurring`; `urgency` the tone its pill shows, `information`, `notice`, `positive`, `warning`, `negative` or `brand`; `jurisdiction` `supranational`, `country` or `international`; `compliance_status` `compliant`, `partly`, `gap` or `not_assessed`; `case_sub_status` the case category it sits inside, `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed` or `dismissed`; and `close_reason` `signed_off`, `not_applicable` or `no_action`. Every other list's rows carry no kind.
+             * @example [
+             *       "information",
+             *       "notice",
+             *       "positive",
+             *       "warning",
+             *       "negative",
+             *       "brand"
+             *     ]
+             */
             kinds?: string[];
-            /** List */
+            /**
+             * List
+             * @description The list's name, which every other vocabulary path takes as `{list}`. The set of lists is fixed by the product and never by an admin, who adds values to a list and never a list. The shared library's lists are `term_dimension`, `instrument_level`, `provision_kind`, `change_type`, `duty_type`, `relation_type`, `source_kind`, `urgency`, `library_tag`, `flag`, `rejection_reason` and `jurisdiction`; a bank's own lists are `tenant_tag`, `link_kind`, `effort_size`, `compliance_status`, `risk_rating`, `case_sub_status`, `dismissal_reason` and `close_reason`.
+             * @example urgency
+             */
             list: string;
-            /** Proposable */
+            /**
+             * Proposable
+             * @description False for a library list that is reference data, seeded with every deploy and never changed through the API (`instrument_level` and `jurisdiction`): a create, suggestion, change, retire, restore or merge on it answers 422 `validation_error`. True for every other list, a bank's own lists included, which change directly rather than by proposal.
+             * @example true
+             */
             proposable: boolean;
-            /** Retiredcount */
+            /**
+             * Retiredcount
+             * @description How many of the list's values were retired or merged away. They stay so the records that carry them remain readable, but no picker offers them.
+             * @example 0
+             */
             retiredCount: number;
-            /** Tier */
+            /**
+             * Tier
+             * @description Who owns the list's values, one of two numbers. `2`: a library list shared by every bank, changed only through a proposal that a second, independent person or agent approves, so every write to it answers 202 with that proposal and changes nothing yet. `3`: the bank's own list, never shared and never seen by another bank, which a person holding `vocab.manage` changes directly. The first tier, the fixed kinds, lives in code and is never a list here.
+             * @example 2
+             */
             tier: number;
         };
-        /** VocabularyListPage */
+        /**
+         * VocabularyListPage
+         * @description `GET /vocab`: every vocabulary list the caller can read, in one answer.
+         * @example {
+         *       "items": [
+         *         {
+         *           "count": 9,
+         *           "kind": "change_lifecycle_kind",
+         *           "kinds": [
+         *             "pre_adoption",
+         *             "adopted",
+         *             "in_force",
+         *             "supervisory",
+         *             "recurring"
+         *           ],
+         *           "list": "change_type",
+         *           "proposable": true,
+         *           "retiredCount": 0,
+         *           "tier": 2
+         *         },
+         *         {
+         *           "count": 3,
+         *           "kind": null,
+         *           "kinds": [],
+         *           "list": "tenant_tag",
+         *           "proposable": true,
+         *           "retiredCount": 1,
+         *           "tier": 3
+         *         }
+         *       ],
+         *       "total": 2
+         *     }
+         */
         VocabularyListPage: {
-            /** Items */
+            /**
+             * Items
+             * @description Every list the caller can read: the library's lists first, then, for a caller signed in to a bank, the bank's own lists, in an order that never changes. Not paginated, because the set is short and fixed by the product; a platform session outside any bank gets the library's lists only.
+             */
             items: components["schemas"]["VocabularyListEntry"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many lists `items` holds; the whole set always arrives on this one page.
+             */
             total: number;
         };
-        /** VocabularyMergeBody */
+        /**
+         * VocabularyMergeBody
+         * @description The body of `POST /vocab/{list}/{key}/merge`: the value to keep.
+         * @example {
+         *       "into": "custody"
+         *     }
+         */
         VocabularyMergeBody: {
-            /** Into */
+            /**
+             * Into
+             * @description The key of the value to keep, on the same list; the records that carry the value in the path move to it. Naming that same value answers 422 `validation_error`, and a key the list does not hold 404 `not_found`.
+             * @example custody
+             */
             into: string;
         };
         /** VocabularyMergeQuery */
         VocabularyMergeQuery: {
             /**
              * Dryrun
+             * @description True previews the merge and changes nothing: the answer is a 200 with how many records would move, no proposal is filed and no audit event is written, on a library list as on a bank's own. False, the default, makes the merge on a bank's own list (200) or files it as a proposal on a library list (202).
              * @default false
+             * @example true
              */
             dryRun: boolean;
         };
@@ -12493,109 +15522,286 @@ export interface components {
          * VocabularyMerged
          * @description Both the dry run and the commit answer this shape, so the screen renders one
          *     preview and one result from the same fields (playbook 15: dry run, preview, commit).
+         * @example {
+         *       "dryRun": true,
+         *       "from": "custody_services",
+         *       "into": "custody",
+         *       "repointed": 4,
+         *       "usageCount": 5
+         *     }
          */
         VocabularyMerged: {
-            /** Dryrun */
+            /**
+             * Dryrun
+             * @description True when this is a preview: nothing changed and no audit event was written. False when the merge was made.
+             * @example true
+             */
             dryRun: boolean;
-            /** From */
+            /**
+             * From
+             * @description The key of the value merged away. After the merge it is retired, kept only so history stays readable, and the records counted in `repointed` carry `into` instead.
+             * @example custody_services
+             */
             from: string;
-            /** Into */
+            /**
+             * Into
+             * @description The key of the value kept, which the records the merge moved now carry.
+             * @example custody
+             */
             into: string;
-            /** Repointed */
+            /**
+             * Repointed
+             * @description How many records move to `into` in a preview, or moved in a merge. It can be lower than `usageCount`: a record that already carried both values keeps a single link to `into`, so nothing is counted twice.
+             * @example 4
+             */
             repointed: number;
-            /** Usagecount */
+            /**
+             * Usagecount
+             * @description How many records carried the merged-away value when the call was answered.
+             * @example 5
+             */
             usageCount: number;
         };
-        /** VocabularyPatchBody */
+        /**
+         * VocabularyPatchBody
+         * @description The body of `PATCH /vocab/{list}/{key}` and `PATCH /taxonomy/terms/{termId}`: only
+         *     what changes. A field left out or null keeps its value; the key never changes.
+         * @example {
+         *       "labels": {
+         *         "en": "Custody services"
+         *       },
+         *       "usageNote": "Safekeeping of client assets."
+         *     }
+         */
         VocabularyPatchBody: {
-            /** Extra */
+            /**
+             * Extra
+             * @description The list's own columns to change, where the list has any: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale. Every other list has none. A column not named keeps its value, and null or absent changes none; a taxonomy term has no such columns and ignores it. Keyed as a row's `extra` reads them (`slaDays`) or by column name (`sla_days`); a key the list does not have is ignored, never stored. Each value is checked like the column it fills, so a wrong one answers 422 `validation_error`, and a reference to a row that does not exist answers 422 `unknown_key` with the valid keys. `tone`, `colour` and `color` are refused with 422 `validation_error`: a value's tone follows its kind and is never chosen.
+             * @example {
+             *       "slaDays": 21
+             *     }
+             */
             extra?: {
                 [key: string]: unknown;
             } | null;
-            /** Labels */
+            /**
+             * Labels
+             * @description The labels to set, per content language (`en`, `sv`, `da`, `nb` or `fi`), merged into those the value has: a language named here gets this text and counts as a person's from now on, and a language left out keeps its label. Null or absent changes no label. An unknown language answers 422 `unknown_key`, and a map whose every text is empty 422 `validation_error`. The key stays what it was, whatever the labels now say.
+             * @example {
+             *       "en": "Custody services"
+             *     }
+             */
             labels?: {
                 [key: string]: string;
             } | null;
-            /** Sortorder */
+            /**
+             * Sortorder
+             * @description The value's new place in the list, lowest first. Null or absent leaves it; `POST /vocab/{list}/reorder` moves several values at once.
+             * @example 1
+             */
             sortOrder?: number | null;
-            /** Usagenote */
+            /**
+             * Usagenote
+             * @description The new usage note, with surrounding spaces trimmed; an empty string clears it. Null or absent leaves it as it is.
+             * @example Safekeeping of client assets.
+             */
             usageNote?: string | null;
         };
         /** VocabularyQuery */
         VocabularyQuery: {
             /**
              * Includeretired
+             * @description True also returns the values that were retired or merged away, each with `active` false, which an admin screen needs to restore one. False, the default, returns only what pickers offer.
              * @default false
+             * @example true
              */
             includeRetired: boolean;
         };
-        /** VocabularyReorderBody */
+        /**
+         * VocabularyReorderBody
+         * @description The body of `POST /vocab/{list}/reorder`: the order a person dragged the values into.
+         * @example {
+         *       "keys": [
+         *         "custody",
+         *         "advice",
+         *         "pension_transfers"
+         *       ]
+         *     }
+         */
         VocabularyReorderBody: {
-            /** Keys */
+            /**
+             * Keys
+             * @description The keys of the list's values in the order the screen now shows them, first to last. Values not named keep their order after the ones named, and a key named twice counts at its first place. A key the list does not hold answers 422 `unknown_key` and nothing moves.
+             * @example [
+             *       "custody",
+             *       "advice",
+             *       "pension_transfers"
+             *     ]
+             */
             keys: string[];
         };
-        /** VocabularyRestored */
+        /**
+         * VocabularyRestored
+         * @description What `POST /vocab/{list}/{key}/restore` answers for a bank's own list.
+         * @example {
+         *       "key": "custody",
+         *       "restored": true,
+         *       "usageCount": 12
+         *     }
+         */
         VocabularyRestored: {
-            /** Key */
+            /**
+             * Key
+             * @description The key of the value just restored, the same key it had before it was retired.
+             * @example custody
+             */
             key: string;
-            /** Restored */
+            /**
+             * Restored
+             * @description Always true in this answer: the value is active again and pickers offer it.
+             * @example true
+             */
             restored: boolean;
-            /** Usagecount */
+            /**
+             * Usagecount
+             * @description How many records carry the value, which kept it all the while it was retired.
+             * @example 12
+             */
             usageCount: number;
         };
-        /** VocabularyRetireBody */
+        /**
+         * VocabularyRetireBody
+         * @description The body of `POST /vocab/{list}/{key}/retire`.
+         * @example {
+         *       "confirm": true
+         *     }
+         */
         VocabularyRetireBody: {
             /**
              * Confirm
+             * @description True retires the value even though records carry it. False, the default, retires a value nothing carries but refuses a used one with 409 `in_use` and its `usageCount`, so the person decides knowing how many records keep it. Retiring never touches those records: they keep the value and still show its label.
              * @default false
+             * @example true
              */
             confirm: boolean;
         };
-        /** VocabularyRetired */
+        /**
+         * VocabularyRetired
+         * @description What `POST /vocab/{list}/{key}/retire` answers for a bank's own list.
+         * @example {
+         *       "key": "custody",
+         *       "retired": true,
+         *       "usageCount": 12
+         *     }
+         */
         VocabularyRetired: {
-            /** Key */
+            /**
+             * Key
+             * @description The key of the value just retired; it never changes and a restore brings it back.
+             * @example custody
+             */
             key: string;
-            /** Retired */
+            /**
+             * Retired
+             * @description Always true in this answer: the value is retired and no picker offers it any more.
+             * @example true
+             */
             retired: boolean;
-            /** Usagecount */
+            /**
+             * Usagecount
+             * @description How many records carry the value. They keep it and still show its label; only the pickers stop offering it.
+             * @example 12
+             */
             usageCount: number;
         };
         /**
          * VocabularyRow
-         * @description One vocabulary row as every surface reads it (playbook 15). `extra` carries the
-         *     list's own columns (an urgency's ordinal and SLA days, a dimension's
-         *     `restrictsFootprint`) so one schema serves every list and the contract does not grow a
-         *     shape per list.
+         * @description One value of a vocabulary list as every picker, filter, pill and agent reads it: the
+         *     key to store and the labels to show. `extra` carries the list's own columns (an
+         *     urgency's ordinal and SLA days, a dimension's `restrictsFootprint`), so one shape serves
+         *     every list and the contract does not grow a shape per list.
+         * @example {
+         *       "active": true,
+         *       "extra": {
+         *         "ordinal": 1,
+         *         "slaDays": 14
+         *       },
+         *       "isDefault": false,
+         *       "isSystem": false,
+         *       "key": "act_now",
+         *       "kind": "negative",
+         *       "label": "Act now",
+         *       "labels": {
+         *         "en": "Act now",
+         *         "sv": "Agera nu"
+         *       },
+         *       "sortOrder": 0,
+         *       "usageCount": 0,
+         *       "usageNote": "Something must change within weeks.",
+         *       "version": 1
+         *     }
          */
         VocabularyRow: {
             /**
              * Active
+             * @description True, the default, while pickers offer the value. False once it was retired or merged away: the records that carry it keep it and still show its label, but no picker offers it and `GET /vocab/{list}` leaves it out unless `includeRetired` is true.
              * @default true
+             * @example true
              */
             active: boolean;
             /** @description The independent agent that confirmed the approval `verifiedOrigin` describes, by its definition key, when `verifiedOrigin` is `agent`: the latest agent approval that reworded the row. Null whenever `verifiedOrigin` is not `agent`, which is a row a person approved, a seeded row and every row of a bank's own list. It names a platform agent definition, never a person or a bank. */
             confirmedByAgent?: components["schemas"]["AgentRef"] | null;
-            /** Extra */
+            /**
+             * Extra
+             * @description The list's own columns, camelCased, which only some lists have: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale. Every other list has none. An empty object for those. Never a tone or a colour: a value's pill tone follows its kind.
+             * @example {
+             *       "ordinal": 1,
+             *       "slaDays": 14
+             *     }
+             */
             extra?: {
                 [key: string]: unknown;
             };
             /**
              * Isdefault
+             * @description True for the value the list preselects when nobody chooses one. Set by the platform's seed and not changed through this API; false, the default, for every other value.
              * @default false
+             * @example false
              */
             isDefault: boolean;
             /**
              * Issystem
+             * @description True for a value the product relies on, seeded with the platform: it can be relabelled but never retired or merged away, which answers 409 `system_row`. False, the default, for a value an admin or an approved proposal added.
              * @default false
+             * @example true
              */
             isSystem: boolean;
-            /** Key */
+            /**
+             * Key
+             * @description The value's stable key, such as `custody`, and the only part of the row to store, compare or send back: it never changes, whatever happens to the labels. The rows are a vocabulary and not a fixed set: a bank's admin extends its own lists with `vocab.manage`, and a library list is extended through a proposal a second person approves, so a key you have not seen before is new data and not an error. `GET /vocab/{list}` gives the live set.
+             * @example act_now
+             */
             key: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description The fixed kind the value belongs to, on the lists whose values carry one, and null on the others. A kind in code, never a vocabulary value: the rules branch on it and an admin never adds one, and `kinds` on the list's entry in `GET /vocab` gives the list's set. Per list, `term_dimension` takes `scope`, `classification` or `opt_in`; `instrument_level` `standard` or none; `provision_kind` `division`, `unit` or `annex`; `change_type` `pre_adoption`, `adopted`, `in_force`, `supervisory` or `recurring`; `urgency` the tone its pill shows, `information`, `notice`, `positive`, `warning`, `negative` or `brand`; `jurisdiction` `supranational`, `country` or `international`; `compliance_status` `compliant`, `partly`, `gap` or `not_assessed`; `case_sub_status` the case category it sits inside, `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed` or `dismissed`; and `close_reason` `signed_off`, `not_applicable` or `no_action`. Every other list's rows carry no kind.
+             * @example negative
+             */
             kind?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description The value's name in the reader's language: the label in the first of the caller's languages that has one (their own, then their bank's, then English), otherwise the original, otherwise the key. For display only: a person wrote it and may reword or translate it at any time, so nothing may match on it.
+             * @example Act now
+             */
             label: string;
-            /** Labels */
+            /**
+             * Labels
+             * @description Every label the value has, as a map from content language (`en`, `sv`, `da`, `nb` or `fi`) to text; a language with no label is absent. `GET /vocab/{list}/{key}` says which one is the original and which a machine translated. For display and editing, never for matching.
+             * @example {
+             *       "en": "Act now",
+             *       "sv": "Agera nu"
+             *     }
+             */
             labels?: {
                 [key: string]: string;
             };
@@ -12603,17 +15809,23 @@ export interface components {
             proposedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Sortorder
+             * @description Where the value sits in its list's pickers and filters, lowest first, with the key settling a tie; 0 by default. It orders the list and ranks nothing: an urgency's rank is `extra.ordinal`. `POST /vocab/{list}/reorder` moves values.
              * @default 0
+             * @example 0
              */
             sortOrder: number;
             /**
              * Usagecount
+             * @description How many records carry the value, counted when the call is answered, so the reach of a rename, retire or merge is known before it is made. The default of 0 is also what a list whose users are not counted yet answers: today the library's shared lists count theirs, except `rejection_reason` and `jurisdiction`, and of a bank's own lists only its tags (`tenant_tag`) do, so 0 on any other list means not counted, not unused.
              * @default 0
+             * @example 0
              */
             usageCount: number;
             /**
              * Usagenote
+             * @description When to use the value, in the words of whoever added it, shown beside the picker so two people choose alike. Guidance, not a rule the server applies; the default "" means nobody wrote one.
              * @default
+             * @example Something must change within weeks.
              */
             usageNote: string;
             /**
@@ -12625,68 +15837,139 @@ export interface components {
             verifiedOrigin: string;
             /**
              * Version
+             * @description The value's version: 1 when it was added, the default, and one higher with every change to it, a relabel, a retire, a restore or a merge. Send it back as `If-Match` on `PATCH /vocab/{list}/{key}` so a change someone made in between is refused with 409 `stale_write` rather than overwritten.
              * @default 1
+             * @example 1
              */
             version: number;
         };
         /**
          * VocabularyRowDetail
-         * @description `GET /vocab/{list}/{key}`: the row plus which label is the original and which are
+         * @description `GET /vocab/{list}/{key}`: the value plus which label is the original and which are
          *     machine-made (I18N-01, D-12): a translation no person confirmed, and every label an
          *     agent's approval wrote, the original included, until a person's approval rewrites it
          *     (INV-05, D-62).
+         * @example {
+         *       "active": true,
+         *       "extra": {},
+         *       "isDefault": false,
+         *       "isSystem": false,
+         *       "key": "custody",
+         *       "kind": null,
+         *       "label": "Custody",
+         *       "labels": {
+         *         "en": "Custody",
+         *         "sv": "Förvaring"
+         *       },
+         *       "machineLanguages": [
+         *         "sv"
+         *       ],
+         *       "originalLanguage": "en",
+         *       "sortOrder": 2,
+         *       "usageCount": 12,
+         *       "usageNote": "Safekeeping and administration of clients' financial instruments.",
+         *       "version": 3
+         *     }
          */
         VocabularyRowDetail: {
             /**
              * Active
+             * @description True, the default, while pickers offer the value. False once it was retired or merged away: the records that carry it keep it and still show its label, but no picker offers it and `GET /vocab/{list}` leaves it out unless `includeRetired` is true.
              * @default true
+             * @example true
              */
             active: boolean;
             /** @description The independent agent that confirmed the approval `verifiedOrigin` describes, by its definition key, when `verifiedOrigin` is `agent`: the latest agent approval that reworded the row. Null whenever `verifiedOrigin` is not `agent`, which is a row a person approved, a seeded row and every row of a bank's own list. It names a platform agent definition, never a person or a bank. */
             confirmedByAgent?: components["schemas"]["AgentRef"] | null;
-            /** Extra */
+            /**
+             * Extra
+             * @description The list's own columns, camelCased, which only some lists have: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale. Every other list has none. An empty object for those. Never a tone or a colour: a value's pill tone follows its kind.
+             * @example {
+             *       "ordinal": 1,
+             *       "slaDays": 14
+             *     }
+             */
             extra?: {
                 [key: string]: unknown;
             };
             /**
              * Isdefault
+             * @description True for the value the list preselects when nobody chooses one. Set by the platform's seed and not changed through this API; false, the default, for every other value.
              * @default false
+             * @example false
              */
             isDefault: boolean;
             /**
              * Issystem
+             * @description True for a value the product relies on, seeded with the platform: it can be relabelled but never retired or merged away, which answers 409 `system_row`. False, the default, for a value an admin or an approved proposal added.
              * @default false
+             * @example true
              */
             isSystem: boolean;
-            /** Key */
+            /**
+             * Key
+             * @description The value's stable key, such as `custody`, and the only part of the row to store, compare or send back: it never changes, whatever happens to the labels. The rows are a vocabulary and not a fixed set: a bank's admin extends its own lists with `vocab.manage`, and a library list is extended through a proposal a second person approves, so a key you have not seen before is new data and not an error. `GET /vocab/{list}` gives the live set.
+             * @example act_now
+             */
             key: string;
-            /** Kind */
+            /**
+             * Kind
+             * @description The fixed kind the value belongs to, on the lists whose values carry one, and null on the others. A kind in code, never a vocabulary value: the rules branch on it and an admin never adds one, and `kinds` on the list's entry in `GET /vocab` gives the list's set. Per list, `term_dimension` takes `scope`, `classification` or `opt_in`; `instrument_level` `standard` or none; `provision_kind` `division`, `unit` or `annex`; `change_type` `pre_adoption`, `adopted`, `in_force`, `supervisory` or `recurring`; `urgency` the tone its pill shows, `information`, `notice`, `positive`, `warning`, `negative` or `brand`; `jurisdiction` `supranational`, `country` or `international`; `compliance_status` `compliant`, `partly`, `gap` or `not_assessed`; `case_sub_status` the case category it sits inside, `new`, `assigned`, `assessing`, `implementing`, `signoff`, `closed` or `dismissed`; and `close_reason` `signed_off`, `not_applicable` or `no_action`. Every other list's rows carry no kind.
+             * @example negative
+             */
             kind?: string | null;
-            /** Label */
+            /**
+             * Label
+             * @description The value's name in the reader's language: the label in the first of the caller's languages that has one (their own, then their bank's, then English), otherwise the original, otherwise the key. For display only: a person wrote it and may reword or translate it at any time, so nothing may match on it.
+             * @example Act now
+             */
             label: string;
-            /** Labels */
+            /**
+             * Labels
+             * @description Every label the value has, as a map from content language (`en`, `sv`, `da`, `nb` or `fi`) to text; a language with no label is absent. `GET /vocab/{list}/{key}` says which one is the original and which a machine translated. For display and editing, never for matching.
+             * @example {
+             *       "en": "Act now",
+             *       "sv": "Agera nu"
+             *     }
+             */
             labels?: {
                 [key: string]: string;
             };
-            /** Machinelanguages */
+            /**
+             * Machinelanguages
+             * @description The content languages whose label a machine translated and no person has confirmed since, so a screen can label them as machine output. A person's edit to a label takes its language off this list. Empty when a person wrote every label.
+             * @example [
+             *       "sv"
+             *     ]
+             */
             machineLanguages?: string[];
-            /** Originallanguage */
+            /**
+             * Originallanguage
+             * @description The content language the value was first named in (`en`, `sv`, `da`, `nb` or `fi`), which every other label translates: English when English was among its first labels, otherwise the language they were written in. Null for a value whose labels name no original.
+             * @example en
+             */
             originalLanguage?: string | null;
             /** @description The agent that proposed the approval `verifiedOrigin` describes, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it; whenever a bank made the proposal, since who proposed on a bank's behalf is never shown; and on a seeded row or a bank's own list. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`. */
             proposedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Sortorder
+             * @description Where the value sits in its list's pickers and filters, lowest first, with the key settling a tie; 0 by default. It orders the list and ranks nothing: an urgency's rank is `extra.ordinal`. `POST /vocab/{list}/reorder` moves values.
              * @default 0
+             * @example 0
              */
             sortOrder: number;
             /**
              * Usagecount
+             * @description How many records carry the value, counted when the call is answered, so the reach of a rename, retire or merge is known before it is made. The default of 0 is also what a list whose users are not counted yet answers: today the library's shared lists count theirs, except `rejection_reason` and `jurisdiction`, and of a bank's own lists only its tags (`tenant_tag`) do, so 0 on any other list means not counted, not unused.
              * @default 0
+             * @example 0
              */
             usageCount: number;
             /**
              * Usagenote
+             * @description When to use the value, in the words of whoever added it, shown beside the picker so two people choose alike. Guidance, not a rule the server applies; the default "" means nobody wrote one.
              * @default
+             * @example Something must change within weeks.
              */
             usageNote: string;
             /**
@@ -12698,28 +15981,83 @@ export interface components {
             verifiedOrigin: string;
             /**
              * Version
+             * @description The value's version: 1 when it was added, the default, and one higher with every change to it, a relabel, a retire, a restore or a merge. Send it back as `If-Match` on `PATCH /vocab/{list}/{key}` so a change someone made in between is refused with 409 `stale_write` rather than overwritten.
              * @default 1
+             * @example 1
              */
             version: number;
         };
-        /** VocabularyRowPage */
+        /**
+         * VocabularyRowPage
+         * @description The values of one list, in list order, in one answer.
+         * @example {
+         *       "items": [
+         *         {
+         *           "active": true,
+         *           "extra": {},
+         *           "isDefault": false,
+         *           "isSystem": false,
+         *           "key": "custody",
+         *           "kind": null,
+         *           "label": "Custody",
+         *           "labels": {
+         *             "en": "Custody",
+         *             "sv": "Förvaring"
+         *           },
+         *           "sortOrder": 0,
+         *           "usageCount": 12,
+         *           "usageNote": "Safekeeping and administration of clients' financial instruments.",
+         *           "version": 3
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
         VocabularyRowPage: {
-            /** Items */
+            /**
+             * Items
+             * @description The list's values in list order (`sortOrder`, then key), active ones only unless `includeRetired` asked for the retired ones too. They are vocabulary rows, which a bank's admin adds to its own lists and a proposal adds to a library list, so read this endpoint for the live set rather than keeping a copy. Not paginated: a list is short enough to arrive whole, and a list with no values is a 200 with an empty list.
+             */
             items: components["schemas"]["VocabularyRow"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many values `items` holds; the whole list always arrives on this one page.
+             */
             total: number;
         };
-        /** VocabularySuggestBody */
+        /**
+         * VocabularySuggestBody
+         * @description The body of `POST /vocab/{list}/suggest`: a value a member without `vocab.manage`
+         *     wants added.
+         * @example {
+         *       "labels": {
+         *         "en": "Pension transfers"
+         *       },
+         *       "usageNote": "Moving an occupational pension from one provider to another."
+         *     }
+         */
         VocabularySuggestBody: {
-            /** Key */
+            /**
+             * Key
+             * @description The key the value would get. Optional: left out, the server makes it from the English label, or from the first label given, as lower-case words joined by underscores (`Custody services` becomes `custody_services`), and a key you give is normalised the same way; one that normalises to nothing answers 422 `validation_error`. A key the list already holds in any letter case, retired values included, answers 409 `duplicate_key` with the existing value in `candidates`. The key never changes once the value exists.
+             * @example pension_transfers
+             */
             key?: string | null;
-            /** Labels */
+            /**
+             * Labels
+             * @description The value's name per content language, as a map from language key to text, such as `{"en": "Custody", "sv": "Förvaring"}`. The keys are the platform's content languages, `en`, `sv`, `da`, `nb` and `fi`, a set a bank's admin cannot extend (`GET /reference/languages` lists it); any other key answers 422 `unknown_key` with the valid ones. Surrounding spaces are trimmed and an empty text is ignored, and at least one label must be left or the write answers 422 `validation_error`.
+             * @example {
+             *       "en": "Pension transfers"
+             *     }
+             */
             labels: {
                 [key: string]: string;
             };
             /**
              * Usagenote
+             * @description Why the value is needed, in the member's words, which the admin reads in the inbox; surrounding spaces are trimmed. The default "" sends none.
              * @default
+             * @example Moving an occupational pension from one provider to another.
              */
             usageNote: string;
         };
@@ -12760,32 +16098,76 @@ export interface components {
              */
             total: number;
         };
-        /** VocabularySuggestionRow */
+        /**
+         * VocabularySuggestionRow
+         * @description One suggestion in a bank's own inbox: a value a member asked an admin to add. The
+         *     bank's own data, never shared with another bank or with the platform.
+         * @example {
+         *       "createdAt": "2026-09-18T10:12:00Z",
+         *       "id": "6d2f9a14-8b3e-4c71-a5d0-3e9b1f7c2a58",
+         *       "key": "pension_transfers",
+         *       "labels": {
+         *         "en": "Pension transfers"
+         *       },
+         *       "list": "tenant_tag",
+         *       "status": "pending",
+         *       "suggestedBy": {
+         *         "id": "0b7e4c2d-9f61-4a38-b5e2-7c1d8a3f6e90",
+         *         "name": "Oskar Lund"
+         *       },
+         *       "usageNote": "Moving an occupational pension from one provider to another."
+         *     }
+         */
         VocabularySuggestionRow: {
             /**
              * Createdat
              * Format: date-time
+             * @description When the member sent it: a UTC timestamp, date and time together. The inbox is worked oldest first by it.
+             * @example 2026-09-18T10:12:00Z
              */
             createdAt: string;
             /**
              * Id
              * Format: uuid
+             * @description The suggestion, as `POST /vocab/{list}/suggestions/{suggestionId}/decline` addresses it: a UUID the server assigns once and never changes.
+             * @example 6d2f9a14-8b3e-4c71-a5d0-3e9b1f7c2a58
              */
             id: string;
-            /** Key */
+            /**
+             * Key
+             * @description The key the value would get. An admin who creates a value with this key on the list answers the suggestion, and every other waiting suggestion for the same key, at once.
+             * @example pension_transfers
+             */
             key: string;
-            /** Labels */
+            /**
+             * Labels
+             * @description The labels the member suggested, per content language (`en`, `sv`, `da`, `nb` or `fi`), as they typed them apart from surrounding spaces.
+             * @example {
+             *       "en": "Pension transfers"
+             *     }
+             */
             labels?: {
                 [key: string]: string;
             };
-            /** List */
+            /**
+             * List
+             * @description The name of the bank's own list the suggestion is for, such as `tenant_tag`.
+             * @example tenant_tag
+             */
             list: string;
-            /** Status */
+            /**
+             * Status
+             * @description Where the suggestion stands, a fixed kind and not a vocabulary: `pending` while it waits in the admin's inbox, `accepted` once an admin created a value with its key, and `declined` once an admin turned it down. Only a `pending` suggestion is listed in the inbox.
+             * @example pending
+             */
             status: string;
+            /** @description The member who suggested it, by id and name, the only personal data a suggestion carries. Always set on a suggestion this API returns. */
             suggestedBy?: components["schemas"]["PersonRef"] | null;
             /**
              * Usagenote
+             * @description Why the member wants the value, in their own words; the default "" means they gave no reason.
              * @default
+             * @example Moving an occupational pension from one provider to another.
              */
             usageNote: string;
         };
@@ -12796,6 +16178,7 @@ export interface components {
          *     no library row (WAT-04, ruling C).
          * @example {
          *       "decidedAt": "2026-09-17T09:12:00Z",
+         *       "decidedByName": "Sara Lind",
          *       "decision": "accepted",
          *       "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
          *     }
@@ -12808,6 +16191,12 @@ export interface components {
              * @example 2026-09-17T09:12:00Z
              */
             decidedAt: string;
+            /**
+             * Decidedbyname
+             * @description The display name of the person in this bank who decided, for the screen and the case file, read in the same query as the decision. Null only for a decision the system made, with no person behind it. A name is the only personal data this read carries about the decision (playbook 4.7).
+             * @example Sara Lind
+             */
+            decidedByName: string | null;
             /**
              * Decision
              * @description What this bank said, a fixed kind: `accepted` (the link is real for us and the case works it) or `removed` (not related to us). `removed` hides the link on this bank's case and leaves the shared library exactly as it was.
@@ -13090,6 +16479,7 @@ export interface components {
          *       "ownerId": null,
          *       "soWhatConfirmed": false,
          *       "soWhatConfirmedAt": null,
+         *       "soWhatConfirmedByName": null,
          *       "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
          *       "urgency": {
          *         "key": "act_now",
@@ -13150,6 +16540,12 @@ export interface components {
              */
             soWhatConfirmedAt: string | null;
             /**
+             * Sowhatconfirmedbyname
+             * @description The display name of the person in this bank who confirmed or rewrote the wording, for the screen's 'Confirmed by' line, read in the same query as the case. Null while it is still an AI draft, exactly when `soWhatConfirmed` is false. A name is the only personal data this read carries about the confirmation (playbook 4.7).
+             * @example null
+             */
+            soWhatConfirmedByName: string | null;
+            /**
              * Sowhattext
              * @description This bank's copy of the 'So what?', at most 4000 characters. It starts as the library's draft and is this bank's to rewrite. Null when no draft exists yet.
              * @example Teams that pay for external research should confirm that documented criteria exist.
@@ -13193,6 +16589,7 @@ export interface components {
          *         "ownerId": null,
          *         "soWhatConfirmed": false,
          *         "soWhatConfirmedAt": null,
+         *         "soWhatConfirmedByName": null,
          *         "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
          *         "urgency": {
          *           "key": "act_now",
@@ -13804,6 +17201,9 @@ export interface components {
          *       "stableKey": "chg-fi-2026-research-payments",
          *       "suggestedUrgency": "act_now",
          *       "summary": "FI's board decided on 15 September 2026 to amend three regulations in the securities area following changed EU rules.",
+         *       "termIds": [
+         *         "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
+         *       ],
          *       "title": "FI adopts amended rules on paying for investment research"
          *     }
          */
@@ -13938,7 +17338,7 @@ export interface components {
             summary: string;
             /**
              * Termids
-             * @description Taxonomy terms that scope the change — its regime, product or service — each a UUID, at most 100 of them. Terms are library rows an admin may extend; the ids come from `GET /taxonomy/terms`, which an agent reads at run start. Every change needs at least one regime term or the call answers 422 `regime_required`, and a standard's term is accepted only when the authority's jurisdiction is international, else 422 `standard_term_only_on_standards` (AC-AGT1). A term that list marks `mirrored` answers 422 `jurisdiction_term_mirrored`: a change's market comes from `authorityCode`, never from a term.
+             * @description Taxonomy terms that scope the change — its regime, product or service — each a UUID, at most 100 of them. Terms are library rows an admin may extend; the ids come from `GET /taxonomy/terms`, which an agent reads at run start. A new change needs at least one term of the `regime` dimension or the call answers 422 `regime_required` with the regime keys in `validKeys`; a merge adds no terms and needs none. A standard's term is accepted only when the authority's jurisdiction is international, else 422 `standard_term_only_on_standards` (AC-AGT1). A term that list marks `mirrored` answers 422 `jurisdiction_term_mirrored`: a change's market comes from `authorityCode`, never from a term.
              * @example [
              *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
              *     ]
@@ -13968,6 +17368,7 @@ export interface components {
          *             "ownerId": null,
          *             "soWhatConfirmed": false,
          *             "soWhatConfirmedAt": null,
+         *             "soWhatConfirmedByName": null,
          *             "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
          *             "urgency": {
          *               "key": "act_now",
@@ -14131,7 +17532,7 @@ export interface components {
             supersededBy?: string | null;
             /**
              * Termids
-             * @description The whole set of taxonomy term ids for this change, each a UUID and at most 100 of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new set, and a term `GET /taxonomy/terms` marks `mirrored` answers 422 `jurisdiction_term_mirrored`.
+             * @description The whole set of taxonomy term ids for this change, each a UUID and at most 100 of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new set: one that names no term of the `regime` dimension answers 422 `regime_required` with the regime keys in `validKeys`. A standard's term is accepted only when the change's authority is a standards body, whose jurisdiction is international, else 422 `standard_term_only_on_standards`. A term `GET /taxonomy/terms` marks `mirrored` answers 422 `jurisdiction_term_mirrored`.
              * @example [
              *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
              *     ]
@@ -14171,7 +17572,7 @@ export interface components {
             changeType?: string | null;
             /**
              * Footprint
-             * @description Which changes to show against the bank's footprint, a fixed kind and a single value (INPUT_DELTAS §7 replaces the designed `inFootprint` pair): `in` (the default — only what matches the footprint), `all` (everything the library holds) or `watched` (everything from a market this bank watches, whether or not the rest of the scope matches, FP-04). Sending the designed `inFootprint` answers 422.
+             * @description Which changes to show against the bank's footprint, a fixed kind and a single value (INPUT_DELTAS §7 replaces the designed `inFootprint` pair): `in` (the default — only what matches the footprint), `all` (everything the library holds) or `watched` (only what watching adds: the changes outside the footprint that match it on every dimension but jurisdiction and whose authority reaches a market this bank watches, each with its `market`, FP-04). A change takes its jurisdiction from its authority; one with no authority is never restricted by jurisdiction. Sending the designed `inFootprint` answers 422.
              * @default in
              * @example in
              * @enum {string}
@@ -14268,6 +17669,7 @@ export interface components {
          *         "ownerId": null,
          *         "soWhatConfirmed": false,
          *         "soWhatConfirmedAt": null,
+         *         "soWhatConfirmedByName": null,
          *         "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
          *         "urgency": {
          *           "key": "act_now",
@@ -14406,6 +17808,15 @@ export interface components {
              * @example day
              */
             keyDatePrecision: ("day" | "month" | "quarter" | "year") | null;
+            /**
+             * @description The market this bank watches that the change comes from, as `{key, kind, label}` of its term in the `jurisdiction` dimension of the taxonomy vocabulary (`kind` is always null; `GET /taxonomy/terms` lists the terms, each mirroring a row of the jurisdiction list a platform admin may extend, so match on the key), or null. Set only where watching is what adds the row: the change is outside the footprint, matches it on every dimension but jurisdiction, and its authority's jurisdiction reaches a market the bank watches. A change takes its jurisdiction from its authority, and one with no authority never has a market. Shown as text, never as a pill, and it sets no urgency and opens no triage (FP-04).
+             * @example {
+             *       "key": "dk",
+             *       "kind": null,
+             *       "label": "Denmark"
+             *     }
+             */
+            market: components["schemas"]["LibraryRef"] | null;
             /**
              * Publishedon
              * @description When the source published it, as a plain calendar date (`2026-09-15`) and never a timestamp, with `publishedPrecision` beside it. Null when the source states none.
@@ -14874,6 +18285,7 @@ export interface components {
          *             "ownerId": null,
          *             "soWhatConfirmed": false,
          *             "soWhatConfirmedAt": null,
+         *             "soWhatConfirmedByName": null,
          *             "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
          *             "urgency": {
          *               "key": "act_now",
@@ -15967,10 +19379,15 @@ export interface operations {
                  */
                 purpose?: string | null;
                 /**
-                 * @description Show only rows in one review state, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. At most 16 characters. A value that is not one of them matches nothing and answers 200 with an empty page.
+                 * @description Show only rows in one review state, a fixed kind: `draft` (nobody has stood behind it yet, which is how every row starts and how a screen knows to label the words as AI output), `confirmed` (a person accepted them as they stand), `edited` (a person rewrote them) and `rejected` (a person threw them away). Fixed in code: an admin adds no fifth state, because each is something the product does differently. At most 16 characters. It reads the state as this bank sees it (see `status` on a row), so `confirmed` lists a shared “So what?” this bank stood behind and not one only another bank did. A value that is not one of them matches nothing and answers 200 with an empty page.
                  * @example draft
                  */
                 status?: string | null;
+                /**
+                 * @description Show only the calls about one record, by the UUID a row carries in `subjectId`: for a “So what?” the regulatory change's id, so a change's screen can list every draft of what it means. A value that is not a UUID is refused with `validation_error` (422); an id no row names answers 200 with an empty page.
+                 * @example c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19
+                 */
+                subjectId?: string | null;
                 /**
                  * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
                  * @example 20
@@ -16004,6 +19421,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The answer to rate, as a UUID: the `id` of the `start` event that `POST /ask` streamed first, which is also the answer's row in the AI log. It must be an answer of the caller's own bank. Another bank's answer, an id that is no answer and a value that is not a UUID all answer `not_found`, never saying which. */
                 answer_id: string;
             };
             cookie?: never;
@@ -16652,7 +20070,7 @@ export interface operations {
                  */
                 inFootprint?: null;
                 /**
-                 * @description Which changes to show against the bank's footprint, a fixed kind and a single value (INPUT_DELTAS §7 replaces the designed `inFootprint` pair): `in` (the default — only what matches the footprint), `all` (everything the library holds) or `watched` (everything from a market this bank watches, whether or not the rest of the scope matches, FP-04). Sending the designed `inFootprint` answers 422.
+                 * @description Which changes to show against the bank's footprint, a fixed kind and a single value (INPUT_DELTAS §7 replaces the designed `inFootprint` pair): `in` (the default — only what matches the footprint), `all` (everything the library holds) or `watched` (only what watching adds: the changes outside the footprint that match it on every dimension but jurisdiction and whose authority reaches a market this bank watches, each with its `market`, FP-04). A change takes its jurisdiction from its authority; one with no authority is never restricted by jurisdiction. Sending the designed `inFootprint` answers 422.
                  * @example in
                  */
                 footprint?: "in" | "all" | "watched";
@@ -17213,12 +20631,118 @@ export interface operations {
                      *       },
                      *       {
                      *         "body": "Your code is 123456. It works once and expires in 10 minutes.",
-                     *         "subject": "Your Compliance Watch sign-in code",
+                     *         "subject": "Your Compliance Watch enrolment code",
                      *         "to": "new.member@example-bank.test"
                      *       }
                      *     ]
                      */
                     "application/json": components["schemas"]["MailOutboxMessage"][];
+                };
+            };
+        };
+    };
+    getEvalBaseline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalBaselineOut"];
+                };
+            };
+        };
+    };
+    listEvalQuestions: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalQuestionPage"];
+                };
+            };
+        };
+    };
+    createEvalQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvalQuestionInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalQuestionOut"];
+                };
+            };
+        };
+    };
+    listEvalRuns: {
+        parameters: {
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvalRunPage"];
                 };
             };
         };
@@ -17257,10 +20781,16 @@ export interface operations {
                  */
                 q?: string | null;
                 /**
-                 * @description Whether to include the instruments the bank's footprint would otherwise hide. False by default, which is the working inventory: only the instruments whose own scope overlaps the footprint. It also lifts the footprint filter `obligationCount` counts obligations against.
-                 * @example false
+                 * @description Which records to show against the bank's footprint, a fixed kind and a single value, so no contradictory pair can be sent: `in` (the default, the working inventory: only what matches the footprint), `all` (everything the library holds, each record the footprint would hide saying why in `outsideReason`) or `watched` (only what the markets the bank watches add: a record the footprint hides, that matches every dimension but jurisdiction, and whose instrument's rules reach a watched market, FP-04). A Union rule never appears under `watched` once the bank operates anywhere it reaches. A record shown under `all` or `watched` is not one the bank has decided applies to it. An instrument is judged by its own scope, and `obligationCount` counts under the same value.
+                 * @example in
                  */
-                outsideFootprint?: boolean;
+                footprint?: "in" | "all" | "watched";
+                /**
+                 * @deprecated
+                 * @description Not accepted: send `footprint` instead. This boolean was replaced by the single `footprint` value, which adds the watched markets. Any value answers 422 `validation_error`, because ignoring it would hand a client that asked for everything the working inventory without a word. Declared only so that refusal happens, and named in the published contract so a client sees what to send.
+                 * @example null
+                 */
+                outsideFootprint?: null;
                 /**
                  * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
                  * @example 20
@@ -17742,10 +21272,16 @@ export interface operations {
                  */
                 asOf?: string | null;
                 /**
-                 * @description Whether to include the duties the bank's footprint would otherwise hide, each saying in `outsideReason` why it would be hidden. It is false by default, which is the working inventory: only the duties whose scope overlaps the footprint. Set it to true to review the boundary itself — a duty that appears only this way is not one the bank has decided applies to it.
-                 * @example false
+                 * @description Which records to show against the bank's footprint, a fixed kind and a single value, so no contradictory pair can be sent: `in` (the default, the working inventory: only what matches the footprint), `all` (everything the library holds, each record the footprint would hide saying why in `outsideReason`) or `watched` (only what the markets the bank watches add: a record the footprint hides, that matches every dimension but jurisdiction, and whose instrument's rules reach a watched market, FP-04). A Union rule never appears under `watched` once the bank operates anywhere it reaches. A record shown under `all` or `watched` is not one the bank has decided applies to it.
+                 * @example in
                  */
-                outsideFootprint?: boolean;
+                footprint?: "in" | "all" | "watched";
+                /**
+                 * @deprecated
+                 * @description Not accepted: send `footprint` instead. This boolean was replaced by the single `footprint` value, which adds the watched markets. Any value answers 422 `validation_error`, because ignoring it would hand a client that asked for everything the working inventory without a word. Declared only so that refusal happens, and named in the published contract so a client sees what to send.
+                 * @example null
+                 */
+                outsideFootprint?: null;
                 /**
                  * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
                  * @example 20
@@ -17953,6 +21489,79 @@ export interface operations {
             };
         };
     };
+    listProblemReports: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Show only reports in one state, a fixed kind: `open` (filed and not yet looked at, which is how every report starts), `answered` (a colleague explained what the reader saw, and the record needs no correction), `fixed` (the record was wrong and has been or is being corrected; the correction itself reaches the library through the watch agents' re-check and a proposal, never through the report) and `rejected` (the record is right as it stands). Fixed in code: an admin adds no fifth state. At most 16 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+                 * @example open
+                 */
+                status?: string | null;
+                /**
+                 * @description Show only reports on one kind of library record, a fixed kind: `obligation` (a duty), `instrument` (a law, regulation or guideline; a provision is reported through the instrument whose card shows it) and `provision` (reserved for a provision reported on its own, which no route files today). Pair it with `subjectId` to list the reports on one record, which is what the record's own screen does. At most 32 characters; a value that is not one of them matches nothing and answers 200 with an empty page.
+                 * @example obligation
+                 */
+                subjectType?: string | null;
+                /**
+                 * @description Show only reports on one library record, by its UUID as the library routes return it (an obligation's or an instrument's `id`). A value that is not a UUID is refused with `validation_error` (422); an id no report names answers 200 with an empty page.
+                 * @example 3f1d6a52-8c47-4b0e-9e21-6a4f0c8d2b17
+                 */
+                subjectId?: string | null;
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemReportPage"];
+                };
+            };
+        };
+    };
+    closeProblemReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The id of the report to close, a UUID as `GET /problem-reports` lists it; a value that is not a UUID is refused with `validation_error` (422). */
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProblemReportClose"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemReportRow"];
+                };
+            };
+        };
+    };
     listProposals: {
         parameters: {
             query?: {
@@ -17981,6 +21590,11 @@ export interface operations {
                  * @example true
                  */
                 notMine?: boolean;
+                /**
+                 * @description Which end of the queue comes first, by when each proposal was filed, with the id breaking a tie so paging is repeatable. The values are `oldest` (the default: the order proposals arrived in, which is how the Waiting tab is worked) and `newest` (the latest filed first, which is how the Approved and Rejected tabs read). Those are the only two values; anything else is refused with 422 `unknown_key`. Left out, the queue reads oldest first.
+                 * @example newest
+                 */
+                order?: string | null;
                 /**
                  * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
                  * @example 20
@@ -18201,6 +21815,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "defaultLanguage": {
+                     *           "key": "en",
+                     *           "kind": null,
+                     *           "label": "English"
+                     *         },
+                     *         "key": "eu",
+                     *         "kind": "supranational",
+                     *         "label": "European Union",
+                     *         "parentKey": null
+                     *       },
+                     *       {
+                     *         "defaultLanguage": {
+                     *           "key": "sv",
+                     *           "kind": null,
+                     *           "label": "Svenska"
+                     *         },
+                     *         "key": "se",
+                     *         "kind": "country",
+                     *         "label": "Sweden",
+                     *         "parentKey": "eu"
+                     *       },
+                     *       {
+                     *         "defaultLanguage": {
+                     *           "key": "nb",
+                     *           "kind": null,
+                     *           "label": "Norsk bokmål"
+                     *         },
+                     *         "key": "no",
+                     *         "kind": "country",
+                     *         "label": "Norway",
+                     *         "parentKey": "eu"
+                     *       }
+                     *     ]
+                     */
                     "application/json": components["schemas"]["JurisdictionRow"][];
                 };
             };
@@ -18270,6 +21921,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "description": "Sign off a case worked by someone else.",
+                     *         "group": "cases",
+                     *         "key": "cases.signoff"
+                     *       },
+                     *       {
+                     *         "description": "Invite, change and deactivate members; re-issue enrolment; revoke sessions.",
+                     *         "group": "members",
+                     *         "key": "members.manage"
+                     *       }
+                     *     ]
+                     */
                     "application/json": components["schemas"]["PermissionOut"][];
                 };
             };
@@ -18533,7 +22198,9 @@ export interface operations {
     listTerms: {
         parameters: {
             query?: {
+                /** @description Only the terms of this dimension, by its key, such as `service_type`; left out by default, every dimension's terms. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists them. An unknown or retired dimension answers 422 `unknown_key` with the valid keys. */
                 dimension?: string | null;
+                /** @description True also returns retired terms, marked `active: false`, for an editor or for reading an old record. False, the default, returns only the terms a scope or a record can use today. */
                 includeRetired?: boolean;
             };
             header?: never;
@@ -18582,12 +22249,22 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The `id` of the term to change, a UUID as `GET /taxonomy/terms` returns it. An id no term has, or anything that is not a UUID, answers 404 `not_found`. */
                 term_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "labels": {
+                 *         "en": "Investment advice",
+                 *         "sv": "Investeringsrådgivning"
+                 *       },
+                 *       "usageNote": "Personal recommendations on financial instruments."
+                 *     }
+                 */
                 "application/json": components["schemas"]["VocabularyPatchBody"];
             };
         };
@@ -18633,6 +22310,30 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["TenantPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantOut"];
+                };
+            };
+        };
+    };
+    setTenantAi: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantAiBody"];
             };
         };
         responses: {
@@ -18707,6 +22408,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The identifier of one of this bank's own API keys, the UUID `GET /tenant/api-keys` lists as `id`, never the key itself. A platform key, another bank's key or an unknown identifier answers `not_found`. */
                 key_id: string;
             };
             cookie?: never;
@@ -18814,6 +22516,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The `id` of the regulatory scope change request, a UUID as `GET /tenant/footprint/requests` returns it. One of another organisation, one that does not exist, or anything that is not a UUID answers 404 `not_found`. */
                 request_id: string;
             };
             cookie?: never;
@@ -18840,6 +22543,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The `id` of the regulatory scope change request, a UUID as `GET /tenant/footprint/requests` returns it. One of another organisation, one that does not exist, or anything that is not a UUID answers 404 `not_found`. */
                 request_id: string;
             };
             cookie?: never;
@@ -18866,6 +22570,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The `id` of the regulatory scope change request, a UUID as `GET /tenant/footprint/requests` returns it. One of another organisation, one that does not exist, or anything that is not a UUID answers 404 `not_found`. */
                 request_id: string;
             };
             cookie?: never;
@@ -18914,8 +22619,7 @@ export interface operations {
                      *         "kind": "country",
                      *         "label": "Norway"
                      *       },
-                     *       "operating": false,
-                     *       "watching": true
+                     *       "level": "watching"
                      *     }
                      */
                     "application/json": components["schemas"]["MarketRow"];
@@ -18954,8 +22658,7 @@ export interface operations {
                      *         "kind": "country",
                      *         "label": "Norway"
                      *       },
-                     *       "operating": false,
-                     *       "watching": true
+                     *       "level": "watching"
                      *     }
                      */
                     "application/json": components["schemas"]["MarketRow"];
@@ -18999,6 +22702,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The identifier of one of this bank's invitations, the UUID `GET /tenant/invitations` lists as `id`, never the token in the emailed link. Another bank's invitation or an unknown identifier answers `not_found`. */
                 invitation_id: string;
             };
             cookie?: never;
@@ -19019,6 +22723,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The identifier of one of this bank's invitations, the UUID `GET /tenant/invitations` lists as `id`, never the token in the emailed link. Another bank's invitation or an unknown identifier answers `not_found`. */
                 invitation_id: string;
             };
             cookie?: never;
@@ -19096,6 +22801,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The account identifier of a current member of the bank this session is signed in to, the UUID `GET /tenant/members` lists as `userId`. A deactivated member, a member of another bank or an unknown identifier all answer `not_found` alike. */
                 user_id: string;
             };
             cookie?: never;
@@ -19116,6 +22822,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The account identifier of a current member of the bank this session is signed in to, the UUID `GET /tenant/members` lists as `userId`. A deactivated member, a member of another bank or an unknown identifier all answer `not_found` alike. */
                 user_id: string;
             };
             cookie?: never;
@@ -19142,6 +22849,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The account identifier of a current member of the bank this session is signed in to, the UUID `GET /tenant/members` lists as `userId`. A deactivated member, a member of another bank or an unknown identifier all answer `not_found` alike. */
                 user_id: string;
             };
             cookie?: never;
@@ -19154,6 +22862,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /** @example {} */
                     "application/json": components["schemas"]["Empty"];
                 };
             };
@@ -19164,6 +22873,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The account identifier of a current member of the bank this session is signed in to, the UUID `GET /tenant/members` lists as `userId`. A deactivated member, a member of another bank or an unknown identifier all answer `not_found` alike. */
                 user_id: string;
             };
             cookie?: never;
@@ -19176,6 +22886,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "createdAt": "2026-09-22T06:58:04Z",
+                     *         "current": false,
+                     *         "id": "5c0d2a1e-7b3f-4c8e-9a6d-1b2c3e4f5a6b",
+                     *         "ip": "192.0.2.41",
+                     *         "lastSeenAt": "2026-09-22T09:41:17Z",
+                     *         "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+                     *       }
+                     *     ]
+                     */
                     "application/json": components["schemas"]["SessionOut"][];
                 };
             };
@@ -19186,6 +22908,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The account identifier of a current member of the bank this session is signed in to, the UUID `GET /tenant/members` lists as `userId`. A deactivated member, a member of another bank or an unknown identifier all answer `not_found` alike. */
                 user_id: string;
             };
             cookie?: never;
@@ -19262,6 +22985,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "active": true,
+                     *         "isSystem": true,
+                     *         "key": "reader",
+                     *         "kind": null,
+                     *         "label": "Reader",
+                     *         "labels": {
+                     *           "en": "Reader",
+                     *           "sv": "Läsare"
+                     *         },
+                     *         "permissions": [
+                     *           "audit.read",
+                     *           "cases.read",
+                     *           "comments.write",
+                     *           "library.read",
+                     *           "problems.report",
+                     *           "register.read",
+                     *           "reports.read",
+                     *           "roadmap.read",
+                     *           "search.use",
+                     *           "watch.read"
+                     *         ],
+                     *         "usageNote": "Reads everything, changes nothing."
+                     *       },
+                     *       {
+                     *         "active": true,
+                     *         "isSystem": false,
+                     *         "key": "dora_reviewer",
+                     *         "kind": null,
+                     *         "label": "DORA reviewer",
+                     *         "labels": {
+                     *           "en": "DORA reviewer",
+                     *           "sv": "DORA-granskare"
+                     *         },
+                     *         "permissions": [
+                     *           "cases.contribute",
+                     *           "cases.read",
+                     *           "library.read",
+                     *           "register.read"
+                     *         ],
+                     *         "usageNote": "Reads the register and works the ICT-risk cases it is asked to help with."
+                     *       }
+                     *     ]
+                     */
                     "application/json": components["schemas"]["RoleOut"][];
                 };
             };
@@ -19296,6 +23065,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The stable key of one of this bank's roles, such as `dora_reviewer`, as `GET /tenant/roles` lists it; matched without regard to case or surrounding spaces. A retired role is still found here. A key the bank does not have answers `not_found`. */
                 key: string;
             };
             cookie?: never;
@@ -19322,6 +23092,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The stable key of one of this bank's roles, such as `dora_reviewer`, as `GET /tenant/roles` lists it; matched without regard to case or surrounding spaces. A retired role is still found here. A key the bank does not have answers `not_found`. */
                 key: string;
             };
             cookie?: never;
@@ -19447,10 +23218,15 @@ export interface operations {
     listVocabularyRows: {
         parameters: {
             query?: {
+                /**
+                 * @description True also returns the values that were retired or merged away, each with `active` false, which an admin screen needs to restore one. False, the default, returns only what pickers offer.
+                 * @example true
+                 */
                 includeRetired?: boolean;
             };
             header?: never;
             path: {
+                /** @description The list to work on, by name, such as `tenant_tag` for the organisation's own tags or `change_type` for the library's change types: one of the names `GET /vocab` returns in `list`. The set of lists is fixed by the product, not by an admin, who adds values to a list and never a list; a name that is not a vocabulary list answers 404 `not_found` with the valid names in `detail`. */
                 list_name: string;
             };
             cookie?: never;
@@ -19473,6 +23249,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The list to work on, by name, such as `tenant_tag` for the organisation's own tags or `change_type` for the library's change types: one of the names `GET /vocab` returns in `list`. The set of lists is fixed by the product, not by an admin, who adds values to a list and never a list; a name that is not a vocabulary list answers 404 `not_found` with the valid names in `detail`. */
                 list_name: string;
             };
             cookie?: never;
@@ -19508,6 +23285,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The list to work on, by name, such as `tenant_tag` for the organisation's own tags or `change_type` for the library's change types: one of the names `GET /vocab` returns in `list`. The set of lists is fixed by the product, not by an admin, who adds values to a list and never a list; a name that is not a vocabulary list answers 404 `not_found` with the valid names in `detail`. */
                 list_name: string;
             };
             cookie?: never;
@@ -19534,6 +23312,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The list to work on, by name, such as `tenant_tag` for the organisation's own tags or `change_type` for the library's change types: one of the names `GET /vocab` returns in `list`. The set of lists is fixed by the product, not by an admin, who adds values to a list and never a list; a name that is not a vocabulary list answers 404 `not_found` with the valid names in `detail`. */
                 list_name: string;
             };
             cookie?: never;
@@ -19603,7 +23382,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The list to work on, by name, such as `tenant_tag` for the organisation's own tags or `change_type` for the library's change types: one of the names `GET /vocab` returns in `list`. The set of lists is fixed by the product, not by an admin, who adds values to a list and never a list; a name that is not a vocabulary list answers 404 `not_found` with the valid names in `detail`. */
                 list_name: string;
+                /** @description The suggestion to decline, as the `id` of a row of `GET /vocab/{list}/suggestions`: a UUID. One that is not a UUID, is not on this list or is not in the caller's organisation answers 404 `not_found`. */
                 suggestion_id: string;
             };
             cookie?: never;
@@ -19626,7 +23407,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The list to work on, by name, such as `tenant_tag` for the organisation's own tags or `change_type` for the library's change types: one of the names `GET /vocab` returns in `list`. The set of lists is fixed by the product, not by an admin, who adds values to a list and never a list; a name that is not a vocabulary list answers 404 `not_found` with the valid names in `detail`. */
                 list_name: string;
+                /** @description The key of the value, as the list gives it in `key`, such as `custody`; a retired value is found by its key too. A key the list does not hold answers 404 `not_found`. */
                 key: string;
             };
             cookie?: never;
@@ -19649,7 +23432,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The list to work on, by name, such as `tenant_tag` for the organisation's own tags or `change_type` for the library's change types: one of the names `GET /vocab` returns in `list`. The set of lists is fixed by the product, not by an admin, who adds values to a list and never a list; a name that is not a vocabulary list answers 404 `not_found` with the valid names in `detail`. */
                 list_name: string;
+                /** @description The key of the value, as the list gives it in `key`, such as `custody`; a retired value is found by its key too. A key the list does not hold answers 404 `not_found`. */
                 key: string;
             };
             cookie?: never;
@@ -19683,11 +23468,17 @@ export interface operations {
     mergeVocabularyRow: {
         parameters: {
             query?: {
+                /**
+                 * @description True previews the merge and changes nothing: the answer is a 200 with how many records would move, no proposal is filed and no audit event is written, on a library list as on a bank's own. False, the default, makes the merge on a bank's own list (200) or files it as a proposal on a library list (202).
+                 * @example true
+                 */
                 dryRun?: boolean;
             };
             header?: never;
             path: {
+                /** @description The list to work on, by name, such as `tenant_tag` for the organisation's own tags or `change_type` for the library's change types: one of the names `GET /vocab` returns in `list`. The set of lists is fixed by the product, not by an admin, who adds values to a list and never a list; a name that is not a vocabulary list answers 404 `not_found` with the valid names in `detail`. */
                 list_name: string;
+                /** @description The key of the value, as the list gives it in `key`, such as `custody`; a retired value is found by its key too. A key the list does not hold answers 404 `not_found`. */
                 key: string;
             };
             cookie?: never;
@@ -19723,7 +23514,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The list to work on, by name, such as `tenant_tag` for the organisation's own tags or `change_type` for the library's change types: one of the names `GET /vocab` returns in `list`. The set of lists is fixed by the product, not by an admin, who adds values to a list and never a list; a name that is not a vocabulary list answers 404 `not_found` with the valid names in `detail`. */
                 list_name: string;
+                /** @description The key of the value, as the list gives it in `key`, such as `custody`; a retired value is found by its key too. A key the list does not hold answers 404 `not_found`. */
                 key: string;
             };
             cookie?: never;
@@ -19755,7 +23548,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The list to work on, by name, such as `tenant_tag` for the organisation's own tags or `change_type` for the library's change types: one of the names `GET /vocab` returns in `list`. The set of lists is fixed by the product, not by an admin, who adds values to a list and never a list; a name that is not a vocabulary list answers 404 `not_found` with the valid names in `detail`. */
                 list_name: string;
+                /** @description The key of the value, as the list gives it in `key`, such as `custody`; a retired value is found by its key too. A key the list does not hold answers 404 `not_found`. */
                 key: string;
             };
             cookie?: never;
