@@ -12,7 +12,7 @@ suggestVocabularyRow, declineVocabularySuggestion, createTerm, updateTerm,
 createFootprintRequest, approveFootprintRequest, rejectFootprintRequest,
 withdrawFootprintRequest.
 
-Prefixes hosted: FP, I18N, VOC.
+Prefixes hosted: ACC, FP, I18N, VOC.
 """
 
 from __future__ import annotations
@@ -1526,3 +1526,10 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             matching.in_footprint(as_dict(iso), {})  # type: ignore[call-arg]
         with self.assertRaises(TypeError):
             matching.in_footprint(as_dict(iso), {}, restricting={"service_type", "standard"})
+
+    @skip("pending: ACC-S2 (ACC-02, AC-ACC1, chunk 11)")
+    def test_acc_s2(self) -> None:
+        """ACC-S2
+
+        An entry's scope narrows the footprint and can never widen it (ACC-02, AC-ACC1).
+        """

@@ -449,4 +449,8 @@ test.describe('identity journeys', () => {
     await expect(alert).toBeVisible();
     await expect(alert).toContainText('Needs security manage');
   });
+
+  test.fixme("ACC-S3: A service key acts as the entry and a personal token acts as the person", async () => {
+    // pending: ACC-S3 (ACC-03, chunk 11)
+  });
 });

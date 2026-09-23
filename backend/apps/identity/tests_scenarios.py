@@ -14,7 +14,7 @@ revokeApiKey, markVisit.
 The ceremonies run for real against py_webauthn through the software authenticator in
 tests_webauthn_support.py; the emailed link and code are read from the mock mailer.
 
-Prefixes hosted: ID.
+Prefixes hosted: ACC, ID.
 """
 
 from __future__ import annotations
@@ -1136,3 +1136,17 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(refused.json()["code"], "not_found")
         self.activate(self.tenant)
         self.assertEqual(AuditEvent.objects.filter(action="member.visited").count(), 1)
+
+    @skip("pending: ACC-S3 (ACC-03, chunk 11)")
+    def test_acc_s3(self) -> None:
+        """ACC-S3
+
+        A service key acts as the entry and a personal token acts as the person (ACC-03).
+        """
+
+    @skip("pending: ACC-S9 (ACC-03, AC-ACC3, chunk 11)")
+    def test_acc_s9(self) -> None:
+        """ACC-S9
+
+        A personal token can never step up and dies with the person (ACC-03, AC-ACC3).
+        """

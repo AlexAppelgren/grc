@@ -16,7 +16,7 @@ console routes other apps register — the source registry, the platform agent k
 agent definitions they bind to — by their gate alone; what each one then does is its own
 app's scenario.
 
-Prefixes hosted: ADM, AUD.
+Prefixes hosted: ACC, ADM, AUD.
 """
 
 from __future__ import annotations
@@ -519,3 +519,17 @@ class GovernanceScenarioTests(ScenarioTestCase):
         with self.assertRaisesMessage(AppendOnlyRefused, "is append-only"):
             event.summary = "edited"
             event.save(update_fields=["summary"])
+
+    @skip("pending: ACC-S11 (ACC-08, AC-ACC2, chunk 11)")
+    def test_acc_s11(self) -> None:
+        """ACC-S11
+
+        Tenant reach needs two people, and off means off (ACC-08, AC-ACC2).
+        """
+
+    @skip("pending: ACC-S12 (ACC-08, chunk 11)")
+    def test_acc_s12(self) -> None:
+        """ACC-S12
+
+        The access log records the call and holds no content (ACC-08).
+        """

@@ -49,6 +49,19 @@ tenant exit (D-56).
 
 Deliberately simplified for R1: retention with a purge is R3.
 
+PRD 0.5 (D-72, ADR 0057) adds the switch that lets a bank's own register leave its
+zone at all. Tenant reach is off until two different people holding
+`security.manage` request and approve it, each with a passkey, never both by the
+same person: it is an egress decision about the bank's confidential judgement, so
+it carries the four eyes exports and tenant exit already carry. Turning it off
+stops every agent access entry at once, which is the single lever a security
+function reaches for at three in the morning. Under it a tenant admin enables
+reach per entry, and with the tenant switch off every entry is library-only
+whatever its own setting says. Every agent access call is logged here with the
+credential, the entry, the person where the credential is personal, the tool, the
+filters, the record count, the scope applied and the timing, and never the
+content or the question.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -60,6 +73,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it; the loop to the library is closed by the watch agents' re-check, which proposes the correction (D-50) | S | R1 | pending |
 | AUD-04 | Retention: a record is deleted ten years after its last use. The purge never updates an append-only row, deletes one only past that age, and runs through one database-guarded path (D-53) | S | R3 | pending |
 | ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only). No problem-report surface (D-50, D-59) | M | R1 to R3 | in_progress |
+| ACC-08 | Tenant reach is requested and approved by two different people holding `security.manage`, each with a passkey; a tenant admin then enables it per entry. Off means off for every entry. Every call is logged with its credential, entry, tool, filters, record count, scope and timing, never content | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -281,4 +295,26 @@ And the event carries no step-up assertion, because a key cannot step up
 And a rejection or a correction by that agent is recorded the same way, with its reason
 And the model call behind the decision is in the AI output log with its citations and review state
 And the audit rows stay append-only: the decision cannot be edited afterwards
+```
+
+### ACC-S11 — Tenant reach needs two people, and off means off `@integration` `@e2e` (ACC-08, AC-ACC2)
+```gherkin
+Given two members holding security.manage and an agent access entry whose own toggle is on
+When one of them requests tenant reach and tries to approve it themselves
+Then the request answers 409 "four_eyes_violation"
+When the second approves it with a fresh passkey assertion
+Then reach is on, one audit row names each of them, and the assertion is referenced
+When the entry reads the register
+Then it succeeds
+When either of them switches tenant reach off
+Then every register route answers 403 "tenant_reach_off" for every entry, whatever each entry's own toggle says
+```
+
+### ACC-S12 — The access log records the call and holds no content `@integration` (ACC-08)
+```gherkin
+Given an entry that asked what applies to a described feature and listed its register entries
+When the tenant reads the entry's access log
+Then each row carries the credential, the entry, the tool, the filters, the record count, the scope applied and the timing
+And the person is named for a personal token and not for a service key
+And no row holds the description that was asked, an obligation's text, or any register content
 ```
