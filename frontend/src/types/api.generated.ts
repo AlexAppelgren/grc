@@ -3144,10 +3144,12 @@ export interface paths {
          *     approval leaves carry no assertion id for its decision. Either way the reviewer is
          *     never the proposer, the same key, or a key of the same agent definition: the widened
          *     proposal_four_eyes constraint refuses that row on its own, whichever principal wrote
-         *     it. An agent approves obligation versions only, and what it confirmed never reads as a
-         *     person's check; a translation it approves stays labelled machine-made, and its
-         *     correction may reword a summary but never move `originalLanguage`, which answers
-         *     `validation_error`. A vocabulary or term proposal waits for a person (D-79).
+         *     it. An agent approves every kind whose record can name the agent that confirmed it: an
+         *     obligation version, a new instrument, a new obligation, a library list row and a
+         *     taxonomy term (D-79). What it confirmed never reads as a person's check: the record
+         *     names the confirming agent, a translation it approves stays labelled machine-made,
+         *     every list or term label it writes is stored machine-made, and its correction may
+         *     reword a summary but never move `originalLanguage`, which answers `validation_error`.
          *
          *     An agent's approval is a model call, and every model call is logged: a key sends the
          *     call behind its approval in `decision` and the open run of its own key it was made in
@@ -3161,18 +3163,19 @@ export interface paths {
          *     `run_not_open` (422) when a key names no run in `agentRunId`, or a run it has closed;
          *     `not_found` (404) when that run is one another key opened, or when there is no such
          *     proposal; `four_eyes_violation` when the reviewer is the person, key or agent who made
-         *     the proposal; `person_review_required` when an agent approves a vocabulary or term
-         *     proposal, which waits for a person; `invalid_transition` when the proposal was already
-         *     approved or rejected, which is also what a repeated or simultaneous second call
-         *     answers, since nothing is ever applied twice; `source_missing` when a correction
-         *     introduces a field the proposal never sourced; `validation_error` when a key sends no
-         *     `decision` or a person sends one or names a run, and when a correction is offered on a
-         *     kind that cannot be corrected or does not fit its payload; `unknown_key` when the
-         *     payload names a row the library does not hold; `not_a_regime` when a new instrument's
-         *     regime is not a term of the regime dimension; `duplicate_key` when a new record's key
-         *     was taken while the proposal waited; `jurisdiction_term_mirrored` (422) when the payload
-         *     adds or renames a term of a dimension that mirrors the jurisdiction list, or scopes an
-         *     obligation with one, which a proposal filed before that rule may still ask for;
+         *     the proposal; `person_review_required` when an agent approves a kind whose record
+         *     cannot name its confirming agent, a new provision or a provision's new text, which
+         *     waits for a person; `invalid_transition` when the proposal was already approved or
+         *     rejected, which is also what a repeated or simultaneous second call answers, since
+         *     nothing is ever applied twice; `source_missing` when a correction introduces a field the
+         *     proposal never sourced; `validation_error` when a key sends no `decision` or a person
+         *     sends one or names a run, and when a correction is offered on a kind that cannot be
+         *     corrected or does not fit its payload; `unknown_key` when the payload names a row the
+         *     library does not hold; `not_a_regime` when a new instrument's regime is not a term of
+         *     the regime dimension; `duplicate_key` when a new record's key was taken while the
+         *     proposal waited; `jurisdiction_term_mirrored` (422) when the payload adds or renames a
+         *     term of a dimension that mirrors the jurisdiction list, or scopes an obligation with
+         *     one, which a proposal filed before that rule may still ask for;
          *     `standard_term_only_on_standards` (422) when the payload, as proposed or as corrected,
          *     puts a standard's term on an obligation whose instrument is not a standard.
          */
@@ -5226,7 +5229,7 @@ export interface components {
          *       "modelVersion": "2026-05-01",
          *       "output": "Approve. The proposed wording matches the amended regulation as the decision memorandum publishes it, and the date it applies from is the one the memorandum states.",
          *       "promptHash": "9f2a1c7d4b8e05f3",
-         *       "promptTemplate": "library-confirmer/decide/v1"
+         *       "promptTemplate": "library-confirmer/decide/v2"
          *     }
          */
         AgentDecision: {
@@ -5262,7 +5265,7 @@ export interface components {
             /**
              * Prompttemplate
              * @description Which prompt produced the decision, by name and version, at most 200 characters, so an odd decision can be traced to the instructions behind it. Optional. Send the name, never the prompt: bleqq stores no prompt text at all.
-             * @example library-confirmer/decide/v1
+             * @example library-confirmer/decide/v2
              */
             promptTemplate?: string | null;
         };
