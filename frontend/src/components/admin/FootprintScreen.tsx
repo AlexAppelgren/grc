@@ -14,6 +14,7 @@ import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components
 import {
   FOOTPRINT_REQUEST,
   FOUR_EYES_CODE,
+  REQUEST_PENDING_CODE,
   canApprove,
   canWithdraw,
   diffFootprint,
@@ -67,13 +68,30 @@ type CreateMutation = ReturnType<typeof useCreateFootprintRequest>;
 type WithdrawMutation = ReturnType<typeof useWithdrawFootprintRequest>;
 
 /** Where the focus goes after the next render: a fresh object each time, so the same target can be asked for twice. */
-type FocusRequest = { target: 'status' | 'propose' | 'first-checkbox' };
+type FocusRequest = { target: 'status' | 'propose' | 'first-checkbox' | 'banner' };
+
+const FOCUS_SELECTOR: Record<Exclude<FocusRequest['target'], 'status'>, string> = {
+  propose: '[data-propose]',
+  'first-checkbox': '[data-footprint-dimensions] input[type="checkbox"]',
+  banner: '[data-pending-request]',
+};
+
+/** A draft and the stored scope it was taken from: the diff means what the person chose only against that scope. */
+type Draft = { base: string; held: FootprintDraft };
+
+function scopeSignature(dimensions: readonly FootprintDimension[]): string {
+  return JSON.stringify(dimensions.map((d) => [d.dimension.key, d.terms.map((term) => term.key)]));
+}
 
 const JURISDICTION = 'jurisdiction';
 const REJECT_REASON = 'reject-reason';
 
-function withLabels(changes: readonly TermChange[], terms: readonly TaxonomyTerm[]): TaxonomyTerm[] {
-  return changes.map((change) => terms.find((term) => term.dimension === change.dimension && term.key === change.key) ?? { ...change, kind: null, label: change.key });
+/** The changes with their labels, read from the groups they were ticked in (a held term no longer active is only there). */
+function withLabels(changes: readonly TermChange[], groups: readonly ScopeGroup[]): TaxonomyTerm[] {
+  return changes.map((change) => {
+    const row = groups.find((group) => group.dimension.key === change.dimension)?.rows.find((r) => r.term.key === change.key);
+    return { ...change, kind: null, label: row?.term.label ?? change.key };
+  });
 }
 
 /** True when a side of the preview moves nothing: every count is known and zero. Decided on the counts, never on the formatted text. */
@@ -215,33 +233,45 @@ function DraftPreview({ changes, narrowed }: { changes: { adds: TermChange[]; re
 
 function ChangePanel({
   dimensions,
-  terms,
+  groups,
   draft,
   create,
   onCancel,
   onSent,
+  onRequestPending,
 }: {
   dimensions: readonly FootprintDimension[];
-  terms: readonly TaxonomyTerm[];
+  groups: readonly ScopeGroup[];
   draft: FootprintDraft;
   create: CreateMutation;
   onCancel: () => void;
   onSent: () => void;
+  onRequestPending: () => void;
 }) {
   const t = useT();
   const changes = diffFootprint(dimensions, draft);
   const changed = changes.adds.length + changes.removes.length > 0;
-  const title = changed ? t('footprint.preview.title', { title: requestTitle({ adds: withLabels(changes.adds, terms), removes: withLabels(changes.removes, terms) }, t) }) : t('footprint.preview.untitled');
+  const title = changed ? t('footprint.preview.title', { title: requestTitle({ adds: withLabels(changes.adds, groups), removes: withLabels(changes.removes, groups) }, t) }) : t('footprint.preview.untitled');
   return (
     <Panel title={title} data-draft-preview="">
       {changed ? <DraftPreview changes={changes} narrowed={narrowedGroups(dimensions, draft)} /> : <p>{t('footprint.draft.nothing')}</p>}
-      {create.isError ? <ProblemAlert error={create.error} /> : null}
+      {create.isError ? <ProblemAlert error={create.error} codes={{ [REQUEST_PENDING_CODE]: t('footprint.requestPending') }} /> : null}
       <ButtonBar>
         <Button variant="outline" onClick={onCancel} disabled={create.isPending}>
           {t('common.cancel')}
         </Button>
         {changed ? (
-          <Button disabled={create.isPending} onClick={() => create.mutate(changes, { onSuccess: onSent })}>
+          <Button
+            disabled={create.isPending}
+            onClick={() =>
+              create.mutate(changes, {
+                onSuccess: onSent,
+                onError: (error) => {
+                  if (hasProblemCode(error, REQUEST_PENDING_CODE)) onRequestPending();
+                },
+              })
+            }
+          >
             {t('footprint.preview.send')}
           </Button>
         ) : null}
@@ -283,7 +313,8 @@ function PendingBanner({
   // Every text inside the warn notice is the text colour (foundations.md, "Restricted setting").
   return (
     <>
-      <Notice tone="warn" className="grid gap-2" data-pending-request={request.id}>
+      {/* Focusable, not tabbable: the focus lands here when a request that started waiting ends an edit. */}
+      <Notice tone="warn" className="grid gap-2" tabIndex={-1} data-pending-request={request.id}>
         <p className="flex flex-wrap items-center gap-2">
           <PillRow pills={[presentRequestStatus(request.status, t)]} />
           <b>{requestTitle(request, t)}</b>
@@ -456,7 +487,7 @@ export function FootprintScreen() {
   const permissions = usePermissions() ?? [];
   const userId = session.me?.user.id ?? null;
 
-  const [draft, setDraft] = useState<FootprintDraft | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [previewShown, setPreviewShown] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -468,8 +499,7 @@ export function FootprintScreen() {
   useEffect(() => {
     if (focus === null) return;
     const timer = window.setTimeout(() => {
-      const selector = focus.target === 'propose' ? '[data-propose]' : '[data-footprint-dimensions] input[type="checkbox"]';
-      const target = focus.target === 'status' ? statusRef.current : document.querySelector<HTMLElement>(selector);
+      const target = focus.target === 'status' ? statusRef.current : document.querySelector<HTMLElement>(FOCUS_SELECTOR[focus.target]);
       target?.focus();
     }, 0);
     return () => window.clearTimeout(timer);
@@ -477,12 +507,22 @@ export function FootprintScreen() {
 
   const dimensions = useMemo(() => footprint.data?.dimensions ?? [], [footprint.data]);
   const groups = useMemo(() => scopeGroups(dimensions, terms.data ?? []), [dimensions, terms.data]);
+  const base = useMemo(() => scopeSignature(dimensions), [dimensions]);
   const pending = footprint.data?.pendingRequest ?? null;
   const canRequest = permissions.includes(FOOTPRINT_REQUEST);
-  // The draft being edited; null in the read state. A request that starts waiting ends the edit.
-  const editing = canRequest && pending === null ? draft : null;
+  // A request that starts waiting, or a scope that changed under the draft, ends the edit
+  // for good: kept, the old snapshot would come back later proposing to undo someone
+  // else's approved change. Cleared during render, so no frame shows the stale draft.
+  const stale = draft !== null && (!canRequest || pending !== null || draft.base !== base);
+  if (stale) {
+    setDraft(null);
+    setFocus({ target: pending !== null ? 'banner' : 'propose' });
+  }
+  // The draft being edited; null in the read state.
+  const editing = draft !== null && !stale ? draft.held : null;
 
   const announce = (message: string) => {
+    create.reset();
     setStatus(message);
     setFocus({ target: 'status' });
   };
@@ -527,8 +567,9 @@ export function FootprintScreen() {
             variant="danger"
             data-propose=""
             onClick={() => {
+              create.reset();
               setStatus(null);
-              setDraft(draftOf(dimensions));
+              setDraft({ base, held: draftOf(dimensions) });
               setFocus({ target: 'first-checkbox' });
             }}
           >
@@ -563,6 +604,10 @@ export function FootprintScreen() {
           onWithdrawn={() => announce(t('footprint.withdrawnDone'))}
         />
       )}
+      {/* Someone else's request got in first: said under the banner that now shows it. */}
+      {pending !== null && hasProblemCode(create.error, REQUEST_PENDING_CODE) ? (
+        <ProblemAlert error={create.error} codes={{ [REQUEST_PENDING_CODE]: t('footprint.requestPending') }} className="-mt-2 mb-4 text-meta text-negative" />
+      ) : null}
 
       {pending !== null ? (
         <Panel id={previewId} hidden={!previewShown} data-pending-preview="">
@@ -574,7 +619,13 @@ export function FootprintScreen() {
         <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-3">
           {groups.map((group) =>
             editing !== null ? (
-              <EditGroup key={group.dimension.key} group={group} draft={editing} disabled={create.isPending} onToggle={(key) => setDraft(toggleTerm(editing, group.dimension.key, key))} />
+              <EditGroup
+                key={group.dimension.key}
+                group={group}
+                draft={editing}
+                disabled={create.isPending}
+                onToggle={(key) => setDraft((current) => current && { ...current, held: toggleTerm(current.held, group.dimension.key, key) })}
+              />
             ) : (
               <ReadGroup key={group.dimension.key} group={group} pending={pending} />
             ),
@@ -585,7 +636,7 @@ export function FootprintScreen() {
       {editing !== null ? (
         <ChangePanel
           dimensions={dimensions}
-          terms={terms.data}
+          groups={groups}
           draft={editing}
           create={create}
           onCancel={() => {
@@ -597,6 +648,7 @@ export function FootprintScreen() {
             setDraft(null);
             announce(t('footprint.sent'));
           }}
+          onRequestPending={() => void footprint.refetch()}
         />
       ) : null}
 

@@ -26,18 +26,21 @@ export interface ScopeGroup {
 }
 
 /** The groups the page shows (REGULATORY_SCOPE.md 4.2): a dimension appears when it
- * restricts the scope and has at least one active term, held or not. Channel, lifecycle
- * stage and theme never restrict, and a dimension without an active term has nothing to
- * offer, so both stay off the page. Each group lists every active term in the taxonomy's
- * order, held or not; one with nothing held is the unrestricted one. */
+ * restricts the scope and has a term to show. Channel, lifecycle stage and theme never
+ * restrict, and a dimension with nothing to show has nothing to offer, so both stay off the
+ * page. Each group lists every active term in the taxonomy's order, held or not; one with
+ * nothing held is the unrestricted one. A held term that is no longer active still filters
+ * (the scope match ignores `active`), so it is listed after them, held, to be read and unticked. */
 export function scopeGroups(dimensions: readonly FootprintDimension[], terms: readonly TaxonomyTerm[]): ScopeGroup[] {
   return dimensions
     .filter((d) => d.restrictsFootprint)
     .map((d) => {
       const held = new Set(d.terms.map((term) => term.key));
+      const active = terms.filter((term) => term.dimension === d.dimension.key && term.active !== false);
+      const listed = new Set(active.map((term) => term.key));
       return {
         dimension: d.dimension,
-        rows: terms.filter((term) => term.dimension === d.dimension.key && term.active !== false).map((term) => ({ term, held: held.has(term.key) })),
+        rows: [...active.map((term) => ({ term, held: held.has(term.key) })), ...d.terms.filter((term) => !listed.has(term.key)).map((term) => ({ term, held: true }))],
       };
     })
     .filter((group) => group.rows.length > 0);
@@ -71,10 +74,13 @@ export function presentRequestStatus(status: FootprintRequestStatus, t: Translat
 }
 
 /** "Advice", "Advice and Custody", "Advice, Custody and Tax". */
-function labels(terms: readonly Pick<TermRef, 'label'>[], t: Translate): string {
-  const names = terms.map((term) => term.label);
+function joined(names: readonly string[], t: Translate): string {
   if (names.length < 2) return names.join('');
   return `${names.slice(0, -1).join(', ')}${t('footprint.preview.and')}${names[names.length - 1]}`;
+}
+
+function labels(terms: readonly Pick<TermRef, 'label'>[], t: Translate): string {
+  return joined(terms.map((term) => term.label), t);
 }
 
 /** "Remove Advice", "Add Fund company", or both: the request's title, built from its terms. */
@@ -115,19 +121,22 @@ export function previewLines(preview: FootprintPreview | null | undefined, t: Tr
   return { hides: previewSide(preview?.hidden, 'hides', t), reveals: previewSide(preview?.revealed, 'reveals', t) };
 }
 
-function counted(lines: readonly PreviewLine[], t: Translate): string {
-  return lines
-    .filter((line) => line.available)
-    .map((line) => line.text)
-    .join(t('footprint.preview.and'));
+/** The kinds on one side with a known count above zero: "4 obligations and 2 open cases". */
+function counted(side: Record<string, FootprintPreviewCount> | undefined, t: Translate): string {
+  const kinds = Object.entries(side ?? {}).filter(([, entry]) => entry.available && entry.count > 0);
+  return joined(kinds.map(([kind, entry]) => kindLabel(kind, entry.count, t)), t);
 }
 
-/** "Hides 2 obligations and reveals 1 obligation.", for the banner and the approve dialog; counts not yet known are left out. */
+/** "Hides 2 obligations and reveals 1 obligation.", for the banner and the approve dialog. A
+ * side that moves nothing is left out, and so are counts not yet known. */
 export function previewSummary(preview: FootprintPreview | null | undefined, t: Translate): string {
-  const { hides, reveals } = previewLines(preview, t);
-  const hidden = counted(hides, t);
-  if (hidden.length === 0) return t('footprint.preview.nothingCounted');
-  return t('footprint.preview.summary', { hides: hidden, reveals: counted(reveals, t) });
+  if (!Object.values(preview?.hidden ?? {}).some((entry) => entry.available)) return t('footprint.preview.nothingCounted');
+  const hides = counted(preview?.hidden, t);
+  const reveals = counted(preview?.revealed, t);
+  if (hides.length > 0 && reveals.length > 0) return t('footprint.preview.summary', { hides, reveals });
+  if (hides.length > 0) return t('footprint.preview.hidesOnly', { hides });
+  if (reveals.length > 0) return t('footprint.preview.revealsOnly', { reveals });
+  return t('footprint.preview.movesNothing');
 }
 
 /** True when a counted record kind would be hidden: the change takes something away from every member. */

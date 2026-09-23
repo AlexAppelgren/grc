@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { QueryClient } from '@tanstack/react-query';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -50,18 +51,17 @@ const dimension = (key: string, label: string, terms: ReturnType<typeof held>[],
   terms,
 });
 
-function scope(pendingRequest: unknown = null) {
-  return {
-    dimensions: [
-      dimension('regime', 'Regime', [held('securities', 'Securities')]),
-      dimension('service_type', 'Service', [held('advice', 'Advice'), held('custody', 'Custody')]),
-      dimension('client_category', 'Client category', []),
-      dimension('product_type', 'Product type', []),
-      dimension('channel', 'Channel', [held('digital', 'Digital')], false),
-      dimension('jurisdiction', 'Jurisdiction', [held('se', 'Sweden')]),
-    ],
-    pendingRequest,
-  };
+const DIMENSIONS = [
+  dimension('regime', 'Regime', [held('securities', 'Securities')]),
+  dimension('service_type', 'Service', [held('advice', 'Advice'), held('custody', 'Custody')]),
+  dimension('client_category', 'Client category', []),
+  dimension('product_type', 'Product type', []),
+  dimension('channel', 'Channel', [held('digital', 'Digital')], false),
+  dimension('jurisdiction', 'Jurisdiction', [held('se', 'Sweden')]),
+];
+
+function scope(pendingRequest: unknown = null, dimensions: unknown[] = DIMENSIONS) {
+  return { dimensions, pendingRequest };
 }
 
 const term = (dimensionKey: string, key: string, label: string) => ({ id: `${dimensionKey}:${key}`, dimension: { key: dimensionKey, kind: null, label: dimensionKey }, key, kind: null, label, usageNote: '', sortOrder: 0, active: true });
@@ -117,15 +117,16 @@ const HISTORY = {
   total: 1,
 };
 
-type Mutation = (sent: Sent, server: { pending: unknown }) => Answer;
+type Server = { pending: unknown; dimensions: unknown[] };
+type Mutation = (sent: Sent, server: Server) => Answer;
 
 /** The server for one test: reads answer from `server`, and each write is the test's own script. */
-function serve(me: Me, pending: unknown = null, write: Mutation = () => ({ status: 500 })): { sent: Sent[]; server: { pending: unknown } } {
-  const server = { pending };
+function serve(me: Me, pending: unknown = null, write: Mutation = () => ({ status: 500 }), taxonomy = TAXONOMY): { sent: Sent[]; server: Server } {
+  const server: Server = { pending, dimensions: DIMENSIONS };
   const sent = installAdapter((s) => {
     if (s.path === ME) return { status: 200, data: me };
-    if (s.path === FOOTPRINT) return { status: 200, data: scope(server.pending) };
-    if (s.path === TERMS) return { status: 200, data: TAXONOMY };
+    if (s.path === FOOTPRINT) return { status: 200, data: scope(server.pending, server.dimensions) };
+    if (s.path === TERMS) return { status: 200, data: taxonomy };
     if (s.method === 'get' && s.path === REQUESTS) return { status: 200, data: HISTORY };
     return write(s, server);
   });
@@ -146,19 +147,29 @@ function preview(hidden: number, revealed: number): Mutation {
   };
 }
 
-function shell(children: ReactNode, permissions: readonly string[]): ReactNode {
-  const { wrapper: Query } = queryWrapper();
-  return (
-    <Query>
-      <PermissionsProvider permissions={permissions}>
-        <LocaleProvider locale="en">{children}</LocaleProvider>
-      </PermissionsProvider>
-    </Query>
-  );
+function shell(children: ReactNode, permissions: readonly string[]): { node: ReactNode; queryClient: QueryClient } {
+  const { wrapper: Query, queryClient } = queryWrapper();
+  return {
+    node: (
+      <Query>
+        <PermissionsProvider permissions={permissions}>
+          <LocaleProvider locale="en">{children}</LocaleProvider>
+        </PermissionsProvider>
+      </Query>
+    ),
+    queryClient,
+  };
 }
 
-function open(me: Me) {
-  return render(shell(<FootprintScreen />, me.permissions));
+/** Renders the screen; the query client lets a test read the scope again, as a refetch on reconnect would. */
+function open(me: Me): QueryClient {
+  const { node, queryClient } = shell(<FootprintScreen />, me.permissions);
+  render(node);
+  return queryClient;
+}
+
+async function readScopeAgain(queryClient: QueryClient): Promise<void> {
+  await act(() => queryClient.invalidateQueries({ queryKey: ['tenant', 'footprint'] }));
 }
 
 const group = (key: string) => document.querySelector<HTMLElement>(`[data-dimension="${key}"]`)!;
@@ -215,6 +226,24 @@ describe('FootprintScreen: the read state', () => {
     const history = document.querySelector<HTMLElement>('[data-footprint-history]')!;
     expect(await within(history).findByText('rejected "Remove Tax" requested by Sara Lindqvist: "ISK tax reporting is ours."')).toBeVisible();
     expect(within(history).getByText('Maria Ek')).toBeVisible();
+  });
+
+  it('keeps a held term that is no longer active: it reads as held, its group still filters, and it can be unticked', async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    // The seed took Sweden's term inactive with its jurisdiction; the scope still holds it.
+    const inactiveSweden = { ...TAXONOMY, items: TAXONOMY.items.filter((row) => row.key !== 'se' && row.key !== 'dk') };
+    serve(me, null, preview(0, 0), inactiveSweden);
+    open(me);
+    await waitFor(() => expect(group('jurisdiction')).not.toBeNull());
+    expect(item('jurisdiction', 'se')).toHaveTextContent('Sweden In our scope');
+    expect(within(group('jurisdiction')).queryByText('Not restricted: every option applies.')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Propose a change' }));
+    const sweden = await screen.findByRole('checkbox', { name: 'Sweden' });
+    expect(sweden).toBeChecked();
+    fireEvent.click(sweden);
+    const panel = document.querySelector<HTMLElement>('[data-draft-preview]')!;
+    expect(within(panel).getByRole('heading', { name: 'Your change: Remove Sweden' })).toBeVisible();
   });
 
   it('reads the same for someone who can only approve, without "Propose a change"', async () => {
@@ -298,6 +327,77 @@ describe('FootprintScreen: proposing a change', () => {
     // Emptying a group widens the scope; its hint says so.
     fireEvent.click(screen.getByRole('checkbox', { name: 'Custody' }));
     expect(screen.getByRole('group', { name: 'Service' })).toHaveAccessibleDescription('Not restricted: every option applies.');
+  });
+
+  it('ends the edit for good when another request starts waiting, so the old draft never comes back once it is decided', async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    const { server } = serve(me, null, preview(0, 1));
+    const queryClient = open(me);
+    fireEvent.click(await screen.findByRole('button', { name: 'Propose a change' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Insurance distribution' }));
+    expect(within(document.querySelector<HTMLElement>('[data-draft-preview]')!).getByRole('heading', { name: 'Your change: Add Insurance distribution' })).toBeVisible();
+
+    // Erik's request arrives while Sara edits: the edit ends and the focus lands on the banner that says why.
+    server.pending = waiting(ERIK);
+    await readScopeAgain(queryClient);
+    const banner = await findBanner();
+    await waitFor(() => expect(document.activeElement).toBe(banner));
+    expect(document.querySelector('[data-draft-preview]')).toBeNull();
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+
+    // Decided elsewhere: the page returns to the read state, not to Sara's old snapshot.
+    server.pending = null;
+    await readScopeAgain(queryClient);
+    expect(await screen.findByRole('button', { name: 'Propose a change' })).toBeVisible();
+    expect(document.querySelector('[data-draft-preview]')).toBeNull();
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+  });
+
+  it('ends the edit when the stored scope changes under it, so the diff never proposes to undo that change', async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    const { server } = serve(me, null, preview(0, 1));
+    const queryClient = open(me);
+    fireEvent.click(await screen.findByRole('button', { name: 'Propose a change' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Insurance distribution' }));
+
+    // Someone's "Remove Advice" was approved between two reads, so no waiting request was ever seen here.
+    server.dimensions = DIMENSIONS.map((d) => (d.dimension.key === 'service_type' ? { ...d, terms: [held('custody', 'Custody')] } : d));
+    await readScopeAgain(queryClient);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Propose a change' })));
+    expect(document.querySelector('[data-draft-preview]')).toBeNull();
+    expect(item('service_type', 'advice')).toHaveTextContent('Advice Not in our scope');
+
+    // A new draft starts from today's scope: nothing differs, so nothing proposes to add Advice back.
+    fireEvent.click(screen.getByRole('button', { name: 'Propose a change' }));
+    expect(within(document.querySelector<HTMLElement>('[data-draft-preview]')!).getByText('Nothing changed yet.')).toBeVisible();
+    expect(within(group('service_type')).getByRole('checkbox', { name: 'Advice' })).not.toBeChecked();
+  });
+
+  it('says under the banner that someone else got in first when the send finds a request already waiting', async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    const dryRun = preview(1, 0);
+    const { sent } = serve(me, null, (s, server) => {
+      if (s.method === 'post' && s.path === REQUESTS && s.params === null) {
+        server.pending = waiting(ERIK);
+        return { status: 409, data: { code: 'request_pending', detail: 'A change is already waiting for a decision.' } };
+      }
+      return dryRun(s, server);
+    });
+    open(me);
+    fireEvent.click(await screen.findByRole('button', { name: 'Propose a change' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Advice' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Request approval' }));
+
+    const banner = await findBanner();
+    expect(within(banner).getByText('Add Retail, remove Advice')).toBeVisible();
+    await waitFor(() => expect(document.activeElement).toBe(banner));
+    const refusal = screen.getByRole('alert');
+    expect(refusal).toHaveTextContent('Someone else proposed a change first, so yours was not sent.');
+    expect(refusal.closest('[data-pending-request]')).toBeNull();
+    expect(document.querySelector('[data-draft-preview]')).toBeNull();
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    expect(statusLine()).toBeEmptyDOMElement();
+    expect(sent.filter((s) => s.method === 'post' && s.params === null)).toHaveLength(1);
   });
 
   it('sends the draft, shows it waiting with its marks, and moves the focus to the status line', async () => {
@@ -495,7 +595,7 @@ describe('FootprintScreen: loading, error and denied', () => {
           <FootprintScreen />
         </AdminGate>,
         me.permissions,
-      ),
+      ).node,
     );
     expect(screen.getByRole('heading', { level: 1, name: 'This page is not available to you' })).toBeVisible();
     expect(screen.getByText('Needs footprint request')).toBeVisible();

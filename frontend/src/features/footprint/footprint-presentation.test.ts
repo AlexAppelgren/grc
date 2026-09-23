@@ -102,14 +102,25 @@ describe('preview', () => {
     expect(previewLines(null, t)).toEqual({ hides: [], reveals: [] });
   });
 
-  it('summarises both sides in one sentence, leaving out what is not counted', () => {
+  it('summarises both sides in one sentence, leaving out what is not counted and a side that moves nothing', () => {
     const counted: FootprintPreview = {
       hidden: { obligations: { count: 2, available: true }, cases: { count: 0, available: false } },
       revealed: { obligations: { count: 1, available: true }, cases: { count: 0, available: false } },
     };
     expect(previewSummary(counted, t)).toBe('Hides 2 obligations and reveals 1 obligation.');
     expect(previewSummary(counted, sv)).toBe('Döljer 2 skyldigheter och visar 1 skyldighet.');
-    expect(previewSummary(preview, t)).toBe('Hides 4 obligations and 2 open cases and reveals 0 obligations.');
+    // Nothing revealed: the sentence names only what is hidden, each kind joined once.
+    expect(previewSummary(preview, t)).toBe('Hides 4 obligations and 2 open cases.');
+    expect(previewSummary(preview, sv)).toBe('Döljer 4 skyldigheter och 2 öppna ärenden.');
+    const three: FootprintPreview = { hidden: { obligations: { count: 1, available: true }, cases: { count: 2, available: true }, widgets: { count: 3, available: true } }, revealed: {} };
+    expect(previewSummary(three, t)).toBe('Hides 1 obligation, 2 open cases and 3 widgets.');
+    // Nothing hidden: only what appears.
+    const widening: FootprintPreview = { hidden: { obligations: { count: 0, available: true } }, revealed: { obligations: { count: 3, available: true }, cases: { count: 0, available: false } } };
+    expect(previewSummary(widening, t)).toBe('Reveals 3 obligations.');
+    expect(previewSummary(widening, sv)).toBe('Visar 3 skyldigheter.');
+    const still: FootprintPreview = { hidden: { obligations: { count: 0, available: true } }, revealed: { obligations: { count: 0, available: true } } };
+    expect(previewSummary(still, t)).toBe('Hides nothing and reveals nothing.');
+    expect(previewSummary(still, sv)).toBe('Döljer inget och visar inget.');
     expect(previewSummary({ hidden: { obligations: { count: 0, available: false } }, revealed: { obligations: { count: 0, available: false } } }, t)).toBe('What it hides is not counted yet.');
     expect(previewSummary(undefined, t)).toBe('What it hides is not counted yet.');
   });
@@ -202,6 +213,23 @@ describe('scopeGroups, narrowedGroups and pendingTermPill', () => {
       ['retail', false],
       ['professional', false],
     ]);
+  });
+
+  it('keeps a held term that is no longer active, held and after the active ones, so its group still reads as filtering and it can be unticked', () => {
+    // The seed takes a jurisdiction's term inactive with it, and the scope match ignores `active`.
+    const sweden = { key: 'se', kind: null, label: 'Sweden' };
+    const jurisdiction: FootprintDimension = { dimension: { key: 'jurisdiction', kind: 'scope', label: 'Jurisdiction' }, restrictsFootprint: true, terms: [sweden], allSelected: false };
+    const legacy = { key: 'legacy', kind: null, label: 'Legacy' };
+    const withLegacy: FootprintDimension = { ...service, terms: [...service.terms, legacy] };
+    const groups = scopeGroups([withLegacy, jurisdiction], allTerms);
+    expect(groups.map((g) => g.dimension.key)).toEqual(['service_type', 'jurisdiction']);
+    expect(groups[0]!.rows.map((row) => [row.term.key, row.held])).toEqual([
+      ['advice', true],
+      ['custody', true],
+      ['execution_only', false],
+      ['legacy', true],
+    ]);
+    expect(groups[1]!.rows).toEqual([{ term: sweden, held: true }]);
   });
 
   it('detects narrowing (empty in the stored scope, non-empty in the draft) and not widening', () => {
