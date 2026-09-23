@@ -191,6 +191,27 @@ class ChangeFacts(CurationCase):
             self.patch_change({"termIds": [str(watch_build.term("regime:aml").id)]})
         self.assertEqual(self.term_keys(), ["aml"])
 
+    def test_a_replacing_set_without_a_regime_is_refused_with_the_regimes_listed(self) -> None:
+        """D-39, AC-AGT1: the rule a new change meets applies to the set that replaces its
+        terms, so no correction can leave a change reaching every bank."""
+        cases = {"an empty set": [], "a channel term alone": [str(watch_build.term("channel:digital").id)]}
+        for case, term_ids in cases.items():
+            with self.subTest(case=case), as_agent():
+                response = self.patch_change({"title": "A better title", "termIds": term_ids})
+            self.assertEqual(response.status_code, 422, response.content)
+            problem = response.json()
+            self.assertEqual(problem["code"], "regime_required")
+            self.assertIn("aml", problem["validKeys"])
+            self.assertNotIn("digital", problem["validKeys"])
+        self.change.refresh_from_db()
+        self.assertNotEqual(self.change.title, "A better title", "a refusal stores nothing at all")
+        self.assertEqual(self.term_keys(), ["securities"])
+
+    def test_a_call_that_leaves_the_terms_alone_needs_no_regime(self) -> None:
+        with as_agent():
+            response = self.patch_change({"flags": ["ai"]})
+        self.assertEqual(response.status_code, 200, response.content)
+
     def test_a_field_left_out_is_left_alone(self) -> None:
         with as_agent():
             self.patch_change({"title": "FI re-opens the research consultation"})

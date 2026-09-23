@@ -1112,6 +1112,7 @@ class WatchChangeInput(WriteBody):
                     "flags": ["advice_perimeter"],
                     "sourceLabel": "Finansinspektionen",
                     "sourceUrl": "https://www.fi.se/",
+                    "termIds": ["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"],
                     "events": [{"label": "Consultation closed", "eventDate": "2026-06-01", "datePrecision": "day", "occurred": True, "sortOrder": 1}],
                     "documents": [{"url": "https://www.fi.se/en/published/news/2026/reporting/", "isPrimary": True}],
                     "obligationLinks": [{"obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17", "confidence": 0.82}],
@@ -1314,8 +1315,10 @@ class WatchChangeInput(WriteBody):
             "Taxonomy terms that scope the change — its regime, product or service — each a "
             "UUID, at most 100 of them. Terms are library rows an admin may extend; the ids "
             "come from "
-            "`GET /taxonomy/terms`, which an agent reads at run start. Every change needs at "
-            "least one regime term or the call answers 422 `regime_required`, and a standard's "
+            "`GET /taxonomy/terms`, which an agent reads at run start. A new change needs at "
+            "least one term of the `regime` dimension or the call answers 422 "
+            "`regime_required` with the regime keys in `validKeys`; a merge adds no terms and "
+            "needs none. A standard's "
             "term is accepted only when the authority's jurisdiction is international, else 422 "
             "`standard_term_only_on_standards` (AC-AGT1). A term that list marks `mirrored` "
             "answers 422 `jurisdiction_term_mirrored`: a change's market comes from "
@@ -1426,7 +1429,8 @@ class WatchChangePatch(WriteBody):
         description=(
             "The whole set of taxonomy term ids for this change, each a UUID and at most 100 "
             "of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new "
-            "set, and a term `GET /taxonomy/terms` marks `mirrored` answers 422 "
+            "set: one that names no term of the `regime` dimension answers 422 "
+            "`regime_required` with the regime keys in `validKeys`. A term `GET /taxonomy/terms` marks `mirrored` answers 422 "
             "`jurisdiction_term_mirrored`."
         ),
         examples=[["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"]],

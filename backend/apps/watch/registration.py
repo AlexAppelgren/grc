@@ -51,11 +51,15 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from apps.agents import runs
+from apps.agents.models import AgentRun
 from apps.agents.screen import screen
+from apps.governance.ai_log import log_generation
+from apps.governance.models import AiPurpose
 from apps.library.models import DatePrecision
 from apps.proposals.models import OriginType
 from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal, PrincipalKind
+from apps.shared.schemas import AiCitation
 from apps.watch import keys, so_what_draft
 from apps.watch.schemas import (
     WatchChange,
@@ -116,6 +120,8 @@ def register_change(
     existing = keys.change_with_stable_key(body.stable_key)
     if existing is not None:
         return 200, _merge(existing, actor=actor, order=order, body=body, risk_flags=risk_flags)
+    # A merge touches no stored term, so only a new change must name its regime (D-39).
+    keys.require_regime(terms)
 
     origin = OriginType.AGENT.value if who.kind is PrincipalKind.AGENT else OriginType.USER.value
     # Who suggested what this call files, copied by the one write path, because a check
@@ -170,6 +176,18 @@ def register_change(
             so_what_draft.store(
                 change, body.so_what, actor=actor, agent_run_id=None if run is None else run.id
             )
+        if run is not None:
+            _log_suggested_classification(
+                change,
+                body,
+                run=run,
+                parts=[
+                    f"change_type:{change_type.key}",
+                    *(f"flag:{flag.key}" for flag in flags),
+                    *(f"{term.dimension.key}:{term.key}" for term in terms),
+                    *([] if urgency is None else [f"urgency:{urgency.key}"]),
+                ],
+            )
         record(
             action=REGISTERED,
             actor=actor,
@@ -181,6 +199,36 @@ def register_change(
             after=_values_of(change, risk_flags),
         )
     return 201, keys.change_out(change, order)
+
+
+def _log_suggested_classification(
+    change: keys.ChangeRow, body: WatchChangeInput, *, run: AgentRun, parts: list[str]
+) -> None:
+    """The run's classification of a new change — its type, flags, scope terms and urgency —
+    as the one `scope_suggestion` row AUD-02 asks for, in this transaction (D-66).
+
+    bleqq made no model call here, so the model metadata is the run's own account: the
+    model and version it filed a “So what?” under when the filing carries one, else the
+    model and pipeline version it opened the run with. The row says so
+    (`model_metadata_reported_by_agent`). A library editor's registration is a person's
+    classification and a merge stores no scope, so neither writes one.
+    """
+    model, version = (
+        (run.model, run.pipeline_version)
+        if body.so_what is None
+        else (body.so_what.model, body.so_what.model_version)
+    )
+    log_generation(
+        purpose=AiPurpose.SCOPE_SUGGESTION,
+        model=model,
+        model_version=version,
+        output="\n".join(parts),
+        citations=[AiCitation(label=body.source_label, url=str(body.source_url))],
+        agent_run_id=run.id,
+        subject_type=SUBJECT_TYPE,
+        subject_id=change.id,
+        metadata_reported_by_agent=True,
+    )
 
 
 def _merge(

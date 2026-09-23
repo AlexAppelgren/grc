@@ -168,7 +168,7 @@ def validate_classification(rows: list[dict]) -> None:
             if key not in r:
                 raise ValueError(f"classification.jsonl {r.get('id', '?')}: {key} missing")
         expected = r["expected"]
-        for key in ("in_scope", "change_type", "flags", "scope", "risk_flags"):
+        for key in ("in_scope", "change_type", "flags", "scope", "risk_flags", "mirrored_dimensions"):
             if key not in expected:
                 raise ValueError(f"classification.jsonl {r['id']}: expected.{key} missing")
         if r["injection"] != (SCREEN_FLAG in expected["risk_flags"]):
@@ -179,6 +179,14 @@ def validate_classification(rows: list[dict]) -> None:
             raise ValueError(f"classification.jsonl {r['id']}: expected.in_scope must be true or false")
         if expected["in_scope"] != bool(expected["scope"].get("regime")):
             raise ValueError(f"classification.jsonl {r['id']}: in_scope and regime disagree")
+        # FP-S12: the dimensions whose terms mirror the jurisdiction list and are never sent,
+        # because a change's market comes from its authority. The scorer reads them here.
+        mirrored = expected["mirrored_dimensions"]
+        if not isinstance(mirrored, list) or not all(isinstance(d, str) and d for d in mirrored):
+            raise ValueError(f"classification.jsonl {r['id']}: expected.mirrored_dimensions must be a list of dimension keys")
+        for dimension in mirrored:
+            if expected["scope"].get(dimension):
+                raise ValueError(f"classification.jsonl {r['id']}: expects a term of the mirrored dimension {dimension}")
         terms = expected.get("standard_terms", [])
         if not isinstance(terms, list) or not all(isinstance(t, str) and t.startswith(STANDARD_TERM) for t in terms):
             raise ValueError(f"classification.jsonl {r['id']}: standard_terms must be a list of {STANDARD_TERM}<key> terms")
@@ -246,7 +254,9 @@ def jaccard(a: list[str], b: list[str]) -> float:
 
 def score_classification(expected: dict, predicted: dict) -> dict[str, float]:
     """One row. change_type: exact. flags and screen: set equality. scope: mean Jaccard over
-    the dimensions the expectation names (an empty expected list matches an empty or absent one).
+    the dimensions the expectation names (an empty expected list matches an empty or absent one),
+    and a miss outright when the prediction sends any term of a dimension the row lists in
+    `mirrored_dimensions`, because such a term is refused however right the rest is (FP-S12).
     in_scope: equal, so a classifier that does not say is wrong. standard_terms: set equality,
     where a row that states none expects none."""
     scope_expected: dict = expected["scope"]
@@ -256,6 +266,8 @@ def score_classification(expected: dict, predicted: dict) -> dict[str, float]:
         if scope_expected
         else 1.0
     )
+    if any(scope_predicted.get(dim) for dim in expected.get("mirrored_dimensions") or []):
+        scope = 0.0
     return {
         "classification_change_type_accuracy": 1.0 if predicted.get("change_type") == expected["change_type"] else 0.0,
         "classification_flags_accuracy": 1.0 if set(predicted.get("flags") or []) == set(expected["flags"]) else 0.0,

@@ -603,6 +603,19 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     terms and its obligation links — is stored as a suggestion, with nobody named as having
     confirmed it, whoever sent it. A reader must not treat any of it as checked.
 
+    **A new change names at least one regime term** in `termIds` (D-39): the regime is the
+    sector boundary, and a change with none would reach every bank whatever its scope. A
+    call that names none answers `regime_required` with the valid regime keys; the terms'
+    ids are on `GET /taxonomy/terms`. A merge adds no scope, so it needs none.
+
+    **A run's classification is logged as AI output** (AUD-02, D-66). When a key registers a
+    new change, its type, flags, scope terms and urgency are recorded as one row in the AI
+    output log with the purpose "scope_suggestion", under the run that filed it. bleqq made no
+    model call, so the model and version on that row are the run's own report: the ones in
+    `soWhat` when the call carries one, else the model and pipeline version the run was
+    opened with, and the row says so (`modelMetadataReportedByAgent`). A library editor's
+    registration is a person's classification and logs no row.
+
     **The drafted “So what?” comes from the run that read the source** (D-66). Send
     it in `soWhat` with the model and the model version that wrote it and the public pages
     it rests on; the words are stored on the shared change, copied unconfirmed into every
@@ -632,8 +645,9 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     `obligationId` or `authorityCode` names a row the library does not hold or has retired,
     with the valid keys listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a
     `termId` is a term that mirrors the jurisdiction list, since a change's market comes
-    from its authority and never from a tag; `validation_error` (422) for a body the
-    schema refuses, for the same obligation named twice, for two pages both marked primary,
+    from its authority and never from a tag; `regime_required` (422) when a new change names
+    no regime term, with the regime keys listed in `validKeys`; `validation_error` (422) for
+    a body the schema refuses, for the same obligation named twice, for two pages both marked primary,
     and for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;
     `tenant_agents_not_available` (403) from a key that belongs to a bank;
     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
@@ -759,7 +773,9 @@ def update_change(
     `supersededBy` names a row the library does not hold or has retired, with the valid keys
     listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a term id is a term
     that mirrors the jurisdiction list, since a change's market comes from its authority and
-    never from a tag; `editor_only_field` (422) when a key sends `status` or
+    never from a tag; `regime_required` (422) when `termIds` replaces the set with one that
+    names no regime term, because every change carries a regime (D-39), with the regime keys
+    in `validKeys`; `editor_only_field` (422) when a key sends `status` or
     `supersededBy`; `confirmed_fact` (422) when a key's call would drop a flag or a term, or
     replace a type, that somebody confirmed; `step_up_required` (403) when a person's call
     would do the same without a fresh passkey assertion; `validation_error` (422) for a field the

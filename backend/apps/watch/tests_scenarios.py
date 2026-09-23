@@ -33,7 +33,7 @@ from apps.shared.testing import (
     stub_session,
     user_principal,
 )
-from apps.taxonomy.models import ChangeType
+from apps.taxonomy.models import ChangeType, TaxonomyTerm
 from apps.watch import testing as watch_build
 from apps.proposals.models import Proposal
 from apps.watch.models import ChangeDocument, ChangeObligation, RegulatoryChange, SourceCheck
@@ -44,17 +44,21 @@ from apps.watch.models import ChangeDocument, ChangeObligation, RegulatoryChange
 # would have taught the scanner to ignore the shape a real leak takes.
 _DORA_RTS = "eu-dora-rts-2026-01"
 
-# One reform as a sweep files it, for the scenarios that register one.
-_CHANGE: dict[str, Any] = {
-    "stableKey": "chg-fi-2026-research-payments",
-    "title": "FI adopts amended rules on paying for investment research",
-    "changeType": "adopted",
-    "authorityLabel": "Finansinspektionen",
-    "summary": "FI's board decided to amend three regulations in the securities area.",
-    "sourceLabel": "Finansinspektionen",
-    "sourceUrl": "https://www.fi.se/",
-    "documents": [{"url": "https://www.fi.se/en/published/news/2026/research-payments/", "isPrimary": True}],
-}
+# One reform as a sweep files it, for the scenarios that register one. A function rather
+# than a constant because every change carries a regime (D-39, AC-AGT1), and a term's id is
+# known only once the reference seed has run.
+def _change() -> dict[str, Any]:
+    return {
+        "stableKey": "chg-fi-2026-research-payments",
+        "title": "FI adopts amended rules on paying for investment research",
+        "changeType": "adopted",
+        "authorityLabel": "Finansinspektionen",
+        "summary": "FI's board decided to amend three regulations in the securities area.",
+        "sourceLabel": "Finansinspektionen",
+        "sourceUrl": "https://www.fi.se/",
+        "documents": [{"url": "https://www.fi.se/en/published/news/2026/research-payments/", "isPrimary": True}],
+        "termIds": [str(watch_build.term(_SECURITIES).id)],
+    }
 
 
 # WAT-S6 and WAT-S7 drive two banks over the real routes, so they need the case the
@@ -182,7 +186,7 @@ class WatchScenarioTests(TestCase):
         registered = self._register(
             plain,
             {
-                **_CHANGE,
+                **_change(),
                 "agentRunId": str(run.id),
                 "events": [
                     {"label": "Consultation opened", "eventDate": "2026-03-01", "datePrecision": "month", "sortOrder": 1},
@@ -216,14 +220,14 @@ class WatchScenarioTests(TestCase):
         run, plain = self._run_with_a_key()
 
         # Given a change registered with stableKey "eu-dora-rts-2026-01"
-        first = self._register(plain, {**_CHANGE, "stableKey": _DORA_RTS, "agentRunId": str(run.id)})
+        first = self._register(plain, {**_change(), "stableKey": _DORA_RTS, "agentRunId": str(run.id)})
         self.assertEqual(first.status_code, 201, first.content)
 
         # When an agent posts the same stableKey with a new source page
         again = self._register(
             plain,
             {
-                **_CHANGE,
+                **_change(),
                 "stableKey": _DORA_RTS,
                 "agentRunId": str(run.id),
                 "documents": [{"url": "https://eur-lex.europa.eu/eli/reg_del/2026/1/oj", "isPrimary": True}],
@@ -444,7 +448,7 @@ class WatchScenarioTests(TestCase):
         registered = self._register(
             plain,
             {
-                **_CHANGE,
+                **_change(),
                 "agentRunId": str(run.id),
                 "termIds": [str(watch_build.term(_SECURITIES).id)],
                 "obligationLinks": [
@@ -558,7 +562,7 @@ class WatchScenarioTests(TestCase):
         registered = self._register(
             plain,
             {
-                **_CHANGE,
+                **_change(),
                 "agentRunId": str(run.id),
                 "termIds": [str(watch_build.term(_SECURITIES).id)],
                 "soWhat": {
@@ -576,7 +580,8 @@ class WatchScenarioTests(TestCase):
         # Then an ai_generation row carries model, version and purpose
         with transaction.atomic():
             tenancy.clear_tenant()
-            logged = AiGeneration.objects.get(subject_id=change_id)
+            # The draft's own row; the filing's classification is a `scope_suggestion` row beside it.
+            logged = AiGeneration.objects.get(subject_id=change_id, purpose="so_what")
             self.assertEqual(
                 (logged.purpose, logged.model, logged.model_version, logged.status),
                 ("so_what", "claude-opus-5", "2026-05-01", "draft"),
@@ -640,12 +645,29 @@ class WatchScenarioTests(TestCase):
         A new edition of a standard is one change, and only tenants that follow it see it (WAT-02, WAT-07, CAS-01).
         """
 
-    @skip("pending: WAT-S11 (WAT-07, chunk 5)")
+    @skip("pending: WAT-S11 (WAT-07, the standard-term and snapshot steps, watch-standards)")
     def test_wat_s11(self) -> None:
         """WAT-S11
 
         Every change carries a regime, a standard term needs a standards body, and a publisher's page keeps no snapshot (WAT-01, WAT-03, WAT-07).
         """
+        # Given an agent key with changes:write
+        run, plain = self._run_with_a_key()
+
+        # When it registers a change with no regime term
+        refused = self._register(plain, {**_change(), "agentRunId": str(run.id), "termIds": []})
+
+        # Then the API answers 422 with code "regime_required" and the valid regime keys
+        self.assertEqual(refused.status_code, 422, refused.content)
+        problem = refused.json()
+        self.assertEqual(problem["code"], "regime_required")
+        regimes = sorted(term.key for term in TaxonomyTerm.objects.filter(dimension__key="regime", active=True))
+        self.assertEqual(sorted(problem["validKeys"]), regimes, "the refusal lists the regimes the agent may send")
+        self.assertEqual(RegulatoryChange.objects.count(), 0, "a refusal stores nothing")
+
+        # The standard-term step (422 `standard_term_only_on_standards`), the snapshot steps
+        # and the inactive standards-body source land with watch-standards, which un-skips
+        # this scenario whole.
 
     def test_wat_s12(self) -> None:
         """WAT-S12
