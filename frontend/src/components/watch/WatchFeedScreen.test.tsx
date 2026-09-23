@@ -49,6 +49,7 @@ const research: ChangeRow = {
   keyDatePrecision: 'day',
   firstSeenAt: '2026-09-16T06:02:00Z',
   inFootprint: true,
+  market: null,
   case: {
     id: 'case-1',
     category: 'new',
@@ -75,6 +76,7 @@ const aiMapping: ChangeRow = {
   keyDate: null,
   keyDateLabel: 'Report date',
   inFootprint: false,
+  market: null,
   case: null,
 };
 
@@ -186,6 +188,11 @@ describe('a change row', () => {
   it('the foot reads status, key date, days left and scope', () => {
     expect(footMeta(research, t, ctx, TODAY)).toEqual(['Needs triage', 'In force 1 Oct 2026', 'in 12 days', 'ISK']);
     expect(footMeta(aiMapping, t, ctx, TODAY)).toEqual(['Report date Date not set', 'ISK', 'Outside our scope']);
+  });
+
+  it('a row from a market we watch names the market as text in place of the outside note', () => {
+    const danish = { ...aiMapping, market: { key: 'dk', kind: null, label: 'Denmark' } };
+    expect(footMeta(danish, t, ctx, TODAY)).toEqual(['Report date Date not set', 'ISK', 'Market we watch: Denmark']);
   });
 
   it('a change with no So what shows none', () => {

@@ -30,6 +30,7 @@ const row: ChangeRow = {
   keyDatePrecision: 'day',
   firstSeenAt: '2026-09-16T06:02:00Z',
   inFootprint: true,
+  market: null,
   case: {
     id: 'case-1',
     category: 'new',

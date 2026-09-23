@@ -26,6 +26,10 @@ const SERVICES = 'service_type';
 // The seeded obligation whose only service is Advice (backend/apps/shared/e2e_seed.py,
 // EXPECTED_LIBRARY.advice_only_obligation): switching Advice off is what hides it.
 const ADVICE_ONLY_OBLIGATION = 'obl-suitability-statement';
+// FP-S15 (e2e_seed.py, tax-watched-feed): a Danish authority's custody change, and
+// the Swedish lead change of chunk 6 (EXPECTED_HOME.lead_change) inside tenant A's scope.
+const WATCHED_MARKET_CHANGE = 'chg-e2e-dk-custody';
+const IN_SCOPE_CHANGE = 'chg-e2e-research-payments';
 // The seed's anchor date. Every inventory read here pins it, so nothing depends
 // on today and no version that takes effect later changes what is listed.
 const INVENTORY_AS_OF = '2026-09-16';
@@ -663,8 +667,32 @@ test.describe('regulatory scope, markets and standards', () => {
     // pending: FP-S13 (FP-04); needs the chunk 3 inventory
   });
 
-  test.fixme("FP-S15: A change's jurisdiction comes from its authority, and the feed has the watched-market view", async () => {
-    // pending: FP-S15 (FP-04); needs the chunk 5 watch feed
+  test("FP-S15: A change's jurisdiction comes from its authority, and the feed has the watched-market view", async ({ page }) => {
+    // Tenant A operates in Sweden and watches Denmark, as seeded (backend/apps/shared/e2e_seed.py,
+    // tax-watched-feed): the Danish authority's custody change is outside its scope by
+    // jurisdiction alone, while the Swedish lead change is inside it. The journey reads
+    // the scope and never changes it.
+    const danish = page.locator(`[data-change="${WATCHED_MARKET_CHANGE}"]`);
+    const swedish = page.locator(`[data-change="${IN_SCOPE_CHANGE}"]`);
+    const scope = page.getByRole('group', { name: 'Scope' });
+    await signInAs(page, LOGINS.reader);
+    await page.goto('/watch');
+    await expect(swedish).toBeVisible();
+    await expect(danish).toHaveCount(0);
+
+    // Markets we watch lists only what watching adds, the market named as text.
+    await scope.getByRole('button', { name: 'Markets we watch' }).click();
+    await expect(page).toHaveURL(/scope=watched/);
+    await expect(danish).toBeVisible();
+    await expect(danish).toContainText('Market we watch: Denmark');
+    await expect(swedish).toHaveCount(0);
+    // Watching opened nothing: the case still waits for triage, as creation left it.
+    await expect(danish).toContainText('Needs triage');
+
+    // Looking outside the scope shows it too, still naming the market it comes from.
+    await scope.getByRole('button', { name: 'Show outside our scope' }).click();
+    await expect(swedish).toBeVisible();
+    await expect(danish).toContainText('Market we watch: Denmark');
   });
 
   test.fixme("FP-S16: A standard shows only to tenants whose regulatory scope names it", async () => {

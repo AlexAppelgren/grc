@@ -151,9 +151,12 @@ export function footMeta(row: ChangeRow, t: Translate, ctx: FormatContext, today
   meta.push(...keyDateMeta(row, t, ctx, today));
   const terms = scopeTermLabels(row);
   if (terms.length > 0) meta.push(terms.join(', '));
-  // The feed read says whether a row is outside the footprint but not which
-  // terms put it there, so the row says that it is and the change page says why.
-  if (!row.inFootprint) meta.push(t('watch.row.outside'));
+  // A row from a market we watch names the market, as text and never a pill
+  // (FP-04). Otherwise the feed read says whether a row is outside the footprint
+  // but not which terms put it there, so the row says that it is and the change
+  // page says why.
+  if (row.market !== null) meta.push(t('watch.row.watchedMarket', { market: row.market.label }));
+  else if (!row.inFootprint) meta.push(t('watch.row.outside'));
   return meta;
 }
 
