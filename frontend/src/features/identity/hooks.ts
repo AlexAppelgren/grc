@@ -70,6 +70,21 @@ export function useFormatContext(): FormatContext {
   return { locale: userLocaleOf(me), timeZone: me?.tenant?.timezone ?? defaultFormatContext.timeZone };
 }
 
+// The person's own interface language (I18N-02), saved on them by PATCH /me.
+// Every label the API sends is read in that language, so every cached answer
+// is now in the old one: all are refetched, the session with them, and the
+// session gate re-renders in the new catalog. It settles once they are back,
+// so the switch never lands half in one language and half in the other.
+export function useSetLanguage(): UseMutationResult<void, unknown, Locale> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (locale: Locale) => {
+      await identity.updateMe({ locale });
+    },
+    onSuccess: () => queryClient.invalidateQueries(),
+  });
+}
+
 function useInvalidateSession(): () => Promise<void> {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: identityKeys.me });

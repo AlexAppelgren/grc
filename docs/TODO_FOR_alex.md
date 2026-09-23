@@ -670,3 +670,16 @@ Nothing waits for these; each has the default the build took.
       Anthropic's endpoint for the test deploy's made-up banks, knowing a question is
       whatever the tester types. Default if you say nothing: nothing changes in code, and
       the deploy follows whatever you set.
+
+## i18n-en-sv-switch: the interface language picker has no design card (2026-09-23, I18N-02)
+
+- [ ] **Confirm how a person picks their interface language, or draw it.** The shell card
+      (`design/screens/tenant-shell.html`) shows the account menu and the More sheet without
+      a language choice, and the prototype has none either (its English/Svenska chips switch
+      the content language of an obligation, not the interface). Default taken without
+      waiting: a "Language" group in the rail's account menu, between My sessions and Sign
+      out, holding one radio per interface language, each named in its own words ("English",
+      "Svenska"), the language in use marked, the menu staying open so the switch is seen to
+      land, and a short error line under the group if the save fails. The More sheet below
+      1024 px lays the same group out flat as touch rows. Say so if you want it elsewhere, for
+      example as a setting on a profile page, and the design card follows.

@@ -118,6 +118,7 @@ export const PAIRS: readonly Pair[] = [
   { name: 'rail: role line, count and minimise on the rail', fg: '--sidebar-muted-foreground', bg: '--sidebar' },
   { name: 'rail: current and hovered row', fg: '--sidebar-accent-foreground', bg: '--sidebar-accent' },
   { name: 'rail: role line and count on a current or hovered row', fg: '--sidebar-muted-foreground', bg: '--sidebar-accent' },
+  { name: 'rail: language error line in the account menu', fg: '--gds-sys-color-content-negative-01', bg: '--sidebar' },
   // The tab bar and the More sheet below 1024 px (design/system/navigation.md
   // 16). Named for the bar or the sheet even where a generic pair covers the
   // same tokens, so a later token change fails by name.
@@ -125,6 +126,7 @@ export const PAIRS: readonly Pair[] = [
   { name: 'tab bar: current tab label', fg: '--sidebar-accent-foreground', bg: '--sidebar-accent' },
   { name: 'more sheet: row label', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'more sheet: organisation and role line', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'more sheet: language error line', fg: '--gds-sys-color-content-negative-01', bg: '--gds-sys-color-l2-neutral-02' },
 ];
 
 export const NON_TEXT: readonly Pair[] = [

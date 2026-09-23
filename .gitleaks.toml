@@ -199,3 +199,9 @@ description = "E2E passkey private key for the seeded user reader-sv@example-ban
 condition = "AND"
 regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgXjQWZqtyaBvdSauPw7EQXwcL7Pzux4BT7PXI5mTmUHyhRANCAAQRNjo2Sl8qxneaYYjbBpMLfsl01osVq0s7xkDho4fT-OAVRR32_m-8VtPUTBlJzD58ymyHr4oIOzOrB4JHDtSf$''']
 paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+[[allowlists]]
+description = "E2E passkey private key for the seeded user language@example-bank.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgfHckdrhZk-n7rS-Xsce_W7LQAMD6-KmHC3LZvo5aCOyhRANCAAS0YAk5zeOVgIE00-Bf19vA0NzPZ9ipMklLaQw4_hwSoVMIZkdlpH3tPJFLRHpy0hbLQdUlQyeMjRMGB4tBAaoq$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']

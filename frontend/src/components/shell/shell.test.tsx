@@ -25,6 +25,12 @@ import { PermissionsProvider } from '@/shared/navigation/require-permission';
 
 const nav = vi.hoisted(() => ({ pathname: '/', replace: vi.fn() }));
 const session = vi.hoisted(() => ({ me: null as Me | null, mutate: vi.fn(), isPending: false }));
+const language = vi.hoisted(() => ({
+  rows: undefined as { key: string; kind: null; label: string }[] | undefined,
+  mutate: vi.fn(),
+  isPending: false,
+  isError: false,
+}));
 
 vi.mock('next/navigation', () => ({
   usePathname: () => nav.pathname,
@@ -42,6 +48,11 @@ vi.mock('next/link', () => ({
 vi.mock('@/features/identity/hooks', () => ({
   useSession: () => ({ status: 'signed-in', me: session.me, error: null, refetch: () => {} }),
   useSignOut: () => ({ mutate: session.mutate, isPending: session.isPending }),
+  useSetLanguage: () => ({ mutate: language.mutate, isPending: language.isPending, isError: language.isError }),
+}));
+
+vi.mock('@/features/tenant-admin/hooks', () => ({
+  useLanguages: () => ({ data: language.rows }),
 }));
 
 const t = createT('en');
@@ -79,6 +90,15 @@ beforeEach(() => {
   session.me = me();
   session.mutate.mockReset();
   session.isPending = false;
+  // The languages the platform serves, as rows: each in its own name, Danish among them.
+  language.rows = [
+    { key: 'da', kind: null, label: 'Dansk' },
+    { key: 'en', kind: null, label: 'English' },
+    { key: 'sv', kind: null, label: 'Svenska' },
+  ];
+  language.mutate.mockReset();
+  language.isPending = false;
+  language.isError = false;
   window.localStorage.clear();
   vi.stubGlobal('matchMedia', (query: string) => ({
     get matches() {
@@ -265,6 +285,54 @@ describe('the signed-in person', () => {
     flipCompact(true);
     expect(within(who).queryByRole('menu')).toBeNull();
     await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
+  });
+
+  it('switches the interface language from the menu, offering each language the interface is written in by its own name', () => {
+    const view = renderShell();
+    const who = document.querySelector('[data-who-panel]') as HTMLElement;
+    const trigger = within(who).getByRole('button', { name: 'Sara Lindqvist, account menu' });
+    act(() => trigger.focus());
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: 'mouse' });
+    const group = within(who).getByRole('group', { name: 'Language' });
+    const english = within(group).getByRole('menuitemradio', { name: 'English' });
+    const swedish = within(group).getByRole('menuitemradio', { name: 'Svenska' });
+    expect(english).toHaveAttribute('aria-checked', 'true');
+    expect(swedish).toHaveAttribute('aria-checked', 'false');
+    // Read out in its own language, whatever the page is in.
+    expect(swedish).toHaveAttribute('lang', 'sv');
+    // A language row the interface has no catalog for is a content language only.
+    expect(within(group).queryByRole('menuitemradio', { name: 'Dansk' })).toBeNull();
+
+    // The language already in use saves nothing; another is saved on the person,
+    // and the menu stays open so the switch is seen to land.
+    fireEvent.click(english);
+    expect(language.mutate).not.toHaveBeenCalled();
+    fireEvent.click(swedish);
+    expect(language.mutate).toHaveBeenCalledExactlyOnceWith('sv');
+    expect(within(who).getByRole('menu')).toBeInTheDocument();
+
+    language.isPending = true;
+    view.rerender(shell(PERMISSIONS));
+    expect(within(who).getByRole('menuitemradio', { name: 'Svenska' })).toHaveAttribute('aria-disabled', 'true');
+    language.isPending = false;
+    language.isError = true;
+    view.rerender(shell(PERMISSIONS));
+    // Read out from inside the menu, which owns only items and groups, so a live region and never an alert.
+    const failed = within(who).getByText('The language could not be changed. Try again.');
+    expect(failed).toHaveAttribute('aria-live', 'polite');
+    expect(within(who).getByRole('group', { name: 'Language' })).toHaveAttribute('aria-describedby', failed.id);
+    expect(within(who).queryByRole('alert')).toBeNull();
+  });
+
+  it('offers no language choice before the languages are known', () => {
+    language.rows = undefined;
+    renderShell();
+    const who = document.querySelector('[data-who-panel]') as HTMLElement;
+    const trigger = within(who).getByRole('button', { name: 'Sara Lindqvist, account menu' });
+    act(() => trigger.focus());
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: 'mouse' });
+    expect(within(who).getByRole('menu')).toBeInTheDocument();
+    expect(within(who).queryByRole('group', { name: 'Language' })).toBeNull();
   });
 
   it('drops the second line when there is neither organisation nor role', () => {
@@ -492,6 +560,44 @@ describe('at compact width: the tab bar', () => {
     expect(root.style.getPropertyValue('--tabbar-height')).toBe('72px');
     view.unmount();
     expect(root.style.getPropertyValue('--tabbar-height')).toBe('');
+  });
+
+  it('switches the interface language from the sheet, as the rail does, and stays open to show it land', () => {
+    const view = renderShell({ permissions: EVERYONE_AND_ADMIN });
+    openMore();
+    const account = within(sheet()).getByRole('group', { name: 'Account' });
+    const group = within(account).getByRole('group', { name: 'Language' });
+    const english = within(group).getByRole('radio', { name: 'English' });
+    const swedish = within(group).getByRole('radio', { name: 'Svenska' });
+    expect(english).toBeChecked();
+    expect(swedish).not.toBeChecked();
+    expect(swedish.closest('label')).toHaveAttribute('lang', 'sv');
+    expect(within(group).queryByRole('radio', { name: 'Dansk' })).toBeNull();
+    // Between the account's pages and sign out.
+    expect(within(account).getByRole('link', { name: 'My passkeys' }).compareDocumentPosition(group)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(group.compareDocumentPosition(within(account).getByRole('button', { name: 'Sign out' }))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+
+    fireEvent.click(english);
+    expect(language.mutate).not.toHaveBeenCalled();
+    fireEvent.click(swedish);
+    expect(language.mutate).toHaveBeenCalledExactlyOnceWith('sv');
+    expect(sheet()).toBeInTheDocument();
+
+    language.isPending = true;
+    view.rerender(shell(EVERYONE_AND_ADMIN));
+    expect(within(sheet()).getByRole('radio', { name: 'Svenska' })).toBeDisabled();
+    language.isPending = false;
+    language.isError = true;
+    view.rerender(shell(EVERYONE_AND_ADMIN));
+    expect(within(sheet()).getByRole('alert')).toHaveTextContent('The language could not be changed. Try again.');
+  });
+
+  it('offers no language choice in the sheet before the languages are known', () => {
+    language.rows = undefined;
+    renderShell({ permissions: EVERYONE_AND_ADMIN });
+    openMore();
+    expect(within(sheet()).getByRole('group', { name: 'Account' })).toBeInTheDocument();
+    expect(within(sheet()).queryByRole('group', { name: 'Language' })).toBeNull();
   });
 
   it('shows only what the permissions unlock: Today and More, and the account in the sheet', () => {
