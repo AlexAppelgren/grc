@@ -215,6 +215,8 @@ When a new_obligation_version proposal adds a standard's term to it
 Then it is refused at creation with 422 "standard_term_only_on_standards"
 When a reviewer's correction adds that term to a pending proposal and approves it
 Then the approval answers 422 "standard_term_only_on_standards" and nothing is written
+When a proposal filed before this rule asks for that term and is approved as it stands
+Then the approval answers the same and nothing is written
 And a tenant whose regulatory scope names no standard still sees the obligation
 ```
 

@@ -20,6 +20,8 @@ from datetime import date
 from typing import Any
 from unittest import mock, skip
 
+from django.core.exceptions import ValidationError
+
 from apps.agents import testing as agents_testing
 from apps.identity import tokens
 from apps.identity.models import ApiKey
@@ -33,7 +35,7 @@ from apps.library.models import (
     ObligationVersion,
 )
 from apps.library.seeds import seed_jurisdictions, seed_languages
-from apps.proposals import apply
+from apps.proposals import apply, logic
 from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
 from apps.shared import factories, tenancy, permissions as perms
 from apps.shared.audit import Actor
@@ -642,12 +644,80 @@ class ProposalsScenarioTests(ScenarioTestCase):
         Licensed text and extra obligations never enter a standard (INV-08, PRO-01, PRO-02).
         """
 
-    @skip("pending: PRO-S11 (INV-08, chunk 4)")
     def test_pro_s11(self) -> None:
         """PRO-S11
 
         A standard term never sits on a law's obligation (FP-01, INV-08).
         """
+        obligation = self._obligation()
+        self._version_one(obligation)
+        # The seeds keep the one standard term switched off until its records exist (D-47);
+        # the rule is about the term's dimension being opt-in, so the scenario switches it on.
+        with library_write("scenario"):
+            TaxonomyTerm.objects.filter(dimension__key="standard", key="iso_iec_27001").update(active=True)
+        with_standard = ["legal_entity:bank", "standard:iso_iec_27001"]
+        body: dict[str, Any] = {
+            "kind": "new_obligation_version",
+            "title": "Version 2 of the advice obligation, citing ISO/IEC 27001",
+            "targetType": "obligation",
+            "targetId": str(obligation.id),
+            "payload": {
+                "summaries": {"sv": "Institutet bedömer kunden innan rådgivning."},
+                "originalLanguage": "sv",
+                "effectiveFrom": "2026-10-01",
+                "effectiveFromPrecision": "day",
+                "terms": with_standard,
+            },
+            "fieldSources": {"summaries.sv": "https://www.fi.se/", "effectiveFrom": "https://www.fi.se/", "terms": "https://www.fi.se/"},
+            "sourceLabel": "FFFS 2017:2",
+            "sourceUrl": "https://www.fi.se/",
+        }
+
+        # Refused at creation, through a bank's key and through a person's session alike, and
+        # nothing is stored.
+        key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        for caller in ({"HTTP_X_API_KEY": key.plain_key}, sign_in(self.officer, tenant=self.tenant)):
+            refused = self._post("/proposals", body, caller)
+            self.assertEqual(refused.status_code, 422, refused.content)
+            self.assertEqual(refused.json()["code"], "standard_term_only_on_standards")
+        self.activate(self.tenant)
+        self.assertFalse(Proposal.objects.filter(kind="new_obligation_version").exists())
+        self.assertFalse(AuditEvent.objects.filter(action="proposal.created").exists())
+
+        # A reviewer's correction that adds the term is refused at approval: nothing is
+        # written, the proposal stays open and uncorrected, and no decision is audited.
+        proposal = self._version_proposal(obligation)
+        reviewer = sign_in(self.second_editor, step_up=True)
+        corrected = self._post(f"/proposals/{proposal['id']}/approve", {"payloadOverrides": {"terms": with_standard}}, reviewer)
+        self.assertEqual(corrected.status_code, 422, corrected.content)
+        self.assertEqual(corrected.json()["code"], "standard_term_only_on_standards")
+        row = Proposal.objects.get(pk=proposal["id"])
+        self.assertEqual((row.status, row.corrected_payload), (ProposalStatus.OPEN.value, None))
+        self.assertEqual([version.version_number for version in obligation.versions.all()], [1])
+        self.assertFalse(AuditEvent.objects.filter(action__in=("proposal.approved", "obligation.version_applied")).exists())
+        # The correction is refused on its own, before anything reaches the apply.
+        with self.assertRaises(ValidationError) as caught:
+            logic.corrected(row, logic.as_reviewer(self.second_editor, Actor.system("test")), {"terms": with_standard})
+        self.assertEqual(caught.exception.code, "standard_term_only_on_standards")
+
+        # A proposal that asked for the term before this rule existed is refused where it is
+        # applied, with the same code and nothing written.
+        Proposal.objects.filter(pk=proposal["id"]).update(payload={**row.payload, "terms": with_standard})
+        waited = self._post(f"/proposals/{proposal['id']}/approve", {}, reviewer)
+        self.assertEqual(waited.status_code, 422, waited.content)
+        self.assertEqual(waited.json()["code"], "standard_term_only_on_standards")
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
+        self.assertEqual([version.version_number for version in obligation.versions.all()], [1])
+        self.assertEqual(
+            [f"{link.term.dimension.key}:{link.term.key}" for link in ObligationTerm.objects.filter(obligation=obligation)],
+            ["legal_entity:bank"],
+        )
+
+        # A bank whose regulatory scope names no standard still sees the duty.
+        officer = sign_in(self.officer, tenant=self.tenant)
+        listed = self.client.get(f"{V1}/obligations", **officer)
+        self.assertEqual(listed.status_code, 200, listed.content)
+        self.assertIn(str(obligation.id), [item["id"] for item in listed.json()["items"]])
 
     @skip("pending: PRO-S12 (INV-07, PRO-03, chunk 13)")
     def test_pro_s12(self) -> None:
