@@ -39,14 +39,14 @@ class AgentReviewRowTests(ScenarioTestCase):
         self.officer = factories.member(self.tenant, roles=("compliance_officer",)).user
         # The confirming agent's key and run are the platform's (H15, AGT-01).
         tenancy.clear_tenant()
-        self.run = agent_build.platform_run(key=agent_build.reviewer_api_key())
+        self.agent_run = agent_build.platform_run(key=agent_build.reviewer_api_key())
         self.decision: dict[str, Any] = {
             "purpose": AiPurpose.AGENT_REVIEW,
             "model": "claude-opus-5",
             "model_version": "2026-05-01",
             "output": "Approve. The proposed wording matches the amended regulation as published.",
             "citations": [CITATION],
-            "agent_run_id": self.run.id,
+            "agent_run_id": self.agent_run.id,
             "subject_type": "proposal",
             "subject_id": uuid.uuid4(),
             "metadata_reported_by_agent": True,
@@ -59,7 +59,7 @@ class AgentReviewRowTests(ScenarioTestCase):
 
     def test_a_decision_that_names_its_run_and_record_is_logged(self) -> None:
         row = self._log(self.decision)
-        self.assertEqual((row.purpose, row.agent_run_id, row.tenant_id), ("agent_review", self.run.id, None))
+        self.assertEqual((row.purpose, row.agent_run_id, row.tenant_id), ("agent_review", self.agent_run.id, None))
         self.assertTrue(row.model_metadata_reported_by_agent)
 
     def test_the_database_refuses_a_decision_nobody_can_trace(self) -> None:
