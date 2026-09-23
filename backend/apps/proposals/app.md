@@ -52,11 +52,19 @@ server sets the proposal's owner from the target, and a second person in the
 same bank approves under `private_records.approve` with a passkey, through the
 same apply code and the same four-eyes constraint (D-57, ADR 0050).
 
-One check function guards the standards rules (INV-08) on every door into the
+One check function guards the standards rules (INV-08, D-35, D-36) on every door into the
 library: at `POST /proposals`, at the agent's proposal creation, over a
 reviewer's corrections at approval and at apply. A payload is stored when a
 proposal is created, so a check only at apply would leave licensed text in the
-platform database.
+platform database. It reads the instrument level's kind and the term dimension's kind,
+never a key, and answers four codes: `licensed_text` for a provision or provision version
+under a standard, or a source on a standard's obligation that is not an https link;
+`one_conformance_obligation` for a new obligation under a standard that already holds an
+active one; `standard_term_required` for a standard's obligation whose scope would hold no
+standard term or two; and `standard_term_only_on_standards` for a standard's term on a law's
+obligation, a new one included. The trigger `provision_not_under_standard` (library 0008)
+refuses a standard's provision in the database whatever writes it, so PRO-S10 proves the
+provision version case on the check itself: there is no standard's provision to version.
 
 The kinds are chunk 2's vocabulary and term kinds plus `new_obligation_version`: a new
 summary in force from a date, with the scope terms that come with it. `new_instrument` and
@@ -73,7 +81,13 @@ keeps its sources field by field; there is no citation table yet. `update_obliga
 `retire_record` wait for a scenario that needs them, and a watch link never travels as a
 proposal (D-64). PRO-S1, PRO-S3, PRO-S5 and PRO-S6 cover the two kinds beside the kinds
 they were written for: a source per fact, one transaction with the re-index, four eyes and
-the idempotent retry. A proposal a bank's
+the idempotent retry. `new_provision` brings a node of a law's text with its first verbatim
+text, sourced like a new record, and `new_provision_version` a later text of a provision
+that exists, sourced like an obligation version (proposals 0005). Each writes its version,
+naming the proposal, its audit row and the provision's re-index in one transaction. Both may
+be corrected; an agent's approval of either waits for a person (D-79), since a provision
+version has no column to say an agent confirmed it. A bank's library updates list them
+uncut, as a record of the library rather than a duty. A proposal a bank's
 own person or agent makes is linked to that bank in `proposal_tenant`, a tenant table, so
 the bank can follow its own proposals while the console sees only that one came from a
 bank, never who made it.
@@ -231,6 +245,8 @@ When a reviewer's correction adds that term to a pending proposal and approves i
 Then the approval answers 422 "standard_term_only_on_standards" and nothing is written
 When a proposal filed before this rule asks for that term and is approved as it stands
 Then the approval answers the same and nothing is written
+When a new_obligation proposal under that level carries a standard's term
+Then it is refused at creation, and at apply when stored before the rule, with the same code
 And a tenant whose regulatory scope names no standard still sees the obligation
 ```
 

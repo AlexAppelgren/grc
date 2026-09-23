@@ -63,7 +63,7 @@ def _applied(*, since: datetime.datetime, kind: str | None, outside_footprint: b
     """The changes applied since `since`, newest first, cut to the footprint in the database
     rather than in Python: a duty the footprint hides is not counted, not only unprinted. A
     change to a shared list carries no target and is never cut, and neither is a new
-    instrument, which is a record of the library rather than a duty. A new obligation has
+    instrument or a provision, a record of the library rather than a duty. A new obligation has
     no target either, since it did not exist when it was proposed: it is cut through the
     first version its approval wrote."""
     from apps.library.reading import scope_term_ids
@@ -76,7 +76,9 @@ def _applied(*, since: datetime.datetime, kind: str | None, outside_footprint: b
         created_inside = Exists(ObligationVersion.objects.filter(applied_by_proposal=OuterRef("pk"), obligation__in=inside))
         new_obligation = Q(kind=ProposalKind.NEW_OBLIGATION.value)
         queryset = queryset.filter(
-            (Q(target_id__isnull=True) & ~new_obligation) | Q(target_id__in=inside.values("id")) | (new_obligation & created_inside),
+            (~Q(target_type=logic.OBLIGATION_TARGET) & ~new_obligation)
+            | Q(target_id__in=inside.values("id"))
+            | (new_obligation & created_inside),
         )
     return queryset.order_by("-applied_at", "-id")
 
@@ -126,7 +128,11 @@ def _vocabulary_refs(proposals: list[Proposal], order: list[str]) -> dict[uuid.U
 def _duties(proposals: list[Proposal], versions: dict[uuid.UUID, ObligationVersion]) -> dict[uuid.UUID, uuid.UUID]:
     """The duty each change touched, by proposal: its target, or for a new obligation the
     record its approval created, read through the first version it wrote."""
-    duties = {proposal.id: proposal.target_id for proposal in proposals if proposal.target_id is not None}
+    duties = {
+        proposal.id: proposal.target_id
+        for proposal in proposals
+        if proposal.target_id is not None and proposal.target_type == logic.OBLIGATION_TARGET
+    }
     for proposal in proposals:
         if proposal.kind == ProposalKind.NEW_OBLIGATION.value and proposal.id in versions:
             duties[proposal.id] = versions[proposal.id].obligation_id

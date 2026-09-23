@@ -264,6 +264,11 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "A new instrument applied from an approved proposal: the actor is platform staff or a "
         "platform agent, and the title is the instrument's stable key, a library fact."
     ),
+    "apps/proposals/apply.py record(SubjectType.PROVISION.value) tenant_id=None actor=actor title=provision.stable_key": (
+        "A new provision or a new text of one applied from an approved proposal: the actor is "
+        "platform staff, the title is the provision's stable key, a library fact, and the row "
+        "holds keys, version numbers and languages, never the text or the proposer."
+    ),
     "apps/library/reports.py record(subject_type.value) tenant_id=tenant_id actor=actor title=subject_title": (
         "A problem report. Its tenant id is the reporter's zone, None only for platform "
         "staff, and create_report's contract is that subject_title is the record's public "

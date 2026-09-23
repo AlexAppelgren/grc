@@ -20,3 +20,9 @@ def reindex(obligation_id: uuid.UUID) -> None:
     may write a chunk, and it returns counts this hook has no use for.
     """
     indexing.reindex(obligation_id)
+
+
+def reindex_provision(provision_id: uuid.UUID) -> None:
+    """The same hook for a provision's versions (SRC-01, INV-02): called from the approval
+    transaction that applies a new provision or a new text of one."""
+    indexing.reindex_provision(provision_id)
