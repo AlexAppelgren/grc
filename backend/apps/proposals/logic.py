@@ -84,6 +84,8 @@ from apps.shared.audit import Actor, record
 from apps.shared.schemas import AgentDecision
 
 SUBJECT_TYPE = "proposal"
+# The widest retry key the column holds, so a longer one is a 422 rather than a failed insert.
+IDEMPOTENCY_KEY_MAX_CHARS: int = Proposal._meta.get_field("idempotency_key").max_length or 0
 # What an obligation proposal points at (schema v0.3 `subject_type`).
 OBLIGATION_TARGET = "obligation"
 # What a provision version proposal points at.
@@ -635,10 +637,23 @@ def create(
     # whose rows this transaction may write, so it is the tenant the link row can carry.
     tenant_id = tenancy.database_tenant_id()
     if idempotency_key:
-        existing = Proposal.objects.filter(idempotency_key=idempotency_key).order_by("created_at", "id").first()
+        if len(idempotency_key) > IDEMPOTENCY_KEY_MAX_CHARS:
+            raise ValidationError(
+                f"An Idempotency-Key is at most {IDEMPOTENCY_KEY_MAX_CHARS} characters.", code="validation_error"
+            )
+        # The key is the proposer's own: another bank or agent sending the same value files
+        # its own proposal and is never answered this one (playbook 4.3). The same person in
+        # another bank is the same proposer, so there it is a conflict, never a replay.
+        own = Q(proposed_by_user=proposer.user) if proposer.user is not None else Q(proposed_by_api_key_id=proposer.api_key_id)
+        existing = Proposal.objects.filter(own, idempotency_key=idempotency_key).order_by("created_at", "id").first()
         if existing is not None:
+            same_zone = (
+                ProposalTenant.objects.filter(proposal=existing, tenant_id=tenant_id).exists()
+                if tenant_id is not None
+                else not existing.proposed_in_tenant
+            )
             submitted = (kind, title, stored_payload, target_type, target_id, sources)
-            if (existing.kind, existing.title, existing.payload, existing.target_type, existing.target_id, existing.field_sources) != submitted:
+            if not same_zone or (existing.kind, existing.title, existing.payload, existing.target_type, existing.target_id, existing.field_sources) != submitted:
                 raise ValidationError(
                     "This Idempotency-Key was already used for a different proposal.",
                     code="idempotency_conflict",

@@ -369,7 +369,10 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     an https link; `one_conformance_obligation` (422) for a new obligation under a standard
     that already holds one; `standard_term_required` (422) when a standard's obligation
     would carry no standard term, or more than one; `idempotency_conflict` (409) when the
-    same `Idempotency-Key` arrives with a different body; `permission_denied` (403) without
+    same proposer's `Idempotency-Key` arrives with a different body or from another bank
+    (a key is its sender's own: another caller's value files a proposal of its own);
+    `validation_error` (422) also for an `Idempotency-Key` longer than 200 characters;
+    `permission_denied` (403) without
     the permission or the scope; `unauthenticated` (401) without a credential.
     """
     # Ungated by design: logic-gate (proposals.create, library_vocab.manage or the proposals:write scope; PRO-01).
