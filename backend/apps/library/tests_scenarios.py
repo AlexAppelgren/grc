@@ -594,7 +594,10 @@ class LibraryScenarioTests(ScenarioTestCase):
         }
         created = self._post("/proposals", body, {"HTTP_X_API_KEY": proposer.plain_key})
         self.assertEqual(created.status_code, 201, created.content)
-        approved = self._post(f"/proposals/{created.json()['id']}/approve", {}, {"HTTP_X_API_KEY": confirmer.plain_key})
+        # The confirming agent sends the model call behind its decision, in a run of its own (D-80).
+        approved = self._post(
+            f"/proposals/{created.json()['id']}/approve", agents_testing.decision(confirmer), {"HTTP_X_API_KEY": confirmer.plain_key}
+        )
         self.assertEqual(approved.status_code, 200, approved.content)
 
         # The record's provenance names the proposing agent and the confirming agent:

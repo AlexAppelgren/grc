@@ -21,6 +21,7 @@ from typing import Any
 from unittest import mock, skip
 
 from apps.agents import testing as agents_testing
+from apps.governance.models import AiGeneration
 from apps.identity import tokens
 from apps.identity.models import ApiKey
 from apps.library.models import (
@@ -585,7 +586,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.activate(self.tenant)
         self.assertEqual(ProblemReport.objects.filter(subject_id=obligation.id).count(), 1, "no platform session filed one either")
 
-    @skip("pending: PRO-S8 (PRO-04, R2)")
+    @skip("pending: PRO-S8 (PRO-04, chunk 11)")
     def test_pro_s8(self) -> None:
         """PRO-S8
 
@@ -672,8 +673,12 @@ class ProposalsScenarioTests(ScenarioTestCase):
         tenancy.clear_tenant()
 
         # A second platform key, bound to a different agent definition, holds proposals:review.
+        # Every decision it makes carries the model call behind it and names the open run of
+        # its own key it was made in (AUD-02, D-80).
         reviewer_key = agents_testing.reviewer_api_key()
         reviewer_headers = {"HTTP_X_API_KEY": reviewer_key.plain_key}
+        sent = agents_testing.decision(reviewer_key)
+        another_agents_run = agents_testing.decision(agents_testing.reviewer_api_key())["agentRunId"]
 
         # It reads the pending proposals through the queue route a person reads, with the
         # same source beside the same diff.
@@ -693,14 +698,24 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual([segment["op"] for segment in detail["diff"]], ["delete", "insert"])
         self.assertEqual([source["field"] for source in detail["sources"]], ["effectiveFrom", "summaries.en", "summaries.sv", "terms"])
 
+        # A decision without the model call behind it is refused, and so is one counted in a
+        # run of another agent's key, as a run that never existed is (AUD-02, D-80).
+        for without, status, code in (
+            ({"agentRunId": sent["agentRunId"]}, 422, "validation_error"),
+            ({**sent, "agentRunId": another_agents_run}, 404, "not_found"),
+        ):
+            refused = self._post(f"/proposals/{proposal['id']}/approve", without, reviewer_headers)
+            self.assertEqual((refused.status_code, refused.json()["code"]), (status, code), refused.content)
+
         # Its correction may not move which language the summary was written in: that would
         # store the machine translation as the unlabelled original (INV-05). Refused, and
-        # nothing applies.
-        moved = self._post(f"/proposals/{proposal['id']}/approve", {"payloadOverrides": {"originalLanguage": "en"}}, reviewer_headers)
+        # like the two above, nothing applies.
+        moved = self._post(f"/proposals/{proposal['id']}/approve", {"payloadOverrides": {"originalLanguage": "en"}, **sent}, reviewer_headers)
         self.assertEqual(moved.status_code, 422, moved.content)
         self.assertEqual(moved.json()["code"], "validation_error")
         self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
         self.assertEqual(list(obligation.versions.values_list("version_number", flat=True)), [1])
+        self.assertFalse(AiGeneration.objects.filter(subject_id=proposal["id"]).exists(), "a refused decision logs no model call")
 
         # It corrects the wording and approves through the same route a person calls, and
         # the decision applies exactly as a person's does, in one transaction. Its
@@ -715,11 +730,20 @@ class ProposalsScenarioTests(ScenarioTestCase):
                     "summaries": {"sv": corrected_sv, "en": "The institution assesses the client's knowledge and experience before advising."},
                     "isMachine": False,
                 },
+                **sent,
             },
             reviewer_headers,
         )
         self.assertEqual(approved.status_code, 200, approved.content)
         self.assertEqual(approved.json()["status"], "approved")
+        # The model call behind the approval is in the AI output log, as the agent's own
+        # report, about this proposal and counted in the run it named (AUD-02, D-80).
+        logged = AiGeneration.objects.get(subject_id=proposal["id"])
+        self.assertEqual(
+            (logged.purpose, logged.subject_type, str(logged.agent_run_id), logged.model_metadata_reported_by_agent),
+            ("agent_review", "proposal", sent["agentRunId"], True),
+        )
+        self.assertEqual((logged.model, logged.citations), (agents_testing.DECISION["model"], agents_testing.DECISION["citations"]))
         version = obligation.versions.order_by("-version_number").first()
         assert version is not None
         self.assertEqual(version.version_number, 2)
@@ -742,27 +766,31 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(decided.reviewed_by_api_key_id, reviewer_key.id)
         self.assertEqual(decided.reviewed_by_agent_id, reviewer_key.agent.id)
 
-        # The audit row names the confirming agent, its definition version and its key, and
-        # carries no step-up assertion.
+        # The audit row names the confirming agent, its definition version, its key and the
+        # run it decided in, and carries no step-up assertion.
         event = AuditEvent.objects.get(action="proposal.approved", subject_id=proposal["id"])
         self.assertEqual(event.actor_type, "agent")
         self.assertEqual(event.actor_id, reviewer_key.agent.id)
         self.assertIn(reviewer_key.agent.key, event.actor_label)
         self.assertIn(f"v{reviewer_key.agent.current_version}", event.actor_label)
         self.assertEqual(event.after["reviewingApiKeyPrefix"], reviewer_key.row.key_prefix)
+        self.assertEqual(event.after["agentRunId"], sent["agentRunId"])
         self.assertIsNone(event.step_up_assertion_id)
         self.assertTrue(event.after["corrected"])
 
         # A platform key bound to an agent but without the review scope answers 403 naming
-        # the scope, on every route of the queue, and leaves the proposal as it was.
+        # the scope, on every route of the queue, and leaves the proposal as it was, even
+        # when it sends its decision in a run of its own.
         waiting = self._version_proposal(obligation, key=proposer_key)
         tenancy.clear_tenant()
-        watcher = {"HTTP_X_API_KEY": agents_testing.agent_key().plain_key}
+        watcher_key = agents_testing.agent_key()
+        watcher = {"HTTP_X_API_KEY": watcher_key.plain_key}
+        watched = agents_testing.decision(watcher_key)
         for method, path, body in (
             ("GET", "/proposals", None),
             ("GET", f"/proposals/{waiting['id']}", None),
-            ("POST", f"/proposals/{waiting['id']}/approve", {}),
-            ("POST", f"/proposals/{waiting['id']}/reject", {"rejectionCode": "duplicate", "note": "Already filed."}),
+            ("POST", f"/proposals/{waiting['id']}/approve", watched),
+            ("POST", f"/proposals/{waiting['id']}/reject", {"rejectionCode": "duplicate", "note": "Already filed.", **watched}),
         ):
             with self.subTest(route=f"{method} {path}"):
                 refused = self.client.get(f"{V1}{path}", **watcher) if body is None else self._post(path, body, watcher)
@@ -773,13 +801,20 @@ class ProposalsScenarioTests(ScenarioTestCase):
         # It rejects through the same route a person calls: the decision names the agent,
         # and the library is left exactly as it was.
         rejected = self._post(
-            f"/proposals/{waiting['id']}/reject", {"rejectionCode": "duplicate", "note": "Version 2 already says this."}, reviewer_headers
+            f"/proposals/{waiting['id']}/reject",
+            {"rejectionCode": "duplicate", "note": "Version 2 already says this.", **sent, "decision": agents_testing.REJECTION_DECISION},
+            reviewer_headers,
         )
         self.assertEqual(rejected.status_code, 200, rejected.content)
         self.assertEqual(rejected.json()["status"], "rejected")
         refused_row = Proposal.objects.get(pk=waiting["id"])
         self.assertEqual((refused_row.reviewed_by_api_key_id, refused_row.reviewed_by_agent_id), (reviewer_key.id, reviewer_key.agent.id))
         self.assertEqual(sorted(obligation.versions.values_list("version_number", flat=True)), [1, 2])
+        # Its run counts both of its decisions, the approval and the rejection (D-80).
+        self.assertEqual(
+            sorted(str(row.subject_id) for row in AiGeneration.objects.filter(agent_run_id=sent["agentRunId"])),
+            sorted([proposal["id"], waiting["id"]]),
+        )
 
         # A bank's key without the review scope answers 403; no route under it writes a
         # library row except through apply, which the fence guard proves structurally.
@@ -805,26 +840,38 @@ class ProposalsScenarioTests(ScenarioTestCase):
         # key is written with no tenant activated (H15).
         tenancy.clear_tenant()
 
-        same_key = self._post(f"/proposals/{proposal['id']}/approve", {}, {"HTTP_X_API_KEY": proposer_key.plain_key})
+        # Each key sends its decision in an open run of its own (D-80), so what refuses it is
+        # four eyes and never a missing decision.
+        same_key = self._post(
+            f"/proposals/{proposal['id']}/approve", agents_testing.decision(proposer_key), {"HTTP_X_API_KEY": proposer_key.plain_key}
+        )
         self.assertEqual(same_key.status_code, 409, same_key.content)
         self.assertEqual(same_key.json()["code"], "four_eyes_violation")
 
         # A second key of the same agent definition is refused the same way.
+        tenancy.clear_tenant()
         second_key_same_agent = agents_testing.agent_key(agent_row=agent_definition, scopes=(perms.SCOPE_PROPOSALS_REVIEW,))
-        same_agent = self._post(f"/proposals/{proposal['id']}/approve", {}, {"HTTP_X_API_KEY": second_key_same_agent.plain_key})
+        same_agent = self._post(
+            f"/proposals/{proposal['id']}/approve",
+            agents_testing.decision(second_key_same_agent),
+            {"HTTP_X_API_KEY": second_key_same_agent.plain_key},
+        )
         self.assertEqual(same_agent.status_code, 409, same_agent.content)
         self.assertEqual(same_agent.json()["code"], "four_eyes_violation")
         self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
+        self.assertFalse(AiGeneration.objects.filter(subject_id=proposal["id"]).exists(), "a refused decision logs no model call")
 
         # A platform key holding the review scope but bound to no agent definition is
         # refused at the gate, on every route of the queue, with its own code: nothing it
-        # confirmed could be told apart from what it proposed.
+        # confirmed could be told apart from what it proposed. It has no agent to open a run
+        # for, so the run it names is one it never opened; the gate answers first.
         headers: dict[str, Any] = {"HTTP_X_API_KEY": self._unbound_platform_key(scopes=(perms.SCOPE_PROPOSALS_REVIEW,))}
+        unbound = {"decision": agents_testing.DECISION, "agentRunId": str(uuid.uuid4())}
         for method, path, body in (
             ("GET", "/proposals", None),
             ("GET", f"/proposals/{proposal['id']}", None),
-            ("POST", f"/proposals/{proposal['id']}/approve", {}),
-            ("POST", f"/proposals/{proposal['id']}/reject", {"rejectionCode": "duplicate", "note": "Already filed."}),
+            ("POST", f"/proposals/{proposal['id']}/approve", unbound),
+            ("POST", f"/proposals/{proposal['id']}/reject", {"rejectionCode": "duplicate", "note": "Already filed.", **unbound}),
         ):
             with self.subTest(route=f"{method} {path}"):
                 refused = self.client.get(f"{V1}{path}", **headers) if body is None else self._post(path, body, headers)
@@ -877,6 +924,8 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertIsNone(Proposal.objects.get(pk=proposal["id"]).reviewed_by_api_key_id)
 
         # A key of a different agent definition approves, and the change applies.
-        approved = self._post(f"/proposals/{proposal['id']}/approve", {}, {"HTTP_X_API_KEY": third_reviewer.plain_key})
+        approved = self._post(
+            f"/proposals/{proposal['id']}/approve", agents_testing.decision(third_reviewer), {"HTTP_X_API_KEY": third_reviewer.plain_key}
+        )
         self.assertEqual(approved.status_code, 200, approved.content)
         self.assertEqual(approved.json()["status"], "approved")

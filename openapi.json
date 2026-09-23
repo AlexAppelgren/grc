@@ -1,6 +1,107 @@
 {
   "components": {
     "schemas": {
+      "AgentDecision": {
+        "additionalProperties": false,
+        "description": "The model call behind a confirming agent's decision on another agent's work:\napproving, correcting or rejecting a proposal, or confirming a watch item's curation.\n\nAn agent's decision is a model call, and every model call is logged (AUD-02), so the\nagent sends this with the decision and the write turns it into one `ai_generation` row\nunder the purpose `agent_review`, marked as reported by the agent, naming the run the\ndecision was made in and the proposal or change it was about (D-80). A decision sent\nwithout a model, a version or a citation is refused rather than logged as one nobody\ncan attribute or check.\n\nPublic facts only: the sources a confirming agent reads are the pages the proposal or\nthe change already cites, and nothing from a bank's zone ever reaches its prompt\n(NFR-04, D-07).",
+        "examples": [
+          {
+            "citations": [
+              {
+                "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+                "url": "https://www.fi.se/en/published/news/2026/reporting/"
+              }
+            ],
+            "model": "claude-opus-5",
+            "modelVersion": "2026-05-01",
+            "output": "Approve. The proposed wording matches the amended regulation as the decision memorandum publishes it, and the date it applies from is the one the memorandum states.",
+            "promptHash": "9f2a1c7d4b8e05f3",
+            "promptTemplate": "library-confirmer/decide/v1"
+          }
+        ],
+        "properties": {
+          "citations": {
+            "description": "The public pages the decision rests on, at least one and at most 20; none, or more, answers 422 naming the field. At least one, because a decision a reader cannot check against a source is not one to let into the shared library. Every citation is a public page: no bank's own record is ever cited, because nothing from a bank's zone reaches the prompt (NFR-04, D-07).",
+            "items": {
+              "$ref": "#/components/schemas/AiCitation"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Citations",
+            "type": "array"
+          },
+          "model": {
+            "description": "Which model made the decision, as the provider names it, 1 to 120 characters. Reported by the agent that made the decision, not measured by bleqq (D-80, as D-66 for a drafted \u201cSo what?\u201d). In R1 every agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs its own reviewing agent. Required: a decision nobody can attribute to a model is not something the AI output log can record, so the call is refused rather than stored.",
+            "examples": [
+              "claude-opus-5"
+            ],
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "modelVersion": {
+            "description": "Which version of that model, 1 to 120 characters, so two decisions months apart can be told apart. Reported by the agent that made the decision, not measured by bleqq (D-80, as D-66 for a drafted \u201cSo what?\u201d). In R1 every agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs its own reviewing agent. Required, for the same reason as `model`.",
+            "examples": [
+              "2026-05-01"
+            ],
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Modelversion",
+            "type": "string"
+          },
+          "output": {
+            "description": "What the model concluded and why, 1 to 20000 characters: the decision in words and what in the cited sources supports it, or what they did not support. Longer is refused with a 422 naming the field rather than cut short. It is stored as AI output, labelled as such, and never reads as a person's review.",
+            "examples": [
+              "Approve. The proposed wording matches the amended regulation as published."
+            ],
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Output",
+            "type": "string"
+          },
+          "promptHash": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A hash of the prompt actually sent, at most 128 characters, so two calls can be compared without either prompt being kept. Optional, and the only thing about the input that is stored.",
+            "examples": [
+              "9f2a1c7d4b8e05f3"
+            ],
+            "title": "Prompthash"
+          },
+          "promptTemplate": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Which prompt produced the decision, by name and version, at most 200 characters, so an odd decision can be traced to the instructions behind it. Optional. Send the name, never the prompt: bleqq stores no prompt text at all.",
+            "examples": [
+              "library-confirmer/decide/v1"
+            ],
+            "title": "Prompttemplate"
+          }
+        },
+        "required": [
+          "model",
+          "modelVersion",
+          "output",
+          "citations"
+        ],
+        "title": "AgentDecision",
+        "type": "object"
+      },
       "AgentDefinitionOut": {
         "description": "One agent definition as the platform ships it, loaded from its versioned folder.",
         "examples": [
@@ -8615,7 +8716,7 @@
       },
       "ProposalApproveBody": {
         "additionalProperties": false,
-        "description": "The body of `POST /proposals/{proposalId}/approve`: the reviewer's word that this\nchange may enter the shared library, and the corrections they made first.\n\nApproving is the only door into the library, so this call needs `proposals.review`\nand a passkey step-up no older than the step-up window; without a fresh assertion it\nanswers 403 `step_up_required`, and the assertion's id is written on every audit row\nthe approval leaves. The reviewer is never the proposer: the database refuses that row\nand the call answers 409 `four_eyes_violation`. Approval carries no\n`Idempotency-Key` and no `If-Match`: a proposal is decided once, and a second call on\na decided proposal answers 409 `invalid_transition` rather than applying anything\ntwice. The audit and outbox rows the approval writes are append-only.\n\nThe whole call is platform work in the shared zone. Neither field ever names the bank\na proposal came from, because a bank member's identity does not reach the console, and\nnothing a bank wrote about its own compliance is touched by an approval.",
+        "description": "The body of `POST /proposals/{proposalId}/approve`: the reviewer's word that this\nchange may enter the shared library, and the corrections they made first.\n\nApproving is the only door into the library, so this call needs `proposals.review`\nand a passkey step-up no older than the step-up window; without a fresh assertion it\nanswers 403 `step_up_required`, and the assertion's id is written on every audit row\nthe approval leaves. The reviewer is never the proposer: the database refuses that row\nand the call answers 409 `four_eyes_violation`. Approval carries no\n`Idempotency-Key` and no `If-Match`: a proposal is decided once, and a second call on\na decided proposal answers 409 `invalid_transition` rather than applying anything\ntwice. The audit and outbox rows the approval writes are append-only.\n\nA confirming agent approves with the platform-only scope `proposals:review` instead of\na step-up, and sends two more fields a person never sends: `decision`, the model call\nbehind its approval, and `agentRunId`, the open run of its own key it was made in\n(D-80). The first example is a person's approval, the second an agent's.\n\nThe whole call is platform work in the shared zone. No field ever names the bank a\nproposal came from, because a bank member's identity does not reach the console, and\nnothing a bank wrote about its own compliance is touched by an approval.",
         "examples": [
           {
             "note": "Wording follows the board decision; scope narrowed to the retail categories the decision names.",
@@ -8626,9 +8727,53 @@
                 "sv": "Investeringsanalys fr\u00e5n tredje part f\u00e5r tas emot endast om den betalas med institutets egna medel eller fr\u00e5n ett analyskonto."
               }
             }
+          },
+          {
+            "agentRunId": "3c2a9f1e-6b7d-4e58-a1c4-0f9d8e7b6a52",
+            "decision": {
+              "citations": [
+                {
+                  "label": "Finansinspektionen, board decision 15 September 2026",
+                  "url": "https://www.fi.se/en/published/news/2026/research-payments/"
+                }
+              ],
+              "model": "claude-opus-5",
+              "modelVersion": "2026-05-01",
+              "output": "Approve. The proposed wording matches the board decision as Finansinspektionen publishes it, and the date it applies from is the one the decision states.",
+              "promptHash": "9f2a1c7d4b8e05f3",
+              "promptTemplate": "library-confirmer/decide/v1"
+            },
+            "note": "Confirmed against the board decision."
           }
         ],
         "properties": {
+          "agentRunId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The run this decision was made in, as the UUID `POST /agent-runs` returned: a run the calling key opened and has not closed, so every decision a confirming agent makes is counted in the run that made it, as a sweep's registrations are, and the decision's audit row names it. Required from a key: naming none, or a run that is closed, answers 422 `run_not_open`, and a run another key opened, another agent's included, answers 404 `not_found` exactly as a run that never existed does. A person's body never names one, and one that does answers 422 `validation_error`.",
+            "examples": [
+              "3c2a9f1e-6b7d-4e58-a1c4-0f9d8e7b6a52"
+            ],
+            "title": "Agentrunid"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentDecision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The model call behind an agent's decision, as the agent reports it: the model and its version, the prompt's name and hash, what it concluded and at least one public page the conclusion rests on. Required from a key, whose decision without it answers 422 `validation_error`: every model call is logged, and one nobody reported cannot be. It becomes one entry of the AI output log under the purpose `agent_review`, in the same transaction as the decision, marked as the agent's own report rather than bleqq's measurement and labelled as AI output, so a reader must not take it for a person's review. No bank reads that entry. A person's decision is not a model call, so a person's body never carries it and one that does answers 422 `validation_error`."
+          },
           "note": {
             "default": "",
             "description": "The reviewer's own sentence to the proposer, stored on the proposal and sent to them with the decision. Optional on an approval, unlike a rejection, which needs a reason and a note. It is the reviewer's comment on the request and never becomes part of the library record's text, so a reader must not quote it as what the authority said.",
@@ -9667,14 +9812,75 @@
         "type": "object"
       },
       "ProposalRejectBody": {
+        "additionalProperties": false,
+        "description": "The body of `POST /proposals/{proposalId}/reject`: why a reviewer turned a proposal\ndown, as a reason the proposer's screen can branch on and a sentence the proposer reads.\n\nNothing in the library changes. The proposal is closed as `rejected` for good, with the\nreason and the note stored on it, and the proposer is told through the notification the\nrejection's audit row triggers. A field the body does not name answers 422\n`validation_error` rather than being dropped.\n\nA confirming agent rejects with the platform-only scope `proposals:review` and sends two\nmore fields a person never sends: `decision`, the model call behind its rejection, and\n`agentRunId`, the open run of its own key it was made in (D-80). The first example is a\nperson's rejection, the second an agent's.",
+        "examples": [
+          {
+            "note": "Version 2 already says this; the board decision changes nothing further.",
+            "rejectionCode": "duplicate"
+          },
+          {
+            "agentRunId": "3c2a9f1e-6b7d-4e58-a1c4-0f9d8e7b6a52",
+            "decision": {
+              "citations": [
+                {
+                  "label": "Finansinspektionen, board decision 15 September 2026",
+                  "url": "https://www.fi.se/en/published/news/2026/research-payments/"
+                }
+              ],
+              "model": "claude-opus-5",
+              "modelVersion": "2026-05-01",
+              "output": "Reject. The board decision limits the rule to retail clients, and the proposal widens its scope to professional clients, which the cited decision does not support.",
+              "promptHash": "9f2a1c7d4b8e05f3",
+              "promptTemplate": "library-confirmer/decide/v1"
+            },
+            "note": "The board decision applies to retail clients only; the proposed scope names professional clients too.",
+            "rejectionCode": "wrong_scope"
+          }
+        ],
         "properties": {
+          "agentRunId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The run this decision was made in, as the UUID `POST /agent-runs` returned: a run the calling key opened and has not closed, so every decision a confirming agent makes is counted in the run that made it, as a sweep's registrations are, and the decision's audit row names it. Required from a key: naming none, or a run that is closed, answers 422 `run_not_open`, and a run another key opened, another agent's included, answers 404 `not_found` exactly as a run that never existed does. A person's body never names one, and one that does answers 422 `validation_error`.",
+            "examples": [
+              "3c2a9f1e-6b7d-4e58-a1c4-0f9d8e7b6a52"
+            ],
+            "title": "Agentrunid"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentDecision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The model call behind an agent's decision, as the agent reports it: the model and its version, the prompt's name and hash, what it concluded and at least one public page the conclusion rests on. Required from a key, whose decision without it answers 422 `validation_error`: every model call is logged, and one nobody reported cannot be. It becomes one entry of the AI output log under the purpose `agent_review`, in the same transaction as the decision, marked as the agent's own report rather than bleqq's measurement and labelled as AI output, so a reader must not take it for a person's review. No bank reads that entry. A person's decision is not a model call, so a person's body never carries it and one that does answers 422 `validation_error`."
+          },
           "note": {
             "default": "",
+            "description": "The reviewer's own sentence to the proposer, saying what is wrong in words they can act on, stored on the proposal and sent to them with the decision. Required, unlike on an approval: left empty or blank, the call answers 422 `reason_required`. It is the reviewer's comment on the request and never part of any library record's text.",
+            "examples": [
+              "Version 2 already says this; the board decision changes nothing further."
+            ],
             "title": "Note",
             "type": "string"
           },
           "rejectionCode": {
             "default": "",
+            "description": "Why the proposal is refused, as the key of a live row of the `rejection_reason` vocabulary, a library list: for example `duplicate`, `wrong_scope`, `poor_wording` or `outside_sector_scope`. Its rows are data an admin may extend, relabel or retire without a deploy, never a closed set, and `GET /vocab/rejection_reason` returns the live ones; compare the key, never the label. Required: left empty, or naming a key the list does not hold or has retired, the call answers 422 `reason_required` and nothing is decided.",
+            "examples": [
+              "duplicate"
+            ],
             "title": "Rejectioncode",
             "type": "string"
           }
@@ -22136,7 +22342,7 @@
     },
     "/api/v1/proposals/{proposal_id}": {
       "get": {
-        "description": "One proposal as a reviewer decides it: the record it would change, what that record\nsays today against what this would make it say, the two compared sentence by sentence,\nthe source behind every changed value, and the scope before and after. Call it before\napproving, correcting or rejecting: read it, open the sources, and only then decide.\n\nWhat comes back is a request and not the library: until the proposal is approved the\nlibrary still says what `currentSummary` says. Reading it changes nothing and records\nnothing. A proposal filed inside a bank arrives without its proposer, as in the list.\n\nNeeds the platform permission `proposals.review` from a person, or the platform-only\nscope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): an\nindependent agent opens the same proposal a person opens before it decides. No bank role\nand no bank's key reaches it.\n\nErrors to branch on: `unauthenticated` (401) without a session or a key;\n`permission_denied` (403) without `proposals.review` or `proposals:review`, or for a\nbank's key; `agent_not_bound` (403) for a key holding the scope but bound to no agent\ndefinition; `not_found` (404) for a proposal that does not exist and for anything that\nis not a UUID.",
+        "description": "One proposal as a reviewer decides it: the record it would change, the wording it is\ncompared with against what this would make it say, the two compared sentence by\nsentence, the source behind every changed value, and the scope before and after. Call it\nbefore approving, correcting or rejecting: read it, open the sources, and only then\ndecide.\n\nWhat it is compared with depends on where it stands. A proposal that was not approved,\nopen or rejected, is read against the version in force today and the scope the record\ncarries now, so its comparison moves when a version comes into force or another is\napproved. An approved one is pinned: it is read against the version numbered just before\nthe one it wrote, and the scope its approval found, so its comparison stays the same\nwhatever the calendar or a later version says.\n\nWhat comes back is a request and not the library: until the proposal is approved the\nlibrary still says what the version in force says. Reading it changes nothing and\nrecords nothing. A proposal filed inside a bank arrives without its proposer, as in the\nlist.\n\nNeeds the platform permission `proposals.review` from a person, or the platform-only\nscope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): an\nindependent agent opens the same proposal a person opens before it decides. No bank role\nand no bank's key reaches it.\n\nErrors to branch on: `unauthenticated` (401) without a session or a key;\n`permission_denied` (403) without `proposals.review` or `proposals:review`, or for a\nbank's key; `agent_not_bound` (403) for a key holding the scope but bound to no agent\ndefinition; `not_found` (404) for a proposal that does not exist and for anything that\nis not a UUID.",
         "operationId": "getProposal",
         "parameters": [
           {
@@ -22171,7 +22377,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Open one proposal and read it against what the library says today",
+        "summary": "Open one proposal and read it against the library version it is compared with",
         "tags": [
           "Proposals"
         ]
@@ -22179,7 +22385,7 @@
     },
     "/api/v1/proposals/{proposal_id}/approve": {
       "post": {
-        "description": "The only door into the shared library. Call it once a reviewer has read the\nproposal, opened its sources and satisfied themselves that the facts are right; what\nit applies is what every bank on the platform will read as the library's own text.\n\nIn one transaction it applies the payload, writes the new library version, writes the\naudit rows for the library record and for the proposal, and re-indexes the record for\nsearch: all of it commits or none of it does. The reviewer may correct the payload on\nthe way through with `payloadOverrides`, and what they approved is stored beside what\nwas proposed, so the queue and the audit trail keep both. The answer is the proposal\nrow as it now stands, with `status` `approved` and `appliedAt` set.\n\nNeeds the platform permission `proposals.review` from a person, stepped up fresh: the\nassertion id is written on the audit rows the approval leaves. Or the platform-only\nscope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): a\nkey holds no passkey assertion, so it is never asked for one, and the audit rows the\napproval leaves carry no assertion id for its decision. Either way the reviewer is\nnever the proposer, the same key, or a key of the same agent definition: the widened\nproposal_four_eyes constraint refuses that row on its own, whichever principal wrote\nit. An agent approves obligation versions only, the one record that can say an agent\nconfirmed it and never reads as a person's check; a translation it approves stays\nlabelled machine-made, and its correction may reword a summary but never move\n`originalLanguage`, which answers `validation_error`. A vocabulary or term proposal\nwaits for a person (D-79).\n\nErrors to branch on: `permission_denied` without `proposals.review` or\n`proposals:review`; `agent_not_bound` for a key holding the scope but bound to no agent\ndefinition; `step_up_required` when a person calls without a fresh passkey assertion;\n`four_eyes_violation` when the reviewer is the person, key or agent who made the\nproposal; `person_review_required` when an agent approves a vocabulary or term\nproposal, which waits for a person; `invalid_transition` when the proposal was already\napproved or rejected, which is also what a repeated or simultaneous second call\nanswers, since nothing is ever applied twice; `source_missing` when a correction\nintroduces a field the proposal never sourced; `validation_error` when a correction is\noffered on a kind that cannot be corrected or does not fit its payload; `unknown_key`\nwhen the payload names a row the library does not hold; `jurisdiction_term_mirrored`\n(422) when the payload adds or renames a term of a dimension that mirrors the\njurisdiction list, or scopes an obligation with one, which a proposal filed before that\nrule may still ask for; `not_found` when there is no such proposal.",
+        "description": "The only door into the shared library. Call it once a reviewer has read the\nproposal, opened its sources and satisfied themselves that the facts are right; what\nit applies is what every bank on the platform will read as the library's own text.\n\nIn one transaction it applies the payload, writes the new library version, writes the\naudit rows for the library record and for the proposal, and re-indexes the record for\nsearch: all of it commits or none of it does. The reviewer may correct the payload on\nthe way through with `payloadOverrides`, and what they approved is stored beside what\nwas proposed, so the queue and the audit trail keep both. The answer is the proposal\nrow as it now stands, with `status` `approved` and `appliedAt` set.\n\nNeeds the platform permission `proposals.review` from a person, stepped up fresh: the\nassertion id is written on the audit rows the approval leaves. Or the platform-only\nscope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): a\nkey holds no passkey assertion, so it is never asked for one, and the audit rows the\napproval leaves carry no assertion id for its decision. Either way the reviewer is\nnever the proposer, the same key, or a key of the same agent definition: the widened\nproposal_four_eyes constraint refuses that row on its own, whichever principal wrote\nit. An agent approves obligation versions only, the one record that can say an agent\nconfirmed it and never reads as a person's check; a translation it approves stays\nlabelled machine-made, and its correction may reword a summary but never move\n`originalLanguage`, which answers `validation_error`. A vocabulary or term proposal\nwaits for a person (D-79).\n\nAn agent's approval is a model call, and every model call is logged: a key sends the\ncall behind its approval in `decision` and the open run of its own key it was made in\nin `agentRunId`, and in the same transaction the approval writes one entry of the AI\noutput log under the purpose \"agent_review\", as the agent's own report, while its audit\nrow names the run (D-80). A person sends neither.\n\nErrors to branch on: `permission_denied` without `proposals.review` or\n`proposals:review`; `agent_not_bound` for a key holding the scope but bound to no agent\ndefinition; `step_up_required` when a person calls without a fresh passkey assertion;\n`run_not_open` (422) when a key names no run in `agentRunId`, or a run it has closed;\n`not_found` (404) when that run is one another key opened, or when there is no such\nproposal; `four_eyes_violation` when the reviewer is the person, key or agent who made\nthe proposal; `person_review_required` when an agent approves a vocabulary or term\nproposal, which waits for a person; `invalid_transition` when the proposal was already\napproved or rejected, which is also what a repeated or simultaneous second call\nanswers, since nothing is ever applied twice; `source_missing` when a correction\nintroduces a field the proposal never sourced; `validation_error` when a key sends no\n`decision` or a person sends one or names a run, and when a correction is offered on a\nkind that cannot be corrected or does not fit its payload; `unknown_key` when the\npayload names a row the library does not hold; `jurisdiction_term_mirrored` (422) when\nthe payload adds or renames a term of a dimension that mirrors the jurisdiction list,\nor scopes an obligation with one, which a proposal filed before that rule may still ask\nfor.",
         "operationId": "approveProposal",
         "parameters": [
           {
@@ -22232,13 +22438,16 @@
     },
     "/api/v1/proposals/{proposal_id}/reject": {
       "post": {
+        "description": "Close a proposal as refused. Call it once a reviewer has read the proposal and its\nsources and found the change wrong, already made, badly worded or outside what the\nlibrary covers; nothing in the shared library changes, now or later.\n\nIn one transaction it stores the reason and the note on the proposal, closes it as\n`rejected` for good and writes the decision's audit row, whose outbox event is what\ntells the proposer, with the reason. The answer is the proposal row as it now stands,\nwith `status` `rejected`, `rejectionCode` and `reviewNote` set. A rejected proposal is\nnever reopened: the proposer files a new one.\n\nNeeds the platform permission `proposals.review` from a person, with no step-up, since\na rejection lets nothing into the library. Or the platform-only scope\n`proposals:review` from a key bound to an agent definition (D-62, ADR 0054), which may\nreject any kind, a vocabulary or term proposal included, because a rejection writes no\nlibrary row (D-79). Either way the reviewer is never the proposer, the same key, or a\nkey of the same agent definition. An agent's rejection is a model call and is logged as\none: a key sends the call behind it in `decision` and the open run of its own key in\n`agentRunId`, the rejection writes one entry of the AI output log under the purpose\n\"agent_review\" in the same transaction, and its audit row names the run (D-80). A\nperson sends neither.\n\nErrors to branch on: `permission_denied` (403) without `proposals.review` or\n`proposals:review`, or for a bank's key; `agent_not_bound` (403) for a key holding the\nscope but bound to no agent definition; `reason_required` (422) when `rejectionCode`\nor `note` is empty, or the code is not a live row of the \"rejection_reason\" vocabulary;\n`run_not_open` (422) when a key names no run, or a run it has closed; `not_found` (404)\nwhen that run is one another key opened, and when there is no such proposal;\n`validation_error` (422) when a key sends no `decision`, when a person sends one or\nnames a run, and for a field the body does not name; `four_eyes_violation` (409) when\nthe reviewer is the person, key or agent who made the proposal; `invalid_transition`\n(409) when the proposal was already approved or rejected.",
         "operationId": "rejectProposal",
         "parameters": [
           {
+            "description": "The proposal being decided, the UUID the queue returns as `id`. A proposal that does not exist, and anything that is not a UUID, answers `not_found`.",
             "in": "path",
             "name": "proposal_id",
             "required": true,
             "schema": {
+              "description": "The proposal being decided, the UUID the queue returns as `id`. A proposal that does not exist, and anything that is not a UUID, answers `not_found`.",
               "title": "Proposal Id",
               "type": "string"
             }
@@ -22274,7 +22483,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Reject Proposal",
+        "summary": "Turn a proposal down with a reason the proposer can act on",
         "tags": [
           "Proposals"
         ]

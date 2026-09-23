@@ -1135,3 +1135,22 @@ how a call bleqq made ended, the provider's own stop reason when the model finis
 `aborted` when the caller stopped reading first and `failed` when the model failed once
 asked (D-82). A streamed Ask answer is logged however it ends, and without the column a
 call cut short read in the log exactly as a finished one. Empty on a row an agent filed.
+
+## 14. A confirming agent's approval or rejection carries its decision and its run (2026-09-23, proposals-agent-decision-log)
+
+`ProposalApproveBody` and `ProposalRejectBody` (`approveProposal`, `rejectProposal`) each
+gain two optional fields the designed `{note}` and `{reason}` bodies do not have:
+`decision`, the `AgentDecision` section 11 describes (D-80), and `agentRunId`, the run the
+decision was made in. Both are required from a key bound to an agent and refused from a
+person: a key's decision without `decision` answers 422 `validation_error`, without
+`agentRunId`, or naming a closed run, 422 `run_not_open`, and naming a run another key
+opened, another agent's included, 404 `not_found`, as a proposal's `agentRunId` already
+does at `createProposal`; a person's body naming either answers 422 `validation_error`.
+The run is checked against the deciding key rather than its agent, the same rule every
+other agent write follows (`runs.require_open_run_of_key`), which is the stricter reading
+of D-80's "a run of the deciding key's own agent". In the decision's own transaction the
+write logs one `ai_generation` row under `agent_review` naming the proposal and the run,
+and the decision's audit row gains `agentRunId` beside `reviewingApiKeyPrefix`.
+`ProposalRejectBody` becomes a strict write body like the approve body: a field it does
+not name answers 422 rather than being dropped. The reject route keeps
+`{rejectionCode, note}` (section 7) and is documented to the API standard.
