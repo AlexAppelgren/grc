@@ -51,7 +51,12 @@ test.describe('home journeys', () => {
     const items = comingUp.locator('[data-roadmap-item]');
     await expect(items.filter({ hasText: 'FI adopts amended rules on paying for investment research' })).toHaveCount(1);
     await expect(items.filter({ hasText: 'Amended reporting of securities financing transactions' })).toHaveCount(1);
-    await expect(items.first()).toContainText('FI adopts amended rules on paying for investment research');
+    // Ordered against each other, never against the top of the list: chunk 5's
+    // seed dates one reform 2027-01-01, a literal, which reaches the top ahead
+    // of the +20-day lead from 12 December 2026 and flipped a first-row check.
+    const titles = await items.allInnerTexts();
+    const leadAt = titles.findIndex((text) => text.includes('FI adopts amended rules on paying for investment research'));
+    expect(leadAt).toBeLessThan(titles.findIndex((text) => text.includes('Amended reporting of securities financing transactions')));
     await expect(comingUp.getByText('Insurance distribution guidance outside our scope')).toHaveCount(0);
     await expect(comingUp.getByText(/\d+ dated items ahead/)).toBeVisible();
 
@@ -158,10 +163,69 @@ test.describe('home journeys', () => {
     await expect(page).toHaveURL(/\/watch\//);
   });
 
-  test.fixme("HOM-S5: Upcoming changes are public facts and the calendar feed is revocable", async () => {
-    // pending: HOM-S5 (HOM-04). The calendar feed's contract is being
-    // corrected to a query-token form (q-feed-token); c6-calendar-feeds-screen
-    // builds this journey once it lands.
+  test('HOM-S5: Upcoming changes are public facts and the calendar feed is revocable', async ({ page, apiGuard }) => {
+    // The agent half (a key with upcoming:read reads /upcoming and finds library
+    // facts and nothing of any bank's) is proved at the backend
+    // (apps/home/tests_scenarios.py::test_hom_s5), not repeated here. This
+    // journey drives the half a person does: subscribe from the roadmap, prove
+    // the address serves the roadmap as a calendar of public facts, revoke it,
+    // and prove the same address is refused from the next fetch on.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto('/roadmap');
+    await page.getByRole('link', { name: 'Subscribe to calendar feed' }).click();
+    await expect(page).toHaveURL(/\/me\/calendar-feeds$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Calendar feeds' })).toBeVisible();
+
+    // Settle before reading the list: a retried run may find a feed of its own.
+    await expect(page.locator('[data-feeds-list]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+    const feedIds = () => page.locator('[data-feed-id]').evaluateAll((rows) => rows.map((row) => row.getAttribute('data-feed-id')));
+    const before = await feedIds();
+
+    await page.getByRole('button', { name: 'New feed' }).click();
+    const shown = page.getByRole('dialog', { name: 'Copy this address into your calendar' });
+    await expect(shown).toBeVisible();
+    const address = (await shown.locator('[data-feed-address]').innerText()).trim();
+    const token = new URL(address).searchParams.get('token') ?? '';
+    expect(new URL(address).pathname).toBe('/api/v1/calendar/feed.ics');
+    expect(token).toMatch(/^[^.]+\.[^.]+$/);
+    expect(page.url()).not.toContain(token);
+
+    // A calendar client's own fetch: the address alone, no session and no key.
+    const served = await page.request.get(address);
+    expect(served.status()).toBe(200);
+    expect(served.headers()['content-type']).toContain('text/calendar');
+    // RFC 5545 folds a line longer than 75 octets onto the next, which starts
+    // with a space; a calendar client reads it as one line, so this does too.
+    const ics = (await served.text()).replace(/\r\n[ \t]/g, '');
+    expect(ics).toContain('BEGIN:VCALENDAR');
+    expect(ics).toContain('SUMMARY:In force: FI adopts amended rules on paying for investment research\r\n');
+    // Public facts only: the bank's own "So what?" never travels in a
+    // calendar, and nothing outside the regulatory scope is in it.
+    expect(ics).not.toContain('Confirm the annual assessment criteria');
+    expect(ics).not.toContain('Insurance distribution guidance outside our scope');
+
+    await shown.getByRole('button', { name: 'Done' }).click();
+    await expect(shown).toBeHidden();
+    await expect(page.locator('[data-feed-id]')).toHaveCount(before.length + 1);
+    const created = (await feedIds()).find((id) => !before.includes(id));
+    expect(created).toBeTruthy();
+    // Shown once: neither the list nor a reload shows the address again.
+    await page.reload();
+    const row = page.locator(`[data-feed-id="${created}"]`);
+    await expect(row.getByText('Active', { exact: true })).toBeVisible();
+    await expect(page.getByText(token)).toHaveCount(0);
+
+    await row.getByRole('button', { name: 'Revoke' }).click();
+    const confirm = page.getByRole('dialog', { name: 'Revoke this feed?' });
+    await confirm.getByRole('button', { name: 'Revoke' }).click();
+    await expect(confirm).toBeHidden();
+    await expect(row.getByText('Revoked', { exact: true })).toBeVisible();
+
+    apiGuard.allow(/\/calendar\/feed\.ics/, 404, 'the address was revoked, so it is refused from the next fetch on (HOM-S5)');
+    const refused = await page.request.get(address);
+    expect(refused.status()).toBe(404);
+    expect(await refused.text()).not.toContain('BEGIN:VCALENDAR');
   });
 
   test('HOM-S6: A regulatory date on the roadmap wears its urgency as a pill', async ({ page, apiGuard }) => {
