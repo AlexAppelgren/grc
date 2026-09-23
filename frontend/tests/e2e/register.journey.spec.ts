@@ -6,7 +6,7 @@ import { test } from './support/api-guard';
 // stub: un-fixme it when the journey is real.
 
 test.describe('register journeys', () => {
-  test.fixme("REG-S1: Applicability changes through a request a second person approves", async () => {
+  test.fixme("REG-S1: One compliance person sets applicability after confirming it", async () => {
     // pending: REG-S1 (REG-01)
   });
 
@@ -39,7 +39,7 @@ test.describe('register journeys', () => {
 // REG-08, J-10). Each stays test.fixme until the task in
 // docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
 test.describe('standards per legal entity', () => {
-  test.fixme("REG-S12: A legal entity follows a standard when its applicability is approved", async () => {
+  test.fixme("REG-S12: A legal entity follows a standard when its applicability is set to \"Applies\"", async () => {
     // pending: REG-S12 (REG-01, REG-02)
   });
 
@@ -47,7 +47,7 @@ test.describe('standards per legal entity', () => {
     // pending: REG-S13 (REG-08)
   });
 
-  test.fixme("REG-S14: Unit decisions are filed from the paste and decided in one call, with four eyes on every row", async () => {
+  test.fixme("REG-S14: Unit decisions are set from the paste in one confirmed call", async () => {
     // pending: REG-S14 (REG-01, REG-08, AC-REG1)
   });
 

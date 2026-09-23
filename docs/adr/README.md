@@ -41,10 +41,10 @@ if behaviour changes. Numbering never reuses a number.
 | [0032](0032-international-jurisdiction.md) | International is a jurisdiction kind of its own | D-38 | accepted by default |
 | [0033](0033-regime-is-the-sector-boundary.md) | Every instrument and every change carries a regime, and the regime list is the boundary | D-39 | accepted by default |
 | [0034](0034-sector-vocabulary-edges.md) | The sector scope's edges: tax, AI and the licensed-activity dimension | D-40 | accepted by default |
-| [0035](0035-soa-units-in-the-tenant-zone.md) | The Statement of Applicability's units live in the tenant zone | D-41 | accepted by default |
-| [0036](0036-entity-follows-a-standard-by-applicability.md) | A legal entity follows a standard through approved applicability | D-42 | accepted by default |
+| [0035](0035-soa-units-in-the-tenant-zone.md) | The Statement of Applicability's units live in the tenant zone | D-41 | accepted by default; amended by D-75 |
+| [0036](0036-entity-follows-a-standard-by-applicability.md) | A legal entity follows a standard through approved applicability | D-42 | accepted by default; amended by D-75 |
 | [0037](0037-certificate-on-the-licence-row.md) | A certificate sits on the entity's licence row and reaches the roadmap, not the feed | D-43 | accepted by default |
-| [0038](0038-bulk-decision-of-applicability-requests.md) | Many pending applicability requests are decided in one call, with four eyes on every row | D-44 | accepted by default |
+| [0038](0038-bulk-decision-of-applicability-requests.md) | Many pending applicability requests are decided in one call, with four eyes on every row | D-44 | superseded by D-75 |
 | [0039](0039-standards-watched-from-public-metadata.md) | Standards are watched from public metadata, and only from cleared publishers | D-45 | accepted by default |
 | [0040](0040-soa-view-now-export-later.md) | The Statement of Applicability is a filtered register view in R2 and an export in R3 | D-46 | accepted by default |
 | [0041](0041-seed-one-standard-first.md) | One standard is seeded first, and the rest arrive by proposal | D-47 | accepted by default |

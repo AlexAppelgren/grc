@@ -1,6 +1,6 @@
 # ADR 0036 — A legal entity follows a standard through approved applicability
 
-**Date:** 2026-09-19 · **Status:** accepted by default (D-42, PRD 0.3 REG-01, TEN-02; the owner confirms)
+**Date:** 2026-09-19 · **Status:** accepted by default (D-42, PRD 0.3 REG-01, TEN-02; the owner confirms); amended by D-75: the "applies" is set by one person holding `applicability.approve` after a confirmation dialog, with one audit event and no four eyes or step-up, and there is no request table, so the scope row is created in the transaction of the write that sets it
 
 ## Context
 
