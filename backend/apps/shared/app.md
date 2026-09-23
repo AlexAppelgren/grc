@@ -133,6 +133,13 @@ Then real data, not a skeleton, is visible within 500 ms of navigation
 And the measurement is recorded beside the screen in the UI plan
 ```
 
+The journey (`shared.journey.spec.ts`) measures every tenant and console destination of the
+navigation registry: the median of `E2E_SCREEN_SAMPLES` client-side navigations (5 by default)
+to the destination's own real-data locator in `frontend/tests/e2e/support/screen-budgets.ts`,
+500 ms unless its row says otherwise. A destination with no row, a locator that never shows, a
+skeleton that lingers or a `next dev` build fails it. The medians go in the Measured column of
+`docs/plans/UI_Implementation_Plan.md`.
+
 ### NFR-S8 — The pill gallery matches the design card in both themes `@e2e` (NFR-03, AC-NFR3)
 ```gherkin
 Given the /dev/pills gallery route rendering every tone, slot and record type

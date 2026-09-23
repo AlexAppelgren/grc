@@ -2,10 +2,13 @@ import { readFileSync } from 'node:fs';
 
 import type { Page } from '@playwright/test';
 
+import { destinations, surfaceOf, unlocks } from '@/shared/navigation/registry';
 import { AA_NON_TEXT, AA_NORMAL_TEXT, contrastRatio, flatten, NON_TEXT, PAIRS, type Pair } from '@/styles/contrast';
 
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
+import { allowFreshContext, LOGINS, signInAs, signOut } from './support/passkeys';
+import { budgetGaps, budgetOf } from './support/screen-budgets';
+import { measureScreen, SCREEN_SAMPLES } from './support/screen-timing';
 import { CHUNK5_WATCH, openChangeByStableKey, openWatchFeed, signInAsSv } from './support/watch-coverage';
 
 // shared: the @e2e scenarios from backend/apps/shared/app.md (playbook Appendix B).
@@ -168,8 +171,45 @@ const TENANT_SCREENS: readonly Screen[] = [
 ];
 
 test.describe('shared journeys', () => {
-  test.fixme("NFR-S7: Every screen reaches real data within its budget", async () => {
-    // pending: NFR-S7 (NFR-02)
+  test('NFR-S7: Every registered destination has a screen budget', () => {
+    // A destination joins the registry with a row in support/screen-budgets.ts,
+    // so the journey below can never leave a screen unmeasured.
+    expect(budgetGaps()).toEqual([]);
+  });
+
+  test('NFR-S7: Every screen reaches real data within its budget', async ({ page, apiGuard }, testInfo) => {
+    // Every sample loads a start screen from cold before it navigates, so the
+    // time limit grows with the samples and the screens.
+    test.setTimeout(60_000 + SCREEN_SAMPLES * destinations.length * 6_000);
+    allowFreshContext(apiGuard);
+
+    // A bank's administrator unlocks every tenant destination; the console's
+    // destinations are split between a library editor and a platform admin.
+    // Each person measures what their own permissions open, read from GET /me
+    // exactly as the client gate reads them, never from a role name.
+    const times = new Map<string, number>();
+    for (const login of [LOGINS.admin, LOGINS.editor, LOGINS.platform]) {
+      const me = page.waitForResponse((response) => response.request().method() === 'GET' && new URL(response.url()).pathname === '/api/v1/me' && response.ok());
+      await signInAs(page, login);
+      const principal = (await (await me).json()) as MeRead;
+      const surface = surfaceOf(principal);
+      for (const destination of destinations) {
+        if (destination.surface !== surface || times.has(destination.id) || !unlocks(destination.anyOfPermissions, principal.permissions)) continue;
+        times.set(destination.id, await measureScreen(page, destination));
+      }
+      await signOut(page);
+    }
+
+    const report = destinations.map((d) => ({ id: d.id, href: d.href, budgetMs: budgetOf(d).budgetMs, medianMs: times.get(d.id) ?? null }));
+    await testInfo.attach('screen-times.json', { body: JSON.stringify({ samples: SCREEN_SAMPLES, screens: report }, null, 2), contentType: 'application/json' });
+    expect(
+      report.filter((r) => r.medianMs === null).map((r) => r.id),
+      'destinations no seeded login could open',
+    ).toEqual([]);
+    expect(
+      report.filter((r) => r.medianMs !== null && r.medianMs > r.budgetMs).map((r) => `${r.href}: ${Math.round(r.medianMs ?? 0)} ms, over ${r.budgetMs} ms`),
+      'screens over their budget',
+    ).toEqual([]);
   });
 
   test("NFR-S9: Every text-on-surface pair passes WCAG AA in both themes", async ({ page }) => {
@@ -363,6 +403,12 @@ test.describe('shared journeys', () => {
     });
   });
 });
+
+/** What NFR-S7 reads of the signed-in person: their tenant, if any, and their permissions, as `GET /me` sends them. */
+interface MeRead {
+  tenant: object | null;
+  permissions: string[];
+}
 
 /** What I18N-S4 reads of a change: its pages and its timeline, as `GET /changes/{id}` sends them. */
 interface ChangeRead {
