@@ -41,8 +41,10 @@ earliest such change is the one named.
 **Every model call leaves one AI log row** (AUD-02, D-82) carrying the answer's own id
 and how the call ended, even when the reader leaves before the answer is finished
 (`aborted`) or the model fails part way (`failed`), with whatever it had written by then.
-A model that fails ends the stream with `model_unavailable`. No audit row is written: an
-answer changes no record.
+A model that fails ends the stream with `model_unavailable`. The closing `answer` event
+carries the provider's own stop reason as that row stores it, so a reader whose answer the
+model cut off at `ASK_MAX_TOKENS` is told so (D-82). No audit row is written: an answer
+changes no record.
 
 `rate_answer` stays `not_built` until the reader's verdict is built.
 """
@@ -250,11 +252,13 @@ def _events(
     statements: list[AnswerStatement] = []
     written = ""
     name = ""
+    stop_reason = ""
     try:
         with closing(model):
             for event in model:
                 if isinstance(event, ai.Generation):
                     name = event.generation.model
+                    stop_reason = event.generation.stop_reason
                     continue
                 sentences, written = _split(written + event)
                 for sentence in sentences:
@@ -280,7 +284,8 @@ def _events(
     yield AskAnswerEvent(
         answer=answer.model_copy(
             update={"statements": statements, "citations": citations, "no_answer": not statements, "model": name}
-        )
+        ),
+        stop_reason=stop_reason or None,
     )
 
 
