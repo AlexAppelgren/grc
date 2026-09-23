@@ -12,9 +12,9 @@ GET /audit-events (chunk 4).
 
 Operations exercised (the audit-on-write guard reads these names): createProposal,
 approveProposal, createConsoleTenant, updateTenant, createFootprintRequest. ADM-S4 also drives the
-console routes other apps register — the source registry, the platform agent keys and the
-agent definitions they bind to — by their gate alone; what each one then does is its own
-app's scenario.
+console routes other apps register — the source registry, the search evaluation set, the
+platform agent keys and the agent definitions they bind to — by their gate alone; what each
+one then does is its own app's scenario.
 
 Prefixes hosted: ACC, ADM, AUD.
 """
