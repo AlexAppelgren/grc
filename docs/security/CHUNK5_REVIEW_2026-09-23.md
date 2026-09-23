@@ -97,19 +97,24 @@ fixed) / accepted.
 ## Gates run
 
 Backend:
-- Suites `apps.shared`, `apps.watch`, `apps.agents`, `apps.identity`, `apps.proposals` and
-  `apps.governance`: the guard suites (RLS, tenancy, tenant isolation, route permissions,
-  audit on write, library fence and library database guard) together with the app suites.
-- ruff and mypy.
-- `compliance_check.py --all` and `requirements_coverage.py`.
+- `apps.shared`, `apps.watch`, `apps.agents`, `apps.identity`, `apps.proposals` and
+  `apps.governance`, which include the guard suites (RLS, tenancy, tenant isolation, route
+  permissions, audit on write, library fence, library database guard): 1,207 tests, 0
+  failures, 34 skipped as pending scenarios.
+- ruff and mypy: clean.
+- `compliance_check.py --all`: 0 findings.
+- `requirements_coverage.py`: 0 problems.
 - `api_docs_gate.py`: 0 outside the ledger, 0 stale.
-- `contract_drift.py`.
+- `contract_drift.py`: 0 unexplained.
 
-Frontend: lint, typecheck, the watch and console unit tests, `check:messages` and
-`check:copy-drift`.
+Frontend:
+- Lint: 0 errors. Two warnings, already present, in `sidebar.test.tsx`.
+- Typecheck: clean.
+- The watch, console and inventory unit tests: 351 passed.
+- `check:messages` and `check:copy-drift`: ok.
 
-E2E: the watch and agent journeys (WAT-S*, AGT-S*), with the curation confirmation.
+E2E: WAT-S1, S2, S4, S6, S7, S9 and S10; AGT-S10 (J-4); INV-S14; PRO-S13; SRC-S4, S5 and
+S10 (J-7). All 13 passed. The six pending `fixme` journeys matching the same patterns did
+not run: AGT-S4, S5, S6, S7 and S13, and WAT-S8.
 
-`prepush.sh --quick`.
-
-The report for this package (the branch's final message) gives each gate's result.
+`prepush.sh --quick`: all gates green.
