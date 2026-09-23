@@ -135,12 +135,25 @@ And no library row changed: the second link is still there, still a suggestion, 
 ```
 `@e2e` built for the bank's half: the compliance officer confirms one link and says the
 other is not related on their own bank's case ("Confirm link", "Not related"), the removed
-link is hidden from that bank's change page and still stored, the first obligation's card
-lists the change with its open count, and another bank still sees both links, neither
-decided. The library editor's half joins the same journey with the curation confirmation;
-until then the seed stands in for it with one link a library editor already confirmed
-(`c5-seed-watch`). That both decisions are audited is asserted by the `@integration` half,
-because the audit log's record-kind filter offers no case kind yet.
+link is hidden from that bank's change page and still stored, and another bank still sees
+both links, neither decided. The library editor's half joins the same journey with the
+curation confirmation; until then the seed stands in for it with one link a library editor
+already confirmed (`c5-seed-watch`). That both decisions are audited is asserted by the
+`@integration` half, because the audit log's record-kind filter offers no case kind yet.
+
+Still pending in this scenario:
+- **"The obligation shows 1 open change" on screen.** No screen mounts the obligation's
+  related-changes panel (`ObligationRelatedChanges`): the obligation page shows its "later
+  release" placeholder in that place. The `@integration` half reads `openCount` from
+  `GET /obligations/{obligationId}/changes`; the journey gains the step when the panel is
+  mounted.
+- **A removed link on the obligation's side.** That route lists and counts every change
+  the library links to the obligation, so the obligation a bank marked "Not related" still
+  lists the change and counts it as open for that bank. Until the read leaves out a change
+  this bank removed for that obligation, the count cannot show a bank's decision.
+- **Reversal.** `POST /changes/{changeId}/case/obligation-links` accepts a link the bank
+  removed, but no screen offers it in R1: a removed link is hidden, and when every link is
+  removed the panel says so rather than that nothing is linked.
 
 > **Note — the library editor's confirmation.** The step "a library editor confirms the
 > first for the shared library" is the held half of this feature and is asserted in WAT-S4,
@@ -161,11 +174,19 @@ When the compliance officer chooses "Confirm wording" or rewrites and chooses "S
 Then the tenant's copy is marked confirmed with the person and time
 And another tenant's copy is still the draft
 ```
-`@e2e` built: tenant A's compliance officer confirms the draft as it stands, then rewrites it
-and saves; the page reads back the bank's own words, confirmed, with no AI label, and tenant
-B's administrator still reads the draft with its label and is offered no control. The
-screen names the time of the confirmation, not the person: the change read carries
-`soWhatConfirmedAt` and no name, and the person is in the audit row and the save's own answer.
+`@e2e` built for the time: tenant A's compliance officer confirms the draft as it stands,
+then rewrites it and saves; the page reads back the bank's own words, confirmed, with the
+time and no AI label, and tenant B's administrator still reads the draft with its label and
+is offered no control.
+
+Still pending in this scenario: **the person on screen.** "Confirmed with the person and
+time" needs the person's name on the change read, which carries `soWhatConfirmedAt` and no
+name (nor does an accepted link's `decidedAt`). The person is stored
+(`change_case.so_what_confirmed_by`, `case_obligation_link.decided_by`), audited, and named
+in the write's own answer, but a reload cannot show it. When the read carries
+`soWhatConfirmedByName` and `decidedByName`, the screen renders the design's "Confirmed by
+{name}, {date}" (`watch.soWhat.confirmedBy`, `watch.change.confirmedBy`) in place of
+"Confirmed {date}" and "Confirmed for us, {date}", and WAT-S6 and WAT-S7 assert the name.
 
 ### WAT-S8 — A tenant requests a source and private sources stay private `@integration` `@e2e` (WAT-06)
 ```gherkin

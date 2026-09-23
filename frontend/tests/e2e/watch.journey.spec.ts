@@ -124,13 +124,11 @@ test.describe('watch journeys', () => {
       await expect(link(first)).toHaveAttribute('data-case-decision', 'accepted');
       await expect(link(second)).toHaveCount(0);
 
-      // And the obligation shows its open change: the first duty's card lists this change
-      // and counts the work open on it. The count is read by its shape, never by a number
-      // the fixtures happen to add up to.
-      await link(first).getByRole('link').click();
-      const related = page.locator('[data-related-changes]');
-      await expect(related.locator(`[data-related-change="${CHUNK5_WATCH.obligationsChange}"]`)).toBeVisible();
-      await expect(related.getByText(/^\d+ open changes?$/)).toBeVisible();
+      // "The obligation shows 1 open change" is not walked here: no screen mounts the
+      // obligation's related-changes panel yet (the obligation page still shows its "later
+      // release" placeholder), so there is nothing to open. The @integration half reads the
+      // count from `GET /obligations/{obligationId}/changes`; the step joins this journey
+      // when the panel is mounted (watch/app.md, the note under WAT-S6).
 
       // And no library row changed: another bank still sees both links, the first as the
       // library editor confirmed it, the second still a suggestion, and neither decided.
@@ -456,11 +454,19 @@ test.describe('the change page', () => {
 });
 
 // ---------------------------------------------------------------------------
-// J-5's footprint half (an approved footprint change recomputing a case's cached
-// `footprint_match`) was a fixme block here until 2026-09-23, and was retired rather than
-// un-fixme'd. The recompute it waited for landed (`apps/cases/matching.py`), and the
-// journey that drives it is FP-S4 in taxonomy.journey.spec.ts, which drops a regime through
-// FP-S5's own four-eyes mechanism and walks the feed after it. A second journey here would
-// switch tenant A's footprint off while every journey in this file reads that footprint in
-// parallel, so it would race them rather than prove anything FP-S4 does not.
+// J-5's footprint half ("an approved footprint change flips a case, and the feed reflects
+// it without a notification or a triage") was a fixme block here until 2026-09-23, and was
+// retired rather than un-fixme'd, for three reasons:
+// - The recompute it waited for landed (`apps/cases/matching.py`, 6fe3929) and is proved
+//   where it runs: `apps/cases/tests_matching.py` approves a footprint change and asserts
+//   that only the cases it should flip do, that nothing else on them moves and that each
+//   bank gets one audit row; `apps/taxonomy/tests_scenarios.py::test_fp_s4` proves the
+//   roadmap and the briefing, the two surfaces that read the cached verdict, follow it.
+// - The feed cannot show the recompute: it decides the footprint per request from the
+//   change's scope terms (`apps/watch/reading.py`, `taxonomy_in_footprint`) and never reads
+//   the cached `footprint_match`, so a feed walk would pass with or without it.
+// - Driving it here would switch tenant A's footprint while every journey in this file
+//   reads that footprint in parallel, so it would race them.
+// The screen walk across the surfaces after a footprint change is FP-S4's own journey in
+// taxonomy.journey.spec.ts, which is still test.fixme and owned there.
 // ---------------------------------------------------------------------------
