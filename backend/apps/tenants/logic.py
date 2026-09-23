@@ -11,6 +11,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.text import slugify
@@ -232,18 +233,41 @@ def console_tenants(*, limit: int, offset: int) -> tuple[list[Tenant], int]:
     return list(tenants[offset : offset + limit]), tenants.count()
 
 
+# Letters slugify would drop because Unicode decomposition has no ASCII for them ("Sør"
+# became "sr"): ø, æ and the German sharp s; å is listed beside them for the reader. Names
+# are lower-cased first, so this covers the capitals too.
+_SPELLED_OUT = str.maketrans({"ø": "o", "æ": "ae", "å": "a", "ß": "ss"})
+_SLUG_MAX_LENGTH = 80  # shared.Tenant.slug's max_length
+
+
 def _derive_slug(name: str) -> str:
-    """A short name from the organisation's name, never typed by a person (D-68): lower-cased,
-    hyphenated, and de-duplicated with a numeric suffix when another tenant already derived
-    the same one. The column, its uniqueness constraint and every place that reads it are
-    unchanged; only the moment a person invented it is gone."""
-    base = slugify(name) or "tenant"
-    candidate = base
-    suffix = 2
-    while Tenant.objects.filter(slug=candidate).exists():
-        candidate = f"{base}-{suffix}"
-        suffix += 1
-    return candidate
+    """A short name from the organisation's name, never typed by a person (D-68): Nordic
+    letters spelled out, lower-cased and hyphenated. `_create_with_derived_slug` cuts it to
+    fit the column and de-duplicates it."""
+    return slugify(name.lower().translate(_SPELLED_OUT)) or "tenant"
+
+
+def _create_with_derived_slug(name: str) -> Tenant:
+    """Insert the tenant under the first free short name: the derived one, then with -2, -3
+    and so on, each cut so that it and its suffix fit the column without a trailing hyphen.
+    The insert runs in a savepoint, so a tenant of the same name committed by a concurrent
+    creation after the existence check costs a retry with the next suffix, not the request."""
+    base = _derive_slug(name)
+    n = 1
+    while True:
+        suffix = f"-{n}" if n > 1 else ""
+        slug = base[: _SLUG_MAX_LENGTH - len(suffix)].rstrip("-") + suffix
+        n += 1
+        if Tenant.objects.filter(slug=slug).exists():
+            continue
+        try:
+            with transaction.atomic():
+                return Tenant.objects.create(name=name, slug=slug)
+        except IntegrityError as exc:
+            # Only the short name's uniqueness means "taken, try the next"; any other refusal
+            # is a fault and surfaces as one.
+            if getattr(getattr(exc.__cause__, "diag", None), "constraint_name", None) != "tenant_slug_key":
+                raise
 
 
 def create_tenant(
@@ -271,7 +295,7 @@ def create_tenant(
             "That address belongs to platform staff. Invite the bank's administrator with an address of their own.",
             code="platform_account",
         )
-    tenant = Tenant.objects.create(name=cleaned_name, slug=_derive_slug(cleaned_name))
+    tenant = _create_with_derived_slug(cleaned_name)
     # Platform staff have no bypass (playbook 14): the one tenant this call activates is
     # the one it has just written, so no other tenant's rows are readable or writable here.
     tenancy.activate(tenant.id)
