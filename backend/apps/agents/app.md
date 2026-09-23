@@ -59,6 +59,15 @@ rows loaded from `backend/agents/<agent>/v<n>/definition.yaml` by `seed_referenc
 `api_key.agent` so the audit log names the agent behind a key rather than the
 key's id (ID-10).
 
+Two definitions ship: `watch-sweeper` (kind `watch`), which proposes, and
+`library-confirmer` (kind `review`, D-62, D-80), which decides what another
+definition proposed and never proposes itself. Each definition names the
+vocabularies it reads at run start; a key with `library:read` reads each of them
+as key, kind, label and usage note on its active rows, submits those keys only,
+and brings a new term as a proposal (AGT-02). A confirming agent's decision
+carries the model call behind it (`AgentDecision`), logged in `ai_generation`
+under the purpose `agent_review` as that agent's own report (D-80).
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.

@@ -38,7 +38,13 @@ def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
 class AiPurpose(enum.StrEnum):
     """Tier-one kind (apps/shared/kinds.py): what a model call was for (AUD-02). The
     console and the log's own filter branch on it, and an admin never adds one, because a
-    new purpose is a new feature."""
+    new purpose is a new feature.
+
+    `agent_review` is a confirming agent's decision on another agent's work — approving,
+    correcting or rejecting a proposal, or confirming a watch item's curation — which the
+    agent reports with the decision (`AgentDecision`, D-80), so its row always carries
+    `model_metadata_reported_by_agent` true. A machine's approval is never logged as one of
+    the drafting purposes above, so the log can tell a draft from a decision."""
 
     SO_WHAT = "so_what"
     CHANGE_SUMMARY = "change_summary"
@@ -46,6 +52,7 @@ class AiPurpose(enum.StrEnum):
     LINK_SUGGESTION = "link_suggestion"
     TRANSLATION = "translation"
     ANSWER = "answer"
+    AGENT_REVIEW = "agent_review"
 
 
 class AiStatus(enum.StrEnum):

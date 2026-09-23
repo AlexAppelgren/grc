@@ -221,6 +221,11 @@ writes, never an OpenAPI `enum`.
   `backend/agents/watch-sweeper/v1/definition.yaml`, declares `kind: watch`, which is
   what sweeping registered sources for new documents is. It stays a tier-one
   kind (§1): the scheduler branches on it and no admin adds one.
+- `agent_kind` gains `review` (D-62, D-80, 2026-09-23). A definition of this kind
+  proposes nothing and decides what another definition proposed, as the
+  independent second principal on the library's queue; the first is
+  `backend/agents/library-confirmer/v1/definition.yaml`. Version 0.3's kinds all
+  produce work, and none names the side of four eyes that decides it.
 - `agent.name` becomes `agent.key`, an immutable slug holding the definition's
   `id`, because a library record is addressed by a key that never changes
   (playbook 15). `agent` also gains `current_version`, the version folder the
@@ -1023,3 +1028,17 @@ them. `POST /changes` also loses the bare `soWhatDraft` string the build had put
 body: words with no model, no model version and no citation cannot become the
 `ai_generation` row AUD-02 asks for, so the object is the shape and a bare string is a 422.
 `WatchChange.soWhatDraft`, the response field, is unchanged.
+
+### A confirming agent's decision is logged under a purpose of its own (D-80, 2026-09-23)
+
+`ai_purpose` gains `agent_review`, which the designed kind does not have: a confirming
+agent's decision on another agent's work — approving, correcting or rejecting a proposal,
+or confirming a watch item's curation — is a model call, and AUD-02 asks that it be logged
+with the model behind it. None of the designed purposes fits, because each names something
+a model drafts, and a reader of the log must be able to tell a machine's decision from a
+machine's draft. The decision arrives with one `AgentDecision` object (model, model
+version, the prompt's name and hash, the output and at least one citation), the shape of
+D-66's `soWhat` with `output` for `text`; its row is always marked
+`model_metadata_reported_by_agent`. `AiCitation` moves from `apps/governance/schemas.py` to
+`apps/shared/schemas.py` beside it, unchanged, because the shared shape cites with it and a
+governance import from there would be a cycle.

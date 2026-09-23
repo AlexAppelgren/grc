@@ -3740,7 +3740,7 @@ export interface components {
         AiGenerationQuery: {
             /**
              * Purpose
-             * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+             * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
              * @example so_what
              */
             purpose?: string | null;
@@ -3849,7 +3849,7 @@ export interface components {
             promptTemplate: string;
             /**
              * Purpose
-             * @description What the call was for, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank).
+             * @description What the call was for, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent).
              * @example so_what
              */
             purpose: string;
@@ -12971,7 +12971,7 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+                 * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
                  * @example so_what
                  */
                 purpose?: string | null;

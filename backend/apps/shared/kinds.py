@@ -53,7 +53,12 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "and never the bank's own, so it has nothing left to choose between",
     ),
     "TicketProvider": ("ticket_provider", "INT-02: the integration branches per provider"),
-    "AgentKind": ("agent_kind", "AGT-03: what an agent definition does"),
+    "AgentKind": (
+        "agent_kind",
+        "AGT-03: what an agent definition does. `watch` sweeps sources and proposes; "
+        "`review` (D-62, D-80) proposes nothing and decides what another definition "
+        "proposed, so a definition's kind says which side of four eyes it works on",
+    ),
     "CaseLinkDecision": (
         "case_link_decision",
         "WAT-04: what a bank said about a suggested obligation link on its own case; the "

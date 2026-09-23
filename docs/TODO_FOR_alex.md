@@ -500,3 +500,21 @@ section. Copied here as chunk3-rest-T20 requires.
       roadmap page already shows. Default if you say nothing: it stays as built, and a feed
       never disagrees with the roadmap page beside it, which is the rule chunk 6 ruling 5 set
       for these two reads.
+
+## agents-confirmer-definition: the confirming agent ships as a draft (2026-09-23, D-80)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **The confirming agent's decisions are logged with metadata it reports itself.** A
+      confirming agent's approval, correction or rejection now has an AI-log purpose of its
+      own, `agent_review`, and the model and model version on that row are the agent's own
+      account, exactly as D-66 has it for the "So what?" (D-80). Default: accepted in R1 as
+      a reporting boundary, because every agent is bleqq's own; it becomes a trust boundary
+      the day a bank runs its own reviewing agent, which is R2's agent-access work.
+- [ ] **`library-confirmer` v1 ships with no labelled evaluation case.** Its definition,
+      prompt and key are its own and it may share the sweeper's model (your default of
+      2026-09-20). Its `evals/README.md` names the four kinds of case it will be scored on
+      (approve, correct, reject, leave open), but none is written yet, so the definition
+      stays `draft` and no run of it is meant to decide anything. Default: it stays a
+      draft until the rows, a scoring track and a first baseline exist; publishing it is a
+      platform admin's act (AGT-03, R2). Say if you want the rows authored before then.
