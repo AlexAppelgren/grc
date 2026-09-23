@@ -5,10 +5,11 @@ validated against the IANA database; languages are keys of Language rows."""
 
 from __future__ import annotations
 
+import re
 import uuid
 import zoneinfo
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, cast
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -234,17 +235,24 @@ def console_tenants(*, limit: int, offset: int) -> tuple[list[Tenant], int]:
 
 
 # Letters slugify would drop because Unicode decomposition has no ASCII for them ("Sør"
-# became "sr"): ø, æ and the German sharp s; å is listed beside them for the reader. Names
-# are lower-cased first, so this covers the capitals too.
-_SPELLED_OUT = str.maketrans({"ø": "o", "æ": "ae", "å": "a", "ß": "ss"})
-_SLUG_MAX_LENGTH = 80  # shared.Tenant.slug's max_length
+# became "sr"): ø, æ, the German sharp s, Faroese and Icelandic ð and þ, the Sami đ, ŋ and
+# ŧ, and œ and ł; å is listed beside them for the reader. Names are lower-cased first, so
+# this covers the capitals too.
+_SPELLED_OUT = str.maketrans(
+    {"ø": "o", "æ": "ae", "å": "a", "ß": "ss", "ð": "d", "þ": "th"}
+    | {"đ": "d", "ŋ": "ng", "ŧ": "t", "œ": "oe", "ł": "l"}
+)
+# Slugify keeps underscores; a short name holds letters, digits and single hyphens only.
+_SEPARATORS = re.compile(r"[-_]+")
+_SLUG_MAX_LENGTH = cast(int, Tenant._meta.get_field("slug").max_length)
 
 
 def _derive_slug(name: str) -> str:
-    """A short name from the organisation's name, never typed by a person (D-68): Nordic
-    letters spelled out, lower-cased and hyphenated. `_create_with_derived_slug` cuts it to
-    fit the column and de-duplicates it."""
-    return slugify(name.lower().translate(_SPELLED_OUT)) or "tenant"
+    """A short name from the organisation's name, never typed by a person (D-68): letters
+    without a decomposition spelled out, lower-cased and hyphenated. `_create_with_derived_slug`
+    cuts it to fit the column and de-duplicates it."""
+    slug = _SEPARATORS.sub("-", slugify(name.lower().translate(_SPELLED_OUT))).strip("-")
+    return slug or "tenant"
 
 
 def _create_with_derived_slug(name: str) -> Tenant:

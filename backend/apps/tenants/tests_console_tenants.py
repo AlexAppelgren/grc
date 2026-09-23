@@ -151,6 +151,27 @@ class ConsoleTenants(ScenarioTestCase):
         # Nothing left to spell: the short name falls back to a word, never to nothing.
         self.assertEqual(logic._derive_slug("!!!"), "tenant")
 
+    def test_other_letters_without_a_decomposition_are_spelled_out_too(self) -> None:
+        """Faroese and Icelandic ð and þ, the Sami ŋ, ŧ and đ, and œ and ł have no
+        decomposition either: "Suðuroyar" would become "suuroyar"."""
+        self.assertEqual(logic._derive_slug("Suðuroyar Sparikassi"), "suduroyar-sparikassi")
+        self.assertEqual(logic._derive_slug("Þjóð Banki"), "thjod-banki")
+        self.assertEqual(logic._derive_slug("Đ Ŋ Ŧ Sparebank"), "d-ng-t-sparebank")
+        self.assertEqual(logic._derive_slug("Œuvre Banque"), "oeuvre-banque")
+        self.assertEqual(logic._derive_slug("Łódź Bank"), "lodz-bank")
+
+    def test_a_short_name_holds_only_lower_case_letters_digits_and_single_hyphens(self) -> None:
+        """Slugify keeps underscores, so "Bank_AB" read "bank_ab" and a cut could end on
+        one; the short name's description promises letters, digits and hyphens."""
+        self.assertEqual(logic._derive_slug("Bank_AB"), "bank-ab")
+        self.assertEqual(logic._derive_slug("__Bank _-_ AB__"), "bank-ab")
+        # A full-width low line decomposes to an underscore inside slugify itself.
+        self.assertEqual(logic._derive_slug("Bank\uff3fAB"), "bank-ab")
+        name = "Nordic " + "x" * 72 + "_Bank"
+        created = self._create(body(name=name))
+        self.assertEqual(created.status_code, 201, created.content)
+        self.assertEqual(created.json()["slug"], "nordic-" + "x" * 72)
+
     def test_another_integrity_error_is_raised_rather_than_retried_as_a_taken_short_name(self) -> None:
         """Only tenant_slug_key means "that short name is taken, try the next"; any other
         refusal on the insert is a fault and surfaces as one, never a loop of retries."""
