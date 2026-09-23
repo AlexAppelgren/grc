@@ -85,15 +85,22 @@ person, and that is the one place the page claims a person decides.
 
 ## Behaviour
 
-Below 880 px the top bar is one line: the wordmark and a Menu button. Menu
-opens a panel under the ribbon holding the five sections as 44 px rows, then
-both actions and the theme toggle. It closes on a choice, on Escape, and when
-the viewport grows past 880 px. Only there is the ribbon sticky, so the way
-back is always one tap away, and it clears the notch through
-`top: env(safe-area-inset-top)`; sections carry a 76 px `scroll-margin-top`
-so an anchor never lands under it. The page gutter takes the larger of its own
-step and the safe-area inset at each side, as `foundations.md` asks. On a wide
-screen the bar keeps the five links inline and scrolls away with the page.
+The top bar carries the wordmark and two buttons at every width, and it is
+sticky, so Sign in is on screen wherever the reader has got to. Sign in is the
+primary of the pair and Request access the outline beside it, in that order,
+because the rule in `design/README.md` puts the primary on the right. From
+881 px the five section links sit between the wordmark and the buttons; below
+that they step aside and the footer carries them instead. There is no menu
+button: at 320 px the bar is still one 56 px row. It clears the notch through
+`top: env(safe-area-inset-top)`, sections carry a 76 px `scroll-margin-top` so
+an anchor lands under the bar with room to spare, and the page gutter takes the
+larger of its own step and the safe-area inset at each side: 16 px below 768 px
+and 32 px above, which is `foundations.md`'s rule. The light and dark switch
+sits in the footer, beside the colophon.
+
+The hero keeps the opposite emphasis, Request access filled and Sign in
+outlined, because the top of the page is read by someone who has no account
+yet. Say the word and the two match.
 
 Light, dark and the unset system theme are all designed; the toggle stamps
 `data-theme` and remembers the choice per device, and every colour is a custom
