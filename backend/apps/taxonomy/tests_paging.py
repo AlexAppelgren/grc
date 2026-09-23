@@ -48,9 +48,9 @@ from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 #   total (1); the terms every request on the page adds (1) and removes (1), each read with
 #   its dimension, and their labels (1); and the waiting request's recount against today's
 #   library, one request at most because the partial unique constraint lets only one wait
-#   (4 in this fixture: the footprint, the restricting dimensions, the obligations' scopes
-#   and their instruments).
-FOOTPRINT_REQUESTS_QUERIES = 10 + 1 + 2 + 3 + 4
+#   (5 in this fixture: the footprint, the restricting dimensions, the obligations' scopes
+#   and their instruments, and the scopes of the bank's open cases).
+FOOTPRINT_REQUESTS_QUERIES = 10 + 1 + 2 + 3 + 5
 # - the suggestion inbox: the page with each suggester (1) and its total (1). A suggestion
 #   carries its labels as typed, so no label order is read.
 SUGGESTIONS_QUERIES = 10 + 2

@@ -19,9 +19,10 @@ from django.contrib.postgres.expressions import ArraySubquery
 from django.contrib.postgres.fields import ArrayField
 from django.db.models import OuterRef, UUIDField
 
+from apps.cases.models import ChangeCase
 from apps.library.models import Obligation, RecordStatus
 from apps.library.reading import localized
-from apps.taxonomy.models import Urgency
+from apps.taxonomy.models import CaseStatusCategory, Urgency
 from apps.watch.models import ChangeTerm, RegulatoryChange
 
 # Dimension key -> the term keys the change carries in it, as the scope rule reads it.
@@ -134,3 +135,27 @@ def scope_term_ids_of_each_case() -> ArraySubquery:
         ChangeTerm.objects.filter(change=OuterRef("change_id"), term__isnull=False).order_by().values("term_id"),
         output_field=ArrayField(UUIDField()),
     )
+
+
+def open_case_scopes(tenant_id: uuid.UUID) -> list[Scope]:
+    """The scope of each open case's change in this bank, one entry per case, for the scope
+    change preview (AC-FP1). The SQL function reads the stored footprint and the preview asks
+    about one that does not exist yet, so the preview decides in Python with the same rule.
+
+    One query for any number of cases: a row per case and change term, and one row with no
+    term for a change that carries none. A closed or dismissed case is finished work and is
+    not counted, as the recomputation leaves it alone (`apps/cases/matching.py`). A flag is a
+    `change_term` row with no term and never scopes a change (WAT-03).
+    """
+    rows = (
+        ChangeCase.objects.filter(tenant_id=tenant_id)
+        .exclude(status__in=(CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value))
+        .order_by()
+        .values_list("id", "change__term_links__term__dimension__key", "change__term_links__term__key")
+    )
+    scopes: dict[uuid.UUID, Scope] = {}
+    for case_id, dimension, key in rows:
+        scope = scopes.setdefault(case_id, {})
+        if key is not None:
+            scope.setdefault(dimension, set()).add(key)
+    return list(scopes.values())

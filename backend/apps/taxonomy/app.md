@@ -260,7 +260,7 @@ Then it matches only a footprint that names that term
 ```gherkin
 Given a compliance officer with footprint.request
 When they choose "Propose a change" and remove "Advice"
-Then the preview counts the obligations that would be hidden and any that would appear, and cases are not counted yet
+Then the preview counts the obligations that would be hidden and any that would appear, and the same for this bank's open cases
 And a change request is stored and shown as "Waiting for approval"
 When the library changes while it waits
 Then the waiting request's preview is counted again against today's library
