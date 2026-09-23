@@ -305,16 +305,47 @@ describe('ObligationScreen', () => {
       expect(document.querySelector('[data-version-row="2"] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
     });
 
-    it('gives way once a person re-verifies the record after the agents approved it', async () => {
+    it('gives way in "Last verified" once a person re-verifies the record, while the version still says who approved it', async () => {
       await open({
         ...research,
         version: byAgents,
         versions: [seeded, byAgents],
         provenance: { ...research.provenance, lastVerifiedAt: '2026-12-01T09:00:00Z', verifiedBy: sara, ...confirmedByAgents },
       });
+      const verified = document.querySelector('[data-last-verified]');
+      expect(verified?.textContent).toBe('1 Dec 2026 by Sara Lindqvist');
+      expect(verified).not.toHaveAttribute('data-machine-confirmed');
+      expect(document.querySelector('[data-version-row="2"] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
+      expect(screen.queryByText('Approved 17 Aug 2026')).not.toBeInTheDocument();
+    });
+
+    it('keeps labelling a version not yet in force after a person re-verifies the wording that is', async () => {
+      // Sara checked version 1 in December; version 2, which the agents confirmed in
+      // August, takes effect in March and no person has read it.
+      const march = { date: '2027-03-01', precision: 'day' as const };
+      const inForce = { ...seeded, effectiveTo: { date: '2027-02-28', precision: 'day' as const } };
+      await open({
+        ...research,
+        version: inForce,
+        versions: [inForce, { ...byAgents, effectiveFrom: march }],
+        provenance: { ...research.provenance, lastVerifiedAt: '2026-12-01T09:00:00Z', verifiedBy: sara },
+      });
       expect(document.querySelector('[data-last-verified]')?.textContent).toBe('1 Dec 2026 by Sara Lindqvist');
-      expect(document.querySelector('[data-machine-confirmed]')).toBeNull();
-      expect(document.querySelector('[data-version-row="2"]')).toHaveTextContent('Approved 17 Aug 2026');
+      expect(document.querySelector('[data-version-row="2"] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
+      expect(screen.queryByText('Approved 17 Aug 2026')).not.toBeInTheDocument();
+    });
+
+    it('never gives way to a later date nobody signed', async () => {
+      // A seeded stamp carries a date and no name: it is nobody's verification.
+      await open({
+        ...research,
+        version: byAgents,
+        versions: [seeded, byAgents],
+        provenance: { ...research.provenance, lastVerifiedAt: '2026-12-01T09:00:00Z', verifiedBy: null, ...confirmedByAgents },
+      });
+      const verified = document.querySelector('[data-last-verified]');
+      expect(verified?.textContent).toBe(MACHINE_CONFIRMED);
+      expect(verified).toHaveAttribute('data-machine-confirmed');
     });
 
     it('reads a person\'s approval as it always has', async () => {

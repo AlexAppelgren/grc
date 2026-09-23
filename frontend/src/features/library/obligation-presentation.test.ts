@@ -174,9 +174,10 @@ describe('presentChangePending', () => {
 describe('machineConfirmedLabel', () => {
   // Fixed instants, never today: a person's stamp in June, the agents' approval in
   // August, and a person's later stamp in December.
-  const JUNE_STAMP = '2026-06-30T07:12:44Z';
   const AUGUST_APPROVAL = '2026-08-17T14:02:11Z';
-  const DECEMBER_STAMP = '2026-12-01T09:00:00Z';
+  const sara = { id: 'u-9', name: 'Sara Lindqvist' };
+  const juneStamp = { lastVerifiedAt: '2026-06-30T07:12:44Z', verifiedBy: sara };
+  const decemberStamp = { lastVerifiedAt: '2026-12-01T09:00:00Z', verifiedBy: sara };
   const byAgents: ObligationVersionRow = {
     versionNumber: 2,
     effectiveFrom: { date: '2026-10-01', precision: 'day' },
@@ -189,22 +190,31 @@ describe('machineConfirmedLabel', () => {
   const both = 'Machine-confirmed 17 Aug 2026: proposed by watch-sweeper, confirmed by library-confirmer';
 
   it('labels a version agents confirmed after a person last verified the record, naming both agents', () => {
-    expect(machineConfirmedLabel(byAgents, JUNE_STAMP, t, defaultFormatContext)).toBe(both);
-    expect(machineConfirmedLabel(byAgents, null, t, defaultFormatContext)).toBe(both);
-    expect(machineConfirmedLabel(byAgents, JUNE_STAMP, sv, { ...defaultFormatContext, locale: 'sv' })).toMatch(
+    expect(machineConfirmedLabel(byAgents, juneStamp, t, defaultFormatContext)).toBe(both);
+    expect(machineConfirmedLabel(byAgents, { lastVerifiedAt: null, verifiedBy: null }, t, defaultFormatContext)).toBe(both);
+    expect(machineConfirmedLabel(byAgents, juneStamp, sv, { ...defaultFormatContext, locale: 'sv' })).toMatch(
       /^Maskinbekräftad 17 aug\.? 2026: föreslagen av watch-sweeper, bekräftad av library-confirmer$/,
     );
   });
 
-  it('gives way to the person wording once a person re-verifies the record after the agents approved it', () => {
-    expect(machineConfirmedLabel(byAgents, DECEMBER_STAMP, t, defaultFormatContext)).toBeNull();
+  it('gives way to the person wording once a named person re-verifies the record after the agents approved it', () => {
+    expect(machineConfirmedLabel(byAgents, decemberStamp, t, defaultFormatContext)).toBeNull();
     // A stamp at the very moment of the approval has seen nothing later: the label stays.
-    expect(machineConfirmedLabel(byAgents, AUGUST_APPROVAL, t, defaultFormatContext)).toBe(both);
+    expect(machineConfirmedLabel(byAgents, { ...juneStamp, lastVerifiedAt: AUGUST_APPROVAL }, t, defaultFormatContext)).toBe(both);
+  });
+
+  it('never gives way to a later stamp that names nobody', () => {
+    // A seeded date is nobody's verification, however late it is.
+    expect(machineConfirmedLabel(byAgents, { ...decemberStamp, verifiedBy: null }, t, defaultFormatContext)).toBe(both);
+  });
+
+  it('keeps the label on a version row, which passes no stamp, whatever anyone checked since', () => {
+    expect(machineConfirmedLabel(byAgents, null, t, defaultFormatContext)).toBe(both);
   });
 
   it('follows who confirmed, never which agents are named', () => {
-    // A person proposed and an agent confirmed: machine-confirmed, naming the one agent.
-    expect(machineConfirmedLabel({ ...byAgents, proposedByAgent: null }, JUNE_STAMP, t, defaultFormatContext)).toBe(
+    // A person, or a key bound to no agent, proposed and an agent confirmed: machine-confirmed, naming the one agent.
+    expect(machineConfirmedLabel({ ...byAgents, proposedByAgent: null }, juneStamp, t, defaultFormatContext)).toBe(
       'Machine-confirmed 17 Aug 2026 by library-confirmer',
     );
     // A person approved an agent's proposal, and a seeded version nobody approved: the person wording.

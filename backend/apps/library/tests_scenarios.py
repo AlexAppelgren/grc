@@ -593,8 +593,9 @@ class LibraryScenarioTests(ScenarioTestCase):
 
         # When a person later re-verifies the record against its source, the stamp names
         # that person and is dated after the version's approval. That order is what the
-        # backend answers; letting the machine-confirmed label give way to it is the
-        # screen's rule (obligation-presentation.ts), which the @e2e half proves.
+        # backend answers; letting the machine-confirmed label give way to it in the
+        # record's "Last verified" slot, and only there, is the screen's rule
+        # (obligation-presentation.ts), which the @e2e half proves.
         editor = sign_in(self.editor, step_up=True)
         reverified = self._post(f"/obligations/{obligation.id}/verifications", {"outcome": "no_change"}, editor)
         self.assertEqual(reverified.status_code, 201, reverified.content)

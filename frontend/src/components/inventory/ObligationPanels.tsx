@@ -92,17 +92,17 @@ export function DutyPanel({ obligation }: { obligation: ObligationDetail }) {
 /**
  * Every version with the dates it runs between; nothing here is ever rewritten,
  * so a correction is another row. A version an independent agent confirmed
- * says so where "Approved" would read, until a person re-verifies the record
- * after it (`lastVerifiedAt`, the record's own stamp).
+ * says so where "Approved" would read, always: a person re-verifying the
+ * record later does not change who approved that version (D-74).
  */
-export function VersionsPanel({ versions, lastVerifiedAt }: { versions: readonly ObligationVersionRow[]; lastVerifiedAt: string | null }) {
+export function VersionsPanel({ versions }: { versions: readonly ObligationVersionRow[] }) {
   const t = useT();
   const ctx = useFormatContext();
   return (
     <Panel title={t('inventory.obligation.versionsTitle')} data-versions-panel="">
       <div className="text-meta">
         {versions.map((version) => {
-          const machine = machineConfirmedLabel(version, lastVerifiedAt, t, ctx);
+          const machine = machineConfirmedLabel(version, null, t, ctx);
           return (
             <div key={version.versionNumber} className="border-b border-line py-2.5 last:border-b-0" data-version-row={version.versionNumber}>
               <time className="block text-muted">{inForceLabel(version.effectiveFrom, version.effectiveTo, t, ctx)}</time>
@@ -150,9 +150,10 @@ export function RelatedPanel({ related }: { related: readonly RelatedObligation[
  * was taken from, when a person last held it against that page, and who
  * drafted it. "by <name>" appears only when somebody has verified it; a
  * seeded record carries a date and no name. When an independent agent
- * confirmed the version on screen after that, the same slot says so and
- * names the agents instead (INV-05): a person's older stamp never vouches for
- * wording no person has seen.
+ * confirmed the version on screen and no named person has re-verified the
+ * record since, the same slot says so and names the agents instead (INV-05):
+ * an older stamp, or one nobody signed, never vouches for wording no person
+ * has seen.
  */
 export function ProvenancePanel({ obligation, actions }: { obligation: ObligationDetail; actions?: React.ReactNode }) {
   const t = useT();
@@ -175,7 +176,7 @@ export function ProvenancePanel({ obligation, actions }: { obligation: Obligatio
       </a>
     ),
   });
-  const machine = machineConfirmedLabel(obligation.version, provenance.lastVerifiedAt, t, ctx);
+  const machine = machineConfirmedLabel(obligation.version, provenance, t, ctx);
   const verified =
     machine ??
     (provenance.lastVerifiedAt === null

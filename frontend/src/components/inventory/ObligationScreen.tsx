@@ -199,7 +199,7 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
         <div>
           <ScopePanel obligation={record} />
           <DutyPanel obligation={record} />
-          <VersionsPanel versions={record.versions} lastVerifiedAt={record.provenance.lastVerifiedAt} />
+          <VersionsPanel versions={record.versions} />
           <RelatedPanel related={record.related} />
         </div>
         <div>

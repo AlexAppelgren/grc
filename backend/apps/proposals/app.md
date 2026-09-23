@@ -38,8 +38,9 @@ other (D-50, ADR 0043).
 
 A bank reads none of that queue. It reads the other end of it: `GET /library-updates`
 lists what was approved and applied since it last marked the library as seen, titled by
-the library record and never by the request that carried it, cut to its own footprint, and
-naming nobody. Its own requests to a shared list it follows through
+the library record and never by the request that carried it, cut to its own footprint,
+naming no person, and naming by definition key the agents that proposed or confirmed a
+change (INV-05, D-62). Its own requests to a shared list it follows through
 `GET /tenant/proposals`, which answers its rows and no other bank's.
 
 A bank's own private records travel the same table but never the console: the

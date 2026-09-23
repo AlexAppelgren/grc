@@ -175,12 +175,14 @@ class VersionConfirmation(LibraryResponse):
 
     The proposer and the confirmer are separate facts, so all four pairings occur: `agent`
     with both agents named (an agent proposed and an independent agent confirmed), `agent`
-    with only `confirmedByAgent` (a person proposed and an agent confirmed), `user` with
-    only `proposedByAgent` (a person confirmed an agent's proposal) and `user` with neither.
-    Decide the machine-confirmed label from `verifiedOrigin` alone, never from which agent
-    fields are present. A person's re-verification of the record later than the version's
-    approval is what lets that label give way; the record's provenance carries that stamp,
-    and this answer applies no such rule itself."""
+    with only `confirmedByAgent` (a person, or a key bound to no agent, proposed and an
+    agent confirmed), `user` with only `proposedByAgent` (a person confirmed an agent's
+    proposal) and `user` with neither (a person, or a key bound to no agent, proposed and a
+    person confirmed). Decide the machine-confirmed label from `verifiedOrigin` alone, never
+    from which agent fields are present. These facts record who approved this version and
+    never change: a person who later re-verifies the record does not re-approve a version,
+    so a version keeps its label. That stamp is on the record's provenance, and this answer
+    applies no rule of its own."""
 
     verified_origin: str = Field(
         description=(
@@ -748,12 +750,15 @@ class ObligationProvenance(LibraryResponse):
     other facts: who confirmed the approval that wrote the version in force on the read's
     date, and which agent proposed it, the same three `version` carries. The proposer and
     the confirmer are independent, so all four pairings occur: `agent` with both agents
-    named, `agent` with only `confirmedByAgent` (a person proposed and an agent confirmed),
-    `user` with only `proposedByAgent` (a person approved an agent's proposal) and `user`
-    with neither. Decide the machine-confirmed label from `verifiedOrigin` alone. This
-    answer applies no rule of its own: a person's re-verification is `verifiedBy` and
-    `lastVerifiedAt`, and a screen reads one later than the version's `approvedAt` as
-    superseding the machine-confirmed label."""
+    named, `agent` with only `confirmedByAgent` (a person, or a key bound to no agent,
+    proposed and an agent confirmed), `user` with only `proposedByAgent` (a person approved
+    an agent's proposal) and `user` with neither (a person, or a key bound to no agent,
+    proposed and a person approved). Decide the machine-confirmed label from
+    `verifiedOrigin` alone. This answer applies no rule of its own: a person's
+    re-verification is `verifiedBy` and `lastVerifiedAt`, and a screen reads one that names
+    a person and is later than the version's `approvedAt` as superseding the
+    machine-confirmed label where the record's verification is shown. A `lastVerifiedAt`
+    with `verifiedBy` null names nobody and supersedes nothing."""
 
     created_origin: str = Field(
         description=(
@@ -839,9 +844,9 @@ class ObligationProvenance(LibraryResponse):
             "The agent that proposed the version in force, by definition key, read from the "
             "approved proposal. Null whenever the proposer was not a key bound to an agent, "
             "which is every proposal a person made, whoever confirmed it. It is independent "
-            "of `verifiedOrigin`: `agent` with this null means a person proposed what an "
-            "agent confirmed, and `user` with this set means a person approved an agent's "
-            "proposal."
+            "of `verifiedOrigin`: `agent` with this null means an agent confirmed what a "
+            "person, or a key bound to no agent, proposed, and `user` with this set means a "
+            "person approved an agent's proposal."
         ),
     )
 
