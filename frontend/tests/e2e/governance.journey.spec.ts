@@ -142,7 +142,7 @@ test.describe('governance journeys', () => {
     // pending: AUD-S5 (AUD-03, chunk 4)
   });
 
-  test("ADM-S4: The platform console offers each surface to the platform role that owns it", async ({ page, request, apiGuard }) => {
+  test("ADM-S4: The platform console offers each surface to the platform role that owns it", async ({ page, request, apiGuard }, testInfo) => {
     // The two platform roles, each walking the whole console. No destination is
     // named here: the registry is the list, and the closing assertion is that it
     // divides cleanly between the two roles with nothing left over.
@@ -163,6 +163,45 @@ test.describe('governance journeys', () => {
     for (const path of ['/api/v1/console/problem-reports', '/api/v1/console/reports']) {
       expect((await request.get(`${BACKEND_URL}${path}`)).status(), `${path} must not exist`).toBe(404);
     }
+
+    // The evaluation set, the library editor's (SRC-05): the set filtered by language, the
+    // baseline as the server holds it, and a question added and marked as not yet in the
+    // release gate. The key carries the attempt, so a retry never collides; a question is
+    // never deleted, only added, and the database is this run's own.
+    await signOut(page);
+    await signInAs(page, LOGINS.editor);
+    const baselineAnswer = page.waitForResponse((r) => r.url().endsWith('/api/v1/eval/baseline') && r.ok());
+    await page.goto('/console/evaluation');
+    await expect(page.getByRole('heading', { level: 1, name: 'Evaluation' })).toBeVisible();
+    await expect(page.locator('[data-eval-questions] [data-question-key]').first()).toBeVisible();
+
+    // A score nobody recorded reads Unrecorded, and a recorded one reads as its number.
+    const baseline = (await (await baselineAnswer).json()) as { recallAt10: number | null; mrr: number | null };
+    for (const metric of ['recallAt10', 'mrr'] as const) {
+      const cell = page.locator(`[data-baseline-metric="${metric}"] [data-baseline-value]`);
+      if (baseline[metric] === null) await expect(cell).toHaveText('Unrecorded');
+      else await expect(cell).not.toHaveText('Unrecorded');
+    }
+    await expect(page.locator('[data-eval-runs] [data-run-id]').or(page.getByText('No runs recorded yet')).first()).toBeVisible();
+
+    const key = `r-sv-e2e-${Date.now().toString(36)}-${testInfo.retry}`;
+    await page.getByRole('button', { name: 'Add a question', exact: true }).click();
+    const form = page.getByRole('dialog', { name: 'Add a question' });
+    await expect(form.getByText(/^Not yet in the release gate\./)).toBeVisible();
+    await form.getByLabel('Key', { exact: true }).fill(key);
+    await form.getByLabel('Language', { exact: true }).selectOption('sv');
+    await form.getByLabel('Question', { exact: true }).fill('kostnader och avgifter före tjänsten');
+    await form.getByLabel('Expected records').fill('obl-costs-charges');
+    const added = page.waitForResponse((r) => r.url().endsWith('/api/v1/eval/questions') && r.request().method() === 'POST' && r.ok());
+    await form.getByRole('button', { name: 'Add question', exact: true }).click();
+    expect(((await (await added).json()) as { inGate: boolean }).inGate).toBe(false);
+    await expect(form).toBeHidden();
+    await expect(page.getByText(`Added ${key}. It is not yet in the release gate.`)).toBeVisible();
+
+    await page.getByLabel('Language', { exact: true }).selectOption('sv');
+    const row = page.locator(`[data-question-key="${key}"]`);
+    await expect(row).toContainText('Not yet in the release gate');
+    await expect(page.locator('[data-eval-questions] [data-question-key]:not([data-lang="sv"])')).toHaveCount(0);
   });
 
   test.fixme("ADM-S5: System health names what is wrong", async () => {

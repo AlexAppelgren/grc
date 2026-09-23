@@ -50,6 +50,7 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'console-sources': { ready: '[data-sources-list] [data-source-id]' },
   'console-tenants': { ready: '[data-tenants-list] [data-tenant-id]' },
   'console-agent-keys': { ready: `[data-agent-keys-list] [data-agent-key-id]${OR_EMPTY}` },
+  'console-evaluation': { ready: `[data-eval-questions] [data-question-key]${OR_EMPTY}` },
 };
 
 /**

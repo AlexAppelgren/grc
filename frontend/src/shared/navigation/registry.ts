@@ -94,6 +94,8 @@ export const destinations: readonly Destination[] = [
   { id: 'console-sources', href: '/console/sources', labelKey: 'nav.console.sources', surface: 'console', anyOfPermissions: ['sources.manage'], dockRank: 4, group: 'primary' },
   { id: 'console-tenants', href: '/console/tenants', labelKey: 'nav.console.tenants', surface: 'console', anyOfPermissions: ['tenants.manage'], dockRank: 3, group: 'primary' },
   { id: 'console-agent-keys', href: '/console/agent-keys', labelKey: 'nav.console.agentKeys', surface: 'console', anyOfPermissions: ['agent_definitions.manage'], group: 'primary' },
+  // The search evaluation set (SRC-05): the library editor's, beside Sources.
+  { id: 'console-evaluation', href: '/console/evaluation', labelKey: 'nav.console.evaluation', surface: 'console', anyOfPermissions: ['eval.manage'], group: 'primary' },
 ];
 
 /** The console's landing: it sends each person on to the first console destination they may open. */

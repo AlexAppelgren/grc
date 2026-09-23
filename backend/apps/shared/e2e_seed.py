@@ -57,6 +57,7 @@ from apps.library.seeds.library import RESEARCH_OBLIGATION, load_library, seed_a
 from apps.proposals.logic import Proposer
 from apps.proposals.logic import create as create_proposal
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
+from apps.search import eval_sets
 from apps.shared import outbox, tenancy
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
@@ -1253,6 +1254,11 @@ def seed_e2e() -> dict[str, int]:
         # SRC-01: the index reads every shared row load_library() and seed_watch_changes()
         # just wrote, and is itself a shared-zone write, so it runs here too.
         search_index = seed_search_index()
+        # SRC-05: the release gate's own questions, so the console's evaluation page has the
+        # set it will have on a deployed platform. Platform rows, refused to any session with a
+        # tenant active, so they are written in the platform's zone even on a re-seed.
+        with tenancy.platform_zone():
+            eval_questions = eval_sets.seed_questions(actor=SEED_ACTOR)
         roles_logic.ensure_platform_roles()
         tenants = seed_tenants()
         logins = seed_logins(tenants)
@@ -1277,6 +1283,7 @@ def seed_e2e() -> dict[str, int]:
         "problem_reports": problem_reports,
         "home_cases": home_cases,
         "chunk5_cases": chunk5_cases,
+        "eval_questions": eval_questions,
         **library,
         **search_index,
     }
