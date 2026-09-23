@@ -205,3 +205,9 @@ description = "E2E passkey private key for the seeded user language@example-bank
 condition = "AND"
 regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgfHckdrhZk-n7rS-Xsce_W7LQAMD6-KmHC3LZvo5aCOyhRANCAAS0YAk5zeOVgIE00-Bf19vA0NzPZ9ipMklLaQw4_hwSoVMIZkdlpH3tPJFLRHpy0hbLQdUlQyeMjRMGB4tBAaoq$''']
 paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
+[[allowlists]]
+description = "Stable keys the FP-S12 scenario gives the instrument and the obligation it builds (backend/apps/taxonomy/tests_scenarios.py, tax-mirror-refusal, 2026-09-23). Test record keys, not secrets: the generic-api-key rule reads a key= argument with a digit in it as a key. Exact literals, this one file only."
+condition = "AND"
+regexes = ['''^fp-s12-instrument$''', '''^fp-s12-obligation$''']
+paths = ['''^backend/apps/taxonomy/tests_scenarios\.py$''']
