@@ -176,14 +176,13 @@ test.describe('cold start', () => {
     await expect(admin.locator('[data-empty-state]')).toBeVisible();
     await admin.goto('/');
     await expect(admin.locator('[data-empty-state]')).toBeVisible();
+    // The watch feed on a library no agent has ever written to: its triage tab says there
+    // is nothing to triage, rather than a feed that failed to load.
+    await admin.goto('/watch');
+    await expect(admin.getByRole('heading', { level: 1, name: 'Watch' })).toBeVisible();
+    await expect(admin.locator('[data-empty-state]')).toBeVisible();
 
     await approver.context().close();
     await admin.context().close();
-  });
-
-  test.fixme('ADM-S8 @coldstart: the watch feed is empty rather than broken on a new bank', async () => {
-    // /watch is in the navigation registry and has no route yet: chunk 5 (Watch and the
-    // agent API) builds the feed and its empty state. Until then a cold start cannot prove
-    // it, and the inventory and the timeline above carry the empty-state half of ADM-S8.
   });
 });
