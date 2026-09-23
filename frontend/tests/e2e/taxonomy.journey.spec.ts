@@ -503,22 +503,63 @@ test.describe('taxonomy journeys', () => {
       await expect(adviceChip(page)).toBeEnabled();
     });
 
-    test.fixme("FP-S4: Every surface respects the footprint and offers a way to look outside it", async () => {
-      // pending: FP-S4 (FP-03). The blocker this note used to describe is
-      // gone: `apps/cases/matching.py` now recomputes `change_case.
-      // footprint_match` on the outbox cursor when a footprint change is
-      // approved and when a change's scope terms move, so dropping Advice
-      // through FP-S5's own mechanism really does move the roadmap and the
-      // briefing. The integration half of FP-S4 drives exactly that path in
-      // `apps/taxonomy/tests_scenarios.py::test_fp_s4` and no longer seeds
-      // the column false.
-      //
-      // What is left is the journey itself: four surfaces walked in one
-      // session (feed, inventory, roadmap, briefing) with the "Show outside
-      // our scope" switch on the inventory, plus the seeded advice-only
-      // change the walk needs. That is a screen job, not a backend one, and
-      // the plan gives it to the chunk that closes the four surfaces
-      // (`docs/plans/briefs/CHUNK5_TASKS.md`, "Cut, with reasons").
+    // FP-S4's records outside tenant A's scope as seeded (backend/apps/shared/e2e_seed.py,
+    // EXPECTED_OUTSIDE_SCOPE): the seed leaves pension accounts out of the scope, and this
+    // obligation and this change fall outside it through that term alone.
+    const OUTSIDE_SCOPE_OBLIGATION = 'obl-pension-transfer-right';
+    const OUTSIDE_SCOPE_CHANGE = 'chg-e2e-outside-scope';
+    // Carries no scope term, so it is inside any scope (EXPECTED_HOME.lead_change).
+    const IN_SCOPE_CHANGE = 'chg-e2e-research-payments';
+
+    test("FP-S4: Every surface respects the footprint and offers a way to look outside it", async ({ page, apiGuard }) => {
+      // FP-03 on the four surfaces R1 has, walked on tenant A's scope as seeded and never
+      // changed here: FP-S2 and FP-S5 change it in this worker, and the home and watch
+      // journeys read it in parallel. Changing the scope and seeing records hide is FP-S5's
+      // (J-6) and the integration half of FP-S4's. The fifth surface, the reports, stays
+      // with chunk 12: every report reads the obligation register, which R1 does not have
+      // (backend/apps/taxonomy/app.md, the notes under FP-S4).
+      allowFreshContext(apiGuard);
+      await signInAs(page, LOGINS.reader);
+
+      // The feed shows what is in our scope by default; "Show outside our scope" adds the
+      // change, marked, and leaves the in-scope one unmarked.
+      await page.goto('/watch');
+      const inScopeChange = page.locator(`[data-change="${IN_SCOPE_CHANGE}"]`);
+      const outsideChange = page.locator(`[data-change="${OUTSIDE_SCOPE_CHANGE}"]`);
+      await expect(inScopeChange).toBeVisible();
+      await expect(outsideChange).toHaveCount(0);
+      await page.getByRole('group', { name: 'Scope' }).getByRole('button', { name: 'Show outside our scope' }).click();
+      await expect(page).toHaveURL(/scope=all/);
+      await expect(outsideChange).toHaveAttribute('data-outside-footprint', '');
+      await expect(inScopeChange).not.toHaveAttribute('data-outside-footprint');
+      // Library titles are rows, not catalog copy: the roadmap and the briefing are
+      // checked for the title this row shows.
+      const title = (await outsideChange.locator('h3').textContent())?.trim() ?? '';
+      expect(title).not.toBe('');
+
+      // The inventory, narrowed to the obligation's regime so a growing library never pages
+      // it out of sight: absent by default while the rest reads, then marked under "Show
+      // outside our scope".
+      await page.goto(`/inventory?regime=insurance&asOf=${INVENTORY_AS_OF}`);
+      const outsideObligation = page.locator(`[data-obligation="${OUTSIDE_SCOPE_OBLIGATION}"]`);
+      await expect(page.locator('[data-obligation]').first()).toBeVisible();
+      await expect(outsideObligation).toHaveCount(0);
+      await page.getByRole('button', { name: 'Show outside our scope' }).click();
+      await expect(outsideObligation).toHaveAttribute('data-outside-footprint', '');
+
+      // The roadmap: the change's date is within the quarters shown, and it is not there.
+      await page.goto('/roadmap');
+      const cards = page.locator('[data-roadmap-roster] [data-roadmap-card]');
+      await expect(cards.first()).toBeVisible();
+      await expect(cards.filter({ hasText: title })).toHaveCount(0);
+
+      // The briefing: both changes were first seen this week. The in-scope one leads or
+      // follows; the outside one is neither the lead, an item nor coming up.
+      await page.goto('/briefing');
+      await expect(page.locator(`[data-lead-card="${IN_SCOPE_CHANGE}"], [data-brief-item="${IN_SCOPE_CHANGE}"]`).first()).toBeVisible();
+      await expect(page.locator(`[data-lead-card="${OUTSIDE_SCOPE_CHANGE}"]`)).toHaveCount(0);
+      await expect(page.locator(`[data-brief-item="${OUTSIDE_SCOPE_CHANGE}"]`)).toHaveCount(0);
+      await expect(page.locator('[data-coming-up] [data-roadmap-item]').filter({ hasText: title })).toHaveCount(0);
     });
 
     test("FP-S5 J-6 @smoke: footprint change with preview and second-person approval", async ({ page, browser, apiGuard }, testInfo) => {
