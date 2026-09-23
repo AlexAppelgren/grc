@@ -739,3 +739,10 @@ class SeedIntegrityGuard(TestCase):
             spoken_for,
             "FP-S4 keeps this obligation outside tenant A's scope: point the proposal or record that names it at one that stays inside",
         )
+
+    def test_every_seeded_change_carries_a_regime(self) -> None:
+        """D-39, AC-AGT1: `createChange` refuses a change with no regime term, so no seeded
+        change may be one the route would never have stored (watch-regime-required)."""
+        seed_e2e()
+        without = RegulatoryChange.objects.exclude(term_links__term__dimension__key="regime").values_list("stable_key", flat=True)
+        self.assertEqual(list(without), [], "every seeded change names a term of the regime dimension")

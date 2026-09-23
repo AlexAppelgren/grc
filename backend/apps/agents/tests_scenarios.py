@@ -39,16 +39,20 @@ from apps.taxonomy.registry import REGISTRY
 from apps.watch import registration, sources, testing as watch_build
 from apps.watch.models import ChangeDocument, RegulatoryChange, SourceCheck
 
-# One reform as a sweep files it, for the scenarios that drive the agent API.
-_CHANGE: dict[str, Any] = {
-    "stableKey": "chg-fi-2026-research-payments",
-    "title": "FI adopts amended rules on paying for investment research",
-    "changeType": "adopted",
-    "authorityLabel": "Finansinspektionen",
-    "summary": "FI's board decided to amend three regulations in the securities area.",
-    "sourceLabel": "Finansinspektionen",
-    "sourceUrl": "https://www.fi.se/",
-}
+# One reform as a sweep files it, for the scenarios that drive the agent API. A function
+# rather than a constant because every change carries a regime (D-39, AC-AGT1), and a term's
+# id is known only once the reference seed has run.
+def _change() -> dict[str, Any]:
+    return {
+        "stableKey": "chg-fi-2026-research-payments",
+        "title": "FI adopts amended rules on paying for investment research",
+        "changeType": "adopted",
+        "authorityLabel": "Finansinspektionen",
+        "summary": "FI's board decided to amend three regulations in the securities area.",
+        "sourceLabel": "Finansinspektionen",
+        "sourceUrl": "https://www.fi.se/",
+        "termIds": [str(watch_build.term("regime:securities").id)],
+    }
 _PAGE = "https://www.fi.se/en/published/news/2026/research-payments/"
 
 # AGT-S3: the registry lists the scenario names, each read through `GET /vocab/{list}`;
@@ -233,7 +237,7 @@ class AgentsScenarioTests(TestCase):
         Registering a change is idempotent across retries (AGT-01).
         """
         run, plain = self._run_with_a_key()
-        payload = {**_CHANGE, "agentRunId": str(run.id), "documents": [{"url": _PAGE, "isPrimary": True}]}
+        payload = {**_change(), "agentRunId": str(run.id), "documents": [{"url": _PAGE, "isPrimary": True}]}
 
         # A run that lost the answer and sent the same registration again, three times.
         first = self._register(plain, payload)
@@ -302,13 +306,13 @@ class AgentsScenarioTests(TestCase):
             ({"flags": [_RETIRED_FLAG]}, "flag"),
         )
         for fields, vocabulary in refusals:
-            response = self._register(key.plain_key, {**_CHANGE, "agentRunId": run_id, **fields})
+            response = self._register(key.plain_key, {**_change(), "agentRunId": run_id, **fields})
             # Then the request answers 422 with code "unknown_key" and the valid keys
             self.assertEqual(response.status_code, 422, response.content)
             problem = response.json()
             self.assertEqual(problem["code"], "unknown_key")
             self.assertEqual(sorted(problem["validKeys"]), sorted(read[vocabulary]), "the keys read at run start")
-        unknown_term = self._register(key.plain_key, {**_CHANGE, "agentRunId": run_id, "termIds": [str(uuid.uuid4())]})
+        unknown_term = self._register(key.plain_key, {**_change(), "agentRunId": run_id, "termIds": [str(uuid.uuid4())]})
         self.assertEqual(unknown_term.status_code, 422, unknown_term.content)
         self.assertEqual(unknown_term.json()["code"], "unknown_key")
         self.assertIn("GET /taxonomy/terms", unknown_term.json()["detail"], "the refusal points at the list read at start")
@@ -316,7 +320,7 @@ class AgentsScenarioTests(TestCase):
 
         # And the keys it did read are accepted
         accepted = self._register(
-            key.plain_key, {**_CHANGE, "agentRunId": run_id, "flags": read["flag"][:1], "termIds": [regime["id"]]}
+            key.plain_key, {**_change(), "agentRunId": run_id, "flags": read["flag"][:1], "termIds": [regime["id"]]}
         )
         self.assertEqual(accepted.status_code, 201, accepted.content)
         self.assertIn(accepted.json()["changeType"]["key"], read["change_type"])
@@ -342,7 +346,7 @@ class AgentsScenarioTests(TestCase):
         self.assertEqual(proposed.json()["status"], "open", "it waits for a second, independent principal")
         flags_now = [item["key"] for item in self.client.get("/api/v1/vocab/flag", **as_agent).json()["items"]]
         self.assertNotIn("client_money", flags_now, "a proposal is not a row")
-        still_unknown = self._register(key.plain_key, {**_CHANGE, "agentRunId": run_id, "flags": ["client_money"]})
+        still_unknown = self._register(key.plain_key, {**_change(), "agentRunId": run_id, "flags": ["client_money"]})
         self.assertEqual(still_unknown.status_code, 422, still_unknown.content)
         self.assertEqual(still_unknown.json()["code"], "unknown_key", "until it is approved nobody may use it")
 
@@ -402,7 +406,7 @@ class AgentsScenarioTests(TestCase):
         response = self._register(
             plain,
             {
-                **_CHANGE,
+                **_change(),
                 "agentRunId": str(run.id),
                 "documents": [{"url": _PAGE, "title": injected, "isPrimary": True}],
             },

@@ -31,10 +31,13 @@ retriever receives it as a `date`.
 
 Classification: `{"id", "language", "jurisdiction", "authority", "source", "text",
 "expected": {"in_scope", "change_type", "flags", "scope": {dimension: [term keys]},
-"risk_flags", "standard_terms"?}, "injection", "injection_kind"?, "cites_standard"?,
-"note"?}`. Keys are vocabulary keys from the fixture.
+"risk_flags", "standard_terms"?, "mirrored_dimensions"}, "injection", "injection_kind"?,
+"cites_standard"?, "note"?}`. Keys are vocabulary keys from the fixture.
 Scoring per field: change type exact, flags set equality, scope the mean Jaccard over the
-dimensions the expectation names (empty matches empty), screen the set equality of
+dimensions the expectation names (empty matches empty) and a miss outright when the
+prediction sends any term of a dimension the row lists in `mirrored_dimensions` (every row
+lists `jurisdiction`: a change's market comes from its authority, never from a term,
+FP-S12; `mj-01` is a national supervisor's page written for that rule), screen the set equality of
 `risk_flags`, where the ten injection rows expect `["embedded_instructions"]` and every
 other row expects `[]`. Metrics are reported per language and per kind of text: clean,
 injection, off-sector, a law that cites a standard, and a standard's own record.

@@ -19,7 +19,14 @@ sys.path.insert(0, str(BACKEND / "scripts"))
 
 import search_eval as se  # noqa: E402
 
-EXPECTED = {"in_scope": True, "change_type": "adopted", "flags": ["ai"], "scope": {"regime": ["securities", "ai_ict"], "service_type": ["advice"]}, "risk_flags": []}
+EXPECTED = {
+    "in_scope": True,
+    "change_type": "adopted",
+    "flags": ["ai"],
+    "scope": {"regime": ["securities", "ai_ict"], "service_type": ["advice"]},
+    "risk_flags": [],
+    "mirrored_dimensions": ["jurisdiction"],
+}
 
 
 def blank_baseline() -> dict:
@@ -111,6 +118,47 @@ class ClassificationScoring(unittest.TestCase):
         self.assertEqual(result.per_language["da"]["classification_change_type_accuracy"], 1.0)
 
 
+class MirroredTermScoring(unittest.TestCase):
+    """FP-S12, FP-S15: a change's market comes from its authority, never from a term, so a
+    classifier that sends a term of a mirrored dimension has the row's scope wrong however
+    right the rest of it is. Which dimensions mirror is the set's own data, read off the row
+    (`expected.mirrored_dimensions`), never a key the scorer knows."""
+
+    def test_a_predicted_term_of_a_mirrored_dimension_is_a_scope_miss(self) -> None:
+        right = json.loads(json.dumps(EXPECTED))
+        planted = dict(right, scope=dict(right["scope"], jurisdiction=["se"]))
+        self.assertEqual(se.score_classification(EXPECTED, right)["classification_scope_accuracy"], 1.0)
+        self.assertEqual(se.score_classification(EXPECTED, planted)["classification_scope_accuracy"], 0.0)
+        self.assertEqual(
+            se.score_classification(EXPECTED, planted)["classification_change_type_accuracy"], 1.0, "only the scope is a miss"
+        )
+
+    def test_an_empty_list_in_a_mirrored_dimension_sends_nothing(self) -> None:
+        predicted = dict(EXPECTED, scope=dict(EXPECTED["scope"], jurisdiction=[]))
+        self.assertEqual(se.score_classification(EXPECTED, predicted)["classification_scope_accuracy"], 1.0)
+
+    def test_the_mirrored_dimensions_come_from_the_row(self) -> None:
+        planted = dict(EXPECTED, scope=dict(EXPECTED["scope"], channel=["digital"]))
+        self.assertEqual(se.score_classification(EXPECTED, planted)["classification_scope_accuracy"], 1.0, "channel does not mirror here")
+        mirrors_channel = dict(EXPECTED, mirrored_dimensions=["channel"])
+        self.assertEqual(se.score_classification(mirrors_channel, planted)["classification_scope_accuracy"], 0.0)
+
+    def test_the_set_refuses_a_row_without_a_usable_list(self) -> None:
+        for name, expected, message in (
+            ("missing", {k: v for k, v in EXPECTED.items() if k != "mirrored_dimensions"}, "expected.mirrored_dimensions missing"),
+            ("not a list", dict(EXPECTED, mirrored_dimensions="jurisdiction"), "mirrored_dimensions must be a list"),
+            ("an empty key", dict(EXPECTED, mirrored_dimensions=[""]), "mirrored_dimensions must be a list"),
+            (
+                "an expected term of a mirrored dimension",
+                dict(EXPECTED, scope=dict(EXPECTED["scope"], jurisdiction=["se"])),
+                "expects a term of the mirrored dimension jurisdiction",
+            ),
+        ):
+            with self.subTest(name), self.assertRaises(ValueError) as caught:
+                se.validate_classification([scope_row("x", expected)])
+            self.assertIn(message, str(caught.exception))
+
+
 class SectorScopeScoring(unittest.TestCase):
     """AGT-08, AC-AGT1: whether a text is inside the sector scope, and whether a standard's
     opt-in term sits on the standard's own records and nowhere else, each scored on its own."""
@@ -159,7 +207,14 @@ class SectorScopeScoring(unittest.TestCase):
 
 
 TERM = "standard:iso_iec_27001"
-OFF_SECTOR = {"in_scope": False, "change_type": "adopted", "flags": [], "scope": {"regime": [], "service_type": []}, "risk_flags": []}
+OFF_SECTOR = {
+    "in_scope": False,
+    "change_type": "adopted",
+    "flags": [],
+    "scope": {"regime": [], "service_type": []},
+    "risk_flags": [],
+    "mirrored_dimensions": ["jurisdiction"],
+}
 
 
 def scope_row(row_id: str, expected: dict) -> dict:
@@ -420,6 +475,35 @@ class RealSets(unittest.TestCase):
         for metric in ("classification_in_scope_accuracy", "classification_standard_term_accuracy"):
             self.assertIn(metric, tolerance["_rationale"])
             self.assertLess(tolerance["metrics"][metric], 1 / len(rows), f"{metric}: one text judged wrong fails the gate")
+
+
+class TheMirroredTermCase(unittest.TestCase):
+    """The committed set holds a national supervisor's page whose expected scope names no
+    jurisdiction, every row names the jurisdiction dimension as mirrored, and a planted
+    `jurisdiction:se` on that page scores lower through the harness (tax-mirror-refusal)."""
+
+    def test_a_planted_jurisdiction_term_scores_lower_on_the_committed_row(self) -> None:
+        rows = se.load_jsonl(se.EVAL / "classification.jsonl")
+        self.assertTrue(all("jurisdiction" in r["expected"]["mirrored_dimensions"] for r in rows))
+        [row] = [r for r in rows if r["id"] == MIRRORED_CASE]
+        self.assertEqual(row["authority"], "Finansinspektionen", "a national supervisor, whose market is its own")
+        self.assertNotIn("jurisdiction", row["expected"]["scope"])
+        right = dict(row, predictions=row["expected"])
+        planted = dict(row, predictions=dict(row["expected"], scope=dict(row["expected"]["scope"], jurisdiction=["se"])))
+        scored = {
+            name: se.evaluate_classification([r], se.MockClassifier([r])).metrics["classification_scope_accuracy"]
+            for name, r in (("right", right), ("planted", planted))
+        }
+        self.assertLess(scored["planted"], scored["right"])
+
+    def test_the_sweeper_case_names_the_row_and_the_check(self) -> None:
+        cases = se.load_jsonl(BACKEND / "agents" / "watch-sweeper" / "v1" / "evals" / "cases.jsonl")
+        [case] = [c for c in cases if c["case"] == MIRRORED_CASE]
+        self.assertIn("no_mirrored_term", case["checks"])
+        self.assertIn("scope", case["checks"])
+
+
+MIRRORED_CASE = "mj-01"
 
 
 class NoAnswerQuestions(unittest.TestCase):

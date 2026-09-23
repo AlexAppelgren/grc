@@ -71,6 +71,12 @@ FLAG_LIST = "flag"
 SOURCE_KIND_LIST = "source_kind"
 URGENCY_LIST = "urgency"
 
+# The taxonomy dimension whose terms say which body of law a record belongs to. Every change
+# carries at least one of its terms (D-39, AC-AGT1): the regime is the sector boundary, and a
+# change with none would reach every bank whatever its scope. A dimension's key is stable
+# and never changes, which is what makes it safe to name here.
+REGIME_DIMENSION = "regime"
+
 # The names `apps/watch/curation.py`, `registration.py` and `sources.py` annotate their own
 # helpers with. Those modules write, so the fence's AST rule refuses them the model's own
 # name; the rows themselves still have to travel between the two halves. The guarantee that
@@ -150,6 +156,26 @@ def resolve_terms(term_ids: Sequence[uuid.UUID]) -> list[TaxonomyTerm]:
         )
     refuse_mirrored(term.dimension_id for term in found.values())
     return [found[term_id] for term_id in term_ids]
+
+
+def require_regime(terms: Sequence[TaxonomyTerm]) -> None:
+    """422 `regime_required` when none of these resolved terms is a regime (D-39, AC-AGT1),
+    listing the regime dimension's active keys in `validKeys` so the caller learns what it
+    may choose from; their ids are on `GET /taxonomy/terms`. Called by registration for a
+    new change and by curation for a set that replaces a change's terms."""
+    if any(term.dimension.key == REGIME_DIMENSION for term in terms):
+        return
+    valid = list(
+        TaxonomyTerm.objects.filter(dimension__key=REGIME_DIMENSION, dimension__active=True, active=True)
+        .order_by("sort_order", "key")
+        .values_list("key", flat=True)
+    )
+    raise VocabularyProblem(
+        f"A change needs at least one regime term. Valid regimes: {', '.join(valid)}. "
+        "GET /taxonomy/terms gives their ids.",
+        code="regime_required",
+        extra={"dimension": REGIME_DIMENSION, "validKeys": valid},
+    )
 
 
 def obligations_for(obligation_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, Obligation]:

@@ -150,6 +150,8 @@ class Flow:
             "sourceUrl": "https://www.fi.se/",
             "documents": [{"url": PAGE, "isPrimary": True}],
             "model": agent_build.SWEEPER_MODEL,
+            # Every change carries a regime (D-39, AC-AGT1).
+            "termIds": [str(watch_build.term("regime:securities").id)],
         }
         if obligation_id is not None:
             body["obligationLinks"] = [{"obligationId": str(obligation_id), "confidence": 0.82}]
