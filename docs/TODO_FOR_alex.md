@@ -987,3 +987,24 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
       for the reading bank from its own case (`confirmed` as drafted, `edited` when the bank
       rewrote it, `draft` otherwise), and nothing shared is written. AUD-S4 in
       `governance/app.md` is reworded to match. Default if you say nothing: it stays this way.
+
+## proposals-kind-instrument-obligation: new instruments and obligations through the queue (2026-09-23, PRO-01, INV-01, INV-03)
+
+- [ ] **Default taken: no citation table.** A new instrument or obligation keeps its sources
+      field by field on the proposal (`field_sources`, https links only) and its own source on
+      the record (`source_url`, from the proposal's `sourceUrl`). A record's citations read
+      from the approving proposal until a citation table is planned. Say so if the re-check
+      needs a table of its own in R1.
+- [ ] **Default taken: approving a new record does not stamp "last verified".** Approval
+      stamps who confirmed it (`verified_origin`, and the confirming agent when an agent did),
+      as a new version already does, and leaves `last_verified_at` and `verified_by` to the
+      re-verification, which is the one act that says someone checked the source on a date.
+      A new record therefore reads as never re-verified until the first monthly check.
+- [ ] **Default taken: `update_obligation` and `retire_record` are not built.** No R1
+      scenario needs them; a changed duty arrives as `new_obligation_version`.
+- [ ] **Default taken: an agent's approval of a new instrument or obligation still waits for
+      a person (D-79).** The records carry machine-confirmed provenance already; the
+      refusal is lifted with the vocabulary and term provenance package, as planned.
+- [ ] **Default taken: a new instrument in the bank's library updates is never cut to the
+      footprint.** A new obligation is cut like a new version; an instrument is not a duty,
+      so it reaches every bank, as a change to a shared list does.

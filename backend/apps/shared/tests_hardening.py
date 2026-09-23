@@ -256,8 +256,13 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "The same door, for a taxonomy term: an approved key is public library vocabulary."
     ),
     "apps/proposals/apply.py record(SubjectType.OBLIGATION.value) tenant_id=None actor=actor title=obligation.stable_key": (
-        "The re-verification stamp, the one write to the library that is not a proposal: "
-        "a library editor is platform staff, and the title is the obligation's stable key."
+        "The re-verification stamp, the one write to the library that is not a proposal, and "
+        "a new obligation applied from an approved proposal: the actor is platform staff or "
+        "a platform agent, and the title is the obligation's stable key, a library fact."
+    ),
+    "apps/proposals/apply.py record(SubjectType.INSTRUMENT.value) tenant_id=None actor=actor title=instrument.stable_key": (
+        "A new instrument applied from an approved proposal: the actor is platform staff or a "
+        "platform agent, and the title is the instrument's stable key, a library fact."
     ),
     "apps/library/reports.py record(subject_type.value) tenant_id=tenant_id actor=actor title=subject_title": (
         "A problem report. Its tenant id is the reporter's zone, None only for platform "

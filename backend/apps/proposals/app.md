@@ -67,7 +67,21 @@ proposal is created, so a check only at apply would leave licensed text in the
 platform database.
 
 The kinds are chunk 2's vocabulary and term kinds plus `new_obligation_version`: a new
-summary in force from a date, with the scope terms that come with it. A proposal a bank's
+summary in force from a date, with the scope terms that come with it. `new_instrument` and
+`new_obligation` bring a record the library does not hold yet: they name no target, every
+fact they set carries an https link as its source, and the proposal's `sourceUrl` becomes
+the record's own source. An instrument's regime is a term of the regime dimension, or 422
+`not_a_regime` at creation, over a correction and at apply (D-39). Approval writes the
+record, a new obligation's first version (naming the proposal, so the proposing side reads
+as for any version), the audit row and the re-index in one transaction, and stamps who
+confirmed it: `verified_origin` `agent` with the confirming agent, or `user`. An agent's
+approval of either still waits for a person (D-79) until the vocabulary and term
+provenance lands; the stamp is proven through the apply itself meanwhile. The proposal
+keeps its sources field by field; there is no citation table yet. `update_obligation` and
+`retire_record` wait for a scenario that needs them, and a watch link never travels as a
+proposal (D-64). PRO-S1, PRO-S3, PRO-S5 and PRO-S6 cover the two kinds beside the kinds
+they were written for: a source per fact, one transaction with the re-index, four eyes and
+the idempotent retry. A proposal a bank's
 own person or agent makes is linked to that bank in `proposal_tenant`, a tenant table, so
 the bank can follow its own proposals while the console sees only that one came from a
 bank, never who made it.

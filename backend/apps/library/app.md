@@ -69,16 +69,16 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 > refusing a provision under a standard on every path a row takes there (D-35, library
 > 0008): a provision inserted under, or moved to, a standard or an instrument the writer
 > cannot see; an instrument holding provisions moved onto a standard level; and an existing
-> level given the kind `standard` while provisions sit under it. Missing, so INV-01, INV-02
-> and INV-08 stay in progress:
+> level given the kind `standard` while provisions sit under it. The `new_instrument`
+> proposal refuses a regime from another dimension with 422 `not_a_regime` at creation, over
+> a reviewer's correction and at apply (INV-S12, green). Missing, so INV-01, INV-02 and
+> INV-08 stay in progress:
 > the screens that read "Standard" in the binding slot and "licensed" in the tree
 > (INV-S11's journey; its integration half is green on the library test builders). The
 > ISO/IEC 27001:2022 edition with its one conformance duty is seeded for tests and E2E only
 > (`fixtures/e2e_standard.json`, loaded by `seed_e2e` and never by `seed_demo`), linked to
 > the standard's term without switching it on, until Alex answers the legal question in
-> `docs/TODO_FOR_alex.md`; the instrument
-> proposal's apply refusing a regime from another dimension with 422 `not_a_regime`
-> (INV-S12's second half, which is why test_inv_s12 stays skipped); and the proposal checks
+> `docs/TODO_FOR_alex.md`; and the proposal checks
 > of D-35 at creation, at a reviewer's correction and at apply (422 `licensed_text`,
 > `one_conformance_obligation`, `standard_term_required`, AC-INV2).
 
@@ -217,7 +217,7 @@ And the instrument has exactly one obligation and no provision
 Given an instrument row written without a regime
 Then the database refuses it
 And every seeded instrument's regime is a term of the regime dimension
-When an instrument proposal names a term of the dimension "Service" as its regime and a library editor approves it
+When an instrument proposal names a term of the dimension "Service" as its regime and a reviewer approves it
 Then the apply answers 422 with code "not_a_regime" and nothing is written
 ```
 

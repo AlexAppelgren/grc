@@ -32,19 +32,24 @@ from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.library.models import (
+    Instrument,
+    InstrumentTitle,
     Obligation,
     ObligationSummary,
     ObligationTerm,
+    ObligationTitle,
     ObligationVersion,
     SubjectType,
     Verification,
     VerificationOutcome,
 )
-from apps.library.reading import active_obligation, terms_of
+from apps.library.reading import active_obligation, live_duty_type, terms_of
 from apps.proposals import standards
-from apps.proposals.logic import Reviewer, as_reviewer, parsed_payload
+from apps.proposals.logic import Reviewer, as_reviewer, parsed_payload, validated_instrument, validated_obligation
 from apps.proposals.models import OriginType, Proposal, ProposalKind
 from apps.proposals.schemas import (
+    ProposalInstrumentPayload,
+    ProposalObligationPayload,
     ProposalObligationVersionPayload,
     ProposalTermCreatePayload,
     ProposalTermUpdatePayload,
@@ -104,6 +109,12 @@ def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_
         elif proposal.kind == ProposalKind.NEW_OBLIGATION_VERSION.value:
             assert isinstance(payload, ProposalObligationVersionPayload)
             _obligation_version(payload, proposal, actor, reviewer, step_up)
+        elif proposal.kind == ProposalKind.NEW_INSTRUMENT.value:
+            assert isinstance(payload, ProposalInstrumentPayload)
+            _new_instrument(payload, proposal, actor, reviewer, step_up)
+        elif proposal.kind == ProposalKind.NEW_OBLIGATION.value:
+            assert isinstance(payload, ProposalObligationPayload)
+            _new_obligation(payload, proposal, actor, reviewer, step_up)
         else:
             # Reached by a kind that enters the queue before the apply that writes it
             # exists: an approval of one is refused where the reviewer can see it, never
@@ -160,6 +171,157 @@ def apply_reverification(
             step_up_assertion_id=step_up_assertion_id,
         )
     return verification
+
+
+# ---------------------------------------------------------------------------------------
+# New instruments and obligations (INV-01, INV-03, INV-05, PRO-02)
+# ---------------------------------------------------------------------------------------
+def _verified_origin(reviewer: Reviewer) -> str:
+    """Who confirmed the change (INV-05, D-62): an independent agent, or a person. An
+    agent's confirmation is machine-confirmed and never reads as a person's."""
+    return OriginType.AGENT.value if reviewer.agent_id is not None else OriginType.USER.value
+
+
+def _new_instrument(
+    payload: ProposalInstrumentPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
+) -> None:
+    """Add the instrument the proposal asks for, with its official name per language.
+
+    The payload is checked again against the library as it is now, by the same function
+    creation ran (`logic.validated_instrument`): a key taken meanwhile is 409
+    `duplicate_key`, and a regime that is not a term of the regime dimension is 422
+    `not_a_regime` here too, for a proposal stored before the rule (D-39, INV-S12).
+
+    Provenance names both sides: who proposed it (`created_origin`, and the run it was
+    found in) and who confirmed it (`verified_origin`, and the confirming agent when an
+    agent did). An instrument is not indexed on its own; its obligations and provisions
+    are, when they arrive.
+    """
+    refs, regime = validated_instrument(payload)
+    instrument = Instrument.objects.create(
+        stable_key=payload.key,
+        short_name=payload.short_name,
+        official_ref=payload.official_ref,
+        eli_uri=payload.eli_uri,
+        source_url=proposal.source_url,
+        level=refs.level,
+        binding=refs.level.binding_default if payload.binding is None else payload.binding,
+        jurisdiction=refs.jurisdiction,
+        authority=refs.authority,
+        regime=regime,
+        in_force_from=payload.in_force_from,
+        in_force_from_precision=payload.in_force_from_precision,
+        in_force_to=payload.in_force_to,
+        in_force_to_precision=payload.in_force_to_precision,
+        implements_note=payload.implements_note,
+        created_origin=proposal.origin,
+        created_by_agent_run=proposal.agent_run_id,
+        verified_origin=_verified_origin(reviewer),
+        verified_by_agent_id=reviewer.agent_id,
+    )
+    for language, text, is_original, is_machine in _texts(payload.titles, payload.original_language, payload.is_machine, reviewer):
+        InstrumentTitle.objects.create(
+            instrument=instrument, language_id=language, text=text, is_original=is_original, is_machine=is_machine
+        )
+    record(
+        action="instrument.created",
+        actor=actor,
+        subject_type=SubjectType.INSTRUMENT.value,
+        subject_id=instrument.id,
+        subject_title=instrument.stable_key,
+        summary=f"Added the instrument {instrument.stable_key} (proposal {proposal.id}).",
+        tenant_id=None,
+        after={
+            "stableKey": instrument.stable_key,
+            "regime": payload.regime,
+            "level": payload.level,
+            "verifiedOrigin": instrument.verified_origin,
+            "proposal": str(proposal.id),
+        },
+        step_up_assertion_id=step_up,
+    )
+
+
+def _new_obligation(
+    payload: ProposalObligationPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
+) -> None:
+    """Add the obligation the proposal asks for, with its title, its scope and its first
+    version, which names the proposal that filed it (`applied_by_proposal`), so the
+    proposing side is read from there as for any later version.
+
+    Checked again by the function creation ran (`logic.validated_obligation`): the
+    instrument may have been retired, or the key taken, while the proposal waited. The
+    search index moves inside this transaction, so an index that cannot be written takes
+    the obligation down with it and leaves the proposal open.
+    """
+    instrument, terms = validated_obligation(payload)
+    verified_origin = _verified_origin(reviewer)
+    obligation = Obligation.objects.create(
+        stable_key=payload.key,
+        instrument=instrument,
+        ref_label=payload.ref_label,
+        duty_type=live_duty_type(payload.duty_type),
+        created_origin=proposal.origin,
+        created_by_agent_run=proposal.agent_run_id,
+        created_model=proposal.model,
+        source_url=proposal.source_url,
+        source_label=proposal.source_label or f"{instrument.official_ref}, {payload.ref_label}",
+        verified_origin=verified_origin,
+        verified_by_agent_id=reviewer.agent_id,
+    )
+    for language, text, is_original, is_machine in _texts(payload.titles, payload.original_language, payload.is_machine, reviewer):
+        ObligationTitle.objects.create(
+            obligation=obligation, language_id=language, text=text, is_original=is_original, is_machine=is_machine
+        )
+    for term in terms:
+        ObligationTerm.objects.create(obligation=obligation, term=term)
+    version = ObligationVersion.objects.create(
+        obligation=obligation,
+        version_number=1,
+        effective_from=payload.effective_from,
+        effective_from_precision=payload.effective_from_precision,
+        caused_by_change=proposal.change_id,
+        applied_by_proposal=proposal,
+        approved_by=reviewer.user,
+        approved_at=timezone.now(),
+        verified_origin=verified_origin,
+        verified_by_agent_id=reviewer.agent_id,
+    )
+    for language, text, is_original, is_machine in _texts(payload.summaries, payload.original_language, payload.is_machine, reviewer):
+        ObligationSummary.objects.create(version=version, language_id=language, text=text, is_original=is_original, is_machine=is_machine)
+    reindex(obligation.id)
+    record(
+        action="obligation.created",
+        actor=actor,
+        subject_type=SubjectType.OBLIGATION.value,
+        subject_id=obligation.id,
+        subject_title=obligation.stable_key,
+        summary=f"Added the obligation {obligation.stable_key} under {instrument.stable_key} (proposal {proposal.id}).",
+        tenant_id=None,
+        after={
+            "stableKey": obligation.stable_key,
+            "instrument": instrument.stable_key,
+            "versionNumber": version.version_number,
+            "versionId": str(version.id),
+            "effectiveFrom": payload.effective_from.isoformat() if payload.effective_from else None,
+            "effectiveFromPrecision": payload.effective_from_precision,
+            "languages": sorted(payload.summaries),
+            "terms": payload.terms or [],
+            "verifiedOrigin": verified_origin,
+            "proposal": str(proposal.id),
+        },
+        step_up_assertion_id=step_up,
+    )
+
+
+def _texts(texts: dict[str, str], original: str, is_machine: bool, reviewer: Reviewer) -> list[tuple[str, str, bool, bool]]:
+    """`(language, text, is_original, is_machine)` per translation row (INV-05): the
+    original unlabelled, the others machine-made when the payload says so, and always under
+    an agent's approval, which confirms nothing a person would."""
+    return [
+        (language, text, language == original, language != original and (is_machine or reviewer.user is None))
+        for language, text in texts.items()
+    ]
 
 
 # ---------------------------------------------------------------------------------------
