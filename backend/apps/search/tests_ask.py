@@ -92,13 +92,14 @@ def answer_of(events: list[dict[str, Any]]) -> dict[str, Any]:
     return events[-1]["answer"]
 
 
-def replying(*deltas: str) -> Any:
-    """A model that writes exactly these words, whatever it was given."""
+def replying(*deltas: str, stop_reason: str = "end_turn") -> Any:
+    """A model that writes exactly these words, whatever it was given, and stops for
+    `stop_reason`."""
 
     def stream(self: llm.MockLlm, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | llm.Completion]:
         yield from deltas
         yield llm.Completion(
-            text="".join(deltas), model="mock", model_version="0", input_tokens=1, output_tokens=1, stop_reason="end_turn"
+            text="".join(deltas), model="mock", model_version="0", input_tokens=1, output_tokens=1, stop_reason=stop_reason
         )
 
     return mock.patch.object(llm.MockLlm, "stream", autospec=True, side_effect=stream)
@@ -598,6 +599,35 @@ class AskDepthTests(AskTestCase):
         self.assertGreater(wide, 1, "at the default depth the question finds more than one passage")
         self.assertEqual(narrow, 1)
         self.assertEqual(len(answer["citations"]), 1)
+
+
+class AskStopReasonTests(AskTestCase):
+    """D-82: the closing `answer` event says how the model finished, in the provider's own
+    word as the AI log row stores it, so a reader whose answer stopped at `ASK_MAX_TOKENS`
+    is told it was cut short rather than reading it as the whole answer."""
+
+    def test_an_answer_the_model_finished_says_end_turn(self) -> None:
+        with replying("Costs are disclosed in advance. [1]"):
+            answer_event = self.ask(COSTS_QUESTION)[-1]
+
+        self.assertEqual(answer_event["stopReason"], "end_turn")
+        self.assertEqual(AiGeneration.objects.get(pk=answer_event["answer"]["id"]).stop_reason, "end_turn")
+
+    def test_an_answer_cut_off_at_the_token_cap_says_max_tokens(self) -> None:
+        with replying("Costs are disclosed in advance. [1] ", "They are item", stop_reason="max_tokens"):
+            events = self.ask(COSTS_QUESTION)
+
+        self.assertEqual([event["event"] for event in events], ["start", "statement", "answer"])
+        self.assertEqual(events[-1]["stopReason"], "max_tokens", "the reader is told the answer was cut short")
+        self.assertEqual(AiGeneration.objects.get(pk=events[-1]["answer"]["id"]).stop_reason, "max_tokens")
+
+    def test_an_answer_no_model_was_asked_for_has_no_stop_reason(self) -> None:
+        with mock.patch.object(llm.MockLlm, "stream", autospec=True) as model:
+            answer_event = self.ask(UNSUPPORTED_QUESTION)[-1]
+
+        model.assert_not_called()
+        self.assertTrue(answer_event["answer"]["noAnswer"])
+        self.assertIsNone(answer_event["stopReason"], "no model stopped, so there is no reason to give")
 
 
 class AskSettingsBoundsTests(SimpleTestCase):

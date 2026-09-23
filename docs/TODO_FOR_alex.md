@@ -860,3 +860,15 @@ Nothing waits for these; each has the default the build took.
       only this bank's sessions. Default if you say nothing: it stays as built, and the
       published description of `GET /me/sessions` says a person sees only this bank's
       sessions there.
+
+## ask-screen: what a reader is told when the model cut an answer off (2026-09-23, SRC-03, AUD-02, D-82)
+
+- [ ] **An Ask answer the model stopped at its length limit (`ASK_MAX_TOKENS`, 1024 tokens)
+      now says so on screen.** D-82 left open what the stream tells that reader. The default
+      taken: the closing `answer` event carries `stopReason`, the provider's own word exactly
+      as the AI log row stores it (`end_turn`, or `max_tokens` when it was cut off; empty when
+      no model was asked), and the Ask screen shows "This answer was cut short at its length
+      limit. Ask a narrower question for the rest." under an answer that ended at
+      `max_tokens`. Every statement sent is still cited either way. Say if you would rather
+      the stream stayed silent (only the AI log records it), or the limit were raised
+      instead. Default if you say nothing: it stays as built.
