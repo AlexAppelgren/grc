@@ -554,12 +554,19 @@ def row(proposal: Proposal) -> ProposalRow:
 # Deciding
 # ---------------------------------------------------------------------------------------
 def _decidable(proposal: Proposal, reviewer: Reviewer) -> None:
-    """Four eyes, checked here so the API answers before the database does (AC-PRO2); the
+    """Lock the row, then check it under the lock (PRO-02). Two decisions on one proposal
+    queue on the lock and the second reads what the first committed: 409
+    `invalid_transition`, never a stale "open" that lets a rejection land on top of an
+    applied approval or a proposal apply twice (apps/proposals/tests_decide.py).
+
+    Four eyes, checked here so the API answers before the database does (AC-PRO2); the
     widened `proposal_four_eyes` constraint is the same rule and answers on its own if this
     is ever bypassed. A repeated user, a repeated key or a repeated agent definition is the
     same principal twice by construction, whichever pair of columns it shows up on; a
     reviewing key that names no agent is refused too, so an unbound platform key can never
-    stand in for independence (PRO-S13, PRO-S14, D-62, ADR 0054)."""
+    stand in for independence (PRO-S13, PRO-S14, D-62, ADR 0054). The API's gate refuses
+    that key first, with `agent_not_bound`; this is the same rule for any other caller."""
+    proposal.refresh_from_db(from_queryset=Proposal.objects.select_for_update())
     if proposal.status != ProposalStatus.OPEN.value:
         raise ValidationError("This proposal has already been decided.", code="invalid_transition")
     if reviewer.api_key_id is not None and reviewer.agent_id is None:
@@ -609,6 +616,11 @@ def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any])
     Only an obligation version may be corrected. A vocabulary row's labels are wording a
     person writes rather than a fact from an authority, so there is nothing to correct
     against a source, and a reviewer who disagrees rejects with a reason instead.
+
+    An agent's correction may reword a summary but not move `originalLanguage`: the
+    original is the one text stored without the machine label, so moving it would store a
+    machine translation as unlabelled and label the source-language text machine-made
+    (INV-05). It is compared as parsed, whichever spelling of the field arrived.
     """
     if proposal.kind not in OBLIGATION_KINDS:
         raise ValidationError(
@@ -618,7 +630,13 @@ def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any])
     merged = {**proposal.payload, **overrides}
     parsed = validated_payload(proposal.kind, merged)
     check_field_sources(parsed, proposal.field_sources)
-    proposal.corrected_payload = payload_dict(parsed)
+    stored = payload_dict(parsed)
+    if reviewer.user is None and stored.get("originalLanguage") != proposal.payload.get("originalLanguage"):
+        raise ValidationError(
+            "An agent cannot change which language a summary was written in. Reject it with a reason instead.",
+            code="validation_error",
+        )
+    proposal.corrected_payload = stored
     proposal.corrected_by = reviewer.user
     proposal.corrected_at = timezone.now()
     # The row's own date follows the correction, because a queue row that showed one date
@@ -645,6 +663,12 @@ def approve(
     the audit trail keep both. `step_up_assertion_id` is null for an agent's decision: a key
     holds no passkey assertion (PRO-S13, D-62, ADR 0054).
 
+    An agent approves only a kind whose applied record can say an agent confirmed it, which
+    today is an obligation version (INV-05, D-79). A vocabulary row or a taxonomy term has
+    nowhere to carry machine-confirmed provenance, so an agent's approval of one would read
+    as a person's: it is refused with 409 `person_review_required` and waits for a person.
+    Rejecting one writes no library row, so an agent still may.
+
     `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
     older caller; `as_reviewer` normalizes either into the same shape below.
     """
@@ -652,6 +676,11 @@ def approve(
 
     reviewer = as_reviewer(reviewer, actor)
     _decidable(proposal, reviewer)
+    if reviewer.user is None and proposal.kind not in OBLIGATION_KINDS:
+        raise ValidationError(
+            "An agent cannot approve this kind of change yet: a person has to approve it.",
+            code="person_review_required",
+        )
     decided = ["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "applied_at", "review_note"]
     if payload_overrides:
         corrected(proposal, reviewer, payload_overrides)

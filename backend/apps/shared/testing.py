@@ -10,9 +10,11 @@ import importlib
 import os
 import uuid
 from datetime import datetime
+from time import monotonic, sleep
 from typing import Any
 from unittest import mock
 
+from django.db import connection
 from django.db.models import Model
 from django.test import Client, TestCase
 from sentry_sdk.integrations import logging as sentry_logging
@@ -188,3 +190,34 @@ class ScenarioTestCase(TestCase):
 
     def as_agent(self, principal: Principal) -> dict[str, Any]:
         return {"HTTP_X_API_KEY": API_KEY_FOR_TESTS}
+
+
+# --- Races between two real sessions ----------------------------------------------------
+# Each racing session runs on its own cw_app connection in its own thread and transaction,
+# the way two requests reach production. The first acts and holds its transaction open
+# until PostgreSQL reports the second one waiting on it, then commits: the interleaving in
+# which a check on an unlocked row lets both through (apps/taxonomy/tests_footprint.py,
+# apps/proposals/tests_decide.py).
+RACE_WAIT_SECONDS = 10
+LANDED = "landed"
+
+
+def backend_pid() -> int:
+    """The PostgreSQL backend of this thread's connection, which the first session watches."""
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT pg_backend_pid()")
+        return int(cursor.fetchone()[0])
+
+
+def hold_until_waiting_on_me(other_pid: list[int]) -> None:
+    """Return once the session `other_pid[0]` waits on a lock this one holds, or fail after
+    RACE_WAIT_SECONDS: a second session that never waited was never serialized."""
+    deadline = monotonic() + RACE_WAIT_SECONDS
+    while monotonic() < deadline:
+        if other_pid:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT pg_backend_pid() = ANY(pg_blocking_pids(%s))", [other_pid[0]])
+                if cursor.fetchone()[0]:
+                    return
+        sleep(0.01)
+    raise AssertionError("the second session never waited on the first")

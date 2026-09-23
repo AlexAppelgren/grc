@@ -62,16 +62,22 @@ REVIEWER_AUTH = [SessionAuth(), ApiKeyAuth()]
 
 
 def require_reviewer(request: HttpRequest) -> Reviewer:
-    """Who may work the review queue (PRO-S13, PRO-S14, ID-S31, D-62, ADR 0054): a person
-    holding `proposals.review`, or a platform key bound to an agent and holding the scope
-    `proposals:review`. `proposals:review` is platform-only (`PLATFORM_ONLY_SCOPES`): a key
-    carrying a tenant is refused here with 403 even if its scopes list somehow names it,
-    which is the gate's own word beside the 422 a tenant key is refused it with at creation
-    (apps/identity/api_keys_logic.py). A reviewing key that names no agent is refused too,
-    the same way the widened `proposal_four_eyes` constraint refuses it on its own: an
-    unbound platform key can never stand in for the independent second agent the scope is
-    for. Never applies a step-up: a key holds no passkey assertion, so that stays the
-    caller's own job for the one route that needs one (`approve_proposal`)."""
+    """Who may work the review queue, on every one of its four routes (PRO-S13, PRO-S14,
+    ID-S31, D-62, ADR 0054): a person holding `proposals.review`, or a platform key bound to
+    an agent definition and holding the scope `proposals:review`.
+
+    A key is refused with 403 `permission_denied`, naming the scope, when it lacks
+    `proposals:review` or carries a tenant: the scope is platform-only
+    (`PLATFORM_ONLY_SCOPES`), so a bank's key is refused here even if its scopes list somehow
+    names it, beside the 422 a bank's key is refused it with at creation
+    (apps/identity/api_keys_logic.py). A key holding the scope but bound to no agent
+    definition is refused with 403 `agent_not_bound`: four eyes compares agent definitions,
+    and a key with none would be compared on a null, so an unbound key can never stand in
+    for the independent second agent the scope is for. The widened `proposal_four_eyes`
+    constraint refuses that decision on its own too, if this gate is ever bypassed.
+
+    Never applies a step-up: a key holds no passkey assertion, so a person's step-up stays
+    the job of the one route that needs one (`approve_proposal`)."""
     from apps.identity.models import ApiKey
 
     who = principal(request)
@@ -82,6 +88,12 @@ def require_reviewer(request: HttpRequest) -> Reviewer:
                 code="permission_denied",
                 detail="This key does not have the scope for that.",
                 required_permission=perms.SCOPE_PROPOSALS_REVIEW,
+            )
+        if who.agent_id is None:
+            raise ProblemError(
+                status=403,
+                code="agent_not_bound",
+                detail="This key is bound to no agent definition, so nothing it confirmed could be told apart from what it proposed.",
             )
         key = ApiKey.objects.select_related("agent").filter(pk=who.subject_id).first()  # ordering: pk lookup, at most one row
         version = key.agent.current_version if key is not None and key.agent is not None else None
@@ -277,31 +289,47 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
 @router.get(
     "/proposals/{proposal_id}",
     response=ProposalDetail,
-    auth=SESSION,
+    auth=REVIEWER_AUTH,
     operation_id="getProposal",
     by_alias=True,
     summary="Open one proposal and read it against what the library says today",
 )
-@requires_permission(perms.PROPOSALS_REVIEW)
 @answers_problems
-def get_proposal(request: HttpRequest, proposal_id: str) -> ProposalDetail:
+def get_proposal(
+    request: HttpRequest,
+    proposal_id: str = Path(
+        ...,
+        description=(
+            "The proposal to open, the UUID the queue returns as `id`. A proposal that does "
+            "not exist, and anything that is not a UUID, answers `not_found`."
+        ),
+    ),
+) -> ProposalDetail:
     """One proposal as a reviewer decides it: the record it would change, what that record
     says today against what this would make it say, the two compared sentence by sentence,
-    the source behind every changed value, and the scope before and after. Read it, open the
-    sources, and only then approve.
+    the source behind every changed value, and the scope before and after. Call it before
+    approving, correcting or rejecting: read it, open the sources, and only then decide.
 
     What comes back is a request and not the library: until the proposal is approved the
-    library still says what `currentSummary` says. A proposal filed inside a bank arrives
-    without its proposer, as in the list.
+    library still says what `currentSummary` says. Reading it changes nothing and records
+    nothing. A proposal filed inside a bank arrives without its proposer, as in the list.
 
-    Needs the platform permission `proposals.review`; no bank role and no API key scope
-    reaches it.
+    Needs the platform permission `proposals.review` from a person, or the platform-only
+    scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): an
+    independent agent opens the same proposal a person opens before it decides. No bank role
+    and no bank's key reaches it.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without `proposals.review`; `not_found` (404) for a proposal that does not exist
-    and for anything that is not a UUID.
+    Errors to branch on: `unauthenticated` (401) without a session or a key;
+    `permission_denied` (403) without `proposals.review` or `proposals:review`, or for a
+    bank's key; `agent_not_bound` (403) for a key holding the scope but bound to no agent
+    definition; `not_found` (404) for a proposal that does not exist and for anything that
+    is not a UUID.
     """
-    return reading.detail(logic.by_id(uuid_or_404(proposal_id)), language_order(request), me_id=principal(request).subject_id)
+    reviewer = require_reviewer(request)
+    # A fresh id for an agent, as the list does: `is_mine` compares a person's user id, and a
+    # key never filed a person's proposal.
+    me_id = reviewer.user.id if reviewer.user is not None else uuid.uuid4()
+    return reading.detail(logic.by_id(uuid_or_404(proposal_id)), language_order(request), me_id=me_id)
 
 
 @router.post(
@@ -342,13 +370,19 @@ def approve_proposal(
     approval leaves carry no assertion id for its decision. Either way the reviewer is
     never the proposer, the same key, or a key of the same agent definition: the widened
     proposal_four_eyes constraint refuses that row on its own, whichever principal wrote
-    it.
+    it. An agent approves obligation versions only, the one record that can say an agent
+    confirmed it and never reads as a person's check; a translation it approves stays
+    labelled machine-made, and its correction may reword a summary but never move
+    `originalLanguage`, which answers `validation_error`. A vocabulary or term proposal
+    waits for a person (D-79).
 
     Errors to branch on: `permission_denied` without `proposals.review` or
-    `proposals:review`; `step_up_required` when a person calls without a fresh passkey
-    assertion; `four_eyes_violation` when the reviewer is the person, key or agent who made
-    the proposal, or a reviewing key names no agent definition; `invalid_transition` when
-    the proposal was already approved or rejected, which is also what a repeated call
+    `proposals:review`; `agent_not_bound` for a key holding the scope but bound to no agent
+    definition; `step_up_required` when a person calls without a fresh passkey assertion;
+    `four_eyes_violation` when the reviewer is the person, key or agent who made the
+    proposal; `person_review_required` when an agent approves a vocabulary or term
+    proposal, which waits for a person; `invalid_transition` when the proposal was already
+    approved or rejected, which is also what a repeated or simultaneous second call
     answers, since nothing is ever applied twice; `source_missing` when a correction
     introduces a field the proposal never sourced; `validation_error` when a correction is
     offered on a kind that cannot be corrected or does not fit its payload; `unknown_key`

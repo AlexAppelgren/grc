@@ -193,6 +193,11 @@ def _obligation_version(
     # _validate_obligation_target`); it is read again here against the library as it is
     # now, because the obligation may have been retired while the proposal waited.
     assert proposal.target_id is not None
+    # The obligation's row is locked before its highest version is read: a second approval
+    # on the same obligation waits here until the first commits, then numbers its version
+    # after that one, rather than both claiming one number and the second dying on the
+    # unique key (PRO-02; apps/proposals/tests_decide.py, ObligationVersionRaces).
+    Obligation.objects.select_for_update().filter(pk=proposal.target_id).exists()
     obligation = active_obligation(proposal.target_id)
     # The scope is resolved and checked before anything is written: a mirrored jurisdiction
     # term is refused here too, for a proposal that entered the queue before the rule did
@@ -225,14 +230,16 @@ def _obligation_version(
     )
     for language, text in payload.summaries.items():
         # The language it was written in is the original; the others are translations, and
-        # they stay labelled machine-made until a person confirms them (INV-05, AUD-02).
+        # they stay labelled machine-made until a person confirms them (INV-05, AUD-02). An
+        # agent's approval confirms nothing a person would, so under it a translation is
+        # machine-made whatever the payload claims.
         is_original = language == payload.original_language
         ObligationSummary.objects.create(
             version=version,
             language_id=language,
             text=text,
             is_original=is_original,
-            is_machine=payload.is_machine and not is_original,
+            is_machine=not is_original and (payload.is_machine or reviewer.user is None),
         )
     scope_before = scope_after = None
     if payload.terms is not None:

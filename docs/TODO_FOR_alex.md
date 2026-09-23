@@ -529,3 +529,16 @@ section. Copied here as chunk3-rest-T20 requires.
       approves it". bleqq staffs no library editor (D-62), so the screen names no approver.
       The design card's lineage headings and this sentence are still the old wording; whoever
       next edits `design/` should bring the card in line, or tell us to follow the card.
+
+## proposals-decide-hardening (2026-09-23): an agent confirms obligation versions only (D-79)
+
+- [ ] **An agent may no longer approve a vocabulary or term proposal; it waits for a person.**
+      Only an obligation version can record that an agent confirmed it (`verified_origin`,
+      `verified_by_agent`); a vocabulary row, its labels and a taxonomy term have no such
+      columns, so an agent's approval of one would have read as a person's check (INV-05).
+      The approve route now answers 409 `person_review_required` to a reviewing key on any
+      kind but `new_obligation_version`, and an agent may still reject one. With
+      `library_editor` unstaffed, that means every proposed flag, list value or term waits in
+      the console queue for you or someone you name. Default if you say nothing: it stays
+      this way. The alternative is machine-confirmed provenance columns on every library
+      list and on terms, so an agent can confirm those too: say if you want that planned.

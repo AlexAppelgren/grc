@@ -2150,19 +2150,23 @@ export interface paths {
          * Open one proposal and read it against what the library says today
          * @description One proposal as a reviewer decides it: the record it would change, what that record
          *     says today against what this would make it say, the two compared sentence by sentence,
-         *     the source behind every changed value, and the scope before and after. Read it, open the
-         *     sources, and only then approve.
+         *     the source behind every changed value, and the scope before and after. Call it before
+         *     approving, correcting or rejecting: read it, open the sources, and only then decide.
          *
          *     What comes back is a request and not the library: until the proposal is approved the
-         *     library still says what `currentSummary` says. A proposal filed inside a bank arrives
-         *     without its proposer, as in the list.
+         *     library still says what `currentSummary` says. Reading it changes nothing and records
+         *     nothing. A proposal filed inside a bank arrives without its proposer, as in the list.
          *
-         *     Needs the platform permission `proposals.review`; no bank role and no API key scope
-         *     reaches it.
+         *     Needs the platform permission `proposals.review` from a person, or the platform-only
+         *     scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): an
+         *     independent agent opens the same proposal a person opens before it decides. No bank role
+         *     and no bank's key reaches it.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without `proposals.review`; `not_found` (404) for a proposal that does not exist
-         *     and for anything that is not a UUID.
+         *     Errors to branch on: `unauthenticated` (401) without a session or a key;
+         *     `permission_denied` (403) without `proposals.review` or `proposals:review`, or for a
+         *     bank's key; `agent_not_bound` (403) for a key holding the scope but bound to no agent
+         *     definition; `not_found` (404) for a proposal that does not exist and for anything that
+         *     is not a UUID.
          */
         get: operations["getProposal"];
         put?: never;
@@ -2202,13 +2206,19 @@ export interface paths {
          *     approval leaves carry no assertion id for its decision. Either way the reviewer is
          *     never the proposer, the same key, or a key of the same agent definition: the widened
          *     proposal_four_eyes constraint refuses that row on its own, whichever principal wrote
-         *     it.
+         *     it. An agent approves obligation versions only, the one record that can say an agent
+         *     confirmed it and never reads as a person's check; a translation it approves stays
+         *     labelled machine-made, and its correction may reword a summary but never move
+         *     `originalLanguage`, which answers `validation_error`. A vocabulary or term proposal
+         *     waits for a person (D-79).
          *
          *     Errors to branch on: `permission_denied` without `proposals.review` or
-         *     `proposals:review`; `step_up_required` when a person calls without a fresh passkey
-         *     assertion; `four_eyes_violation` when the reviewer is the person, key or agent who made
-         *     the proposal, or a reviewing key names no agent definition; `invalid_transition` when
-         *     the proposal was already approved or rejected, which is also what a repeated call
+         *     `proposals:review`; `agent_not_bound` for a key holding the scope but bound to no agent
+         *     definition; `step_up_required` when a person calls without a fresh passkey assertion;
+         *     `four_eyes_violation` when the reviewer is the person, key or agent who made the
+         *     proposal; `person_review_required` when an agent approves a vocabulary or term
+         *     proposal, which waits for a person; `invalid_transition` when the proposal was already
+         *     approved or rejected, which is also what a repeated or simultaneous second call
          *     answers, since nothing is ever applied twice; `source_missing` when a correction
          *     introduces a field the proposal never sourced; `validation_error` when a correction is
          *     offered on a kind that cannot be corrected or does not fit its payload; `unknown_key`
@@ -15176,6 +15186,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The proposal to open, the UUID the queue returns as `id`. A proposal that does not exist, and anything that is not a UUID, answers `not_found`. */
                 proposal_id: string;
             };
             cookie?: never;

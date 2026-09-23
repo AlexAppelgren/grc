@@ -928,7 +928,9 @@ class IdentityScenarioTests(ScenarioTestCase):
         The review scope reaches the queue and never a library row (ID-10, AC-PRO1, AC-ID3).
         """
         from apps.agents import testing as agents_testing
+        from apps.library import testing as build
         from apps.library.seeds import seed_jurisdictions
+        from apps.proposals.models import Proposal, ProposalStatus
         from apps.shared.audit import Actor
         from apps.taxonomy.models import Flag
         from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
@@ -939,12 +941,25 @@ class IdentityScenarioTests(ScenarioTestCase):
         seed_term_dimensions()
         seed_taxonomy_terms()
         ensure_tenant_vocabularies(self.tenant, actor=Actor.system("test"))
+        tenancy.clear_tenant()  # a library record belongs to no tenant
+        obligation = build.obligation(build.instrument(key="id-s31-instrument"), key="obl-id-s31")
+        self.activate(self.tenant)
 
         proposer_key = factories.api_key(self.tenant, scopes=("proposals:write",))
         agent_headers = {"HTTP_X_API_KEY": proposer_key.plain_key}
+        # An agent approves an obligation version: that is the record that can say an
+        # agent confirmed it (D-79). A vocabulary row cannot yet, so its proposal waits for
+        # a person, and this one is rejected below instead.
         made = self._post(
             "/proposals",
-            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}},
+            {
+                "kind": "new_obligation_version",
+                "title": "Refresh the wording against the source",
+                "targetType": "obligation",
+                "targetId": str(obligation.id),
+                "payload": {"summaries": {"en": "The duty as the source now reads it."}, "originalLanguage": "en", "isMachine": True},
+                "fieldSources": {"summaries.en": "https://www.fi.se/"},
+            },
             **agent_headers,
         )
         self.assertEqual(made.status_code, 201, made.content)
@@ -955,9 +970,26 @@ class IdentityScenarioTests(ScenarioTestCase):
         )
         self.assertEqual(second.status_code, 201, second.content)
 
+        # A bank's key holding proposals:review, written straight to the table as no route
+        # would write it, is refused on the list, approve and reject alike, and the proposals
+        # it tried to decide are untouched: the scope is platform-only at the gate too.
+        rogue = {"HTTP_X_API_KEY": factories.api_key(self.tenant, scopes=(perms.SCOPE_PROPOSALS_REVIEW,)).plain_key}
+        for refused in (
+            self.client.get("/api/v1/proposals", **rogue),
+            self._post(f"/proposals/{made.json()['id']}/approve", {"note": "Agreed."}, **rogue),
+            self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists."}, **rogue),
+        ):
+            self.assertEqual(refused.status_code, 403, refused.content)
+            self.assertEqual(refused.json()["requiredPermission"], perms.SCOPE_PROPOSALS_REVIEW)
+        tenancy.clear_tenant()  # the rogue key's requests activated its tenant; proposals are the platform's
+        self.assertEqual(
+            sorted(Proposal.objects.filter(pk__in=[made.json()["id"], second.json()["id"]]).values_list("status", flat=True)),
+            [ProposalStatus.OPEN.value, ProposalStatus.OPEN.value],
+        )
+        self.assertEqual(list(obligation.versions.values_list("version_number", flat=True)), [1])
+
         # A platform key bound to an agent definition, holding proposals:review, reads the
         # queue and approves, corrects or rejects a proposal it did not file.
-        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
         reviewer_key = agents_testing.reviewer_api_key()
         reviewer = {"HTTP_X_API_KEY": reviewer_key.plain_key}
         listed = self.client.get("/api/v1/proposals?status=open", **reviewer)
@@ -965,9 +997,12 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertIn(made.json()["id"], [row["id"] for row in listed.json()["items"]])
         approved = self._post(f"/proposals/{made.json()['id']}/approve", {"note": "Agreed."}, **reviewer)
         self.assertEqual(approved.status_code, 200, approved.content)
-        self.assertTrue(Flag.objects.filter(key="client_money").exists(), "the change reached the library only through apply")
+        self.assertEqual(
+            sorted(obligation.versions.values_list("version_number", flat=True)), [1, 2], "the change reached the library only through apply"
+        )
         rejected = self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists."}, **reviewer)
         self.assertEqual(rejected.status_code, 200, rejected.content)
+        self.assertFalse(Flag.objects.filter(key="sanctioned").exists())
 
         # A key without proposals:review answers 403 naming the missing scope; every
         # instrument, provision, obligation and vocabulary route it might try to write

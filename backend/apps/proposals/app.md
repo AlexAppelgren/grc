@@ -24,7 +24,11 @@ whose user, key or agent matches on both sides. A person approving still steps
 up with a passkey; a key cannot step up, so for an agent the scope and the
 constraint are the whole gate. A record applied from a proposal an agent
 confirmed carries machine-confirmed provenance (INV-05), never a person's
-verification.
+verification. Only an obligation version can carry it, so an agent approves
+obligation versions only; a vocabulary or term proposal answers it 409
+`person_review_required` and waits for a person, though an agent may reject one
+(D-79). A key bound to no agent definition is refused at the queue's gate with
+403 `agent_not_bound`.
 
 The prototype shows the tenant's compliance officer approving agent
 proposals. That is the one place the prototype is wrong: the queue lives in
@@ -228,6 +232,7 @@ When that key reads the pending proposals through the queue route a person reads
 Then it sees the same proposal with the same source beside the same diff
 When it approves, corrects or rejects through the same routes
 Then the decision applies exactly as a person's does, in one transaction
+And a correction by the agent that moves the original language answers 422 and applies nothing
 And the audit row names the confirming agent, its definition version and its key, and carries no step-up assertion
 And a key without the review scope answers 403
 And no route under the review scope writes a library row except through apply
@@ -243,5 +248,6 @@ Then the request answers 409 with code "four_eyes_violation"
 When the row is written directly, bypassing the logic
 Then the check constraint refuses it for a repeated user, key or agent alike
 And it refuses a reviewing key that names no agent, so two unbound keys cannot pass on nulls
+And such a key is refused before that, on every route of the queue, with 403 "agent_not_bound"
 And a key of a different agent definition approves it and the change applies
 ```

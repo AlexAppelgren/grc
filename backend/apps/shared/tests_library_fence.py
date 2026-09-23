@@ -38,7 +38,9 @@ functions that open `library_write()` themselves. It demands that:
   problem report, a proposal, a tenant list's own row) or is the stamp;
 - every route that reaches a library write is gated by `proposals.review`, needs a step-up
   and takes a person's session only — except the watch routes, which are gated instead as
-  the next paragraph says;
+  the next paragraph says, and approveProposal, whose body gate `require_reviewer` admits a
+  reviewing agent's key beside a person and whose body calls `enforce_step_up` for the
+  person (PRO-S13, D-62);
 - no tenant role holds `proposals.review`, the role editor refuses it, and no API key's
   principal passes a permission gate.
 
@@ -83,6 +85,11 @@ step-up it passed); an API key accepted on approveProposal; `proposals.review` g
 the compliance officer, added to TENANT_PERMISSIONS and added as a `proposals:review`
 scope; the role editor validating against every permission; and a key's principal passing
 a permission gate.
+
+The step-up edge proven to fail 2026-09-23, then reverted: approveProposal with its
+`enforce_step_up` call and import removed (red here, naming the missing edge, and red in
+apps/proposals/tests_decide.py, where a person's approval without an assertion and one
+with a stale assertion both applied).
 
 The second door proven to fail 2026-09-21 (H18), each breach then reverted. Against the
 rule as it stood before — one map, and no gate rule for a watch route — the two tests at
@@ -294,6 +301,11 @@ CHANGE_WRITER: Node = ("apps.watch.api", "require_change_writer")
 # decorator can express "a session holding the permission or a key holding the scope", and
 # this function is the door's own word on who may pass either way.
 REQUIRE_REVIEWER: Node = ("apps.proposals.api", "require_reviewer")
+# The step-up a person's approval demands, called in the route body for the same reason:
+# `@requires_step_up` would refuse a key, which holds no assertion to give. The runtime half
+# (no assertion, and one older than STEP_UP_FRESHNESS_MINUTES, each refused with nothing
+# applied) is apps/proposals/tests_decide.py.
+ENFORCE_STEP_UP: Node = ("apps.shared.permissions", "enforce_step_up")
 # Each route that may reach a library write, and the one function opening library_write()
 # it may reach. The stamp is chunk 3's POST /obligations/{id}/verifications (INV-S8).
 LIBRARY_WRITING_ROUTES: dict[str, Node] = {
@@ -546,8 +558,11 @@ class ProposalDoorGuard(SimpleTestCase):
         """Amended for PRO-S13, PRO-S14 and ID-S31 (D-62, ADR 0054), strengthened rather
         than dropped: `approveProposal` is the one route the second, independent principal
         may now be an agent for, so its gate is `require_reviewer()` in the route body, not
-        a decorator, and it accepts a key beside a session. Every other route that reaches a
-        library write is exactly as before: `proposals.review`, a fresh step-up and a
+        a decorator, and it accepts a key beside a session. A person's fresh step-up is
+        `enforce_step_up()` in the same body rather than `@requires_step_up`, which would
+        refuse the key; the index proves the route names it, and apps/proposals/tests_decide.py
+        proves a missing or stale assertion applies nothing. Every other route that reaches
+        a library write is exactly as before: `proposals.review`, a fresh step-up and a
         person's session alone."""
         index = code_index()
         # The watch routes are the exception the guard now knows (D-64): they write a sighting,
@@ -570,6 +585,11 @@ class ProposalDoorGuard(SimpleTestCase):
                         REQUIRE_REVIEWER,
                         index.edges[node],
                         "approveProposal must call require_reviewer(), the one function admitting a session or a reviewing key",
+                    )
+                    self.assertIn(
+                        ENFORCE_STEP_UP,
+                        index.edges[node],
+                        "approveProposal must call enforce_step_up() for a person: a library write needs a fresh passkey assertion",
                     )
                     self.assertEqual(
                         {type(auth) for auth in operation.auth},
