@@ -24,7 +24,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import prefetch_related_objects
+from django.db.models import Prefetch, prefetch_related_objects
 from django.utils import timezone
 
 from apps.library import reading
@@ -118,9 +118,8 @@ def request_row(request: FootprintChangeRequest, order: list[str]) -> FootprintR
 
 def request_rows(requests: list[FootprintChangeRequest], order: list[str]) -> list[FootprintRequestRow]:
     """A page of requests costs the same few queries however many it holds: the terms of all
-    of them in one read per side, their dimensions in one and their labels in one."""
-    _load_changes(requests)
-    changes = [_changes(request) for request in requests]
+    of them with their dimensions in one read per side, and their labels in one."""
+    changes = _changes_of(requests)
     terms = {term.id: term for adds, removes in changes for term in (*adds, *removes)}
     labelled = dict(zip(terms, terms_logic.labelled_term_refs(list(terms.values()), order), strict=True))
     return [
@@ -181,21 +180,24 @@ def preview_of(tenant_id: uuid.UUID, adds: list[Any], removes: list[Any]) -> Foo
     )
 
 
-def _load_changes(requests: list[FootprintChangeRequest]) -> None:
-    """Read the terms each request switches on and off, and their dimensions, in three
-    queries for any number of requests. What a request already holds is not read again."""
-    prefetch_related_objects(requests, "adds", "removes")
-    prefetch_related_objects([term for request in requests for term in (*request.adds.all(), *request.removes.all())], "dimension")
+def _changes_of(requests: list[FootprintChangeRequest]) -> list[tuple[list[Any], list[Any]]]:
+    """The terms each request would switch on and off, with their dimensions, in one query
+    per side for any number of requests. The database orders them as the picker and the
+    scope panel do (terms_logic), by its own collation."""
+    in_picker_order = ("term__dimension__sort_order", "term__sort_order", "term__key")
+    prefetch_related_objects(
+        requests,
+        Prefetch("add_links", FootprintChangeAdd.objects.select_related("term__dimension").order_by(*in_picker_order)),
+        Prefetch("remove_links", FootprintChangeRemove.objects.select_related("term__dimension").order_by(*in_picker_order)),
+    )
+    return [
+        ([link.term for link in request.add_links.all()], [link.term for link in request.remove_links.all()])
+        for request in requests
+    ]
 
 
 def _changes(request: FootprintChangeRequest) -> tuple[list[Any], list[Any]]:
-    """The terms a request would switch on and off, in the picker's order."""
-    _load_changes([request])
-
-    def in_picker_order(terms: Any) -> list[Any]:
-        return sorted(terms, key=lambda term: (term.dimension.sort_order, term.sort_order, term.key))
-
-    return in_picker_order(request.adds.all()), in_picker_order(request.removes.all())
+    return _changes_of([request])[0]
 
 
 def _preview_now(request: FootprintChangeRequest, adds: list[Any], removes: list[Any]) -> FootprintPreview:

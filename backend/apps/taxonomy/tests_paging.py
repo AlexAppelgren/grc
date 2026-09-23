@@ -26,9 +26,17 @@ from django.utils import timezone
 
 from apps.shared import factories
 from apps.shared.audit import Actor, ActorType
+from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy import footprint_logic, terms_logic
-from apps.taxonomy.models import FootprintChangeRequest, VocabularySuggestion
+from apps.taxonomy.models import (
+    ApprovalStatus,
+    FootprintChangeAdd,
+    FootprintChangeRemove,
+    FootprintChangeRequest,
+    TaxonomyTerm,
+    VocabularySuggestion,
+)
 from apps.taxonomy.tests_scenarios import V1, _seed_library
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 
@@ -37,12 +45,12 @@ from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 # the auth layer (6) and the caller's tenant (1). Then the read's own, which do not grow
 # with the number of rows:
 # - the request history: the caller's user for the label order (1); the page (1) and its
-#   total (1); the terms every request on the page adds (1) and removes (1), their
-#   dimensions (1) and their labels (1); and the waiting request's recount against today's
+#   total (1); the terms every request on the page adds (1) and removes (1), each read with
+#   its dimension, and their labels (1); and the waiting request's recount against today's
 #   library, one request at most because the partial unique constraint lets only one wait
 #   (4 in this fixture: the footprint, the restricting dimensions, the obligations' scopes
 #   and their instruments).
-FOOTPRINT_REQUESTS_QUERIES = 10 + 1 + 2 + 4 + 4
+FOOTPRINT_REQUESTS_QUERIES = 10 + 1 + 2 + 3 + 4
 # - the suggestion inbox: the page with each suggester (1) and its total (1). A suggestion
 #   carries its labels as typed, so no label order is read.
 SUGGESTIONS_QUERIES = 10 + 2
@@ -102,7 +110,7 @@ class PagingFixture(ScenarioTestCase):
 
     def assert_inside_the_budget(self, url: str, headers: dict[str, Any]) -> None:
         response = self.get(url, {"limit": settings.API_PAGE_SIZE_MAX}, headers)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual((response.status_code, len(response.json()["items"])), (200, settings.API_PAGE_SIZE_MAX), "a full page")
         self.assertRegex(response["Server-Timing"], r"^app;dur=\d+\.\d$")
         # CPU time on the request thread, the best of five, with coverage's tracer paused.
         spent = []
@@ -128,21 +136,30 @@ class FootprintRequestHistoryPaging(PagingFixture):
         footprint_logic.seed_terms(tenant=self.tenant, actor=Actor.system("test"), terms=[self.advice])
 
     def _requests(self, decided: int, *, waiting: bool = False) -> None:
-        """`decided` requests, each withdrawn once sent, then one left waiting if asked: the
-        partial unique constraint lets only one wait at a time.
+        """`decided` withdrawn requests, each adding retail and removing advice, then one left
+        waiting if asked: the partial unique constraint lets only one wait at a time. The
+        withdrawn ones are written as `withdraw` leaves them, in three inserts, so a full page
+        costs no hundred trips through the audit log the history never reads.
 
         Then each is stamped by hand, because a clock that ticks every 15.6 ms (Windows) or
         every microsecond (Linux) would decide the order by chance: the decided ones two to a
         minute, a week ago, so every page walks through ties the id has to settle, and the
         waiting one a day later, so it is the newest by construction."""
         self.activate(self.tenant)
-        sent: list[FootprintChangeRequest] = []
-        for _ in range(decided):
-            request = footprint_logic.create_request(
-                tenant=self.tenant, requester=self.officer, actor=_actor(self.officer), adds=[self.retail], removes=[self.advice]
+        preview = footprint_logic.preview_of(self.tenant.id, [self.retail], [self.advice]).model_dump(by_alias=True)
+        sent = FootprintChangeRequest.objects.bulk_create(
+            FootprintChangeRequest(
+                tenant=self.tenant,
+                requested_by=self.officer,
+                status=ApprovalStatus.WITHDRAWN.value,
+                decided_at=timezone.now(),
+                preview=preview,
+                version=2,
             )
-            footprint_logic.withdraw(tenant=self.tenant, request=request, requester=self.officer, actor=_actor(self.officer))
-            sent.append(request)
+            for _ in range(decided)
+        )
+        FootprintChangeAdd.objects.bulk_create(FootprintChangeAdd(tenant=self.tenant, request=request, term=self.retail) for request in sent)
+        FootprintChangeRemove.objects.bulk_create(FootprintChangeRemove(tenant=self.tenant, request=request, term=self.advice) for request in sent)
         week_ago = timezone.now() - datetime.timedelta(days=7)
         for n, request in enumerate(sent):
             FootprintChangeRequest.objects.filter(pk=request.pk).update(requested_at=week_ago + datetime.timedelta(minutes=n // 2))
@@ -159,7 +176,30 @@ class FootprintRequestHistoryPaging(PagingFixture):
         first = self.get(REQUESTS, {"limit": 1}, headers).json()["items"][0]
         self.assertEqual(first["status"], "pending", "the waiting request is the newest")
         self.assertEqual(([t["key"] for t in first["adds"]], [t["key"] for t in first["removes"]]), (["retail"], ["advice"]))
-        self.assertEqual(first["preview"]["obligations"]["available"], True, "a waiting request is counted again on every read")
+
+    def test_a_waiting_request_is_counted_again_and_a_decided_one_keeps_its_counts(self) -> None:
+        """Every stored preview is made stale, so only a recount can answer today's counts."""
+        self._requests(1, waiting=True)
+        stale = {"obligations": {"hidden": 99, "revealed": 99, "available": True}, "cases": {"hidden": 0, "revealed": 0, "available": False}}
+        FootprintChangeRequest.objects.filter(tenant=self.tenant).update(preview=stale)
+        today = footprint_logic.preview_of(self.tenant.id, [self.retail], [self.advice]).model_dump(mode="json", by_alias=True)
+        self.assertNotEqual(today, stale)
+        items = self.get(REQUESTS, {}, sign_in(self.reader, tenant=self.tenant)).json()["items"]
+        self.assertEqual([(row["status"], row["preview"]) for row in items], [("pending", today), ("withdrawn", stale)])
+
+    def test_a_request_lists_its_terms_in_the_pickers_order(self) -> None:
+        """The picker and the scope panel order terms in the database, so a request's terms do
+        too. Two terms tied on their sort order are settled by the key as the database compares
+        it: under en_US `payments` comes before `payment_services`, where a sort by code point
+        puts the underscore first."""
+        with library_write("test"):
+            for key in ("payment_services", "payments"):
+                TaxonomyTerm.objects.create(dimension=self.advice.dimension, key=key, sort_order=90)
+        tied = [term for term in terms_logic.terms_of("service_type") if term.key in {"payment_services", "payments"}]
+        self.activate(self.tenant)
+        footprint_logic.create_request(tenant=self.tenant, requester=self.officer, actor=_actor(self.officer), adds=tied, removes=[])
+        row = self.get(REQUESTS, {}, sign_in(self.reader, tenant=self.tenant)).json()["items"][0]
+        self.assertEqual([term["key"] for term in row["adds"]], [term.key for term in tied])
 
     def test_the_page_size_is_bounded(self) -> None:
         self._requests(1)
@@ -179,7 +219,7 @@ class FootprintRequestHistoryPaging(PagingFixture):
             self.assertTrue(all(row["adds"] and row["removes"] for row in response.json()["items"]))
 
     def test_a_full_page_stays_inside_the_budget(self) -> None:
-        self._requests(MORE_THAN_A_PAGE - 1, waiting=True)
+        self._requests(settings.API_PAGE_SIZE_MAX - 1, waiting=True)
         self.assert_inside_the_budget(REQUESTS, sign_in(self.reader, tenant=self.tenant))
 
 
