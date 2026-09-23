@@ -34,10 +34,9 @@ from apps.identity.models import User
 from apps.library import testing as build
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.tests_reading import as_app_role
-from apps.shared import factories, tenancy
+from apps.shared import factories, tenancy, testing
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
-from apps.shared.testing import sign_in
 from apps.taxonomy import footprint_logic, terms_logic
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintHistory
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
@@ -333,7 +332,7 @@ class RefusalsSayRegulatoryScope(TestCase):
 
     def test_a_request_that_is_not_here_says_regulatory_scope(self) -> None:
         response = self.client.post(
-            f"/api/v1/tenant/footprint/requests/{uuid.uuid4()}/withdraw", content_type="application/json", **sign_in(self.officer, tenant=self.tenant)
+            f"/api/v1/tenant/footprint/requests/{uuid.uuid4()}/withdraw", content_type="application/json", **testing.sign_in(self.officer, tenant=self.tenant)
         )
         self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"))
         self.assert_reads_regulatory_scope(response.json()["detail"])
