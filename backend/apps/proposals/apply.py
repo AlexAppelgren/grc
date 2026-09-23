@@ -27,6 +27,7 @@ import uuid
 from typing import Any
 
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.library.models import (
@@ -53,6 +54,7 @@ from apps.proposals.schemas import (
 from apps.search.logic import reindex
 from apps.shared.audit import Actor, record
 from apps.shared.tenancy import library_write
+from apps.taxonomy import repoint
 from apps.taxonomy.models import TaxonomyTerm, TaxonomyTermLabel, TermDimension
 from apps.taxonomy.registry import REGISTRY, VocabularyList
 from apps.taxonomy.tenant_lists_logic import extra_columns
@@ -395,7 +397,18 @@ def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposa
     target = _row(entry, payload.into)
     if source.is_system:
         raise ValidationError(f"{payload.key} is a system value: it can be relabelled but not merged away.", code="system_row")
-    repointed = entry.repoint(source, target, dry_run=False)
+    # Every current row holding the source moves to the target in this transaction; the
+    # source row itself stays, retired, so versions, audit rows and old labels resolve. A
+    # record the database refuses to move (a standard's level on an instrument holding
+    # provisions) undoes every move before it and leaves the proposal open.
+    try:
+        with transaction.atomic():
+            moved = repoint.move(entry.links, source, target, library=_repoint_rows)
+    except IntegrityError as refused:
+        raise ValidationError(
+            f"{payload.key} cannot be merged into {payload.into}: a record that carries it cannot take {payload.into}.",
+            code="invalid_transition",
+        ) from refused
     source.active = False
     source.version += 1
     source.save(update_fields=["active", "version"])
@@ -408,9 +421,23 @@ def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposa
         summary=f"Merged {payload.key} into {payload.into} on {payload.list} (proposal {proposal.id}).",
         tenant_id=None,
         before={"from": payload.key, "active": True},
-        after={"into": payload.into, "repointed": repointed, "active": False, "proposal": str(proposal.id)},
+        after={
+            "into": payload.into,
+            "repointed": sum(moved.values()),
+            "moved": moved,
+            "active": False,
+            "proposal": str(proposal.id),
+        },
         step_up_assertion_id=step_up,
     )
+
+
+def _repoint_rows(moving: Any, twins: Any, field: str, target: Any) -> int:
+    """The inventory half of a merge's re-point, inside the approval's `library_write()`: a
+    row whose twin already holds the target is dropped (a unique constraint), every other
+    row moves, and only the moved rows count. Watch tables go through their own door."""
+    twins.delete()
+    return int(moving.update(**{field: target}))
 
 
 # ---------------------------------------------------------------------------------------

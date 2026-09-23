@@ -120,13 +120,21 @@ When they drag "Custody services" above "Advice"
 Then sort_order is stored and the picker follows it
 ```
 
-> **Note — the preview shows counts only.** `relation_type`'s `VocabularyList` entry
-> carries no `usage=` annotation, so its usage count is `registry._no_usage()`, hardcoded to
-> 0 for every row (registry.py). Chunk3-rest (T8) filed the first real use of one of its
-> values, the "Amends" row, on FFFS 2026:11's `instrument_relations` row to FFFS 2017:2, but
-> the vocabulary screen still shows 0 for it: nothing in `registry.py` counts
-> `instrument_relations` yet. Wiring a real count (`_count("...")` against that relation) is
-> not INV-01 or INV-02 work and is left for the chunk that next touches `relation_type`.
+> **Note — what a library list counts and what its merge moves.** Every library list that
+> a library or watch record references names those columns as `links` in
+> `registry.py`: `instrument_level` (instruments), `provision_kind` (provisions),
+> `duty_type` (obligations), `library_tag` (obligation tags), `relation_type` (instrument
+> and obligation relations, so "Amends" on FFFS 2026:11's relation to FFFS 2017:2
+> counts), `change_type` and `urgency` (changes; a bank's own case urgency is a tenant
+> row and neither counts nor moves), `source_kind` (sources) and `flag` (change terms).
+> The usage count, the merge preview and the approved merge read the same links, so the
+> preview's `repointed` is the number that moves. An approved merge moves the current
+> link rows inside the approval's transaction (library rows in `proposals/apply.py`,
+> watch rows through `watch/write.py`'s door), drops a row whose twin already carries the
+> target, records the moved count per table on the `vocabulary.merged` audit row, and
+> leaves the merged-away row retired with its labels, so history still resolves. A
+> record the database refuses to move undoes the whole merge and leaves the proposal
+> open. Version rows and append-only ledgers are never touched.
 
 ### VOC-S4 — Retiring a used value keeps history readable and leaves pickers `@integration` `@e2e` (VOC-02, AC-VOC2)
 ```gherkin
