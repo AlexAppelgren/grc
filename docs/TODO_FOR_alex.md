@@ -327,8 +327,9 @@ change what four eyes means and are marked as such.
       carry no agent columns, and their `confirmed_by` is a foreign key to a user, so an agent
       cannot be recorded as the one who confirmed; `regulatory_change.change_type` has no
       `suggested`, `confirmed_by` or `confirmed_at`; and the console's Change facts detail has no
-      Confirm control. Until that lands, `PUT /changes/{changeId}/obligations` answers 501
-      `not_built` to an editor whose call would unmake a confirmation and refuses a key outright,
+      Confirm control. Until that lands, `PUT /changes/{changeId}/obligations` and
+      `PATCH /changes/{changeId}` answer 501 `not_built` to an editor whose call would unmake a
+      confirmation (a link on the first, a flag or a term on the second) and refuse a key outright,
       and an agent's suggestion keeps reading as a suggestion. Nothing waits on you for it.
       What the answer settles for the build, of the three things the question asked for: the
       principal is a confirming agent, with a Confirm control on the console's Change facts
