@@ -22,6 +22,7 @@ from typing import Any
 from unittest import mock
 
 from django.conf import settings
+from django.core.exceptions import ValidationError as Refusal
 from django.db import DEFAULT_DB_ALIAS, connection, connections, transaction
 from django.test import TestCase, TransactionTestCase
 from django.test.utils import CaptureQueriesContext
@@ -1044,6 +1045,17 @@ class PrivateObligationIsolation(TransactionTestCase):
             self.assertEqual((own.status_code, own.json()["stableKey"]), (200, "obl-b-private"))
             own_sources = self.client.get(f"{URL}/{self.private.id}/sources", HTTP_X_API_KEY=self.key_b.plain_key)
             self.assertEqual((own_sources.status_code, own_sources.json()["obligationId"]), (200, str(self.private.id)))
+
+    def test_a_library_proposal_never_targets_the_proposing_banks_own_private_obligation(self) -> None:
+        # The owner reads its private row under row-level security, so the lookup a
+        # proposal is checked against must refuse it by its owner, not by visibility
+        # alone: a library proposal only ever targets a shared record (INV-07, PRO-01).
+        with as_app_role(), transaction.atomic():
+            tenancy.activate(self.tenant_b.id)
+            self.assertTrue(Obligation.objects.filter(pk=self.private.id).exists(), "the owner sees its own row")
+            with self.assertRaises(Refusal) as refused:
+                reading.active_obligation(self.private.id)
+            self.assertEqual(refused.exception.code, "unknown_key")
 
 
 # Queries per instrument list read, measured 2026-09-22 the same way as LIST_QUERIES: the
