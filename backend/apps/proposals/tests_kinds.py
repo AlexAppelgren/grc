@@ -601,7 +601,9 @@ class StandardsCheck(KindsTestCase):
         # The seeds keep the one standard term switched off until its records exist (D-47).
         with library_write("test"):
             TaxonomyTerm.objects.filter(dimension__key="standard", key="iso_iec_27001").update(active=True)
-        self.standard = library_build.instrument(key=STANDARD_KEY, short_name="ISO/IEC 27001:2022", regime="regime:ai_ict", level="standard", binding=False)
+        self.standard = library_build.instrument(
+            key=STANDARD_KEY, short_name="ISO/IEC 27001:2022", official_ref="ISO/IEC 27001:2022", regime="regime:ai_ict", level="standard", binding=False
+        )
 
     def _conformance(self, **payload: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper overriding payload fields
         fields = {"key": "obl-iso-iec-27001-2022-conformance", "refLabel": "ISO/IEC 27001:2022", "terms": [STANDARD_TERM], **payload}
@@ -629,6 +631,16 @@ class StandardsCheck(KindsTestCase):
         pasted = "5.1 Leadership and commitment: top management shall demonstrate"
         self._refused(self._file({**body, "fieldSources": {**body["fieldSources"], "summaries.en": pasted}}), 422, "licensed_text")
         self.assertFalse(Proposal.objects.exists())
+
+    def test_a_standards_obligation_is_labelled_by_the_official_reference_alone(self) -> None:
+        """D-35: the conformance obligation's `ref_label` equals the standard's official
+        reference, so no clause number or control title reaches the library through it."""
+        clause = self._conformance(refLabel="A.5.1 Policies for information security")
+        self._refused(self._file(clause), 422, "licensed_text")
+        self.assertFalse(Proposal.objects.exists())
+        stored = self._stored(clause)
+        self._refused(self._approve(str(stored.id)), 422, "licensed_text")
+        self.assertFalse(Obligation.objects.filter(instrument=self.standard).exists())
 
     def test_a_second_obligation_under_a_standard_is_refused_at_creation_and_at_apply(self) -> None:
         library_build.obligation(self.standard, key="obl-iso-conformance", terms=[STANDARD_TERM])

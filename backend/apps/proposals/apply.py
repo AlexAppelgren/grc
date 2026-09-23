@@ -280,7 +280,7 @@ def _new_obligation(
     """
     instrument, terms = validated_obligation(payload)
     Instrument.objects.select_for_update().filter(pk=instrument.pk).exists()
-    standards.check(proposal.kind, instrument, [term.id for term in terms], proposal.field_sources)
+    standards.check(proposal.kind, instrument, [term.id for term in terms], proposal.field_sources, payload.ref_label)
     verified_origin = _verified_origin(reviewer)
     obligation = Obligation.objects.create(
         stable_key=payload.key,
