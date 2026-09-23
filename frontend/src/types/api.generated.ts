@@ -336,9 +336,12 @@ export interface paths {
          *     The log also carries the changes to the shared library that reach every bank: a change
          *     to an authority, instrument, provision, obligation, vocabulary or taxonomy term made by
          *     an agent, the system or bleqq's platform staff. It never carries another bank's rows,
-         *     which row-level security in the database keeps out rather than a filter here, and never
-         *     a proposal's own rows or a platform sign-in or code request, which can name a person
-         *     from another bank.
+         *     which are kept out by row-level security in the database and by the query itself. Of
+         *     the rows that belong to no bank, only those library changes appear: never the review
+         *     queue's decision on a proposal (its approval or rejection), and never a platform
+         *     sign-in or code request, which can name a person from another bank. A proposal this
+         *     bank made does appear, as `proposal.created`, and as `proposal.replayed` when a retried
+         *     submission was answered with the proposal it had already made.
          *
          *     Append-only: a row is written in the same transaction as the change it records and is
          *     never updated, so a correction is a new row and never an edit of an old one. This call
@@ -349,12 +352,13 @@ export interface paths {
          *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no
          *     rows, or filters matching none, is a 200 with an empty `items` and a `total` of 0.
          *
-         *     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
-         *     `audit.read`, with `requiredPermission` named; `not_found` (404) for a session with no
-         *     bank, such as the platform console's, because the audit log is a bank's own;
-         *     `validation_error` (422) when `subjectId` or `actorId` is not a UUID, `from` or `to` is
-         *     not a timestamp, `subjectType` is longer than 64 characters, or `limit` or `offset` is
-         *     out of range.
+         *     Errors: `unauthenticated` (401) without a session, an agent's key included;
+         *     `permission_denied` (403) without `audit.read`, with `requiredPermission` named, which
+         *     is also what a platform console session gets, since no platform role holds
+         *     `audit.read`; `not_found` (404) for a session that holds `audit.read` but belongs to
+         *     no bank, because the audit log is a bank's own; `validation_error` (422) when
+         *     `subjectId` or `actorId` is not a UUID, `from` or `to` is not a timestamp,
+         *     `subjectType` is longer than 64 characters, or `limit` or `offset` is out of range.
          */
         get: operations["listAuditEvents"];
         put?: never;
@@ -4356,7 +4360,7 @@ export interface components {
             id: string | null;
             /**
              * Label
-             * @description The actor's name as it stood when the row was written, at most 200 characters, for display: a person's name, an agent's name with its version where the row records one (such as `library-confirmer v1`), or the job's name for the system (`system` when it gave none). A snapshot that is never updated, so a person renamed later keeps the old name here: match on `id`, never on the label.
+             * @description The actor's name as it stood when the row was written, at most 200 characters, for display: a person's name; for an agent, the key of the agent its key is bound to (such as `library-confirmer`), with the agent's version where the row records one (`library-confirmer v1`), or `api key <id>` for a key bound to no agent; for the system, the job's name (`system` when it gave none). A snapshot that is never updated, so a person renamed later keeps the old name here: match on `id`, never on the label.
              * @example Erik Holm
              */
             label: string;
@@ -4364,8 +4368,9 @@ export interface components {
              * Type
              * @description What kind of actor made the change, a fixed kind: `user` (a person, either a member of this bank or bleqq's platform staff changing the shared library), `agent` (an agent working through its key; it cannot step up, so its rows always carry `steppedUp` false, and a proposal it confirmed is machine-confirmed and never a person's decision) and `system` (the product itself, such as a seed or a scheduled job). Fixed in code: an admin adds no fourth kind.
              * @example user
+             * @enum {string}
              */
-            type: string;
+            type: "user" | "agent" | "system";
         };
         /**
          * AuditEventPage
@@ -4438,7 +4443,7 @@ export interface components {
         AuditEventPage: {
             /**
              * Items
-             * @description The rows of this page, newest first, with rows written in the same instant ordered by `id`. Empty when nothing matches, which is a 200 and never an error.
+             * @description The rows of this page, newest first, with rows written in the same instant ordered by `id`, descending. Empty when nothing matches, which is a 200 and never an error.
              */
             items: components["schemas"]["AuditEventRow"][];
             /**
@@ -4468,14 +4473,14 @@ export interface components {
             from?: string | null;
             /**
              * Subjectid
-             * @description Show only the rows about one record, by its UUID: the same id the record carries everywhere else in the API. A value that is not a UUID is refused with `validation_error` (422); an id no row names answers 200 with an empty page.
-             * @example b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70
+             * @description Show only the rows about one record, by the UUID a row carries in `subjectId`. For most kinds that is the id the API uses for the record, such as a footprint change request's id; a `membership` row carries the membership's own id, which the API does not otherwise show, and not the member's `userId`, so take it from a row. A value that is not a UUID is refused with `validation_error` (422); an id no row names answers 200 with an empty page.
+             * @example 4a7c1e9b-3d5f-4b2a-8e6c-0f1d3b5a7c92
              */
             subjectId?: string | null;
             /**
              * Subjecttype
-             * @description Show only the rows about one kind of record, by the kind key a row carries in `subjectType`, such as `membership`, `footprint_change_request` or `obligation`; pair it with `subjectId` to read one record's history. Matched exactly, at most 64 characters; a longer value is refused with `validation_error` (422). A kind no row carries matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
-             * @example membership
+             * @description Show only the rows about one kind of record, by the kind key a row carries in `subjectType`, such as `footprint_change_request`, `membership` or `obligation`; pair it with `subjectId` to read one record's history. Matched exactly, at most 64 characters; a longer value is refused with `validation_error` (422). A kind no row carries matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+             * @example footprint_change_request
              */
             subjectType?: string | null;
             /**
@@ -4524,7 +4529,7 @@ export interface components {
             /**
              * Createdat
              * Format: date-time
-             * @description When the change was committed, as an RFC 3339 timestamp in UTC (`2026-09-16T08:14:00Z`), set by the server in the change's own transaction. The log is ordered by it, newest first, and `from` and `to` compare against it.
+             * @description When the row was written, as an RFC 3339 timestamp in UTC (`2026-09-16T08:14:00Z`), taken from the server's clock inside the change's own transaction. It is the moment of writing and not of committing, so a change that took longer to commit can show up after rows with a later time. The log is ordered by it, newest first, and `from` and `to` compare against it: to poll for new rows, start `from` a little before the newest time already seen and drop the rows whose `id` you already have.
              * @example 2026-09-16T08:14:00Z
              */
             createdAt: string;
@@ -4543,19 +4548,19 @@ export interface components {
             steppedUp: boolean;
             /**
              * Subjectid
-             * @description The record that changed, as a UUID: the id it carries everywhere else in the API, so a screen can link to it and `subjectId` can filter on it. Null for a change about no single record.
+             * @description The record that changed, as a UUID, which `subjectId` filters on. For most kinds it is the id the API uses for that record, so a screen can link to it; a few kinds name a row the API does not otherwise show, such as `membership`, whose id is the membership's own and not the member's `userId`. Null for a change about no single record.
              * @example b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70
              */
             subjectId: string | null;
             /**
              * Subjecttitle
-             * @description The record's name as it read when the change was made, at most 500 characters, such as a member's name or an obligation's stable key. A snapshot: a record renamed later keeps its old title here, which is what an audit trail is for. Empty when the record has no name.
+             * @description The record's name as it read when the change was made, at most 500 characters, such as a member's name, an obligation's stable key or `<list>:<key>` for a list value. A snapshot: a record renamed later keeps its old title here, which is what an audit trail is for. Empty when the record has no name.
              * @example Johan Berg
              */
             subjectTitle: string;
             /**
              * Subjecttype
-             * @description What kind of record changed, as a snake_case kind key of at most 64 characters, such as `membership`, `tenant_role` or `footprint_change_request` for the bank's own records. The shared library's kinds are `authority`, `instrument`, `provision`, `obligation`, `vocabulary` and `taxonomy_term`: a row about one of those is either the bank's own act on that record, such as a problem it reported, or a change to the library itself made by an agent, the system or bleqq's platform staff, which every bank sees; `action` says which. Written by the code, and the set grows as features ship. Filter on it with `subjectType`.
+             * @description What kind of record changed, as a snake_case kind key of at most 64 characters, such as `membership`, `tenant_role` or `footprint_change_request` for the bank's own records. The shared library's kinds are `authority`, `instrument`, `provision`, `obligation`, `vocabulary` and `taxonomy_term`: a row about one of those is either the bank's own act on that record, such as a problem it reported, or a change to the library itself made by an agent, the system or bleqq's platform staff, which every bank sees; `action` says which. `vocabulary` also covers this bank's own lists, which its administrators edit: its `subjectTitle` starts with the list's name (`<list>:<key>`), and the list says whether it is the library's or the bank's. Written by the code, and the set grows as features ship. Filter on it with `subjectType`.
              * @example membership
              */
             subjectType: string;
@@ -13253,13 +13258,13 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Show only the rows about one kind of record, by the kind key a row carries in `subjectType`, such as `membership`, `footprint_change_request` or `obligation`; pair it with `subjectId` to read one record's history. Matched exactly, at most 64 characters; a longer value is refused with `validation_error` (422). A kind no row carries matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
-                 * @example membership
+                 * @description Show only the rows about one kind of record, by the kind key a row carries in `subjectType`, such as `footprint_change_request`, `membership` or `obligation`; pair it with `subjectId` to read one record's history. Matched exactly, at most 64 characters; a longer value is refused with `validation_error` (422). A kind no row carries matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+                 * @example footprint_change_request
                  */
                 subjectType?: string | null;
                 /**
-                 * @description Show only the rows about one record, by its UUID: the same id the record carries everywhere else in the API. A value that is not a UUID is refused with `validation_error` (422); an id no row names answers 200 with an empty page.
-                 * @example b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70
+                 * @description Show only the rows about one record, by the UUID a row carries in `subjectId`. For most kinds that is the id the API uses for the record, such as a footprint change request's id; a `membership` row carries the membership's own id, which the API does not otherwise show, and not the member's `userId`, so take it from a row. A value that is not a UUID is refused with `validation_error` (422); an id no row names answers 200 with an empty page.
+                 * @example 4a7c1e9b-3d5f-4b2a-8e6c-0f1d3b5a7c92
                  */
                 subjectId?: string | null;
                 /**

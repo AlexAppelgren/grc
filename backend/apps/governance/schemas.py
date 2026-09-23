@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from django.conf import settings
 from pydantic import ConfigDict, Field
@@ -26,22 +27,25 @@ class AuditEventQuery(CamelSchema):
         max_length=64,
         description=(
             "Show only the rows about one kind of record, by the kind key a row carries in "
-            "`subjectType`, such as `membership`, `footprint_change_request` or `obligation`; "
+            "`subjectType`, such as `footprint_change_request`, `membership` or `obligation`; "
             "pair it with `subjectId` to read one record's history. Matched exactly, at most "
             "64 characters; a longer value is refused with `validation_error` (422). A kind no "
             "row carries matches nothing and answers 200 with an empty page, because a filter "
             "that finds nothing is an empty answer and not an error."
         ),
-        examples=["membership"],
+        examples=["footprint_change_request"],
     )
     subject_id: uuid.UUID | None = Field(
         default=None,
         description=(
-            "Show only the rows about one record, by its UUID: the same id the record carries "
-            "everywhere else in the API. A value that is not a UUID is refused with "
-            "`validation_error` (422); an id no row names answers 200 with an empty page."
+            "Show only the rows about one record, by the UUID a row carries in `subjectId`. "
+            "For most kinds that is the id the API uses for the record, such as a footprint "
+            "change request's id; a `membership` row carries the membership's own id, which "
+            "the API does not otherwise show, and not the member's `userId`, so take it from a "
+            "row. A value that is not a UUID is refused with `validation_error` (422); an id "
+            "no row names answers 200 with an empty page."
         ),
-        examples=["b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70"],
+        examples=["4a7c1e9b-3d5f-4b2a-8e6c-0f1d3b5a7c92"],
     )
     actor_id: uuid.UUID | None = Field(
         default=None,
@@ -82,10 +86,14 @@ class AuditEventQuery(CamelSchema):
     )
 
 
+# The actor kinds of apps.shared.audit.ActorType, closed in the contract so a client sees all three.
+AuditActorKind = Literal["user", "agent", "system"]
+
+
 class AuditActorRef(CamelSchema):
     """Who did it: a user, an agent or the system. `id` is empty for the system."""
 
-    type: str = Field(
+    type: AuditActorKind = Field(
         description=(
             "What kind of actor made the change, a fixed kind: `user` (a person, either a "
             "member of this bank or bleqq's platform staff changing the shared library), "
@@ -107,11 +115,13 @@ class AuditActorRef(CamelSchema):
         examples=["8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30"],
     )
     label: str = Field(
+        max_length=200,
         description=(
             "The actor's name as it stood when the row was written, at most 200 characters, "
-            "for display: a person's name, an agent's name with its version where the row "
-            "records one (such as `library-confirmer v1`), or the job's name for the system "
-            "(`system` when it gave none). A snapshot that is "
+            "for display: a person's name; for an agent, the key of the agent its key is bound "
+            "to (such as `library-confirmer`), with the agent's version where the row records "
+            "one (`library-confirmer v1`), or `api key <id>` for a key bound to no agent; for "
+            "the system, the job's name (`system` when it gave none). A snapshot that is "
             "never updated, so a person renamed later keeps the old name here: match on `id`, "
             "never on the label."
         ),
@@ -133,9 +143,13 @@ class AuditEventRow(CamelSchema):
     )
     created_at: datetime = Field(
         description=(
-            "When the change was committed, as an RFC 3339 timestamp in UTC "
-            "(`2026-09-16T08:14:00Z`), set by the server in the change's own transaction. The "
-            "log is ordered by it, newest first, and `from` and `to` compare against it."
+            "When the row was written, as an RFC 3339 timestamp in UTC "
+            "(`2026-09-16T08:14:00Z`), taken from the server's clock inside the change's own "
+            "transaction. It is the moment of writing and not of committing, so a change that "
+            "took longer to commit can show up after rows with a later time. The log is ordered "
+            "by it, newest first, and `from` and `to` compare against it: to poll for new rows, "
+            "start `from` a little before the newest time already seen and drop the rows whose "
+            "`id` you already have."
         ),
         examples=["2026-09-16T08:14:00Z"],
     )
@@ -146,6 +160,7 @@ class AuditEventRow(CamelSchema):
         )
     )
     action: str = Field(
+        max_length=100,
         description=(
             "What happened, as a machine key of the form `<record>.<event>` of at most 100 "
             "characters, such as `member.updated`, `footprint.change_approved`, "
@@ -157,6 +172,7 @@ class AuditEventRow(CamelSchema):
         examples=["member.updated"],
     )
     subject_type: str = Field(
+        max_length=64,
         description=(
             "What kind of record changed, as a snake_case kind key of at most 64 characters, "
             "such as `membership`, `tenant_role` or `footprint_change_request` for the bank's "
@@ -164,29 +180,36 @@ class AuditEventRow(CamelSchema):
             "`provision`, `obligation`, `vocabulary` and `taxonomy_term`: a row about one of "
             "those is either the bank's own act on that record, such as a problem it reported, "
             "or a change to the library itself made by an agent, the system or bleqq's "
-            "platform staff, which every bank sees; `action` says which. Written by the code, "
-            "and the set grows as features ship. Filter on it with `subjectType`."
+            "platform staff, which every bank sees; `action` says which. `vocabulary` also "
+            "covers this bank's own lists, which its administrators edit: its `subjectTitle` "
+            "starts with the list's name (`<list>:<key>`), and the list says whether it is the "
+            "library's or the bank's. Written by the code, and the set grows as features ship. "
+            "Filter on it with `subjectType`."
         ),
         examples=["membership"],
     )
     subject_id: uuid.UUID | None = Field(
         description=(
-            "The record that changed, as a UUID: the id it carries everywhere else in the API, "
-            "so a screen can link to it and `subjectId` can filter on it. Null for a change "
-            "about no single record."
+            "The record that changed, as a UUID, which `subjectId` filters on. For most kinds "
+            "it is the id the API uses for that record, so a screen can link to it; a few kinds "
+            "name a row the API does not otherwise show, such as `membership`, whose id is the "
+            "membership's own and not the member's `userId`. Null for a change about no single "
+            "record."
         ),
         examples=["b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70"],
     )
     subject_title: str = Field(
+        max_length=500,
         description=(
             "The record's name as it read when the change was made, at most 500 characters, "
-            "such as a member's name or an obligation's stable key. A snapshot: a record "
-            "renamed later keeps its old title here, which is what an audit trail is for. "
-            "Empty when the record has no name."
+            "such as a member's name, an obligation's stable key or `<list>:<key>` for a list "
+            "value. A snapshot: a record renamed later keeps its old title here, which is what "
+            "an audit trail is for. Empty when the record has no name."
         ),
         examples=["Johan Berg"],
     )
     summary: str = Field(
+        max_length=1000,
         description=(
             "One sentence saying what happened, at most 1000 characters, written in English by "
             "the code that made the change and not translated. Read it as the row's caption; "
@@ -276,7 +299,7 @@ class AuditEventPage(CamelSchema):
     items: list[AuditEventRow] = Field(
         description=(
             "The rows of this page, newest first, with rows written in the same instant ordered "
-            "by `id`. Empty when nothing matches, which is a 200 and never an error."
+            "by `id`, descending. Empty when nothing matches, which is a 200 and never an error."
         )
     )
     total: int = Field(

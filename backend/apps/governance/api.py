@@ -41,9 +41,12 @@ def list_audit_events(request: HttpRequest, filters: Query[AuditEventQuery], pag
     The log also carries the changes to the shared library that reach every bank: a change
     to an authority, instrument, provision, obligation, vocabulary or taxonomy term made by
     an agent, the system or bleqq's platform staff. It never carries another bank's rows,
-    which row-level security in the database keeps out rather than a filter here, and never
-    a proposal's own rows or a platform sign-in or code request, which can name a person
-    from another bank.
+    which are kept out by row-level security in the database and by the query itself. Of
+    the rows that belong to no bank, only those library changes appear: never the review
+    queue's decision on a proposal (its approval or rejection), and never a platform
+    sign-in or code request, which can name a person from another bank. A proposal this
+    bank made does appear, as `proposal.created`, and as `proposal.replayed` when a retried
+    submission was answered with the proposal it had already made.
 
     Append-only: a row is written in the same transaction as the change it records and is
     never updated, so a correction is a new row and never an edit of an old one. This call
@@ -54,12 +57,13 @@ def list_audit_events(request: HttpRequest, filters: Query[AuditEventQuery], pag
     Pages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no
     rows, or filters matching none, is a 200 with an empty `items` and a `total` of 0.
 
-    Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
-    `audit.read`, with `requiredPermission` named; `not_found` (404) for a session with no
-    bank, such as the platform console's, because the audit log is a bank's own;
-    `validation_error` (422) when `subjectId` or `actorId` is not a UUID, `from` or `to` is
-    not a timestamp, `subjectType` is longer than 64 characters, or `limit` or `offset` is
-    out of range.
+    Errors: `unauthenticated` (401) without a session, an agent's key included;
+    `permission_denied` (403) without `audit.read`, with `requiredPermission` named, which
+    is also what a platform console session gets, since no platform role holds
+    `audit.read`; `not_found` (404) for a session that holds `audit.read` but belongs to
+    no bank, because the audit log is a bank's own; `validation_error` (422) when
+    `subjectId` or `actorId` is not a UUID, `from` or `to` is not a timestamp,
+    `subjectType` is longer than 64 characters, or `limit` or `offset` is out of range.
     """
     tenant_id = cast(Principal, request.auth).tenant_id  # type: ignore[attr-defined]
     events, total = logic.audit_events(tenant_id, filters, limit=page.limit, offset=page.offset)

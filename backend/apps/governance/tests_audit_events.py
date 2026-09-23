@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import uuid
 from datetime import timedelta
-from typing import Any
+from typing import Any, get_args
 
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
+from apps.governance.schemas import AuditActorKind
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.audit import Actor, ActorType, record
@@ -130,6 +131,10 @@ class AuditEventsReadTests(ScenarioTestCase):
         )
         self.assertFalse(rows[str(plain.id)]["steppedUp"])
         self.assertIsNone(rows[str(plain.id)]["actor"]["id"])
+
+    def test_the_contract_closes_the_actor_kind_on_every_kind_the_log_records(self) -> None:
+        # A kind added to ActorType but not to the contract would fail every page that holds one.
+        self.assertEqual(set(get_args(AuditActorKind)), {kind.value for kind in ActorType})
 
     def test_newest_first_and_paginated_with_a_total(self) -> None:
         events = [self._event(tenant=self.tenant_b, actor=Actor.system("seed"), subject_type="footprint") for _ in range(3)]
