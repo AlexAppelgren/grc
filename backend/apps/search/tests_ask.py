@@ -202,6 +202,24 @@ class AskGroundingTests(AskTestCase):
         self.assertNotIn("down", events[1]["detail"], "nothing of the server's internals reaches the reader")
         self.assertFalse(AiGeneration.objects.exists())
 
+    def test_a_bracket_that_is_not_a_citation_holds_nothing_back(self) -> None:
+        """Only a citation still arriving at the end of the words so far holds its sentence
+        back. Any other bracket after a full stop is text, so the uncited sentence before it
+        is dropped rather than carried inside the cited one after it."""
+        with replying(
+            "Costs are disclosed in advance. [",
+            "Chapter 9] requires them in writing [1]. ",
+            "They are itemised. [",
+            "1] Both are in writing. [1]",
+        ):
+            events = self.ask(COSTS_QUESTION)
+
+        self.assertEqual([event["event"] for event in events], ["start", "statement", "statement", "statement", "answer"])
+        self.assertEqual(
+            [s["text"] for s in answer_of(events)["statements"]],
+            ["[Chapter 9] requires them in writing.", "They are itemised.", "Both are in writing."],
+        )
+
     def test_a_language_the_library_does_not_hold_is_refused_before_any_stream(self) -> None:
         response = self.post({"question": COSTS_QUESTION, "lang": "xx"})
 

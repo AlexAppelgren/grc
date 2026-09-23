@@ -109,6 +109,9 @@ MOVES_THE_LAW = (ChangeLifecycleKind.ADOPTED.value, ChangeLifecycleKind.IN_FORCE
 SENTENCE_END = re.compile(r"[.!?](?:\s*+\[\d++\])*+\s++(?=\S)|(?<=\S)[ \t]*+\n\s*+(?=\S)")
 # A citation marker, read from a sentence whose white space is already single spaces.
 CITATION = re.compile(r" ?\[(\d+)\]")
+# A citation marker still arriving: an opening bracket and the digits so far, and nothing
+# after them yet.
+ARRIVING_CITATION = re.compile(r"\[\d*+")
 
 
 @dataclass(frozen=True)
@@ -282,13 +285,14 @@ def _events(
 
 def _split(text: str) -> tuple[list[str], str]:
     """The sentences `text` has finished, and the rest, still being written. A citation
-    marker still arriving holds its sentence back, so it is never cut from its number."""
+    marker still arriving at the end of the text holds its sentence back, so it is never
+    cut from its number; any other bracket is text like the rest."""
     sentences: list[str] = []
     start = 0
     for end in SENTENCE_END.finditer(text):
-        following = text[end.end()]
-        if following == "[":
+        if ARRIVING_CITATION.fullmatch(text, end.end()):
             break
+        following = text[end.end()]
         if end.group()[0] not in ".!?" or not (following.islower() or following.isdigit()):
             sentences.append(text[start : end.end()])
             start = end.end()
