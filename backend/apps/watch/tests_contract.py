@@ -56,6 +56,7 @@ CHANGE = "11111111-1111-4111-8111-111111111111"
 EVENT = "22222222-2222-4222-8222-222222222222"
 SOURCE = "33333333-3333-4333-8333-333333333333"
 OBLIGATION = "44444444-4444-4444-8444-444444444444"
+REGIME_TERM = "55555555-5555-4555-8555-555555555555"
 
 AS_KEY: dict[str, Any] = {"HTTP_X_API_KEY": API_KEY_FOR_TESTS}
 AS_SESSION: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
@@ -70,6 +71,8 @@ CHANGE_BODY = {
     "summary": "Reporting moves to a quarterly cycle.",
     "sourceLabel": "FI news",
     "sourceUrl": "https://www.fi.se/en/published/news/2026/",
+    # Every change carries a regime (D-39, AC-AGT1); the gates below answer before any term is read.
+    "termIds": [REGIME_TERM],
 }
 CHANGE_PATCH = {"keyDateLabel": "Transition ends"}
 EVENT_BODY = {"label": "Consultation closes", "eventDate": "2026-11-01", "datePrecision": "day"}

@@ -860,3 +860,27 @@ Nothing waits for these; each has the default the build took.
       only this bank's sessions. Default if you say nothing: it stays as built, and the
       published description of `GET /me/sessions` says a person sees only this bank's
       sessions there.
+
+## watch-regime-required: a run's classification is logged with metadata it reports itself (2026-09-23, D-66, AUD-02, D-39)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **A run's classification of a new change is now AI output on the record.** When a key
+      registers a new change, its type, flags, scope terms and urgency are written as one
+      `scope_suggestion` row in the AI output log under the run that filed it, marked
+      `model_metadata_reported_by_agent` exactly as D-66 has it for the "So what?" (AUD-S4's
+      producer). bleqq made no model call, so the model and version are the run's own
+      account: the ones in the filing's `soWhat` when it carries one, else the model and
+      pipeline version the run was opened with, because `createChange` itself has no model
+      version field. Default: accepted in R1 as a reporting boundary, as D-66 and D-80. A
+      library editor's registration is a person's classification and logs no row, and a
+      second sighting logs none because it stores no scope. Say if you want a dedicated
+      model version on `createChange` instead of the run's pipeline version.
+- [ ] **Every change must name a regime (D-39), and a merge is exempt.** `createChange` for a
+      new change and an `updateChange` that replaces `termIds` answer 422 `regime_required`
+      with the regime keys. A second sighting of a known `stableKey` adds pages and
+      milestones and never touches the stored terms, so it is not held to the rule. The six
+      E2E-seeded changes that carried no regime now carry one each, chosen inside the
+      footprint of the bank whose case they belong to, so no cached scope verdict moved; the
+      one visible difference is that tenant B's feed now shows the AI-mapping change as
+      outside its scope, since tenant B does not follow the AI and ICT regime.

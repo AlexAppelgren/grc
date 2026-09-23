@@ -96,6 +96,8 @@ def update_change_facts(
     change_type = keys.resolve_keys(keys.CHANGE_TYPE_LIST, [sent["change_type"]])[0] if "change_type" in sent else None
     flags = keys.resolve_keys(keys.FLAG_LIST, sent["flags"]) if "flags" in sent else None
     terms = keys.resolve_terms(sent["term_ids"]) if "term_ids" in sent else None
+    if terms is not None:
+        keys.require_regime(terms)
     superseded_by = _superseding(change, sent) if "superseded_by" in sent else None
     if flags is not None:
         _refuse_dropping_confirmed(who, change, "flag", {row.id for row in flags}, "a flag")
