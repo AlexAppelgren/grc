@@ -101,8 +101,9 @@ EXPECTED_TENANTS: tuple[SeedTenant, ...] = (TENANT_A, TENANT_B)
 SEED_ACTOR = Actor.system("seed_e2e")
 
 # Footprints as "dimension:key" (chunk 2, FP-01, J-6). Tenant A's is the prototype's
-# `footprint{regimes, accounts, entities, services, clients}`; tenant B's is a smaller,
-# different bank so J-8 can prove the footprint is per tenant.
+# `footprint{regimes, accounts, entities, services, clients}` less pension accounts, the one
+# term FP-S4 needs left out (`EXPECTED_OUTSIDE_SCOPE`); tenant B's is a smaller, different
+# bank so J-8 can prove the footprint is per tenant.
 EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
     TENANT_A_SLUG: (
         "regime:securities",
@@ -117,7 +118,6 @@ EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
         "account_type:af",
         "account_type:depa",
         "account_type:kf",
-        "account_type:pension",
         "legal_entity:bank",
         "legal_entity:insurer",
         "legal_entity:fund_company",
@@ -363,7 +363,7 @@ def seed_pending_footprint_request(tenants: list[Tenant]) -> int:
     removes = [terms_logic.term_by_ref(*ref.split(":")) for ref in spec.removes]
     adds = [terms_logic.term_by_ref(*ref.split(":")) for ref in spec.adds]
     # A journey may have approved the seeded request and removed the term; put it back so
-    # the next run starts from the prototype's footprint again.
+    # the next run starts from the seeded footprint again.
     for term in removes:
         if not FootprintTerm.objects.filter(tenant=tenant, term=term).exists():
             footprint_logic.seed_terms(tenant=tenant, actor=SEED_ACTOR, terms=[term])
@@ -839,9 +839,10 @@ def seed_home_cases(tenants: list[Tenant], home: SeedHome) -> int:
 
     _seed_case(tenant_a, by_key[home.lead_change], urgency="act_now", footprint_match=True, so_what_confirmed_by=officer)
     _seed_case(tenant_a, by_key[home.later_change], urgency="six_months_plus", footprint_match=True)
-    # Outside the bank's regulatory scope (HOM-S4, FP-S4): a case FP-03's own matching
-    # would have computed false too, set directly here as the backend's own HOM-S4 test
-    # does, so this seed needs no extra scope terms to prove the same absence.
+    # Outside the bank's regulatory scope (HOM-S4, FP-S4): the change carries the one term
+    # tenant A's scope leaves out (`seed_outside_scope_terms()`), so false is what the rule
+    # answers too, what the feed decides on every read, and what a recompute after any
+    # approved footprint change keeps (seed integrity checks every case against the rule).
     _seed_case(tenant_a, by_key[home.outside_scope_change], urgency="within_3_months", footprint_match=False)
     _seed_case(tenant_a, by_key[home.last_week_change], urgency="monitor", footprint_match=True, so_what_confirmed_by=officer)
 
@@ -1158,6 +1159,43 @@ def seed_chunk5_cases(tenants: list[Tenant]) -> int:
     return 1
 
 
+# ---------------------------------------------------------------------------------------
+# FP-S4 (FP-03, tax-fp-s4-journey): one record of each kind outside tenant A's scope
+# ---------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class SeedOutsideScope:
+    """What FP-S4's journey finds outside tenant A's regulatory scope without changing it:
+    the one term the seed leaves out of that scope, and the obligation and the change that
+    fall outside it through that term alone."""
+
+    term: str
+    obligation: str
+    change: str
+
+
+# The journey cannot narrow the scope itself: FP-S2 and FP-S5 change tenant A's scope, and
+# every home and watch journey reads it in parallel. So tenant A holds the prototype's scope
+# less pension accounts, which leaves exactly one library obligation outside it (the
+# pension transfer right, which only pension accounts carry and no other journey names) and
+# the outside-scope change, which carries the same term.
+EXPECTED_OUTSIDE_SCOPE = SeedOutsideScope(
+    term="account_type:pension",
+    obligation="obl-pension-transfer-right",
+    change=EXPECTED_HOME.outside_scope_change,
+)
+
+
+def seed_outside_scope_terms() -> None:
+    """The outside-scope change carries the term tenant A's scope leaves out, so the rule
+    and the verdict its case caches agree (FP-03). Without a scope term a change matches
+    every bank: the feed, which decides from the terms on every read, showed it in scope
+    while the roadmap and the briefing, which read the cache, hid it, and the first
+    approved footprint change would have recomputed the cache to true. Left a suggestion,
+    as an agent leaves one: an unconfirmed term scopes a change all the same (WAT-03)."""
+    change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key=EXPECTED_OUTSIDE_SCOPE.change)
+    watch_e2e_seed.seed_scope_term_link(change, term_ref=EXPECTED_OUTSIDE_SCOPE.term)
+
+
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
@@ -1172,6 +1210,7 @@ def seed_e2e() -> dict[str, int]:
         # tenant is activated — for the same reason `seed_authorities()` and
         # `load_library()` run here rather than after `seed_tenants()` (WAT-06).
         home = seed_watch_changes()
+        seed_outside_scope_terms()
         # SRC-01: the index reads every shared row load_library() and seed_watch_changes()
         # just wrote, and is itself a shared-zone write, so it runs here too.
         search_index = seed_search_index()
