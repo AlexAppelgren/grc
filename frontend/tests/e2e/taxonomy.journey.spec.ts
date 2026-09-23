@@ -351,9 +351,13 @@ test.describe('taxonomy journeys', () => {
 
     // The same fact, read on the bank's own feed row and change page: a
     // brand pill, still marked as the agent's own suggestion (a library
-    // editor's correction is not a confirmation).
-    await page.goto('/watch?tab=all');
+    // editor's correction is not a confirmation). The change's case is new in
+    // every bank, as the registration's fan-out left it, and no other journey
+    // moves it, so it sits on the triage tab; the tab is named and checked
+    // rather than reached as the fallback of a tab the feed does not have.
+    await page.goto('/watch?tab=triage');
     await expect(page.locator('[data-change-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+    await expect(page.getByRole('tab', { name: /^Needs triage/ })).toHaveAttribute('aria-selected', 'true');
     const row = page.locator('[data-change="chg-e2e-c5-payments"]');
     await expect(row).toBeVisible();
     await expect(row.locator('[data-pill="brand"]').filter({ hasText: 'Client money' })).toBeVisible();
@@ -382,25 +386,28 @@ test.describe('taxonomy journeys', () => {
     await expect(classification.locator('[data-pill="brand"]').filter({ hasText: 'Segregated client money' })).toBeVisible();
     await expect(classification.locator('[data-pill="brand"]').filter({ hasText: /^Client money$/ })).toHaveCount(0);
 
-    // Merged into an existing flag, and the change still reads: nothing
-    // breaks and the address is unchanged, whether or not the merge
-    // re-points this change's own link (a later task's work;
-    // `entry.repoint()` on `flag` is still `repoint.nothing_to_repoint`,
-    // apps/taxonomy/registry.py).
+    // Merged into an existing flag: the preview counts the one change this
+    // journey put the flag on, the approval moves that change's link to the
+    // flag it was merged into, and the merged-away flag leaves the list.
     await editor2.goto('/console/vocabularies');
     await editor2.locator('[data-vocabulary-list="flag"]').click();
     await editor2.locator('[data-value-key="client_money"]').getByRole('button', { name: /^Merge into/ }).click();
     const mergeDialog = editor2.getByRole('dialog', { name: /^Merge "Segregated client money" into/ });
     await mergeDialog.locator('#merge-into').selectOption({ label: 'Advice perimeter' });
     await expect(mergeDialog.getByText('What happens')).toBeVisible();
-    await mergeDialog.getByRole('button', { name: /^Merge/ }).click();
+    await mergeDialog.getByRole('button', { name: 'Merge 1 record', exact: true }).click();
     await expect(mergeDialog.getByText(/is waiting for a library editor\.$/)).toBeVisible();
     await mergeDialog.getByRole('button', { name: 'Done' }).click();
     await approveQueueProposal(editor, /Merge client_money into advice_perimeter on flag/);
 
     await page.goto(changeUrl);
     await expect(page).toHaveURL(changeUrl);
-    await expect(classification).toBeVisible();
+    await expect(classification.locator('[data-pill="brand"]').filter({ hasText: /^Advice perimeter$/ })).toHaveCount(1);
+    await expect(classification.locator('[data-pill="brand"]').filter({ hasText: 'Segregated client money' })).toHaveCount(0);
+    await editor2.goto('/console/vocabularies');
+    await editor2.locator('[data-vocabulary-list="flag"]').click();
+    await expect(editor2.locator('[data-value-key="advice_perimeter"]')).toBeVisible();
+    await expect(editor2.locator('[data-value-active][data-value-key="client_money"]')).toHaveCount(0);
   });
 
   test.describe('footprint', () => {
