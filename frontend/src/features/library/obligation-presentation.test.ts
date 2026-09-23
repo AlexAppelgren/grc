@@ -5,7 +5,9 @@ import { defaultFormatContext } from '@/shared/utils/format';
 
 import {
   machineConfirmedLabel,
+  OBLIGATION_SLOT_ORDER,
   outsideFootprintLabel,
+  presentBindingLevel,
   presentChangePending,
   presentObligation,
   presentScope,
@@ -103,6 +105,52 @@ describe('presentObligation header', () => {
   it('omits a missing regime and never shows row-only pills', () => {
     const pills = presentObligation({ ...esma, regime: undefined }, 'header', t);
     expect(pills.map((p) => p.key)).toEqual(['instrument:esmagl', 'guidance', 'compliance:gap']);
+  });
+});
+
+describe('the binding slots follow the level kind (D-37)', () => {
+  const iso: ObligationFacts = {
+    instrument: { key: 'iso-27001-2022', label: 'ISO/IEC 27001:2022' },
+    regime: { key: 'ai_ict', label: 'AI and ICT' },
+    binding: false,
+    levelKind: 'standard',
+  };
+
+  it('a standard reads "Standard" as information in the header, never "Guidance, comply or explain"', () => {
+    expect(presentObligation(iso, 'header', t).map((p) => [p.key, p.label, p.tone])).toEqual([
+      ['instrument:iso-27001-2022', 'ISO/IEC 27001:2022', 'brand'],
+      ['regime:ai_ict', 'AI and ICT', 'information'],
+      ['standard', 'Standard', 'information'],
+    ]);
+    expect(presentObligation(iso, 'header', sv).find((p) => p.key === 'standard')?.label).toBe('Standard');
+  });
+
+  it('a standard reads "Standard" as information in the row guidance slot, never "Guidance"', () => {
+    const pills = presentObligation(iso, 'row', t);
+    expect(pills.map((p) => [p.key, p.label, p.tone])).toEqual([
+      ['instrument:iso-27001-2022', 'ISO/IEC 27001:2022', 'brand'],
+      ['standard', 'Standard', 'information'],
+    ]);
+    expect(pills[1]?.order).toBe(OBLIGATION_SLOT_ORDER.guidance);
+  });
+
+  it('a null kind leaves binding to decide: null and binding reads "Binding", null and not binding reads guidance', () => {
+    const law = { ...iso, binding: true, levelKind: null };
+    const guidance = { ...iso, binding: false, levelKind: null };
+    expect(presentObligation(law, 'header', t).find((p) => p.order === OBLIGATION_SLOT_ORDER.bindingLevel + 1)).toMatchObject({ key: 'binding', label: 'Binding', tone: 'information' });
+    expect(presentObligation(law, 'row', t).map((p) => p.key)).toEqual(['instrument:iso-27001-2022']);
+    expect(presentObligation(guidance, 'header', t).find((p) => p.order === OBLIGATION_SLOT_ORDER.bindingLevel + 1)).toMatchObject({
+      key: 'guidance',
+      label: 'Guidance, comply or explain',
+      tone: 'warning',
+    });
+    expect(presentObligation(guidance, 'row', t).find((p) => p.order === OBLIGATION_SLOT_ORDER.guidance)).toMatchObject({ key: 'guidance', label: 'Guidance', tone: 'information' });
+  });
+
+  it('presentBindingLevel takes the kind first, whatever the binding flag says', () => {
+    expect(presentBindingLevel(true, 'standard', 30, t)).toEqual({ key: 'standard', label: 'Standard', tone: 'information', order: 30 });
+    expect(presentBindingLevel(true, null, 30, t).key).toBe('binding');
+    expect(presentBindingLevel(false, null, 30, t).key).toBe('guidance');
   });
 });
 

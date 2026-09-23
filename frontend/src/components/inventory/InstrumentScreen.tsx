@@ -18,6 +18,7 @@ import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States
 import { useFormatContext } from '@/features/identity/hooks';
 import { useInstrument, useObligations, useReportInstrumentProblem } from '@/features/library/hooks';
 import { presentInstrument } from '@/features/library/instrument-presentation';
+import { presentBindingLevel } from '@/features/library/obligation-presentation';
 import type { InstrumentDetail, InstrumentLineageRef } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -100,7 +101,7 @@ function IdentityPanel({ instrument, actions }: { instrument: InstrumentDetail; 
     { key: 'ref', label: t('inventory.instrument.officialRefLabel'), value: <span className="font-mono">{instrument.officialRef}</span> },
     { key: 'eli', label: t('inventory.instrument.eliLabel'), value: instrument.eliUri === '' ? t('inventory.instrument.eliNotAvailable') : instrument.eliUri },
     { key: 'level', label: t('inventory.instrument.levelLabel'), value: instrument.level.label },
-    { key: 'binding', label: t('inventory.instrument.bindingLabel'), value: instrument.binding ? t('pill.binding') : t('pill.guidanceComplyOrExplain') },
+    { key: 'binding', label: t('inventory.instrument.bindingLabel'), value: presentBindingLevel(instrument.binding, instrument.level.kind, 0, t).label },
     { key: 'jurisdiction', label: t('inventory.instrument.jurisdictionLabel'), value: instrument.jurisdiction.label },
   ];
   if (instrument.authority !== null) {
@@ -186,9 +187,10 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
     {
       instrument: { key: record.stableKey, label: record.shortName },
       level: { key: record.level.key, label: record.level.label },
+      levelKind: record.level.kind,
       binding: record.binding,
       jurisdiction: { key: record.jurisdiction.key, label: record.jurisdiction.label },
-      ...(record.regime === null ? {} : { regime: { key: record.regime.key, label: record.regime.label } }),
+      regime: { key: record.regime.key, label: record.regime.label },
     },
     t,
   );
@@ -210,7 +212,7 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <ProvisionTree instrumentId={instrumentId} />
+          <ProvisionTree instrumentId={instrumentId} levelKind={record.level.kind} sourceUrl={record.sourceUrl} />
           <ObligationsPanel instrument={record} />
         </div>
         <div>

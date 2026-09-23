@@ -248,11 +248,22 @@ describe('ObligationScreen', () => {
     await waitFor(() => expect(document.querySelector('[data-legal-text] [lang="sv"]')?.textContent).toBe(sv.text));
   });
 
-  it('reads a record with no title, no regime, no lineage and nobody named as verifier', async () => {
+  it('reads "Standard" in the binding slot of a duty under a standard, never "Guidance, comply or explain"', async () => {
+    serve({ ...research, bindingLevel: { key: 'standard', kind: 'standard', label: 'Standard edition' }, binding: false });
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1 });
+    const header = document.querySelectorAll('[data-header-pills] [data-pill]');
+    expect([...header].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
+      ['FFFS 2017:2', 'brand'],
+      ['Securities', 'information'],
+      ['Standard', 'information'],
+    ]);
+  });
+
+  it('reads a record with no title, no lineage and nobody named as verifier', async () => {
     serve({
       ...research,
       title: null,
-      regime: null,
       productScope: '',
       triggerFrequency: '',
       retention: '',
@@ -265,7 +276,6 @@ describe('ObligationScreen', () => {
     });
     renderIn(<ObligationScreen obligationId="ob-1" />);
     await screen.findByRole('heading', { level: 1, name: 'Third-party payments' });
-    expect(screen.queryByText('Securities')).not.toBeInTheDocument();
     expect(screen.getByText('Not verified yet')).toBeInTheDocument();
     expect(screen.getByText('The library files no other duty beside this one.')).toBeInTheDocument();
     expect(screen.getByText(/^12 Mar 2026.*through proposal review$/)).toBeInTheDocument();

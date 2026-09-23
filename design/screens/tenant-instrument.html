@@ -293,14 +293,23 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="states">
     <h2 class="k">Instrument with a partial in-force date, and one with no provisions yet</h2>
     <p class="meta" style="display:block"><span class="pill brand">Retail Investment Strategy</span> Publication pending · Application 2028, exact date unknown</p>
-    <div class="empty"><h2>No provisions yet</h2><p>The provision tree appears as the library editor approves it.</p><a href="#">See the obligations</a></div>
+    <div class="empty"><h2>No provisions yet</h2><p>The provision tree appears here once the library holds it.</p><a href="#">See the obligations</a></div>
+
+    <h2 class="k">A standard: the text is licensed, so the Provisions panel holds no tree</h2>
+    <p class="meta" style="display:block"><span class="pill brand">ISO/IEC 27001:2022</span><span class="pill information">Standard edition</span><span class="pill information">Standard</span><span class="pill brand">International</span><span class="pill information">AI and ICT</span></p>
+    <div class="empty"><h2>The text is licensed</h2><p>The text of this standard is licensed and not held here.</p><a href="#">See it in the publisher's catalogue</a></div>
+
+    <h2 class="k">Provisions loading, not loaded, denied</h2>
+    <div class="rows" aria-busy="true"><div class="skeleton" style="height:48px"></div></div>
+    <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the provisions</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
+    <p class="meta" role="alert" style="display:block;color:var(--red)">You do not have access to this. Needs library read.</p>
 
     <h2 class="k">Loading, error, not found</h2>
     <div class="rows" aria-busy="true"><div class="skeleton" style="height:48px"></div><div class="skeleton" style="height:180px"></div></div>
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load this instrument</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Back to Inventory</a></div>
     </div>
-    <p class="note">Instrument card. The short name is brand (scope from the library), level and binding force are information from their kinds, the jurisdiction is a brand facet, the regime information. The provision tree is a disclosure list with the verbatim text of the selected version, its in-force range and any transitional note; a provision lists the obligations that cite it. Lineage shows what the instrument implements, what elaborates it and what amends it. Every role reads; a member reports. Legal dates render with their precision.</p>
+    <p class="note">Instrument card. The short name is brand (scope from the library), level and binding force are information from their kinds, the jurisdiction is a brand facet, the regime information. The provision tree is a disclosure list with the verbatim text of the selected version, its in-force range and any transitional note; a provision lists the obligations that cite it. A standard (its level's kind is <code>standard</code>) reads "Standard" as information in the binding slot, never "Guidance, comply or explain", and its Provisions panel says the text is licensed and links the publisher's catalogue (the instrument's source) instead of a tree. Lineage shows what the instrument implements, what elaborates it and what amends it. Every role reads; a member reports. Legal dates render with their precision.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

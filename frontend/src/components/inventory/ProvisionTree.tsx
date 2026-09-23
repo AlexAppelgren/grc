@@ -10,12 +10,14 @@ import { LegalText } from '@/components/inventory/LegalText';
 import { diffSentence } from '@/components/inventory/ObligationScreen';
 import { Notice } from '@/components/ui/Notice';
 import { Meta, Panel } from '@/components/ui/Panel';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useInstrumentProvisions, useProvisionDiff } from '@/features/library/hooks';
+import { STANDARD_LEVEL_KIND } from '@/features/library/obligation-presentation';
 import type { ProvisionNode } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
+import { problemStatus } from '@/shared/utils/problem';
 
 // The provision tree, on the instrument card (design/screens/tenant-instrument.html;
 // INV-02, INV-04, INV-05). A disclosure list: every version a unit has ever
@@ -31,6 +33,11 @@ import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 // carries the same label when either side of it is machine translated, and
 // names the two versions it compares, which are the latest and the one
 // before it whichever chip is pressed.
+//
+// A standard's text is licensed (D-37): the library holds no provision under
+// it, so the panel says so and links the publisher's catalogue instead of
+// reading a tree, and a reader without library.read sees why the tree is
+// missing rather than an error to retry.
 
 /** The version a node opens on: the one in force on the read's date, or its first version when none is in force. */
 export function defaultVersion(node: ProvisionNode): number | null {
@@ -127,26 +134,56 @@ function ProvisionUnit({ node }: { node: ProvisionNode }) {
   );
 }
 
-export function ProvisionTree({ instrumentId }: { instrumentId: string }) {
+/**
+ * A standard's text is licensed, so the library holds no provision under it
+ * and the tree is never read: the panel says so and links the publisher's
+ * catalogue entry, the instrument's own source.
+ */
+function LicensedText({ sourceUrl }: { sourceUrl: string }) {
+  const t = useT();
+  return (
+    <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-provisions-licensed="">
+      <h2 className="text-fg">{t('inventory.instrument.provisionsLicensed.title')}</h2>
+      <p className="mx-auto mt-2 max-w-[60ch]">{t('inventory.instrument.provisionsLicensed.body')}</p>
+      <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block font-medium text-fg underline">
+        {t('inventory.instrument.provisionsLicensed.link')}
+      </a>
+    </div>
+  );
+}
+
+function ProvisionNodes({ instrumentId }: { instrumentId: string }) {
   const t = useT();
   const provisions = useInstrumentProvisions(instrumentId);
   const nodes = provisions.data ?? [];
 
+  return provisions.isPending ? (
+    <LoadingState rows={2} />
+  ) : provisions.isError ? (
+    problemStatus(provisions.error) === 403 ? (
+      <div data-provisions-denied="">
+        <ProblemAlert error={provisions.error} />
+      </div>
+    ) : (
+      <ErrorState title={t('inventory.instrument.provisionsErrorTitle')} onRetry={() => void provisions.refetch()} />
+    )
+  ) : nodes.length === 0 ? (
+    <EmptyState title={t('inventory.instrument.provisionsEmpty.title')} body={t('inventory.instrument.provisionsEmpty.body')} />
+  ) : (
+    <ul className="m-0 list-none p-0">
+      {nodes.map((node) => (
+        <ProvisionUnit key={node.id} node={node} />
+      ))}
+    </ul>
+  );
+}
+
+/** The instrument's level kind and source decide whether there is a tree to read at all. */
+export function ProvisionTree({ instrumentId, levelKind, sourceUrl }: { instrumentId: string; levelKind: string | null; sourceUrl: string }) {
+  const t = useT();
   return (
     <Panel title={t('inventory.instrument.provisionsTitle')} data-provision-tree="">
-      {provisions.isPending ? (
-        <LoadingState rows={2} />
-      ) : provisions.isError ? (
-        <ErrorState title={t('inventory.instrument.provisionsErrorTitle')} onRetry={() => void provisions.refetch()} />
-      ) : nodes.length === 0 ? (
-        <EmptyState title={t('inventory.instrument.provisionsEmpty.title')} body={t('inventory.instrument.provisionsEmpty.body')} />
-      ) : (
-        <ul className="m-0 list-none p-0">
-          {nodes.map((node) => (
-            <ProvisionUnit key={node.id} node={node} />
-          ))}
-        </ul>
-      )}
+      {levelKind === STANDARD_LEVEL_KIND ? <LicensedText sourceUrl={sourceUrl} /> : <ProvisionNodes instrumentId={instrumentId} />}
     </Panel>
   );
 }

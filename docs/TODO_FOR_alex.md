@@ -665,11 +665,13 @@ your own answer in chat to the session that merges it.
       it stays as built. If you want the design's wording, relation types gain an inverse
       label (a vocabulary change, one more label per row, in every content language) and
       the card uses it for the incoming groups.
-- [ ] **The empty provision tree says "The provision tree appears here once the library holds
+- [x] **The empty provision tree says "The provision tree appears here once the library holds
       it."**, where `design/screens/tenant-instrument.html` still says "as the library editor
       approves it". bleqq staffs no library editor (D-62), so the screen names no approver.
       The design card's lineage headings and this sentence are still the old wording; whoever
       next edits `design/` should bring the card in line, or tell us to follow the card.
+      Done (lib-standard-presentation): D-62 settled it, so the card's empty line now reads
+      as the screen does, and the card draws a standard's licensed-text state too.
 
 ## proposals-decide-hardening (2026-09-23): an agent confirms obligation versions only (D-79)
 

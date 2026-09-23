@@ -165,7 +165,7 @@ export interface ObligationDetail {
   refLabel: string;
   title: LocalizedText | null;
   instrument: InstrumentSummary;
-  regime: LibraryRef | null;
+  regime: LibraryRef;
   bindingLevel: LibraryRef;
   binding: boolean;
   dutyType: LibraryRef;
@@ -236,7 +236,7 @@ export interface Instrument {
   binding: boolean;
   jurisdiction: LibraryRef;
   authority: InstrumentAuthorityRef | null;
-  regime: LibraryRef | null;
+  regime: LibraryRef;
   officialRef: string;
   inForceFrom: PartialDate | null;
   inForceTo: PartialDate | null;
@@ -304,7 +304,7 @@ export interface InstrumentDetail {
   binding: boolean;
   jurisdiction: LibraryRef;
   authority: InstrumentAuthorityRef | null;
-  regime: LibraryRef | null;
+  regime: LibraryRef;
   officialRef: string;
   /** The European Legislation Identifier, or an empty string when none is published; never null. */
   eliUri: string;
