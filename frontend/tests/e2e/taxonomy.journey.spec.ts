@@ -594,17 +594,57 @@ test.describe('taxonomy journeys', () => {
       await expect(page.locator('[data-coming-up] [data-roadmap-item]').filter({ hasText: title })).toHaveCount(0);
     });
 
+    /** The id of the request the next "Request approval" files: the audit log names it. */
+    function nextRequestId(page: Page): Promise<string> {
+      return page
+        .waitForResponse((r) => r.url().endsWith('/api/v1/tenant/footprint/requests') && r.request().method() === 'POST' && r.ok())
+        .then(async (r) => ((await r.json()) as { id: string }).id);
+    }
+
+    /** Puts Advice back through the same door when it is out, so the scope reads as seeded; the restoring request's id, or null when nothing needed it. */
+    async function restoreAdvice(page: Page, approver: Page): Promise<string | null> {
+      await page.goto('/admin/footprint');
+      await expect(adviceItem(page)).toBeVisible();
+      if ((await page.locator('[data-pending-request]').count()) > 0 || !/Not in our scope/.test((await adviceItem(page).textContent()) ?? '')) return null;
+      await page.getByRole('button', { name: 'Propose a change' }).click();
+      await adviceCheckbox(page).check();
+      const filed = nextRequestId(page);
+      await page.locator('[data-draft-preview]').getByRole('button', { name: 'Request approval' }).click();
+      await expect(page.getByText('Sent for approval.', { exact: true })).toBeFocused();
+      const id = await filed;
+      await approveWithPasskey(approver);
+      return id;
+    }
+
+    /** TAX-14: the audit log holds exactly one event of this action for Advice, naming the request that caused it, confirmed with a passkey. */
+    async function expectAdviceEvent(page: Page, action: 'footprint.term_removed' | 'footprint.term_added', requestId: string): Promise<void> {
+      await page.goto('/admin/audit-log');
+      await expect(page.getByRole('heading', { level: 1, name: 'Audit log' })).toBeVisible();
+      await page.getByLabel('Record kind').selectOption('footprint');
+      // A removal carries the term and its request as the state before, an addition as the state after.
+      const side = action === 'footprint.term_removed' ? 'before' : 'after';
+      const events = page
+        .locator(`[data-audit-row][data-subject-type="footprint"][data-action="${action}"]`)
+        .filter({ has: page.locator(`[data-audit-diff] [data-field="request"] [data-${side}]`, { hasText: requestId }) });
+      await expect(events).toHaveCount(1);
+      await expect(events.locator(`[data-audit-diff] [data-field="term"] [data-${side}]`)).toHaveText('advice');
+      await expect(events.locator(`[data-audit-diff] [data-field="dimension"] [data-${side}]`)).toHaveText(SERVICES);
+      await expect(events.getByText('Confirmed with a passkey')).toBeVisible();
+    }
+
     test("FP-S5 J-6 @smoke: footprint change with preview and second-person approval", async ({ page, browser, apiGuard }, testInfo) => {
-      // pending: FP-S5 (FP-01, FP-02, FP-03, AC-FP1, J-6) -> built in chunk 2,
-      // the inventory half in chunk 3. The per-term audit events wait for the
-      // audit log screen. Here: the officer's request with its preview, the
-      // approver's passkey step-up, the footprint changed on screen, and the
-      // advice-only obligation gone from the inventory.
+      // FP-S5 (FP-01, FP-02, FP-03, AC-FP1, J-6): the officer's request with its
+      // preview, the approver's passkey step-up, the footprint changed on screen,
+      // the advice-only obligation gone from the inventory, and the audit log's
+      // one event per term, each naming its request (TAX-14), for the removal
+      // and for the restore that puts the scope back as seeded.
       allowFreshContext(apiGuard);
       apiGuard.allow(/\/api\/v1\/tenant\/footprint\/requests\/[^/]+\/approve$/, 403, 'the first attempt answers step_up_required and opens the prompt');
       await signInAs(page, LOGINS.complianceOfficer);
       await officerStartsClean(page);
+      const removal = nextRequestId(page);
       await officerRemovesAdvice(page);
+      const removalId = await removal;
 
       const approver = await secondPerson(browser, apiGuard, testInfo, LOGINS.approver);
       try {
@@ -623,17 +663,15 @@ test.describe('taxonomy journeys', () => {
         await page.getByRole('button', { name: 'Show outside our scope' }).click();
         await expect(adviceOnlyRow(page)).toHaveAttribute('data-outside-footprint', '');
         await expect(adviceOnlyRow(page).getByText('Outside our scope: Advice')).toBeVisible();
+
+        // The audit log: one removal for Advice naming the request, then one addition naming the restore.
+        await expectAdviceEvent(page, 'footprint.term_removed', removalId);
+        const restoreId = await restoreAdvice(page, approver);
+        expect(restoreId).not.toBeNull();
+        await expectAdviceEvent(page, 'footprint.term_added', restoreId ?? '');
       } finally {
-        // Put Advice back through the same door, so the scope reads as seeded.
-        await page.goto('/admin/footprint');
-        await expect(adviceItem(page)).toBeVisible();
-        if ((await page.locator('[data-pending-request]').count()) === 0 && /Not in our scope/.test((await adviceItem(page).textContent()) ?? '')) {
-          await page.getByRole('button', { name: 'Propose a change' }).click();
-          await adviceCheckbox(page).check();
-          await page.locator('[data-draft-preview]').getByRole('button', { name: 'Request approval' }).click();
-          await expect(page.getByText('Sent for approval.', { exact: true })).toBeFocused();
-          await approveWithPasskey(approver);
-        }
+        // On a failure too: the scope reads as seeded for every journey after this one.
+        await restoreAdvice(page, approver);
         await approver.context().close();
       }
     });
@@ -644,8 +682,48 @@ test.describe('taxonomy journeys', () => {
 // the opt-in standards dimension (INV-08). Each stays test.fixme until the task
 // in docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
 test.describe('regulatory scope, markets and standards', () => {
-  test.fixme("FP-S7: Members without scope permissions cannot open the regulatory scope page", async () => {
-    // pending: FP-S7 (FP-02, ADM-01)
+  test("FP-S7: Members without scope permissions cannot open the regulatory scope page", async ({ page, browser, apiGuard }, testInfo) => {
+    // FP-02, ADM-01. Only reads: the footprint journeys above file and decide
+    // requests against tenant A's one scope in another worker, so each login
+    // settles on the page's loaded state before it branches on a waiting request.
+    allowFreshContext(apiGuard);
+
+    // A reader holds neither footprint.request nor footprint.approve: no entry
+    // in Admin, and the page opened directly is the restricted page naming the permission.
+    await signInAs(page, LOGINS.reader);
+    await page.goto('/admin');
+    await expect(page.locator('[data-admin-section="admin-organisation"]')).toBeVisible();
+    await expect(page.locator('[data-admin-section="admin-footprint"]')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Regulatory scope', exact: true })).toHaveCount(0);
+    await page.goto('/admin/footprint');
+    const restricted = page.getByRole('alert').filter({ hasText: 'This page is not available to you' });
+    await expect(restricted).toContainText('Needs footprint request');
+    await expect(page.locator('[data-footprint-dimensions]')).toHaveCount(0);
+
+    // The approver holds footprint.approve only: the scope reads, nothing on it
+    // is a checkbox, nothing offers to propose, and a phone never scrolls sideways.
+    const approver = await secondPerson(browser, apiGuard, testInfo, LOGINS.approver);
+    await approver.setViewportSize({ width: 375, height: 812 });
+    await approver.goto('/admin/footprint');
+    await expect(approver.locator('[data-footprint-dimensions]')).toBeVisible();
+    await expect(approver.getByRole('checkbox')).toHaveCount(0);
+    await expect(approver.getByRole('button', { name: 'Propose a change' })).toHaveCount(0);
+    expect(await approver.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await approver.context().close();
+
+    // The compliance officer holds footprint.request: offered "Propose a change"
+    // while nothing waits, or their own waiting request to withdraw (only the
+    // officer files requests on tenant A, and one waits at a time).
+    const officer = await secondPerson(browser, apiGuard, testInfo, LOGINS.complianceOfficer);
+    await officer.goto('/admin/footprint');
+    await expect(officer.locator('[data-footprint-dimensions]')).toBeVisible();
+    const waiting = officer.locator('[data-pending-request]');
+    if ((await waiting.count()) === 0) {
+      await expect(officer.getByRole('button', { name: 'Propose a change' })).toBeVisible();
+    } else {
+      await expect(waiting.getByRole('button', { name: 'Withdraw' })).toBeVisible();
+    }
+    await officer.context().close();
   });
 
   test.fixme("FP-S8: Turning on a country brings the EU rules that reach it", async () => {
