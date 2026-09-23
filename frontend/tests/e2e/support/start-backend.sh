@@ -67,6 +67,11 @@ export EMBEDDER_PROVIDER=mock
 export AGENT_RUNNER=mock
 export MAIL_PROVIDER=mock
 export STORAGE_BACKEND=local
+# No persistent connections under runserver: it starts a thread per request, and each
+# thread's connection outlives it, so with a max age every request leaks one until
+# Postgres runs out of slots (CI, 2026-09-23: "too many clients already" after 84
+# journeys). Django's own guidance for the development server; gunicorn keeps its default.
+export DATABASE_CONN_MAX_AGE_S=0
 export REDIS_URL="${REDIS_URL:-redis://localhost:6379/1}"
 export CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://localhost:3000}"
 export WEBAUTHN_RP_ID="${WEBAUTHN_RP_ID:-localhost}"
