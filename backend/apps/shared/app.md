@@ -136,7 +136,7 @@ Given the token pipeline output and brand.css
 When the contrast test runs over every text and surface pair the design uses, including the six pill tones
 Then each pair reaches the AA ratio in light and in dark
 Given the pill gallery and the seeded Today, Watch, Inventory, an instrument, Roadmap, Search and the console queue in a browser under a light and a dark system theme
-When every named pair and every pill on screen is measured from the colours the browser computes
+When every named pair is measured once per theme, and every pill on each screen, once it has loaded, against what is behind it, from the colours the browser computes
 Then text and pills reach 4.5:1 and non-text 3:1 in both themes
 ```
 

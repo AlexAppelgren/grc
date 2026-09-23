@@ -36,22 +36,20 @@ interface MeasuredPair {
   missing: string[];
 }
 
-/** Each pair's two colours as the browser computes them in the screen's own content, under the page's theme. */
+/** Each pair's two colours as the browser computes them under the page's theme. */
 async function measurePairs(page: Page, pairs: readonly Pair[]): Promise<MeasuredPair[]> {
   return page.evaluate(
-    (list) => {
-      const host = document.querySelector('#main') ?? document.body;
-      return list.map(({ name, fg, bg }) => {
+    (list) =>
+      list.map(({ name, fg, bg }) => {
         const probe = document.createElement('span');
         probe.style.color = `var(${fg})`;
         probe.style.backgroundColor = `var(${bg})`;
-        host.append(probe);
+        document.body.append(probe);
         const style = getComputedStyle(probe);
         const measured = { name, fg: style.color, bg: style.backgroundColor, missing: [fg, bg].filter((v) => style.getPropertyValue(v).trim() === '') };
         probe.remove();
         return measured;
-      });
-    },
+      }),
     [...pairs],
   );
 }
@@ -72,24 +70,37 @@ async function measurePills(page: Page): Promise<{ name: string; fg: string; lay
   );
 }
 
-/** What falls short of AA on the page as it stands: 4.5:1 for text and every pill, 3:1 for non-text. Empty when all pass. */
-async function contrastFailures(page: Page, where: string): Promise<string[]> {
+function shortfall(where: string, name: string, fg: string, bg: string, floor: number): string[] {
+  const ratio = contrastRatio(fg, bg);
+  return ratio < floor ? [`${where}: ${name} is ${ratio.toFixed(2)}:1, under ${floor}:1 (${fg} on ${bg})`] : [];
+}
+
+/**
+ * The named pairs that fall short of AA under the page's theme: 4.5:1 for
+ * text, 3:1 for non-text. Every pair's tokens are set once on the theme class
+ * (theme.css, tokens.generated.css) and no screen overrides one, so one page
+ * per theme measures them for every screen.
+ */
+async function pairFailures(page: Page, where: string): Promise<string[]> {
   const failures: string[] = [];
-  const check = (name: string, fg: string, bg: string, floor: number): void => {
-    const ratio = contrastRatio(fg, bg);
-    if (ratio < floor) failures.push(`${where}: ${name} is ${ratio.toFixed(2)}:1, under ${floor}:1 (${fg} on ${bg})`);
-  };
   for (const [pairs, floor] of [
     [PAIRS, AA_NORMAL_TEXT],
     [NON_TEXT, AA_NON_TEXT],
   ] as const) {
     for (const pair of await measurePairs(page, pairs)) {
       if (pair.missing.length > 0) failures.push(`${where}: ${pair.name} names ${pair.missing.join(' and ')}, which the page does not define`);
-      else check(pair.name, pair.fg, pair.bg, floor);
+      else failures.push(...shortfall(where, pair.name, pair.fg, pair.bg, floor));
     }
   }
-  for (const pill of await measurePills(page)) check(pill.name, pill.fg, flatten(pill.layers), AA_NORMAL_TEXT);
   return failures;
+}
+
+/** Every pill on the page that falls short of 4.5:1 against what is actually behind it, once nothing on the page is still loading. */
+async function pillFailures(page: Page, where: string): Promise<string[]> {
+  // A panel with a query of its own can still be loading after the screen's
+  // first pill shows; its pills belong in the sweep.
+  await expect(page.locator('[data-loading-state]')).toHaveCount(0);
+  return (await measurePills(page)).flatMap((pill) => shortfall(where, pill.name, pill.fg, flatten(pill.layers), AA_NORMAL_TEXT));
 }
 
 interface Screen {
@@ -128,6 +139,9 @@ const TENANT_SCREENS: readonly Screen[] = [
       await page.goto('/inventory?tab=instruments');
       await page.locator('[data-instrument="fffs-2017-2"]').click();
       await expect(page.locator('[data-instrument="fffs-2017-2"] [data-header-pills] [data-pill]').first()).toBeVisible();
+      // The obligations panel loads on its own query; the research payment
+      // duty is one of this instrument's.
+      await expect(page.locator('[data-obligations-panel] [data-obligation="obl-research-payments"] [data-pill]').first()).toBeVisible();
     },
   },
   {
@@ -156,15 +170,17 @@ test.describe('shared journeys', () => {
   });
 
   test("NFR-S9: Every text-on-surface pair passes WCAG AA in both themes", async ({ page }) => {
-    // The gallery holds every tone, slot and record type in a light and a dark
-    // column, so each system theme sweeps all six tones in both themes.
+    // The named pairs are measured here, once per system theme, for every
+    // screen. The gallery holds every tone, slot and record type in a light
+    // and a dark column, so each system theme also sweeps all six tones in
+    // both themes.
     const failures: string[] = [];
     for (const scheme of SCHEMES) {
       await page.emulateMedia({ colorScheme: scheme });
       await page.goto('/dev/pills');
       await expect(page.locator('[data-theme-column="dark"] [data-pill]').first()).toBeVisible();
       await expectScheme(page, scheme);
-      failures.push(...(await contrastFailures(page, `pill gallery, ${scheme}`)));
+      failures.push(...(await pairFailures(page, `named pairs, ${scheme}`)), ...(await pillFailures(page, `pill gallery, ${scheme}`)));
     }
     expect(failures).toEqual([]);
   });
@@ -182,7 +198,7 @@ test.describe('shared journeys', () => {
       for (const screen of TENANT_SCREENS) {
         await screen.open(page);
         await expectScheme(page, scheme);
-        failures.push(...(await contrastFailures(page, `${screen.name}, ${scheme}`)));
+        failures.push(...(await pillFailures(page, `${screen.name}, ${scheme}`)));
       }
     }
     expect(failures).toEqual([]);
@@ -205,7 +221,7 @@ test.describe('shared journeys', () => {
         await expect(page.locator('[data-proposal-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
         await expectScheme(page, scheme);
         proposalPills += await page.locator('[data-proposal-rows] [data-pill]').count();
-        failures.push(...(await contrastFailures(page, `console queue, ${tab}, ${scheme}`)));
+        failures.push(...(await pillFailures(page, `console queue, ${tab}, ${scheme}`)));
       }
       expect(proposalPills, `no tab of the console queue listed a proposal (${scheme})`).toBeGreaterThan(0);
     }
