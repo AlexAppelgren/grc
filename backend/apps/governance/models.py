@@ -7,10 +7,11 @@ stood behind it yet" has one place to be asked.
 
 A mixed table (playbook 14): a row with no tenant is the library's — the "So what?" drafted
 once per change and shared by every bank — and a row with a tenant is that bank's own, an
-Ask answer among them. Reading is mixed so every bank sees the library's rows; writing is
-the session's own zone alone, which is what keeps one bank from moving, rewriting or
-deleting the platform's row (ruling I, HARDENING H15). The write rule is the database's,
-not only the code's.
+Ask answer among them. Reading is mixed so every bank sees the library's rows, except a
+confirming agent's decisions (`agent_review`, D-80), which the platform alone reads; writing
+is the session's own zone alone, which is what keeps one bank from moving, rewriting or
+deleting the platform's row (ruling I, HARDENING H15). Both rules are the database's, not
+only the code's.
 
 The review state is the designed `ai_status` kind, so a row ships as `draft` and a person
 standing behind it is what moves it. Chunk 5 never moves it: a bank confirms its own copy
@@ -42,9 +43,12 @@ class AiPurpose(enum.StrEnum):
 
     `agent_review` is a confirming agent's decision on another agent's work — approving,
     correcting or rejecting a proposal, or confirming a watch item's curation — which the
-    agent reports with the decision (`AgentDecision`, D-80), so its row always carries
-    `model_metadata_reported_by_agent` true. A machine's approval is never logged as one of
-    the drafting purposes above, so the log can tell a draft from a decision."""
+    agent reports with the decision (`AgentDecision`, D-80). Its row is always marked
+    `model_metadata_reported_by_agent` and names the run and the record decided, which a
+    check constraint holds, and no bank reads it: it is about the proposal queue, where a
+    bank sees only what it filed itself, so the library read policy leaves it to the
+    platform. A machine's approval is never logged as one of the drafting purposes above,
+    so the log can tell a draft from a decision."""
 
     SO_WHAT = "so_what"
     CHANGE_SUMMARY = "change_summary"
@@ -144,6 +148,16 @@ class AiGeneration(models.Model):
                     | models.Q(reviewed_by__isnull=False, reviewed_at__isnull=False)
                 ),
                 name="ai_generation_review_names_a_person",
+            ),
+            models.CheckConstraint(
+                # A confirming agent's decision is its own report, made in a run and about a
+                # record, so no consumer can log one that nobody can trace (D-80).
+                condition=~models.Q(purpose=AiPurpose.AGENT_REVIEW.value)
+                | (
+                    models.Q(model_metadata_reported_by_agent=True, agent_run__isnull=False, subject_id__isnull=False)
+                    & ~models.Q(subject_type="")
+                ),
+                name="ai_generation_agent_review_names_its_run",
             ),
         ]
 

@@ -1038,7 +1038,10 @@ with the model behind it. None of the designed purposes fits, because each names
 a model drafts, and a reader of the log must be able to tell a machine's decision from a
 machine's draft. The decision arrives with one `AgentDecision` object (model, model
 version, the prompt's name and hash, the output and at least one citation), the shape of
-D-66's `soWhat` with `output` for `text`; its row is always marked
-`model_metadata_reported_by_agent`. `AiCitation` moves from `apps/governance/schemas.py` to
+D-66's `soWhat` with `output` for `text`. A check constraint holds that its row is marked
+`model_metadata_reported_by_agent` and names the run and the record decided. The designed
+log is read by every bank for its library rows; an `agent_review` row is left out of that
+read, because it is about the proposal queue, where a bank sees only its own filings, and
+the platform alone reads it (governance 0002). `AiCitation` moves from `apps/governance/schemas.py` to
 `apps/shared/schemas.py` beside it, unchanged, because the shared shape cites with it and a
 governance import from there would be a cycle.

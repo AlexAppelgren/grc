@@ -538,3 +538,13 @@ Nothing waits for these; each has the default the build took.
       `decision` from a key caller on both routes. Default: the definition stays `draft`
       until then, and its tool descriptions say "once the route accepts it". This is a
       note to the next package, not a question.
+- [ ] **Should a bank read the confirming agent's reasoning?** Each decision the confirming
+      agent makes is logged under `agent_review` in the platform's zone, because its run
+      is the platform's. Every row in that zone was readable by every bank's
+      `ai_log.read` holders. A decision is about a proposal, and another bank may have
+      filed it, while a bank today sees only the proposals it filed itself. Default: the
+      library read policy on `ai_generation` leaves `agent_review` out, the platform
+      alone reads those rows, and a bank still sees on the record itself which agents
+      proposed and confirmed it (D-62). Say if a bank should read the reasoning behind a
+      record it relies on. That would take a narrower read, for example the decisions on
+      applied proposals only, and never the rejections of other banks' filings.

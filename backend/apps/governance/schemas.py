@@ -68,7 +68,8 @@ _PURPOSES = (
     "`translation` (a machine translation of library text), `answer` (an Ask answer for "
     "one bank) and `agent_review` (a confirming agent's decision on another agent's work: "
     "approving, correcting or rejecting a proposal, or confirming a watch item's curation, "
-    "with the model behind it reported by that agent)"
+    "with the model behind it reported by that agent; only the platform reads these, so a "
+    "bank's log never lists one)"
 )
 _STATUSES = (
     "`draft` (nobody has stood behind it yet, which is how every row starts and how a "

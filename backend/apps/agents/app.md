@@ -66,7 +66,8 @@ vocabularies it reads at run start; a key with `library:read` reads each of them
 as key, kind, label and usage note on its active rows, submits those keys only,
 and brings a new term as a proposal (AGT-02). A confirming agent's decision
 carries the model call behind it (`AgentDecision`), logged in `ai_generation`
-under the purpose `agent_review` as that agent's own report (D-80).
+under the purpose `agent_review` as that agent's own report, naming its run and the
+record decided, and read by the platform alone (D-80).
 
 ## 2. Requirements
 
