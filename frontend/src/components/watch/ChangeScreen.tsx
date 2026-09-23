@@ -27,9 +27,10 @@ import { hasProblemCode } from '@/shared/utils/problem';
 // "What happened"; triage, assessment, actions, evidence and sign-off are
 // the case workflow and arrive with chunk 9.
 //
-// A change's type, flags and scope are library facts that only a library
-// editor settles, so this screen shows what an agent put forward and offers a
-// reader of this bank no control that would confirm one. The only writes are
+// A change's type, flags and scope are library facts that an independent
+// agent or a person settles for every bank (D-74), so this screen shows what
+// an agent put forward, says when a machine confirmed it, and offers a reader
+// of this bank no control that would confirm one. The only writes are
 // this bank's own, on its case: the "So what?" and its decision about each
 // suggested obligation link (SoWhatPanel, ChangeObligations).
 
@@ -37,10 +38,10 @@ import { hasProblemCode } from '@/shared/utils/problem';
  * The facts the header's pills are made of, in the card's slot order.
  *
  * The urgency is this bank's own where it has a case and the library's
- * suggestion otherwise, exactly as a feed row reads it. `suggested` marks the
- * record: a change a run registered carries a type no person has stood behind
- * (`origin` is `agent`), which is the rule the feed read applies to the type
- * too.
+ * suggestion otherwise, exactly as a feed row reads it. The marker follows the
+ * type (`typeProvenance`): a type a run put forward is the agent's suggestion
+ * until somebody confirms it, and one an independent agent confirmed reads
+ * machine-confirmed, never as a person's verification (D-74).
  *
  * Each flag and each scope term now arrives with its own `confidence` and
  * `suggested` beside the vocabulary row, as a feed row has always carried
@@ -51,13 +52,26 @@ import { hasProblemCode } from '@/shared/utils/problem';
  */
 export function detailFacts(change: ChangeDetail, t: Translate): ChangeFacts {
   const urgency = urgencyOf(change.case === null ? change.suggestedUrgency : (change.case.urgency ?? change.suggestedUrgency));
+  const provenance = typeProvenance(change);
   return {
     type: { key: change.changeType.key, label: change.changeType.label },
     ...(urgency === null ? {} : { urgency }),
     flags: change.flags.map((flag) => ({ key: flag.ref.key, label: flag.ref.label })),
-    suggested: change.origin === 'agent',
+    suggested: provenance === 'suggested',
+    machineConfirmed: provenance === 'machineConfirmed',
     ...(change.case === null ? {} : { workflowStatus: { key: change.case.category, label: caseStatusLabel(change.case.category, t) } }),
   };
+}
+
+/**
+ * What the type's marker says: the agent's suggestion while a run's type is
+ * unconfirmed, machine-confirmed once an independent agent confirmed it, and
+ * nothing once a person did or when a person filed it.
+ */
+export function typeProvenance(change: ChangeDetail): 'suggested' | 'machineConfirmed' | null {
+  const fact = change.changeTypeFact;
+  if (fact?.confirmedOrigin === 'agent') return 'machineConfirmed';
+  return change.origin === 'agent' && (fact?.suggested ?? true) ? 'suggested' : null;
 }
 
 export function presentChangeDetail(change: ChangeDetail, t: Translate): PresentedPill[] {
@@ -112,6 +126,7 @@ export function ChangeScreen({ changeId }: { changeId: string }) {
   const pills = presentChangeDetail(change, t);
   const slot = (prefix: string) => pills.filter((pill) => pill.key.startsWith(prefix));
   const urgencySuggested = change.case === null || !change.case.urgencyConfirmed;
+  const provenance = typeProvenance(change);
 
   return (
     <div data-change={change.stableKey}>
@@ -141,7 +156,9 @@ export function ChangeScreen({ changeId }: { changeId: string }) {
               <dt className="text-meta text-muted">{t('watch.change.changeType')}</dt>
               <dd className="m-0 flex flex-wrap items-center gap-1.5">
                 <PillRow pills={slot('type:')} />
-                {change.origin === 'agent' ? <span className="text-meta text-muted">{t('watch.change.suggested')}</span> : null}
+                {provenance === null ? null : (
+                  <span className="text-meta text-muted">{t(provenance === 'suggested' ? 'watch.change.suggested' : 'watch.change.machineConfirmed')}</span>
+                )}
               </dd>
               <dt className="text-meta text-muted">{t('watch.change.urgency')}</dt>
               <dd className="m-0 flex flex-wrap items-center gap-1.5">
