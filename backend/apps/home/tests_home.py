@@ -59,19 +59,19 @@ LAST_WEEK = datetime.datetime(2026, 9, 22, 9, 0, tzinfo=datetime.UTC)
 THIS_QUARTER = D(2026, 10, 15)
 NEXT_QUARTER = D(2027, 1, 20)
 
-# Sixteen queries on this file's fixture, measured 2026-09-21 and pinned so an N+1 shows up
+# Seventeen queries on this file's fixture, measured 2026-09-21 and pinned so an N+1 shows up
 # as a number (playbook 10). What the test below demands is not the number itself but that
 # it does not move between one case and thirty, which is why it asks at both sizes:
 #   the roadmap's first items and its count (5): the page of cases with their change and
 #     urgency, the urgency rows and their labels, the confirmed obligation links, and the
 #     count over the whole roadmap. A sixth — those obligations' titles — is not sent, because
 #     this bank has no confirmed link and a query whose `IN` clause is empty never executes.
-#   the lead (9): the week's cases ordered by urgency (1), then the feed's own row for the one
-#     change it chose (8) — the change with this bank's case joined, its classification in
-#     three, the urgency rows and their labels, the change type's labels and this bank's
-#     obligation-link decisions.
+#   the lead (10): the week's cases ordered by urgency (1), then the feed's own row for the one
+#     change it chose (9) — the change with this bank's case joined, its classification in
+#     three, the urgency rows and their labels, the change type's labels, this bank's
+#     obligation-link decisions and the jurisdiction terms its authority reaches (FP-04).
 #   source health (2): every source with the last line of its log, and those sources' labels.
-HOME_QUERIES = 16
+HOME_QUERIES = 17
 
 
 def a_change(

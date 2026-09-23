@@ -1905,6 +1905,21 @@ class WatchChangeRow(LibraryResponse):
         ),
         examples=[True],
     )
+    market: LibraryRef | None = Field(
+        description=(
+            "The market this bank watches that the change comes from, as `{key, kind, label}` "
+            "of its term in the `jurisdiction` dimension of the taxonomy vocabulary (`kind` is "
+            "always null; `GET /taxonomy/terms` lists the terms, each mirroring a row of the "
+            "jurisdiction list a platform admin may extend, so match on the key), or null. Set "
+            "only where "
+            "watching is what adds the row: the change is outside the footprint, matches it "
+            "on every dimension but jurisdiction, and its authority's jurisdiction reaches a "
+            "market the bank watches. A change takes its jurisdiction from its authority, and "
+            "one with no authority never has a market. Shown as text, never as a pill, and it "
+            "sets no urgency and opens no triage (FP-04)."
+        ),
+        examples=[{"key": "dk", "kind": None, "label": "Denmark"}],
+    )
     first_seen_at: datetime.datetime = Field(
         description=(
             "When bleqq first saw the reform, as an RFC 3339 timestamp in UTC "
@@ -2101,8 +2116,11 @@ class WatchChangeQuery(PageQuery, CamelSchema):
             "Which changes to show against the bank's footprint, a fixed kind and a single "
             "value (INPUT_DELTAS §7 replaces the designed `inFootprint` pair): `in` (the "
             "default — only what matches the footprint), `all` (everything the library holds) "
-            "or `watched` (everything from a market this bank watches, whether or not the rest "
-            "of the scope matches, FP-04). Sending the designed `inFootprint` answers 422."
+            "or `watched` (only what watching adds: the changes outside the footprint that "
+            "match it on every dimension but jurisdiction and whose authority reaches a market "
+            "this bank watches, each with its `market`, FP-04). A change takes its jurisdiction "
+            "from its authority; one with no authority is never restricted by jurisdiction. "
+            "Sending the designed `inFootprint` answers 422."
         ),
         examples=["in"],
     )

@@ -64,8 +64,9 @@ OTHER_WEEK = D(2026, 9, 7)
 # its restricting dimensions (2); the count and the page, the page carrying the reader's own
 # case in the same left join (2); the page's classification links (1); the urgency rows the
 # page and the cases name (1); one label query each for change types, urgencies, flags and
-# terms (4); the banks' own decisions about the suggested links (1).
-FEED_QUERIES = 2 + 6 + 2 + 2 + 2 + 1 + 1 + 4 + 1
+# terms (4); the banks' own decisions about the suggested links (1); the jurisdiction terms
+# the page's authorities reach (1, FP-04).
+FEED_QUERIES = 2 + 6 + 2 + 2 + 2 + 1 + 1 + 4 + 1 + 1
 
 # Queries per console read, measured the same way. The savepoint pair (2); the session of a
 # platform person (the identity flag on, the session row, the flag off, the platform roles,
