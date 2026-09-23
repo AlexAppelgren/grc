@@ -552,12 +552,19 @@ def row(proposal: Proposal) -> ProposalRow:
 # Deciding
 # ---------------------------------------------------------------------------------------
 def _decidable(proposal: Proposal, reviewer: Reviewer) -> None:
-    """Four eyes, checked here so the API answers before the database does (AC-PRO2); the
+    """Lock the row, then check it under the lock (PRO-02). Two decisions on one proposal
+    queue on the lock and the second reads what the first committed: 409
+    `invalid_transition`, never a stale "open" that lets a rejection land on top of an
+    applied approval or a proposal apply twice (apps/proposals/tests_decide.py).
+
+    Four eyes, checked here so the API answers before the database does (AC-PRO2); the
     widened `proposal_four_eyes` constraint is the same rule and answers on its own if this
     is ever bypassed. A repeated user, a repeated key or a repeated agent definition is the
     same principal twice by construction, whichever pair of columns it shows up on; a
     reviewing key that names no agent is refused too, so an unbound platform key can never
-    stand in for independence (PRO-S13, PRO-S14, D-62, ADR 0054)."""
+    stand in for independence (PRO-S13, PRO-S14, D-62, ADR 0054). The API's gate refuses
+    that key first, with `agent_not_bound`; this is the same rule for any other caller."""
+    proposal.refresh_from_db(from_queryset=Proposal.objects.select_for_update())
     if proposal.status != ProposalStatus.OPEN.value:
         raise ValidationError("This proposal has already been decided.", code="invalid_transition")
     if reviewer.api_key_id is not None and reviewer.agent_id is None:
