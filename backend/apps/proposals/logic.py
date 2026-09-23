@@ -510,6 +510,9 @@ def filed_by(reviewer: Reviewer) -> Q:
     return mine & Q(proposed_in_tenant=False)
 
 
+QUEUE_ORDERS = {"oldest": ("created_at", "id"), "newest": ("-created_at", "-id")}
+
+
 def queue(
     *,
     reviewer: Reviewer,
@@ -518,11 +521,17 @@ def queue(
     target_list: str | None = None,
     origin: str | None = None,
     not_mine: bool = False,
+    order: str | None = None,
 ) -> Any:
     """The console review queue, read by a person or by an agent's key alike (PRO-S13, D-62),
     with the people and agents each row names joined in, so a page costs the same whatever
     it holds. `origin` keeps an agent's proposals or a person's; `not_mine` drops the ones
-    `reviewer` filed (`filed_by`)."""
+    `reviewer` filed (`filed_by`). `order` is `oldest` (the default, `filtered`'s own order)
+    or `newest`, for the decided tabs; the id breaks a tie either way. It orders this answer
+    only, so a bank's own list stays oldest first."""
+    order = order or "oldest"
+    if order not in QUEUE_ORDERS:
+        raise ValidationError(f"{order!r} is not an order. Valid values: {', '.join(QUEUE_ORDERS)}.", code="unknown_key")
     queryset = filtered(Proposal.objects.all(), status=status, kind=kind, target_list=target_list)
     queryset = queryset.select_related("proposed_by_agent", "reviewed_by_agent", "corrected_by")
     origin = validated_origin(origin)
@@ -530,7 +539,7 @@ def queue(
         queryset = queryset.filter(origin=origin)
     if not_mine:
         queryset = queryset.exclude(filed_by(reviewer))
-    return queryset
+    return queryset.order_by(*QUEUE_ORDERS[order])
 
 
 def by_id(proposal_id: uuid.UUID) -> Proposal:
