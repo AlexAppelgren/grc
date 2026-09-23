@@ -26,7 +26,7 @@ import uuid
 from typing import Any, ClassVar
 from unittest import skip
 
-from django.db import connection
+from django.db import DatabaseError, connection, transaction
 from django.test import override_settings
 
 from apps.identity.models import Invitation, TenantRole
@@ -435,13 +435,9 @@ class GovernanceScenarioTests(ScenarioTestCase):
         """AUD-S9
 
         An agent's approval is in the audit trail with the agent named (AUD-01, AUD-02).
-
-        The model call behind an agent's own decision is chunk 5's pipeline (AGT-01):
-        nothing here calls a model, so the AI output log gets nothing to carry, and this
-        scenario is proven for the parts D-62 actually builds: the audit row, the null
-        assertion, and append-only.
         """
         from apps.agents import testing as agents_testing
+        from apps.governance.models import AiGeneration
         from apps.library import testing as build
         from apps.shared.audit import Actor
         from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
@@ -478,11 +474,21 @@ class GovernanceScenarioTests(ScenarioTestCase):
         # for the rest of this connection's transaction; a platform key is written and read
         # with no tenant activated (H15).
         tenancy.clear_tenant()
+        # The agent corrects the wording on the way through and approves, sending the model
+        # call behind its decision and the open run of its own key it was made in (D-80).
+        corrected = "The duty as the source now reads it, from the day the decision names."
+        sent = agents_testing.decision(reviewer_key)
         decision = self._post(
-            f"/proposals/{approved.json()['id']}/approve", {"note": "Confirmed."}, {"HTTP_X_API_KEY": reviewer_key.plain_key}
+            f"/proposals/{approved.json()['id']}/approve",
+            {"note": "Confirmed.", "payloadOverrides": {"summaries": {"en": corrected}}, **sent},
+            {"HTTP_X_API_KEY": reviewer_key.plain_key},
         )
         self.assertEqual(decision.status_code, 200, decision.content)
         self.assertEqual(sorted(obligation.versions.values_list("version_number", flat=True)), [1, 2])
+        self.assertEqual(decision.json()["correctedByAgent"]["key"], reviewer_key.agent.key, "the correction is the agent's")
+        self.assertIsNone(decision.json()["correctedBy"], "no person corrected it")
+        applied = obligation.versions.get(version_number=2).summaries.get(language_id="en")
+        self.assertEqual(applied.text, corrected)
 
         event = self._one("proposal.approved", uuid.UUID(approved.json()["id"]))
         self.assertEqual(event.actor_type, "agent")
@@ -492,10 +498,25 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertIn(f"v{reviewer_key.agent.current_version}", event.actor_label)
         self.assertEqual(event.after["reviewingApiKeyPrefix"], reviewer_key.row.key_prefix)
         self.assertNotIn(str(reviewer_key.id), event.actor_label)
+        self.assertTrue(event.after["corrected"], "the correction is recorded with the decision")
+        self.assertEqual(event.after["agentRunId"], sent["agentRunId"], "and so is the run it was made in")
         # No step-up assertion: a key cannot step up.
         self.assertIsNone(event.step_up_assertion_id)
 
-        # A rejection by that agent is recorded the same way, with its reason.
+        # The model call behind the decision is in the AI output log: the agent's own report,
+        # with its citations, about this proposal, in that run, and still a draft, because
+        # no person has confirmed what a machine decided.
+        logged = AiGeneration.objects.get(subject_id=approved.json()["id"])
+        self.assertEqual(
+            (logged.purpose, logged.subject_type, str(logged.agent_run_id), logged.model_metadata_reported_by_agent),
+            ("agent_review", "proposal", sent["agentRunId"], True),
+        )
+        self.assertEqual(logged.citations, agents_testing.DECISION["citations"])
+        self.assertEqual((logged.status, logged.reviewed_by_id, logged.reviewed_at), ("draft", None, None))
+        self.assertEqual((logged.model, logged.model_version), (agents_testing.DECISION["model"], agents_testing.DECISION["modelVersion"]))
+
+        # A rejection by that agent is recorded the same way, with its reason. An agent may
+        # reject a vocabulary proposal, though only a person may approve one (D-79).
         second = self._post(
             "/proposals",
             {"kind": "vocabulary_create", "title": "Add the flag Sanctioned", "payload": {"list": "flag", "key": "sanctioned", "labels": {"en": "Sanctioned"}}},
@@ -505,17 +526,27 @@ class GovernanceScenarioTests(ScenarioTestCase):
         tenancy.clear_tenant()  # the create request re-activated the tenant; see above (H15)
         rejected = self._post(
             f"/proposals/{second.json()['id']}/reject",
-            {"rejectionCode": "duplicate", "note": "Already exists."},
+            {"rejectionCode": "duplicate", "note": "Already exists.", **sent},
             {"HTTP_X_API_KEY": reviewer_key.plain_key},
         )
         self.assertEqual(rejected.status_code, 200, rejected.content)
         reject_event = self._one("proposal.rejected", uuid.UUID(second.json()["id"]))
         self.assertEqual(reject_event.actor_type, "agent")
         self.assertEqual(reject_event.after["rejectionCode"], "duplicate")
+        self.assertEqual(reject_event.after["agentRunId"], sent["agentRunId"])
         self.assertIsNone(reject_event.step_up_assertion_id)
         self.assertIn(reviewer_key.agent.key, reject_event.actor_label)
+        rejection_logged = AiGeneration.objects.get(subject_id=second.json()["id"])
+        self.assertEqual((rejection_logged.purpose, str(rejection_logged.agent_run_id)), ("agent_review", sent["agentRunId"]))
 
-        # Append-only: the decision cannot be edited afterwards.
+        # Append-only: the decision cannot be edited afterwards, through the model or past it
+        # in raw SQL, which the table's trigger refuses.
+        written = event.summary
         with self.assertRaisesMessage(AppendOnlyRefused, "is append-only"):
             event.summary = "edited"
             event.save(update_fields=["summary"])
+        with self.assertRaises(DatabaseError) as refused:
+            with transaction.atomic(), connection.cursor() as cursor:
+                cursor.execute("UPDATE audit_event SET summary = 'edited' WHERE id = %s", [str(event.id)])
+        self.assertIn("append-only", str(refused.exception))
+        self.assertEqual(self._one("proposal.approved", uuid.UUID(approved.json()["id"])).summary, written)
