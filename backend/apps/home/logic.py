@@ -31,7 +31,6 @@ to see most of it.
 from __future__ import annotations
 
 import datetime
-from typing import NoReturn
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -41,18 +40,11 @@ from apps.cases.models import ChangeCase
 from apps.home import roadmap
 from apps.home.schemas import Home, HomeSourceHealth
 from apps.library.reading import today_for
-from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.watch import reading as watch_reads
 from apps.watch import sources as watch_sources
 from apps.watch.models import CheckStatus
 from apps.watch.schemas import WatchChangeRow
-
-
-def not_built(detail: str) -> NoReturn:
-    """The one 501 the home app answers while a route is declared ahead of its logic. RFC
-    9457 like every other refusal, with `not_built` as the code a caller branches on."""
-    raise ProblemError(status=501, code="not_built", detail=detail)
 
 
 # ---------------------------------------------------------------------------------------

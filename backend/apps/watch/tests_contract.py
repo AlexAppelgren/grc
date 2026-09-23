@@ -190,6 +190,12 @@ class WatchRouteGates(TestCase):
             ("createChange", "post", "/api/v1/changes", {k: v for k, v in CHANGE_BODY.items() if k != "title"}),
             ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "sourceUrl": "not a url"}),
             ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "tone": "negative"}),
+            # A stable key is a slug the column can hold: an agent reading untrusted pages
+            # must not carry a line break into every calendar that lists the change.
+            ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "stableKey": "fi-2026-14\r\nATTACH:https://evil.example/"}),
+            ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "stableKey": "fi-2026-14\n"}),
+            ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "stableKey": "fi-2026-14,a;b"}),
+            ("createChange", "post", "/api/v1/changes", {**CHANGE_BODY, "stableKey": "k" * 121}),
             ("updateChange", "patch", f"/api/v1/changes/{CHANGE}", {"status": "retired"}),
             ("addChangeEvent", "post", f"/api/v1/changes/{CHANGE}/events", {"eventDate": "2026-11-01"}),
             ("addChangeEvent", "post", f"/api/v1/changes/{CHANGE}/events", {**EVENT_BODY, "datePrecision": "decade"}),

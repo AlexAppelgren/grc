@@ -609,10 +609,15 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
 # anyone noticing; and a subscription nobody has fetched for a month is a calendar that was
 # removed or a device that was replaced, so it expires rather than working forever. Both
 # are settings because a bank's own guidance may be stricter and neither number is a rule.
-# `apps/home/calendar.py` reads them when the feed itself is built.
+# `apps/home/feed.py` reads them when a subscription is made, listed and fetched.
 # ---------------------------------------------------------------------------------------
 CALENDAR_FEEDS_PER_USER = env_int("CALENDAR_FEEDS_PER_USER", 5)
 CALENDAR_FEED_IDLE_DAYS = env_int("CALENDAR_FEED_IDLE_DAYS", 30)
+# How many stopped subscriptions a person's list shows beside the ones that work, most
+# recently stopped first. Enough to show a whole set of addresses just replaced; the list
+# stays short however many a person has replaced over the years, which is what lets it go
+# unpaged (the live ones are capped above).
+CALENDAR_FEED_REVOKED_SHOWN = env_int("CALENDAR_FEED_REVOKED_SHOWN", 5)
 # How often one address may be fetched. A calendar client polls every few hours, so this
 # is generous for every real client and still bounds what someone who found an address
 # can pull from it. It is per token, so a flood on one address leaves the others answering.

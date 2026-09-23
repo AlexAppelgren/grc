@@ -10,16 +10,20 @@ holds at most `CALENDAR_FEEDS_PER_USER` addresses that work; minting one takes a
 sign-in or a step-up (the route's own gate); an unknown, malformed, revoked or expired token
 all answer one 404; and every fetch re-checks that the owner is still a member who still
 holds `roadmap.read` and has not been enrolled again, revoking the subscription then and
-there when one of those has gone. No token, prefix or secret reaches a log line, an audit
-row or an error body: the plaintext exists in `create_feed()` and in its answer, and nowhere
-else at all.
+there when one of those has gone. One nobody has fetched for `CALENDAR_FEED_IDLE_DAYS`, or
+one made before its owner was enrolled again, is stopped wherever it is next read — a
+fetch, its owner's list or their next subscribe — so it is never shown as working and never
+counted against the cap. A row is stopped once: whoever finds it second leaves it as it is.
+No token, prefix or secret reaches a log line, an audit row or an error body: the plaintext
+exists in `create_feed()` and in its answer, and nowhere else at all.
 
 **What the document says is public.** The events are *selected* by this bank's roadmap —
-`roadmap.roadmap_items()`, the one roadmap query there is, so the feed and the roadmap page
-can never disagree — and what each event says comes from library columns alone: the date,
-what the date is, the reform's title, who published it and a link that needs signing in.
-Never a "So what?", a case, an owner, an urgency, an internal deadline or the bank's name,
-because a calendar entry travels to devices outside the bank's control (AC-TEN1).
+`roadmap.calendar_items()`, the roadmap's own query narrowed to the regulatory dates stated
+to the day, so a calendar never shows a date the roadmap page does not — and what each event
+says comes from library columns alone: the change's stable key as its UID, the date, what
+the date is, the reform's title, who published it and a link that needs signing in. Never a
+"So what?", a case, an owner, an urgency, an internal deadline or the bank's name, because a
+calendar entry travels to devices outside the bank's control (AC-TEN1).
 
 **Why this is not in `apps/home/calendar.py`,** where `GET /upcoming` answers the public
 half of HOM-04: that module reads library records and writes nothing, this one writes a
@@ -38,19 +42,15 @@ from urllib.parse import urlencode, urlsplit
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 
 from apps.home import roadmap
 from apps.home.models import TOKEN_PREFIX_LENGTH, CalendarFeed
-from apps.home.schemas import (
-    HomeCalendarFeed,
-    HomeCalendarFeedCreated,
-    HomeRoadmapItem,
-    HomeRoadmapQuery,
-)
+from apps.home.schemas import HomeCalendarFeed, HomeCalendarFeedCreated, HomeRoadmapItem
 from apps.identity import rate_limit, roles_logic, tokens
-from apps.identity.models import LoginEvent, LoginEventKind, LoginMethod, Membership, User
+from apps.identity.models import LoginEventKind, LoginMethod, Membership, User, WebAuthnCredential
 from apps.identity.security_log import log_event
 from apps.shared import permissions as perms
 from apps.shared import tenancy
@@ -126,12 +126,19 @@ def list_feeds(tenant: Tenant, user: User) -> list[HomeCalendarFeed]:
     The caller's own and nobody else's by the query itself, not by a filter afterwards, so
     another member's row cannot appear however this is called. A revoked subscription stays
     in the list with the date it stopped, because a person who pasted an address somewhere
-    needs to see that it no longer works.
+    needs to see that it no longer works — the most recent `CALENDAR_FEED_REVOKED_SHOWN` of
+    them, so the list stays short however many addresses a person has replaced over the
+    years. What still works is capped already, so the list is bounded by design and needs
+    no paging.
+
+    One gone idle, or made before its owner was enrolled again, is stopped here first, so
+    the list never shows as working an address that answers 404: the route already demands
+    a member holding `roadmap.read`, which are the fetch's other two rules.
     """
-    rows = CalendarFeed.objects.filter(
-        tenant=tenant,
-        user=user,
-    )
+    _live_feeds(tenant, user, timezone.now())
+    mine = CalendarFeed.objects.filter(tenant=tenant, user=user)
+    stopped = mine.filter(revoked_at__isnull=False).order_by("-revoked_at", "id").values("pk")
+    rows = mine.filter(Q(revoked_at__isnull=True) | Q(pk__in=stopped[: settings.CALENDAR_FEED_REVOKED_SHOWN]))
     return [_feed_out(feed) for feed in rows]
 
 
@@ -145,17 +152,22 @@ def create_feed(
     person holds at most `CALENDAR_FEEDS_PER_USER` subscriptions that still work, so a
     stolen session cannot quietly leave a drawer of addresses behind, and revoking one
     makes room. A revoked subscription is not counted, because it works for nobody — which
-    is what makes "revoke one and subscribe again" true rather than nearly true.
+    is what makes "revoke one and subscribe again" true rather than nearly true — and nor is
+    one gone idle or made before the person was enrolled again, which is stopped here first
+    for the same reason: somebody re-enrolled because their devices were lost subscribes
+    again straight away.
+
+    Two calls at once take turns. The caller's membership row is locked before anything is
+    counted: it exists for every caller, where their live rows may be none, and a count
+    over live rows would never see the row a concurrent call is inserting, so both could
+    count four and both mint a fifth.
 
     The audit row says who subscribed and when. It carries no part of the address: the
     plaintext exists in this function and in the answer, and nowhere else at all.
     """
-    live = CalendarFeed.objects.filter(
-        tenant=tenant,
-        user=user,
-        revoked_at__isnull=True,
-    ).count()
-    if live >= settings.CALENDAR_FEEDS_PER_USER:
+    # Read for its lock alone; a second call waits here until the first has committed.
+    Membership.objects.select_for_update().filter(tenant=tenant, user=user).first()  # ordering: unique (tenant, user), at most one row
+    if len(_live_feeds(tenant, user, timezone.now())) >= settings.CALENDAR_FEEDS_PER_USER:
         raise ValidationError(
             f"You already have {settings.CALENDAR_FEEDS_PER_USER} calendar subscriptions. "
             "Stop one you no longer use and then subscribe again.",
@@ -185,7 +197,8 @@ def revoke_feed(*, tenant: Tenant, user: User, actor: Actor, feed_id: uuid.UUID)
     Another person's subscription and one that never existed both answer `not_found`, so no
     id can be probed for what somebody else holds. Revoking one that is already revoked
     answers the same way and is audited like any other call, because a retry has to be safe
-    and an unaudited 2xx is not a thing this product does (AC-AUD1).
+    and an unaudited 2xx is not a thing this product does (AC-AUD1). Its audit row then
+    says the row was already stopped, and when, rather than that this call stopped it.
     """
     feed = CalendarFeed.objects.filter(
         pk=feed_id,
@@ -194,10 +207,8 @@ def revoke_feed(*, tenant: Tenant, user: User, actor: Actor, feed_id: uuid.UUID)
     ).first()  # ordering: pk lookup inside one owner, at most one row
     if feed is None:
         raise ValidationError("Not found.", code="not_found")
-    before = feed.revoked_at
-    if before is None:
-        feed.revoked_at = timezone.now()
-        feed.save(update_fields=["revoked_at"])
+    stopped = _stop(feed, timezone.now())
+    stamp = feed.revoked_at.isoformat() if feed.revoked_at is not None else None
     record(
         action="calendar_feed.revoked",
         actor=actor,
@@ -206,8 +217,8 @@ def revoke_feed(*, tenant: Tenant, user: User, actor: Actor, feed_id: uuid.UUID)
         subject_title=FEED_SUBJECT,
         summary="Stopped a calendar subscription.",
         tenant_id=tenant.id,
-        before={"revokedAt": before.isoformat() if before is not None else None},
-        after={"revokedAt": feed.revoked_at.isoformat() if feed.revoked_at is not None else None},
+        before={"revokedAt": None if stopped else stamp},
+        after={"revokedAt": stamp},
     )
 
 
@@ -228,10 +239,11 @@ def calendar_ics(request: HttpRequest, token: str) -> HttpResponse:
        is found; `calendar_feed` is the fifth table of that clause.
     2. **Still granted, on this request.** A subscription whose owner has left the bank,
        lost `roadmap.read` or been enrolled again stops working the next time it is
-       fetched, and one nobody has fetched for `CALENDAR_FEED_IDLE_DAYS` days expires. It
-       is checked here rather than swept nightly, so the gap between losing access and the
-       address going dead is one fetch and not one night. Each of those revokes the row and
-       writes an audit event with a system actor, in this request's transaction.
+       fetched, and one nobody has fetched for `CALENDAR_FEED_IDLE_DAYS` days expires
+       (its owner's list and next subscribe find that one too). It is checked here rather
+       than swept nightly, so the gap between losing access and the address going dead is
+       one fetch and not one night. Each of those revokes the row and writes an audit
+       event with a system actor, in this request's transaction.
     3. **The same 404 for all of it.** Unknown, malformed, revoked, expired and revoked a
        moment ago by step 2 all leave through `_no_such_feed()`.
 
@@ -271,20 +283,48 @@ def calendar_ics(request: HttpRequest, token: str) -> HttpResponse:
     return response
 
 
+def _live_feeds(tenant: Tenant, user: User, now: datetime.datetime) -> list[CalendarFeed]:
+    """The caller's subscriptions that still work, after stopping each one gone idle or made
+    before the caller was enrolled again, the way a fetch would stop it (ADR 0045). Where a
+    person looks — their list, their next subscribe — is where such an address is found, so
+    it is ended there rather than shown as working or counted against the cap until some
+    calendar client happens to ask. The person's passkeys are read once for all their rows."""
+    passkeys = _passkeys(user.id)
+    live = []
+    for feed in CalendarFeed.objects.filter(tenant=tenant, user=user, revoked_at__isnull=True):
+        if _idle(feed, now):
+            _revoke_automatically(feed, now, _idle_summary())
+        elif _enrolled_again(feed, passkeys):
+            _revoke_automatically(feed, now, ENROLLED_AGAIN)
+        else:
+            live.append(feed)
+    return live
+
+
+def _idle(feed: CalendarFeed, now: datetime.datetime) -> bool:
+    """Nobody has fetched it for `CALENDAR_FEED_IDLE_DAYS` days: a calendar that was removed
+    or a device that was replaced, never one in use, because every fetch moves the stamp."""
+    idle_since = feed.last_used_at or feed.created_at
+    return now - idle_since > datetime.timedelta(days=settings.CALENDAR_FEED_IDLE_DAYS)
+
+
+ENROLLED_AGAIN = "Calendar subscription stopped: the person who made it was enrolled again."
+
+
+def _idle_summary() -> str:
+    return f"Calendar subscription stopped: nobody fetched it for {settings.CALENDAR_FEED_IDLE_DAYS} days."
+
+
 def _subscription_ended(feed: CalendarFeed, now: datetime.datetime) -> str | None:
     """Why this subscription has to stop working, as the sentence its audit row carries, or
     None while it still holds (D-52, ADR 0045).
 
-    Four reasons, each read on the request rather than swept for. The three that read the
+    Four reasons, each read on the request rather than swept for. The two that read the
     bank's own rows run with the feed's tenant activated, so they see that bank and no
-    other.
+    other; re-enrolment is read from the person's passkeys, which belong to no bank.
     """
-    idle_since = feed.last_used_at or feed.created_at
-    if now - idle_since > datetime.timedelta(days=settings.CALENDAR_FEED_IDLE_DAYS):
-        return (
-            "Calendar subscription stopped: nobody fetched it for "
-            f"{settings.CALENDAR_FEED_IDLE_DAYS} days."
-        )
+    if _idle(feed, now):
+        return _idle_summary()
     membership = Membership.objects.filter(
         tenant_id=feed.tenant_id,
         user_id=feed.user_id,
@@ -294,23 +334,63 @@ def _subscription_ended(feed: CalendarFeed, now: datetime.datetime) -> str | Non
         return "Calendar subscription stopped: the person who made it is no longer a member."
     if perms.ROADMAP_READ not in roles_logic.permissions_of(membership.roles.all()):
         return "Calendar subscription stopped: the person who made it lost access to the roadmap."
-    reenrolled = LoginEvent.objects.filter(
-        tenant_id=feed.tenant_id,
-        user_id=feed.user_id,
-        event=LoginEventKind.REENROLMENT_ISSUED.value,
-        occurred_at__gt=feed.created_at,
-    ).exists()
-    if reenrolled:
-        return "Calendar subscription stopped: the person who made it was enrolled again."
+    if _enrolled_again(feed, _passkeys(feed.user_id)):
+        return ENROLLED_AGAIN
     return None
 
 
+def _passkeys(user_id: uuid.UUID) -> list[tuple[datetime.datetime, datetime.datetime | None]]:
+    """When each of a person's passkeys, retired ones included, was made and retired."""
+    return list(WebAuthnCredential.objects.filter(user_id=user_id).values_list("created_at", "retired_at"))
+
+
+def _enrolled_again(
+    feed: CalendarFeed, passkeys: list[tuple[datetime.datetime, datetime.datetime | None]]
+) -> bool:
+    """Whether the owner has been enrolled again since they subscribed (ID-05), read from
+    their passkeys, which are the person's and not a bank's.
+
+    Re-enrolment retires every passkey a person holds in one statement, in whichever bank an
+    admin issued it, and it is the only thing that can leave them with none: a person is
+    refused the removal of their last passkey, and `identity/passkey_logic.remove_passkey`
+    locks their passkeys before it counts them, so two removals at once cannot each leave
+    the other as the last. So a moment since the subscription at which no passkey was left
+    is a re-enrolment, and replacing one phone's passkey while keeping another is not; one
+    before the subscription is the person as they are now asking for it, and stops nothing.
+    The security log's `reenrolment_issued` row cannot serve: it is written in the issuing
+    bank, and row-level security hides it from every other bank the person belongs to,
+    whose subscriptions have to stop as well.
+    """
+    retirements = {retired for _, retired in passkeys if retired is not None and retired > feed.created_at}
+    return any(
+        all(created > moment or (retired is not None and retired <= moment) for created, retired in passkeys)
+        for moment in retirements
+    )
+
+
+def _stop(feed: CalendarFeed, now: datetime.datetime) -> bool:
+    """Stamp the row if it still works, and say whether this call is the one that stopped it.
+
+    Conditional in the statement itself, because two requests — two tabs on the account
+    page, a list while a client polls, a person's revoke and the server's — can each read
+    the row as working before either writes. The second one's update waits for the first,
+    finds the row stopped and changes nothing, so the date it stopped never moves (nothing
+    overwritten). `feed` then carries the stamp the row holds, whoever wrote it."""
+    stopped = CalendarFeed.objects.filter(pk=feed.pk, revoked_at__isnull=True).update(revoked_at=now) == 1
+    if stopped:
+        feed.revoked_at = now
+    else:
+        feed.refresh_from_db(fields=["revoked_at"])
+    return stopped
+
+
 def _revoke_automatically(feed: CalendarFeed, now: datetime.datetime, summary: str) -> None:
-    """Stamp the row and record who did it, in this request's transaction. The actor is the
+    """Stop the row and record who did it, in this request's transaction. The actor is the
     system, because nobody asked for it: the bank sees the row a person's revoke would
-    leave, with a summary naming the rule that ended it (ADR 0045)."""
-    feed.revoked_at = now
-    feed.save(update_fields=["revoked_at"])
+    leave, with a summary naming the rule that ended it (ADR 0045). A row somebody else
+    stopped a moment ago is left as it is and audited once, by whoever stopped it."""
+    if not _stop(feed, now):
+        return
     record(
         action="calendar_feed.revoked",
         actor=Actor.system(),
@@ -360,34 +440,39 @@ def _stamp_used(feed: CalendarFeed, now: datetime.datetime) -> None:
 def _ics_document(feed: CalendarFeed, now: datetime.datetime) -> str:
     """The owner's roadmap as iCalendar, from library columns only (ADR 0045, AC-TEN1).
 
-    What is *selected* is this bank's: `roadmap_items()` is the one roadmap query there is,
-    so the feed shows the dates the roadmap page shows and cannot drift from it. What each
-    event *says* is the library's: the date, what the date is, the reform's title, who
+    What is *selected* is this bank's: `calendar_items()` is the roadmap's own query, so
+    the feed shows no date the roadmap page does not and cannot drift from it — only the
+    regulatory ones, and only those stated to the day. What each event *says* is the
+    library's: the change's stable key, the date, what the date is, the reform's title, who
     published it, and a link that needs a sign-in. No "So what?", no case note, no owner,
     no urgency, no internal deadline and no bank name — a calendar entry travels to phones,
     watches and mail clients outside the bank's control, so no judgement of the bank's ever
     goes into one. `tests_feed.py` pins the properties emitted, so a field added to a
     roadmap item later cannot ride out through here.
     """
-    roadmap_page = roadmap.roadmap_items(feed.tenant, _language_order(feed), HomeRoadmapQuery())
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
         f"PRODID:-//bleqq//{settings.PRODUCT_NAME}//EN",
     ]
-    for item in roadmap_page.items:
-        lines.extend(_event(item, now))
+    for change_key, item in roadmap.calendar_items(feed.tenant, _language_order(feed)):
+        lines.extend(_event(change_key, item, now))
     lines.append("END:VCALENDAR")
     return "".join(f"{folded}\r\n" for line in lines for folded in _fold(line))
 
 
-def _event(item: HomeRoadmapItem, now: datetime.datetime) -> list[str]:
-    """One all-day event: five properties and not a sixth."""
+def _event(change_key: str, item: HomeRoadmapItem, now: datetime.datetime) -> list[str]:
+    """One all-day event: five properties and not a sixth. The UID is the change's stable
+    key, which never changes and names no bank, so a client updates the event when its date
+    moves rather than showing it twice, and nothing of the bank's own rows — not its case id
+    — leaves in it. An agent reading untrusted pages chooses the key, so it is escaped like
+    every other text value although the watch door accepts only a slug: a line break in it
+    would otherwise end the UID and begin a property of its own on every subscriber's phone."""
     summary = f"{item.label}: {item.title}" if item.label else item.title
     link = f"{settings.APP_BASE_URL.rstrip('/')}/watch/{item.change_id}"
     return [
         "BEGIN:VEVENT",
-        f"UID:{item.id.replace(':', '-')}@{_uid_domain()}",
+        f"UID:{_escape(change_key)}@{_uid_domain()}",
         f"DTSTAMP:{now.astimezone(datetime.UTC):%Y%m%dT%H%M%SZ}",
         f"DTSTART;VALUE=DATE:{item.date:%Y%m%d}",
         f"SUMMARY:{_escape(summary)}",

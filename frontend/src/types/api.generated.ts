@@ -789,16 +789,23 @@ export interface paths {
          *     last fetched and whether it still works. Call it for the account page where a person
          *     manages their own subscriptions.
          *
-         *     A read: it changes nothing and writes no audit row. A person's session holding
-         *     `roadmap.read`. The caller's own rows only — never another member's and never another
-         *     bank's — and the address is **not** in this answer: it is shown once when the subscription
-         *     is created and stored afterwards only as a lookup prefix and a hash, so a reader must not
-         *     expect to recover a lost address here. Revoking and creating a new one is the way back.
+         *     A read that changes nothing a person asked for. The one write it can make is the server's
+         *     own: a subscription nobody has fetched for `CALENDAR_FEED_IDLE_DAYS` days, or one made
+         *     before the caller was enrolled again, is stopped here, before it is listed, and recorded
+         *     as an audit event with a system actor, once however many reads find it at the same moment
+         *     — exactly what the next fetch of it would have done — so the list never shows as working
+         *     an address that answers 404. A person's session holding `roadmap.read`. The caller's own
+         *     rows only — never another member's and never another bank's — and the address is
+         *     **not** in this answer: it is shown once when the subscription is created and stored
+         *     afterwards only as a lookup prefix and a hash, so a reader must not expect to recover a
+         *     lost address here. Revoking and creating a new one is the way back.
          *
-         *     Revoked subscriptions stay in the list with the date they stopped, so a person can see
-         *     that an address they pasted somewhere no longer works, and the ones the server revoked
-         *     for them — after they lost `roadmap.read`, were enrolled again or let a subscription go
-         *     idle — read the same way as one they revoked themselves.
+         *     Every subscription that still works is listed, and beside them the most recently stopped
+         *     `CALENDAR_FEED_REVOKED_SHOWN` (five by default) with the date each stopped, so a person
+         *     can see that an address they pasted somewhere no longer works. The ones the server
+         *     revoked for them — after they lost `roadmap.read`, were enrolled again or let a
+         *     subscription go idle — read the same way as one they revoked themselves. Both halves are
+         *     bounded, so the list is never paged.
          *
          *     A person with no subscriptions gets a 200 with an empty array, never a 404. Errors:
          *     `permission_denied` without `roadmap.read`, `unauthenticated` without a session.
@@ -824,7 +831,11 @@ export interface paths {
          *
          *     A person keeps at most `CALENDAR_FEEDS_PER_USER` subscriptions at once, which is what a
          *     phone, a laptop and a work calendar need; asking for one past the cap is refused, and
-         *     revoking one makes room.
+         *     revoking one makes room. One nobody has fetched for `CALENDAR_FEED_IDLE_DAYS` days, or
+         *     one made before the caller was enrolled again, is stopped by the server first, with an
+         *     audit event of its own, and never counted, so a person enrolled again after losing their
+         *     devices can subscribe at once. Two calls at once take turns, so they cannot both take
+         *     the last place.
          *
          *     The address is returned **once**, in `url`, and never again: the server keeps only the
          *     lookup prefix and a SHA-256 of the secret, exactly as it does for an API key. Treat the
@@ -904,9 +915,13 @@ export interface paths {
          *     rather than the path because our own logs print the route and drop the query, while a
          *     hosting edge writes whole request lines (D-52).
          *
-         *     Each event carries the date, what the date is and the record's title, and nothing else. No
-         *     "So what?", no case note, no owner, no bank name: a calendar entry travels to devices and
-         *     mail clients outside the bank's control, so no judgement of the bank's ever goes into one.
+         *     The events are the roadmap's regulatory dates — the ones the outside world set, never the
+         *     bank's own deadlines — and only those the source stated to the day, because an all-day
+         *     event on a date published as a month or a quarter would state a day nobody published.
+         *     Each event carries the date, what the date is and the record's title, with the change's
+         *     stable key as its UID, and nothing else. No "So what?", no case note, no owner, no bank
+         *     name: a calendar entry travels to devices and mail clients outside the bank's control, so
+         *     no judgement of the bank's ever goes into one.
          *     Anyone holding the address can still see which regulatory changes the bank has open work
          *     on, which is what makes it worth revoking rather than passing on.
          *
@@ -12270,7 +12285,7 @@ export interface components {
             sourceUrl: string;
             /**
              * Stablekey
-             * @description The reform's permanent key, at most 200 characters, chosen by the agent and never changed afterwards (playbook 4.3). It is the merge key: posting a key the library already holds adds the new pages to that change and answers 200 with it, instead of creating a second row (AC-WAT1). Two reforms never share a key.
+             * @description The reform's permanent key, 1 to 120 characters of ASCII letters, digits, hyphens and underscores and nothing else, chosen by the agent and never changed afterwards (playbook 4.3). Any other character, a space or a line break included, is refused with `validation_error`, because the key travels as the event's identifier in every calendar that lists the change. It is the merge key: posting a key the library already holds adds the new pages to that change and answers 200 with it, instead of creating a second row (AC-WAT1). Two reforms never share a key.
              * @example chg-fi-2026-research-payments
              */
             stableKey: string;
@@ -14469,7 +14484,7 @@ export interface operations {
                      *     VERSION:2.0
                      *     PRODID:-//bleqq//Compliance Watch//EN
                      *     BEGIN:VEVENT
-                     *     UID:change_date-9d0b5a3c@bleqq.com
+                     *     UID:chg-fi-2026-research-payments@bleqq.com
                      *     DTSTART;VALUE=DATE:20261001
                      *     SUMMARY:In force: FI adopts amended rules on paying for investment research
                      *     END:VEVENT

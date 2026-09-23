@@ -1047,12 +1047,16 @@ class WatchChangeInput(WriteBody):
 
     stable_key: str = Field(
         min_length=1,
-        max_length=200,
+        max_length=120,
+        pattern=r"^[-a-zA-Z0-9_]+$",
         description=(
-            "The reform's permanent key, at most 200 characters, chosen by the agent and never "
-            "changed afterwards (playbook 4.3). It is the merge key: posting a key the library "
-            "already holds adds the new pages to that change and answers 200 with it, instead "
-            "of creating a second row (AC-WAT1). Two reforms never share a key."
+            "The reform's permanent key, 1 to 120 characters of ASCII letters, digits, hyphens "
+            "and underscores and nothing else, chosen by the agent and never changed afterwards "
+            "(playbook 4.3). Any other character, a space or a line break included, is refused "
+            "with `validation_error`, because the key travels as the event's identifier in "
+            "every calendar that lists the change. It is the merge key: posting a key the "
+            "library already holds adds the new pages to that change and answers 200 with it, "
+            "instead of creating a second row (AC-WAT1). Two reforms never share a key."
         ),
         examples=["chg-fi-2026-research-payments"],
     )
