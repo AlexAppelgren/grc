@@ -88,8 +88,9 @@ FP_S4_KEY_DATE = datetime.date(2026, 10, 15)
 URGENCY_READ_QUERIES = 10 + 1 + 2
 # - the footprint: the selected terms (1) and their labels (1), the dimensions with their
 #   term counts (1) and their labels (1), the pending request (1); the markets (FP-04),
-#   four more however many countries there are: the footprint read again for the operating
-#   check (1), the watch rows (1), the countries (1) and their labels (1).
+#   four more however many countries there are: the jurisdictions whose mirrored term is in
+#   the footprint, read through the term's link (1), the watch rows (1), the countries (1)
+#   and their labels (1).
 FOOTPRINT_READ_QUERIES = 10 + 1 + 5 + 4
 
 
@@ -1013,7 +1014,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         watched = self._post("/tenant/footprint/watching", {"jurisdiction": "no"}, admin)
         self.assertEqual(watched.status_code, 200, watched.content)
-        self.assertEqual(watched.json(), {"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "operating": False, "watching": True})
+        self.assertEqual(watched.json(), {"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "level": "watching"})
         self.activate(self.tenant)
         self.assertTrue(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction__key="no").exists())
         event = AuditEvent.objects.get(action="markets.watch_added")
@@ -1030,7 +1031,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         stopped = self._post("/tenant/footprint/watching/remove", {"jurisdiction": "no"}, admin)
         self.assertEqual(stopped.status_code, 200, stopped.content)
-        self.assertEqual(stopped.json()["watching"], False)
+        self.assertEqual(stopped.json()["level"], "not_followed")
         self.activate(self.tenant)
         self.assertFalse(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction__key="no").exists())
         self.assertTrue(AuditEvent.objects.filter(action="markets.watch_removed").exists())
@@ -1038,7 +1039,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         reader = sign_in(self.reader, tenant=self.tenant)
         seen = self._footprint(reader)
         self.assertIn("markets", seen)
-        self.assertIn("se", [m["jurisdiction"]["key"] for m in seen["markets"] if m["operating"]])
+        self.assertIn("se", [m["jurisdiction"]["key"] for m in seen["markets"] if m["level"] == "operating"])
         denied = self._post("/tenant/footprint/watching", {"jurisdiction": "no"}, reader)
         self.assertEqual(denied.status_code, 403)
         self.assertEqual(denied.json()["requiredPermission"], "footprint.request")
@@ -1053,36 +1054,34 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self._set_footprint(["regime:securities", "jurisdiction:se"])
         norway = Jurisdiction.objects.get(key="no")
         finland = Jurisdiction.objects.get(key="fi")
+        reader = sign_in(self.reader, tenant=self.tenant)
 
-        def _start_operating(key: str) -> dict[str, Any]:
+        def _level(key: str) -> str:
+            markets = self._footprint(reader)["markets"]
+            return next(market["level"] for market in markets if market["jurisdiction"]["key"] == key)
+
+        def _decide(adds: list[str], removes: list[str]) -> None:
             officer = sign_in(self.officer, tenant=self.tenant)
             request = self._post(
-                "/tenant/footprint/requests", {"adds": [{"dimension": "jurisdiction", "key": key}], "removes": []}, officer
+                "/tenant/footprint/requests",
+                {"adds": [{"dimension": "jurisdiction", "key": key} for key in adds], "removes": [{"dimension": "jurisdiction", "key": key} for key in removes]},
+                officer,
             ).json()
             approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
-            self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH=str(request["version"]))
-            return request
-
-        def _stop_operating(key: str) -> dict[str, Any]:
-            officer = sign_in(self.officer, tenant=self.tenant)
-            request = self._post(
-                "/tenant/footprint/requests", {"adds": [], "removes": [{"dimension": "jurisdiction", "key": key}]}, officer
-            ).json()
-            approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
-            self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH=str(request["version"]))
-            return request
+            approved = self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH=str(request["version"]))
+            self.assertEqual(approved.status_code, 200, approved.content)
 
         # Given a tenant operating in Sweden and watching Norway.
         self.activate(self.tenant)
         markets_logic.watch(tenant=self.tenant, actor=Actor.system("test"), key="no")
-        self.assertEqual(markets_logic.level_of(self.tenant.id, norway), markets_logic.WATCHING)
+        self.assertEqual((_level("se"), _level("no")), ("operating", "watching"))
         events_before = AuditEvent.objects.filter(action__in=["markets.watch_added", "markets.watch_removed"]).count()
 
         # When a request to operate in Norway is approved, then Norway reads as operating,
         # its watch row is untouched, and no watch event is written.
-        _start_operating("no")
+        _decide(["no"], [])
+        self.assertEqual(_level("no"), "operating")
         self.activate(self.tenant)
-        self.assertEqual(markets_logic.level_of(self.tenant.id, norway), markets_logic.OPERATING)
         self.assertTrue(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction=norway).exists())
         self.assertEqual(
             AuditEvent.objects.filter(action__in=["markets.watch_added", "markets.watch_removed"]).count(), events_before
@@ -1090,19 +1089,17 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         # When a request to stop operating in Norway is approved, then Norway reads as
         # watching again.
-        _stop_operating("no")
-        self.activate(self.tenant)
-        self.assertEqual(markets_logic.level_of(self.tenant.id, norway), markets_logic.WATCHING)
+        _decide([], ["no"])
+        self.assertEqual(_level("no"), "watching")
 
         # Given Finland was never watched, when a request to operate is approved and later
         # reversed, then Finland reads as not followed.
-        self.assertEqual(markets_logic.level_of(self.tenant.id, finland), markets_logic.NOT_FOLLOWED)
-        _start_operating("fi")
+        self.assertEqual(_level("fi"), "not_followed")
+        _decide(["fi"], [])
+        self.assertEqual(_level("fi"), "operating")
+        _decide([], ["fi"])
+        self.assertEqual(_level("fi"), "not_followed")
         self.activate(self.tenant)
-        self.assertEqual(markets_logic.level_of(self.tenant.id, finland), markets_logic.OPERATING)
-        _stop_operating("fi")
-        self.activate(self.tenant)
-        self.assertEqual(markets_logic.level_of(self.tenant.id, finland), markets_logic.NOT_FOLLOWED)
         self.assertFalse(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction=finland).exists())
 
     def test_fp_s12(self) -> None:
@@ -1301,7 +1298,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         seen = self._get("/tenant/footprint", b)
         self.assertEqual(seen.status_code, 200, seen.content)
         norway = next(market for market in seen.json()["markets"] if market["jurisdiction"]["key"] == "no")
-        self.assertEqual((norway["operating"], norway["watching"]), (False, False))
+        self.assertEqual(norway["level"], "not_followed")
         self.assertIsNone(seen.json()["pendingRequest"])
         for row_id in a_rows:
             self.assertNotIn(row_id, seen.content.decode())
