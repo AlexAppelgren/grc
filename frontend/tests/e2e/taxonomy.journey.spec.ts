@@ -667,7 +667,7 @@ test.describe('regulatory scope, markets and standards', () => {
     // pending: FP-S13 (FP-04); needs the chunk 3 inventory
   });
 
-  test("FP-S15: A change's jurisdiction comes from its authority, and the feed has the watched-market view", async ({ page }) => {
+  test("FP-S15: A change's jurisdiction comes from its authority, and the feed has the watched-market view", async ({ page, apiGuard }) => {
     // Tenant A operates in Sweden and watches Denmark, as seeded (backend/apps/shared/e2e_seed.py,
     // tax-watched-feed): the Danish authority's custody change is outside its scope by
     // jurisdiction alone, while the Swedish lead change is inside it. The journey reads
@@ -675,6 +675,7 @@ test.describe('regulatory scope, markets and standards', () => {
     const danish = page.locator(`[data-change="${WATCHED_MARKET_CHANGE}"]`);
     const swedish = page.locator(`[data-change="${IN_SCOPE_CHANGE}"]`);
     const scope = page.getByRole('group', { name: 'Scope' });
+    allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
     await page.goto('/watch');
     await expect(swedish).toBeVisible();
