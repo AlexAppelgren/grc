@@ -33,10 +33,15 @@ watch test named the table and the missing policy, and the enumeration named it 
 was proven to fail the same day by leaving the hand-written policies of watch 0001 in place:
 the read policy's name was not the shared one, so the policy census and the mixed-table
 write proof both named it.
+
+The problem-report pin was proven to fail 2026-09-23 by adding, in a scratch copy of library
+0009, a SELECT policy reading a review setting (the set of policies was named) and, alone, a
+BEFORE UPDATE trigger (the trigger was named).
 """
 
 from __future__ import annotations
 
+import re
 import uuid
 from contextlib import AbstractContextManager, nullcontext
 from datetime import timedelta
@@ -102,6 +107,10 @@ MIXED_TABLES = {
     "invitation_role": "tenant_id",
     "login_event": "tenant_id",
     "outbox_event": "tenant_id",
+    # A bank's "this looks wrong" (AUD-03, D-50). Every row carries the bank that filed it;
+    # the column stays nullable and the table mixed until Alex decides otherwise
+    # (docs/TODO_FOR_alex.md, problem reports). Its shape is pinned below: the split and
+    # nothing else, so no read window for bleqq can be added without failing a test.
     "problem_report": "tenant_id",
     # The derived search index (SRC-01, H7). Its zone column is always NULL in R1, so
     # `library_rows_visible` is what every bank reads a chunk through; the FOR ALL policy
@@ -329,6 +338,21 @@ class RowLevelSecurityGuard(TestCase):
             [],
             "Write rules that accept more than the session's own zone:\n  " + "\n  ".join(problems),
         )
+
+
+    def test_problem_report_carries_the_mixed_shape_and_nothing_else(self) -> None:
+        """AUD-03, D-50: a report is read and closed inside its own bank, so nothing may sit
+        on `problem_report` beyond the split every mixed table gets. A policy of its own, a
+        policy reading any setting but the tenant's (a review window, a platform flag) or a
+        trigger of its own would each open a way out of the bank, and each fails here."""
+        policies = self._policies("problem_report")
+        self.assertEqual(set(policies), {POLICY_NAME, LIBRARY_READ_POLICY}, "problem_report carries the mixed split only")
+        for name, (_, qual, with_check) in sorted(policies.items()):
+            settings_read = set(re.findall(r"current_setting\('([^']+)'", qual + with_check))
+            self.assertLessEqual(settings_read, {TENANT_SETTING}, f"{name} reads a setting beside the tenant's")
+        with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+            cursor.execute("SELECT tgname FROM pg_trigger WHERE tgrelid = 'problem_report'::regclass AND NOT tgisinternal")
+            self.assertEqual(cursor.fetchall(), [], "problem_report carries no trigger of its own")
 
 
 class RowLevelSecurityEnforcement(TransactionTestCase):

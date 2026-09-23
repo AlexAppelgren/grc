@@ -197,6 +197,17 @@ def obligation_headings(obligation_ids: Collection[uuid.UUID], order: list[str])
     return headings
 
 
+def instrument_headings(instrument_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, RecordHeading]:
+    """How to name each of these instruments, in one query: its short name as the title and
+    its official reference. An id the caller cannot see is simply absent."""
+    if not instrument_ids:
+        return {}
+    return {
+        row.id: RecordHeading(title=row.short_name, reference_label=row.official_ref, instrument_short_name=row.short_name)
+        for row in Instrument.objects.filter(id__in=instrument_ids)
+    }
+
+
 def obligation_scope_refs(obligation_id: uuid.UUID) -> list[str]:
     """One duty's own scope facets as `dimension:key`, in the order a reader sees them and
     the spelling a proposal's payload uses. The instrument's regime is deliberately not

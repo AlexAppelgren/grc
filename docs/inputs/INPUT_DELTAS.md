@@ -1132,3 +1132,36 @@ and the decision's audit row gains `agentRunId` beside `reviewingApiKeyPrefix`.
 `ProposalRejectBody` becomes a strict write body like the approve body: a field it does
 not name answers 422 rather than being dropped. The reject route keeps
 `{rejectionCode, note}` (section 7) and is documented to the API standard.
+
+## 15. A bank reads and closes its own problem reports (2026-09-23, problem-reports-backend)
+
+- `GET /problem-reports` (`listProblemReports`) serves a bank's own session only, under
+  `problems.report`, which every member holds and no platform role does. The designed
+  `x-roles` list `library_editor` and the designed read is the console's; since D-50 a
+  report stays inside the bank that filed it, so a platform session is refused 403 naming
+  `problems.report`. Reach inside the bank is `proposals.create`: its holder lists every
+  report of the bank, every other member lists the reports they filed (the
+  docs/TODO_FOR_alex.md default of item 3; no permission is added). Paging is `limit` and
+  `offset` with `total`, as on every list here, not the designed `cursor` and
+  `nextCursor`. Filters are `status`, `subjectType` and `subjectId`. A row carries
+  `description` (the reporter's words), `subjectTitle` and `subjectReference` (the record
+  named in the caller's language), `versionNumber` and `language` (what was on screen),
+  `reporter`, `closedBy` and `closedAt` as `{id, name}` and a timestamp, and
+  `resolutionNote`; the designed `reportedBy`, `reportedAt` and `resultingProposalId` are
+  `reporter`, `createdAt` and nothing, because no proposal ever links to a bank's report.
+- `PATCH /problem-reports/{}` is `closeProblemReport`, not the designed
+  `resolveProblemReport`, and its body is `{status, resolutionNote}` with no
+  `resultingProposalId`. The status is `answered`, `fixed` or `rejected`, the kinds chunk 3
+  wrote (`ReportStatus`); the designed `accepted` and a return to `open` do not exist. The
+  note is required. The reporter closes their own report and a `proposals.create` holder
+  any of the bank's; anyone else is 403 naming `proposals.create`, and a second close is
+  409 `already_closed`. It answers the closed report as a `listProblemReports` row. The
+  close records `problem_report.closed` with the states only, never the words, and no
+  step-up or second person is asked: it changes nothing outside the report.
+- An agent's key on either route answers 401 `unauthenticated`, as every session-only
+  route does, rather than the 403 AUD-S5's wording allows: a key is not a session, so it is
+  refused before any gate runs. Nothing about the key is revealed either way.
+- `problem_report` loses `resolved_by_proposal` and gains `resolution_note`, `closed_by`
+  and `closed_at` (library 0009), with a check constraint that a report is open with none
+  of the three or closed with all three and a note. `tenant_id` stays nullable and the
+  table stays mixed until Alex decides otherwise (docs/TODO_FOR_alex.md, item 3).
