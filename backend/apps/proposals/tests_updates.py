@@ -39,7 +39,7 @@ from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor, ActorType
 from apps.shared.tenancy import library_write
-from apps.shared.testing import ScenarioTestCase, sign_in
+from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, ScenarioTestCase, sign_in, stub_session, user_principal
 from apps.taxonomy import footprint_logic
 from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
@@ -241,12 +241,14 @@ class LibraryUpdates(ScenarioTestCase):
         self._apply_version(obligation)
         self.activate(self.tenant)
         membership = Membership.objects.get(tenant=self.tenant, user=self.reader)
-        membership.last_visit_at = timezone.now()
+        seen = timezone.now()
+        membership.last_visit_at = seen
         membership.save(update_fields=["last_visit_at"])
 
         body = self._read(self.reader, self.tenant)
         self.assertEqual(body["total"], 0, "everything applied before they marked it as seen is behind them")
-        self.assertEqual(body["since"][:10], timezone.now().date().isoformat())
+        # The bookmark's own day, not the clock's: read again at midnight UTC, "today" moves on.
+        self.assertEqual(body["since"][:10], seen.date().isoformat())
 
     @override_settings(LIBRARY_UPDATES_DEFAULT_DAYS=1)
     def test_a_reader_who_never_marked_it_as_seen_reads_the_window(self) -> None:
@@ -298,6 +300,12 @@ class LibraryUpdates(ScenarioTestCase):
         self.assertEqual(refused.status_code, 401, refused.content)
         # A platform session is in no organisation, so there is no footprint to read against.
         self.assertEqual(self.client.get(f"{V1}/library-updates", **sign_in(self.editor)).status_code, 403)
+        # A member of the bank whose roles leave out library.read is refused, and told which
+        # permission it wanted, rather than reading an empty list.
+        with stub_session(user_principal(permissions={perms.CASES_READ}, tenant_id=self.tenant.id)):
+            refused = self.client.get(f"{V1}/library-updates", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}")
+        self.assertEqual(refused.status_code, 403, refused.content)
+        self.assertEqual((refused.json()["code"], refused.json()["requiredPermission"]), ("permission_denied", perms.LIBRARY_READ))
 
     def test_the_list_costs_the_same_whatever_it_holds(self) -> None:
         self._apply_version(self._obligation("obl-advice-suitability", "service_type:advice"))

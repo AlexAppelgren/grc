@@ -56,6 +56,7 @@ from apps.shared.e2e_seed import (
     EXPECTED_PROBLEM_REPORT,
     EXPECTED_PROPOSALS,
     EXPECTED_TENANTS,
+    PRO_S7_OBLIGATION,
     RECHECK_OBLIGATION,
     SUGGESTED_LINK_OBLIGATION,
     SeedProposal,
@@ -639,3 +640,29 @@ class SeedIntegrityGuard(TestCase):
                 tenant = Tenant.objects.get(slug=slug)
                 tenancy.activate(tenant.id)
                 self.assertFalse(FootprintTerm.objects.filter(tenant=tenant, term__dimension__key__in=opt_in).exists())
+
+    # --- library-updates-frontend (PRO-S7) ---------------------------------------------
+    def test_the_obligation_pro_s7_approves_reaches_tenant_a_with_or_without_advice(self) -> None:
+        """PRO-S7 (PRO-03): the officer finds the approved change on "Library updates", which
+        lists only what reaches the bank's footprint. J-6 switches Advice off while other
+        journeys run, so the duty has to reach tenant A either way, and it has to be on
+        version 1 so the approval writes a clean version 2."""
+        seed_e2e()
+        self.assertEqual(next(expected.target for expected in EXPECTED_PROPOSALS if expected.journey == "PRO-S7"), PRO_S7_OBLIGATION)
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        footprint = footprint_of(tenant_a.id)
+        without = {dimension: set(keys) for dimension, keys in footprint.items()}
+        for ref in EXPECTED_PENDING_REQUEST.removes:
+            dimension, key = ref.split(":")
+            without[dimension].discard(key)
+        obligation = (
+            Obligation.objects.select_related("instrument__regime__dimension")
+            .prefetch_related("terms__dimension")
+            .get(stable_key=PRO_S7_OBLIGATION)
+        )
+        restricting = restricting_dimensions()
+        self.assertTrue(in_footprint(_scope(obligation), footprint, restricting=restricting))
+        self.assertTrue(in_footprint(_scope(obligation), without, restricting=restricting))
+        self.assertEqual(list(ObligationVersion.objects.filter(obligation=obligation).values_list("version_number", flat=True)), [1])
+    # --- end library-updates-frontend ------------------------------------------------------
