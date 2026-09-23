@@ -58,6 +58,7 @@ const research: ChangeRow = {
     ownerId: null,
     soWhatConfirmed: false,
     soWhatConfirmedAt: null,
+    soWhatConfirmedByName: null,
     soWhatText: 'Teams that pay for external research should confirm the criteria exist.',
     urgency: null,
     urgencyConfirmed: false,

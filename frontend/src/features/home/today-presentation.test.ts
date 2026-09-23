@@ -39,6 +39,7 @@ const row: ChangeRow = {
     ownerId: null,
     soWhatConfirmed: false,
     soWhatConfirmedAt: null,
+    soWhatConfirmedByName: null,
     soWhatText: 'Confirm the annual assessment criteria.',
     urgency: { key: 'act_now', kind: null, label: 'Act now' },
     urgencyConfirmed: true,

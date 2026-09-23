@@ -157,6 +157,7 @@ LINK_DECISION_EXAMPLE: JsonDict = {
     "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
     "decision": "accepted",
     "decidedAt": "2026-09-17T09:12:00Z",
+    "decidedByName": "Sara Lind",
 }
 CASE_EXAMPLE: JsonDict = {
     "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
@@ -168,6 +169,7 @@ CASE_EXAMPLE: JsonDict = {
     "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
     "soWhatConfirmed": False,
     "soWhatConfirmedAt": None,
+    "soWhatConfirmedByName": None,
     "obligationDecisions": [],
     "allowedTransitions": [],
 }
@@ -1724,6 +1726,15 @@ class WatchCaseObligationDecision(LibraryResponse):
         ),
         examples=["2026-09-17T09:12:00Z"],
     )
+    decided_by_name: str | None = Field(
+        description=(
+            "The display name of the person in this bank who decided, for the screen and the "
+            "case file, read in the same query as the decision. Null only for a decision the "
+            "system made, with no person behind it. A name is the only personal data this read "
+            "carries about the decision (playbook 4.7)."
+        ),
+        examples=["Sara Lind"],
+    )
 
 
 class WatchChangeCase(LibraryResponse):
@@ -1804,6 +1815,15 @@ class WatchChangeCase(LibraryResponse):
         description=(
             "When a person in this bank confirmed the wording, as an RFC 3339 timestamp in UTC "
             "(`2026-09-17T09:12:00Z`). Null while it is still an AI draft."
+        ),
+        examples=[None],
+    )
+    so_what_confirmed_by_name: str | None = Field(
+        description=(
+            "The display name of the person in this bank who confirmed or rewrote the wording, "
+            "for the screen's 'Confirmed by' line, read in the same query as the case. Null "
+            "while it is still an AI draft, exactly when `soWhatConfirmed` is false. A name is "
+            "the only personal data this read carries about the confirmation (playbook 4.7)."
         ),
         examples=[None],
     )

@@ -253,7 +253,7 @@ class FeedTests(WatchReadFixture):
         self.assertEqual(case["allowedTransitions"], [], "the workflow that would move a case is chunk 9")
         self.assertEqual(
             case["obligationDecisions"],
-            [{"obligationId": str(self.obligation.id), "decision": "accepted", "decidedAt": case["obligationDecisions"][0]["decidedAt"]}],
+            [{"obligationId": str(self.obligation.id), "decision": "accepted", "decidedAt": case["obligationDecisions"][0]["decidedAt"], "decidedByName": None}],
         )
 
     def test_a_change_the_bank_has_no_case_for_answers_a_null_case(self) -> None:
