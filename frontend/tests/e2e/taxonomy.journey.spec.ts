@@ -442,14 +442,19 @@ test.describe('taxonomy journeys', () => {
       const draft = page.locator('[data-draft-preview]');
       await expect(draft.getByRole('heading', { name: 'Your change: Remove Advice' })).toBeVisible();
       const hides = draft.locator('[data-preview-side="hides"]');
+      const reveals = draft.locator('[data-preview-side="reveals"]');
       await expect(hides.getByText('Hides')).toBeVisible();
-      await expect(draft.locator('[data-preview-side="reveals"]').getByText('Reveals')).toBeVisible();
+      await expect(reveals.getByText('Reveals')).toBeVisible();
       await expect(draft.getByText('Loading…')).toHaveCount(0);
       // J-6: the preview counts what the change would take away, and the count
       // is not zero — one seeded obligation reaches this bank through Advice
       // alone. Counts only: the preview never names the records.
       await expect(hides.getByText(/^[1-9]\d* obligations?$/)).toBeVisible();
       await expect(hides.getByText('Nothing.')).toHaveCount(0);
+      // FP-S2: any that would appear are counted too, and cases are not counted yet, on either side.
+      await expect(reveals.getByText(/^(\d+ obligations?|Nothing\.)$/)).toBeVisible();
+      await expect(hides.getByText('Open cases: not counted yet')).toBeVisible();
+      await expect(reveals.getByText('Open cases: not counted yet')).toBeVisible();
       // It hides something, so the panel says once what that means for every member.
       await expect(draft.getByText('What this hides leaves the feed, the inventory, the roadmap and the briefing for every member.')).toBeVisible();
       await expect(page.getByRole('button', { name: 'Cancel' })).toHaveCount(1);
