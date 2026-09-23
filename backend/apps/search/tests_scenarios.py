@@ -12,13 +12,17 @@ Prefixes hosted: SRC.
 import datetime
 import json
 import re
+import sys
 import tempfile
+import time
 import uuid
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 from unittest import mock, skip
 
+from django.conf import settings
 from django.contrib.postgres.search import SearchQuery
+from django.core.cache import cache
 from django.db import connection, transaction
 from django.test import Client, TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
@@ -92,8 +96,8 @@ class SearchScenarioTests(TestCase):
         takes its place (`LabelledClassifier`). A question the library cannot answer gets
         no hit at all from the real retriever, which is the one answer the gate scores right.
 
-        Operations: `rateAnswer`, the reader's verdict the evaluation set reads back.
-        It answers 501 not_built until the Ask backend lands.
+        Operations: `rateAnswer`, the reader's verdict the evaluation set reads back
+        (proved in tests_ask_limits.py).
         """
         gate = load_search_eval()
         questions = gate.load_jsonl(gate.EVAL / "retrieval.jsonl")
@@ -158,13 +162,6 @@ class SearchScenarioTests(TestCase):
                 )
         self.assertEqual(silent, [], "a question the library cannot answer gets no hit")
         self.assertEqual((gate.recall_at_k([], silent), gate.reciprocal_rank([], silent)), (1.0, 1.0))
-
-    @skip("pending: SRC-S9")
-    def test_src_s9(self) -> None:
-        """SRC-S9
-
-        Search and Ask stay within their budgets and are rate limited (SRC-01, NFR-02).
-        """
 
     def test_src_s11(self) -> None:
         """SRC-S11
@@ -372,6 +369,92 @@ class HybridSearchScenarioTests(CorpusMixin, TestCase):
 # ---------------------------------------------------------------------------------------
 # SRC-S8: the release gate's harness, run the way the gate runs it
 # ---------------------------------------------------------------------------------------
+class BudgetScenarioTests(CorpusMixin, TestCase):
+    """SRC-S9, through the real routes against the indexed corpus."""
+
+    reader: ClassVar[User]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.build_corpus()
+        cls.reader = factories.member_user(cls.tenant, roles=("reader",))
+
+    def setUp(self) -> None:
+        cache.clear()
+        self.addCleanup(cache.clear)
+
+    def test_src_s9(self) -> None:
+        """SRC-S9
+
+        Search and Ask stay within their budgets and are rate limited (SRC-01, NFR-02).
+
+        Given the indexed corpus and a warm cache, hybrid search answers inside
+        `SEARCH_BUDGET_MS` without the reranker and `SEARCH_RERANKED_BUDGET_MS` with it,
+        reporting its time in `Server-Timing`; Ask's first event, the answer's id, leaves
+        inside `ASK_FIRST_TOKEN_BUDGET_MS`. Measured on thread time and on the fastest of
+        five runs with the coverage tracer off, as the other budgets are, so a loaded
+        machine cannot fail a gate about the query. r1-perf records the medians against a
+        production build.
+
+        When a reader spends a bucket (`limits.py`, a setting each), the next search and
+        the next question answer 429 `rate_limited`, before anything is read.
+        """
+        headers = sign_in(self.reader, tenant=self.tenant)
+        client = Client()
+        query = {"q": "kostnader och avgifter", "lang": "sv"}
+        question = {"question": "What must we disclose about costs and charges?", "lang": "en"}
+
+        def search() -> Any:
+            return client.post(SEARCH, data=query, content_type="application/json", **headers)
+
+        def first_event() -> bytes:
+            response: Any = client.post(ASK, data=question, content_type="application/json", **headers)
+            self.assertEqual(response.status_code, 200, getattr(response, "content", b""))
+            stream = iter(response.streaming_content)
+            first = next(stream)
+            list(stream)  # the rest of the answer, which is outside the first-token budget
+            return cast(bytes, first)
+
+        warm = search()
+        self.assertEqual(warm.status_code, 200, warm.content)
+        self.assertRegex(warm["Server-Timing"], r"^app;dur=\d+\.\d$")
+        self.assertIn(b'"event": "start"', first_event())
+
+        def fastest(call: Any) -> float:
+            spent = []
+            for _ in range(5):
+                started = time.thread_time()
+                call()
+                spent.append((time.thread_time() - started) * 1000)
+            return min(spent)
+
+        tracer = sys.gettrace()
+        sys.settrace(None)
+        try:
+            reranked = fastest(search)
+            with override_settings(RERANKER_PROVIDER="none"):
+                unranked = fastest(search)
+            asked = fastest(first_event)
+        finally:
+            sys.settrace(tracer)
+        self.assertLess(reranked, settings.SEARCH_RERANKED_BUDGET_MS, "the reranker is on in this run")
+        self.assertLess(unranked, settings.SEARCH_BUDGET_MS)
+        self.assertLess(asked, settings.ASK_FIRST_TOKEN_BUDGET_MS)
+
+        cache.clear()  # the runs above spent from the reader's buckets
+        with override_settings(
+            RATE_LIMITING_ENABLED=True, SEARCH_RATE_PER_USER_PER_MINUTE=1, ASK_RATE_PER_USER_PER_MINUTE=1
+        ):
+            self.assertEqual(search().status_code, 200)
+            refused_search = search()
+            self.assertEqual(first_event()[:6], b"data: ")
+            refused_ask = client.post(ASK, data=question, content_type="application/json", **headers)
+        for refused in (refused_search, refused_ask):
+            with self.subTest(route=refused.request["PATH_INFO"]):
+                self.assertEqual(refused.status_code, 429, refused.content)
+                self.assertEqual(refused.json()["code"], "rate_limited")
+
+
 class LabelledClassifier:
     """SRC-S8's stand-in for the agents' classifier, which is not this app's: it answers every
     text of the committed set with its label. It is not a mock, so the gate holds it to a
