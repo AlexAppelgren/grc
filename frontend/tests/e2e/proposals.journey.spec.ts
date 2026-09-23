@@ -1,7 +1,8 @@
-import type { Page } from '@playwright/test';
+import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
 
 import { destinations } from '@/shared/navigation/registry';
 
+import { mintAgentKey, revokeAgentKey, type MintedAgentKey } from './support/agent-key';
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, LOGINS, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
@@ -29,6 +30,23 @@ const COSTS_CHARGES_TITLE = 'Add version 2 of the costs and charges obligation, 
 const AUTOMATED_DECISIONS_TITLE = 'Add version 2 of the automated decisions obligation, with a review by a person within one month';
 const AUTOMATED_DECISIONS_SOURCE = 'EUR-Lex, Regulation (EU) 2016/679, Article 22, consolidated text';
 const AUTOMATED_DECISIONS_OBLIGATION = 'Apply safeguards to solely automated decisions with significant effects';
+// PRO-S13 (e2e_seed.py PRO_S13_OBLIGATION): the sweeper's proposal the confirming agent
+// decides through the API, and what that agent sends with its decision: the model call
+// behind it (D-80, AUD-02), citing the page the proposal cites.
+const PRODUCT_GOVERNANCE_TITLE = 'Add version 2 of the product governance obligation, with a yearly review of each target market';
+const PRODUCT_GOVERNANCE_SOURCE = 'Finansinspektionen, amended product governance rules';
+const PRODUCT_GOVERNANCE_URL = 'https://www.fi.se/';
+const CONFIRMER_MODEL = 'confirmer pipeline 1.0';
+const CONFIRMER_NOTE = 'The wording and the date match the amended rules the proposal cites.';
+const CONFIRMER_DECISION = {
+  model: CONFIRMER_MODEL,
+  modelVersion: '2026-05-01',
+  promptTemplate: 'library-confirmer/decide/v1',
+  promptHash: 'e2e-pro-s13',
+  output: 'Approve. The proposed wording and date match the amended rules at the cited page.',
+  citations: [{ label: PRODUCT_GOVERNANCE_SOURCE, url: PRODUCT_GOVERNANCE_URL }],
+};
+const CONFIRMER_STATS = { modelCalls: 1, fetches: 1, sourcesChecked: 0, changesRegistered: 0, proposalsSubmitted: 0 };
 // The console's destinations, read from the registry (src/shared/navigation/registry.ts)
 // and never from a list written here, as ADM-S4 reads them.
 const CONSOLE_HREFS: readonly string[] = destinations.filter((d) => d.surface === 'console').map((d) => d.href);
@@ -91,6 +109,40 @@ async function proposeFlag(page: Page, label: string): Promise<void> {
   await dialog.getByRole('button', { name: 'Send for review' }).click();
   await expect(dialog.getByText(/is waiting for review\.$/)).toBeVisible();
   await dialog.getByRole('button', { name: 'Done' }).click();
+}
+
+/** What the journey reads of a queue row or a proposal's detail (GET /proposals, GET /proposals/{id}). */
+interface QueueDetail {
+  id: string;
+  title: string;
+  status: string;
+  isMine: boolean;
+  sourceLabel: string;
+  proposedByAgent: { key: string } | null;
+  reviewedByAgent: { key: string } | null;
+  sources: { field: string; label: string; url: string }[];
+  diff: unknown[];
+}
+
+/** The calls an agent makes with its own key, as its pipeline makes them: straight to the API, never through a page. */
+function agentCalls(request: APIRequestContext, plainKey: string) {
+  const url = (path: string) => `${BACKEND_URL}/api/v1${path}`;
+  return {
+    get: (path: string): Promise<APIResponse> => request.get(url(path), { headers: { 'X-API-Key': plainKey } }),
+    send: (method: 'post' | 'patch', path: string, data: object): Promise<APIResponse> =>
+      request[method](url(path), { headers: { 'X-API-Key': plainKey, 'Idempotency-Key': crypto.randomUUID() }, data }),
+  };
+}
+
+/** PRO-S13's seeded proposal, as the confirming agent reads it: waiting, or already approved by an earlier attempt of this journey. */
+async function findSeededProposal(agent: ReturnType<typeof agentCalls>): Promise<QueueDetail> {
+  for (const status of ['open', 'approved']) {
+    const page = await agent.get(`/proposals?status=${status}&kind=new_obligation_version&limit=100`);
+    expect(page.status(), await page.text()).toBe(200);
+    const row = ((await page.json()) as { items: QueueDetail[] }).items.find((item) => item.title === PRODUCT_GOVERNANCE_TITLE);
+    if (row !== undefined) return row;
+  }
+  throw new Error(`No proposal titled ${PRODUCT_GOVERNANCE_TITLE} waiting or approved.`);
 }
 
 test.describe('proposals journeys', () => {
@@ -263,9 +315,81 @@ test.describe('proposals journeys', () => {
     await expect(rejected).toContainText('The label needs tightening before this can be used.');
   });
 
-  test.fixme('PRO-S13: An independent agent confirms a proposal from the same queue', async () => {
-    // pending: PRO-S13 (PRO-01, PRO-02, AUD-02). The confirming agent is chunk 5's
-    // (docs/plans/briefs/CHUNK4_TASKS.md, "What the E2E half waits for"); this task builds
-    // the human half of the one queue that will serve both.
+  test('PRO-S13: An independent agent confirms a proposal from the same queue', async ({ page, browser, request, apiGuard }) => {
+    // The console mints the confirming agent's keys (support/agent-key.ts) in a context of
+    // its own, which stays signed in so the teardown can revoke them whatever happens.
+    const keysContext = await browser.newContext();
+    const keysPage = await keysContext.newPage();
+    apiGuard.watch(keysPage);
+    const stamp = Date.now();
+    const keys: MintedAgentKey[] = [];
+    try {
+      const confirmer = await mintAgentKey(keysPage, apiGuard, {
+        name: `PRO-S13 confirmer ${stamp}`,
+        agent: 'library-confirmer',
+        scopes: ['agent-runs:write', 'proposals:review'],
+      });
+      keys.push(confirmer);
+      const unscoped = await mintAgentKey(keysPage, apiGuard, { name: `PRO-S13 without review ${stamp}`, agent: 'library-confirmer', scopes: ['agent-runs:write'] });
+      keys.push(unscoped);
+      const agent = agentCalls(request, confirmer.plainKey);
+
+      // The confirming agent opens a run of its own key and reads the queue a person reads.
+      const run = await agent.send('post', '/agent-runs', { agent: 'library-confirmer', model: CONFIRMER_MODEL, pipelineVersion: '1' });
+      expect(run.status(), await run.text()).toBe(201);
+      const runId = ((await run.json()) as { id: string }).id;
+      const found = await findSeededProposal(agent);
+      if (found.status === 'open') {
+        // It sees the sweeper's proposal, not its own, with the source beside the diff.
+        const detail = await agent.get(`/proposals/${found.id}`);
+        expect(detail.status()).toBe(200);
+        const body = (await detail.json()) as QueueDetail;
+        expect([body.proposedByAgent?.key, body.isMine]).toEqual(['watch-sweeper', false]);
+        expect(body.sourceLabel).toBe(PRODUCT_GOVERNANCE_SOURCE);
+        expect(body.sources.map((source) => source.url)).toContain(PRODUCT_GOVERNANCE_URL);
+        expect(body.diff.length).toBeGreaterThan(0);
+
+        // It approves through the same route, with the model call behind the decision and the run it made it in.
+        const approved = await agent.send('post', `/proposals/${found.id}/approve`, { note: CONFIRMER_NOTE, decision: CONFIRMER_DECISION, agentRunId: runId });
+        expect(approved.status(), await approved.text()).toBe(200);
+        expect(((await approved.json()) as QueueDetail).reviewedByAgent?.key).toBe('library-confirmer');
+      } else {
+        // A retry: the earlier attempt's approval stands, and it was the confirming agent's.
+        expect(found.reviewedByAgent?.key).toBe('library-confirmer');
+      }
+      const closed = await agent.send('patch', `/agent-runs/${runId}`, { status: 'succeeded', stats: CONFIRMER_STATS, error: null });
+      expect(closed.status(), await closed.text()).toBe(200);
+
+      // A key of the same agent without the review scope is refused at the queue itself.
+      apiGuard.allow(/^\/api\/v1\/proposals$/, 403, 'a key without proposals:review may not read the queue (permission_denied)');
+      const refused = await agentCalls(request, unscoped.plainKey).get('/proposals?status=open');
+      expect(refused.status()).toBe(403);
+      expect(((await refused.json()) as { code: string }).code).toBe('permission_denied');
+    } finally {
+      // Teardown that runs on failure too: no key minted here outlives the attempt.
+      for (const key of keys) await revokeAgentKey(keysPage, key.id);
+      await keysContext.close();
+    }
+
+    // The library editor finds it under Approved, decided by the agent, machine-confirmed.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.editor);
+    await page.goto('/console/queue');
+    await queueSettled(page);
+    await page.getByRole('tab', { name: 'Approved' }).click();
+    await queueSettled(page);
+    await page.getByRole('link', { name: new RegExp(PRODUCT_GOVERNANCE_TITLE) }).first().click();
+    await expect(page.getByRole('heading', { level: 1, name: new RegExp(PRODUCT_GOVERNANCE_TITLE) })).toBeVisible();
+    const applied = page.locator('[data-proposal-applied]');
+    await expect(applied).toContainText(/by the agent library-confirmer, machine-confirmed\./);
+    await expect(applied).toContainText(CONFIRMER_NOTE);
+    await expect(page.locator('[data-proposal]')).toContainText(PRODUCT_GOVERNANCE_SOURCE);
+    await signOut(page);
+
+    // The bank's reader finds version 2 on the obligation's card, labelled as the agents'
+    // and never as a person's.
+    await signInAs(page, LOGINS.reader);
+    await expectVersionOnCard(page, 'obl-product-governance', 2);
+    await expect(page.locator('[data-versions-panel] [data-version-row="2"] [data-machine-confirmed]')).toContainText(/proposed by watch-sweeper, confirmed by library-confirmer/);
   });
 });

@@ -67,6 +67,8 @@ from apps.shared.e2e_seed import (
     EXPECTED_WATCHED_MARKETS,
     WATCHED_MARKET_OBLIGATION,
     PRO_S7_OBLIGATION,
+    PRO_S13_OBLIGATION,
+    PRO_S13_RUN,
     RECHECK_OBLIGATION,
     SUGGESTED_LINK_OBLIGATION,
     SeedProposal,
@@ -1039,3 +1041,56 @@ class SeedIntegrityGuard(TestCase):
             (Proposal.objects.count(), ObligationVersion.objects.count(), Verification.objects.count(), AgentRun.objects.count(), ApiKey.objects.count(), AiGeneration.objects.count()),
             counts,
         )
+
+    # --- pro-s13-journey (PRO-S13) -------------------------------------------------------------
+    def test_pro_s13_finds_a_sweeper_proposal_of_its_own_for_the_confirming_agent(self) -> None:
+        """PRO-S13 (PRO-01, PRO-02, AGT-01): the confirming agent decides a proposal the
+        watch-sweeper filed through its own key, as the create route files an agent's: the
+        proposal names the sweeper's agent and key, its run is that key's, and its audit row
+        names the agent as the actor, never a bare run or key. The target is on version 1
+        and reaches tenant A with or without Advice, so the reader finds a clean version 2
+        on the card whichever way J-6 has left the scope; no other seeded proposal or named
+        record sits on it."""
+        seed_e2e()
+        expected = next(row for row in EXPECTED_PROPOSALS if row.journey == "PRO-S13")
+        self.assertEqual((expected.target, expected.agent_run, expected.proposed_by_email), (PRO_S13_OBLIGATION, PRO_S13_RUN, ""))
+        others = {row.target for row in EXPECTED_PROPOSALS if row.journey != "PRO-S13"} | {
+            EXPECTED_LIBRARY.advice_only_obligation,
+            EXPECTED_LIBRARY.research_obligation,
+            EXPECTED_PROBLEM_REPORT.obligation,
+            EXPECTED_OUTSIDE_SCOPE.obligation,
+            RECHECK_OBLIGATION,
+            CONFIRMED_LINK_OBLIGATION,
+            SUGGESTED_LINK_OBLIGATION,
+        }
+        self.assertNotIn(PRO_S13_OBLIGATION, others)
+
+        tenancy.clear_tenant()
+        (proposal,) = _waiting_for(expected)
+        assert proposal.proposed_by_agent is not None and proposal.proposed_by_api_key_id is not None
+        self.assertEqual(proposal.proposed_by_agent.key, "watch-sweeper")
+        self.assertIsNone(proposal.proposed_by_user)
+        key = ApiKey.objects.get(pk=proposal.proposed_by_api_key_id)
+        self.assertEqual((key.agent_id, key.tenant_id), (proposal.proposed_by_agent_id, None))
+        run = AgentRun.objects.get(pk=PRO_S13_RUN)
+        self.assertEqual((run.api_key_id, run.agent_id), (key.id, proposal.proposed_by_agent_id))
+        created = AuditEvent.objects.get(subject_id=proposal.id, action="proposal.created")
+        self.assertEqual((created.actor_type, created.actor_id), ("agent", proposal.proposed_by_agent_id))
+
+        obligation = (
+            Obligation.objects.select_related("instrument__regime__dimension")
+            .prefetch_related("terms__dimension")
+            .get(stable_key=PRO_S13_OBLIGATION)
+        )
+        self.assertEqual(list(ObligationVersion.objects.filter(obligation=obligation).values_list("version_number", flat=True)), [1])
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        footprint = footprint_of(tenant_a.id)
+        without = {dimension: set(keys) for dimension, keys in footprint.items()}
+        for ref in EXPECTED_PENDING_REQUEST.removes:
+            dimension, term = ref.split(":")
+            without[dimension].discard(term)
+        restricting = restricting_dimensions()
+        self.assertTrue(in_footprint(_scope(obligation), footprint, restricting=restricting))
+        self.assertTrue(in_footprint(_scope(obligation), without, restricting=restricting))
+    # --- end pro-s13-journey -------------------------------------------------------------------
