@@ -108,6 +108,14 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     # so a platform_admin is refused it and a library_editor reaches it (and is then asked
     # for a passkey, which is a different refusal).
     "reverifyObligation": ("POST", f"/obligations/{_ANY_ID}/verifications", {"outcome": "no_change"}),
+    # The search evaluation set (SRC-05): the library editor's alone, a platform admin is refused.
+    "listEvalQuestions": ("GET", "/eval/questions", None),
+    "createEvalQuestion": (
+        "POST",
+        "/eval/questions",
+        {"key": "r-en-90", "lang": "en", "question": "costs and charges", "expected": [], "matchKind": "concept"},
+    ),
+    "listEvalRuns": ("GET", "/eval/runs", None),
 }
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a
