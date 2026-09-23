@@ -14,11 +14,12 @@ from unittest import skip
 
 from django.test import TestCase
 
-from apps.agents import testing as agent_build
+from apps.agents import testing as agent_build, tests_flow as agent_flow
 from apps.agents.screen import EMBEDDED_INSTRUCTIONS
-from apps.shared import tenancy
-from apps.watch import testing as watch_build
-from apps.watch.models import ChangeDocument, RegulatoryChange
+from apps.shared import permissions as perms, tenancy
+from apps.shared.models import AuditEvent
+from apps.watch import registration, sources, testing as watch_build
+from apps.watch.models import ChangeDocument, RegulatoryChange, SourceCheck
 
 # One reform as a sweep files it, for the scenarios that drive the agent API.
 _CHANGE: dict[str, Any] = {
@@ -48,13 +49,68 @@ class AgentsScenarioTests(TestCase):
             "/api/v1/changes", data=payload, content_type="application/json", HTTP_X_API_KEY=plain
         )
 
-    @skip("pending: AGT-S1")
     def test_agt_s1(self) -> None:
         """AGT-S1
 
         A run opens, logs checks, finds similar, registers, proposes and closes (AGT-01).
-        Operations: `startAgentRun`, `finishAgentRun`.
+        Operations: `startAgentRun`, `finishAgentRun`, `recordSourceCheck`, `createChange`,
+        `createProposal`.
         """
+        # Given an agent key with the watch and proposal scopes
+        world = agent_flow.world()
+        flow = agent_flow.Flow(self.client, world.key)
+
+        # When it opens a run, logs a source check and asks what the library already holds
+        opened = flow.open()
+        self.assertEqual(opened.status_code, 201, opened.content)
+        run_id = opened.json()["id"]
+        self.assertEqual(flow.check(run_id).status_code, 204)
+        similar = flow.similar()
+        self.assertEqual(similar.status_code, 200, similar.content)
+        hits = [hit["id"] for hit in similar.json()["items"] if hit["type"] == "obligation"]
+        self.assertIn(str(world.obligation.id), hits, "the duty the reform touches is found by what the run read")
+
+        # And registers the change against what it found, proposes the new wording and closes
+        registered = flow.register(run_id, obligation_id=hits[0])
+        self.assertEqual(registered.status_code, 201, registered.content)
+        change_id = registered.json()["id"]
+        proposed = flow.propose(run_id, obligation_id=hits[0], change_id=change_id)
+        self.assertEqual(proposed.status_code, 201, proposed.content)
+        closed = flow.close(run_id)
+        self.assertEqual(closed.status_code, 200, closed.content)
+
+        # Then each write references the run
+        self.assertEqual([str(check.agent_run_id) for check in SourceCheck.objects.all()], [run_id])
+        self.assertEqual(str(RegulatoryChange.objects.get(pk=change_id).agent_run_id), run_id)
+        self.assertEqual(proposed.json()["agentRunId"], run_id)
+        self.assertEqual(proposed.json()["changeId"], change_id)
+
+        # And the run shows its findings and status succeeded
+        run = closed.json()
+        self.assertEqual(run["status"], "succeeded")
+        self.assertIsNotNone(run["finishedAt"])
+        for counter, value in agent_flow.STATS.items():
+            self.assertEqual(run["stats"][counter], value)
+
+        # And every write is in the audit log against the agent behind the key (ID-10)
+        tenancy.clear_tenant()
+        written = AuditEvent.objects.filter(actor_type="agent")
+        self.assertEqual({event.actor_label for event in written}, {world.key.agent.key})
+        self.assertLessEqual(
+            {"agent_run.opened", sources.CHECK_LOGGED, registration.REGISTERED, "proposal.created", "agent_run.closed"},
+            set(written.values_list("action", flat=True)),
+        )
+
+        # And a request without the key's scope answers 403
+        no_proposals = agent_flow.Flow(self.client, agent_flow.key_without(perms.SCOPE_PROPOSALS_WRITE))
+        refused = no_proposals.propose(run_id, obligation_id=hits[0])
+        self.assertEqual(refused.status_code, 403, refused.content)
+        self.assertEqual(refused.json()["requiredPermission"], perms.SCOPE_PROPOSALS_WRITE)
+
+        # And another key's run answers 404, as a run that never existed does
+        tenancy.clear_tenant()
+        stranger = agent_flow.Flow(self.client, agent_build.agent_key(scopes=agent_flow.FLOW_SCOPES))
+        self.assertEqual(stranger.check(run_id).status_code, 404)
 
     def test_agt_s2(self) -> None:
         """AGT-S2

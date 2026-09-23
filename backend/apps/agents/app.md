@@ -59,6 +59,12 @@ rows loaded from `backend/agents/<agent>/v<n>/definition.yaml` by `seed_referenc
 `api_key.agent` so the audit log names the agent behind a key rather than the
 key's id (ID-10).
 
+The flow of AGT-S1 is proven over the real routes (`tests_flow.py`): every
+change and proposal from a key bound to an agent names an open run of that key,
+a step naming another key's run is not found, and a bank's key writes nothing to
+the watch. AGT-01 stays `in_progress` until AGT-S10 (the J-4 journey) and AGT-S15
+(the confirming agent) are green as well.
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -100,9 +106,12 @@ updating this file.
 ```gherkin
 Given an agent key with the watch and proposal scopes
 When it opens a run, logs a source check, calls POST /search/similar, registers a change, submits a proposal and closes the run
-Then each step answers 2xx and references the run
-And the run shows its findings and status closed
+Then each step answers 2xx and each write references the run
+And the run shows its findings and status succeeded (or failed, when it closes from its failure path)
 And a request without the key's scope answers 403
+And a step naming another key's run answers 404, as a run that never existed does
+And a change or a proposal from the key that names no run, or a closed one, answers 422 with code "run_not_open"
+And a bank's key is refused on every watch write with code "tenant_agents_not_available"
 ```
 
 ### AGT-S2 — Registering a change is idempotent across retries `@integration` (AGT-01)
