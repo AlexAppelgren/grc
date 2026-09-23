@@ -63,11 +63,10 @@ def policy_operations(
 
     `library_fence=True` keeps the old shape, one FOR ALL policy whose write check is the read
     rule, on the two library tables mixed on `owner_tenant_id` (instrument, obligation). What
-    stands between a bank session and a shared record there is the library fence itself
-    (PRO-01): `library_write()` and its AST guard, with proposals the only door. Narrowing
-    their write rule refuses every library write made with a tenant activated, which the
-    reference seed, the E2E seed and most tests do, so it waits for the fence to name the zone
-    of the row it is writing (HARDENING.md H16).
+    stands between a bank session and a shared record there is the library fence (PRO-01):
+    `library_write()` and its AST guard in Python, and in the database the door trigger below,
+    which refuses the app role's write to either table unless an approved proposal, the
+    re-verification stamp or a reference seed opened a door (H16, shared 0008, ADR 0058).
     """
     if library_fence:
         mixed_read = f"{column} IS NULL OR {column} = {TENANT_EXPRESSION}"
@@ -228,6 +227,79 @@ def append_only_trigger_operations(table: str, *, function: str = APPEND_ONLY_FU
             sql=(
                 f'CREATE TRIGGER {trigger} BEFORE UPDATE OR DELETE ON "{table}" '
                 f"FOR EACH ROW EXECUTE FUNCTION {function}()"
+            ),
+            reverse_sql=f'DROP TRIGGER IF EXISTS {trigger} ON "{table}"',
+        )
+    ]
+
+
+LIBRARY_DOOR_FUNCTION = "cw_library_door_guard"
+LIBRARY_DOOR_SETTING = "cw.library_door"
+
+# The doors each library-zone table accepts (H16, ADR 0058), passed to the trigger as its
+# arguments. The inventory and the library vocabularies change through an approved proposal
+# or a reference seed; the re-verification stamp reaches the obligation and its verification
+# rows and nothing else (INV-06); the watch door reaches the seven watch tables only (D-64);
+# the index door reaches the search index only (D-65). The library app's reference rows —
+# `language`, `jurisdiction` and its labels, which every bank reads and no proposal writes
+# (the jurisdiction list is not proposable) — change through a reference seed alone.
+INVENTORY_DOORS = ("proposal", "seed")
+STAMPED_DOORS = ("proposal", "reverification", "seed")
+WATCH_DOORS = ("watch",)
+INDEX_DOORS = ("index",)
+REFERENCE_DOORS = ("seed",)
+
+# One trigger per library-zone table, per statement and before it, so it fires once however
+# many rows the statement touches, and fires for a statement that touches none: a write
+# outside a door is refused as a write, not only when it finds a row. TRUNCATE is included
+# although cw_app holds no TRUNCATE grant, so the rule does not rest on the grant alone.
+#
+# The door is a setting the app role sets itself, through `library_door()` in
+# apps/shared/tenancy.py, so this refuses a write that never entered a door — an ORM call
+# that bypassed the Python fence, raw SQL, a cascade — and not a statement that sets the
+# setting first (ADR 0058 says what that leaves to the lint and the AST guards). The schema
+# owner passes by `session_user`, as `_MAINTENANCE_CHECK` recognises it, so a migration's
+# data step, the E2E seed and tenant exit are not refused; never `current_user`, which a
+# SECURITY DEFINER function or a cascade changes (shared 0005).
+LIBRARY_DOOR_FUNCTION_SQL = f"""
+CREATE OR REPLACE FUNCTION {LIBRARY_DOOR_FUNCTION}() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+    door text := current_setting('{LIBRARY_DOOR_SETTING}', true);
+BEGIN
+    IF session_user = '{MIGRATOR_ROLE}' OR door = ANY (TG_ARGV) THEN
+        RETURN NULL;
+    END IF;
+    RAISE EXCEPTION 'library door: % on % refused: the door open is %, and % accepts only %. A library row changes only through a door (PRO-01, ADR 0058).',
+        TG_OP, TG_TABLE_NAME, coalesce(nullif(door, ''), 'none'), TG_TABLE_NAME, array_to_string(TG_ARGV, ', ')
+        USING ERRCODE = 'insufficient_privilege';
+END;
+$$;
+"""
+
+
+def library_door_function_operations() -> list[migrations.RunSQL]:
+    """The trigger function (shared 0008). A later change to its text replaces it in place
+    in a migration of its own, which reaches every trigger already attached."""
+    return [
+        migrations.RunSQL(
+            sql=LIBRARY_DOOR_FUNCTION_SQL,
+            reverse_sql=f"DROP FUNCTION IF EXISTS {LIBRARY_DOOR_FUNCTION}()",
+        )
+    ]
+
+
+def library_door_trigger_operations(table: str, doors: tuple[str, ...]) -> list[migrations.RunSQL]:
+    """Attach the door trigger to `table`, accepting `doors`. The migration that creates a
+    library-zone table calls this for it; apps/shared/tests_library_db_guard.py fails for a
+    library table without it and for one whose doors are not the ones its kind accepts."""
+    trigger = f"{table}_library_door"
+    arguments = ", ".join(f"'{door}'" for door in doors)
+    return [
+        migrations.RunSQL(
+            sql=(
+                f'CREATE TRIGGER {trigger} BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON "{table}" '
+                f"FOR EACH STATEMENT EXECUTE FUNCTION {LIBRARY_DOOR_FUNCTION}({arguments})"
             ),
             reverse_sql=f'DROP TRIGGER IF EXISTS {trigger} ON "{table}"',
         )

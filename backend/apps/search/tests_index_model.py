@@ -151,6 +151,10 @@ class SearchChunkIsolation(TransactionTestCase):
 
     The indexer writes the shared zone with no tenant active; a bank's session must not be
     able to reach it at all, and must not see another bank's chunk if one ever existed.
+
+    Every write here also opens the index door on the cw_app connection it runs on:
+    `index_write()` opens it on the runner's own connection, and without it the trigger of
+    shared 0008 would refuse the statement before the policy under test is asked (H16).
     """
 
     databases = {DEFAULT_DB_ALIAS, "app"}
@@ -159,10 +163,10 @@ class SearchChunkIsolation(TransactionTestCase):
         seed_languages()
         self.tenant_a = factories.tenant(slug="chunk-a")
         self.tenant_b = factories.tenant(slug="chunk-b")
-        with index_write(REASON), transaction.atomic(using="app"):
+        with index_write(REASON), transaction.atomic(using="app"), tenancy.library_door("index", using="app"):
             self.shared = chunk()
             self.shared.save(using="app")
-        with index_write(REASON), transaction.atomic(using="app"):
+        with index_write(REASON), transaction.atomic(using="app"), tenancy.library_door("index", using="app"):
             tenancy.activate(self.tenant_b.id, using="app")
             self.theirs = chunk(source_id=uuid.uuid4(), owner_tenant=self.tenant_b)
             self.theirs.save(using="app")
@@ -178,26 +182,26 @@ class SearchChunkIsolation(TransactionTestCase):
 
     def test_a_tenant_cannot_insert_a_shared_chunk(self) -> None:
         with self.assertRaises(ProgrammingError):
-            with index_write(REASON), transaction.atomic(using="app"):
+            with index_write(REASON), transaction.atomic(using="app"), tenancy.library_door("index", using="app"):
                 self._as_tenant_a()
                 chunk(source_id=uuid.uuid4()).save(using="app")
 
     def test_a_tenant_cannot_update_a_shared_chunk(self) -> None:
-        with index_write(REASON), transaction.atomic(using="app"):
+        with index_write(REASON), transaction.atomic(using="app"), tenancy.library_door("index", using="app"):
             self._as_tenant_a()
             changed = SearchChunk.objects.using("app").filter(id=self.shared.id).update(title="rewritten")
         self.assertEqual(changed, 0, "the shared chunk was reachable from a bank's session")
         self.assertEqual(SearchChunk.objects.get(id=self.shared.id).title, TITLE)
 
     def test_a_tenant_cannot_delete_a_shared_chunk(self) -> None:
-        with index_write(REASON), transaction.atomic(using="app"):
+        with index_write(REASON), transaction.atomic(using="app"), tenancy.library_door("index", using="app"):
             self._as_tenant_a()
             deleted, _ = SearchChunk.objects.using("app").filter(id=self.shared.id).delete()
         self.assertEqual(deleted, 0, "the shared chunk was deletable from a bank's session")
         self.assertTrue(SearchChunk.objects.filter(id=self.shared.id).exists())
 
     def test_a_tenant_cannot_pull_a_shared_chunk_into_its_own_zone(self) -> None:
-        with index_write(REASON), transaction.atomic(using="app"):
+        with index_write(REASON), transaction.atomic(using="app"), tenancy.library_door("index", using="app"):
             self._as_tenant_a()
             moved = SearchChunk.objects.using("app").filter(id=self.shared.id).update(owner_tenant=self.tenant_a)
         self.assertEqual(moved, 0)

@@ -263,7 +263,9 @@ class SharedOrMineIsolation(TransactionTestCase):
         self.reporter = factories.user(email="reporter@lib-a.test")
 
     def _instrument(self, key: str, owner: Tenant | None, *, level: str = "act") -> Instrument:
-        with library_write("test"):
+        # The door on the connection that writes, which is cw_app here: without it the
+        # trigger of shared 0008 refuses the row before the policy under test is asked (H16).
+        with library_write("test"), tenancy.library_door("seed", using="app"):
             return Instrument.objects.using("app").create(
                 stable_key=key,
                 short_name=key,
@@ -291,7 +293,7 @@ class SharedOrMineIsolation(TransactionTestCase):
             self._instrument("forged", self.tenant_a)
 
     def _provision(self, under: Instrument, key: str) -> Provision:
-        with library_write("test"):
+        with library_write("test"), tenancy.library_door("seed", using="app"):
             return Provision.objects.using("app").create(
                 stable_key=key, instrument=under, kind=ProvisionKind.objects.using("app").get(key="chapter"), ref_label="1", path=f"{under.short_name} > 1"
             )
@@ -324,7 +326,12 @@ class SharedOrMineIsolation(TransactionTestCase):
         self.assertEqual(list(Provision.objects.using("app").values_list("stable_key", flat=True)), ["bank-a-policy/1"])
         # Nor does the library turn a level into a standard while it cannot see where a
         # provision sits: bank A's is at `act`, hidden from it, and `eu_guidance` is refused too.
-        with self.assertRaisesMessage(IntegrityError, "provision_not_under_standard"), transaction.atomic(using="app"), library_write("test"):
+        with (
+            self.assertRaisesMessage(IntegrityError, "provision_not_under_standard"),
+            transaction.atomic(using="app"),
+            library_write("test"),
+            tenancy.library_door("seed", using="app"),
+        ):
             InstrumentLevel.objects.using("app").filter(key="eu_guidance").update(kind=InstrumentLevelKind.STANDARD.value)
 
     def test_a_problem_report_stays_with_its_tenant(self) -> None:

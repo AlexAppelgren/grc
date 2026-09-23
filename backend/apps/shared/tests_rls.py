@@ -38,6 +38,7 @@ write proof both named it.
 from __future__ import annotations
 
 import uuid
+from contextlib import AbstractContextManager, nullcontext
 from datetime import timedelta
 from typing import Any
 
@@ -121,9 +122,9 @@ WATCH_LIBRARY_TABLES = frozenset(
 # instrument and obligation are mixed on `owner_tenant_id` ("shared or mine", INPUT_DELTAS
 # §5, INV-07) and still carry the old single policy, so their write rule accepts the
 # library's rows from a tenant session. What stands in the way there is the library fence
-# (PRO-01): `library_write()` and its AST guard. Splitting them needs the fence's own zone
-# switch, because the reference seed, the E2E seed and most tests write a library record
-# with a tenant activated; HARDENING.md H16 carries it.
+# (PRO-01): `library_write()` and its AST guard, and in the database the door trigger of
+# shared 0008, which refuses the app role's write to either table outside an approved
+# proposal, the re-verification stamp or a reference seed (H16, ADR 0058).
 LIBRARY_OWNED_TABLES = frozenset({"instrument", "obligation"})
 
 # Tables that hold one bank's rows and nothing else, named here so the enumeration cannot
@@ -404,7 +405,11 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
     here without reaching through that fence, and the same four refusals are proven as
     cw_app in apps/search/tests_index_model.py. `source` is: it is the one watch table with
     a zone column (WAT-06), and a bank must not be able to reach the shared source registry
-    the sweeps read.
+    the sweeps read. Every statement on it runs inside the watch door on the cw_app
+    connection (`_door`), as a bank's watch step would: `source` is a library table too, and
+    outside that door the trigger of shared 0008 refuses the statement before the policy is
+    asked, which would prove the trigger here instead of the policy (H16; the trigger's own
+    proof is apps/shared/tests_library_db_guard.py).
     """
 
     databases = {DEFAULT_DB_ALIAS, "app"}
@@ -427,6 +432,11 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
 
     def _tables(self) -> list[str]:
         return [table for table in sorted(MIXED_TABLES) if table not in {"agent_run", "search_chunk"}]
+
+    @staticmethod
+    def _door(table: str) -> AbstractContextManager[None]:
+        """The watch door on the cw_app connection for `source`, and nothing for the rest."""
+        return tenancy.library_door("watch", using="app") if table == "source" else nullcontext()
 
     def _rows(self, tenant_id: uuid.UUID | None) -> dict[str, Any]:
         """One committed row per table in the zone `tenant_id` names."""
@@ -483,7 +493,7 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
         if table == "source":
             # The one watch table with a zone column (WAT-06). It is a library record, so the
             # Python fence has to be open too; the door it belongs behind is watch_write().
-            with watch_write("a zone probe"):
+            with watch_write("a zone probe"), self._door(table):
                 return Source.objects.using("app").create(
                     owner_tenant_id=tenant_id, name=f"Probe {token}", kind=self.source_kind
                 )
@@ -526,7 +536,7 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
             column = MIXED_TABLES[table]
             with self.subTest(table=table), transaction.atomic(using="app"):
                 tenancy.activate(self.tenant_a.id, using="app")
-                with connections["app"].cursor() as cursor:
+                with connections["app"].cursor() as cursor, self._door(table):
                     for statement, parameters, why in (
                         (f'UPDATE "{table}" SET {column} = {column} WHERE id = %s', [self.platform[table]], "changed"),
                         (
@@ -547,7 +557,8 @@ class MixedTablesWriteOnlyTheirOwnZone(TransactionTestCase):
                 with self.assertRaisesMessage(DatabaseError, refusal):
                     with transaction.atomic(using="app"), connections["app"].cursor() as cursor:
                         tenancy.activate(self.tenant_a.id, using="app")
-                        cursor.execute(f'UPDATE "{table}" SET {column} = NULL WHERE id = %s', [self.own[table]])
+                        with self._door(table):
+                            cursor.execute(f'UPDATE "{table}" SET {column} = NULL WHERE id = %s', [self.own[table]])
 
     def test_the_reads_are_unchanged(self) -> None:
         """The whole point of a mixed table: the platform's rows are everybody's to read,

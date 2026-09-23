@@ -75,7 +75,7 @@ def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_
     """
     reviewer = as_reviewer(reviewer, actor)
     payload = parsed_payload(proposal.kind, proposal.corrected_payload or proposal.payload)
-    with library_write(f"proposal:{proposal.id}"):
+    with library_write(f"proposal:{proposal.id}", door="proposal"):
         if proposal.kind == ProposalKind.VOCABULARY_CREATE.value:
             assert isinstance(payload, ProposalVocabularyCreatePayload)
             _vocabulary_create(payload, proposal, actor, step_up)
@@ -127,7 +127,7 @@ def apply_reverification(
     if outcome not in {member.value for member in VerificationOutcome}:
         raise ValidationError(f"{outcome!r} is not a verification outcome.", code="unknown_key")
     stamped = obligation.last_verified_at
-    with library_write(f"reverification:obligation:{obligation.id}"):
+    with library_write(f"reverification:obligation:{obligation.id}", door="reverification"):
         verification = Verification.objects.create(
             subject_type=SubjectType.OBLIGATION.value,
             subject_id=obligation.id,
