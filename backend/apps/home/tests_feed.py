@@ -13,8 +13,8 @@ credential, so what is proved here is everything that stands in place of a sign-
   library holds, pinned by asserting the property names emitted against a set, so a field
   added to a roadmap item later fails here instead of reaching a phone.
 - **Stopped by the server.** The four rules that end a subscription are read on the
-  fetch, and the idle one on the list and the cap as well; each one revokes the row and
-  records a system actor doing it.
+  fetch, and the idle and re-enrolment ones on the list and the cap as well; each one
+  revokes the row once and records a system actor doing it.
 - **One person, one cap.** Two subscribe calls at once cannot both mint the last address.
 
 `tests_calendar.py` holds the other half of HOM-04, the public list, because
@@ -196,6 +196,22 @@ class FeedFixture(TestCase):
         tenancy.activate(self.tenant.id)
         return CalendarFeed.objects.filter(tenant=self.tenant)
 
+    def enrol_again(self, bank: Tenant, *, at: datetime.datetime = AFTER_ENROLMENT) -> None:
+        """An admin of `bank` re-issues the reader's enrolment, a minute after they subscribed
+        unless a test says when, through the function the members screen and the console both
+        call (ID-05)."""
+        admin = factories.member_user(bank, roles=("admin",))
+        with frozen_at(at):
+            tenancy.activate(bank.id)
+            invitation_logic.reissue_enrolment(
+                tenant=bank,
+                user=self.reader,
+                actor=factories.user_actor(user_id=admin.id),
+                actor_user=admin,
+                request=None,
+                step_up_assertion_id=None,
+            )
+
 
 class MintingAnAddress(FeedFixture):
     """`POST /calendar-feeds`: shown once, capped, audited, and never echoed again."""
@@ -292,12 +308,14 @@ class MintingAnAddress(FeedFixture):
         self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"))
 
 
-class TheIdleRuleOnTheListAndTheCap(FeedFixture):
-    """ADR 0045's idle expiry, read where a person looks as well as where a client fetches.
-    A subscription nobody fetched for a month works for nobody, so it is stopped the moment
-    its owner lists or adds subscriptions — never counted against the cap, never shown as
-    live — and stopped the way a fetch stops it: a system actor, audited, in that request's
-    transaction."""
+class TheListAndTheCapStopWhatNoLongerWorks(FeedFixture):
+    """ADR 0045's idle expiry and the re-enrolment rule, read where a person looks as well as
+    where a client fetches. A subscription nobody fetched for a month, or one made before its
+    owner was enrolled again, works for nobody, so it is stopped the moment its owner lists or
+    adds subscriptions — never counted against the cap, never shown as live — and stopped the
+    way a fetch stops it: a system actor, audited, in that request's transaction. The other
+    two rules need nothing here, because both routes already demand a member holding
+    `roadmap.read`."""
 
     def age(self, feed_ids: list[uuid.UUID]) -> None:
         self.own_rows().filter(pk__in=feed_ids).update(created_at=LONG_AGO, last_used_at=None)
@@ -339,6 +357,35 @@ class TheIdleRuleOnTheListAndTheCap(FeedFixture):
             list(self.own_rows().filter(revoked_at__isnull=True).values_list("pk", flat=True)),
             [uuid.UUID(created.json()["feed"]["id"])],
         )
+
+    def test_a_person_enrolled_again_is_neither_refused_at_the_cap_nor_shown_a_dead_address(self) -> None:
+        """Somebody re-enrolled because their devices were lost signs in on the new one and
+        subscribes again straight away. Every address they made before answers 404 from its
+        next fetch, so none of them may take a place under the cap or read as working in the
+        list until some calendar client happens to ask."""
+        factories.passkey(self.reader, nickname="Lost phone")
+        headers = self.headers()
+        for _ in range(settings.CALENDAR_FEEDS_PER_USER):
+            self.assertEqual(self.subscribe(headers).status_code, 201)
+        made_before = set(self.own_rows().values_list("pk", flat=True))
+        self.enrol_again(self.tenant)
+
+        with frozen_at(LATER_THAT_NIGHT):
+            factories.passkey(self.reader, nickname="New phone")
+            signed_in_again = self.headers()
+            created = self.subscribe(signed_in_again)
+            listed = self.client.get(FEEDS, **signed_in_again).json()
+
+        self.assertEqual(created.status_code, 201, "a dead address took a place under the cap")
+        self.assertEqual(
+            [row["id"] for row in listed if row["revokedAt"] is None],
+            [created.json()["feed"]["id"]],
+            "only the address made after the re-enrolment reads as working",
+        )
+        stopped = self.stopped_by_the_server()
+        self.assertEqual(set(stopped), made_before)
+        for summary in stopped.values():
+            self.assertIn("enrolled again", summary)
 
     def test_two_reads_that_find_one_idle_subscription_stop_it_once(self) -> None:
         """Two tabs on the account page, or a list while a calendar client polls, can both read
@@ -689,22 +736,6 @@ class TheServerStopsASubscriptionItself(FeedFixture):
             )
         self.assert_stopped(token, because="lost access to the roadmap")
 
-    def enrol_again(self, bank: Tenant) -> None:
-        """An admin of `bank` re-issues the reader's enrolment a minute after they
-        subscribed, through the function the members screen and the console both call
-        (ID-05)."""
-        admin = factories.member_user(bank, roles=("admin",))
-        with frozen_at(AFTER_ENROLMENT):
-            tenancy.activate(bank.id)
-            invitation_logic.reissue_enrolment(
-                tenant=bank,
-                user=self.reader,
-                actor=factories.user_actor(user_id=admin.id),
-                actor_user=admin,
-                request=None,
-                step_up_assertion_id=None,
-            )
-
     def test_being_enrolled_again_stops_it(self) -> None:
         """A re-enrolment retires every passkey and revokes every session, so an address
         minted by the person as they were is not one the person as they are now asked for."""
@@ -738,6 +769,20 @@ class TheServerStopsASubscriptionItself(FeedFixture):
             )
         self.assertEqual(self.fetch(token, at=LATER_THAT_NIGHT).status_code, 200)
         self.assertIsNone(self.own_rows().get().revoked_at)
+
+    def test_a_subscription_made_after_being_enrolled_again_keeps_working(self) -> None:
+        """The rule looks only at what happened since the subscription. A person re-enrolled
+        an hour ago, holding a new passkey, who then subscribes is the person as they are now
+        asking for the address, and their old passkeys going all at once must not stop it."""
+        with frozen_at(INSTANT - datetime.timedelta(hours=2)):
+            factories.passkey(self.reader, nickname="Lost phone")
+        self.enrol_again(self.tenant, at=INSTANT - datetime.timedelta(hours=1))
+        with frozen_at(INSTANT - datetime.timedelta(minutes=30)):
+            factories.passkey(self.reader, nickname="New phone")
+        token = self.token_of(self.subscribe())
+        self.assertEqual(self.fetch(token, at=LATER_THAT_NIGHT).status_code, 200)
+        self.assertIsNone(self.own_rows().get().revoked_at)
+        self.assertEqual(self.stopped_by_the_server(), {})
 
     def test_a_subscription_nobody_fetches_expires(self) -> None:
         token = self.token_of(self.subscribe())

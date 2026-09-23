@@ -395,14 +395,15 @@ def list_calendar_feeds(request: HttpRequest) -> Any:
     manages their own subscriptions.
 
     A read that changes nothing a person asked for. The one write it can make is the server's
-    own: a subscription nobody has fetched for `CALENDAR_FEED_IDLE_DAYS` days is stopped
-    here, before it is listed, and recorded as an audit event with a system actor — exactly
-    what the next fetch of it would have done — so the list never shows as working an address
-    that answers 404. A person's session holding `roadmap.read`. The caller's own rows only —
-    never another member's and never another bank's — and the address is **not** in this
-    answer: it is shown once when the subscription is created and stored afterwards only as
-    a lookup prefix and a hash, so a reader must not expect to recover a lost address here.
-    Revoking and creating a new one is the way back.
+    own: a subscription nobody has fetched for `CALENDAR_FEED_IDLE_DAYS` days, or one made
+    before the caller was enrolled again, is stopped here, before it is listed, and recorded
+    as an audit event with a system actor, once however many reads find it at the same moment
+    — exactly what the next fetch of it would have done — so the list never shows as working
+    an address that answers 404. A person's session holding `roadmap.read`. The caller's own
+    rows only — never another member's and never another bank's — and the address is
+    **not** in this answer: it is shown once when the subscription is created and stored
+    afterwards only as a lookup prefix and a hash, so a reader must not expect to recover a
+    lost address here. Revoking and creating a new one is the way back.
 
     Every subscription that still works is listed, and beside them the most recently stopped
     `CALENDAR_FEED_REVOKED_SHOWN` (five by default) with the date each stopped, so a person
@@ -445,9 +446,11 @@ def create_calendar_feed(request: HttpRequest, body: HomeCalendarFeedInput) -> A
 
     A person keeps at most `CALENDAR_FEEDS_PER_USER` subscriptions at once, which is what a
     phone, a laptop and a work calendar need; asking for one past the cap is refused, and
-    revoking one makes room. One nobody has fetched for `CALENDAR_FEED_IDLE_DAYS` days is
-    stopped by the server first, with an audit event of its own, and never counted. Two
-    calls at once take turns, so they cannot both take the last place.
+    revoking one makes room. One nobody has fetched for `CALENDAR_FEED_IDLE_DAYS` days, or
+    one made before the caller was enrolled again, is stopped by the server first, with an
+    audit event of its own, and never counted, so a person enrolled again after losing their
+    devices can subscribe at once. Two calls at once take turns, so they cannot both take
+    the last place.
 
     The address is returned **once**, in `url`, and never again: the server keeps only the
     lookup prefix and a SHA-256 of the secret, exactly as it does for an API key. Treat the

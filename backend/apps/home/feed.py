@@ -10,11 +10,12 @@ holds at most `CALENDAR_FEEDS_PER_USER` addresses that work; minting one takes a
 sign-in or a step-up (the route's own gate); an unknown, malformed, revoked or expired token
 all answer one 404; and every fetch re-checks that the owner is still a member who still
 holds `roadmap.read` and has not been enrolled again, revoking the subscription then and
-there when one of those has gone. One nobody has fetched for `CALENDAR_FEED_IDLE_DAYS` is
-stopped wherever it is next read — a fetch, its owner's list or their next subscribe — so it
-is never shown as working and never counted against the cap. No token, prefix or secret
-reaches a log line, an audit row or an error body: the plaintext exists in `create_feed()`
-and in its answer, and nowhere else at all.
+there when one of those has gone. One nobody has fetched for `CALENDAR_FEED_IDLE_DAYS`, or
+one made before its owner was enrolled again, is stopped wherever it is next read — a
+fetch, its owner's list or their next subscribe — so it is never shown as working and never
+counted against the cap. A row is stopped once: whoever finds it second leaves it as it is.
+No token, prefix or secret reaches a log line, an audit row or an error body: the plaintext
+exists in `create_feed()` and in its answer, and nowhere else at all.
 
 **What the document says is public.** The events are *selected* by this bank's roadmap —
 `roadmap.calendar_items()`, the roadmap's own query narrowed to the regulatory dates stated
@@ -130,8 +131,9 @@ def list_feeds(tenant: Tenant, user: User) -> list[HomeCalendarFeed]:
     years. What still works is capped already, so the list is bounded by design and needs
     no paging.
 
-    One gone idle is stopped here first, so the list never shows as working an address
-    that answers 404.
+    One gone idle, or made before its owner was enrolled again, is stopped here first, so
+    the list never shows as working an address that answers 404: the route already demands
+    a member holding `roadmap.read`, which are the fetch's other two rules.
     """
     _live_feeds(tenant, user, timezone.now())
     mine = CalendarFeed.objects.filter(tenant=tenant, user=user)
@@ -151,7 +153,9 @@ def create_feed(
     stolen session cannot quietly leave a drawer of addresses behind, and revoking one
     makes room. A revoked subscription is not counted, because it works for nobody — which
     is what makes "revoke one and subscribe again" true rather than nearly true — and nor is
-    one gone idle, which is stopped here first for the same reason.
+    one gone idle or made before the person was enrolled again, which is stopped here first
+    for the same reason: somebody re-enrolled because their devices were lost subscribes
+    again straight away.
 
     Two calls at once take turns. The caller's membership row is locked before anything is
     counted: it exists for every caller, where their live rows may be none, and a count
@@ -280,14 +284,18 @@ def calendar_ics(request: HttpRequest, token: str) -> HttpResponse:
 
 
 def _live_feeds(tenant: Tenant, user: User, now: datetime.datetime) -> list[CalendarFeed]:
-    """The caller's subscriptions that still work, after stopping each one gone idle the way
-    a fetch would stop it (ADR 0045). Where a person looks — their list, their next
-    subscribe — is where an idle address is found, so it is ended there rather than shown
-    as working or counted against the cap until some calendar client happens to ask."""
+    """The caller's subscriptions that still work, after stopping each one gone idle or made
+    before the caller was enrolled again, the way a fetch would stop it (ADR 0045). Where a
+    person looks — their list, their next subscribe — is where such an address is found, so
+    it is ended there rather than shown as working or counted against the cap until some
+    calendar client happens to ask. The person's passkeys are read once for all their rows."""
+    passkeys = _passkeys(user.id)
     live = []
     for feed in CalendarFeed.objects.filter(tenant=tenant, user=user, revoked_at__isnull=True):
         if _idle(feed, now):
             _revoke_automatically(feed, now, _idle_summary())
+        elif _enrolled_again(feed, passkeys):
+            _revoke_automatically(feed, now, ENROLLED_AGAIN)
         else:
             live.append(feed)
     return live
@@ -298,6 +306,9 @@ def _idle(feed: CalendarFeed, now: datetime.datetime) -> bool:
     or a device that was replaced, never one in use, because every fetch moves the stamp."""
     idle_since = feed.last_used_at or feed.created_at
     return now - idle_since > datetime.timedelta(days=settings.CALENDAR_FEED_IDLE_DAYS)
+
+
+ENROLLED_AGAIN = "Calendar subscription stopped: the person who made it was enrolled again."
 
 
 def _idle_summary() -> str:
@@ -323,25 +334,33 @@ def _subscription_ended(feed: CalendarFeed, now: datetime.datetime) -> str | Non
         return "Calendar subscription stopped: the person who made it is no longer a member."
     if perms.ROADMAP_READ not in roles_logic.permissions_of(membership.roles.all()):
         return "Calendar subscription stopped: the person who made it lost access to the roadmap."
-    if _enrolled_again(feed):
-        return "Calendar subscription stopped: the person who made it was enrolled again."
+    if _enrolled_again(feed, _passkeys(feed.user_id)):
+        return ENROLLED_AGAIN
     return None
 
 
-def _enrolled_again(feed: CalendarFeed) -> bool:
+def _passkeys(user_id: uuid.UUID) -> list[tuple[datetime.datetime, datetime.datetime | None]]:
+    """When each of a person's passkeys, retired ones included, was made and retired."""
+    return list(WebAuthnCredential.objects.filter(user_id=user_id).values_list("created_at", "retired_at"))
+
+
+def _enrolled_again(
+    feed: CalendarFeed, passkeys: list[tuple[datetime.datetime, datetime.datetime | None]]
+) -> bool:
     """Whether the owner has been enrolled again since they subscribed (ID-05), read from
     their passkeys, which are the person's and not a bank's.
 
     Re-enrolment retires every passkey a person holds in one statement, in whichever bank an
     admin issued it, and it is the only thing that can leave them with none: a person is
-    refused the removal of their last passkey (`identity/passkey_logic.remove_passkey`). So
-    a moment since the subscription at which no passkey was left is a re-enrolment, and
-    replacing one phone's passkey while keeping another is not. The security log's
-    `reenrolment_issued` row cannot serve: it is written in the issuing bank, and row-level
-    security hides it from every other bank the person belongs to, whose subscriptions have
-    to stop as well.
+    refused the removal of their last passkey, and `identity/passkey_logic.remove_passkey`
+    locks their passkeys before it counts them, so two removals at once cannot each leave
+    the other as the last. So a moment since the subscription at which no passkey was left
+    is a re-enrolment, and replacing one phone's passkey while keeping another is not; one
+    before the subscription is the person as they are now asking for it, and stops nothing.
+    The security log's `reenrolment_issued` row cannot serve: it is written in the issuing
+    bank, and row-level security hides it from every other bank the person belongs to,
+    whose subscriptions have to stop as well.
     """
-    passkeys = list(WebAuthnCredential.objects.filter(user_id=feed.user_id).values_list("created_at", "retired_at"))
     retirements = {retired for _, retired in passkeys if retired is not None and retired > feed.created_at}
     return any(
         all(created > moment or (retired is not None and retired <= moment) for created, retired in passkeys)
