@@ -5,7 +5,7 @@
   "today.empty.action": "Sätt den regulatoriska omfattningen under Admin",
   "today.errorTitle": "Kunde inte läsa in Idag",
   "today.comingUp.title": "Kommande",
-  "today.comingUp.empty": "Inget daterat framöver inom ert regelverksomfång.",
+  "today.comingUp.empty": "Inget daterat framöver inom vår omfattning.",
   "today.comingUp.roadmapLink": "Öppna färdplanen",
   "today.comingUp.count": "{count, plural, one {# daterad post framöver} other {# daterade poster framöver}}",
   "today.lead.moreThisWeek": "{count, plural, one {# post till denna vecka} other {# poster till denna vecka}}",

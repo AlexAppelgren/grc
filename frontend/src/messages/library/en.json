@@ -10,7 +10,7 @@
   "scope.notActivitySpecific": "Not activity-specific",
   "scope.notProductSpecific": "Not product-specific",
   "scope.notSpecific": "Not specific",
-  "library.outsideFootprint": "Outside your scope: {terms}",
+  "library.outsideFootprint": "Outside our scope: {terms}",
   "library.verified": "Verified {date}",
   "version.label": "Version {number}",
   "version.labelFrom": "Version {number}, from {date}",

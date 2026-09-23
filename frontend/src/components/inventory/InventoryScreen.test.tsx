@@ -172,7 +172,7 @@ describe('ObligationRow', () => {
   });
 
   it('names the terms that put a row outside the footprint, and leaves out what the row does not carry', () => {
-    expect(metaOf(adviceOnly, t, defaultFormatContext)).toEqual(['Advice, Portfolio management', 'Outside your scope: Advice']);
+    expect(metaOf(adviceOnly, t, defaultFormatContext)).toEqual(['Advice, Portfolio management', 'Outside our scope: Advice']);
   });
 
   it('renders the pills of the row slot order and links to the obligation', async () => {
@@ -198,7 +198,7 @@ describe('ObligationRow', () => {
     expect(row).toHaveAttribute('data-outside-footprint', '');
     expect(row.className).toContain('border-dashed');
     expect(within(row).getByRole('heading', { level: 3 })).toHaveTextContent('9 kap.');
-    expect(within(row).getByText('Outside your scope: Advice')).toBeVisible();
+    expect(within(row).getByText('Outside our scope: Advice')).toBeVisible();
     // Not binding, an applicability change waiting, and a gap: each pill from its slot or kind.
     expect([...row.querySelectorAll('[data-pill]')].map((pill) => pill.getAttribute('data-pill'))).toEqual(['brand', 'information', 'negative', 'warning']);
   });

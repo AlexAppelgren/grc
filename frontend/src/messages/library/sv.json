@@ -10,7 +10,7 @@
   "scope.notActivitySpecific": "Inte verksamhetsspecifik",
   "scope.notProductSpecific": "Inte produktspecifik",
   "scope.notSpecific": "Inte specifik",
-  "library.outsideFootprint": "Utanför er omfattning: {terms}",
+  "library.outsideFootprint": "Utanför vår omfattning: {terms}",
   "library.verified": "Verifierad {date}",
   "version.label": "Version {number}",
   "version.labelFrom": "Version {number}, från {date}",
