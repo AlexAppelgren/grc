@@ -21,9 +21,16 @@ answer narrower, never wrong.
 **Narrower, never wider.** The read is confined to `owner_tenant_id IS NULL` in code as well
 as by the policy, so a row a bank owns cannot be reached by a query written before such a
 row existed (D-10, H7). The regulatory scope is chunk 3's one rule — `taxonomy_in_footprint`
-over the record's own terms plus its instrument's regime, exactly as the obligations list
-and the watch feed apply it — and never a second copy of it here. Every filter compares a
-key or an id, so renaming a vocabulary row changes nothing a caller sent.
+over the record's own terms plus its instrument's regime and the jurisdictions its rules
+reach, from the SQL twins the obligations list hands the same function — and never a second
+copy of it here. Every filter compares a key or an id, so renaming a vocabulary row changes
+nothing a caller sent.
+
+**Ties are broken on what a rebuild keeps.** Two chunks may score the same on a leg, and
+the rank each gets decides its fused score. Every ranking here therefore breaks a tie on
+`TIE_BREAK` — the record's stable key, the kind, the language and the start date — and never
+on a uuid, so the same library answers in the same order on every fresh database, which is
+what lets the evaluation set gate a release (SRC-05).
 
 **One hit per record.** A duty is indexed once per language it is summarised in, and the
 reader asked about the duty. The page therefore carries the chunk whose own language read
@@ -56,7 +63,6 @@ import uuid
 from typing import Any
 
 from django.conf import settings
-from django.contrib.postgres.expressions import ArraySubquery
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.core.exceptions import ValidationError
@@ -81,8 +87,8 @@ from django.db.models.functions import Cast, Coalesce, NullIf, RowNumber
 from django.utils import timezone
 from pgvector.django import CosineDistance
 
-from apps.library.models import Instrument, ObligationTerm, ObligationTitle, ObligationVersion, Provision
-from apps.library.reading import today_for
+from apps.library.models import Instrument, Obligation, ObligationTitle, ObligationVersion, Provision
+from apps.library.reading import instrument_scope_term_ids, scope_term_ids, today_for
 from apps.search import limits
 from apps.search.models import TEXT_SEARCH_CONFIGS, SearchChunk, SearchSource
 from apps.search.schemas import (
@@ -98,6 +104,7 @@ from apps.shared.adapters import embedder, reranker
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy import matching
+from apps.watch.models import RegulatoryChange
 
 # Which chunk a caller means by a hit kind, and which kind a chunk answers as. One mapping,
 # read both ways, so a `types` filter and a hit can never disagree about what a chunk is.
@@ -126,6 +133,11 @@ COLUMNS = (
     "by_concept",
     "fused",
 )
+# What a tie is broken on wherever rows are ranked: the record's stable key, the kind of
+# chunk, its language and the day its text took effect. A rebuilt library reproduces all
+# four, where a chunk's or a record's uuid comes out different on every fresh database and
+# put two of the evaluation set's questions in another order from one run to the next.
+TIE_BREAK = ("record_key", "source_type", "language_id", "valid_from")
 WORDS = re.compile(r"\w+", re.UNICODE)
 ELLIPSIS = "…"
 
@@ -220,10 +232,11 @@ def _candidates(
     rows = rows.annotate(
         keyword_score=SearchRank(F("tsv"), asked),
         similarity=_similarity(text),
+        record_key=_record_key(),
     )
     rows = rows.annotate(
-        keyword_rank=Window(RowNumber(), order_by=(F("keyword_score").desc(), F("id").asc())),
-        concept_rank=Window(RowNumber(), order_by=(F("similarity").desc(nulls_last=True), F("id").asc())),
+        keyword_rank=Window(RowNumber(), order_by=(F("keyword_score").desc(), *TIE_BREAK)),
+        concept_rank=Window(RowNumber(), order_by=(F("similarity").desc(nulls_last=True), *TIE_BREAK)),
     )
     depth = settings.SEARCH_RETRIEVAL_DEPTH
     # Whether the words matched is `@@` and not the rank: `ts_rank` answers 1e-20 rather
@@ -248,7 +261,7 @@ def _candidates(
     # four records and call it the end of the list. The widest columns are left behind
     # (COLUMNS), so the extra rows cost a few kilobytes and no round trip.
     wanted = max(reranker.get_reranker().top_k, limit) * len(TEXT_SEARCH_CONFIGS)
-    page = rows.order_by(F("fused").desc(), "id").values(*COLUMNS)[:wanted]
+    page = rows.order_by(F("fused").desc(), *TIE_BREAK).values(*COLUMNS)[:wanted]
     return [row for row in page if row["by_keyword"] or row["by_concept"]]
 
 
@@ -301,20 +314,21 @@ def _filtered(
 
 def _in_footprint(tenant: Tenant) -> Func:
     """FP-03's verdict, from the database function the obligations list and the watch feed
-    use. The scope is chunk 3's rule (`library.reading.obligation_scopes`): the record's own
-    terms plus its instrument's regime, read from the library for the chunk's own record."""
-    own = ArraySubquery(
-        ObligationTerm.objects.filter(obligation_id=_outer_metadata_uuid("obligation_id")).order_by().values("term_id"),
+    use, over the scope the inventory hands it: `library.reading`'s SQL twins, read for the
+    chunk's own record and never copied here. An obligation's chunk is judged by the
+    obligation's own terms plus its instrument's scope; a provision's, which has no terms of
+    its own, by its instrument's scope alone; a chunk that names neither carries no scope
+    and matches every bank, as it did before. So the regime and the jurisdictions an
+    instrument's rules reach (D-28, D-29) narrow a search exactly as they narrow the
+    inventory."""
+    obligation = Obligation.objects.filter(id=_outer_metadata_uuid("obligation_id")).values(scope=scope_term_ids())
+    instrument = Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id")).values(scope=instrument_scope_term_ids())
+    scope = Coalesce(
+        Subquery(obligation[:1]),
+        Subquery(instrument[:1]),
+        Value([], output_field=ArrayField(UUIDField())),
         output_field=ArrayField(UUIDField()),
     )
-    regime = ArraySubquery(
-        Instrument.objects.filter(regime__isnull=False)
-        .filter(id=_outer_metadata_uuid("instrument_id"))
-        .order_by()
-        .values("regime_id"),
-        output_field=ArrayField(UUIDField()),
-    )
-    scope = Func(own, regime, function="array_cat", output_field=ArrayField(UUIDField()))
     return Func(
         Value(tenant.id, output_field=UUIDField()),
         scope,
@@ -375,6 +389,27 @@ def _record_id() -> Case:
     )
 
 
+def _record_key() -> Case:
+    """The stable key of the record the chunk was built from, the first thing a tie is
+    broken on (`TIE_BREAK`): one branch per kind of chunk, a change's included, so ties
+    stay broken the day changes are indexed."""
+    return Case(
+        When(
+            source_type=SearchSource.OBLIGATION_VERSION.value,
+            then=Subquery(Obligation.objects.filter(id=_outer_metadata_uuid("obligation_id")).values("stable_key")[:1]),
+        ),
+        When(
+            source_type=SearchSource.PROVISION_VERSION.value,
+            then=Subquery(Provision.objects.filter(versions__id=OuterRef("source_id")).values("stable_key")[:1]),
+        ),
+        When(
+            source_type=SearchSource.CHANGE.value,
+            then=Subquery(RegulatoryChange.objects.filter(id=OuterRef("source_id")).values("stable_key")[:1]),
+        ),
+        output_field=TextField(),
+    )
+
+
 def _heading() -> Coalesce:
     """The record's own heading in the language searched, which is what the screen puts in
     the hit's title: the chunk's own `title` is the citation line the keyword leg is built
@@ -412,7 +447,9 @@ def _reranked(query: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
     for index, row in enumerate(rows):
         row["score"] = row["fused"] + judged.get(index, 0.0)
-    return sorted(rows, key=lambda row: (-row["score"], str(row["id"])))
+    # sorted() is stable: rows the scores cannot separate keep the database's order, which
+    # broke every tie on `TIE_BREAK` and never on an id.
+    return sorted(rows, key=lambda row: -row["score"])
 
 
 def _documents(rows: list[dict[str, Any]]) -> list[str]:

@@ -220,7 +220,7 @@ def _metadata(
     return SearchChunkMetadata(
         instrument_id=instrument.id,
         obligation_id=obligation_id,
-        regime=instrument.regime.key if instrument.regime_id else None,
+        regime=instrument.regime.key,
         binding=instrument.binding,
         term_ids=term_ids,
         jurisdiction=instrument.jurisdiction.key,
