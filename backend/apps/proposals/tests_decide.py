@@ -32,7 +32,7 @@ from unittest import mock
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import DEFAULT_DB_ALIAS, connection, connections, transaction
+from django.db import DEFAULT_DB_ALIAS, IntegrityError, connection, connections, transaction
 from django.test import TransactionTestCase
 from django.utils import timezone
 
@@ -380,34 +380,129 @@ class DecidingAProposal(ScenarioTestCase):
         approved = self._post(f"/proposals/{proposal_id}/approve", {}, headers)
         self.assertEqual(approved.status_code, 200, approved.content)
 
-    def test_an_agent_cannot_approve_a_vocabulary_or_term_proposal_which_waits_for_a_person(self) -> None:
-        """D-79: an agent approves obligation versions only until the owner opens the list
-        and term kinds to it. The rows now record who confirmed them (taxonomy 0007,
-        apps/proposals/tests_provenance.py), but that decision is not taken: an agent's
-        approval is refused with its own code, applies nothing, and the proposal waits for a
-        person."""
-        flag = self._proposed("vocabulary_create", "Add the flag Client money", FLAG)
-        term = self._proposed("term_create", "Add the regime Crypto-assets", TERM)
+    def test_an_independent_agent_approves_every_vocabulary_and_term_kind_and_the_rows_say_a_machine_did(self) -> None:
+        """D-79 as lifted on 2026-09-23: every library list row and taxonomy term records who
+        confirmed it, so an agent of another definition and key approves every `vocabulary_*`
+        and `term_*` kind through the route a person calls. What it writes names the
+        confirming agent, never a person, and every label it writes is stored machine-made
+        (INV-05, D-62, ADR 0054); the console's queue read names the agent as the decider."""
         tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
-        key = agents_testing.reviewer_api_key()
-        reviewer = {"HTTP_X_API_KEY": key.plain_key}
-        # With the model call behind its decision and an open run of its own (D-80), so the
-        # refusal is D-79's and nothing else's.
-        decided = agents_testing.decision(key)
-        for proposal_id in (flag, term):
-            with self.subTest(proposal=proposal_id):
-                refused = self._post(f"/proposals/{proposal_id}/approve", decided, reviewer)
-                self.assertEqual(refused.status_code, 409, refused.content)
-                self.assertEqual(refused.json()["code"], "person_review_required")
-        self._assert_untouched(flag)
-        self._assert_untouched(term)
-        self.assertFalse(TaxonomyTerm.objects.filter(dimension__key=TERM["dimension"], key=TERM["key"]).exists())
-        # An agent may still reject one: a rejection writes no library row.
-        rejected = self._post(
-            f"/proposals/{term}/reject", {"rejectionCode": "duplicate", "note": "Covered by an existing regime.", **decided, "decision": agents_testing.REJECTION_DECISION}, reviewer
+        proposing = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        proposing_run = str(agents_testing.platform_run(key=proposing).id)
+        confirming = agents_testing.reviewer_api_key()
+        decided = agents_testing.decision(confirming)
+        dimension, key = TERM["dimension"], TERM["key"]
+        into = {"list": "flag", "key": "client_assets", "labels": {"en": "Client assets"}}
+        kinds: list[tuple[str, dict[str, Any]]] = [
+            ("vocabulary_create", FLAG),
+            ("vocabulary_create", into),
+            ("vocabulary_relabel", {"list": "flag", "key": FLAG["key"], "labels": {"fi": "Asiakasvarat"}}),
+            ("vocabulary_retire", {"list": "flag", "key": FLAG["key"]}),
+            ("vocabulary_restore", {"list": "flag", "key": FLAG["key"]}),
+            ("vocabulary_merge", {"list": "flag", "key": into["key"], "into": FLAG["key"]}),
+            ("term_create", TERM),
+            ("term_update", {"dimension": dimension, "key": key, "labels": {"sv": "Kryptotillgångar"}}),
+        ]
+        approved: dict[str, str] = {}
+        for kind, payload in kinds:
+            with self.subTest(kind=kind, key=payload["key"]):
+                filed = self._post(
+                    "/proposals",
+                    {"kind": kind, "title": f"{kind} {payload['key']}", "payload": payload, "agentRunId": proposing_run},
+                    {"HTTP_X_API_KEY": proposing.plain_key},
+                )
+                self.assertEqual(filed.status_code, 201, filed.content)
+                tenancy.clear_tenant()
+                answer = self._post(f"/proposals/{filed.json()['id']}/approve", {"note": "Agreed.", **decided}, {"HTTP_X_API_KEY": confirming.plain_key})
+                self.assertEqual(answer.status_code, 200, answer.content)
+                tenancy.clear_tenant()
+                # The console's read of the decision names the agent in the agent's slot and
+                # no person at all.
+                self.assertEqual(answer.json()["status"], ProposalStatus.APPROVED.value)
+                self.assertIsNone(answer.json()["reviewedBy"])
+                self.assertEqual(answer.json()["reviewedByAgent"]["key"], confirming.agent.key)
+                approved[f"{kind}:{payload['key']}"] = filed.json()["id"]
+
+        confirmed_by_agent = ("agent", confirming.agent.id)
+        flag = Flag.objects.get(key=FLAG["key"])
+        self.assertTrue(flag.active)
+        # The relabel wrote wording, so the stamp names it; the retire, restore and merge
+        # after it wrote none and left it.
+        self.assertEqual(
+            (flag.verified_origin, flag.verified_by_agent_id, str(flag.applied_by_proposal_id)),
+            (*confirmed_by_agent, approved["vocabulary_relabel:client_money"]),
         )
-        self.assertEqual(rejected.status_code, 200, rejected.content)
-        # A person approves the other, as before.
+        self.assertEqual(
+            {label.language: (label.is_original, label.is_machine) for label in flag.labels.all()},
+            {"en": (True, True), "sv": (False, True), "fi": (False, True)},
+        )
+        merged = Flag.objects.get(key=into["key"])
+        self.assertFalse(merged.active)
+        self.assertEqual((merged.verified_origin, merged.verified_by_agent_id), confirmed_by_agent)
+        term = TaxonomyTerm.objects.get(dimension__key=dimension, key=key)
+        self.assertEqual(
+            (term.verified_origin, term.verified_by_agent_id, str(term.applied_by_proposal_id)),
+            (*confirmed_by_agent, approved["term_update:crypto_assets"]),
+        )
+        self.assertEqual(
+            {label.language: (label.is_original, label.is_machine) for label in term.labels.all()},
+            {"en": (True, True), "sv": (False, True)},
+        )
+        # Every decision is the agent's: no person reviewed, the key and agent are named, and
+        # the model call behind it is logged in the run it named (AUD-02, D-80).
+        rows = Proposal.objects.filter(pk__in=approved.values())
+        self.assertEqual(
+            set(rows.values_list("status", "reviewed_by_id", "reviewed_by_api_key_id", "reviewed_by_agent_id")),
+            {(ProposalStatus.APPROVED.value, None, confirming.id, confirming.agent.id)},
+        )
+        self.assertEqual(
+            sorted(str(subject) for subject in AiGeneration.objects.filter(purpose=AiPurpose.AGENT_REVIEW.value).values_list("subject_id", flat=True)),
+            sorted(approved.values()),
+        )
+
+    def test_the_same_principal_twice_is_still_refused_on_a_vocabulary_or_term_proposal(self) -> None:
+        """Lifting D-79 widened which kinds an agent approves, not who counts as a second
+        principal: the key that filed, a second key of its definition, and a row written
+        straight past the logic are all refused by four eyes (D-62, ADR 0054)."""
+        tenancy.clear_tenant()
+        definition = agents_testing.agent()
+        both = agents_testing.agent_key(agent_row=definition, scopes=(perms.SCOPE_PROPOSALS_WRITE, perms.SCOPE_PROPOSALS_REVIEW))
+        sibling = agents_testing.agent_key(agent_row=definition, scopes=(perms.SCOPE_PROPOSALS_REVIEW,))
+        run = str(agents_testing.platform_run(key=both).id)
+        for kind, payload in (("vocabulary_create", FLAG), ("term_create", TERM)):
+            with self.subTest(kind=kind):
+                filed = self._post("/proposals", {"kind": kind, "title": f"Add {payload['key']}", "payload": payload, "agentRunId": run}, {"HTTP_X_API_KEY": both.plain_key})
+                self.assertEqual(filed.status_code, 201, filed.content)
+                proposal_id = filed.json()["id"]
+                for key in (both, sibling):
+                    tenancy.clear_tenant()
+                    refused = self._post(f"/proposals/{proposal_id}/approve", agents_testing.decision(key), {"HTTP_X_API_KEY": key.plain_key})
+                    self.assertEqual(refused.status_code, 409, refused.content)
+                    self.assertEqual(refused.json()["code"], "four_eyes_violation")
+                tenancy.clear_tenant()
+                with self.assertRaises(IntegrityError) as caught, transaction.atomic():
+                    Proposal.objects.filter(pk=proposal_id).update(
+                        status=ProposalStatus.APPROVED.value, reviewed_by_api_key=sibling.row, reviewed_by_agent=definition, reviewed_at=timezone.now()
+                    )
+                self.assertIn("proposal_four_eyes", str(caught.exception))
+                self._assert_untouched(proposal_id)
+        self.assertFalse(TaxonomyTerm.objects.filter(dimension__key=TERM["dimension"], key=TERM["key"]).exists())
+
+    def test_a_kind_whose_record_cannot_name_its_confirming_agent_waits_for_a_person(self) -> None:
+        """The rule stays keyed on the kinds that carry machine-confirmed provenance
+        (`AGENT_CONFIRMABLE_KINDS`), so a kind added without it is refused to an agent with
+        409 `person_review_required`, applies nothing, and a person still approves it. Every
+        list and term kind carries it, so the proof narrows the set to the obligation kind
+        alone; a provision, which does not, is proven in tests_kinds.py."""
+        flag = self._proposed("vocabulary_create", "Add the flag Client money", FLAG)
+        tenancy.clear_tenant()
+        key = agents_testing.reviewer_api_key()
+        with mock.patch.object(logic, "AGENT_CONFIRMABLE_KINDS", logic.OBLIGATION_KINDS):
+            refused = self._post(f"/proposals/{flag}/approve", agents_testing.decision(key), {"HTTP_X_API_KEY": key.plain_key})
+        self.assertEqual(refused.status_code, 409, refused.content)
+        self.assertEqual(refused.json()["code"], "person_review_required")
+        self._assert_untouched(flag)
+        self.assertFalse(AiGeneration.objects.filter(subject_id=flag).exists(), "a refused decision logs no model call")
         approved = self._post(f"/proposals/{flag}/approve", {}, sign_in(self.second_editor, step_up=True))
         self.assertEqual(approved.status_code, 200, approved.content)
         self.assertTrue(Flag.objects.filter(key=FLAG["key"]).exists())

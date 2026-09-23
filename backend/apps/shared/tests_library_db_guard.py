@@ -37,10 +37,13 @@ What is proven here:
   whom the trigger lets through, so a writer that names the wrong door — a vocabulary merge
   that moves a watch row inside the proposal door, say — would pass it and fail only in
   E2E. Here every proposal kind is filed and approved through `proposals.logic` as a
-  console request does it, and every watch step writes through its own entry point, all on
-  the cw_app connection. Two censuses keep that whole: every `ProposalKind` must be
-  approved here, and every module allowed to open the watch door must be exercised here,
-  so a new kind or a new watch step fails this guard until it is proven as the app role.
+  console request does it, every kind an agent may approve again as one agent files it and
+  an agent of another definition approves it (D-79, lifted 2026-09-23), and every watch step
+  writes through its own entry point, all on the cw_app connection. Three censuses keep that
+  whole: every `ProposalKind` must be approved here by a person, every kind in
+  `AGENT_CONFIRMABLE_KINDS` by an agent, and every module allowed to open the watch door must
+  be exercised here, so a new kind, a kind opened to agents or a new watch step fails this
+  guard until it is proven as the app role.
 - **A door lasts only as long as its transaction.** A door set in autocommit is gone by the
   next statement, which is why every door opens a transaction (a savepoint inside one).
 
@@ -75,8 +78,11 @@ from django.db import DEFAULT_DB_ALIAS, DatabaseError, connections, models, tran
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 
+from apps.agents import testing as agents_testing
+from apps.governance.models import AiGeneration
 from apps.library import testing as library_testing
 from apps.library.models import (
+    Instrument,
     InstrumentTitle,
     Jurisdiction,
     JurisdictionLabel,
@@ -104,7 +110,9 @@ from apps.search import eval_sets, indexing
 from apps.search.models import EvalQuestion, EvalRun, SearchChunk
 from apps.search.schemas import EvalQuestionInput, SearchMatchKind
 from apps.shared import factories, permissions as perms, tenancy
+from apps.shared.audit import Actor, ActorType
 from apps.shared.migration_helpers import LIBRARY_DOOR_FUNCTION, LIBRARY_DOOR_SETTING
+from apps.shared.schemas import AgentDecision
 from apps.shared.tenancy import LibraryDoor, LibraryModel, library_door, library_write
 from apps.shared.testing import production_models, user_principal
 from apps.shared.tests_library_fence import WATCH_WRITE_ALLOWLIST
@@ -599,6 +607,109 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
         self.assertTrue(SearchChunk.objects.filter(source_id=version.id).exists())
         self.assertEqual(Obligation.objects.get(stable_key=OBLIGATION_KEY).instrument.stable_key, INSTRUMENT_KEY)
         self.assertEqual(Provision.objects.get(stable_key=PROVISION_KEY).versions.count(), 2)
+
+    def test_an_independent_agent_approves_every_kind_it_may_as_the_app_role(self) -> None:
+        """D-79 as lifted on 2026-09-23: an agent's approval of every kind whose record can
+        name its confirming agent writes the library through the proposal door as cw_app too,
+        with the model call behind it logged and the machine-confirmed stamp on what it
+        confirmed. One agent files, a key of another definition approves, each in a
+        transaction of its own as their requests would."""
+        proposing = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        confirming = agents_testing.reviewer_api_key()
+        proposing_run = agents_testing.platform_run(key=proposing)
+        confirming_run = agents_testing.platform_run(key=confirming)
+        reviewer = proposals.Reviewer(
+            actor=Actor(kind=ActorType.AGENT, id=confirming.agent.id, label=confirming.agent.key),
+            api_key_id=confirming.id,
+            agent_id=confirming.agent.id,
+            api_key_prefix=confirming.row.key_prefix,
+        )
+        bodies: list[dict[str, Any]] = [
+            {"kind": kind, "payload": payload}
+            for kind, payload in (
+                ("vocabulary_create", {"list": "flag", "key": "agent_money", "labels": {"en": "Agent money"}}),
+                ("vocabulary_create", {"list": "flag", "key": "agent_funds", "labels": {"en": "Agent funds"}}),
+                ("vocabulary_relabel", {"list": "flag", "key": "agent_money", "labels": {"sv": "Agentpengar"}}),
+                ("vocabulary_retire", {"list": "flag", "key": "agent_money"}),
+                ("vocabulary_restore", {"list": "flag", "key": "agent_money"}),
+                ("vocabulary_merge", {"list": "flag", "key": "agent_funds", "into": "agent_money"}),
+                ("term_create", {"dimension": "client_category", "key": "agent_client", "labels": {"en": "Agent client"}}),
+                ("term_update", {"dimension": "client_category", "key": "agent_client", "labels": {"sv": "Agentklient"}}),
+            )
+        ]
+        # The kinds that write a law's records, sourced as apps/proposals/tests_kinds.py files
+        # them: a version of an obligation that exists, a new instrument, and a duty under it.
+        bodies += [
+            {
+                "kind": "new_obligation_version",
+                "payload": {
+                    "summaries": {"en": "The firm assesses the client before advising.", "sv": "Företaget bedömer kunden innan rådgivning."},
+                    "originalLanguage": "en",
+                    "effectiveFrom": (timezone.localdate() + datetime.timedelta(days=30)).isoformat(),
+                    "effectiveFromPrecision": "day",
+                },
+                "targetType": "obligation",
+                "targetId": str(self.obligation.id),
+                "fieldSources": dict.fromkeys(("summaries.en", "summaries.sv", "effectiveFrom"), SOURCE_URL),
+            },
+            instrument_body(),
+            obligation_body(instrument=INSTRUMENT_KEY),
+        ]
+        decided: list[Proposal] = []
+        with as_the_app_role():
+            for body in bodies:
+                with transaction.atomic():
+                    tenancy.clear_tenant()
+                    proposal, _ = proposals.create(
+                        kind=body["kind"],
+                        title=f"Proven as the app role by an agent: {body['kind']}",
+                        payload=body["payload"],
+                        proposer=proposals.Proposer(
+                            actor=Actor(kind=ActorType.AGENT, id=proposing.agent.id, label=proposing.agent.key),
+                            api_key_id=proposing.id,
+                            agent_id=proposing.agent.id,
+                        ),
+                        agent_run_id=proposing_run.id,
+                        target_type=body.get("targetType", ""),
+                        target_id=uuid.UUID(body["targetId"]) if "targetId" in body else None,
+                        field_sources=body.get("fieldSources"),
+                        source_label=body.get("sourceLabel", ""),
+                        source_url=body.get("sourceUrl", ""),
+                    )
+                with transaction.atomic():
+                    tenancy.clear_tenant()
+                    decided.append(
+                        proposals.approve(
+                            proposal=proposals.by_id(proposal.id),
+                            reviewer=reviewer,
+                            actor=reviewer.actor,
+                            note="",
+                            step_up_assertion_id=None,
+                            decision=AgentDecision.model_validate(agents_testing.DECISION),
+                            agent_run_id=confirming_run.id,
+                        )
+                    )
+        # The census: a kind opened to agents fails here until an agent approves it above.
+        self.assertEqual(
+            {proposal.kind for proposal in decided},
+            proposals.AGENT_CONFIRMABLE_KINDS,
+            "a kind an agent may approve, not approved here by an agent as the app role",
+        )
+        self.assertEqual({proposal.status for proposal in decided}, {ProposalStatus.APPROVED.value})
+        money = Flag.objects.get(key="agent_money")
+        self.assertEqual((money.active, money.verified_origin, money.verified_by_agent_id), (True, "agent", confirming.agent.id))
+        self.assertEqual({label.language: label.is_machine for label in money.labels.all()}, {"en": True, "sv": True})
+        self.assertFalse(Flag.objects.get(key="agent_funds").active)
+        term = TaxonomyTerm.objects.get(dimension__key="client_category", key="agent_client")
+        self.assertEqual((term.verified_origin, term.verified_by_agent_id), ("agent", confirming.agent.id))
+        self.assertEqual(term.labels.get(language="sv").is_machine, True)
+        version = ObligationVersion.objects.get(applied_by_proposal=next(p for p in decided if p.kind == "new_obligation_version"))
+        instrument = Instrument.objects.get(stable_key=INSTRUMENT_KEY)
+        obligation = Obligation.objects.get(stable_key=OBLIGATION_KEY)
+        for record in (version, instrument, obligation):
+            with self.subTest(record=type(record).__name__):
+                self.assertEqual((record.verified_origin, record.verified_by_agent_id), ("agent", confirming.agent.id))
+        self.assertEqual(AiGeneration.objects.filter(agent_run=confirming_run).count(), len(bodies))
 
     def test_every_watch_step_writes_through_its_own_entry_point_as_the_app_role(self) -> None:
         editor = factories.platform_user(roles=("library_editor",), email="door-editor@bleqq.test")

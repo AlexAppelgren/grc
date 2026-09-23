@@ -25,7 +25,7 @@ from django.test import TestCase
 from apps.agents import testing as agent_build, tests_flow as agent_flow
 from apps.agents.models import Agent
 from apps.agents.screen import EMBEDDED_INSTRUCTIONS
-from apps.agents.seeds import seed_agent_definitions
+from apps.agents.seeds import SHIPPED, seed_agent_definitions
 from apps.agents.seeds.definition import DEFINITIONS
 from apps.governance.models import AiGeneration
 from apps.library.models import ObligationVersion
@@ -599,7 +599,7 @@ class AgentsScenarioTests(TestCase):
         )
         self.assertNotEqual((confirmer_key.agent.id, confirmer_key.id), (sweeper_key.agent.id, sweeper_key.id))
         self.assertEqual((sweeper_key.agent.kind, confirmer_key.agent.kind), ("watch", "review"))
-        prompts = {key: (DEFINITIONS / key / "v1" / "prompt.md").read_text(encoding="utf-8") for key in ("watch-sweeper", "library-confirmer")}
+        prompts = {key: (DEFINITIONS / key / f"v{version}" / "prompt.md").read_text(encoding="utf-8") for key, version in SHIPPED}
         self.assertNotEqual(prompts["watch-sweeper"], prompts["library-confirmer"])
         as_confirmer = {"HTTP_X_API_KEY": confirmer_key.plain_key}
 

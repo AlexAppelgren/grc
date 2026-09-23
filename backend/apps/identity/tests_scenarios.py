@@ -1031,9 +1031,8 @@ class IdentityScenarioTests(ScenarioTestCase):
 
         proposer_key = factories.api_key(self.tenant, scopes=("proposals:write",))
         agent_headers = {"HTTP_X_API_KEY": proposer_key.plain_key}
-        # An agent approves an obligation version: that is the record that can say an
-        # agent confirmed it (D-79). A vocabulary row cannot yet, so its proposal waits for
-        # a person, and this one is rejected below instead.
+        # An agent approves an obligation version and a vocabulary row, both records that
+        # name the agent that confirmed them (D-79), and rejects a second list proposal.
         made = self._post(
             "/proposals",
             {
@@ -1053,6 +1052,12 @@ class IdentityScenarioTests(ScenarioTestCase):
             **agent_headers,
         )
         self.assertEqual(second.status_code, 201, second.content)
+        listed_value = self._post(
+            "/proposals",
+            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}},
+            **agent_headers,
+        )
+        self.assertEqual(listed_value.status_code, 201, listed_value.content)
 
         # A bank's key holding proposals:review, written straight to the table as no route
         # would write it, is refused on the list, approve and reject alike, and the proposals
@@ -1092,6 +1097,16 @@ class IdentityScenarioTests(ScenarioTestCase):
         rejected = self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists.", **sent, "decision": agents_testing.REJECTION_DECISION}, **reviewer)
         self.assertEqual(rejected.status_code, 200, rejected.content)
         self.assertFalse(Flag.objects.filter(key="sanctioned").exists())
+        tenancy.clear_tenant()
+        value = self._post(f"/proposals/{listed_value.json()['id']}/approve", {"note": "Agreed.", **sent}, **reviewer)
+        self.assertEqual(value.status_code, 200, value.content)
+        tenancy.clear_tenant()
+        flag = Flag.objects.get(key="client_money")
+        self.assertEqual(
+            (flag.verified_origin, flag.verified_by_agent_id, str(flag.applied_by_proposal_id)),
+            ("agent", reviewer_key.agent.id, listed_value.json()["id"]),
+            "the change reached the library only through apply, stamped as the agent's",
+        )
 
         # A key without proposals:review answers 403 naming the missing scope; every
         # instrument, provision, obligation and vocabulary route it might try to write

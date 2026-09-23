@@ -8,9 +8,9 @@ writes the record (and a new obligation's first version) with its audit row and 
 re-index in one transaction. An instrument's regime is a term of the regime dimension, or
 422 `not_a_regime` at every door: creation, correction and apply.
 
-Provenance is proven through `apply.apply` for an agent reviewer, because an agent's
-`approve()` of these kinds still waits for a person (D-79) until the vocabulary and term
-provenance lands; the record must say an agent confirmed it the moment one may.
+An independent agent approves a new instrument and a new obligation through the real
+route, and the record says an agent confirmed it (D-79). A provision has no column to say so,
+so an agent's approval of one waits for a person.
 
 The standards check (INV-08, D-35, D-36) answers at the same three doors: `licensed_text`
 for a provision under a standard or a non-link source on a standard's obligation,
@@ -227,6 +227,15 @@ class KindsTestCase(ScenarioTestCase):
             agent_run_id=self.agent_run.id,
         )
 
+    def _approve_as_agent(self, proposal_id: str) -> tuple[Any, Any]:
+        """Approve as an independent agent through the real route: a key of another
+        definition than the proposer's, with the model call behind its decision and an open
+        run of its own (D-62, D-80). Returns the response and the confirming key."""
+        confirmer = agents_testing.reviewer_api_key()
+        tenancy.clear_tenant()
+        response = self._post(f"/proposals/{proposal_id}/approve", agents_testing.decision(confirmer), {"HTTP_X_API_KEY": confirmer.plain_key})
+        return response, confirmer
+
     def _agent_reviewer(self, confirmer: Any = None) -> logic.Reviewer:
         confirmer = confirmer or agents_testing.reviewer_api_key()
         actor = Actor(kind=ActorType.AGENT, id=confirmer.agent.id, label=confirmer.agent.key)
@@ -269,13 +278,11 @@ class NewInstrument(KindsTestCase):
         self.assertEqual(event.after["proposal"], proposal["id"])
 
     def test_an_agent_reviewer_stamps_machine_confirmed(self) -> None:
-        proposal = Proposal.objects.get(pk=self._filed(instrument_body())["id"])
-        reviewer = self._agent_reviewer()
+        approved, confirmer = self._approve_as_agent(self._filed(instrument_body())["id"])
 
-        apply.apply(proposal, actor=reviewer.actor, reviewer=reviewer, step_up=None)
-
+        self.assertEqual(approved.status_code, 200, approved.content)
         instrument = Instrument.objects.get(stable_key=INSTRUMENT_KEY)
-        self.assertEqual((instrument.verified_origin, instrument.verified_by_agent_id), ("agent", reviewer.agent_id))
+        self.assertEqual((instrument.verified_origin, instrument.verified_by_agent_id), ("agent", confirmer.agent.id))
         self.assertIsNone(instrument.verified_by_id, "no person is named as its verifier")
         self.assertEqual((instrument.created_origin, instrument.created_by_agent_run), ("agent", self.agent_run.id))
 
@@ -360,16 +367,14 @@ class NewObligation(KindsTestCase):
         self.assertEqual((event.after["versionNumber"], event.after["proposal"]), (1, proposal["id"]))
 
     def test_an_agent_reviewer_stamps_the_obligation_and_its_version(self) -> None:
-        proposal = Proposal.objects.get(pk=self._filed(obligation_body(isMachine=False))["id"])
-        reviewer = self._agent_reviewer()
+        approved, confirmer = self._approve_as_agent(self._filed(obligation_body(isMachine=False))["id"])
 
-        apply.apply(proposal, actor=reviewer.actor, reviewer=reviewer, step_up=None)
-
+        self.assertEqual(approved.status_code, 200, approved.content)
         obligation = Obligation.objects.get(stable_key=OBLIGATION_KEY)
         version = ObligationVersion.objects.get(obligation=obligation)
         for record in (obligation, version):
             with self.subTest(record=type(record).__name__):
-                self.assertEqual((record.verified_origin, record.verified_by_agent_id), ("agent", reviewer.agent_id))
+                self.assertEqual((record.verified_origin, record.verified_by_agent_id), ("agent", confirmer.agent.id))
         self.assertIsNone(version.approved_by_id, "no person is named as its verifier")
         self.assertEqual(Proposal.objects.get(pk=str(version.applied_by_proposal_id)).proposed_by_agent_id, self.proposer.agent.id)
         # An agent's approval confirms no translation, whatever the payload claimed.
@@ -571,7 +576,8 @@ class NewProvision(KindsTestCase):
         self.assertFalse(Proposal.objects.exists())
 
     def test_an_agent_cannot_approve_a_provision_yet(self) -> None:
-        """A provision version has nowhere to say an agent confirmed it (INV-05, D-79)."""
+        """A provision version has nowhere to say an agent confirmed it, so it is not in
+        `AGENT_CONFIRMABLE_KINDS` and waits for a person (INV-05, D-79)."""
         proposal = Proposal.objects.get(pk=self._filed(provision_body())["id"])
         confirmer = agents_testing.reviewer_api_key()
         reviewer = self._agent_reviewer(confirmer)

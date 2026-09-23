@@ -675,7 +675,8 @@ your own answer in chat to the session that merges it.
 
 ## proposals-decide-hardening (2026-09-23): an agent confirms obligation versions only (D-79)
 
-- [ ] **An agent may no longer approve a vocabulary or term proposal; it waits for a person.**
+- [x] **An agent may no longer approve a vocabulary or term proposal; it waits for a person.**
+      **Answered 2026-09-23, and lifted by `vocab-agent-confirm`:** see the next section.
       Only an obligation version can record that an agent confirmed it (`verified_origin`,
       `verified_by_agent`); a vocabulary row, its labels and a taxonomy term have no such
       columns, so an agent's approval of one would have read as a person's check (INV-05).
@@ -688,8 +689,18 @@ your own answer in chat to the session that merges it.
 
 ## vocab-term-provenance (2026-09-23): the columns for D-79's alternative are built; the 409 waits for your yes
 
-- [ ] **Say, in your own words, whether an agent may now approve vocabulary and term
-      proposals.** The build plan records your 2026-09-23 answer to the box above as the
+- [x] **Say, in your own words, whether an agent may now approve vocabulary and term
+      proposals.** **Answered 2026-09-23, in chat to the session orchestrating the R1
+      build, which put it into the repository as the `vocab-agent-confirm` brief
+      (`docs/plans/r1-waves/wave4.json` on `claude/r1-plan`).** Asked "An agent can now
+      approve proposals (D-62), but vocabulary lists and taxonomy terms have no column to
+      record machine-confirmed provenance. How should agent approval of those proposal
+      kinds work?", you chose "Add provenance columns now": "Every library list row and taxonomy term gains the machine-confirmed provenance an obligation version has, so agents can confirm them too. More migrations and screens in wave 2, but no human bottleneck on vocabulary." You declined "Refuse until provenance
+      exists". Done in `vocab-agent-confirm`: the 409 is lifted for every
+      `vocabulary_*` and `term_*` kind (the rule stays keyed on the kinds whose record can
+      name its confirming agent, so a kind added without that still waits for a person),
+      `library-confirmer` v2 decides the list and term kinds, D-79 records the lift, and PRO-S13 and
+      ID-S31 prove it with a vocabulary kind. What follows is the original question. The build plan records your 2026-09-23 answer to the box above as the
       alternative (provenance columns), but it reached this work relayed through the plan,
       not in your words, and the box above is still open. So only the half that changes
       nothing about who may approve was built: every library list and every taxonomy term

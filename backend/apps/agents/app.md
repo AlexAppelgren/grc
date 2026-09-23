@@ -71,7 +71,10 @@ green, AGT-01 is built.
 
 Two definitions ship: `watch-sweeper` (kind `watch`), which proposes, and
 `library-confirmer` (kind `review`, D-62, D-80), which decides what another
-definition proposed and never proposes itself. Each definition names the
+definition proposed and never proposes itself. Its v2 decides list values and
+taxonomy terms as well as obligation versions, since Alex lifted D-79's interim
+refusal on 2026-09-23; v1 left those to a person. Every other kind it leaves open
+for a person. Each definition names the
 vocabularies it reads at run start; a key with `library:read` reads each of them
 as key, kind, label and usage note on its active rows, submits those keys only,
 and brings a new term as a proposal (AGT-02). A confirming agent's decision

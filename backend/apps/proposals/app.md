@@ -32,10 +32,14 @@ verification. An obligation version carries it, and since taxonomy 0007 so do a
 library list row and a taxonomy term: the approval that writes their wording
 records `user` or `agent`, the confirming agent and the proposal. Every label an
 agent's approval writes is stored machine-made, and the row keeps naming the
-agents until a person has approved all the wording they left. An agent still
-approves obligation versions only until the owner opens the list and term kinds
-to it; a vocabulary or term proposal answers it 409 `person_review_required` and
-waits for a person, though an agent may reject one (D-79). A key bound to no agent definition is
+agents until a person has approved all the wording they left. A new instrument
+records it on its row, and a new obligation on its row and its first version. So
+an agent approves every kind whose record can name it: an obligation version, a
+new instrument, a new obligation and, since Alex lifted D-79's interim refusal on
+2026-09-23, every vocabulary and term kind. A provision and its versions have no
+such column, so `new_provision` and `new_provision_version` answer an agent 409
+`person_review_required` and wait for a person, as will any kind added later
+without that provenance (D-79). A key bound to no agent definition is
 refused at the queue's gate with 403 `agent_not_bound`.
 
 The prototype shows the tenant's compliance officer approving agent
@@ -293,6 +297,8 @@ And a decision sent without the model call behind it answers 422, and one naming
 And a correction by the agent that moves the original language answers 422 and applies nothing
 And the model call behind each decision is logged against the proposal in the run the agent named
 And the audit row names the confirming agent, its definition version, its key and that run, and carries no step-up assertion
+When it approves a vocabulary proposal from the same queue
+Then the list row names the confirming agent and the proposal, every label it wrote is stored machine-made, and the list read names both agents and no person
 And a key without the review scope answers 403
 And no route under the review scope writes a library row except through apply
 ```

@@ -139,6 +139,19 @@ REGIME_DIMENSION = "regime"
 UNSOURCED_FIELDS = frozenset(
     {"key", "originalLanguage", "isMachine", "effectiveFromPrecision", "inForceFromPrecision", "inForceToPrecision", "sortOrder"}
 )
+TERM_KINDS = frozenset({ProposalKind.TERM_CREATE.value, ProposalKind.TERM_UPDATE.value})
+# The kinds whose applied record can say an agent confirmed it (`verified_origin` and
+# `verified_by_agent`): an obligation version, every library list row and taxonomy term
+# (taxonomy 0007), a new instrument, and a new obligation with its first version. Only these
+# may an independent agent approve (INV-05, D-62, D-79). A provision and its versions have no
+# such column, so `new_provision` and `new_provision_version` wait for a person, as does any
+# kind added later without that provenance.
+AGENT_CONFIRMABLE_KINDS = (
+    OBLIGATION_KINDS
+    | VOCABULARY_KINDS
+    | TERM_KINDS
+    | frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value})
+)
 # The payloads that name a row by key and carry labels: the key must be its own slug and
 # the labels real languages, as the vocabulary routes make them.
 NAMED_PAYLOADS = (
@@ -985,12 +998,13 @@ def approve(
     call is logged as one `agent_review` row and the audit row names the run (`_decision_run`,
     AUD-02, D-80). A person sends neither.
 
-    An agent approves an obligation version only (INV-05, D-79). A vocabulary row and a
-    taxonomy term record who confirmed them too since taxonomy 0007, and `apply` marks
-    every label an agent writes machine-made, but opening those kinds to an agent is the
-    owner's decision and is not taken yet: an agent's approval of one is refused with 409
-    `person_review_required` and waits for a person. Rejecting one writes no library row,
-    so an agent still may.
+    An agent approves only a kind whose record can say an agent confirmed it
+    (`AGENT_CONFIRMABLE_KINDS`, INV-05, D-79): an obligation version, a new instrument, a new
+    obligation, and since Alex lifted D-79's interim refusal on 2026-09-23 every vocabulary
+    and term kind, whose rows `apply` stamps with the confirming agent and whose every label
+    it writes machine-made. A kind without that provenance, today a new provision or a
+    provision's new text, is refused to an agent with 409 `person_review_required` and waits
+    for a person. Rejecting writes no library row, so an agent may reject any kind.
 
     `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
     older caller; `as_reviewer` normalizes either into the same shape below.
@@ -1001,9 +1015,9 @@ def approve(
     with transaction.atomic():
         run = _decision_run(reviewer, decision, agent_run_id)
         _decidable(proposal, reviewer)
-        if reviewer.user is None and proposal.kind not in OBLIGATION_KINDS:
+        if reviewer.user is None and proposal.kind not in AGENT_CONFIRMABLE_KINDS:
             raise ValidationError(
-                "An agent cannot approve this kind of change yet: a person has to approve it.",
+                "An agent cannot approve this kind of change: a person has to approve it.",
                 code="person_review_required",
             )
         decided = ["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "applied_at", "review_note"]

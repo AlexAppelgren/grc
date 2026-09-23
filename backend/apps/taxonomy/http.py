@@ -43,8 +43,9 @@ CHUNK_STATUS_BY_CODE: dict[str, int] = {
     "idempotency_conflict": 409,
     "already_watching": 409,
     "forbidden": 403,
-    # An agent approved a kind that waits for a person (D-79): the proposal is fine, the
-    # reviewer is the wrong kind of principal for it.
+    # An agent approved a kind whose record cannot name its confirming agent, so it waits
+    # for a person (D-79; no kind today): the proposal is fine, the reviewer is the wrong
+    # kind of principal for it.
     "person_review_required": 409,
     # An agent confirmed a watch fact that it, or another key of its own agent, suggested
     # (D-74): the fact is fine, the confirmer is not independent of it.

@@ -21,7 +21,7 @@ ACTOR = Actor.system(SEED_REASON)
 # globbed: a folder half-added to the tree never becomes an agent by accident. The sweeper
 # proposes and the confirmer decides (kind `review`, D-62, D-80): two definitions, so the
 # second pair of eyes on a proposal is never the definition that filed it.
-SHIPPED: tuple[tuple[str, int], ...] = (("watch-sweeper", 1), ("library-confirmer", 1))
+SHIPPED: tuple[tuple[str, int], ...] = (("watch-sweeper", 1), ("library-confirmer", 2))
 
 
 def definitions() -> list[Definition]:
