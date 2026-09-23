@@ -23,6 +23,7 @@
   "nav.admin.auditLog": "Granskningslogg",
   "nav.me.passkeys": "Mina nycklar",
   "nav.me.sessions": "Mina sessioner",
+  "nav.me.calendarFeeds": "Mina kalenderflöden",
   "shell.skipToContent": "Hoppa till innehållet",
   "shell.signedInAs": "Inloggad som",
   "shell.signOut": "Logga ut",

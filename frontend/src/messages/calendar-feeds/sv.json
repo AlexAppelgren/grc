@@ -1,0 +1,22 @@
+{
+  "calendarFeeds.title": "Kalenderflöden",
+  "calendarFeeds.lede": "Färdplanen i din egen kalender, uppdaterad när datum flyttas.",
+  "calendarFeeds.newFeed": "Nytt flöde",
+  "calendarFeeds.addressTitle": "Kopiera adressen till din kalender",
+  "calendarFeeds.addressBody": "Den visas nu och aldrig igen. Den som har adressen kan se vilka regulatoriska ändringar er bank har öppet arbete med, så återkalla den här om den kommer ut.",
+  "calendarFeeds.copy": "Kopiera adress",
+  "calendarFeeds.copied": "Kopierad.",
+  "calendarFeeds.limitReached": "Du har redan så många flöden som en person kan ha. Återkalla först ett som du inte längre använder.",
+  "calendarFeeds.created": "Skapat {date}",
+  "calendarFeeds.lastFetched": "Senast hämtat {date}",
+  "calendarFeeds.neverFetched": "Aldrig hämtat",
+  "calendarFeeds.revokedOn": "Återkallat {date}",
+  "calendarFeeds.active": "Aktivt",
+  "calendarFeeds.revoked": "Återkallat",
+  "calendarFeeds.revoke": "Återkalla",
+  "calendarFeeds.revokeTitle": "Återkalla flödet?",
+  "calendarFeeds.revokeBody": "Adressen slutar fungera direkt, och kalendern slutar uppdateras vid nästa hämtning. Du kan skapa ett nytt flöde när som helst.",
+  "calendarFeeds.emptyTitle": "Inga kalenderflöden",
+  "calendarFeeds.emptyBody": "Skapa ett för att se färdplanen i din kalender.",
+  "calendarFeeds.errorTitle": "Kunde inte läsa in dina flöden"
+}
