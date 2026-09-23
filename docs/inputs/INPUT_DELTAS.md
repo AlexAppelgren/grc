@@ -1023,3 +1023,25 @@ them. `POST /changes` also loses the bare `soWhatDraft` string the build had put
 body: words with no model, no model version and no citation cannot become the
 `ai_generation` row AUD-02 asks for, so the object is the shape and a bare string is a 422.
 `WatchChange.soWhatDraft`, the response field, is unchanged.
+
+## 12. What an Ask statement says about a pending change (2026-09-23, search-ask-backend)
+
+`AnswerStatement` gains two optional fields the designed contract does not have, both
+additive: `pendingChangeInForceOn`, the day the flagged change takes effect as a plain
+date, and `pendingChangeInForceOnPrecision`, how exact that day is (`day`, `month`,
+`quarter`, `year`). The design's statement names a pending change by id and label only,
+which leaves the screen's "Change pending: in force 1 Oct" (SRC-S4) with nothing to print
+but a phrase it would have to invent; a legal date is a plain date with its precision
+(playbook 4.3), so the two travel together. Both are empty exactly when `pendingChangeId`
+is.
+
+What is flagged is also narrower than "an open change": only a change the library
+confirmed affects a cited obligation (a confirmed `change_obligation` link, never an
+agent's suggestion), still active, whose type's lifecycle kind moves the law on its key
+date (`adopted`, or `in_force` from a later day) and whose key date falls after the
+answer's `asOf`; of several, the earliest. A proposal, a supervisory statement or a
+recurring date moves no law on its date, and flagging one would warn a reader about a rule
+that may never exist.
+
+`Answer.model` is empty when no model was asked: a question no library passage supports is
+answered `noAnswer` at once, with no model call and so no `ai_generation` row.

@@ -37,6 +37,7 @@ from pydantic import ConfigDict, Field
 
 from apps.shared.schemas import CamelSchema, WriteBody
 from apps.taxonomy.schemas import TermRef
+from apps.watch.schemas import DatePrecision
 
 __all__ = ["CamelSchema"]
 
@@ -153,10 +154,10 @@ class SearchFilters(WriteBody):
     instrument_id: UUID | None = Field(
         default=None,
         description=(
-            "Narrow the search to one instrument, such as the bank's copy of FFFS 2017:2, "
-            "by the instrument's id. Source: the shared library. Do not read a filtered "
-            "result as everything the instrument requires of the bank: it is what matched "
-            "the query inside that instrument, not the instrument's full obligation list."
+            "Narrow the search to one instrument, such as FFFS 2017:2, by the instrument's "
+            "id, a UUID. Source: the shared library. Do not read a filtered result as "
+            "everything the instrument requires of the bank: it is what matched the query "
+            "inside that instrument, not the instrument's full obligation list."
         ),
     )
     jurisdiction: str | None = Field(
@@ -188,7 +189,7 @@ class SearchFilters(WriteBody):
         max_length=settings.LIBRARY_TERM_FILTER_MAX,
         description=(
             "Narrow the search to records tagged with all of these taxonomy terms, such as "
-            "a regime or a legal entity kind, by term id. Terms are rows in the shared "
+            "a regime or a legal entity kind, each by its term id, a UUID. Terms are rows in the shared "
             "library's taxonomy, which an administrator may extend through an approved "
             "proposal; the dimensions seeded on day one are `regime`, `account_type`, "
             f"`legal_entity`, `service_type`, `client_category`, `channel` and "
@@ -378,9 +379,9 @@ class SearchHit(CamelSchema):
     )
     id: UUID = Field(
         description=(
-            "The id of the record the hit points at: the obligation, the provision or the "
-            "registered change. Source: the shared library. Do not read it as the id of "
-            "the indexed chunk, which is derived data the API never exposes."
+            "The id of the record the hit points at, a UUID: the obligation, the provision "
+            "or the registered change. Source: the shared library. Do not read it as the id "
+            "of the indexed chunk, which is derived data the API never exposes."
         )
     )
     title: str = Field(
@@ -442,18 +443,20 @@ class SearchHit(CamelSchema):
     valid_from: date | None = Field(
         default=None,
         description=(
-            "The first day this version of the record was in force, so a reader knows "
-            "whether it governed a transaction. Source: the shared library. Do not read it "
-            "as the day the bank had to comply from: a transitional rule may give longer, "
-            "and that is in the text."
+            "The first day this version of the record was in force, a plain date such as "
+            "`2026-01-01`, so a reader knows whether it governed a transaction. Empty when "
+            "the library holds no such day, as on a change not yet in force. Source: the "
+            "shared library. Do not read it as the day the bank had to comply from: a "
+            "transitional rule may give longer, and that is in the text."
         ),
     )
     valid_to: date | None = Field(
         default=None,
         description=(
-            "The last day this version was in force; empty means it still is. Source: the "
-            "shared library. Do not read an empty value as permanent: a change already "
-            "registered in the watch feed may be about to close it."
+            "The last day this version was in force, a plain date such as `2026-08-31`; "
+            "empty means it still is. Source: the shared library. Do not read an empty value "
+            "as permanent: a change already registered in the watch feed may be about to "
+            "close it."
         ),
     )
     urgency: TermRef | None = Field(
@@ -601,9 +604,10 @@ class AnswerCitation(CamelSchema):
     )
     obligation_id: UUID = Field(
         description=(
-            "The obligation the statement rests on, which the reader opens to check it. "
-            "Source: the shared library. Do not read a citation as a finding that the "
-            "obligation applies to this bank: applicability is a separate judgement."
+            "The obligation the statement rests on, by its id, a UUID, which the reader "
+            "opens to check it. Source: the shared library. Do not read a citation as a "
+            "finding that the obligation applies to this bank: applicability is a separate "
+            "judgement."
         )
     )
     version_no: int = Field(
@@ -630,10 +634,11 @@ class AnswerCitation(CamelSchema):
     provision_id: UUID | None = Field(
         default=None,
         description=(
-            "The exact provision behind the obligation, when the answer could pin one, so "
-            "the reader lands on the paragraph rather than the card. Source: the shared "
-            "library. Do not read its absence as a weaker citation: many obligations "
-            "summarise several provisions and pin none."
+            "The exact provision behind the obligation, by its id, a UUID, when the answer "
+            "could pin one, so the reader lands on the paragraph rather than the card. Empty "
+            "today: an answer cites the obligation, and the provision is one click further. "
+            "Source: the shared library. Do not read its absence as a weaker citation: many "
+            "obligations summarise several provisions and pin none."
         ),
     )
 
@@ -654,6 +659,8 @@ class AnswerStatement(CamelSchema):
                     "citationIndexes": [1],
                     "pendingChangeId": "a41d0f36-2c88-4e7b-b5a9-13d6c4f80e27",
                     "pendingChangeLabel": "FI adopts amended rules on paying for investment research",
+                    "pendingChangeInForceOn": "2026-10-01",
+                    "pendingChangeInForceOnPrecision": "day",
                 }
             ]
         }
@@ -678,10 +685,14 @@ class AnswerStatement(CamelSchema):
     pending_change_id: UUID | None = Field(
         default=None,
         description=(
-            "A registered change that would move the law this sentence rests on, so a "
-            "reader is warned before acting on it. Source: the shared library's watch feed. "
-            "Do not read it as law: a registered change may be a consultation that never "
-            "takes effect, and the sentence still describes the rule in force."
+            "The registered change that will move the law this sentence rests on, by its "
+            "id, a UUID, so a reader is warned before acting on it. Only a change the "
+            "library confirmed affects a cited obligation, still active, whose type's "
+            "lifecycle kind moves the law on its key date (`adopted`, or `in_force` from a "
+            "later day) and whose key date falls after the answer's `asOf`; of several, the "
+            "earliest. Empty when there is none. Source: the shared library's watch feed. "
+            "Do not read it as the law today: the sentence still describes the rule in "
+            "force on `asOf`, and the change is what comes next."
         ),
     )
     pending_change_label: str | None = Field(
@@ -690,6 +701,28 @@ class AnswerStatement(CamelSchema):
             "The title of that change, so the warning reads as something rather than an id. "
             "Source: the shared library's watch feed. Do not read it as a summary of the "
             "effect on the bank: what it means here is the bank's own assessment."
+        ),
+    )
+    pending_change_in_force_on: date | None = Field(
+        default=None,
+        description=(
+            "The day that change takes effect, as a plain date such as `2026-10-01`, so the "
+            "screen can warn \"Change pending: in force 1 Oct\" and the reader knows how long "
+            "the sentence stays true. Only an adopted change, or one already in force from a "
+            "later day, is flagged: a consultation or a supervisory statement moves no law on "
+            "a date. Empty exactly when `pendingChangeId` is. Source: the key date the shared "
+            "library's watch feed holds for the change. Do not read it as the bank's own "
+            "deadline, which lives on its case, nor as a promise: a date can still move."
+        ),
+    )
+    pending_change_in_force_on_precision: DatePrecision | None = Field(
+        default=None,
+        description=(
+            "How exact that date is, a fixed kind: `day` renders as 1 October 2026, "
+            "`month` as October 2026, `quarter` as Q4 2026 and `year` as 2026. Empty "
+            "exactly when `pendingChangeInForceOn` is. Source: the shared library's watch "
+            "feed, as the source stated the date. Do not print a day the source did not "
+            "state: render the date by this precision."
         ),
     )
 
@@ -716,6 +749,8 @@ class Answer(CamelSchema):
                             "citationIndexes": [1],
                             "pendingChangeId": None,
                             "pendingChangeLabel": None,
+                            "pendingChangeInForceOn": None,
+                            "pendingChangeInForceOnPrecision": None,
                         }
                     ],
                     "citations": [
@@ -739,10 +774,11 @@ class Answer(CamelSchema):
 
     id: UUID = Field(
         description=(
-            "This answer's id, which a reader's verdict points at (`rateAnswer`) and which "
-            "the AI log records. Source: the server, generated before the first event. Do "
-            "not read it as a record of the bank's position: an answer is a reading aid, "
-            "and nothing in the inventory changed because it was given."
+            "This answer's id, a UUID, which a reader's verdict points at (`rateAnswer`) and "
+            "which the AI log row of its model call carries as its own. Source: the server, "
+            "generated before the first event. Do not read it as a record of the bank's "
+            "position: an answer is a reading aid, and nothing in the inventory changed "
+            "because it was given."
         )
     )
     question: str = Field(
@@ -784,8 +820,10 @@ class Answer(CamelSchema):
     model: str = Field(
         description=(
             "Which model wrote the statements, so a bank's vendor review can trace an "
-            "answer to the system that produced it. Source: the server's model call, "
-            "recorded on the AI log row. Do not read a model name as a quality guarantee."
+            "answer to the system that produced it. Empty when no model was asked: a "
+            "question no library passage supported is answered `noAnswer` without one. "
+            "Source: the server's model call, recorded on the AI log row. Do not read a "
+            "model name as a quality guarantee."
         )
     )
     ai_generated: bool = Field(
@@ -828,9 +866,10 @@ class AskStartEvent(CamelSchema):
     )
     id: UUID = Field(
         description=(
-            "The answer's id, sent first so the screen can offer a verdict while the answer "
-            "is still arriving. Source: the server. Do not read it as a promise that an "
-            "answer follows: the stream may still close with a `problem` event."
+            "The answer's id, a UUID, sent first so the screen can offer a verdict while the "
+            "answer is still arriving; the closing `answer` event carries the same id. "
+            "Source: the server. Do not read it as a promise that an answer follows: the "
+            "stream may still close with a `problem` event."
         )
     )
 
@@ -851,6 +890,8 @@ class AskStatementEvent(CamelSchema):
                         "citationIndexes": [1],
                         "pendingChangeId": None,
                         "pendingChangeLabel": None,
+                        "pendingChangeInForceOn": None,
+                        "pendingChangeInForceOnPrecision": None,
                     },
                 }
             ]
@@ -896,6 +937,8 @@ class AskAnswerEvent(CamelSchema):
                                 "citationIndexes": [1],
                                 "pendingChangeId": None,
                                 "pendingChangeLabel": None,
+                                "pendingChangeInForceOn": None,
+                                "pendingChangeInForceOnPrecision": None,
                             }
                         ],
                         "citations": [
@@ -943,7 +986,11 @@ class AskProblemEvent(CamelSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
-                {"event": "problem", "code": "not_built", "detail": "Ask is not switched on yet."}
+                {
+                    "event": "problem",
+                    "code": "model_unavailable",
+                    "detail": "The answer could not be finished. Ask again in a moment.",
+                }
             ]
         }
     )
@@ -959,11 +1006,15 @@ class AskProblemEvent(CamelSchema):
     code: str = Field(
         description=(
             "The machine-readable reason the answer stopped, the same `code` an RFC 9457 "
-            "problem body would carry; today the one code this stream ends on is "
-            "`not_built`, while the answering logic is being built. Branch on this, never "
-            "on `detail`. Source: the server. Do not read a code as a verdict on the "
-            "question: it says why this stream stopped, not that the library holds no "
-            "answer, which is `noAnswer` on a stream that finished."
+            "problem body would carry. The one code a stream ends on is "
+            "`model_unavailable`: the model could not be reached, declined, or did not "
+            "finish before its deadline, nothing was logged and asking again may succeed. "
+            "Everything that can refuse a question before it is answered (no session, no "
+            "permission, the rate limit, the bank's AI switch) is a status with a problem "
+            "body instead, and no stream opens. Branch on this, never on `detail`. Source: "
+            "the server. Do not read a code as a verdict on the question: it says why this "
+            "stream stopped, not that the library holds no answer, which is `noAnswer` on a "
+            "stream that finished."
         )
     )
     detail: str = Field(

@@ -444,6 +444,26 @@ if min(SEARCH_RATE_PER_USER_PER_MINUTE, ASK_RATE_PER_USER_PER_MINUTE) < 1:
     )
 
 # ---------------------------------------------------------------------------------------
+# ===== SRC-03 Ask: what reaches the model and how much it may write (apps/search/ask.py) =
+# How many passages of the hybrid ranking the model is given, and the most it may write
+# back. The passages are the whole of what an answer may rest on, so a deeper retrieval is
+# a wider answer and a longer prompt; each is also a numbered citation on the answer and
+# on its AI log row, so the depth may not exceed the log's citation cap. The token cap is
+# the answer's own ceiling beneath LLM_MAX_TOKENS: an answer is a few cited sentences, and
+# a model that runs on is spending the bank's money on text nobody asked for.
+# ---------------------------------------------------------------------------------------
+ASK_RETRIEVAL_DEPTH = env_int("ASK_RETRIEVAL_DEPTH", 6)
+ASK_MAX_TOKENS = env_int("ASK_MAX_TOKENS", 1024)
+# At zero every question would be "no answer" without anyone having decided so, and above
+# the citation cap an answer could cite a passage its log row cannot record.
+if not 1 <= ASK_RETRIEVAL_DEPTH <= AI_GENERATION_CITATIONS_MAX or ASK_MAX_TOKENS < 1:
+    raise ImproperlyConfigured(
+        f"Refusing to boot: ASK_RETRIEVAL_DEPTH is {ASK_RETRIEVAL_DEPTH} (1 to "
+        f"AI_GENERATION_CITATIONS_MAX, {AI_GENERATION_CITATIONS_MAX}) and ASK_MAX_TOKENS is "
+        f"{ASK_MAX_TOKENS} (at least 1)."
+    )
+
+# ---------------------------------------------------------------------------------------
 # ===== INV-04 "show what changed" (apps/library/logic.py sentence_diff) ==================
 # Aligning two versions costs up to the cube of their sentence count when sentences repeat,
 # and the texts come from fetched sources. Above this many sentences on either side the
@@ -686,6 +706,12 @@ LOGGING = {
         "apps": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
     },
 }
+# ===== SRC-03 Ask: no tenant text through django.template's DEBUG lines ================
+# Ninja reads a response attribute it cannot find through Django's template `Variable`,
+# which logs the miss at DEBUG with the object's repr, and an Ask event's repr holds the
+# question the reader typed. So this one logger stays at INFO whatever LOG_LEVEL says
+# (apps/search/tests_ask.py, AskPrivacyTests).
+LOGGING["loggers"]["django.template"] = {"level": "INFO"}  # type: ignore[index]
 
 # ---------------------------------------------------------------------------------------
 # Sentry (playbook 11.2), only when SENTRY_DSN is set, on the EU region. No PII, no

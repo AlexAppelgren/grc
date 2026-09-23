@@ -138,7 +138,7 @@ def run_search(body: SearchRequest, *, tenant_id: uuid.UUID | None, user_id: uui
     library's (D-10: only the library is indexed in R1). The reader's own bucket is spent
     before any of it runs, so a runaway client is refused at the door (NFR-02)."""
     limits.search_bucket(user_id)
-    tenant = _tenant(tenant_id)
+    tenant = tenant_of(tenant_id)
     as_of = body.as_of or today_for(tenant)
     found = _candidates(
         body.q,
@@ -174,6 +174,31 @@ def find_similar(body: SimilarRequest, *, caller_id: uuid.UUID) -> SearchRespons
     )
     ranked = _best_per_record(_reranked(body.text, found))
     return SearchResponse(items=[_hit(row, body.text) for row in ranked[: body.limit]], as_of=as_of)
+
+
+def passages(
+    question: str, *, tenant: Tenant, lang: str | None, as_of: datetime.date, depth: int
+) -> list[dict[str, Any]]:
+    """What Ask may ground an answer in (SRC-03): the obligations the reader's own search
+    would rank first for the question, one row per obligation, best first, at most `depth`.
+
+    The same statement, the same regulatory scope and the same "as of" as `POST /search`,
+    so an answer can never rest on a record the reader could not have found, and nothing
+    outside the bank's scope is read at all. Obligations only, because a citation points at
+    an obligation version. A row carries the chunk's whole `body` rather than a snippet,
+    since that is the text the model is given. It spends no search bucket: `POST /ask`
+    spends its own (`limits.ask_bucket`).
+    """
+    found = _candidates(
+        question,
+        configurations=(_configuration(lang, tenant),),
+        types=[SearchHitType.OBLIGATION],
+        filters=SearchFilters(),
+        tenant=tenant,
+        as_of=as_of,
+        limit=depth,
+    )
+    return _best_per_record(_reranked(question, found))[:depth]
 
 
 # ---------------------------------------------------------------------------------------
@@ -459,9 +484,9 @@ def _first_match(body: str, query: str) -> int:
 # ---------------------------------------------------------------------------------------
 # The caller
 # ---------------------------------------------------------------------------------------
-def _tenant(tenant_id: uuid.UUID | None) -> Tenant:
-    """The bank whose scope and time zone the search is read in. A session in no bank is a
-    404 and not a 403, exactly as every other tenant read answers it."""
+def tenant_of(tenant_id: uuid.UUID | None) -> Tenant:
+    """The bank whose scope and time zone a search or a question is read in. A session in no
+    bank is a 404 and not a 403, exactly as every other tenant read answers it."""
     tenant = (
         Tenant.objects.filter(pk=tenant_id).first()  # ordering: pk lookup, at most one row
         if tenant_id is not None
