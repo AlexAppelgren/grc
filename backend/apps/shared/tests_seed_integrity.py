@@ -75,7 +75,7 @@ from apps.shared.e2e_seed import (
 from apps.shared.models import AuditEvent, Tenant
 from apps.watch.models import ChangeDocument, ChangeEvent, ChangeObligation, ChangeTerm, CheckStatus, RegulatoryChange, Source, SourceCheck, SourceCheckKind
 from apps.taxonomy.matching import footprint_of, in_footprint, in_footprint_sql, opt_in_dimensions, restricting_dimensions
-from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm, WatchedMarket
+from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
 
@@ -679,7 +679,7 @@ class SeedIntegrityGuard(TestCase):
     def test_the_e2e_standard_is_public_facts_and_one_duty_on_a_held_term(self) -> None:
         """INV-08, D-35, D-36: seed_e2e files ISO/IEC 27001:2022 under International and
         ISO/IEC with no provision and exactly one duty, whose one term is the standard's.
-        The term stays inactive and no seeded bank sees the duty in its inventory. That the
+        No seeded bank follows the term, so none sees the duty in its inventory. That the
         prototype seed_demo loads holds no standard is check_prototype_data's to refuse."""
         seed_e2e()
         standard = Instrument.objects.select_related("level", "jurisdiction", "authority", "regime").get(stable_key=E2E_STANDARD_INSTRUMENT)
@@ -692,7 +692,7 @@ class SeedIntegrityGuard(TestCase):
         self.assertEqual(list(standard.titles.values_list("text", flat=True)), ["ISO/IEC 27001:2022"])
         duty = Obligation.objects.get(instrument=standard)
         self.assertEqual((duty.stable_key, duty.ref_label), (E2E_STANDARD_OBLIGATION, standard.official_ref))
-        self.assertEqual([(t.dimension.key, t.key, t.active) for t in duty.terms.select_related("dimension")], [("standard", "iso_iec_27001", False)])
+        self.assertEqual([(t.dimension.key, t.key, t.active) for t in duty.terms.select_related("dimension")], [("standard", "iso_iec_27001", True)])
         self.assertFalse(Instrument.objects.filter(level__kind="standard").exclude(pk=standard.pk).exists())
         restricting = restricting_dimensions()
         for tenant in Tenant.objects.order_by("slug"):
@@ -700,6 +700,23 @@ class SeedIntegrityGuard(TestCase):
                 tenancy.activate(tenant.id)
                 self.assertFalse(in_footprint(_scope(duty), footprint_of(tenant.id), restricting=restricting))
     # --- end lib-standard-e2e-seed ---------------------------------------------------------
+
+    # --- std-journeys (FP-S16) ------------------------------------------------------------
+    def test_e2e_switches_the_standard_on_and_logs_it_once(self) -> None:
+        """FP-S16 (FP-01, INV-08, D-8x std-journeys): a scope request names active terms only,
+        so seed_e2e switches ISO/IEC 27001 on for E2E alone, with one version bump and one
+        audit row, and a second run changes nothing. The reference seed keeps it off
+        everywhere else (apps/taxonomy/tests_matching.HeldStandard)."""
+        seed_e2e()
+        term = TaxonomyTerm.objects.get(dimension__key="standard", key="iso_iec_27001")
+        self.assertTrue(term.active)
+        events = AuditEvent.objects.filter(action="taxonomy.term_updated", subject_id=term.id)
+        self.assertEqual([(e.before, e.after, e.actor_label) for e in events], [({"active": False}, {"active": True}, "seed_reference")])
+        version = term.version
+        seed_e2e()
+        term.refresh_from_db()
+        self.assertEqual((term.active, term.version, events.count()), (True, version, 1))
+    # --- end std-journeys -------------------------------------------------------------------
 
     # --- library-updates-frontend (PRO-S7) ---------------------------------------------
     def test_the_obligation_pro_s7_approves_reaches_tenant_a_with_or_without_advice(self) -> None:

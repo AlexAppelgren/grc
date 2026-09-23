@@ -22,7 +22,8 @@ import type {
 // Derived facts and pills for the regulatory scope screen
 // (design/screens/admin-footprint.html; FP-01, FP-02, AC-FP1). The page reads
 // the scope as groups of terms, held or not; an empty group means no
-// restriction, and a term a waiting request changes carries a warning pill.
+// restriction, except an opt-in group, which then follows nothing, and a term
+// a waiting request changes carries a warning pill.
 
 export const FOUR_EYES_CODE = 'four_eyes_violation';
 export const REQUEST_PENDING_CODE = 'request_pending';
@@ -37,7 +38,12 @@ export interface ScopeGroup {
   rows: ScopeGroupRow[];
   /** Its terms mirror the jurisdiction rows, so the group is the markets we operate in. */
   mirrored: boolean;
+  /** An opt-in dimension (the standards a bank follows): empty, it hides every record carrying one of its terms, so it reads "None followed". */
+  optIn: boolean;
 }
+
+/** The dimension kind of the standards a bank follows (FP-01, INV-08): a record carrying one of its terms shows only when the scope names that term. */
+export const OPT_IN_KIND = 'opt_in';
 
 /** The groups the page shows (REGULATORY_SCOPE.md 4.2): a dimension appears when it
  * restricts the scope and has a term to show. Channel, lifecycle stage and theme never
@@ -55,6 +61,7 @@ export function scopeGroups(dimensions: readonly FootprintDimension[], terms: re
       return {
         dimension: d.dimension,
         mirrored: active.some((term) => term.mirrored === true),
+        optIn: d.dimension.kind === OPT_IN_KIND,
         rows: [...active.map((term) => ({ term, held: held.has(term.key) })), ...d.terms.filter((term) => !listed.has(term.key)).map((term) => ({ term, held: true }))],
       };
     })
@@ -64,9 +71,10 @@ export function scopeGroups(dimensions: readonly FootprintDimension[], terms: re
 /** The groups a draft would start restricting (REGULATORY_SCOPE.md 4.3): empty in the
  * stored footprint, so today it narrows nothing, and non-empty in the draft — ticking the
  * first term in an empty group is the dangerous direction, because it can hide records for
- * every member that no preview line ever showed as "revealed". */
+ * every member that no preview line ever showed as "revealed". An opt-in group is never
+ * one: empty, it already hides every record of a standard, and following one only reveals. */
 export function narrowedGroups(dimensions: readonly FootprintDimension[], draft: FootprintDraft): FootprintDimension[] {
-  return dimensions.filter((d) => d.terms.length === 0 && (draft[d.dimension.key]?.size ?? 0) > 0);
+  return dimensions.filter((d) => d.dimension.kind !== OPT_IN_KIND && d.terms.length === 0 && (draft[d.dimension.key]?.size ?? 0) > 0);
 }
 
 export function pendingTermPill(kind: 'add' | 'remove', t: Translate): PresentedPill {

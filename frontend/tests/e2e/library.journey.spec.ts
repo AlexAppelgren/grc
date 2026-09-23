@@ -290,11 +290,58 @@ test.describe('library journeys', () => {
 });
 
 // PRD 0.3: a standard is an instrument of public facts with no provision tree
-// (INV-08). It stays test.fixme until the task in
-// docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
+// (INV-08). The one standard is seeded for E2E only (backend/apps/shared/e2e_seed.py,
+// E2E_STANDARD_INSTRUMENT and E2E_STANDARD_OBLIGATION) and no seeded bank follows it,
+// so its conformance duty is reached through "Show outside our scope". Its instrument
+// carries only its regime, which tenant A holds, so the Instruments tab lists it.
+const STANDARD_INSTRUMENT = 'iso-iec-27001-2022';
+const STANDARD_OBLIGATION = 'iso-iec-27001-2022-conformance';
+
 test.describe('standards in the library', () => {
-  test.fixme("INV-S11: An edition of a standard is an instrument with public facts and no text", async () => {
-    // pending: INV-S11 (INV-01, INV-02, INV-08)
+  test("INV-S11: An edition of a standard is an instrument with public facts and no text", async ({ page, apiGuard }) => {
+    // INV-S11 (INV-01, INV-02, INV-08). The API's bindingLevel and the single obligation
+    // with no provision are proved by the backend's INV-S11 test; here, the screens.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openInstrument(page, STANDARD_INSTRUMENT);
+
+    // "Standard" in the binding slot, as information, never "Guidance, comply or explain".
+    // The level's label and the binding slot both read "Standard"; the third pill is the slot.
+    const pills = headerPills(page);
+    await expect(pills).toHaveText(['ISO/IEC 27001:2022', 'Standard', 'Standard', 'International', 'AI and ICT']);
+    await expect(pills.nth(0)).toHaveAttribute('data-pill', 'brand');
+    await expect(pills.nth(2)).toHaveAttribute('data-pill', 'information');
+
+    // Public facts: the official reference, the publication date with its day precision
+    // and "Standard" as the binding force. Library facts assert through a locator.
+    const identity = page.locator('[data-identity-panel]');
+    await expect(identity).toContainText('ISO/IEC 27001:2022');
+    await expect(identity.getByText('In force from 25 Oct 2022')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Source' })).toHaveAttribute('href', /^https:\/\//);
+
+    // No provision tree: the text is licensed, and the catalogue is one link away.
+    const licensed = page.locator('[data-provision-tree] [data-provisions-licensed]');
+    await expect(licensed.getByText('The text of this standard is licensed and not held here.')).toBeVisible();
+    const catalogue = licensed.getByRole('link', { name: "See it in the publisher's catalogue" });
+    await expect(catalogue).toHaveAttribute('href', /^https:\/\//);
+    await expect(catalogue).toHaveAttribute('rel', /noopener/);
+
+    // The one conformance duty, through the inventory's outside view: no seeded bank
+    // follows the standard, so it is absent until "Show outside our scope", where its
+    // row reads "Standard" and never "Guidance".
+    await page.goto(`/inventory?regime=ai_ict&asOf=${AS_OF}`);
+    const duty = page.locator(`[data-obligation="${STANDARD_OBLIGATION}"]`);
+    await expect(page.locator('[data-obligation-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+    await expect(duty).toHaveCount(0);
+    await page.getByRole('button', { name: 'Show outside our scope' }).click();
+    await expect(duty).toHaveAttribute('data-outside-footprint', '');
+    await expect(duty.locator('[data-pill]').filter({ hasText: /^Standard$/ })).toHaveCount(1);
+    await expect(duty.locator('[data-pill]').filter({ hasText: /^Guidance$/ })).toHaveCount(0);
+
+    await duty.click();
+    const header = page.locator(`[data-obligation="${STANDARD_OBLIGATION}"] [data-header-pills] [data-pill]`);
+    await expect(header.filter({ hasText: /^Standard$/ })).toHaveCount(1);
+    await expect(header.filter({ hasText: /^Guidance, comply or explain$/ })).toHaveCount(0);
   });
 });
 

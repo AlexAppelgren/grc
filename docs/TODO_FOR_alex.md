@@ -1044,3 +1044,13 @@ Nothing waits for these; each has the default the build took.
       `max_tokens`. Every statement sent is still cited either way. Say if you would rather
       the stream stayed silent (only the AI log records it), or the limit were raised
       instead. Default if you say nothing: it stays as built.
+
+## std-journeys: a standard shows only to banks that follow it (2026-09-23, FP-01, FP-02, INV-08, AC-FP3)
+
+- [ ] Default taken (D-8x std-journeys in `docs/DECISIONS.md`): `seed_e2e` switches the
+      ISO/IEC 27001 term on so FP-S16 can follow it through the regulatory scope request;
+      the reference seed still files it off, so nothing deployed changes. Say if a journey
+      should instead wait until you answer "Legal, before any standard is seeded" above.
+- [x] The regulatory scope page's opt-in group with "None followed" (listed among the design
+      cards still to be drawn above) is drawn: `design/screens/admin-footprint.html`, state 20.
+      New string `footprint.noneFollowed`: "None followed." / "Ingen följs.".

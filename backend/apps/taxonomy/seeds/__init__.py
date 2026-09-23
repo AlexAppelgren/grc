@@ -357,6 +357,30 @@ def _mirror_jurisdiction_terms(dimension: TermDimension) -> int:
     return len(terms)
 
 
+def switch_on_term(dimension: str, key: str) -> None:
+    """Switch one seeded term on, for a seed that needs it where the reference list keeps it
+    off: seed_e2e alone, for ISO/IEC 27001 (FP-S16, D-8x std-journeys). One version bump and
+    one audit row the first time; a term already on is left alone."""
+    with transaction.atomic(), library_write(SEED_REASON):
+        term = TaxonomyTerm.objects.select_for_update().get(dimension__key=dimension, key=key)
+        if term.active:
+            return
+        term.active = True
+        term.version += 1
+        term.save(update_fields=["active", "version"])
+        record(
+            action="taxonomy.term_updated",
+            actor=ACTOR,
+            subject_type="taxonomy_term",
+            subject_id=term.id,
+            subject_title=f"{dimension}:{key}",
+            summary=f"Switched the term {key} in {dimension} on.",
+            tenant_id=None,
+            before={"active": False},
+            after={"active": True},
+        )
+
+
 def seed_taxonomy_terms() -> int:
     """The taxonomy terms per dimension, and the jurisdiction dimension's mirror of the
     jurisdiction rows. Without them no footprint can be set, no obligation can be scoped and

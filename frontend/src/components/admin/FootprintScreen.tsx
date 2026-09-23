@@ -124,7 +124,7 @@ function ReadGroup({ group, pending }: { group: ScopeGroup; pending: FootprintCh
   const key = group.dimension.key;
   const adds = pendingAdditions(pending, key);
   const removes = pendingRemovals(pending, key);
-  // A group with nothing held does not restrict; it lists its terms only when a waiting request adds one.
+  // A group with nothing held does not restrict, and an opt-in one follows nothing; it lists its terms only when a waiting request adds one.
   const listed = group.rows.some((row) => row.held || adds.has(row.term.key));
   return (
     <div data-dimension={key}>
@@ -154,7 +154,7 @@ function ReadGroup({ group, pending }: { group: ScopeGroup; pending: FootprintCh
           })}
         </ul>
       ) : (
-        <p>{t('footprint.notRestricted')}</p>
+        <p>{group.optIn ? t('footprint.noneFollowed') : t('footprint.notRestricted')}</p>
       )}
     </div>
   );
@@ -164,7 +164,7 @@ function EditGroup({ group, draft, disabled, onToggle }: { group: ScopeGroup; dr
   const t = useT();
   const key = group.dimension.key;
   const held = draft[key] ?? new Set<string>();
-  const hint = held.size === 0 ? t('footprint.notRestricted') : group.mirrored ? t('footprint.jurisdictionHint') : undefined;
+  const hint = held.size === 0 ? (group.optIn ? t('footprint.noneFollowed') : t('footprint.notRestricted')) : group.mirrored ? t('footprint.jurisdictionHint') : undefined;
   return (
     <div data-dimension={key}>
       <CheckGroup legend={group.dimension.label} hint={hint}>

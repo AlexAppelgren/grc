@@ -258,6 +258,32 @@ describe('scopeGroups, narrowedGroups and pendingTermPill', () => {
     expect(narrowedGroups([service], {})).toEqual([]);
   });
 
+  // std-journeys (FP-01, INV-08, AC-FP3): an opt-in dimension, the standards a bank follows.
+  const standard: FootprintDimension = { dimension: { key: 'standard', kind: 'opt_in', label: 'Standards followed' }, restrictsFootprint: true, terms: [], allSelected: false };
+  const iso: TaxonomyTerm = { key: 'iso_iec_27001', kind: null, label: 'ISO/IEC 27001', dimension: 'standard' };
+
+  it('marks the opt-in group by the kind the footprint read serves, never by its key', () => {
+    const followed: FootprintDimension = { ...standard, dimension: { ...standard.dimension, key: 'certifications' } };
+    const terms: TaxonomyTerm[] = [...allTerms, { ...iso, dimension: 'certifications' }];
+    expect(scopeGroups([service, client, followed], terms).map((g) => [g.dimension.key, g.optIn])).toEqual([
+      ['service_type', false],
+      ['client_category', false],
+      ['certifications', true],
+    ]);
+  });
+
+  it('never lists an opt-in group as narrowed: following a standard only reveals', () => {
+    const draft = toggleTerm(draftOf([service, client, standard]), 'standard', 'iso_iec_27001');
+    expect(narrowedGroups([service, client, standard], draft)).toEqual([]);
+    // The same draft on a scope group still narrows.
+    expect(narrowedGroups([service, client, standard], toggleTerm(draft, 'client_category', 'retail')).map((d) => d.dimension.key)).toEqual(['client_category']);
+  });
+
+  it('reads an empty opt-in group as none followed, in both languages', () => {
+    expect(t('footprint.noneFollowed')).toBe('None followed.');
+    expect(sv('footprint.noneFollowed')).toBe('Ingen följs.');
+  });
+
   it('pends a term with the warning tone and the added/removed labels', () => {
     expect(pendingTermPill('add', t)).toEqual({ key: 'pending:add', label: 'Added when approved', tone: 'warning', order: 0 });
     expect(pendingTermPill('remove', t)).toEqual({ key: 'pending:remove', label: 'Removed when approved', tone: 'warning', order: 0 });
