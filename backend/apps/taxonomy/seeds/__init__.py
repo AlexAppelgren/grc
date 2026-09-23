@@ -152,7 +152,7 @@ _REJECTION_REASONS: list[SystemRow] = [
     SystemRow(
         "outside_sector_scope",
         {"en": "Outside the sector scope", "sv": "Utanför sektorsomfattningen"},
-        "The record falls outside the PRD's sector scope: regulated financial services only (banking, "
+        "The record falls outside the library's sector scope: regulated financial services only (banking, "
         "payments, investment services, insurance and pension provision, and asset and wealth management), "
         "with the AML, data protection and ICT-risk regimes that apply to them and the tax and AI rules as "
         "they apply to financial firms and their products. Every record carries a regime from the regime "
