@@ -58,6 +58,8 @@ describe('tenant-admin hooks', () => {
       ['patch', '/api/v1/tenant'],
     ]);
     expect(await settled(renderHook(() => useLanguages(), { wrapper }))).toEqual({ id: 't1', name: 'Old' });
+    // Signed out, the list is not asked for at all.
+    expect(renderHook(() => useLanguages(false), { wrapper: queryWrapper().wrapper }).result.current.fetchStatus).toBe('idle');
   });
 
   it('members and invitations: lists at the page maximum, mutations invalidate both lists', async () => {

@@ -58,8 +58,10 @@ export function useUpdateTenant(): UseMutationResult<Tenant, unknown, TenantUpda
   });
 }
 
-export function useLanguages(): UseQueryResult<LanguageRef[]> {
-  return useQuery({ queryKey: adminKeys.languages, queryFn: admin.listLanguages, staleTime: 5 * 60_000 });
+// `enabled` is false while nobody is signed in: the shell's account menu reads
+// this list, and a shell still on screen as a person signs out fetches nothing.
+export function useLanguages(enabled = true): UseQueryResult<LanguageRef[]> {
+  return useQuery({ queryKey: adminKeys.languages, queryFn: admin.listLanguages, staleTime: 5 * 60_000, enabled });
 }
 
 export function useMembers(): UseQueryResult<Page<Member>> {

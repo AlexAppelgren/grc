@@ -48,7 +48,7 @@ export function accountLine(me: Me, t: ReturnType<typeof useT>): string {
  */
 export function useInterfaceLanguages(): { options: LanguageRef[]; choose: (key: string) => void; pending: boolean; failed: boolean } {
   const { me } = useSession();
-  const languages = useLanguages();
+  const languages = useLanguages(me !== null);
   const setLanguage = useSetLanguage();
   return {
     options: (languages.data ?? []).filter((row) => isLocale(row.key)),
