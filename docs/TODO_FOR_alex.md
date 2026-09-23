@@ -595,8 +595,8 @@ Everything it changes, all in the documents:
   `four_eyes_violation`), plus a version row. That row is 0.6, because 0.5 is held
   for (a).
 - The register spec (`backend/apps/register/app.md`): its context, the REG-01 row,
-  AC-REG1 and the acceptance bullet on requests, and REG-S1, REG-S2, REG-S12, REG-S13
-  and REG-S14, with their test stubs and journey titles.
+  AC-REG1 and the acceptance bullet on requests, and REG-S1, REG-S2, REG-S4 and
+  REG-S12 to REG-S16 (J-10's journey), with their test stubs and journey titles.
 - Decisions: D-44 and its ADR 0038 ("many pending applicability requests are decided
   in one call, with four eyes on every row") are superseded. D-41 and D-42 and their
   ADRs 0035 and 0036 lose the applicability request table they extend, and D-42's
@@ -604,7 +604,9 @@ Everything it changes, all in the documents:
 - The four-eyes guard (`backend/apps/shared/tests_four_eyes.py`) no longer lists
   applicability among the tables it must grow to cover. The chunk 8 rows of
   `docs/plans/UI_Implementation_Plan.md` lose their request, approve and decide
-  routes.
+  routes. The chunk 8 task briefs (`CHUNK8_TASKS.md` and `FEATURES_0_3_TASKS.md`)
+  have tasks that file, approve and decide requests. Those tasks are marked to be
+  planned again before chunk 8 starts.
 - `applicability.request` retires when chunk 8 builds REG-01.
 
 This is prepared as one commit on the local branch `wt/r1w1-lost-content-d75`.
