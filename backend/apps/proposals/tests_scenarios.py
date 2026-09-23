@@ -13,6 +13,7 @@ Prefixes hosted: PRO.
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import date
 from typing import Any
@@ -520,20 +521,39 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(listed[0]["versionNumber"], 2)
         self.assertNotIn(proposal["title"], repr(listed[0]), "an update is titled by the library record, never by the request")
 
-        # "This looks wrong" files a report, and it stays inside the bank: no console
-        # surface reads one, and nothing in the platform's own zone carries it.
-        reported = self._post(
-            f"/obligations/{obligation.id}/problem-reports",
-            {"description": "The new wording drops the annual review the decision keeps."},
-            officer,
-        )
+        # "This looks wrong" files a report, and it stays inside the bank (AUD-03).
+        words = "The new wording drops the annual review the decision keeps."
+        reported = self._post(f"/obligations/{obligation.id}/problem-reports", {"description": words}, officer)
         self.assertEqual(reported.status_code, 201, reported.content)
+        report_id = reported.json()["id"]
         self.activate(self.tenant)
         report = ProblemReport.objects.get(subject_id=obligation.id)
-        self.assertEqual(report.tenant_id, self.tenant.id)
-        self.assertEqual(report.reporter_id, self.officer.id)
-        reads = {(op.method, op.path) for op in iter_operations(api) if "problem-report" in op.path}
-        self.assertEqual({method for method, _ in reads}, {"POST"}, "filing one is the only problem-report operation the console could reach")
+        self.assertEqual((str(report.id), report.tenant_id, report.reporter_id), (report_id, self.tenant.id, self.officer.id))
+
+        # No platform session returns it, proven by behaviour rather than by the routes'
+        # methods: each platform role signs in and drives every problem-report route the API
+        # serves, which refuses it; the console has no problem-report route at all; and no
+        # read a platform session can make without naming a record answers with the
+        # report's id or its words.
+        ids = {"obligation_id": str(obligation.id), "instrument_id": str(obligation.instrument_id)}
+        filing = [op for op in iter_operations(api) if "problem-report" in op.path]
+        self.assertTrue(filing, "the report routes are what this drives")
+        reads = [op.path for op in iter_operations(api) if op.method == "GET" and "{" not in op.path]
+        for person in (self.editor, factories.platform_user(roles=("platform_admin",))):
+            platform = sign_in(person)
+            for op in filing:
+                answer = self.client.generic(
+                    op.method, V1 + op.path.format(**ids), json.dumps({"description": "A platform note."}), content_type="application/json", **platform
+                )
+                self.assertIn(answer.status_code, (403, 404), f"{op.method} {op.path}: {answer.content!r}")
+            for path in ("/console/problem-reports", f"/console/problem-reports/{report_id}", "/console/reports"):
+                self.assertEqual(self.client.get(f"{V1}{path}", **platform).status_code, 404, path)
+            for path in reads:
+                body = self.client.get(f"{V1}{path}", **platform).content.decode()
+                self.assertNotIn(report_id, body, path)
+                self.assertNotIn(words, body, path)
+        self.activate(self.tenant)
+        self.assertEqual(ProblemReport.objects.filter(subject_id=obligation.id).count(), 1, "no platform session filed one either")
 
     @skip("pending: PRO-S8 (PRO-04, R2)")
     def test_pro_s8(self) -> None:

@@ -390,6 +390,16 @@ def seed_pending_footprint_request(tenants: list[Tenant]) -> int:
 # below carry version 1 only, sit inside tenant A's footprint, are not advice-only and are
 # named by no other spec, so a decision on any of them is a clean version 2 nothing else is
 # watching, and the four journeys never race each other.
+#
+# --- library-updates-frontend (PRO-S7) ---------------------------------------------------
+# PRO-S7 approves its proposal and then finds the change on the bank's "Library updates" by
+# the duty's own title. Its target was obl-isk-control-statements until SRC-S3
+# (search.journey.spec.ts) came to name that duty's title, so it is now the pension transfer
+# right: version 1 only, inside tenant A's footprint with or without Advice (J-6 switches
+# Advice off while other journeys run), and named by no other spec or seed.
+PRO_S7_OBLIGATION = "obl-pension-transfer-right"
+PENSION_TRANSFER_RUN = uuid.UUID("00000000-0000-4000-9000-000000000005")
+# --- end library-updates-frontend ---------------------------------------------------------
 AGENT_LABEL = "Research agent 0.4"
 AGENT_MODEL = "agent pipeline 0.4"
 # The library editor who files PRO-S5's proposal; the second editor decides everything else.
@@ -398,7 +408,6 @@ LIBRARY_EDITOR_EMAIL = "editor@bleqq.test"
 APPROPRIATENESS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000001")
 COSTS_CHARGES_RUN = uuid.UUID("00000000-0000-4000-9000-000000000002")
 CLIENT_ASSETS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000003")
-ISK_STATEMENTS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000004")
 
 
 @dataclass(frozen=True)
@@ -420,7 +429,7 @@ EXPECTED_PROPOSALS: tuple[SeedProposal, ...] = (
     SeedProposal("PRO-S3", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-appropriateness", APPROPRIATENESS_RUN),
     SeedProposal("PRO-S4", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-costs-charges", COSTS_CHARGES_RUN),
     SeedProposal("PRO-S9", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-client-assets", CLIENT_ASSETS_RUN),
-    SeedProposal("PRO-S7", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-isk-control-statements", ISK_STATEMENTS_RUN),
+    SeedProposal("PRO-S7", ProposalKind.NEW_OBLIGATION_VERSION.value, PRO_S7_OBLIGATION, PENSION_TRANSFER_RUN),
     SeedProposal("PRO-S5", ProposalKind.VOCABULARY_RELABEL.value, "flag:ai", proposed_by_email=LIBRARY_EDITOR_EMAIL),
 )
 
@@ -640,25 +649,27 @@ def seed_proposals() -> int:
         source_label="Finansinspektionen, consultation memorandum 2026:14",
         source_url="https://www.fi.se/",
     )
+    # library-updates-frontend (PRO-S7): see PRO_S7_OBLIGATION above.
     _propose_obligation_version(
-        obligation="obl-isk-control-statements",
-        agent_run=ISK_STATEMENTS_RUN,
-        title="Add version 2 of the ISK control statement obligation, moving the deadline to 31 January",
+        obligation=PRO_S7_OBLIGATION,
+        agent_run=PENSION_TRANSFER_RUN,
+        title="Add version 2 of the pension transfer obligation, with a one-month deadline for the transfer",
         summaries={
             "sv": (
-                "Kontrolluppgift för ett investeringssparkonto ska lämnas till Skatteverket senast den "
-                "31 januari året efter beskattningsåret, med kapitalunderlaget per kvartal och de "
-                "insättningar som räknas in i underlaget."
+                "En försäkringstagare får flytta värdet av en pensionsförsäkring till ett annat "
+                "försäkringsföretag. Försäkringsföretaget ska genomföra flytten inom en månad från "
+                "begäran, och avgiften för flytten får inte överstiga företagets kostnad för att "
+                "genomföra den."
             ),
             "en": (
-                "The control statement for an investment savings account is filed with the Swedish Tax "
-                "Agency by 31 January of the year after the tax year, with the capital base per quarter "
-                "and the deposits counted into it."
+                "A policyholder may transfer the value of a pension insurance to another insurer. The "
+                "insurer completes the transfer within one month of the request, and the fee for the "
+                "transfer may not exceed the insurer's own cost of carrying it out."
             ),
         },
         effective_from="2027-01-01",
-        source_label="Skatteverket, statement of practice 2026-09-10",
-        source_url="https://www.skatteverket.se/",
+        source_label="Riksdagen, Försäkringsavtalslagen (2005:104), consolidated text",
+        source_url="https://www.riksdagen.se/",
     )
     _propose_flag_relabel()
     return len(EXPECTED_PROPOSALS)
