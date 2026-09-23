@@ -464,7 +464,31 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Request Code */
+        /**
+         * Ask for an enrolment code by email to finish joining
+         * @description The "First time here?" path, for an invitee who has their invitation but not its link
+         *     to hand: post the invited address and, when it has an open invitation and no passkey
+         *     yet, a one-time enrolment code is emailed to it. The invitee then sends the address and
+         *     the code to `POST /auth/code/verify`. Asking again sends a fresh code and retires the
+         *     earlier one.
+         *
+         *     The answer is the same 202 with an empty body whatever the address, invited, enrolled or
+         *     unknown, and the server does the same hashing work for each: the answer never says
+         *     whether the address has an account, and the rate limits below bound what the response
+         *     time could hint. An address that already holds a passkey is sent nothing: the code is
+         *     for enrolment only and never a way around a passkey. There is no password and no
+         *     self-service recovery; a person who has lost every passkey asks their bank's
+         *     administrator to re-issue their enrolment.
+         *
+         *     No session is needed. Every call writes the audit event `auth.code_requested`, which
+         *     names the account only when the address is known; a code sent, and a code refused to an
+         *     enrolled address, are also written to the security log.
+         *
+         *     Errors: `rate_limited` (429) past 5 requests an hour for one
+         *     address or 20 an hour from one network address, counted together with
+         *     opening invitation links and whether or not the address is known; `validation_error`
+         *     (422) for a missing address or one over 254 characters.
+         */
         post: operations["requestCode"];
         delete?: never;
         options?: never;
@@ -481,7 +505,27 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Verify Code */
+        /**
+         * Trade the code emailed to your address for an enrolment session
+         * @description The second step of the "First time here?" path: send the invited address and the code
+         *     emailed to it. A right code opens an enrolment session in the bank whose invitation is
+         *     the newest open one for that address, and answers with its access token (`sessionKind`
+         *     `enrolment`); the refresh token arrives as an `HttpOnly` cookie scoped to
+         *     `/api/v1/auth`. The enrolment session reaches only passkey registration and `GET /me`;
+         *     every other route answers 403 `enrolment_only` until the first passkey is registered.
+         *
+         *     No session is needed. A code works once; each wrong try spends one of its 5
+         *     attempts, after which even the right code is refused and a new one must be requested. A
+         *     right code for an address with no open invitation, or one that already holds a passkey,
+         *     is refused like a wrong one. Failures are written to the security log; success writes
+         *     the audit event `session.created`.
+         *
+         *     Errors: `invalid_code` (400) for a wrong, expired or missing code or a closed invitation,
+         *     one answer for all of them; `code_locked` (400) once the attempts are spent;
+         *     `rate_limited` (429) past 30 calls a minute from one network
+         *     address, one allowance shared by opening an invitation, both code checks and both halves
+         *     of passkey sign-in; `validation_error` (422) for a missing field or one over its length.
+         */
         post: operations["verifyCode"];
         delete?: never;
         options?: never;
@@ -498,7 +542,29 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Open Invitation */
+        /**
+         * Open your invitation link and get an enrolment code by email
+         * @description Call this when an invitee opens the link in their invitation email: the page reads the
+         *     token from the link's fragment (`/invite#<token>`) and posts it here. A valid token sends
+         *     a one-time enrolment code to the invited address, 6 digits and good for
+         *     10 minutes, which the invitee then sends with the same token to
+         *     `POST /auth/invitations/verify`. The code is for enrolment only: it opens an enrolment
+         *     session that can register a passkey, never a full sign-in. Opening the link again sends
+         *     a fresh code and retires the earlier one.
+         *     The code is never returned here: the answer is 202 with an empty body.
+         *
+         *     No session is needed; the single-use token is the grant. It writes a code-sent entry to
+         *     the inviting bank's security log and the audit event `invitation.opened`.
+         *
+         *     Errors: `invitation_expired` (410) when the token is unknown, already used, past its
+         *     72 hours, or revoked or replaced by an administrator; `rate_limited` (429)
+         *     past 30 calls a minute from one network address, one allowance
+         *     shared by opening an invitation, both code checks and both halves of passkey sign-in, or
+         *     past 5 codes an hour for one invited address or
+         *     20 an hour from one network address, counted together with
+         *     `POST /auth/code/request`; `validation_error` (422) for a missing token or one over 128
+         *     characters.
+         */
         post: operations["openInvitation"];
         delete?: never;
         options?: never;
@@ -515,7 +581,29 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Verify Invitation Code */
+        /**
+         * Trade your invitation code for an enrolment session
+         * @description The second step of joining by invitation: send the token from the link and the code
+         *     from the email. A right code opens an enrolment session in the inviting bank and answers
+         *     with its access token (`sessionKind` `enrolment`); the refresh token arrives as an
+         *     `HttpOnly` cookie scoped to `/api/v1/auth`. The enrolment session can do two things,
+         *     register a passkey and read `GET /me`, and every other route answers 403
+         *     `enrolment_only`. Registering the first passkey ends it and starts a full session.
+         *
+         *     No session is needed: the token and the code together are the grant, so no email address
+         *     travels on this path, and only a code sent to the invitation's own address verifies. A
+         *     code works once; each wrong try spends one of its 5 attempts, after which
+         *     even the right code is refused. Failures are written to the bank's security log; success
+         *     writes the audit event `session.created`.
+         *
+         *     Errors: `invitation_expired` (410) when the token is unknown, used, expired or revoked;
+         *     `invalid_code` (400) for a wrong or expired code or when none is waiting, one answer for
+         *     all of them; `code_locked` (400) once the attempts are spent, when the invitee opens the
+         *     link again for a new code; `rate_limited` (429) past 30 calls a
+         *     minute from one network address, one allowance shared by opening an invitation, both
+         *     code checks and both halves of passkey sign-in; `validation_error` (422) for a missing
+         *     field or one over its length.
+         */
         post: operations["verifyInvitationCode"];
         delete?: never;
         options?: never;
@@ -532,7 +620,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Passkey Authenticate Options */
+        /**
+         * Start signing in with a passkey
+         * @description The first half of sign-in: returns the options to pass to
+         *     `navigator.credentials.get({publicKey: ...})`, or to
+         *     `PublicKeyCredential.parseRequestOptionsFromJSON()`. No username is asked for:
+         *     `allowCredentials` is empty, so the browser offers whichever passkeys the person holds
+         *     for this domain and the account is found from the one that answers. Then send the
+         *     browser's answer to `POST /auth/passkeys/authenticate/verify`.
+         *
+         *     No session is needed. Each call stores a single-use challenge that expires after
+         *     120 seconds and writes the audit event `auth.challenge_issued`; no
+         *     account is read or revealed.
+         *
+         *     Errors: `rate_limited` (429) past 30 calls a minute from one
+         *     network address, one allowance shared by opening an invitation, both code checks and
+         *     both halves of passkey sign-in, so each sign-in spends two.
+         */
         post: operations["passkeyAuthenticateOptions"];
         delete?: never;
         options?: never;
@@ -549,7 +653,32 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Passkey Authenticate Verify */
+        /**
+         * Sign in with your passkey
+         * @description The second half of sign-in: send the credential the browser returned from
+         *     `navigator.credentials.get()`. The server finds the passkey by its credential ID and
+         *     checks that the user handle names its owner, that the challenge is one it issued, the
+         *     page's origin and the domain, that the person was verified, the signature, and that the
+         *     signature counter moved forward, since one going backwards suggests a cloned
+         *     authenticator. It then opens a full session and answers with its access token
+         *     (`sessionKind` `full`); the refresh token arrives as an `HttpOnly` cookie scoped to
+         *     `/api/v1/auth`.
+         *
+         *     A member is signed in to their bank, the one they joined first when they belong to
+         *     several, and platform staff to the platform. Signing in is not a step-up: a sensitive
+         *     action still asks for its own passkey confirmation through `POST /auth/step-up/options`.
+         *
+         *     No session is needed. Success records the passkey's use and writes a sign-in entry to
+         *     the security log and the audit event `session.created`; a refusal writes a failed
+         *     sign-in with its reason to the security log, and tells the caller nothing more.
+         *
+         *     Errors: `signin_failed` (401) for every refusal (an unknown or retired passkey, an
+         *     account that is not active, a spent or expired challenge, a user handle naming someone
+         *     else, a bad signature), one answer so a caller cannot tell them apart; `rate_limited`
+         *     (429) past 30 calls a minute from one network address, one
+         *     allowance shared by opening an invitation, both code checks and both halves of passkey
+         *     sign-in; `validation_error` (422) for a malformed body.
+         */
         post: operations["passkeyAuthenticateVerify"];
         delete?: never;
         options?: never;
@@ -566,7 +695,26 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Passkey Register Options */
+        /**
+         * Start registering a passkey
+         * @description The first half of the registration ceremony: returns the options to pass to
+         *     `navigator.credentials.create({publicKey: ...})`, byte members base64url-encoded in
+         *     WebAuthn's JSON form, which `PublicKeyCredential.parseCreationOptionsFromJSON()` reads as
+         *     they are. Call it when a person enrols their first passkey from an enrolment session or
+         *     adds another from a full session, then send the browser's answer to
+         *     `POST /auth/passkeys/register/verify`.
+         *
+         *     The options ask for a discoverable passkey with user verification required, from any
+         *     kind of authenticator and with no attestation, and list the person's existing passkeys so
+         *     the same authenticator is not registered twice. The challenge inside works once, only for
+         *     this person and session, and expires after 120 seconds.
+         *
+         *     Needs a session of either kind and no permission: a person can only ever register a
+         *     passkey for their own account. It stores the challenge and writes the audit event
+         *     `auth.challenge_issued`.
+         *
+         *     Errors: `unauthenticated` (401) without a live session.
+         */
         post: operations["passkeyRegisterOptions"];
         delete?: never;
         options?: never;
@@ -583,7 +731,37 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Passkey Register Verify */
+        /**
+         * Finish registering a passkey
+         * @description The second half of the registration ceremony: send the credential the browser returned
+         *     from `navigator.credentials.create()`, in its JSON form, and optionally a name. The server
+         *     checks the challenge, the page's origin, the domain and that the person was verified,
+         *     then stores the passkey (its credential ID, public key, signature counter, transports,
+         *     authenticator model and backup flags) and answers 201 with it. With no name given it
+         *     names the passkey from the device; the person may rename it later.
+         *
+         *     From an enrolment session this completes enrolment: the invitation is accepted, the
+         *     person becomes a member of the bank with the roles they were invited with, the account
+         *     turns active and the emailed code stops working for good, the enrolment session is
+         *     revoked, and a full session starts with this response, its access token in the body and
+         *     its refresh token as an `HttpOnly` cookie. A screen then offers a second passkey. From a
+         *     full session it adds a passkey and the session carries on; adding an authentication
+         *     factor needs a session younger than 5 minutes or a fresh passkey step-up.
+         *
+         *     Needs a session of either kind and no permission. It writes an enrolled entry to the
+         *     security log and the audit event `passkey.registered` with the name, how it was chosen,
+         *     the device type and the authenticator model; completing an enrolment also writes
+         *     `session.revoked` and `session.created`.
+         *
+         *     Errors: `challenge_expired` (400) when the challenge is unknown, used or older than its
+         *     lifetime, and start again from the options call; `invalid_credential` (400) when the
+         *     credential cannot be read; `registration_failed` (400) when it does not verify or that
+         *     passkey is already registered; `step_up_required` (403) when a full session is older
+         *     than the step-up window and holds no fresh assertion; `platform_account` (422) when a
+         *     bank invitation reaches an account that has since become platform staff;
+         *     `unauthenticated` (401) without a live session; `validation_error` (422) for a malformed
+         *     body.
+         */
         post: operations["passkeyRegisterVerify"];
         delete?: never;
         options?: never;
@@ -600,7 +778,27 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Refresh Session */
+        /**
+         * Keep your session going with a fresh access token
+         * @description Call this shortly before the access token expires. It takes no body and no
+         *     `Authorization` header: the credential is the `HttpOnly` refresh cookie that sign-in set,
+         *     scoped to `/api/v1/auth`, so a browser client calls it with credentials included. The
+         *     answer carries a new access token, and the refresh token is rotated: the response sets a
+         *     new cookie and the old one stops working.
+         *
+         *     Two tabs refreshing at once are safe: the previous refresh token presented within
+         *     30 seconds of its rotation gets a fresh access token without rotating
+         *     again. Presented any later it is treated as stolen, the whole session is revoked and the
+         *     replay is written to the security log. A session also ends after 30 minutes
+         *     without a refresh or 12 hours after sign-in, and a revoked one cannot be
+         *     refreshed.
+         *
+         *     Writes the audit event `session.refreshed`; a session that ends here writes
+         *     `session.revoked`.
+         *
+         *     Errors: `unauthenticated` (401) when the cookie is missing, unreadable or replayed late,
+         *     or its session is revoked, idle too long or past its absolute limit: sign in again.
+         */
         post: operations["refreshSession"];
         delete?: never;
         options?: never;
@@ -617,7 +815,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Sign Out */
+        /**
+         * Sign out on this device
+         * @description Revokes the session behind the refresh cookie and clears the cookie, so neither token
+         *     works again; drop the access token from memory as well. It answers 204 whatever the state
+         *     of the cookie, present, missing, stale or already signed out, so it is always safe to
+         *     call. It signs out this device only; `DELETE /me/sessions/{session_id}` signs out
+         *     another.
+         *
+         *     No `Authorization` header is needed: the refresh cookie, sent because it is scoped to
+         *     `/api/v1/auth`, names the session and carries its secret, which is the proof. A cookie
+         *     that names a session without holding its current secret signs nobody out. A live
+         *     session is revoked with an entry in the security log and the audit event
+         *     `session.revoked`; a call that proves no live session still writes the audit event
+         *     `session.sign_out_without_session`. There is no error code to branch on.
+         */
         post: operations["signOut"];
         delete?: never;
         options?: never;
@@ -634,7 +846,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Step Up Options */
+        /**
+         * Start confirming a sensitive action with your passkey
+         * @description The first half of a step-up. A sensitive action (an approval, a sign-off, a footprint
+         *     change, an export, a key, a role or security change, a re-enrolment) answers 403
+         *     `step_up_required` unless the session holds a passkey assertion younger than
+         *     5 minutes. Call this, pass the options to
+         *     `navigator.credentials.get({publicKey: ...})`, send the answer to
+         *     `POST /auth/step-up/verify`, then repeat the action.
+         *
+         *     The options list the caller's own live passkeys in `allowCredentials`, so no other
+         *     account's passkey can confirm, and require user verification. The challenge works once,
+         *     only for this person and session, and expires after 120 seconds.
+         *
+         *     Needs a full session and no permission; an agent's API key can never step up. It stores
+         *     the challenge and writes the audit event `auth.challenge_issued`.
+         *
+         *     Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
+         *     enrolment session.
+         */
         post: operations["stepUpOptions"];
         delete?: never;
         options?: never;
@@ -651,7 +881,26 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Step Up Verify */
+        /**
+         * Confirm a sensitive action with your passkey
+         * @description The second half of a step-up: send the credential the browser returned. The server
+         *     checks that the passkey is one of the caller's own live ones, the challenge, the origin
+         *     and the domain, user verification, the signature and the counter, then records the
+         *     assertion on this session and answers with its identifier and until when it counts as
+         *     fresh, 5 minutes. Until then every sensitive action on this session may proceed, and
+         *     each writes the assertion's identifier onto its own audit event. It covers this session
+         *     only; another device steps up for itself.
+         *
+         *     Needs a full session and no permission; an agent's API key can never step up. Success
+         *     records the passkey's use and writes a step-up entry to the security log and the audit
+         *     event `step_up.asserted`; a refusal writes a failed step-up with its reason to the
+         *     security log.
+         *
+         *     Errors: `step_up_failed` (400) for every refusal (a passkey that is not the caller's or
+         *     is retired, a spent or expired challenge, a user handle naming someone else, a bad
+         *     signature); `unauthenticated` (401) without a live session; `enrolment_only` (403) from
+         *     an enrolment session; `validation_error` (422) for a malformed body.
+         */
         post: operations["stepUpVerify"];
         delete?: never;
         options?: never;
@@ -1873,14 +2122,43 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Me */
+        /**
+         * Read who you are and what you may do
+         * @description The first call every screen makes after sign-in: the signed-in person, the bank the
+         *     session belongs to, their roles and the permissions those roles grant, whether enrolment
+         *     is still pending, how many passkeys they hold, whether a step-up is fresh, the counts
+         *     behind Today's "Decide now" panel and when they last marked the library as seen. Screens
+         *     decide what to offer from `permissions`, never from a role's key.
+         *
+         *     Both kinds of session may call it. An enrolment session sees `enrolmentPending` true, no
+         *     roles and no permissions, and uses it to know a passkey is still to be registered. It
+         *     reads only the caller's own account and bank, changes nothing and writes no audit event.
+         *
+         *     Errors: `unauthenticated` (401) without a live session. An agent's API key is not a
+         *     session and is refused the same way.
+         */
         get: operations["getMe"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Me */
+        /**
+         * Change your name or reading language
+         * @description Updates the caller's own name, preferred language or both, and answers with the whole
+         *     of `GET /me` as it now stands. Send only what changes: an omitted or null field is left
+         *     alone. The name belongs to the account, so every bank the person is in shows the new
+         *     one; the language decides which language their screens and labels use.
+         *
+         *     Self-service: it needs a full session and no permission, and reaches no one else's
+         *     account. It writes the audit event `user.updated` with the name and language before and
+         *     after.
+         *
+         *     Errors: `name_required` (422) for a blank name; `unknown_key` (422) for a language key
+         *     that is not an active language; `validation_error` (422) for a name over 200 characters
+         *     or a language key over 8; `unauthenticated` (401) without a live session;
+         *     `enrolment_only` (403) from an enrolment session.
+         */
         patch: operations["updateMe"];
         trace?: never;
     };
@@ -1891,7 +2169,20 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List My Passkeys */
+        /**
+         * List your passkeys
+         * @description Every live passkey the caller holds, oldest first: its name, whether it is a synced
+         *     passkey or bound to one device, the transports the browser reported, when it was
+         *     registered and when it was last used. Retired passkeys are not listed, and the credential
+         *     IDs and public keys stay on the server. An empty answer is a 200 with an empty list,
+         *     though a signed-in person normally holds at least one.
+         *
+         *     Self-service: needs a full session and no permission, and lists only the caller's own. It
+         *     changes nothing and writes no audit event.
+         *
+         *     Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
+         *     enrolment session.
+         */
         get: operations["listMyPasskeys"];
         put?: never;
         post?: never;
@@ -1911,11 +2202,42 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Remove My Passkey */
+        /**
+         * Remove one of your passkeys
+         * @description Retires one of the caller's own passkeys: it stops working for sign-in and step-up at
+         *     once and leaves the list. It is retired and not deleted, so its record stays for the
+         *     audit trail. Sessions already open stay open; sign them out with
+         *     `DELETE /me/sessions/{session_id}` if the passkey was lost. The last live passkey cannot
+         *     be removed, because without one the person could not sign in again and there is no
+         *     self-service recovery: add another first.
+         *
+         *     Removing an authentication factor asks for a fresh proof of presence: a session younger
+         *     than 5 minutes or a passkey step-up on this session. It needs a full session and no
+         *     permission, and writes the audit event `passkey.retired` with the passkey's name.
+         *
+         *     Errors: `last_passkey` (409) for the only live passkey; `not_found` (404) when the
+         *     passkey does not exist, is already retired or belongs to someone else;
+         *     `step_up_required` (403) when the session is older than the step-up window and holds no
+         *     fresh assertion; `unauthenticated` (401) without a live session; `enrolment_only` (403)
+         *     from an enrolment session.
+         */
         delete: operations["removeMyPasskey"];
         options?: never;
         head?: never;
-        /** Rename My Passkey */
+        /**
+         * Rename one of your passkeys
+         * @description Gives one of the caller's own passkeys a new name and answers with the passkey as it
+         *     now stands. The name is a label for the person's own list and changes nothing about how
+         *     the passkey signs in; surrounding spaces are trimmed.
+         *
+         *     Self-service: needs a full session, no permission and no step-up. It writes the audit
+         *     event `passkey.renamed` with the name before and after.
+         *
+         *     Errors: `not_found` (404) when the passkey does not exist, is retired or belongs to
+         *     someone else, one answer for all three; `validation_error` (422) for a name over 100
+         *     characters; `unauthenticated` (401) without a live session; `enrolment_only` (403) from
+         *     an enrolment session.
+         */
         patch: operations["renameMyPasskey"];
         trace?: never;
     };
@@ -1926,7 +2248,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List My Sessions */
+        /**
+         * See where you are signed in
+         * @description Every live signed-in session the caller has in the bank this session is signed in to
+         *     (on a platform session, their platform sessions), most recently active first: when it
+         *     began, when it last refreshed, the network address and browser it came from, and
+         *     `current` true for the one making this call. A person who belongs to several banks sees
+         *     here only this bank's sessions; the ones in another bank stay inside that bank and
+         *     cannot be listed or revoked from this session. Enrolment sessions, revoked ones and
+         *     those past their 12-hour limit are not listed; an idle one shows until its
+         *     next refresh attempt ends it. An empty answer is a 200 with an empty list.
+         *
+         *     Self-service: needs a full session and no permission, and lists only the caller's own. It
+         *     changes nothing and writes no audit event.
+         *
+         *     Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
+         *     enrolment session.
+         */
         get: operations["listMySessions"];
         put?: never;
         post?: never;
@@ -1946,7 +2284,22 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Revoke My Session */
+        /**
+         * Sign out one of your devices
+         * @description Revokes one of the caller's own sessions at once: its access token stops working on
+         *     its next call and its refresh token can no longer renew it. Use it to sign out a lost or
+         *     forgotten device from the list `GET /me/sessions` returns; revoking the current session
+         *     signs this device out too. A session already revoked answers 204 and changes nothing.
+         *
+         *     Self-service: needs a full session and no permission, and reaches only the caller's own
+         *     sessions in the bank this session is signed in to. It writes an entry to the security
+         *     log and the audit event `session.revoked`, with the reason that the person revoked it
+         *     themselves.
+         *
+         *     Errors: `not_found` (404) when the session does not exist, belongs to someone else or is
+         *     one of the caller's own in another bank, one answer for all three; `unauthenticated`
+         *     (401) without a live session; `enrolment_only` (403) from an enrolment session.
+         */
         delete: operations["revokeMySession"];
         options?: never;
         head?: never;
@@ -5065,16 +5418,39 @@ export interface components {
              */
             text: string;
         };
-        /** CodeRequestBody */
+        /**
+         * CodeRequestBody
+         * @description Asking for a one-time enrolment code by email, the "First time here?" path. The code
+         *     opens only an enrolment session that can register a passkey, never a full sign-in.
+         * @example {
+         *       "email": "anna@example-bank.test"
+         *     }
+         */
         CodeRequestBody: {
-            /** Email */
+            /**
+             * Email
+             * @description The address the invitation was sent to, at most 254 characters. Case and surrounding spaces are ignored. Any text is accepted and answered alike: a code goes out only when the address has an open invitation and no passkey yet, and the answer never says whether it did, so it never tells who holds an account.
+             */
             email: string;
         };
-        /** CodeVerifyBody */
+        /**
+         * CodeVerifyBody
+         * @description Trading the emailed code for an enrolment session, on the "First time here?" path.
+         * @example {
+         *       "code": "482915",
+         *       "email": "anna@example-bank.test"
+         *     }
+         */
         CodeVerifyBody: {
-            /** Code */
+            /**
+             * Code
+             * @description The code from the email: 6 digits by default, at most 12 characters, surrounding spaces ignored. It works once, for 10 minutes after it was sent, and 5 wrong tries lock it (all three are settings). Only the newest code sent to the address counts; asking again retires the earlier one.
+             */
             code: string;
-            /** Email */
+            /**
+             * Email
+             * @description The address the code was sent to, at most 254 characters, the same one given to `POST /auth/code/request`. Case and surrounding spaces are ignored. It names the code being checked and, through its newest open invitation, the bank the enrolment session will belong to.
+             */
             email: string;
         };
         /**
@@ -6708,21 +7084,37 @@ export interface components {
         /**
          * InvitationCodeVerifyBody
          * @description The invitation path: the link's token names the account, so no address travels.
-         *     The token rides in the body, never the path, so no access log holds it (F6, F29).
+         *     The token rides in the body, never the path, so no access log holds it.
+         * @example {
+         *       "code": "482915",
+         *       "token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"
+         *     }
          */
         InvitationCodeVerifyBody: {
-            /** Code */
+            /**
+             * Code
+             * @description The code the invitee received after opening the link: 6 digits by default, at most 12 characters, surrounding spaces ignored. Only a code sent to the invitation's own address verifies; it works once, for 10 minutes, and 5 wrong tries lock it (settings).
+             */
             code: string;
-            /** Token */
+            /**
+             * Token
+             * @description The same invitation token that was posted to `POST /auth/invitations/open`, at most 128 characters. It names the invitation, and through it the address and the bank, so no email address travels on this path. A token that is unknown, used, expired or revoked is refused before the code is looked at.
+             */
             token: string;
         };
         /**
          * InvitationOpenBody
          * @description Opening the emailed link. The token rides in the body, never a path, so no server
-         *     that logs request lines ever holds it (security review F29).
+         *     that logs request lines ever holds it.
+         * @example {
+         *       "token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"
+         *     }
          */
         InvitationOpenBody: {
-            /** Token */
+            /**
+             * Token
+             * @description The invitation token, at most 128 characters: the part after `#` in the emailed link (`/invite#<token>`). The fragment is never sent to any server by a browser, so the page reads it and posts it here. The token is single use and stops working 72 hours after it was sent (a setting), once the invitee has enrolled, or when an administrator revokes or resends the invitation; the server keeps only its hash.
+             */
             token: string;
         };
         /** InvitationOut */
@@ -7274,11 +7666,76 @@ export interface components {
              */
             jurisdiction: string;
         };
-        /** Me */
+        /**
+         * Me
+         * @description Who the caller is and what this session may do: the one read every screen makes
+         *     first. The enrolment session may make it too, and sees `enrolmentPending` true.
+         * @example {
+         *       "counts": {
+         *         "assignedToMe": 1,
+         *         "proposals": 2,
+         *         "triage": 3
+         *       },
+         *       "enrolmentPending": false,
+         *       "lastVisitAt": "2026-09-18T07:00:00Z",
+         *       "passkeyCount": 2,
+         *       "permissions": [
+         *         "ai_log.read",
+         *         "applicability.approve",
+         *         "applicability.request",
+         *         "audit.read",
+         *         "cases.contribute",
+         *         "cases.read",
+         *         "cases.triage",
+         *         "cases.work",
+         *         "comments.write",
+         *         "exports.create",
+         *         "footprint.approve",
+         *         "footprint.request",
+         *         "gaps.edit",
+         *         "library.read",
+         *         "problems.report",
+         *         "proposals.create",
+         *         "register.edit",
+         *         "register.read",
+         *         "reports.read",
+         *         "risk.accept.approve",
+         *         "roadmap.read",
+         *         "search.use",
+         *         "vocab.manage",
+         *         "watch.read",
+         *         "workflow.manage"
+         *       ],
+         *       "platformRoles": [],
+         *       "roles": [
+         *         {
+         *           "key": "compliance_officer",
+         *           "kind": null,
+         *           "label": "Compliance officer"
+         *         }
+         *       ],
+         *       "stepUpValidUntil": null,
+         *       "tenant": {
+         *         "id": "00000000-0000-4000-8000-00000000000a",
+         *         "name": "Example Bank AB",
+         *         "slug": "example-bank",
+         *         "timezone": "Europe/Stockholm"
+         *       },
+         *       "user": {
+         *         "email": "compliance_officer@example-bank.test",
+         *         "id": "00000000-0000-4000-8000-000000000102",
+         *         "locale": "en",
+         *         "name": "Sara Lindqvist"
+         *       }
+         *     }
+         */
         Me: {
-            /** @description The caller's own queue counts for 'Decide now' (D-23), or null for a platform session, which has no tenant to count against. Each of the three counts is 0 rather than refused when the caller's permissions do not unlock it (f03-T48). */
+            /** @description The caller's own queue counts for 'Decide now', or null for a platform session, which has no tenant to count against. Each of the three counts is 0 rather than refused when the caller's permissions do not unlock it. */
             counts: components["schemas"]["MeCounts"] | null;
-            /** Enrolmentpending */
+            /**
+             * Enrolmentpending
+             * @description True while the person has not finished enrolling: the session is an enrolment session, which reaches only passkey registration and this call, or the account is not yet active. A screen that reads true sends the person to register a passkey. False for every full session of an active account.
+             */
             enrolmentPending: boolean;
             /**
              * Lastvisitat
@@ -7286,25 +7743,41 @@ export interface components {
              * @example 2026-09-18T07:00:00Z
              */
             lastVisitAt: string | null;
-            /** Passkeycount */
+            /**
+             * Passkeycount
+             * @description How many live passkeys the person holds: 0 during first enrolment and at least 1 afterwards, because the last one cannot be removed. Retired passkeys are not counted. A screen uses it to suggest adding a second passkey.
+             */
             passkeyCount: number;
-            /** Permissions */
+            /**
+             * Permissions
+             * @description Everything this session may do, as permission keys such as `cases.triage` or `footprint.approve`: the union of the permissions of the person's roles in this bank, or of their platform roles on a platform session. Permissions are constants in code, not rows, so the set changes only with a release; `GET /reference/permissions` lists the bank-side ones with their meanings. Screens decide what to offer from these, never from a role. Empty for an enrolment session.
+             */
             permissions: string[];
-            /** Platformroles */
+            /**
+             * Platformroles
+             * @description The platform roles of platform staff, as key, kind and label: the seeded `platform_admin` and `library_editor`. Always empty for a member of a bank, because platform staff sign in with accounts of their own and a bank session never carries a platform grant. They are a platform vocabulary that only the platform's own administrators manage; a bank's admin cannot extend it.
+             */
             platformRoles: components["schemas"]["RoleRef"][];
-            /** Roles */
+            /**
+             * Roles
+             * @description The person's roles in this bank, as key, kind and label: the seeded `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`, plus any role the bank's own administrators added. Roles are rows of the bank's role vocabulary, which an admin may extend in the role editor (`GET /tenant/roles` lists the live set), so an unfamiliar key is new data and not an error. Never decide what to show from a role key; read `permissions`. Empty for a platform session and for an enrolment session.
+             */
             roles: components["schemas"]["RoleRef"][];
-            /** Stepupvaliduntil */
+            /**
+             * Stepupvaliduntil
+             * @description Until when the latest passkey step-up on this session stays fresh, as a UTC timestamp, or null when there is none or it has lapsed. While it lies ahead, a sensitive action — an approval, a sign-off, a footprint change, an export, a key, a role or security change, a re-enrolment — goes through without a new passkey prompt. Signing in never counts as a step-up.
+             */
             stepUpValidUntil: string | null;
+            /** @description The bank this session is signed in to, or null for a platform session, which belongs to no bank. A person in several banks is signed in to the one they joined first; there is no bank switcher yet. An enrolment session already names the bank whose invitation it came from. */
             tenant: components["schemas"]["MeTenant"] | null;
+            /** @description The signed-in person's own account: identifier, address, name and chosen language. Present for every session, the enrolment session included. */
             user: components["schemas"]["MeUser"];
         };
         /**
          * MeCounts
-         * @description The queue counts behind Today's "Decide now" panel (HOM-01, D-23): three
-         *     independent reads, each filtered by the caller's own permissions rather than
-         *     refused, so a reader without a permission sees a true zero and not a 403 that
-         *     would take the whole panel away.
+         * @description The queue counts behind Today's "Decide now" panel: three independent reads, each
+         *     filtered by the caller's own permissions rather than refused, so a reader without a
+         *     permission sees a true zero and not a 403 that would take the whole panel away.
          */
         MeCounts: {
             /**
@@ -7326,39 +7799,79 @@ export interface components {
              */
             triage: number;
         };
-        /** MePatch */
+        /**
+         * MePatch
+         * @description Changing your own name or reading language. Send only what changes.
+         * @example {
+         *       "locale": "sv",
+         *       "name": "Sara Lindqvist"
+         *     }
+         */
         MePatch: {
-            /** Locale */
+            /**
+             * Locale
+             * @description The language to read the product in, as a language key such as `sv` or `en`, at most 8 characters. Omit it or send null to leave it as it is; a key that is not an active language is refused with `unknown_key`. `GET /reference/languages` lists the keys on offer.
+             */
             locale?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Your new name, at most 200 characters, surrounding spaces trimmed. Omit it or send null to leave the name as it is; a blank one is refused with `name_required`. Every bank you belong to shows the same name.
+             */
             name?: string | null;
         };
-        /** MeTenant */
+        /**
+         * MeTenant
+         * @description The bank the session is signed in to.
+         */
         MeTenant: {
             /**
              * Id
              * Format: uuid
+             * @description The bank's permanent identifier, a UUID. Every tenant-zone record the session reads or writes belongs to this bank and no other.
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description The bank's own name for itself, such as `Example Bank AB`, for display.
+             */
             name: string;
-            /** Slug */
+            /**
+             * Slug
+             * @description The bank's short name, lower-case letters, digits and hyphens, such as `example-bank`: unique across the platform and fixed when the bank was created.
+             */
             slug: string;
-            /** Timezone */
+            /**
+             * Timezone
+             * @description The IANA timezone the bank works in, such as `Europe/Stockholm`: the one a screen uses to turn a stored UTC instant into the bank's local day.
+             */
             timezone: string;
         };
-        /** MeUser */
+        /**
+         * MeUser
+         * @description The signed-in person's own account. One account serves every bank the person belongs
+         *     to, so these facts are the person's and not any one bank's.
+         */
         MeUser: {
-            /** Email */
+            /**
+             * Email
+             * @description The address the person was invited with, lower-cased. It is where codes and notices go and the account name their passkeys show, and it cannot be changed through the API.
+             */
             email: string;
             /**
              * Id
              * Format: uuid
+             * @description The person's account identifier, a UUID that never changes and is the same in every bank they belong to. Its bytes are also their passkeys' user handle.
              */
             id: string;
-            /** Locale */
+            /**
+             * Locale
+             * @description The language the person chose to read the product in, as a language key such as `en` or `sv`, or null when they have not chosen one and screens fall back to the bank's default language. Languages are library reference rows, read `GET /reference/languages` for the set.
+             */
             locale: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description The person's name as they chose it, shown to colleagues wherever the product says who did something. It belongs to the account, so every bank the person is in sees the same name; `PATCH /me` changes it.
+             */
             name: string;
         };
         /** MemberInvite */
@@ -8517,90 +9030,270 @@ export interface components {
              */
             precision: string;
         };
-        /** PasskeyAssertBody */
+        /**
+         * PasskeyAssertBody
+         * @description A passkey's answer to a sign-in or step-up challenge.
+         * @example {
+         *       "credential": {
+         *         "authenticatorAttachment": "platform",
+         *         "clientExtensionResults": {},
+         *         "id": "cGAj7tm8-pSeo4if4t4UZw",
+         *         "rawId": "cGAj7tm8-pSeo4if4t4UZw",
+         *         "response": {
+         *           "authenticatorData": "x1ybolFRp_Yvz904eABUWO9MpIEWkReG-jUXymg8hkAdAAAAAA",
+         *           "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiMTdWb0hYZ2pBRmd4LWE3S3ZFS1lPR2hJRF9qWTZxdGR4VldiYnFsWW5wWVpVZXZQMVU5S08tN1lkekY0Mjh6ODFSY2hwZFhNenltSFlyYi1nNUxJNGciLCJvcmlnaW4iOiJodHRwczovL2NvbXBsaWFuY2UuYmxlcXEuY29tIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ",
+         *           "signature": "MEUCIFP6eeLo2Wx1xFw1uT8xSjydMQ8NBmCaeqLY-urHgqPYAiEApk3FBKiW0c_dwtT64nidwrSJdAxJiIR_O7jEfU-WTVo",
+         *           "userHandle": "AAAAAAAAQACAAAAAAAABAg"
+         *         },
+         *         "type": "public-key"
+         *       }
+         *     }
+         */
         PasskeyAssertBody: {
+            /** @description The credential `navigator.credentials.get()` returned for the options the matching options call issued, in its JSON form, byte fields base64url. */
             credential: components["schemas"]["PasskeyAuthenticationCredential"];
         };
         /**
          * PasskeyAuthenticationCredential
-         * @description What the browser returns from `get()`, serialised with base64url fields.
+         * @description What the browser returns from `get()`, serialised with base64url fields: the
+         *     `AuthenticationResponseJSON` that WebAuthn Level 3's `PublicKeyCredential.toJSON()`
+         *     produces.
+         * @example {
+         *       "authenticatorAttachment": "platform",
+         *       "clientExtensionResults": {},
+         *       "id": "cGAj7tm8-pSeo4if4t4UZw",
+         *       "rawId": "cGAj7tm8-pSeo4if4t4UZw",
+         *       "response": {
+         *         "authenticatorData": "x1ybolFRp_Yvz904eABUWO9MpIEWkReG-jUXymg8hkAdAAAAAA",
+         *         "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiMTdWb0hYZ2pBRmd4LWE3S3ZFS1lPR2hJRF9qWTZxdGR4VldiYnFsWW5wWVpVZXZQMVU5S08tN1lkekY0Mjh6ODFSY2hwZFhNenltSFlyYi1nNUxJNGciLCJvcmlnaW4iOiJodHRwczovL2NvbXBsaWFuY2UuYmxlcXEuY29tIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ",
+         *         "signature": "MEUCIFP6eeLo2Wx1xFw1uT8xSjydMQ8NBmCaeqLY-urHgqPYAiEApk3FBKiW0c_dwtT64nidwrSJdAxJiIR_O7jEfU-WTVo",
+         *         "userHandle": "AAAAAAAAQACAAAAAAAABAg"
+         *       },
+         *       "type": "public-key"
+         *     }
          */
         PasskeyAuthenticationCredential: {
-            /** Authenticatorattachment */
+            /**
+             * Authenticatorattachment
+             * @description Which kind of authenticator answered, as the browser reports it: `platform` (built into this device) or `cross-platform` (a security key or a phone). Null when the browser does not say. Accepted and not used.
+             */
             authenticatorAttachment?: string | null;
-            /** Clientextensionresults */
+            /**
+             * Clientextensionresults
+             * @description The outputs of any WebAuthn extensions, from `getClientExtensionResults()`. The server requests none and ignores what arrives, so a browser normally sends `{}`.
+             */
             clientExtensionResults?: {
                 [key: string]: unknown;
             } | null;
-            /** Id */
+            /**
+             * Id
+             * @description The credential ID of the passkey that answered, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses. The server looks the passkey up by it; a retired passkey, or one it has never seen, is refused.
+             */
             id: string;
-            /** Rawid */
+            /**
+             * Rawid
+             * @description The same credential ID as `id`, from the credential's raw bytes, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses.
+             */
             rawId: string;
+            /** @description The authenticator's signed answer: client data, authenticator data, signature and user handle. */
             response: components["schemas"]["WebAuthnAssertionResponse"];
-            /** Type */
+            /**
+             * Type
+             * @description The credential type, always `public-key`, the only one WebAuthn defines.
+             */
             type: string;
         };
-        /** PasskeyOut */
+        /**
+         * PasskeyOut
+         * @description One of the person's own live passkeys. The public key and the signature counter stay
+         *     on the server; nothing here is enough to sign in with.
+         * @example {
+         *       "backedUp": true,
+         *       "createdAt": "2026-09-14T08:12:31Z",
+         *       "deviceType": "multi_device",
+         *       "id": "3b6f1d2e-8a4c-4f0b-9e7d-2c1a5b8f6e30",
+         *       "lastUsedAt": "2026-09-22T06:58:04Z",
+         *       "nickname": "iCloud Keychain",
+         *       "transports": [
+         *         "hybrid",
+         *         "internal"
+         *       ]
+         *     }
+         */
         PasskeyOut: {
-            /** Backedup */
+            /**
+             * Backedup
+             * @description Whether a synced passkey was backed up when it was registered, from the authenticator's backup-state flag. Always false for a `single_device` passkey. Recorded at registration and not refreshed at later sign-ins, so read it as how things stood then.
+             */
             backedUp: boolean;
             /**
              * Createdat
              * Format: date-time
+             * @description When the passkey was registered, as a UTC timestamp.
              */
             createdAt: string;
-            /** Devicetype */
+            /**
+             * Devicetype
+             * @description Whether the passkey may leave the device it was made on, fixed at registration from the authenticator's backup-eligible flag: `single_device` (bound to one authenticator, such as a security key; losing it loses the passkey) or `multi_device` (a synced passkey that a platform such as iCloud Keychain or Google Password Manager can copy to the person's other devices).
+             */
             deviceType: string;
             /**
              * Id
              * Format: uuid
+             * @description This product's identifier for the passkey, a UUID, used to rename or remove it. It is not the WebAuthn credential ID, which the server never returns here.
              */
             id: string;
-            /** Lastusedat */
+            /**
+             * Lastusedat
+             * @description When the passkey last signed in or confirmed a step-up, as a UTC timestamp. A registration through this API sets it to the moment of registration; null means a passkey provisioned some other way that has not been used since.
+             */
             lastUsedAt: string | null;
-            /** Nickname */
+            /**
+             * Nickname
+             * @description The passkey's name as the person sees it under My passkeys, at most 100 characters: the one they gave, or the one the server derived from the device at registration. The person may rename it at any time, so show it and never key on it.
+             */
             nickname: string;
-            /** Transports */
+            /**
+             * Transports
+             * @description How the browser said the authenticator can be reached, at registration: any of `usb`, `nfc`, `ble`, `smart-card`, `hybrid` (a phone reached from another device) and `internal` (built into the device). Empty when the browser did not say.
+             */
             transports: string[];
         };
-        /** PasskeyPatch */
+        /**
+         * PasskeyPatch
+         * @description Renaming one of your own passkeys.
+         * @example {
+         *       "nickname": "Work laptop"
+         *     }
+         */
         PasskeyPatch: {
-            /** Nickname */
+            /**
+             * Nickname
+             * @description The new name, at most 100 characters; surrounding spaces are trimmed. It is only a label for the person's own list and changes nothing about how the passkey signs in.
+             */
             nickname: string;
         };
-        /** PasskeyRegisterBody */
+        /**
+         * PasskeyRegisterBody
+         * @description Finishing a passkey registration: the browser's credential, and optionally a name.
+         * @example {
+         *       "credential": {
+         *         "authenticatorAttachment": "platform",
+         *         "clientExtensionResults": {},
+         *         "id": "cGAj7tm8-pSeo4if4t4UZw",
+         *         "rawId": "cGAj7tm8-pSeo4if4t4UZw",
+         *         "response": {
+         *           "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViUx1ybolFRp_Yvz904eABUWO9MpIEWkReG-jUXymg8hkBdAAAAAAAAAAAAAAAAAAAAAAAAAAAAEHBgI-7ZvPqUnqOIn-LeFGelAQIDJiABIVggPrL3_N-yJVIgitm_kE9S0YkZxNJLzXlhV_C3NrWbXl4iWCCRvpVJLG06C1S4j5i7pPvcRbu8Jyrw5hW-eZh8dfzDUg",
+         *           "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiQnFPd1FDNmxIQk5teVo0ekhGNmVsa3ZHWmJMWWtqRkFpeTBVMF8xdFN2eF9CaDFxY0QxRThGM2t4MkpOb1B3T09Id01qZkxJMFUyMl9tUVdrUjZ4RHciLCJvcmlnaW4iOiJodHRwczovL2NvbXBsaWFuY2UuYmxlcXEuY29tIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ",
+         *           "transports": [
+         *             "hybrid",
+         *             "internal"
+         *           ]
+         *         },
+         *         "type": "public-key"
+         *       }
+         *     }
+         */
         PasskeyRegisterBody: {
+            /** @description The credential `navigator.credentials.create()` returned for the options from `POST /auth/passkeys/register/options`, in its JSON form, byte fields base64url. */
             credential: components["schemas"]["PasskeyRegistrationCredential"];
-            /** Nickname */
+            /**
+             * Nickname
+             * @description A name for the passkey, at most 100 characters, kept as given apart from surrounding spaces. Usually left out: the server then names it from the device — the authenticator's own name where it is known ("iCloud Keychain"), else the browser and platform ("Chrome on Windows"), else "Security key", "Phone" or "Passkey" — and adds a counter when the person already has one of that name. It can be renamed later.
+             */
             nickname?: string | null;
         };
-        /** PasskeyRegistered */
+        /**
+         * PasskeyRegistered
+         * @description A passkey was stored. When it was the first one, the enrolment session has ended and
+         *     a full session begins with this response.
+         * @example {
+         *       "accessToken": "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.1790150400.ExampleSignatureThatNoServerWillAccept00000",
+         *       "expiresIn": 600,
+         *       "passkey": {
+         *         "backedUp": true,
+         *         "createdAt": "2026-09-14T08:12:31Z",
+         *         "deviceType": "multi_device",
+         *         "id": "3b6f1d2e-8a4c-4f0b-9e7d-2c1a5b8f6e30",
+         *         "lastUsedAt": "2026-09-22T06:58:04Z",
+         *         "nickname": "iCloud Keychain",
+         *         "transports": [
+         *           "hybrid",
+         *           "internal"
+         *         ]
+         *       },
+         *       "sessionKind": "full"
+         *     }
+         */
         PasskeyRegistered: {
-            /** Accesstoken */
+            /**
+             * Accesstoken
+             * @description Present only when this registration finished an enrolment: the bearer token of the new full session, which replaces the enrolment session (now revoked) and whose refresh cookie this response set. Null when a passkey was added from a full session, which carries on with the tokens it already holds.
+             */
             accessToken: string | null;
-            /** Expiresin */
+            /**
+             * Expiresin
+             * @description How many seconds the new access token is good for, 600 by default; null whenever `accessToken` is null.
+             */
             expiresIn: number | null;
+            /** @description The passkey just stored, with the name the server gave it or kept. */
             passkey: components["schemas"]["PasskeyOut"];
-            /** Sessionkind */
+            /**
+             * Sessionkind
+             * @description Always `full`: after this call the person holds a normal session, either the new one that `accessToken` opens or the full session they already had.
+             */
             sessionKind: string;
         };
         /**
          * PasskeyRegistrationCredential
-         * @description What the browser returns from `create()`, serialised with base64url fields.
+         * @description What the browser returns from `create()`, serialised with base64url fields: the
+         *     `RegistrationResponseJSON` that WebAuthn Level 3's `PublicKeyCredential.toJSON()`
+         *     produces.
+         * @example {
+         *       "authenticatorAttachment": "platform",
+         *       "clientExtensionResults": {},
+         *       "id": "cGAj7tm8-pSeo4if4t4UZw",
+         *       "rawId": "cGAj7tm8-pSeo4if4t4UZw",
+         *       "response": {
+         *         "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViUx1ybolFRp_Yvz904eABUWO9MpIEWkReG-jUXymg8hkBdAAAAAAAAAAAAAAAAAAAAAAAAAAAAEHBgI-7ZvPqUnqOIn-LeFGelAQIDJiABIVggPrL3_N-yJVIgitm_kE9S0YkZxNJLzXlhV_C3NrWbXl4iWCCRvpVJLG06C1S4j5i7pPvcRbu8Jyrw5hW-eZh8dfzDUg",
+         *         "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiQnFPd1FDNmxIQk5teVo0ekhGNmVsa3ZHWmJMWWtqRkFpeTBVMF8xdFN2eF9CaDFxY0QxRThGM2t4MkpOb1B3T09Id01qZkxJMFUyMl9tUVdrUjZ4RHciLCJvcmlnaW4iOiJodHRwczovL2NvbXBsaWFuY2UuYmxlcXEuY29tIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ",
+         *         "transports": [
+         *           "hybrid",
+         *           "internal"
+         *         ]
+         *       },
+         *       "type": "public-key"
+         *     }
          */
         PasskeyRegistrationCredential: {
-            /** Authenticatorattachment */
+            /**
+             * Authenticatorattachment
+             * @description Which kind of authenticator made the passkey, as the browser reports it: `platform` (built into this device) or `cross-platform` (a security key or a phone). Null when the browser does not say. Used only to name the passkey when no name is given; nothing is allowed or refused on it.
+             */
             authenticatorAttachment?: string | null;
-            /** Clientextensionresults */
+            /**
+             * Clientextensionresults
+             * @description The outputs of any WebAuthn extensions, from `getClientExtensionResults()`. The server requests no extension and ignores what arrives here, so an empty object `{}` is what a browser normally sends.
+             */
             clientExtensionResults?: {
                 [key: string]: unknown;
             } | null;
-            /** Id */
+            /**
+             * Id
+             * @description The new passkey's credential ID, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses. It becomes the passkey's identifier at every later sign-in and must be unique across every account: one already registered anywhere is refused with `registration_failed`.
+             */
             id: string;
-            /** Rawid */
+            /**
+             * Rawid
+             * @description The same credential ID as `id`, from the credential's raw bytes, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses.
+             */
             rawId: string;
+            /** @description The authenticator's signed answer: the client data and the attestation object, with its transports. */
             response: components["schemas"]["WebAuthnAttestationResponse"];
-            /** Type */
+            /**
+             * Type
+             * @description The credential type, always `public-key`, the only one WebAuthn defines.
+             */
             type: string;
         };
         /** PermissionOut */
@@ -9818,11 +10511,25 @@ export interface components {
              */
             versionNumber: number;
         };
-        /** RefreshResult */
+        /**
+         * RefreshResult
+         * @description The next access token for a live session. The rotated refresh token arrives as a
+         *     cookie in the same response, never in the body.
+         * @example {
+         *       "accessToken": "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.1790150400.ExampleSignatureThatNoServerWillAccept00000",
+         *       "expiresIn": 600
+         *     }
+         */
         RefreshResult: {
-            /** Accesstoken */
+            /**
+             * Accesstoken
+             * @description A fresh bearer token for the same session, replacing the one the caller held: send it as `Authorization: Bearer <token>` and keep it in memory only. It carries the same session kind as before; refreshing never upgrades an enrolment session into a full one.
+             */
             accessToken: string;
-            /** Expiresin */
+            /**
+             * Expiresin
+             * @description How many seconds the new access token is good for: 600 by default (a setting). It never outlives the session, which still ends after 30 idle minutes or 12 hours after sign-in.
+             */
             expiresIn: number;
         };
         /**
@@ -10269,37 +10976,78 @@ export interface components {
             /** Total */
             total: number;
         };
-        /** SessionOut */
+        /**
+         * SessionOut
+         * @description One signed-in device: when it signed in, when it was last active and from where.
+         * @example {
+         *       "createdAt": "2026-09-22T06:58:04Z",
+         *       "current": true,
+         *       "id": "5c0d2a1e-7b3f-4c8e-9a6d-1b2c3e4f5a6b",
+         *       "ip": "192.0.2.41",
+         *       "lastSeenAt": "2026-09-22T09:41:17Z",
+         *       "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+         *     }
+         */
         SessionOut: {
             /**
              * Createdat
              * Format: date-time
+             * @description When the person signed in on this device, as a UTC timestamp. The session ends 12 hours after it at the latest (a setting).
              */
             createdAt: string;
-            /** Current */
+            /**
+             * Current
+             * @description True for the session making this call, so a screen can mark this device and warn before the person signs it out. Always false in an administrator's list of a member's sessions.
+             */
             current: boolean;
             /**
              * Id
              * Format: uuid
+             * @description The session's identifier, a UUID. A person signs one of their own devices out by passing it to `DELETE /me/sessions/{session_id}`.
              */
             id: string;
-            /** Ip */
+            /**
+             * Ip
+             * @description The network address the person signed in from, IPv4 or IPv6 as text, or null when it was not known. Behind the product's own proxy it is the address that proxy saw the request come from. It is the person's data, shown to them and to their bank's administrators.
+             */
             ip: string | null;
             /**
              * Lastseenat
              * Format: date-time
+             * @description When the session last refreshed its access token, as a UTC timestamp: a sign of recent use that lags real activity by up to the access token's 10-minute lifetime. After 30 minutes without a refresh the session ends.
              */
             lastSeenAt: string;
-            /** Useragent */
+            /**
+             * Useragent
+             * @description The browser's own description of itself at sign-in (its User-Agent header), stored up to 500 characters and empty when the browser sent none. Screens turn it into a label such as "Chrome on Windows". It is the browser's claim and proves nothing about the device.
+             */
             userAgent: string;
         };
-        /** SessionTokens */
+        /**
+         * SessionTokens
+         * @description A session has just started. The access token is in the body; the refresh token is
+         *     set as an `HttpOnly` cookie by the same response and never appears in a body.
+         * @example {
+         *       "accessToken": "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.1790150400.ExampleSignatureThatNoServerWillAccept00000",
+         *       "expiresIn": 600,
+         *       "sessionKind": "full"
+         *     }
+         */
         SessionTokens: {
-            /** Accesstoken */
+            /**
+             * Accesstoken
+             * @description The bearer token for every other call: send it as `Authorization: Bearer <token>`. Treat it as opaque, keep it in memory and never in browser storage, and expect it to stop working after `expiresIn` seconds (10 minutes by default); `POST /auth/refresh` then issues the next one from the refresh cookie this response set. Revoking the session stops it at once, whatever its expiry.
+             */
             accessToken: string;
-            /** Expiresin */
+            /**
+             * Expiresin
+             * @description How many seconds the access token is good for from now: 600 by default (a setting). Refresh a little before it runs out. The session itself lasts longer: it ends after 30 minutes without a refresh or 12 hours after sign-in, whichever comes first.
+             */
             expiresIn: number;
-            /** Sessionkind */
+            /**
+             * Sessionkind
+             * @description Which kind of session the token opens. `enrolment`: the first sign-in by emailed code, which may call only the passkey registration ceremony and `GET /me`; every other route answers 403 `enrolment_only` until a passkey is registered, and that registration replaces it with a full session. `full`: a normal signed-in session with the person's own permissions in their bank, or on the platform for platform staff.
+             */
             sessionKind: string;
         };
         /**
@@ -10337,16 +11085,25 @@ export interface components {
              */
             types?: components["schemas"]["SearchHitType"][];
         };
-        /** StepUpResult */
+        /**
+         * StepUpResult
+         * @description A fresh passkey assertion, recorded on the caller's session.
+         * @example {
+         *       "assertionId": "9f2e6c1a-4b7d-4e3f-a8c0-5d1b7e9a2c64",
+         *       "expiresAt": "2026-09-22T09:46:17Z"
+         *     }
+         */
         StepUpResult: {
             /**
              * Assertionid
              * Format: uuid
+             * @description The identifier of the recorded assertion, a UUID. Every sensitive action taken on this session before `expiresAt` writes it onto its own audit event, so the audit trail shows which passkey confirmation stood behind which action.
              */
             assertionId: string;
             /**
              * Expiresat
              * Format: date-time
+             * @description Until when, as a UTC timestamp, the assertion counts as fresh: 5 minutes after it was made by default (a setting). Until then every sensitive action on this session may proceed; after it they answer 403 `step_up_required` again. It belongs to this session only.
              */
             expiresAt: string;
         };
@@ -13567,104 +14324,316 @@ export interface components {
              */
             url?: string | null;
         };
-        /** WebAuthnAssertionResponse */
+        /**
+         * WebAuthnAssertionResponse
+         * @description The authenticator's answer to `get()` (WebAuthn `AuthenticatorAssertionResponse`), in
+         *     the JSON form `PublicKeyCredential.toJSON()` produces.
+         * @example {
+         *       "authenticatorData": "x1ybolFRp_Yvz904eABUWO9MpIEWkReG-jUXymg8hkAdAAAAAA",
+         *       "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiMTdWb0hYZ2pBRmd4LWE3S3ZFS1lPR2hJRF9qWTZxdGR4VldiYnFsWW5wWVpVZXZQMVU5S08tN1lkekY0Mjh6ODFSY2hwZFhNenltSFlyYi1nNUxJNGciLCJvcmlnaW4iOiJodHRwczovL2NvbXBsaWFuY2UuYmxlcXEuY29tIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ",
+         *       "signature": "MEUCIFP6eeLo2Wx1xFw1uT8xSjydMQ8NBmCaeqLY-urHgqPYAiEApk3FBKiW0c_dwtT64nidwrSJdAxJiIR_O7jEfU-WTVo",
+         *       "userHandle": "AAAAAAAAQACAAAAAAAABAg"
+         *     }
+         */
         WebAuthnAssertionResponse: {
-            /** Authenticatordata */
+            /**
+             * Authenticatordata
+             * @description The authenticator data, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses: a hash of the domain the passkey is bound to, the flags saying the person was present and verified and whether the passkey is backed up, and the signature counter, which the server uses to spot a cloned authenticator.
+             */
             authenticatorData: string;
-            /** Clientdatajson */
+            /**
+             * Clientdatajson
+             * @description The browser's client data, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses: a small JSON document naming the ceremony (`webauthn.get`), the challenge and the page's origin. The server finds the stored challenge from it and checks the origin and the ceremony type.
+             */
             clientDataJSON: string;
-            /** Signature */
+            /**
+             * Signature
+             * @description The passkey's signature over the authenticator data and a hash of the client data, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses. The server verifies it with the public key stored at registration; this is the proof, and the private key never leaves the authenticator.
+             */
             signature: string;
-            /** Userhandle */
+            /**
+             * Userhandle
+             * @description The user handle the passkey was registered with, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses, or null when the authenticator returns none. At sign-in it is required and must name the passkey's own account; at step-up it may be null and is checked when present.
+             */
             userHandle?: string | null;
         };
-        /** WebAuthnAttestationResponse */
+        /**
+         * WebAuthnAttestationResponse
+         * @description The authenticator's answer to `create()` (WebAuthn `AuthenticatorAttestationResponse`),
+         *     in the JSON form `PublicKeyCredential.toJSON()` produces.
+         * @example {
+         *       "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViUx1ybolFRp_Yvz904eABUWO9MpIEWkReG-jUXymg8hkBdAAAAAAAAAAAAAAAAAAAAAAAAAAAAEHBgI-7ZvPqUnqOIn-LeFGelAQIDJiABIVggPrL3_N-yJVIgitm_kE9S0YkZxNJLzXlhV_C3NrWbXl4iWCCRvpVJLG06C1S4j5i7pPvcRbu8Jyrw5hW-eZh8dfzDUg",
+         *       "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiQnFPd1FDNmxIQk5teVo0ekhGNmVsa3ZHWmJMWWtqRkFpeTBVMF8xdFN2eF9CaDFxY0QxRThGM2t4MkpOb1B3T09Id01qZkxJMFUyMl9tUVdrUjZ4RHciLCJvcmlnaW4iOiJodHRwczovL2NvbXBsaWFuY2UuYmxlcXEuY29tIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ",
+         *       "transports": [
+         *         "hybrid",
+         *         "internal"
+         *       ]
+         *     }
+         */
         WebAuthnAttestationResponse: {
-            /** Attestationobject */
+            /**
+             * Attestationobject
+             * @description The authenticator's attestation object, CBOR base64url-encoded without padding, the encoding WebAuthn's own JSON form uses. It carries the new passkey's credential ID and public key, the authenticator's model identifier (AAGUID), the flags saying whether the person was verified and whether the passkey can be and is backed up, and the attestation statement, normally empty here because the server asks for none.
+             */
             attestationObject: string;
-            /** Clientdatajson */
+            /**
+             * Clientdatajson
+             * @description The browser's client data, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses: a small JSON document naming the ceremony (`webauthn.create`), the challenge and the page's origin. The server checks all three, so a response made for another challenge or another site is refused.
+             */
             clientDataJSON: string;
-            /** Transports */
+            /**
+             * Transports
+             * @description How the browser believes the authenticator can be reached, from the response's `getTransports()`: any of `usb`, `nfc`, `ble`, `smart-card`, `hybrid` and `internal`. Stored with the passkey and shown under My passkeys; an absent or empty list is accepted.
+             */
             transports?: string[] | null;
         };
-        /** WebAuthnAuthenticatorSelection */
+        /**
+         * WebAuthnAuthenticatorSelection
+         * @description What the new passkey's authenticator must do (WebAuthn
+         *     `AuthenticatorSelectionCriteria`).
+         * @example {
+         *       "requireResidentKey": true,
+         *       "residentKey": "required",
+         *       "userVerification": "required"
+         *     }
+         */
         WebAuthnAuthenticatorSelection: {
-            /** Authenticatorattachment */
+            /**
+             * Authenticatorattachment
+             * @description Which kind of authenticator may be used: `platform` (built into the device, such as Windows Hello, Touch ID or an Android phone's screen lock) or `cross-platform` (a roaming authenticator, such as a security key or a phone reached from another device). This server leaves it out, so either kind is welcome.
+             */
             authenticatorAttachment?: string | null;
-            /** Requireresidentkey */
+            /**
+             * Requireresidentkey
+             * @description The WebAuthn Level 1 spelling of the same requirement, kept for older browsers: true exactly when `residentKey` is `required`, which is why this server always sends true. A browser that understands `residentKey` reads that instead.
+             */
             requireResidentKey?: boolean | null;
-            /** Residentkey */
+            /**
+             * Residentkey
+             * @description Whether the passkey must be discoverable, meaning the authenticator itself remembers the account and can offer it with no username typed: `required`, `preferred` or `discouraged`. This server always sends `required`, because sign-in starts with no username; a browser that cannot create a discoverable credential fails the ceremony rather than make another kind.
+             */
             residentKey?: string | null;
-            /** Userverification */
+            /**
+             * Userverification
+             * @description Whether the authenticator must check that the person is who they say, by PIN, fingerprint or face, rather than only that somebody is present: `required`, `preferred` or `discouraged`. This server always sends `required` and refuses a response whose user-verified flag is not set.
+             */
             userVerification?: string | null;
         };
         /**
          * WebAuthnCreationOptions
-         * @description `navigator.credentials.create({publicKey: ...})`, bytes as base64url.
+         * @description `navigator.credentials.create({publicKey: ...})`, bytes as base64url: WebAuthn's
+         *     `PublicKeyCredentialCreationOptions` in its JSON form. Decode the byte members
+         *     (`challenge`, `user.id`, each `excludeCredentials[].id`) to ArrayBuffers, or hand the
+         *     whole object to `PublicKeyCredential.parseCreationOptionsFromJSON()`.
+         * @example {
+         *       "attestation": "none",
+         *       "authenticatorSelection": {
+         *         "requireResidentKey": true,
+         *         "residentKey": "required",
+         *         "userVerification": "required"
+         *       },
+         *       "challenge": "BqOwQC6lHBNmyZ4zHF6elkvGZbLYkjFAiy0U0_1tSvx_Bh1qcD1E8F3kx2JNoPwOOHwMjfLI0U22_mQWkR6xDw",
+         *       "excludeCredentials": [
+         *         {
+         *           "id": "cGAj7tm8-pSeo4if4t4UZw",
+         *           "type": "public-key"
+         *         }
+         *       ],
+         *       "pubKeyCredParams": [
+         *         {
+         *           "alg": -8,
+         *           "type": "public-key"
+         *         },
+         *         {
+         *           "alg": -7,
+         *           "type": "public-key"
+         *         },
+         *         {
+         *           "alg": -257,
+         *           "type": "public-key"
+         *         }
+         *       ],
+         *       "rp": {
+         *         "id": "compliance.bleqq.com",
+         *         "name": "Compliance Watch"
+         *       },
+         *       "timeout": 120000,
+         *       "user": {
+         *         "displayName": "Sara Lindqvist",
+         *         "id": "AAAAAAAAQACAAAAAAAABAg",
+         *         "name": "compliance_officer@example-bank.test"
+         *       }
+         *     }
          */
         WebAuthnCreationOptions: {
-            /** Attestation */
+            /**
+             * Attestation
+             * @description How much proof of the authenticator's make and model the server wants back: `none` (no proof; a browser replaces any it is given with none, unless the authenticator only vouched for itself), `indirect` (a verifiable proof the browser may anonymise), `direct` (the authenticator's own proof) or `enterprise` (a proof that may identify the individual device, only where a managed deployment allows it). This server always sends `none`, so no prompt asks the person to share device details.
+             */
             attestation?: string | null;
+            /** @description What the authenticator must do: always a discoverable passkey with user verification required, from any kind of authenticator. */
             authenticatorSelection?: components["schemas"]["WebAuthnAuthenticatorSelection"] | null;
-            /** Challenge */
+            /**
+             * Challenge
+             * @description The server's random challenge, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses: 64 random bytes, well above the 16 WebAuthn asks for. The authenticator signs it, which proves the response is fresh. It works once, only for the person and session that asked for it, and expires 120 seconds after it was issued (a setting); after that the verify call answers `challenge_expired` and the ceremony starts again.
+             */
             challenge: string;
-            /** Excludecredentials */
+            /**
+             * Excludecredentials
+             * @description The person's passkeys that are already registered, so the browser does not create a second one on an authenticator that holds one; it asks the person to use a different authenticator instead. Empty at first enrolment, when there are none.
+             */
             excludeCredentials?: components["schemas"]["WebAuthnCredentialDescriptor"][] | null;
-            /** Hints */
+            /**
+             * Hints
+             * @description Hints to the browser about how the person will most likely answer, first one wins: `security-key` (a physical security key), `client-device` (the device's own authenticator) or `hybrid` (a phone or similar general-purpose authenticator). This server sends none today, so the browser offers every way it has.
+             */
             hints?: string[] | null;
-            /** Pubkeycredparams */
+            /**
+             * Pubkeycredparams
+             * @description The kinds of key the server accepts, most preferred first: EdDSA, ES256 and RS256. The authenticator uses the first it supports.
+             */
             pubKeyCredParams: components["schemas"]["WebAuthnPubKeyCredParam"][];
+            /** @description The service the passkey will belong to: the product's name and the domain the passkey is bound to. */
             rp: components["schemas"]["WebAuthnRpEntity"];
-            /** Timeout */
+            /**
+             * Timeout
+             * @description How long, in milliseconds, the browser should wait for the person: 120000 by default, the challenge's own lifetime. WebAuthn makes it a hint a browser may override, for example to give the person more time, but the server stops accepting the challenge when it expires, whatever the browser waited.
+             */
             timeout?: number | null;
+            /** @description The account the passkey is for: the caller's own, never anybody else's. Its `id` is what the authenticator returns as `userHandle` at every later sign-in. */
             user: components["schemas"]["WebAuthnUserEntity"];
         };
-        /** WebAuthnCredentialDescriptor */
+        /**
+         * WebAuthnCredentialDescriptor
+         * @description One existing passkey, named so the browser can find or avoid it (WebAuthn
+         *     `PublicKeyCredentialDescriptor`).
+         * @example {
+         *       "id": "cGAj7tm8-pSeo4if4t4UZw",
+         *       "type": "public-key"
+         *     }
+         */
         WebAuthnCredentialDescriptor: {
-            /** Id */
+            /**
+             * Id
+             * @description The credential ID of one of the person's live passkeys, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses, exactly as the authenticator issued it (WebAuthn caps it at 1023 bytes before encoding). It is the authenticator's identifier for the passkey, not this product's `id` for it in `GET /me/passkeys`.
+             */
             id: string;
-            /** Transports */
+            /**
+             * Transports
+             * @description How the browser might reach the authenticator holding this passkey, a hint and not a restriction: `usb`, `nfc`, `ble` (Bluetooth), `smart-card`, `hybrid` (a phone reached from another device) or `internal` (built into the device). This server leaves it out today, so the browser tries every way it has.
+             */
             transports?: string[] | null;
-            /** Type */
+            /**
+             * Type
+             * @description The credential type, always `public-key`. WebAuthn tells a browser to skip a descriptor whose type it does not know.
+             */
             type: string;
         };
-        /** WebAuthnPubKeyCredParam */
+        /**
+         * WebAuthnPubKeyCredParam
+         * @description One kind of key the server accepts (WebAuthn `PublicKeyCredentialParameters`).
+         * @example {
+         *       "alg": -7,
+         *       "type": "public-key"
+         *     }
+         */
         WebAuthnPubKeyCredParam: {
-            /** Alg */
+            /**
+             * Alg
+             * @description A signature algorithm the server accepts, as a COSE algorithm identifier. This server offers -8 (EdDSA), -7 (ES256) and -257 (RS256), the three WebAuthn recommends, in that order of preference. The authenticator creates a key with the first one it supports and fails the ceremony if it supports none.
+             */
             alg: number;
-            /** Type */
+            /**
+             * Type
+             * @description The credential type, always `public-key`: the only credential type WebAuthn defines. A browser ignores an entry with a type it does not know.
+             */
             type: string;
         };
         /**
          * WebAuthnRequestOptions
-         * @description `navigator.credentials.get({publicKey: ...})`, bytes as base64url.
+         * @description `navigator.credentials.get({publicKey: ...})`, bytes as base64url: WebAuthn's
+         *     `PublicKeyCredentialRequestOptions` in its JSON form, for signing in and for step-up.
+         *     Decode `challenge` and each `allowCredentials[].id` to ArrayBuffers, or hand the whole
+         *     object to `PublicKeyCredential.parseRequestOptionsFromJSON()`.
+         * @example {
+         *       "allowCredentials": [],
+         *       "challenge": "17VoHXgjAFgx-a7KvEKYOGhID_jY6qtdxVWbbqlYnpYZUevP1U9KO-7YdzF428z81RchpdXMzymHYrb-g5LI4g",
+         *       "rpId": "compliance.bleqq.com",
+         *       "timeout": 120000,
+         *       "userVerification": "required"
+         *     }
          */
         WebAuthnRequestOptions: {
-            /** Allowcredentials */
+            /**
+             * Allowcredentials
+             * @description Which passkeys may answer. Empty when signing in: the person has typed no username, so the authenticator offers whichever of its passkeys for this domain the person picks, and the account is found from the `userHandle` it returns. At step-up it lists the caller's own live passkeys, so no other account's passkey can confirm the action.
+             */
             allowCredentials?: components["schemas"]["WebAuthnCredentialDescriptor"][] | null;
-            /** Challenge */
+            /**
+             * Challenge
+             * @description The server's random challenge, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses: 64 random bytes. The passkey signs it. It works once and expires 120 seconds after it was issued (a setting); a step-up challenge is further bound to the person and session that asked for it.
+             */
             challenge: string;
-            /** Rpid */
+            /**
+             * Rpid
+             * @description The domain the passkey must have been made for, such as `compliance.bleqq.com`. The browser checks that the page is on it, and the authenticator offers only passkeys bound to exactly this domain.
+             */
             rpId?: string | null;
-            /** Timeout */
+            /**
+             * Timeout
+             * @description How long, in milliseconds, the browser should wait for the person: 120000 by default, the challenge's own lifetime. A hint the browser may override; the challenge still expires on the server.
+             */
             timeout?: number | null;
-            /** Userverification */
+            /**
+             * Userverification
+             * @description Whether the authenticator must verify the person by PIN, fingerprint or face: `required`, `preferred` or `discouraged`. This server always sends `required` and refuses an assertion whose user-verified flag is not set.
+             */
             userVerification?: string | null;
         };
-        /** WebAuthnRpEntity */
+        /**
+         * WebAuthnRpEntity
+         * @description The service the passkey belongs to (WebAuthn `PublicKeyCredentialRpEntity`).
+         * @example {
+         *       "id": "compliance.bleqq.com",
+         *       "name": "Compliance Watch"
+         *     }
+         */
         WebAuthnRpEntity: {
-            /** Id */
+            /**
+             * Id
+             * @description The relying party identifier (RP ID): the domain the new passkey is bound to, such as `compliance.bleqq.com`. A passkey made for one RP ID never works for another, which is why the host is fixed before anybody enrols. This server always sends it; WebAuthn would read a missing value as the calling page's own domain.
+             */
             id?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description The product's name, `Compliance Watch` by default (a setting), which some browsers show while the person creates the passkey. WebAuthn Level 3 deprecates this member because many browsers no longer display it, but it is still required, so it is always sent. For display only; nothing is decided on it.
+             */
             name: string;
         };
-        /** WebAuthnUserEntity */
+        /**
+         * WebAuthnUserEntity
+         * @description The account the new passkey is for (WebAuthn `PublicKeyCredentialUserEntity`).
+         * @example {
+         *       "displayName": "Sara Lindqvist",
+         *       "id": "AAAAAAAAQACAAAAAAAABAg",
+         *       "name": "compliance_officer@example-bank.test"
+         *     }
+         */
         WebAuthnUserEntity: {
-            /** Displayname */
+            /**
+             * Displayname
+             * @description The person's name as their profile holds it, such as `Sara Lindqvist`, shown next to the account name in the passkey picker. For display only, never returned to the server, and never an identifier.
+             */
             displayName: string;
-            /** Id */
+            /**
+             * Id
+             * @description The user handle, base64url-encoded without padding, the encoding WebAuthn's own JSON form uses: the 16 bytes of the person's account identifier, 22 characters once encoded. It holds no name or address, as WebAuthn requires of a handle (at most 64 bytes, never personally identifying), and the authenticator hands it back as `userHandle` when the passkey later signs in, which is how a sign-in with no username finds the account.
+             */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description The account name the browser and authenticator show when the person later picks among their passkeys: the email address they were invited with. For display only; WebAuthn never returns it to the server, and nothing is decided on it.
+             */
             name: string;
         };
     };
@@ -14072,6 +15041,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "accessToken": "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.enrolment.1790150400.ExampleSignatureThatNoServerWillAccept00000",
+                     *       "expiresIn": 600,
+                     *       "sessionKind": "enrolment"
+                     *     }
+                     */
                     "application/json": components["schemas"]["SessionTokens"];
                 };
             };
@@ -14120,6 +15096,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "accessToken": "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.enrolment.1790150400.ExampleSignatureThatNoServerWillAccept00000",
+                     *       "expiresIn": 600,
+                     *       "sessionKind": "enrolment"
+                     *     }
+                     */
                     "application/json": components["schemas"]["SessionTokens"];
                 };
             };
@@ -14266,6 +15249,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "allowCredentials": [
+                     *         {
+                     *           "id": "cGAj7tm8-pSeo4if4t4UZw",
+                     *           "type": "public-key"
+                     *         }
+                     *       ],
+                     *       "challenge": "17VoHXgjAFgx-a7KvEKYOGhID_jY6qtdxVWbbqlYnpYZUevP1U9KO-7YdzF428z81RchpdXMzymHYrb-g5LI4g",
+                     *       "rpId": "compliance.bleqq.com",
+                     *       "timeout": 120000,
+                     *       "userVerification": "required"
+                     *     }
+                     */
                     "application/json": components["schemas"]["WebAuthnRequestOptions"];
                 };
             };
@@ -15395,6 +16392,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "backedUp": true,
+                     *         "createdAt": "2026-09-14T08:12:31Z",
+                     *         "deviceType": "multi_device",
+                     *         "id": "3b6f1d2e-8a4c-4f0b-9e7d-2c1a5b8f6e30",
+                     *         "lastUsedAt": "2026-09-22T06:58:04Z",
+                     *         "nickname": "iCloud Keychain",
+                     *         "transports": [
+                     *           "hybrid",
+                     *           "internal"
+                     *         ]
+                     *       },
+                     *       {
+                     *         "backedUp": false,
+                     *         "createdAt": "2026-09-14T08:20:02Z",
+                     *         "deviceType": "single_device",
+                     *         "id": "a41c7e90-2f5b-4d8a-b3e6-91d0c4f7a852",
+                     *         "lastUsedAt": "2026-09-14T08:20:02Z",
+                     *         "nickname": "YubiKey 5 NFC",
+                     *         "transports": [
+                     *           "nfc",
+                     *           "usb"
+                     *         ]
+                     *       }
+                     *     ]
+                     */
                     "application/json": components["schemas"]["PasskeyOut"][];
                 };
             };
@@ -15405,6 +16430,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The identifier of one of your own passkeys, the UUID `GET /me/passkeys` returns as `id`. Another person's passkey, a retired one or an unknown identifier all answer `not_found` alike. */
                 passkey_id: string;
             };
             cookie?: never;
@@ -15425,6 +16451,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The identifier of one of your own passkeys, the UUID `GET /me/passkeys` returns as `id`. Another person's passkey, a retired one or an unknown identifier all answer `not_found` alike. */
                 passkey_id: string;
             };
             cookie?: never;
@@ -15461,6 +16488,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "createdAt": "2026-09-22T06:58:04Z",
+                     *         "current": true,
+                     *         "id": "5c0d2a1e-7b3f-4c8e-9a6d-1b2c3e4f5a6b",
+                     *         "ip": "192.0.2.41",
+                     *         "lastSeenAt": "2026-09-22T09:41:17Z",
+                     *         "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+                     *       },
+                     *       {
+                     *         "createdAt": "2026-09-19T12:03:55Z",
+                     *         "current": false,
+                     *         "id": "e8a2f4c6-1d3b-4a7e-8c5f-0b9d2e6a4f13",
+                     *         "ip": "198.51.100.7",
+                     *         "lastSeenAt": "2026-09-19T15:27:40Z",
+                     *         "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1"
+                     *       }
+                     *     ]
+                     */
                     "application/json": components["schemas"]["SessionOut"][];
                 };
             };
@@ -15471,6 +16518,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description The identifier of one of your own sessions in the bank this session is signed in to (on a platform session, one of your platform sessions), the UUID `GET /me/sessions` returns as `id`. Another person's session, one of yours in another bank or an unknown identifier all answer `not_found` alike. */
                 session_id: string;
             };
             cookie?: never;

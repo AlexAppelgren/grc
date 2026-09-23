@@ -95,8 +95,10 @@ logic that will fill it, and answering 501 until that ships. Never document a
 501 as if it were the behaviour, and never leave a reader to discover it.
 
 **An error code is documented only if a route raises it.** The gate reads every
-`code=` literal under `backend/apps` outside its tests, so any code the API
-really answers may be written down — and one that is invented is still refused.
+`code=` literal under `backend/apps` outside its tests, and in the exception
+handlers of `backend/config/api.py`, which answer for requests no route sees
+(`enrolment_only`, `validation_error`), so any code the API really answers may
+be written down — and one that is invented is still refused.
 Name the codes a caller must branch on, one line each, with the condition that
 produces them.
 

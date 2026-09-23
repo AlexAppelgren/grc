@@ -358,6 +358,14 @@ class TheRaisableCodesComeFromTheSource(SimpleTestCase):
             with self.subTest(code=code):
                 self.assertIn(code, codes)
 
+    def test_a_code_the_exception_handlers_answer_is_accepted(self) -> None:
+        """`config/api.py` answers for requests no route sees: an enrolment session that
+        calls any route but passkey registration and `GET /me` gets 403 `enrolment_only`
+        (AC-ID2). Reading only `backend/apps/` refused that code, so the sweep documenting
+        the routes that answer it could not tell the integrator what to branch on
+        (api-docs-identity-auth, 2026-09-23)."""
+        self.assertIn("enrolment_only", load_gate().RAISABLE_CODES)
+
     def test_a_code_nothing_raises_is_not(self) -> None:
         self.assertNotIn("obligation_frozen", load_gate().RAISABLE_CODES)
 
