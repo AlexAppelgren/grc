@@ -3837,7 +3837,7 @@
             "description": "Who issued the instrument, in full, or null when the fixture carries none."
           },
           "binding": {
-            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
+            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words, unless the level's kind is `standard`: an edition of a standard is false and is neither law nor guidance (see the level). It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
             "examples": [
               true
             ],
@@ -4260,7 +4260,7 @@
             "description": "Who issued the instrument, or null when the fixture carries none."
           },
           "binding": {
-            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
+            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words, unless the level's kind is `standard`: an edition of a standard is false and is neither law nor guidance (see the level). It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
             "examples": [
               true
             ],
@@ -4606,7 +4606,7 @@
           },
           "jurisdiction": {
             "$ref": "#/components/schemas/LibraryRef",
-            "description": "Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` says whether it is a country, a union or an international body; a change takes its own jurisdiction from its authority, and a standard's term is accepted only when that kind is international (FP-04, AC-AGT1). A reader must not conclude from this alone that a change applies to a bank: applicability is a separate fact (REG-01)."
+            "description": "Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, where a standards body such as ISO/IEC sits; a change takes its own jurisdiction from its authority, and a standard's term is accepted only when that kind is international (FP-04, AC-AGT1). A reader must not conclude from this alone that a change applies to a bank: applicability is a separate fact (REG-01)."
           },
           "key": {
             "description": "The authority's immutable key, the value a filter, a report or an export stores. It never changes; the name may be relabelled around it (playbook 4.3).",
@@ -5966,7 +5966,7 @@
         ],
         "properties": {
           "binding": {
-            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
+            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words, unless the level's kind is `standard`: an edition of a standard is false and is neither law nor guidance (see the level). It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
             "examples": [
               true
             ],
@@ -6730,7 +6730,7 @@
         "description": "One row of `GET /obligations` (INV-03). `version` is the one in force on the read's\ndate and `upcomingVersion` the next one after it. The register overlay arrives later:\n`openChangeCount` with the watch feed (chunk 5), `pendingApplicability` and\n`complianceStatus` with the register (chunk 8).",
         "properties": {
           "binding": {
-            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
+            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words, unless the level's kind is `standard`: an edition of a standard is false and is neither law nor guidance (see the level). It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
             "examples": [
               true
             ],
@@ -9087,7 +9087,7 @@
         "description": "An obligation a reader should see beside this one (INV-03), with the relation as a\nvocabulary row.",
         "properties": {
           "binding": {
-            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
+            "description": "Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words, unless the level's kind is `standard`: an edition of a standard is false and is neither law nor guidance (see the level). It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.",
             "examples": [
               true
             ],

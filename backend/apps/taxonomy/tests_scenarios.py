@@ -32,7 +32,7 @@ import datetime
 from apps.cases import matching as case_matching, testing as cases_build
 from apps.cases.models import ChangeCase
 from apps.identity.models import TenantRole, User
-from apps.library.models import Jurisdiction, Language, Obligation, ObligationTerm
+from apps.library.models import Authority, Instrument, Jurisdiction, Language, Obligation, ObligationTerm
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import load_library, seed_authorities
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
@@ -907,6 +907,10 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertIsInstance(User._meta.get_field("locale"), ForeignKey)
         self.assertIs(User._meta.get_field("locale").related_model, Language)
         self.assertIsInstance(Jurisdiction._meta.get_field("default_language"), ForeignKey)
+        # An instrument's and an authority's jurisdiction reference the jurisdiction table.
+        for model in (Instrument, Authority):
+            self.assertIsInstance(model._meta.get_field("jurisdiction"), ForeignKey)
+            self.assertIs(model._meta.get_field("jurisdiction").related_model, Jurisdiction)
         # No code branch names a country or a language in the taxonomy and library apps.
         for path in sorted((APPS_DIR / "taxonomy").glob("*.py")) + sorted((APPS_DIR / "library").glob("*.py")):
             if path.name.startswith("tests_"):

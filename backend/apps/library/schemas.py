@@ -305,9 +305,11 @@ _BINDING_LEVEL = (
 )
 _BINDING = (
     "Whether the instrument behind this duty binds the bank in law. False means guidance a "
-    "bank either complies with or explains, which is what a screen says in those words. It "
-    "is a fact about the rule and not about the bank: neither value says the duty applies "
-    "here, and neither says whether the bank complies with it."
+    "bank either complies with or explains, which is what a screen says in those words, "
+    "unless the level's kind is `standard`: an edition of a standard is false and is "
+    "neither law nor guidance (see the level). It is a fact about the rule and not about "
+    "the bank: neither value says the duty applies here, and neither says whether the bank "
+    "complies with it."
 )
 _DUTY_TYPE = (
     "What kind of duty this is, as key, kind and label. `conduct`, `disclosure`, "
@@ -2116,11 +2118,12 @@ class LibraryAuthority(LibraryResponse):
     jurisdiction: LibraryRef = Field(
         description=(
             "Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary "
-            "(`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are "
-            "rows an admin manages, not a closed set: a platform admin may extend, relabel or "
-            "retire one without a deploy, so read `GET /reference/jurisdictions` for the live "
-            "set and match on the key, never on the label. The "
-            "`kind` says whether it is a country, a union or an international body; a change "
+            "(`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The "
+            "values are rows an admin manages, not a closed set: a platform admin may extend, "
+            "relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for "
+            "the live set and match on the key, never on the label. The `kind` is one of three "
+            "kinds fixed in code: `country`, `supranational` (the European Union) or "
+            "`international`, where a standards body such as ISO/IEC sits; a change "
             "takes its own jurisdiction from its authority, and a standard's term is accepted "
             "only when that kind is international (FP-04, AC-AGT1). A reader must not conclude "
             "from this alone that a change applies to a bank: applicability is a separate fact "

@@ -107,6 +107,13 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "body); instrument relations (implements) branch on it, and only supranational and "
         "country rows are mirrored into the footprint's jurisdiction dimension",
     ),
+    "InstrumentLevelKind": (
+        "instrument_level_kind",
+        "INV-01, INV-08, D-37: the one optional value, standard, is what tells a pill to "
+        "read Standard rather than Binding or Guidance, comply or explain, and what the "
+        "provision triggers refuse a provision under; the five other levels stay kindless "
+        "and no admin may add a second value",
+    ),
     "FootprintAction": (
         "footprint_action",
         "FP-02: a history row records a term added or removed; the as-of reconstruction branches on it",
@@ -158,13 +165,5 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "roadmap_item_type",
         "HOM-03, HOM-04: what produced the date - a change's key date, an internal deadline, "
         "an action due or a review due; the card and the calendar builder branch on it",
-    ),
-    # INV-01, INV-08 (lib-standard-model): the standard level (D-37).
-    "InstrumentLevelKind": (
-        "instrument_level_kind",
-        "INV-01, INV-08, D-37: the one optional value, standard, is what tells a pill to "
-        "read Standard rather than Binding or Guidance, comply or explain, and what the "
-        "provision trigger refuses a provision under; the five other levels stay kindless "
-        "and no admin may add a second value",
     ),
 }
