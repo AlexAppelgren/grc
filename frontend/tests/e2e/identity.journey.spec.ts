@@ -368,6 +368,12 @@ test.describe('identity journeys', () => {
     await page.goto('/admin/api-keys');
     await page.getByRole('button', { name: 'Create a key' }).click();
     const form = page.locator('[data-key-form]');
+    // A bank's key is offered reads and proposals only: the watch writes belong
+    // to the platform's own agents and are not on the form at all.
+    await expect(form.locator('label', { hasText: /^proposals write/ })).toBeVisible();
+    for (const platformOnly of [/^agent runs write/, /^sources write/, /^changes write/]) {
+      await expect(form.locator('label', { hasText: platformOnly })).toHaveCount(0);
+    }
     await form.getByLabel('Name', { exact: true }).fill('GRC export sync');
     await form.locator('label', { hasText: /^tenant read/ }).getByRole('checkbox').check();
     await form.locator('label', { hasText: /^search read/ }).getByRole('checkbox').check();
