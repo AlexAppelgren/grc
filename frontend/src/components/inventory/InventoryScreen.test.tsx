@@ -165,10 +165,11 @@ describe('ObligationRow', () => {
     nav.replace.mockReset();
   });
 
-  it('reads the row into the pill contract: the instrument, the tags, and the counted open changes', () => {
+  it('reads the row into the pill contract: the instrument, the level kind, the tags, and the counted open changes', () => {
     expect(factsOf(research)).toEqual({
       instrument: { key: 'fffs-2017-2', label: 'FFFS 2017:2' },
       binding: true,
+      levelKind: null,
       complianceStatus: undefined,
       changeWaitingForApproval: false,
       openChangeCount: 1,

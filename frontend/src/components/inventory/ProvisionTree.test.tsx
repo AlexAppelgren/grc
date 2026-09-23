@@ -74,6 +74,8 @@ const diff = {
   ],
 };
 
+const SOURCE = 'https://www.iso.org/standard/27001';
+
 function serve(nodes: ProvisionNode[], answer: typeof diff = diff) {
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/me') return { status: 200, data: { user: { id: 'u1', name: 'Sara', locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: [], enrolmentPending: false } };
@@ -98,7 +100,7 @@ describe('ProvisionTree', () => {
 
   it('renders the tree three levels deep, and defaults to the in-force version with its text', async () => {
     serve([chapter]);
-    renderIn(<ProvisionTree instrumentId="in-1" />);
+    renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
     await screen.findByText('9 kap.');
     expect(screen.getByText('Skydd för investerare')).toBeVisible();
     expect(screen.getAllByText('6 §').length).toBeGreaterThan(0);
@@ -111,7 +113,7 @@ describe('ProvisionTree', () => {
 
   it('chooses a version by its own chip, never by relying on today, and shows its transitional note', async () => {
     serve([chapter]);
-    renderIn(<ProvisionTree instrumentId="in-1" />);
+    renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
     await screen.findByText('Betalning för analys');
     fireEvent.click(screen.getByRole('button', { name: 'In force from 1 Oct 2026' }));
     expect(screen.getByText('Research payment under the new rules.')).toBeVisible();
@@ -121,14 +123,14 @@ describe('ProvisionTree', () => {
 
   it('links to the obligations that cite the provision', async () => {
     serve([chapter]);
-    renderIn(<ProvisionTree instrumentId="in-1" />);
+    renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
     const link = await screen.findByRole('link', { name: 'Pay for third-party research only under the permitted models' });
     expect(link).toHaveAttribute('href', '/inventory/obligations/ob-1');
   });
 
   it('opens the diff through "Show what changed", naming the two versions it compares and labelling a machine translation', async () => {
     serve([chapter]);
-    renderIn(<ProvisionTree instrumentId="in-1" />);
+    renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
     await screen.findByText('Betalning för analys');
     fireEvent.click(screen.getByRole('button', { name: 'Show what changed' }));
     await waitFor(() => expect(screen.getByText(/Research payment under the new rules\./)).toBeVisible());
@@ -145,7 +147,7 @@ describe('ProvisionTree', () => {
 
   it('leaves the machine translation label off a diff between two texts a person wrote', async () => {
     serve([chapter], { ...diff, isMachine: false, language: 'sv' });
-    renderIn(<ProvisionTree instrumentId="in-1" />);
+    renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
     await screen.findByText('Betalning för analys');
     fireEvent.click(screen.getByRole('button', { name: 'Show what changed' }));
     await waitFor(() => expect(document.querySelector('[data-diff-banner]')).not.toBeNull());
@@ -155,14 +157,48 @@ describe('ProvisionTree', () => {
 
   it('leaves the diff chip and the version chips out of a unit with no text of its own', async () => {
     serve([chapter]);
-    renderIn(<ProvisionTree instrumentId="in-1" />);
+    renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
     await screen.findByText('9 kap.');
     expect(screen.queryAllByRole('button', { name: 'Show what changed' })).toHaveLength(1);
   });
 
   it('shows the empty state for an instrument with no provisions yet', async () => {
     serve([]);
-    renderIn(<ProvisionTree instrumentId="in-1" />);
+    renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
     expect(await screen.findByText('No provisions yet')).toBeVisible();
+  });
+
+  it("says a standard's text is licensed and links the catalogue, without reading a tree", async () => {
+    const sent = serve([chapter]);
+    renderIn(<ProvisionTree instrumentId="in-1" levelKind="standard" sourceUrl={SOURCE} />);
+    const panel = document.querySelector('[data-provisions-licensed]') as HTMLElement;
+    expect(within(panel).getByRole('heading', { name: 'The text is licensed' })).toBeVisible();
+    expect(within(panel).getByText('The text of this standard is licensed and not held here.')).toBeVisible();
+    const link = within(panel).getByRole('link', { name: "See it in the publisher's catalogue" });
+    expect(link).toHaveAttribute('href', SOURCE);
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.queryByText('9 kap.')).toBeNull();
+    expect(sent.some((request) => request.path.endsWith('/provisions'))).toBe(false);
+  });
+
+  it('shows the loading state until the tree arrives', async () => {
+    serve([chapter]);
+    renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
+    expect(document.querySelector('[data-provision-tree] [aria-busy="true"]')).not.toBeNull();
+    await screen.findByText('9 kap.');
+  });
+
+  it('offers a retry when the tree cannot be read', async () => {
+    installAdapter(() => ({ status: 500, data: { detail: 'no', code: 'server_error' } }));
+    renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
+    expect(await screen.findByText('Could not load the provisions')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
+  });
+
+  it('names the missing grant instead of a retry when the tree is denied', async () => {
+    installAdapter(() => ({ status: 403, data: { detail: 'You do not have access to this.', code: 'permission_denied' } }));
+    renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
+    await waitFor(() => expect(document.querySelector('[data-provisions-denied] [role="alert"]')).toHaveTextContent('You do not have access to this.'));
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 });

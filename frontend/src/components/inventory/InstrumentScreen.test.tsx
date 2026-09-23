@@ -112,6 +112,55 @@ describe('InstrumentScreen', () => {
     tokenStore.set('tok');
   });
 
+  it('a standard reads "Standard" in its binding slots and says its text is licensed, with the catalogue link', async () => {
+    const iso: InstrumentDetail = {
+      ...fffs,
+      stableKey: 'iso-27001-2022',
+      shortName: 'ISO/IEC 27001:2022',
+      name: { text: 'Information security management systems', language: 'en', isOriginal: true, isMachine: false },
+      level: { key: 'standard', kind: 'standard', label: 'Standard edition' },
+      binding: false,
+      jurisdiction: { key: 'int', kind: 'international', label: 'International' },
+      authority: null,
+      regime: { key: 'ai_ict', kind: null, label: 'AI and ICT' },
+      sourceUrl: 'https://www.iso.org/standard/27001',
+      lineage: [],
+    };
+    const control: Obligation = {
+      ...researchObligation,
+      instrument: { key: iso.stableKey, shortName: iso.shortName },
+      bindingLevel: iso.level,
+      binding: false,
+    };
+    const sent = serve(iso, [control]);
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Information security management systems' });
+
+    const header = document.querySelectorAll('[data-header-pills] [data-pill]');
+    expect([...header].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
+      ['ISO/IEC 27001:2022', 'brand'],
+      ['Standard edition', 'information'],
+      ['Standard', 'information'],
+      ['International', 'brand'],
+      ['AI and ICT', 'information'],
+    ]);
+    expect(screen.queryByText('Guidance, comply or explain')).toBeNull();
+    const identity = document.querySelector('[data-identity-panel]') as HTMLElement;
+    expect(within(identity).getByText('Standard')).toBeInTheDocument();
+
+    const licensed = document.querySelector('[data-provision-tree] [data-provisions-licensed]') as HTMLElement;
+    expect(within(licensed).getByRole('link', { name: "See it in the publisher's catalogue" })).toHaveAttribute('href', iso.sourceUrl);
+    expect(sent.some((request) => request.path.endsWith('/provisions'))).toBe(false);
+
+    // The row of an obligation under it reads "Standard" in its guidance slot, never "Guidance".
+    await waitFor(() => expect(document.querySelector('[data-obligations-panel] [data-obligation]')).not.toBeNull());
+    const row = document.querySelector('[data-obligations-panel] [data-obligation]') as HTMLElement;
+    expect([...row.querySelectorAll('[data-pill]')].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
+      ['ISO/IEC 27001:2022', 'brand'],
+      ['Standard', 'information'],
+    ]);
+  });
+
   it('shows the header pills, the identity panel, the source link and the obligations from this instrument', async () => {
     serve(fffs);
     renderIn(<InstrumentScreen instrumentId="in-1" />);
