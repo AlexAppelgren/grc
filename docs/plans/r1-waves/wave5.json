@@ -1,0 +1,68 @@
+[
+ {
+  "key": "r1-close-and-readiness",
+  "title": "R1 is closed on a recorded commit",
+  "goal": "Every R1 chunk row, status cell, floor and ledger is final and the full gates are green once over the merged batch.",
+  "requirement_ids": [
+   "NFR-01",
+   "NFR-02",
+   "NFR-03",
+   "I18N-02",
+   "ADM-01",
+   "ADM-02",
+   "ID-10",
+   "INV-01",
+   "INV-02",
+   "INV-05",
+   "INV-06",
+   "INV-08",
+   "PRO-01",
+   "PRO-02",
+   "PRO-03",
+   "HOM-01",
+   "HOM-03",
+   "HOM-04",
+   "WAT-01",
+   "WAT-02",
+   "WAT-03",
+   "WAT-04",
+   "WAT-05",
+   "WAT-07",
+   "CAS-01",
+   "AGT-01",
+   "SRC-03",
+   "SRC-05",
+   "AUD-02",
+   "AUD-03",
+   "FP-01",
+   "FP-02",
+   "FP-03",
+   "FP-04"
+  ],
+  "scenario_ids": [],
+  "files_owned": [
+   "backend/scripts/coverage_gate.py"
+  ],
+  "shared_files": [
+   "docs/plans/IMPLEMENTATION_STATUS.md",
+   "docs/plans/UI_Implementation_Plan.md",
+   "docs/TODO_FOR_alex.md",
+   "docs/plans/Verification_Log.md",
+   "backend/apps/*/app.md (status cells only)",
+   "docs/plans/briefs/HARDENING.md"
+  ],
+  "depends_on": [
+   "r1-perf",
+   "security-review-c3-f03",
+   "security-review-c4",
+   "security-review-c5",
+   "security-review-c6",
+   "security-review-c7"
+  ],
+  "wave": 5,
+  "size": "M",
+  "acceptance": "prepush.sh --all and the full npm run test:e2e green on a recorded commit; no R1 route answers 501; no R1 journey fixme and no R1 scenario skipped; api_docs_pending.txt has zero entry lines; every R1 requirement's app.md cell reads built only when every R1 @integration and @e2e scenario naming it is green (in_progress with the cut named otherwise); every HARDENING row of medium or higher severity is fixed or named as a cut Alex accepted (H16 today); coverage floors added (apps/home/*, home/feed.py, proposals updates.py/reading.py/logic.py/api.py restated, governance/problem_reports_logic.py, search/ask.py, search/eval_sets.py) with measured value, test count and date, and the chunk 3 comment and apply.py line fixed; chunk 3-7 rows dated Implemented and Tested with cut lists; Verified left to Alex.",
+  "brief": "Base: create your branch claude/r1w5-r1-close-and-readiness from origin/claude/r1-int-w4-done (main plus every wave-4 package, integrated) if that commit is not yet on origin/main, otherwise from origin/main. Close chunks 3-7 (CHUNK6_TASKS ~848, chunk 5 and 7 close tasks) once their R1 scenarios are green. Status cells, set after the batch E2E run (builders did not flip journey-dependent cells, D-67): INV-01/02/05/06/08, FP-01/02/03/04, WAT-01/02/03/04/05/07, CAS-01, PRO-01/02/03, ID-10, AGT-01 (AGT-02 and AGT-08 were set by their packages: confirm), SRC-03/05 (SRC-04 pending; only SRC-S7 and SRC-S13 skipped), AUD-02/03, HOM-01 built with standing named as a chunk 8 cut, HOM-03 in_progress (ruling 3), HOM-04 once HOM-S5's journey is green, NFR-01 once NFR-S1..S6/S13/S16 are green, NFR-02/03 built, I18N-02 built for en/sv. Several of these read built on main today while a scenario naming them is skipped or fixme: reconcile every one. Add a fetched Verification_Log row for text/calendar and the RFC 5545 properties the feed writes. TODO_FOR_alex: chunk 6's three confirmations (briefing mail recipients, a confirmed So-what in it, standing and own deadlines in chunk 8), chunk 7's (scope applies to search, k-anthropic cost/approval, unrecorded retrieval track, standards refused in Ask). State plainly whether the retrieval gate is recorded. Update IMPLEMENTATION_STATUS and UI plan rows. Run the full gates once, not in parallel with any other suite on the shared Postgres. Rules: no Co-Authored-By trailer; the owner deploys. Additions from this build run (2026-09-23): (a) D-79's refusal is lifted (vocab-agent-confirm, Alex's answer quoted in D-79); library-confirmer v2 stays a draft until its evaluation rows exist: say so in IMPLEMENTATION_STATUS. (b) H16 is fixed (ADR 0058, D-83), not a cut. (c) The four wave-4 security reviews (c3-f03, c4, c5, c7) and c6 from wave 2 are on record in docs/security; every medium finding is fixed (merge-moved-ids, agent-write-guards and the reviews' own fixes) — verify each medium row reads fixed with its commit; every low row stays a HARDENING row. (d) r1-perf recorded backend/perf/baseline.json and NFR-S7's medians; real-model and real-embedder timings wait for the D-07 and D-09 keys. (e) The CI secret scan reads every origin branch; prepush.sh now does too. (f) The owner-blocked items to list plainly in TODO_FOR_alex.md's summary at the top: the D-07 model key, the D-09 embedding key and retrieval baseline, the test deployment, and legal on standard titles; plus every '[ ]' box a package added today. Your done marker is claude/r1w5-r1-close-and-readiness-done.",
+  "wave2_deps": []
+ }
+]
