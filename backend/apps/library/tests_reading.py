@@ -922,13 +922,15 @@ class PrivateObligationIsolation(TransactionTestCase):
         # A record the reader cannot see is not there: the same 404 as an id that never
         # existed, so no address can be probed for what a bank holds privately (INV-07).
         with as_app_role():
-            for path in (f"{URL}/{self.private.id}", f"{URL}/{self.private.id}/diff"):
+            for path in (f"{URL}/{self.private.id}", f"{URL}/{self.private.id}/diff", f"{URL}/{self.private.id}/sources"):
                 with self.subTest(path=path):
                     refused = self.client.get(path, HTTP_X_API_KEY=self.key_a.plain_key)
                     self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"))
                     self.assertEqual(refused.json()["detail"], reading.NOT_FOUND)
             own = self.client.get(f"{URL}/{self.private.id}", HTTP_X_API_KEY=self.key_b.plain_key)
             self.assertEqual((own.status_code, own.json()["stableKey"]), (200, "obl-b-private"))
+            own_sources = self.client.get(f"{URL}/{self.private.id}/sources", HTTP_X_API_KEY=self.key_b.plain_key)
+            self.assertEqual((own_sources.status_code, own_sources.json()["obligationId"]), (200, str(self.private.id)))
 
 
 # Queries per instrument list read, measured 2026-09-22 the same way as LIST_QUERIES: the
@@ -1465,3 +1467,121 @@ class AuthorityListTests(TestCase):
         self.assertEqual(self.get({"HTTP_X_API_KEY": no_scope.plain_key}).status_code, 403)
         key = factories.api_key(self.tenant, scopes=(perms.SCOPE_LIBRARY_READ,))
         self.assertEqual(self.get({"HTTP_X_API_KEY": key.plain_key}).status_code, 200)
+
+
+# ---------------------------------------------------------------------------------------
+# GET /obligations/{id}/sources (INV-06, AGT-01 item 3, `library-recheck-loop`)
+# ---------------------------------------------------------------------------------------
+class RecordSourcesTests(TestCase):
+    """What a live record cites, which is what a watch run re-checks it against: the field
+    sources of the approved proposal that wrote the version in force, or, for a version no
+    proposal wrote, the record's own source as one `summary` citation (INV-06). Reading
+    them needs `library:read` and nothing more (AGT-01, item 3)."""
+
+    tenant: Tenant
+    reader: User
+    research: Obligation
+    corrected: Obligation
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        seed_reference()
+        cls.tenant = factories.tenant(slug="sources-a")
+        cls.reader = factories.member_user(cls.tenant, roles=("reader",))
+        seed_obligations()
+        cls.research = Obligation.objects.get(stable_key="obl-d-research")
+        cls.corrected = build.obligation(
+            build.instrument(key="fffs-sources", short_name="FFFS 2017:2", regime="regime:securities"),
+            key="obl-sources-corrected",
+            versions=((D(2025, 1, 1), {"en": "Report within ten days."}),),
+        )
+
+    def propose_and_confirm(self, obligation: Obligation) -> None:
+        """One agent proposes a corrected version citing a page per field, and an independent
+        agent confirms it, through the queue as production does (PRO-01, PRO-S13)."""
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        proposer = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        body = {
+            "kind": "new_obligation_version",
+            "title": "The reporting deadline moved",
+            "targetType": "obligation",
+            "targetId": str(obligation.id),
+            "payload": {
+                "summaries": {"en": "Report within five days."},
+                "originalLanguage": "en",
+                "isMachine": True,
+                "effectiveFrom": "2026-01-01",
+                "effectiveFromPrecision": "day",
+            },
+            "fieldSources": {"summaries.en": "https://www.fi.se/en/fffs-2017-2/", "effectiveFrom": "https://www.fi.se/en/news/deadline/"},
+            "sourceLabel": "FFFS 2017:2 as amended",
+            "sourceUrl": "https://www.fi.se/en/fffs-2017-2/",
+            "agentRunId": str(agents_testing.platform_run(key=proposer).id),
+        }
+        created = self.client.post("/api/v1/proposals", body, content_type="application/json", HTTP_X_API_KEY=proposer.plain_key)
+        self.assertEqual(created.status_code, 201, created.content)
+        approved = self.client.post(
+            f"/api/v1/proposals/{created.json()['id']}/approve",
+            {},
+            content_type="application/json",
+            HTTP_X_API_KEY=agents_testing.reviewer_api_key().plain_key,
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+    def test_a_version_no_proposal_wrote_cites_the_records_own_source(self) -> None:
+        # Before its first version takes effect, a record is read by that first version.
+        for on, number in ((D(2024, 12, 31), 1), (EARLY, 1), (CHANGE_DAY, 2)):
+            with self.subTest(on=on):
+                sources = reading.get_record_sources(self.research.id, on)
+                self.assertEqual((sources.obligation_id, sources.version_number), (self.research.id, number))
+                self.assertEqual(
+                    [item.model_dump() for item in sources.items],
+                    [
+                        {
+                            "field": "summary",
+                            "url": build.SOURCE_URL,
+                            "label": self.research.source_label,
+                            "content_hash": None,
+                            "fetched_at": None,
+                            "document_id": None,
+                        }
+                    ],
+                )
+
+    def test_an_approved_proposal_gives_one_citation_per_field_it_sourced(self) -> None:
+        self.propose_and_confirm(self.corrected)
+        before = reading.get_record_sources(self.corrected.id, D(2025, 12, 31))
+        self.assertEqual((before.version_number, [item.field for item in before.items]), (1, ["summary"]))
+
+        after = reading.get_record_sources(self.corrected.id, EARLY)
+        self.assertEqual(after.version_number, 2)
+        self.assertEqual(
+            sorted((item.field, item.url, item.label) for item in after.items),
+            [
+                ("effectiveFrom", "https://www.fi.se/en/news/deadline/", "FFFS 2017:2 as amended"),
+                ("summaries.en", "https://www.fi.se/en/fffs-2017-2/", "FFFS 2017:2 as amended"),
+            ],
+        )
+
+    def test_a_person_and_a_key_with_library_read_alone_read_them(self) -> None:
+        # Every version here took effect before today, so the real clock picks the last one.
+        self.propose_and_confirm(self.corrected)
+        platform_key = agents_testing.agent_key(scopes=(perms.SCOPE_LIBRARY_READ,))
+        bank_key = factories.api_key(self.tenant, scopes=(perms.SCOPE_LIBRARY_READ,))
+        for headers in (
+            sign_in(self.reader, tenant=self.tenant),
+            {"HTTP_X_API_KEY": platform_key.plain_key},
+            {"HTTP_X_API_KEY": bank_key.plain_key},
+        ):
+            with self.subTest(headers=sorted(headers)):
+                response = self.client.get(f"{URL}/{self.corrected.id}/sources", **headers)
+                self.assertEqual(response.status_code, 200, response.content)
+                body = response.json()
+                self.assertEqual((body["obligationId"], body["versionNumber"]), (str(self.corrected.id), 2))
+                self.assertEqual(sorted(item["field"] for item in body["items"]), ["effectiveFrom", "summaries.en"])
+                self.assertEqual(sorted(body["items"][0]), ["contentHash", "documentId", "fetchedAt", "field", "label", "url"])
+
+    def test_an_id_that_never_existed_is_404(self) -> None:
+        response = self.client.get(f"{URL}/{uuid.uuid4()}/sources", **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"))
+        self.assertEqual(response.json()["detail"], reading.NOT_FOUND)
