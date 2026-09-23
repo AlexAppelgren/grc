@@ -3,12 +3,12 @@
 import Link from 'next/link';
 
 import { ToneDot } from '@/components/ui/ToneDot';
-import { presentRoadmapItem } from '@/features/home/roadmap-presentation';
+import { presentRoadmapItem, roadmapWhen } from '@/features/home/roadmap-presentation';
 import type { RoadmapItem } from '@/features/home/types';
-import { daysUntil, urgencyOf } from '@/features/watch/change-presentation';
+import { urgencyOf } from '@/features/watch/change-presentation';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { formatDate, type FormatContext } from '@/shared/utils/format';
+import type { FormatContext } from '@/shared/utils/format';
 
 // The "Coming up" panel (design/screens/tenant-today.html,
 // tenant-briefing.html; HOM-01, HOM-02): the same short list Today and the
@@ -20,14 +20,14 @@ import { formatDate, type FormatContext } from '@/shared/utils/format';
 function ComingUpRow({ item, t, ctx, today }: { item: RoadmapItem; t: Translate; ctx: FormatContext; today: Date }) {
   const urgency = urgencyOf(item.urgency);
   const pills = presentRoadmapItem({ ourDeadline: item.kind === 'internal', ...(urgency === null ? {} : { urgency }) }, t);
-  const days = daysUntil(item.date, today);
+  const when = roadmapWhen(item, ctx, today);
   return (
     <div className="flex gap-2.5 border-b border-line py-2.5 last:border-0" data-roadmap-item={item.id}>
       <ToneDot tone={pills[0]?.tone ?? 'information'} />
       <div className="min-w-0">
         <p className="flex flex-wrap items-baseline gap-x-1.5 text-meta text-muted">
-          <span className="font-medium tabular-nums text-fg">{formatDate(item.date, ctx)}</span>
-          {days !== null && days > 0 ? <span>{t('watch.row.daysLeft', { count: days })}</span> : null}
+          <span className="font-medium tabular-nums text-fg">{when.date}</span>
+          {when.daysLeft !== null ? <span>{t('watch.row.daysLeft', { count: when.daysLeft })}</span> : null}
         </p>
         {item.changeId === null ? (
           <span className="font-medium">{item.title}</span>
