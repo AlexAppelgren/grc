@@ -576,3 +576,52 @@ section. Copied here as chunk3-rest-T20 requires.
       "each step". Every write of the flow (opening and closing the run, a source check, a
       change, a proposal) names it. Say so if you want the lookups an agent makes traced to
       its run as well: that is an optional, checked `agentRunId` on the similar-records call.
+
+## agents-confirmer-definition: the confirming agent ships as a draft (2026-09-23, D-80)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **The confirming agent's decisions are logged with metadata it reports itself.** A
+      confirming agent's approval, correction or rejection now has an AI-log purpose of its
+      own, `agent_review`, and the model and model version on that row are the agent's own
+      account, exactly as D-66 has it for the "So what?" (D-80). Default: accepted in R1 as
+      a reporting boundary, because every agent is bleqq's own; it becomes a trust boundary
+      the day a bank runs its own reviewing agent, which is R2's agent-access work.
+- [ ] **`library-confirmer` v1 ships with no labelled evaluation case.** Its definition,
+      prompt and key are its own and it may share the sweeper's model (your default of
+      2026-09-20). Its `evals/README.md` names the four kinds of case it will be scored on
+      (approve, correct, reject, leave open), but none is written yet, so the definition
+      stays `draft` and no run of it is meant to decide anything. Default: it stays a
+      draft until the rows, a scoring track and a first baseline exist; publishing it is a
+      platform admin's act (AGT-03, R2). Say if you want the rows authored before then.
+- [ ] **A proposal the confirming agent leaves open has no reason kept anywhere.** It
+      leaves a proposal open when the proposal is outside the sector scope or its sources
+      contradict each other. A run's stats count only model calls and fetches, and no
+      proposal field holds an agent's "not mine to settle", so the next run reads the same
+      proposal again, and oldest-first order puts it at the front each time. Default: it
+      stays so in R1. The run lists `new_obligation_version` proposals only, so vocabulary
+      and term proposals, which are a person's, never cost it a model call. Its decision
+      and model-call budgets cap what a stuck proposal can cost, and the console queue
+      shows a person what is waiting. Say if you want a leave-open outcome with a reason
+      of its own: a proposal note or a counter on the run, and a way for the queue to skip
+      what an agent already left open.
+- [ ] **Hand-off: the approve and reject bodies must carry `AgentDecision` before any run
+      of the confirming agent decides anything.** The definition names the object on both
+      tools. Today `ProposalApproveBody` is a `WriteBody` and refuses the field with a 422,
+      and `ProposalRejectBody` is a plain `CamelSchema` that drops it without a word, which
+      would leave a model call unlogged (AUD-02). The package that wires D-80
+      (proposals-agent-decision-log) makes the reject body a `WriteBody` and requires
+      `decision` from a key caller on both routes. Default: the definition stays `draft`
+      until then, and its tool descriptions say "once the route accepts it". This is a
+      note to the next package, not a question.
+- [ ] **Should a bank read the confirming agent's reasoning?** Each decision the confirming
+      agent makes is logged under `agent_review` in the platform's zone, because its run
+      is the platform's. Every row in that zone was readable by every bank's
+      `ai_log.read` holders. A decision is about a proposal, and another bank may have
+      filed it, while a bank today sees only the proposals it filed itself. Default: the
+      library read policy on `ai_generation` leaves `agent_review` out, the platform
+      alone reads those rows, and a bank still sees on the record itself which agents
+      proposed and confirmed it (D-62). A watch item's curation confirmation (D-74)
+      follows the same rule, although the item is one every bank reads. Say if a bank should read the reasoning behind a
+      record it relies on. That would take a narrower read, for example the decisions on
+      applied proposals only, and never the rejections of other banks' filings.

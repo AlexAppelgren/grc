@@ -1,12 +1,16 @@
-"""Models, seed and isolation of the agents app (AGT-01, AGT-03, ID-10).
+"""Models, seed and isolation of the agents app (AGT-01, AGT-02, AGT-03, ID-10, D-80).
 
-Proven here: the definition reader reads the shipped definition exactly as PyYAML does,
+Proven here: the definition reader reads every shipped definition exactly as PyYAML does,
 so the seed's stripped-down reader can never drift from real YAML; the definitions are in
-the API image, where the seed reads them on every deploy; the seed creates the agent row
-once and leaves it alone on the next deploy, and an agent's key never changes;
+the API image, where the seed reads them on every deploy; the seed creates one agent row
+per definition once and leaves it alone on the next deploy, and an agent's key never
+changes; the confirming definition is independent of the proposing one by what it may
+call, and every vocabulary a definition reads at run start is one the API serves through
+a tool the definition declares with `library:read`;
 `agent_run` is a mixed table whose policies bite for `cw_app`: a tenant reads the
-library's runs but never writes them, and a run lives in its key's zone; and a key bound
-to an agent writes its audit rows as that agent, not as a bare key id.
+library's runs but never writes them, and a run lives in its key's zone; a key bound to
+an agent writes its audit rows as that agent, not as a bare key id; and the decision an
+agent reports with its model call is refused without a model, a version or a citation.
 """
 
 from __future__ import annotations
@@ -24,26 +28,39 @@ from django.conf import settings
 from django.db import DEFAULT_DB_ALIAS, DatabaseError, IntegrityError, ProgrammingError, transaction
 from django.db.models import QuerySet
 from django.test import SimpleTestCase, TestCase, TransactionTestCase
+from pydantic import ValidationError as SchemaError
 
 from apps.agents.models import Agent, AgentKind, AgentRun, RunStatus
-from apps.agents.seeds import SHIPPED, seed_agent_definitions
+from apps.agents.seeds import SHIPPED, definitions, seed_agent_definitions
 from apps.agents.seeds.definition import DEFINITIONS, DefinitionError, read_definition
 from apps.identity import tokens
 from apps.identity.api_keys_logic import resolve_api_key
 from apps.identity.models import ApiKey
 from apps.library.seeds import seed_jurisdictions, seed_languages
-from apps.shared import factories, tenancy
+from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.audit import Actor
 from apps.shared.authentication import PrincipalKind
 from apps.shared.models import AuditEvent
+from apps.shared.schemas import AgentDecision
 from apps.shared.tenancy import LibraryWriteRefused, library_write
 from apps.shared.testing import ScenarioTestCase
 from apps.shared.vocabulary import KeyIsImmutable
+from apps.taxonomy.registry import LIBRARY_LISTS
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 
 V1 = "/api/v1"
 WATCH_SWEEPER = DEFINITIONS / "watch-sweeper" / "v1" / "definition.yaml"
+LIBRARY_CONFIRMER = DEFINITIONS / "library-confirmer" / "v1" / "definition.yaml"
+# Where a run reads each list it names at run start, every route taking `library:read`: the
+# registry's library lists through one route, the three that are not registry rows through
+# routes of their own.
+READ_FROM_THE_REGISTRY = "GET /vocab/{list}"
+READ_OUTSIDE_THE_REGISTRY = {
+    "taxonomy_term": "GET /taxonomy/terms",
+    "authority": "GET /authorities",
+    "source": "GET /sources",
+}
 # A .dockerignore wildcard as Docker compiles it (moby/patternmatcher), keyed by its
 # re.escape spelling: `**` spans directories, `*` and `?` stay inside one.
 DOCKER_WILDCARDS = {r"\*\*/": "(.*/)?", r"\*\*": ".*", r"\*": "[^/]*", r"\?": "[^/]"}
@@ -106,6 +123,7 @@ class DefinitionReaderTests(TestCase):
 
     def test_only_a_published_definition_is_active(self) -> None:
         self.assertFalse(read_definition(WATCH_SWEEPER).active, "watch-sweeper v1 is still a draft")
+        self.assertFalse(read_definition(LIBRARY_CONFIRMER).active, "library-confirmer v1 waits for its evals")
 
     def test_a_definition_it_cannot_read_raises_instead_of_guessing(self) -> None:
         directory = Path(tempfile.mkdtemp())
@@ -120,6 +138,68 @@ class DefinitionReaderTests(TestCase):
             path.write_text(body, encoding="utf-8")
             with self.assertRaises(DefinitionError, msg=why):
                 read_definition(path)
+
+
+def _parsed(name: str, version: int) -> dict[str, Any]:
+    """The whole definition as PyYAML reads it: the runner's contract, beyond the five
+    scalars the seed stores."""
+    path = DEFINITIONS / name / f"v{version}" / "definition.yaml"
+    parsed: dict[str, Any] = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return parsed
+
+
+def _scopes(definition: dict[str, Any]) -> set[str]:
+    return {scope for tool in definition["tools"] for scope in tool.get("scopes", ())}
+
+
+class DefinitionContractTests(SimpleTestCase):
+    """What a definition may call and read, from its own file (AGT-02, D-62, D-80)."""
+
+    def test_every_kind_is_an_agent_kind(self) -> None:
+        kinds = {kind.value for kind in AgentKind}
+        for name, version in SHIPPED:
+            self.assertIn(_parsed(name, version)["kind"], kinds, name)
+
+    def test_every_scope_a_tool_names_is_one_a_key_can_hold(self) -> None:
+        for name, version in SHIPPED:
+            self.assertLessEqual(_scopes(_parsed(name, version)), perms.ALL_SCOPES, name)
+
+    def test_the_confirming_definition_cannot_file_what_it_decides(self) -> None:
+        """Independence by construction: a `review` definition decides and never proposes,
+        and a definition that proposes never decides, so no one definition's key needs
+        both scopes. The four-eyes constraint refuses the pair anyway (D-62)."""
+        for name, version in SHIPPED:
+            definition = _parsed(name, version)
+            scopes = _scopes(definition)
+            if definition["kind"] == AgentKind.REVIEW.value:
+                self.assertIn(perms.SCOPE_PROPOSALS_REVIEW, scopes, name)
+                self.assertNotIn(perms.SCOPE_PROPOSALS_WRITE, scopes, name)
+            else:
+                self.assertNotIn(perms.SCOPE_PROPOSALS_REVIEW, scopes, name)
+        confirmer, sweeper = _parsed("library-confirmer", 1), _parsed("watch-sweeper", 1)
+        self.assertNotEqual(confirmer["id"], sweeper["id"])
+        prompts = {
+            (DEFINITIONS / definition["id"] / "v1" / definition["prompt"]).read_text(encoding="utf-8")
+            for definition in (confirmer, sweeper)
+        }
+        self.assertEqual(len(prompts), 2, "the confirmer has a prompt of its own")
+
+    def test_every_vocabulary_read_at_run_start_is_one_the_definition_may_read(self) -> None:
+        """A list named here that no route serves, or whose route the definition declares
+        no tool for with `library:read`, would fail the run at its first read: the key the
+        platform issues carries the scopes of the definition's tools and no others. A tenant
+        list is never one: a platform run reads no bank's rows."""
+        for name, version in SHIPPED:
+            definition = _parsed(name, version)
+            lists = definition["vocabularies_read_at_run_start"]
+            self.assertEqual(len(lists), len(set(lists)), f"{name} names a list twice")
+            tools = {tool["operation"]: tool for tool in definition["tools"] if "operation" in tool}
+            for listed in lists:
+                route = READ_FROM_THE_REGISTRY if listed in LIBRARY_LISTS else READ_OUTSIDE_THE_REGISTRY.get(listed)
+                self.assertIsNotNone(route, f"{name}: no route serves {listed}")
+                self.assertIn(route, sorted(tools), f"{name} reads {listed} at run start and declares no tool for {route}")
+                self.assertIn(perms.SCOPE_LIBRARY_READ, tools[route]["scopes"], f"{name}: {route} needs library:read")
+        self.assertIn("rejection_reason", _parsed("library-confirmer", 1)["vocabularies_read_at_run_start"])
 
 
 class DefinitionsShipInTheImageTests(SimpleTestCase):
@@ -145,18 +225,20 @@ class DefinitionsShipInTheImageTests(SimpleTestCase):
 
 
 class AgentSeedTests(TestCase):
-    def test_the_seed_creates_the_shipped_agent_from_its_definition(self) -> None:
+    def test_the_seed_creates_every_shipped_agent_from_its_definition(self) -> None:
         created = seed_agent_definitions()
         self.assertEqual(created, len(SHIPPED))
-        definition = read_definition(WATCH_SWEEPER)
-        agent = Agent.objects.get(key="watch-sweeper")
-        self.assertEqual(agent.kind, AgentKind.WATCH.value)
-        self.assertEqual(agent.current_version, definition.version)
-        self.assertEqual(agent.description, definition.description)
-        self.assertFalse(agent.active)
-        event = AuditEvent.objects.get(action="agent.seeded")
-        self.assertEqual(event.subject_id, agent.id)
-        self.assertIsNone(event.tenant_id, "an agent is a library row, so its audit row is a library row")
+        for definition in definitions():
+            agent = Agent.objects.get(key=definition.key)
+            self.assertEqual(agent.kind, definition.kind)
+            self.assertEqual(agent.current_version, definition.version)
+            self.assertEqual(agent.description, definition.description)
+            self.assertFalse(agent.active)
+            event = AuditEvent.objects.get(action="agent.seeded", subject_id=agent.id)
+            self.assertIsNone(event.tenant_id, "an agent is a library row, so its audit row is a library row")
+        kinds = dict(Agent.objects.values_list("key", "kind"))
+        self.assertEqual(kinds["watch-sweeper"], AgentKind.WATCH.value)
+        self.assertEqual(kinds["library-confirmer"], AgentKind.REVIEW.value, "the second pair of eyes (D-62, D-80)")
 
     def test_a_second_deploy_changes_nothing(self) -> None:
         seed_agent_definitions()
@@ -397,3 +479,42 @@ class AgentKeyActorTests(ScenarioTestCase):
         self.assertEqual(event.actor_type, "agent")
         self.assertEqual(event.actor_id, self.agent.id, "the agent, not the key")
         self.assertEqual(event.actor_label, "watch-sweeper")
+
+
+class AgentDecisionTests(SimpleTestCase):
+    """The model call a confirming agent reports with its decision (AUD-02, D-80). A body
+    from an agent is a trust boundary: what the log cannot attribute or check is refused
+    at the shape, before any route reads it."""
+
+    DECISION: dict[str, Any] = {
+        "model": "claude-opus-5",
+        "modelVersion": "2026-05-01",
+        "promptTemplate": "library-confirmer/decide/v1",
+        "output": "Approve. The proposed wording matches the amended regulation as published.",
+        "citations": [{"label": "Finansinspektionen", "url": "https://www.fi.se/"}],
+    }
+
+    def test_a_decision_with_its_model_and_a_citation_is_accepted(self) -> None:
+        decision = AgentDecision.model_validate(self.DECISION)
+        self.assertEqual((decision.model, decision.model_version), ("claude-opus-5", "2026-05-01"))
+        self.assertIsNone(decision.prompt_hash, "the prompt's hash is optional, as D-66's is")
+        self.assertEqual(decision.citations[0].url, "https://www.fi.se/")
+
+    def test_what_the_log_could_not_attribute_or_check_is_refused(self) -> None:
+        over = settings.AI_GENERATION_OUTPUT_MAX_CHARS + 1
+        for change, why in (
+            ({"citations": []}, "no citation"),
+            ({"model": ""}, "no model"),
+            ({"modelVersion": ""}, "no model version"),
+            ({"output": ""}, "no conclusion"),
+            ({"output": "x" * over}, "an output over the cap, refused rather than cut short"),
+            ({"citations": [{"label": "x", "url": "https://www.fi.se/"}] * (settings.AI_GENERATION_CITATIONS_MAX + 1)}, "too many citations"),
+            ({"prompt": "the whole prompt"}, "a field the shape does not name, such as the prompt itself"),
+            ({"citations": [{"label": "x", "url": "javascript:alert(1)"}]}, "a citation that is not a web page"),
+            ({"citations": [{"label": "x", "url": "file:///etc/passwd"}]}, "a citation that is not a web page"),
+        ):
+            with self.assertRaises(SchemaError, msg=why):
+                AgentDecision.model_validate({**self.DECISION, **change})
+        body = {name: value for name, value in self.DECISION.items() if name != "model"}
+        with self.assertRaises(SchemaError, msg="a missing model"):
+            AgentDecision.model_validate(body)

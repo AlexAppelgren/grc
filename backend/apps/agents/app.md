@@ -65,6 +65,16 @@ a step naming another key's run is not found, and a bank's key writes nothing to
 the watch. AGT-01 stays `in_progress` until AGT-S10 (the J-4 journey) and AGT-S15
 (the confirming agent) are green as well.
 
+Two definitions ship: `watch-sweeper` (kind `watch`), which proposes, and
+`library-confirmer` (kind `review`, D-62, D-80), which decides what another
+definition proposed and never proposes itself. Each definition names the
+vocabularies it reads at run start; a key with `library:read` reads each of them
+as key, kind, label and usage note on its active rows, submits those keys only,
+and brings a new term as a proposal (AGT-02). A confirming agent's decision
+carries the model call behind it (`AgentDecision`), logged in `ai_generation`
+under the purpose `agent_review` as that agent's own report, naming its run and the
+record decided, and read by the platform alone (D-80).
+
 ## 2. Requirements
 
 Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verified`.
@@ -72,7 +82,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | in_progress |
-| AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | pending |
+| AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | built |
 | AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | pending |
 | AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61) | M | R2 | pending |
 | AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61) | S | R2 | pending |

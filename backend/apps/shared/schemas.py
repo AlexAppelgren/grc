@@ -111,3 +111,159 @@ class AuditSnapshot(RootModel[dict[str, Any]]):
 class OutboxPayload(RootModel[dict[str, Any]]):
     """The `payload` column of outbox_event: what the worker needs to act on the topic,
     always including `auditEventId`. Never tenant content the audit row lacks."""
+
+
+# ---------------------------------------------------------------------------------------
+# AUD-02, D-66, D-80: what an agent reports about the model call behind its words
+# ---------------------------------------------------------------------------------------
+class AiCitation(CamelSchema):
+    """One public page the model's output rests on, so a reader can check a sentence
+    against its source rather than trusting it. Stored on the generation row as JSON."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+                    "url": "https://www.fi.se/en/published/news/2026/reporting/",
+                }
+            ]
+        }
+    )
+
+    label: str = Field(
+        min_length=1,
+        max_length=500,
+        description=(
+            "How the cited source reads in a sentence, 1 to 500 characters, in the "
+            "publisher's own words. Source: reported by whoever made the model call. Do not "
+            "read it as a verified reference; it is checked by opening `url`."
+        ),
+        examples=["Finansinspektionen, decision memorandum FI Dnr 25-12345"],
+    )
+    url: str = Field(
+        min_length=1,
+        max_length=2000,
+        pattern=r"^https?://",
+        description=(
+            "The public page the citation points at, 1 to 2000 characters starting with "
+            "http:// or https://, so the claim can be opened and read; any other address is "
+            "refused with a 422 naming the field. Source: the public source the model was "
+            "given. It is always a public page: no bank's own record is ever cited here, "
+            "because nothing from a bank's zone reaches a prompt (NFR-04, D-07)."
+        ),
+        examples=["https://www.fi.se/en/published/news/2026/reporting/"],
+    )
+
+
+# Said in the shape and in every route that takes it, so nobody reads it as bleqq's own
+# measurement (D-66, D-80).
+_DECISION_REPORTED = (
+    "Reported by the agent that made the decision, not measured by bleqq (D-80, as D-66 "
+    "for a drafted “So what?”). In R1 every agent is bleqq's own, so this is a reporting "
+    "boundary; it becomes a trust boundary the day a bank runs its own reviewing agent."
+)
+
+
+class AgentDecision(WriteBody):
+    """The model call behind a confirming agent's decision on another agent's work:
+    approving, correcting or rejecting a proposal, or confirming a watch item's curation.
+
+    An agent's decision is a model call, and every model call is logged (AUD-02), so the
+    agent sends this with the decision and the write turns it into one `ai_generation` row
+    under the purpose `agent_review`, marked as reported by the agent, naming the run the
+    decision was made in and the proposal or change it was about (D-80). A decision sent
+    without a model, a version or a citation is refused rather than logged as one nobody
+    can attribute or check.
+
+    Public facts only: the sources a confirming agent reads are the pages the proposal or
+    the change already cites, and nothing from a bank's zone ever reaches its prompt
+    (NFR-04, D-07)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "model": "claude-opus-5",
+                    "modelVersion": "2026-05-01",
+                    "promptTemplate": "library-confirmer/decide/v1",
+                    "promptHash": "9f2a1c7d4b8e05f3",
+                    "output": (
+                        "Approve. The proposed wording matches the amended regulation as the "
+                        "decision memorandum publishes it, and the date it applies from is the "
+                        "one the memorandum states."
+                    ),
+                    "citations": [
+                        {
+                            "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+                            "url": "https://www.fi.se/en/published/news/2026/reporting/",
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
+    model: str = Field(
+        min_length=1,
+        max_length=120,
+        description=(
+            "Which model made the decision, as the provider names it, 1 to 120 characters. "
+            f"{_DECISION_REPORTED} Required: a decision nobody can attribute to a model is not "
+            "something the AI output log can record, so the call is refused rather than stored."
+        ),
+        examples=["claude-opus-5"],
+    )
+    model_version: str = Field(
+        min_length=1,
+        max_length=120,
+        description=(
+            "Which version of that model, 1 to 120 characters, so two decisions months apart "
+            f"can be told apart. {_DECISION_REPORTED} Required, for the same reason as `model`."
+        ),
+        examples=["2026-05-01"],
+    )
+    prompt_template: str | None = Field(
+        default=None,
+        max_length=200,
+        description=(
+            "Which prompt produced the decision, by name and version, at most 200 characters, "
+            "so an odd decision can be traced to the instructions behind it. Optional. Send "
+            "the name, never the prompt: bleqq stores no prompt text at all."
+        ),
+        examples=["library-confirmer/decide/v1"],
+    )
+    prompt_hash: str | None = Field(
+        default=None,
+        max_length=128,
+        description=(
+            "A hash of the prompt actually sent, at most 128 characters, so two calls can be "
+            "compared without either prompt being kept. Optional, and the only thing about "
+            "the input that is stored."
+        ),
+        examples=["9f2a1c7d4b8e05f3"],
+    )
+    output: str = Field(
+        min_length=1,
+        max_length=settings.AI_GENERATION_OUTPUT_MAX_CHARS,
+        description=(
+            "What the model concluded and why, 1 to "
+            f"{settings.AI_GENERATION_OUTPUT_MAX_CHARS} characters: the decision in words and "
+            "what in the cited sources supports it, or what they did not support. Longer is "
+            "refused with a 422 naming the field rather than cut short. It is stored as AI "
+            "output, labelled as such, and never reads as a person's review."
+        ),
+        examples=["Approve. The proposed wording matches the amended regulation as published."],
+    )
+    citations: list[AiCitation] = Field(
+        min_length=1,
+        max_length=settings.AI_GENERATION_CITATIONS_MAX,
+        description=(
+            "The public pages the decision rests on, at least one and at most "
+            f"{settings.AI_GENERATION_CITATIONS_MAX}; none, or more, answers 422 naming the "
+            "field. At least one, because a decision a reader cannot check against a source "
+            "is not one to let into the shared library. Every citation is a public page: no "
+            "bank's own record is ever cited, because nothing from a bank's zone reaches the "
+            "prompt (NFR-04, D-07)."
+        ),
+    )

@@ -800,12 +800,13 @@
             "type": "string"
           },
           "url": {
-            "description": "The public page the citation points at, 1 to 2000 characters, so the claim can be opened and read. Source: the public source the model was given. It is always a public page: no bank's own record is ever cited here, because nothing from a bank's zone reaches a prompt (NFR-04, D-07).",
+            "description": "The public page the citation points at, 1 to 2000 characters starting with http:// or https://, so the claim can be opened and read; any other address is refused with a 422 naming the field. Source: the public source the model was given. It is always a public page: no bank's own record is ever cited here, because nothing from a bank's zone reaches a prompt (NFR-04, D-07).",
             "examples": [
               "https://www.fi.se/en/published/news/2026/reporting/"
             ],
             "maxLength": 2000,
             "minLength": 1,
+            "pattern": "^https?://",
             "title": "Url",
             "type": "string"
           }
@@ -863,7 +864,7 @@
                 "type": "null"
               }
             ],
-            "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
+            "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
             "examples": [
               "so_what"
             ],
@@ -1009,7 +1010,7 @@
             "type": "string"
           },
           "purpose": {
-            "description": "What the call was for, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank).",
+            "description": "What the call was for, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one).",
             "examples": [
               "so_what"
             ],
@@ -17128,11 +17129,11 @@
     },
     "/api/v1/ai-generations": {
       "get": {
-        "description": "Every model call this bank can see, newest first: the drafted \u201cSo what?\u201d of\neach regulatory change, and this bank's own Ask answers once Ask ships. Call it to\nanswer \u201cwhat has a machine written for us, about what, and has anybody checked\nit\u201d \u2014 the question an auditor asks and the one AUD-02 exists to answer.\n\nA read: it changes nothing and writes no audit row. A person's session holding\n`ai_log.read`, which the administrator, compliance officer, approver and auditor roles\ncarry. What a bank sees is its own rows plus the shared library's; another bank's rows\nare kept out by row-level security in the database rather than by a filter here, so no\nquery written later can widen it.\n\n**The model and the version are not always bleqq's own measurement.** For a\n\u201cSo what?\u201d the agent that read the change files the words together with the\nchange and reports which model and which version produced them, so those two fields are\nthat agent's account of itself rather than something bleqq observed (D-66).\n`modelMetadataReportedByAgent` says which rows are which. In R1 every agent is bleqq's\nown, so this is a reporting boundary; it becomes a trust boundary the day a bank runs\nits own agent against the write routes, which is the agent-access work in R2.\n\nPages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no\nrows, or a filter matching none, is a 200 with an empty `items` and a `total` of 0.\nErrors: `permission_denied` without `ai_log.read`, with `requiredPermission` named;\n`unauthenticated` without a session.",
+        "description": "Every model call this bank can see, newest first: the drafted \u201cSo what?\u201d of\neach regulatory change, and this bank's own Ask answers once Ask ships. Call it to\nanswer \u201cwhat has a machine written for us, about what, and has anybody checked\nit\u201d \u2014 the question an auditor asks and the one AUD-02 exists to answer.\n\nA read: it changes nothing and writes no audit row. A person's session holding\n`ai_log.read`, which the administrator, compliance officer, approver and auditor roles\ncarry. What a bank sees is its own rows plus the shared library's, except a confirming\nagent's decisions on the proposal queue, which only the platform reads. Another bank's\nrows and those decisions are kept out by row-level security in the database rather than\nby a filter here, so no query written later can widen it.\n\n**The model and the version are not always bleqq's own measurement.** For a\n\u201cSo what?\u201d the agent that read the change files the words together with the\nchange and reports which model and which version produced them, so those two fields are\nthat agent's account of itself rather than something bleqq observed (D-66).\n`modelMetadataReportedByAgent` says which rows are which. In R1 every agent is bleqq's\nown, so this is a reporting boundary; it becomes a trust boundary the day a bank runs\nits own agent against the write routes, which is the agent-access work in R2.\n\nPages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no\nrows, or a filter matching none, is a 200 with an empty `items` and a `total` of 0.\nErrors: `permission_denied` without `ai_log.read`, with `requiredPermission` named;\n`unauthenticated` without a session.",
         "operationId": "listAiGenerations",
         "parameters": [
           {
-            "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
+            "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
             "examples": [
               "so_what"
             ],
@@ -17149,7 +17150,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
+              "description": "Show only calls made for one purpose, a fixed kind: `so_what` (the drafted \u201cSo what?\u201d filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.",
               "examples": [
                 "so_what"
               ],

@@ -14,7 +14,10 @@ from datetime import datetime
 from django.conf import settings
 from pydantic import ConfigDict, Field
 
-from apps.shared.schemas import AuditSnapshot, CamelSchema
+# `AiCitation` lives beside `AgentDecision` in apps/shared/schemas.py, which cites with it
+# and which a governance import would turn into a cycle; it is re-exported here for the
+# modules that already read it from this app.
+from apps.shared.schemas import AiCitation, AuditSnapshot, CamelSchema
 
 
 class AuditEventQuery(CamelSchema):
@@ -62,8 +65,11 @@ _PURPOSES = (
     "`so_what` (the drafted “So what?” filed with a regulatory change), "
     "`change_summary` (a plain-language summary of a change), `scope_suggestion` (a "
     "suggested scope term or flag), `link_suggestion` (a suggested obligation link), "
-    "`translation` (a machine translation of library text) and `answer` (an Ask answer for "
-    "one bank)"
+    "`translation` (a machine translation of library text), `answer` (an Ask answer for "
+    "one bank) and `agent_review` (a confirming agent's decision on another agent's work: "
+    "approving, correcting or rejecting a proposal, or confirming a watch item's curation, "
+    "with the model behind it reported by that agent; only the platform reads these, so a "
+    "bank's log never lists one)"
 )
 _STATUSES = (
     "`draft` (nobody has stood behind it yet, which is how every row starts and how a "
@@ -72,44 +78,6 @@ _STATUSES = (
     "away). Fixed in code: an admin adds no fifth state, because each is something the "
     "product does differently"
 )
-
-
-class AiCitation(CamelSchema):
-    """One public page the model's output rests on, so a reader can check a sentence
-    against its source rather than trusting it. Stored on the generation row as JSON."""
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {
-                    "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
-                    "url": "https://www.fi.se/en/published/news/2026/reporting/",
-                }
-            ]
-        }
-    )
-
-    label: str = Field(
-        min_length=1,
-        max_length=500,
-        description=(
-            "How the cited source reads in a sentence, 1 to 500 characters, in the "
-            "publisher's own words. Source: reported by whoever made the model call. Do not "
-            "read it as a verified reference; it is checked by opening `url`."
-        ),
-        examples=["Finansinspektionen, decision memorandum FI Dnr 25-12345"],
-    )
-    url: str = Field(
-        min_length=1,
-        max_length=2000,
-        description=(
-            "The public page the citation points at, 1 to 2000 characters, so the claim can "
-            "be opened and read. Source: the public source the model was given. It is always "
-            "a public page: no bank's own record is ever cited here, because nothing from a "
-            "bank's zone reaches a prompt (NFR-04, D-07)."
-        ),
-        examples=["https://www.fi.se/en/published/news/2026/reporting/"],
-    )
 
 
 class AiGenerationQuery(CamelSchema):

@@ -48,9 +48,10 @@ def list_ai_generations(
 
     A read: it changes nothing and writes no audit row. A person's session holding
     `ai_log.read`, which the administrator, compliance officer, approver and auditor roles
-    carry. What a bank sees is its own rows plus the shared library's; another bank's rows
-    are kept out by row-level security in the database rather than by a filter here, so no
-    query written later can widen it.
+    carry. What a bank sees is its own rows plus the shared library's, except a confirming
+    agent's decisions on the proposal queue, which only the platform reads. Another bank's
+    rows and those decisions are kept out by row-level security in the database rather than
+    by a filter here, so no query written later can widen it.
 
     **The model and the version are not always bleqq's own measurement.** For a
     “So what?” the agent that read the change files the words together with the

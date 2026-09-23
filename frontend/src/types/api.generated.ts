@@ -309,9 +309,10 @@ export interface paths {
          *
          *     A read: it changes nothing and writes no audit row. A person's session holding
          *     `ai_log.read`, which the administrator, compliance officer, approver and auditor roles
-         *     carry. What a bank sees is its own rows plus the shared library's; another bank's rows
-         *     are kept out by row-level security in the database rather than by a filter here, so no
-         *     query written later can widen it.
+         *     carry. What a bank sees is its own rows plus the shared library's, except a confirming
+         *     agent's decisions on the proposal queue, which only the platform reads. Another bank's
+         *     rows and those decisions are kept out by row-level security in the database rather than
+         *     by a filter here, so no query written later can widen it.
          *
          *     **The model and the version are not always bleqq's own measurement.** For a
          *     “So what?” the agent that read the change files the words together with the
@@ -4143,7 +4144,7 @@ export interface components {
             label: string;
             /**
              * Url
-             * @description The public page the citation points at, 1 to 2000 characters, so the claim can be opened and read. Source: the public source the model was given. It is always a public page: no bank's own record is ever cited here, because nothing from a bank's zone reaches a prompt (NFR-04, D-07).
+             * @description The public page the citation points at, 1 to 2000 characters starting with http:// or https://, so the claim can be opened and read; any other address is refused with a 422 naming the field. Source: the public source the model was given. It is always a public page: no bank's own record is ever cited here, because nothing from a bank's zone reaches a prompt (NFR-04, D-07).
              * @example https://www.fi.se/en/published/news/2026/reporting/
              */
             url: string;
@@ -4177,7 +4178,7 @@ export interface components {
         AiGenerationQuery: {
             /**
              * Purpose
-             * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+             * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
              * @example so_what
              */
             purpose?: string | null;
@@ -4286,7 +4287,7 @@ export interface components {
             promptTemplate: string;
             /**
              * Purpose
-             * @description What the call was for, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank).
+             * @description What the call was for, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one).
              * @example so_what
              */
             purpose: string;
@@ -13829,7 +13830,7 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text) and `answer` (an Ask answer for one bank). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
+                 * @description Show only calls made for one purpose, a fixed kind: `so_what` (the drafted “So what?” filed with a regulatory change), `change_summary` (a plain-language summary of a change), `scope_suggestion` (a suggested scope term or flag), `link_suggestion` (a suggested obligation link), `translation` (a machine translation of library text), `answer` (an Ask answer for one bank) and `agent_review` (a confirming agent's decision on another agent's work: approving, correcting or rejecting a proposal, or confirming a watch item's curation, with the model behind it reported by that agent; only the platform reads these, so a bank's log never lists one). At most 32 characters. A value that is not one of them matches nothing and answers 200 with an empty page, because a filter that finds nothing is an empty answer and not an error.
                  * @example so_what
                  */
                 purpose?: string | null;

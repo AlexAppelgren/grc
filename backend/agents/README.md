@@ -18,6 +18,8 @@ backend/agents/<agent>/v<n>/
 └── evals/            # the labelled cases scripts/search_eval.py scores this version on
 ```
 
-Phase 0 ships one skeleton, `watch-sweeper`, so the layout exists and the
-seed has something to load. Its prompt and evals are placeholders until
-chunk 5 (WAT-01 to WAT-05, AGT-01, AGT-02, AGT-07).
+Two definitions ship, both drafts: `watch-sweeper` (kind `watch`), which
+checks sources and proposes (WAT-01 to WAT-05, AGT-01, AGT-02, AGT-07), and
+`library-confirmer` (kind `review`), the independent second pair of eyes that
+decides what another definition proposed and never proposes itself (PRO-02,
+D-62, D-80). `apps/agents/seeds/__init__.py` names them in `SHIPPED`.
