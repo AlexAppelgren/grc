@@ -23,8 +23,12 @@ import yaml
 from django.test import TestCase
 
 from apps.agents import testing as agent_build, tests_flow as agent_flow
+from apps.agents.models import Agent
 from apps.agents.screen import EMBEDDED_INSTRUCTIONS
+from apps.agents.seeds import seed_agent_definitions
 from apps.agents.seeds.definition import DEFINITIONS
+from apps.governance.models import AiGeneration
+from apps.library.models import ObligationVersion
 from apps.proposals.models import Proposal
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.models import AuditEvent
@@ -563,12 +567,109 @@ class AgentsScenarioTests(TestCase):
         A bank's own agent writes only in its own zone (AGT-04, AGT-05).
         """
 
-    @skip("pending: AGT-S15 (D-62, chunks 4 and 5)")
     def test_agt_s15(self) -> None:
         """AGT-S15
 
         The confirming agent is independent of the proposing agent (AGT-01, AGT-03, PRO-02).
         """
+        # Given the sweeper agent's key files a proposal in a platform run: the shipped
+        # definitions, one that proposes and one that decides (D-62, D-80).
+        world = agent_flow.world()
+        seed_agent_definitions()
+        sweeper_key = agent_build.agent_key(agent_row=Agent.objects.get(key="watch-sweeper"), scopes=agent_flow.FLOW_SCOPES)
+        sweeper = agent_flow.Flow(self.client, sweeper_key)
+        sweep = sweeper.open()
+        self.assertEqual(sweep.status_code, 201, sweep.content)
+        sweep_id = sweep.json()["id"]
+        filed = [sweeper.propose(sweep_id, obligation_id=world.obligation.id) for _ in range(2)]
+        self.assertEqual([answer.status_code for answer in filed], [201, 201], [answer.content for answer in filed])
+        to_approve, to_reject = (answer.json()["id"] for answer in filed)
+        self.assertEqual(sweeper.close(sweep_id).status_code, 200)
+
+        # And a confirming agent whose definition, key and prompt differ from the sweeper's,
+        # holding the review scope and never the scope to propose.
+        tenancy.clear_tenant()  # platform keys are written with no tenant activated (H15)
+        confirmer_key = agent_build.agent_key(
+            agent_row=Agent.objects.get(key="library-confirmer"),
+            scopes=(perms.SCOPE_AGENT_RUNS_WRITE, perms.SCOPE_LIBRARY_READ, perms.SCOPE_PROPOSALS_REVIEW),
+        )
+        self.assertNotEqual((confirmer_key.agent.id, confirmer_key.id), (sweeper_key.agent.id, sweeper_key.id))
+        self.assertEqual((sweeper_key.agent.kind, confirmer_key.agent.kind), ("watch", "review"))
+        prompts = {key: (DEFINITIONS / key / "v1" / "prompt.md").read_text(encoding="utf-8") for key in ("watch-sweeper", "library-confirmer")}
+        self.assertNotEqual(prompts["watch-sweeper"], prompts["library-confirmer"])
+        as_confirmer = {"HTTP_X_API_KEY": confirmer_key.plain_key}
+
+        # When the confirming agent opens a run and reads the pending queue with its review scope
+        confirmer = agent_flow.Flow(self.client, confirmer_key)
+        review = confirmer.open()
+        self.assertEqual(review.status_code, 201, review.content)
+        review_id = review.json()["id"]
+        queue = self.client.get("/api/v1/proposals?status=open&kind=new_obligation_version", **as_confirmer)
+        self.assertEqual(queue.status_code, 200, queue.content)
+        rows = {row["id"]: row for row in queue.json()["items"]}
+        # Then it sees the proposal, filed by another definition and so not its own
+        self.assertTrue({to_approve, to_reject} <= set(rows), rows)
+        self.assertEqual((rows[to_approve]["proposedByAgent"]["key"], rows[to_approve]["isMine"]), ("watch-sweeper", False))
+
+        # When a key of the proposing definition tries to confirm the same proposal, with
+        # its decision in a run of its own, four eyes refuses it by identity.
+        tenancy.clear_tenant()
+        sibling = agent_build.agent_key(agent_row=sweeper_key.agent, scopes=(perms.SCOPE_PROPOSALS_REVIEW,))
+        own_side = self.client.post(
+            f"/api/v1/proposals/{to_approve}/approve",
+            data=agent_build.decision(sibling),
+            content_type="application/json",
+            HTTP_X_API_KEY=sibling.plain_key,
+        )
+        agent_flow.assert_refused(self, own_side, 409, "four_eyes_violation")
+
+        # And it may correct and approve one, and reject the other, each with the model call
+        # behind its decision, in the run it opened.
+        corrected = "The institution pays for third-party research from its own resources or a research payment account."
+        approved = self.client.post(
+            f"/api/v1/proposals/{to_approve}/approve",
+            data={"payloadOverrides": {"summaries": {"en": corrected}}, "decision": agent_build.DECISION, "agentRunId": review_id},
+            content_type="application/json",
+            **as_confirmer,
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertEqual(approved.json()["correctedByAgent"]["key"], "library-confirmer")
+        rejected = self.client.post(
+            f"/api/v1/proposals/{to_reject}/reject",
+            data={
+                "rejectionCode": "duplicate",
+                "note": "The same wording was approved in this run.",
+                "decision": agent_build.REJECTION_DECISION,
+                "agentRunId": review_id,
+            },
+            content_type="application/json",
+            **as_confirmer,
+        )
+        self.assertEqual(rejected.status_code, 200, rejected.content)
+        self.assertEqual(confirmer.close(review_id).status_code, 200)
+
+        # Its run records the proposals it decided, as the sweep records what it proposed.
+        tenancy.clear_tenant()
+        self.assertEqual(
+            sorted(str(row.subject_id) for row in AiGeneration.objects.filter(agent_run_id=review_id, purpose="agent_review")),
+            sorted([to_approve, to_reject]),
+        )
+        self.assertEqual(sorted(str(pk) for pk in Proposal.objects.filter(agent_run_id=sweep_id).values_list("id", flat=True)), sorted([to_approve, to_reject]))
+        for proposal_id in (to_approve, to_reject):
+            event = AuditEvent.objects.get(subject_id=proposal_id, action__in=("proposal.approved", "proposal.rejected"))
+            self.assertEqual((event.actor_id, event.after["agentRunId"]), (confirmer_key.agent.id, review_id))
+
+        # And no confirming-agent path writes a library row except through the approved
+        # proposal: the one new version is the approval's, machine-confirmed, naming no person,
+        # and the confirmer's key cannot file what it would then decide.
+        versions = ObligationVersion.objects.filter(obligation=world.obligation).order_by("version_number")
+        self.assertEqual([version.version_number for version in versions], [1, 2])
+        applied = versions.get(version_number=2)
+        self.assertEqual(
+            (str(applied.applied_by_proposal_id), applied.verified_origin, applied.verified_by_agent_id, applied.approved_by_id),
+            (to_approve, "agent", confirmer_key.agent.id, None),
+        )
+        self.assertEqual(confirmer.propose(review_id, obligation_id=world.obligation.id).status_code, 403)
 
     @skip("pending: ACC-S1 (ACC-01, J-11, chunk 11)")
     def test_acc_s1(self) -> None:

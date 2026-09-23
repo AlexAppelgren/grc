@@ -383,7 +383,7 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     auth=REVIEWER_AUTH,
     operation_id="getProposal",
     by_alias=True,
-    summary="Open one proposal and read it against what the library says today",
+    summary="Open one proposal and read it against the library version it is compared with",
 )
 @answers_problems
 def get_proposal(
@@ -396,14 +396,23 @@ def get_proposal(
         ),
     ),
 ) -> ProposalDetail:
-    """One proposal as a reviewer decides it: the record it would change, what that record
-    says today against what this would make it say, the two compared sentence by sentence,
-    the source behind every changed value, and the scope before and after. Call it before
-    approving, correcting or rejecting: read it, open the sources, and only then decide.
+    """One proposal as a reviewer decides it: the record it would change, the wording it is
+    compared with against what this would make it say, the two compared sentence by
+    sentence, the source behind every changed value, and the scope before and after. Call it
+    before approving, correcting or rejecting: read it, open the sources, and only then
+    decide.
+
+    What it is compared with depends on where it stands. A proposal that was not approved,
+    open or rejected, is read against the version in force today and the scope the record
+    carries now, so its comparison moves when a version comes into force or another is
+    approved. An approved one is pinned: it is read against the version numbered just before
+    the one it wrote, and the scope its approval found, so its comparison stays the same
+    whatever the calendar or a later version says.
 
     What comes back is a request and not the library: until the proposal is approved the
-    library still says what `currentSummary` says. Reading it changes nothing and records
-    nothing. A proposal filed inside a bank arrives without its proposer, as in the list.
+    library still says what the version in force says. Reading it changes nothing and
+    records nothing. A proposal filed inside a bank arrives without its proposer, as in the
+    list.
 
     Needs the platform permission `proposals.review` from a person, or the platform-only
     scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): an
@@ -464,20 +473,29 @@ def approve_proposal(
     `originalLanguage`, which answers `validation_error`. A vocabulary or term proposal
     waits for a person (D-79).
 
+    An agent's approval is a model call, and every model call is logged: a key sends the
+    call behind its approval in `decision` and the open run of its own key it was made in
+    in `agentRunId`, and in the same transaction the approval writes one entry of the AI
+    output log under the purpose "agent_review", as the agent's own report, while its audit
+    row names the run (D-80). A person sends neither.
+
     Errors to branch on: `permission_denied` without `proposals.review` or
     `proposals:review`; `agent_not_bound` for a key holding the scope but bound to no agent
     definition; `step_up_required` when a person calls without a fresh passkey assertion;
-    `four_eyes_violation` when the reviewer is the person, key or agent who made the
-    proposal; `person_review_required` when an agent approves a vocabulary or term
+    `run_not_open` (422) when a key names no run in `agentRunId`, or a run it has closed;
+    `not_found` (404) when that run is one another key opened, or when there is no such
+    proposal; `four_eyes_violation` when the reviewer is the person, key or agent who made
+    the proposal; `person_review_required` when an agent approves a vocabulary or term
     proposal, which waits for a person; `invalid_transition` when the proposal was already
     approved or rejected, which is also what a repeated or simultaneous second call
     answers, since nothing is ever applied twice; `source_missing` when a correction
-    introduces a field the proposal never sourced; `validation_error` when a correction is
-    offered on a kind that cannot be corrected or does not fit its payload; `unknown_key`
-    when the payload names a row the library does not hold; `jurisdiction_term_mirrored`
-    (422) when the payload adds or renames a term of a dimension that mirrors the
-    jurisdiction list, or scopes an obligation with one, which a proposal filed before that
-    rule may still ask for; `not_found` when there is no such proposal.
+    introduces a field the proposal never sourced; `validation_error` when a key sends no
+    `decision` or a person sends one or names a run, and when a correction is offered on a
+    kind that cannot be corrected or does not fit its payload; `unknown_key` when the
+    payload names a row the library does not hold; `jurisdiction_term_mirrored` (422) when
+    the payload adds or renames a term of a dimension that mirrors the jurisdiction list,
+    or scopes an obligation with one, which a proposal filed before that rule may still ask
+    for.
     """
     reviewer = require_reviewer(request)
     step_up_assertion_id = enforce_step_up(request) if reviewer.user is not None else None
@@ -488,13 +506,64 @@ def approve_proposal(
         note=body.note,
         payload_overrides=body.payload_overrides,
         step_up_assertion_id=step_up_assertion_id,
+        decision=body.decision,
+        agent_run_id=body.agent_run_id,
     )
     return logic.row(proposal)
 
 
-@router.post("/proposals/{proposal_id}/reject", response=ProposalRow, auth=REVIEWER_AUTH, operation_id="rejectProposal", by_alias=True)
+@router.post(
+    "/proposals/{proposal_id}/reject",
+    response=ProposalRow,
+    auth=REVIEWER_AUTH,
+    operation_id="rejectProposal",
+    by_alias=True,
+    summary="Turn a proposal down with a reason the proposer can act on",
+)
 @answers_problems
-def reject_proposal(request: HttpRequest, proposal_id: str, body: ProposalRejectBody) -> ProposalRow:
+def reject_proposal(
+    request: HttpRequest,
+    body: ProposalRejectBody,
+    proposal_id: str = Path(
+        ...,
+        description=(
+            "The proposal being decided, the UUID the queue returns as `id`. A proposal "
+            "that does not exist, and anything that is not a UUID, answers `not_found`."
+        ),
+    ),
+) -> ProposalRow:
+    """Close a proposal as refused. Call it once a reviewer has read the proposal and its
+    sources and found the change wrong, already made, badly worded or outside what the
+    library covers; nothing in the shared library changes, now or later.
+
+    In one transaction it stores the reason and the note on the proposal, closes it as
+    `rejected` for good and writes the decision's audit row, whose outbox event is what
+    tells the proposer, with the reason. The answer is the proposal row as it now stands,
+    with `status` `rejected`, `rejectionCode` and `reviewNote` set. A rejected proposal is
+    never reopened: the proposer files a new one.
+
+    Needs the platform permission `proposals.review` from a person, with no step-up, since
+    a rejection lets nothing into the library. Or the platform-only scope
+    `proposals:review` from a key bound to an agent definition (D-62, ADR 0054), which may
+    reject any kind, a vocabulary or term proposal included, because a rejection writes no
+    library row (D-79). Either way the reviewer is never the proposer, the same key, or a
+    key of the same agent definition. An agent's rejection is a model call and is logged as
+    one: a key sends the call behind it in `decision` and the open run of its own key in
+    `agentRunId`, the rejection writes one entry of the AI output log under the purpose
+    "agent_review" in the same transaction, and its audit row names the run (D-80). A
+    person sends neither.
+
+    Errors to branch on: `permission_denied` (403) without `proposals.review` or
+    `proposals:review`, or for a bank's key; `agent_not_bound` (403) for a key holding the
+    scope but bound to no agent definition; `reason_required` (422) when `rejectionCode`
+    or `note` is empty, or the code is not a live row of the "rejection_reason" vocabulary;
+    `run_not_open` (422) when a key names no run, or a run it has closed; `not_found` (404)
+    when that run is one another key opened, and when there is no such proposal;
+    `validation_error` (422) when a key sends no `decision`, when a person sends one or
+    names a run, and for a field the body does not name; `four_eyes_violation` (409) when
+    the reviewer is the person, key or agent who made the proposal; `invalid_transition`
+    (409) when the proposal was already approved or rejected.
+    """
     reviewer = require_reviewer(request)
     proposal = logic.reject(
         proposal=logic.by_id(uuid_or_404(proposal_id)),
@@ -502,5 +571,7 @@ def reject_proposal(request: HttpRequest, proposal_id: str, body: ProposalReject
         actor=reviewer.actor,
         rejection_code=body.rejection_code,
         note=body.note,
+        decision=body.decision,
+        agent_run_id=body.agent_run_id,
     )
     return logic.row(proposal)

@@ -21,8 +21,12 @@ same queue a person reads and approves, corrects or rejects through the same
 logic. Independence is what four eyes means here — a different agent definition
 and a different key from the proposer — and the check constraint refuses a row
 whose user, key or agent matches on both sides. A person approving still steps
-up with a passkey; a key cannot step up, so for an agent the scope and the
-constraint are the whole gate. A record applied from a proposal an agent
+up with a passkey; a key cannot step up, so for an agent the gate is the scope,
+the constraint and the model call behind its decision: an agent's approval or
+rejection names the model, the output and its citations and an open run of its
+own key, and is refused without them; the call is logged in the AI output log
+with the decision, and the audit row names the run (D-80). A person sends
+neither. A record applied from a proposal an agent
 confirmed carries machine-confirmed provenance (INV-05), never a person's
 verification. Only an obligation version can carry it, so an agent approves
 obligation versions only; a vocabulary or term proposal answers it 409
@@ -239,8 +243,10 @@ When that key reads the pending proposals through the queue route a person reads
 Then it sees the same proposal with the same source beside the same diff
 When it approves, corrects or rejects through the same routes
 Then the decision applies exactly as a person's does, in one transaction
+And a decision sent without the model call behind it answers 422, and one naming a run of another agent's key answers 404, and neither applies anything
 And a correction by the agent that moves the original language answers 422 and applies nothing
-And the audit row names the confirming agent, its definition version and its key, and carries no step-up assertion
+And the model call behind each decision is logged against the proposal in the run the agent named
+And the audit row names the confirming agent, its definition version, its key and that run, and carries no step-up assertion
 And a key without the review scope answers 403
 And no route under the review scope writes a library row except through apply
 ```
