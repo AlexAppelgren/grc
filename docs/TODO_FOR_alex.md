@@ -500,3 +500,16 @@ section. Copied here as chunk3-rest-T20 requires.
       roadmap page already shows. Default if you say nothing: it stays as built, and a feed
       never disagrees with the roadmap page beside it, which is the rule chunk 6 ruling 5 set
       for these two reads.
+
+## api-docs-identity-auth: a passkey prompt gives up after two minutes (2026-09-23, ID-02, ID-06)
+
+- [ ] **Web Authentication Level 3 (W3C Recommendation, 25 August 2026, §15.1) recommends a
+      ceremony timeout of 5 to 10 minutes, default 5, and challenges that stay valid about
+      that long (§13.4.3); `CHALLENGE_TTL_SECONDS` defaults to 120.** So a person who takes
+      longer than two minutes over a passkey prompt (finding the security key, a phone that
+      has to wake for a hybrid sign-in, a screen reader user) gets `challenge_expired` and
+      starts again. The spec's range comes from WCAG's "Enough time". Raising the default to
+      300 is one setting and changes no invariant: challenges stay single use, and the
+      registration and step-up ones stay bound to the person and session. It was left alone because the package that found it was
+      documentation only; the published docs state the current value, so they follow the
+      setting either way. Default if you say nothing: it stays at 120.
