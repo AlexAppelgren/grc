@@ -53,8 +53,9 @@ from django.utils import timezone
 from pydantic.alias_generators import to_camel
 
 from apps.agents import runs
+from apps.governance import ai_log
 from apps.governance.ai_log import log_generation
-from apps.governance.models import AiGeneration, AiPurpose
+from apps.governance.models import AiPurpose
 from apps.library.models import DatePrecision
 from apps.proposals.models import OriginType
 from apps.shared.audit import Actor, record
@@ -654,9 +655,7 @@ def _decided_in(run: Any, change: keys.ChangeRow) -> bool:
     """Whether this run has already logged a decision on this change. A call that confirms
     nothing new and whose decision the run has already logged is a retry, and logging it
     again would count one model call twice (D-80)."""
-    return AiGeneration.objects.filter(
-        agent_run_id=run.id, purpose=AiPurpose.AGENT_REVIEW.value, subject_type=SUBJECT_TYPE, subject_id=change.id
-    ).exists()
+    return ai_log.logged_for(agent_run_id=run.id, purpose=AiPurpose.AGENT_REVIEW, subject_type=SUBJECT_TYPE, subject_id=change.id)
 
 
 def _decision_run(who: Principal, body: WatchCurationConfirmInput) -> Any:
