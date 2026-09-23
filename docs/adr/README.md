@@ -61,6 +61,7 @@ if behaviour changes. Numbering never reuses a number.
 | [0052](0052-platform-counters-window.md) | The console reads each bank's figures through one window on tables of numbers | D-59 | accepted |
 | [0053](0053-bleqq-agents-are-the-base-package.md) | bleqq's agents are the base package; a bank steers only its own | D-61 | accepted |
 | [0054](0054-agent-approves-from-the-same-queue.md) | The second pair of eyes on a library proposal may be an independent agent | D-62 | accepted |
+| [0058](0058-library-writes-refused-by-the-database.md) | The database refuses a library write that never entered a door | D-8x (`h16-library-db-policy`; numbered on merge) | accepted by default |
 
 Still to write, when the playbook's Appendix C says so:
 the switch from one branch to `staging` and `main` (supersedes 0015), the
