@@ -451,7 +451,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         seed_library_vocabularies()
         seed_term_dimensions()
         seed_taxonomy_terms()
-        obligation = build.obligation(build.instrument(key="aud-s9-instrument"), key="obl-aud-s9")
+        obligation = build.obligation(build.instrument(key="aud-s9-instrument", regime="regime:securities"), key="obl-aud-s9")
         tenant = factories.tenant(slug="aud-s9")
         self.activate(tenant)
         ensure_tenant_vocabularies(tenant, actor=Actor.system("test"))

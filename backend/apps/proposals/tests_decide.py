@@ -188,7 +188,7 @@ class ObligationVersionRaces(TransactionTestCase):
             _seed()
         with transaction.atomic():
             tenancy.clear_tenant()
-            self.obligation = build.obligation(build.instrument(key="race-instrument"), key="obl-race")
+            self.obligation = build.obligation(build.instrument(key="race-instrument", regime="regime:securities"), key="obl-race")
             proposer = factories.platform_user(roles=("library_editor",), email="proposer@bleqq.test")
             self.first = factories.platform_user(roles=("library_editor",), email="first@bleqq.test")
             self.second = factories.platform_user(roles=("library_editor",), email="second@bleqq.test")

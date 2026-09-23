@@ -1024,7 +1024,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         seed_taxonomy_terms()
         ensure_tenant_vocabularies(self.tenant, actor=Actor.system("test"))
         tenancy.clear_tenant()  # a library record belongs to no tenant
-        obligation = build.obligation(build.instrument(key="id-s31-instrument"), key="obl-id-s31")
+        obligation = build.obligation(build.instrument(key="id-s31-instrument", regime="regime:securities"), key="obl-id-s31")
         self.activate(self.tenant)
 
         proposer_key = factories.api_key(self.tenant, scopes=("proposals:write",))
