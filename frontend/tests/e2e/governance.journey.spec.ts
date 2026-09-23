@@ -135,11 +135,11 @@ test.describe('governance journeys', () => {
   });
 
   test.fixme("AUD-S4: Every model output is logged with its review state", async () => {
-    // pending: AUD-S4 (AUD-02)
+    // pending: AUD-S4 (AUD-02, chunk 7)
   });
 
   test.fixme("AUD-S5: A problem report stays inside the bank that filed it", async () => {
-    // pending: AUD-S5 (AUD-03)
+    // pending: AUD-S5 (AUD-03, chunk 4)
   });
 
   test("ADM-S4: The platform console offers each surface to the platform role that owns it", async ({ page, request, apiGuard }) => {
@@ -170,7 +170,7 @@ test.describe('governance journeys', () => {
   });
 
   test.fixme("ADM-S5: System health names what is wrong", async () => {
-    // pending: ADM-S5 (ADM-02)
+    // pending: ADM-S5 (ADM-02, chunk 14)
   });
 
   test("ADM-S6: A tenant is created from the console with its first administrator invited", async ({ page, request, apiGuard }, testInfo) => {

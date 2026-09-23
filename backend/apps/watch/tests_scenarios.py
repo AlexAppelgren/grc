@@ -456,7 +456,7 @@ class WatchScenarioTests(TestCase):
             tenancy.clear_tenant()
             self.assertEqual(list(AiGeneration.objects.values()), before, "the shared log row is nobody's to move")
 
-    @skip("pending: WAT-S8")
+    @skip("pending: WAT-S8 (WAT-06, chunk 13)")
     def test_wat_s8(self) -> None:
         """WAT-S8
 
