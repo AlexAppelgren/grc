@@ -89,9 +89,13 @@ a permission gate.
 The door each writer names to the database (H16, ADR 0058) is `EachWriterNamesItsOwnDoor`:
 the word a writer hands the trigger of shared 0008 decides which tables it reaches there, so
 `proposal`, `reverification`, `watch` and `index` are each named by one function and no
-other, and `seed` is what everything else takes. Proven to fail 2026-09-23, each breach then
-reverted: `door="proposal"` in `watch_write()` (the watch door named by the wrong function),
-and the stamp's `door="reverification"` removed (the door named by nobody).
+other, and `seed`, the widest door and `library_write()`'s default, is opened, by name or by
+default, only from the reference seeds' directories. Proven to fail 2026-09-23, each breach
+then reverted: `door="proposal"` in `watch_write()` (the watch door named by the wrong
+function), and the stamp's `door="reverification"` removed (the door named by nobody).
+Proven to fail 2026-09-24, then reverted: a `library_write("a repoint helper")` naming no
+door planted in apps/watch/write.py, which the database would have let reach every
+inventory table (red, naming `watch/write.py::_plant`).
 
 The step-up edge proven to fail 2026-09-23, then reverted: approveProposal with its
 `enforce_step_up` call and import removed (red here, naming the missing edge, and red in
@@ -136,7 +140,7 @@ from apps.identity import roles_logic
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, Principal, PrincipalKind, SessionAuth
 from apps.shared.routes import RegisteredOperation, iter_operations
-from apps.shared.tenancy import LibraryModel
+from apps.shared.tenancy import LibraryModel, library_write
 from config.api import api
 
 APPS_DIR = Path(__file__).resolve().parent.parent
@@ -297,11 +301,13 @@ class LibraryFenceGuard(SimpleTestCase):
 # ---------------------------------------------------------------------------------------
 # The trigger of shared 0008 opens each library-zone table to the doors it names, so the
 # word a writer hands the database is what decides which tables it reaches there. `seed` is
-# library_write()'s default and is what a reference seed and a test builder take; every
-# other door is named by exactly one function, and by no other. A watch step that named
-# `proposal` would reach the inventory in the database, and a stamp that lost its door would
-# fall back to `seed` and reach every inventory table: each fails here. `library_door()`
-# itself is kept to its homes by the compliance lint's `library-door` rule.
+# library_write()'s default and the widest door (every inventory table, the stamped tables
+# and the reference rows), so only the reference seeds' own directories may open it, whether
+# a call names it or takes it by default; every other door is named by exactly one function,
+# and by no other. A watch step that named `proposal` would reach the inventory in the database,
+# and a stamp, or a watch door, that lost its door would fall back to `seed` and reach every
+# inventory table: each fails here. `library_door()` itself is kept to its homes by the
+# compliance lint's `library-door` rule.
 DOOR_NAMERS: dict[str, frozenset[str]] = {
     "proposal": frozenset({"proposals/apply.py::apply"}),
     "reverification": frozenset({"proposals/apply.py::apply_reverification"}),
@@ -310,12 +316,16 @@ DOOR_NAMERS: dict[str, frozenset[str]] = {
 }
 # The one call that passes a door it was handed rather than one it names.
 DOOR_PASSED_ON = "shared/tenancy.py::library_write"
+# What a `library_write()` that names no door opens, read from its signature so the pin
+# follows the code.
+DEFAULT_DOOR: str = inspect.signature(library_write).parameters["door"].default
 
 
 def named_doors() -> dict[str, set[str]]:
     """Every door a production call names, by `library_write(..., door=...)` or
-    `library_door(...)`, and the top-level function (or `<module>`) that names it. A door
-    that is not a string literal is listed as `<passed on>`."""
+    `library_door(...)`, and the top-level function (or `<module>`) that names it. A
+    `library_write()` that names none is listed under the door it takes by default, and a
+    door that is not a string literal as `<passed on>`."""
     found: dict[str, set[str]] = {}
     for path in production_modules():
         rel = path.relative_to(APPS_DIR).as_posix()
@@ -327,11 +337,14 @@ def named_doors() -> dict[str, set[str]]:
                 func = node.func
                 called = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else None
                 door = next((keyword.value for keyword in node.keywords if keyword.arg == "door"), None)
+                if called not in {"library_write", "library_door"}:
+                    continue
                 if called == "library_door" and door is None and node.args:
                     door = node.args[0]
-                if called not in {"library_write", "library_door"} or door is None:
-                    continue
-                name = door.value if isinstance(door, ast.Constant) and isinstance(door.value, str) else "<passed on>"
+                if door is None:
+                    name = DEFAULT_DOOR if called == "library_write" else "<passed on>"
+                else:
+                    name = door.value if isinstance(door, ast.Constant) and isinstance(door.value, str) else "<passed on>"
                 found.setdefault(name, set()).add(f"{rel}::{scope}")
     return found
 
@@ -344,6 +357,20 @@ class EachWriterNamesItsOwnDoor(SimpleTestCase):
                 self.assertEqual(found.get(door, set()), set(namers), f"the {door} door is named by the wrong functions")
         self.assertEqual(found.get("<passed on>", set()), {DOOR_PASSED_ON}, "a door passed on from a variable outside library_write()")
         self.assertEqual(set(found) - set(DOOR_NAMERS) - {"seed", "<passed on>"}, set(), "a door the database does not know")
+
+    def test_the_seed_door_named_or_taken_by_default_is_opened_by_the_reference_seeds_alone(self) -> None:
+        self.assertEqual(DEFAULT_DOOR, "seed")
+        seeders = named_doors().get("seed", set())
+        self.assertNotEqual(seeders, set(), "the pin sees no reference seed at all")
+        outside = sorted(
+            namer for namer in seeders if not any(namer.startswith(prefix) for prefix in LIBRARY_WRITE_ALLOWED_DIRS)
+        )
+        self.assertEqual(
+            outside,
+            [],
+            "library_write() opens the seed door (every inventory table, in the database) outside the reference "
+            f"seeds {LIBRARY_WRITE_ALLOWED_DIRS}; name the writer's own door instead",
+        )
 
 
 # ---------------------------------------------------------------------------------------
