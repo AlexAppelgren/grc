@@ -2099,13 +2099,23 @@ export interface paths {
          * @description Every change an agent or a person has asked for, with the library record each one
          *     would change named by its own title and reference, so a reviewer can work the queue
          *     without opening each proposal. Call it for the console's Waiting, Approved and Rejected
-         *     tabs, each of which is this call with its own `status`.
+         *     tabs, each of which is this call with its own `status`, and call it from a confirming
+         *     agent's key to read the same queue a person reads.
          *
-         *     The answer is every proposal matching the filters in one page, oldest first. Nothing is
-         *     hidden by them: `total` counts the same rows the list carries. A proposal filed inside a
-         *     bank arrives without its proposer and says `fromOrganisation` instead, and `isMine` says
-         *     whether the reader filed it, which four eyes will not let them decide; it is always
-         *     false for the platform key of an independent agent reading the same queue (PRO-S13).
+         *     Each row names who filed it and who decided it: a platform person in `proposedBy` and
+         *     `reviewedBy`, or an agent by its definition key in `proposedByAgent` and
+         *     `reviewedByAgent`, and whoever corrected the payload on the way to approving it. A
+         *     proposal filed inside a bank arrives without its proposer and says `fromOrganisation`
+         *     instead. `isMine` says whether the reader filed it, which four eyes will not let them
+         *     decide: for a person their own, for an agent's key the key's own and those of every
+         *     other key of the same agent definition. `notMine` drops exactly those rows.
+         *
+         *     Nothing here changes a record and nothing is written to the audit trail: it is a read.
+         *
+         *     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
+         *     quietly trimmed, oldest first so paging is repeatable, and `total` counting every
+         *     proposal matching the filters across every page. Nothing matching is a 200 with an empty
+         *     items list and a total of 0, never a 404.
          *
          *     Needs the platform permission `proposals.review` from a person, or the platform-only
          *     scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054). No
@@ -2113,7 +2123,8 @@ export interface paths {
          *
          *     Errors to branch on: `unauthenticated` (401) without a session or a key;
          *     `permission_denied` (403) without `proposals.review` or `proposals:review`;
-         *     `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`.
+         *     `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`;
+         *     `validation_error` (422) when the page size or offset is out of range.
          */
         get: operations["listProposals"];
         put?: never;
@@ -8025,15 +8036,59 @@ export interface components {
         ProposalAccepted: {
             proposal: components["schemas"]["ProposalRow"];
         };
-        /** ProposalActorRef */
+        /**
+         * ProposalActorRef
+         * @description A platform person named on a proposal: who filed it, who corrected it or who decided
+         *     it. Always bleqq's own staff and never a bank member, whose name and id do not reach the
+         *     console (PRO-03).
+         * @example {
+         *       "id": "0b6f2c4e-8d1a-4f3b-9e27-5c8a1d3f6b90",
+         *       "name": "Kari Nygaard"
+         *     }
+         */
         ProposalActorRef: {
             /**
              * Id
              * Format: uuid
+             * @description The person's platform account, as a UUID that never changes. Compare this, never the name, to tell whether two proposals were handled by the same person.
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description The person's name as their platform account spells it today, for showing on screen. It may change; the audit trail keeps the name it had at the time.
+             */
             name: string;
+        };
+        /**
+         * ProposalAgentRef
+         * @description One of the platform's agents named on a proposal: the agent that filed it, or the
+         *     independent agent that decided it (D-62). An agent's decision is machine-confirmed and
+         *     never reads as a person's; the record it applied says so on its own provenance.
+         * @example {
+         *       "key": "library-confirmer",
+         *       "label": "library-confirmer v1",
+         *       "version": 1
+         *     }
+         */
+        ProposalAgentRef: {
+            /**
+             * Key
+             * @description The agent definition's own key, stable and never changed, for example `watch-sweeper`: the folder its versioned definition lives in. Store and compare this. Two proposals naming the same key were handled by the same agent, whichever of its keys it called with.
+             * @example library-confirmer
+             */
+            key: string;
+            /**
+             * Label
+             * @description How the audit trail names the agent: its key and the definition version, for example `library-confirmer v1`. For showing on screen and for nothing else; compare `key`.
+             * @example library-confirmer v1
+             */
+            label: string;
+            /**
+             * Version
+             * @description The version of the definition the platform runs for this agent now, counting from 1. The audit row of the decision keeps the version the agent ran when it decided, which a later release may have moved on from.
+             * @example 1
+             */
+            version: number;
         };
         /**
          * ProposalAppliedVersion
@@ -8154,12 +8209,20 @@ export interface components {
         /**
          * ProposalDetail
          * @description One proposal opened for a decision (PRO-02): everything the row carries, plus what the
-         *     library says today, what the proposal would make it say, and where each changed value came
-         *     from. Read it before approving; approving is the only door into the shared library.
+         *     library says against what the proposal would make it say, and where each changed value
+         *     came from. Read it before approving; approving is the only door into the shared library.
+         *
+         *     What it is compared with depends on where it stands. A proposal still to be decided is
+         *     read against the version in force today, the wording it would replace. An approved one is
+         *     read against the version before the one it wrote, and its scope against the scope the
+         *     approval found, so the comparison a reviewer made stays the same whatever the calendar
+         *     or a later version says.
          * @example {
          *       "agentRunId": "5a2b9c7d-1e3f-4a8b-9c0d-2e4f6a8b0c12",
          *       "appliedAt": null,
          *       "changeId": "b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33",
+         *       "correctedBy": null,
+         *       "correctedByAgent": null,
          *       "createdAt": "2026-09-16T07:12:00Z",
          *       "effectiveFrom": "2026-10-01",
          *       "fieldSources": {
@@ -8167,6 +8230,7 @@ export interface components {
          *         "summaries.en": "https://www.fi.se/",
          *         "summaries.sv": "https://www.fi.se/"
          *       },
+         *       "fromOrganisation": false,
          *       "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
          *       "kind": "new_obligation_version",
          *       "model": "agent pipeline 0.4",
@@ -8182,10 +8246,16 @@ export interface components {
          *         }
          *       },
          *       "proposedBy": null,
+         *       "proposedByAgent": {
+         *         "key": "watch-sweeper",
+         *         "label": "watch-sweeper v1",
+         *         "version": 1
+         *       },
          *       "rejectionCode": "",
          *       "reviewNote": "",
          *       "reviewedAt": null,
          *       "reviewedBy": null,
+         *       "reviewedByAgent": null,
          *       "scopeSuggestion": [],
          *       "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
          *       "sourceUrl": "https://www.fi.se/",
@@ -8213,13 +8283,17 @@ export interface components {
              * @description The regulatory change that prompted this, as a UUID, when an agent's watch run found one. Null means nobody linked one, not that no change exists.
              */
             changeId?: string | null;
+            /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
+            correctedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
+            correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Createdat
              * Format: date-time
              * @description When the proposal was filed: a UTC timestamp, date and time together. Not the legal date of the change, which is `effectiveFrom`.
              */
             createdAt: string;
-            /** @description What the library says today, in the language above: the summary of the version in force now. Null when the record has no text in that language, and null on a proposal that changes no record text. */
+            /** @description The wording the proposal replaces, in the language above. For a proposal not yet approved it is the summary of the version in force today, or of the latest version when every version starts later. For an approved one it is the summary of the version before the one the approval wrote, so it does not move when that version comes into force or a later one arrives. Null when that version has no text in this language, when there is no earlier version, and on a proposal that changes no record text. */
             currentSummary?: components["schemas"]["LocalizedText"] | null;
             /**
              * Diff
@@ -8253,7 +8327,7 @@ export interface components {
             id: string;
             /**
              * Ismine
-             * @description True when the person reading this row is the one who filed the proposal, worked out by the server from the signed-in session. Four eyes means they may not decide it: their own approval answers 409 `four_eyes_violation`, so a screen hides the control rather than offering a refusal. Always false for a proposal filed by an agent or inside a bank, neither of which is a platform person.
+             * @description True when the reader filed this proposal themselves, worked out by the server from who called and never sent by the client: for a person, the person who filed it; for an agent's key, the same key or any key of the same agent definition. Four eyes means the reader may not decide it, and their approval answers 409 `four_eyes_violation`, so a screen hides the control rather than offering a refusal. Always false for a proposal made inside a bank, which no platform reader filed, and exactly the rows `notMine` drops.
              * @default false
              * @example false
              */
@@ -8278,7 +8352,7 @@ export interface components {
             model: string;
             /**
              * Origin
-             * @description Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI output and stays labelled until a person confirms it by approving; `user` means a person typed it. Neither tells a reader whether the facts are right.
+             * @description Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI output and stays labelled: a person's approval confirms it, and an independent agent's approval leaves the record machine-confirmed, naming both agents, never confirmed by a person. `user` means a person typed it. Neither tells a reader whether the facts are right.
              */
             origin: string;
             /**
@@ -8288,11 +8362,13 @@ export interface components {
             payload?: {
                 [key: string]: unknown;
             };
-            /** @description The platform person who made the proposal. Null for an agent's proposal, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
+            /** @description The platform person who made the proposal. Null for an agent's proposal, which `proposedByAgent` names instead, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
             proposedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The platform agent that filed the proposal, by definition key, when the key it called with is bound to one. Null for a person's proposal, for one made inside a bank, whichever of its people or keys filed it, and for a key bound to no agent. Four eyes compares this with the reviewing agent: no key of the same definition may decide it. */
+            proposedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Proposedtext
-             * @description The wording that would replace it, which is the reviewer's own correction where one has been made and the proposal's text otherwise. Empty on a proposal that changes no record text. It is a request, not the library: until the proposal is approved the library still says what `currentSummary` says.
+             * @description The wording that would replace it, which is the reviewer's own correction where one has been made and the proposal's text otherwise. Empty on a proposal that changes no record text. It is a request, not the library: until the proposal is approved the library still says what `currentSummary` says, and once it is, `appliedVersion` is where the library carries it.
              * @default
              */
             proposedText: string;
@@ -8306,17 +8382,19 @@ export interface components {
             rejectionReason?: components["schemas"]["LibraryRef"] | null;
             /**
              * Reviewnote
-             * @description The reviewer's own sentence to the proposer, on an approval or a rejection. A platform person's words; it is not part of the library record.
+             * @description The reviewer's own sentence to the proposer, on an approval or a rejection: a platform person's words, or the deciding agent's output when an agent decided, which is AI output like any other. It is not part of the library record.
              * @default
              */
             reviewNote: string;
             /**
              * Reviewedat
-             * @description When the decision was made: a UTC timestamp, date and time together. Null while the proposal is open.
+             * @description When the decision was made, by a person or by an agent: a UTC timestamp, date and time together. Null while the proposal is open.
              */
             reviewedAt?: string | null;
-            /** @description The platform reviewer who decided it. Always a different person from the proposer, which the database enforces. Null while the proposal is open. */
+            /** @description The platform person who decided it, never the person who proposed it, which the database enforces. Null while the proposal is open, and null when an independent agent decided it, which `reviewedByAgent` then names: a decided proposal names exactly one of the two. */
             reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The independent agent that decided it, by definition key: never the proposing key and never another key of the proposing agent's definition, which the database enforces. Null while the proposal is open and when a person decided it. An agent's approval is machine-confirmed: the record it applied reads as confirmed by that agent and never as verified by a person. */
+            reviewedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Scopeafter
              * @description The scope the proposal would leave, in the same spelling, which replaces the list above whole rather than adding to it. Null means the proposal leaves the scope alone, which is not the same as an empty list: an empty list would clear it.
@@ -8324,7 +8402,7 @@ export interface components {
             scopeAfter?: string[] | null;
             /**
              * Scopebefore
-             * @description The record's scope facets as the library holds them now, each written `dimension:key`, for example `client_category:retail`. Both parts are keys of rows an admin manages rather than fixed values, so read the term lists for the labels. Empty when the record carries no facets, and empty on a proposal that changes no record.
+             * @description The record's scope facets before this proposal, each written `dimension:key`, for example `client_category:retail`. For a proposal not yet approved it is the scope the library holds now. For an approved one that replaced the scope it is the scope the approval found, as the audit row of the approval recorded it; one that left the scope alone shows the scope the record carries now. Both parts are keys of rows an admin manages rather than fixed values, so read the term lists for the labels. Empty when the record carries no facets, and empty on a proposal that changes no record.
              * @example [
              *       "service_type:advice",
              *       "client_category:retail"
@@ -8381,17 +8459,79 @@ export interface components {
         };
         /**
          * ProposalPage
-         * @description A page of the console review queue.
+         * @description A page of the console review queue, oldest first, with the count of every proposal
+         *     matching the filters.
+         * @example {
+         *       "items": [
+         *         {
+         *           "agentRunId": "5a2b9c7d-1e3f-4a8b-9c0d-2e4f6a8b0c12",
+         *           "appliedAt": "2026-09-16T09:40:00Z",
+         *           "changeId": "b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33",
+         *           "correctedBy": null,
+         *           "correctedByAgent": null,
+         *           "createdAt": "2026-09-16T07:12:00Z",
+         *           "effectiveFrom": "2026-10-01",
+         *           "fieldSources": {
+         *             "effectiveFrom": "https://www.fi.se/",
+         *             "summaries.sv": "https://www.fi.se/"
+         *           },
+         *           "fromOrganisation": false,
+         *           "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+         *           "isMine": false,
+         *           "kind": "new_obligation_version",
+         *           "model": "agent pipeline 0.4",
+         *           "origin": "agent",
+         *           "payload": {
+         *             "effectiveFrom": "2026-10-01",
+         *             "effectiveFromPrecision": "day",
+         *             "isMachine": false,
+         *             "originalLanguage": "sv",
+         *             "summaries": {
+         *               "sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel eller från ett analyskonto."
+         *             }
+         *           },
+         *           "proposedBy": null,
+         *           "proposedByAgent": {
+         *             "key": "watch-sweeper",
+         *             "label": "watch-sweeper v1",
+         *             "version": 1
+         *           },
+         *           "rejectionCode": "",
+         *           "reviewNote": "The summary matches the board decision and the date it names.",
+         *           "reviewedAt": "2026-09-16T09:40:00Z",
+         *           "reviewedBy": null,
+         *           "reviewedByAgent": {
+         *             "key": "library-confirmer",
+         *             "label": "library-confirmer v1",
+         *             "version": 1
+         *           },
+         *           "scopeSuggestion": [],
+         *           "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
+         *           "sourceUrl": "https://www.fi.se/",
+         *           "status": "approved",
+         *           "target": {
+         *             "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *             "instrumentShortName": "FFFS 2017:2",
+         *             "referenceLabel": "Third-party payments",
+         *             "title": "Pay for third-party research only under the permitted models"
+         *           },
+         *           "targetId": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *           "targetType": "obligation",
+         *           "title": "Add version 2 of the research payment obligation, in force 1 October 2026"
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
          */
         ProposalPage: {
             /**
              * Items
-             * @description The proposals matching the filters, oldest first, so the queue reads in the order they arrived.
+             * @description This page of proposals, oldest first, so the queue reads in the order they arrived and paging is repeatable: 20 rows by default and 100 at most. Nothing matching the filters is an empty list, never a 404.
              */
             items: components["schemas"]["ProposalQueueRow"][];
             /**
              * Total
-             * @description How many proposals match the filters in all, which is what a tab's count shows.
+             * @description How many proposals match the filters in all, across every page, which is what a tab's count shows. 0 when nothing matches.
              * @example 4
              */
             total: number;
@@ -8409,7 +8549,7 @@ export interface components {
             kind?: string | null;
             /**
              * Notmine
-             * @description True drops the proposals this reviewer filed themselves, which are exactly the ones four eyes will not let them decide, so the queue shows only work they can actually do. False, the default, returns theirs alongside the rest.
+             * @description True drops the proposals the reader filed themselves, which are exactly the ones four eyes will not let them decide and the ones `isMine` marks, so the queue shows only work they can actually do: for a person, their own; for an agent's key, the key's own and those of every other key of the same agent definition. `total` then counts what is left. False, the default, returns theirs alongside the rest.
              * @default false
              * @example true
              */
@@ -8442,6 +8582,8 @@ export interface components {
          *       "agentRunId": "5a2b9c7d-1e3f-4a8b-9c0d-2e4f6a8b0c12",
          *       "appliedAt": null,
          *       "changeId": "b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33",
+         *       "correctedBy": null,
+         *       "correctedByAgent": null,
          *       "createdAt": "2026-09-16T07:12:00Z",
          *       "effectiveFrom": "2026-10-01",
          *       "fieldSources": {
@@ -8449,6 +8591,7 @@ export interface components {
          *         "summaries.en": "https://www.fi.se/",
          *         "summaries.sv": "https://www.fi.se/"
          *       },
+         *       "fromOrganisation": false,
          *       "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
          *       "kind": "new_obligation_version",
          *       "model": "agent pipeline 0.4",
@@ -8464,10 +8607,16 @@ export interface components {
          *         }
          *       },
          *       "proposedBy": null,
+         *       "proposedByAgent": {
+         *         "key": "watch-sweeper",
+         *         "label": "watch-sweeper v1",
+         *         "version": 1
+         *       },
          *       "rejectionCode": "",
          *       "reviewNote": "",
          *       "reviewedAt": null,
          *       "reviewedBy": null,
+         *       "reviewedByAgent": null,
          *       "scopeSuggestion": [],
          *       "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
          *       "sourceUrl": "https://www.fi.se/",
@@ -8493,6 +8642,10 @@ export interface components {
              * @description The regulatory change that prompted this, as a UUID, when an agent's watch run found one. Null means nobody linked one, not that no change exists.
              */
             changeId?: string | null;
+            /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
+            correctedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
+            correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Createdat
              * Format: date-time
@@ -8526,7 +8679,7 @@ export interface components {
             id: string;
             /**
              * Ismine
-             * @description True when the person reading this row is the one who filed the proposal, worked out by the server from the signed-in session. Four eyes means they may not decide it: their own approval answers 409 `four_eyes_violation`, so a screen hides the control rather than offering a refusal. Always false for a proposal filed by an agent or inside a bank, neither of which is a platform person.
+             * @description True when the reader filed this proposal themselves, worked out by the server from who called and never sent by the client: for a person, the person who filed it; for an agent's key, the same key or any key of the same agent definition. Four eyes means the reader may not decide it, and their approval answers 409 `four_eyes_violation`, so a screen hides the control rather than offering a refusal. Always false for a proposal made inside a bank, which no platform reader filed, and exactly the rows `notMine` drops.
              * @default false
              * @example false
              */
@@ -8544,7 +8697,7 @@ export interface components {
             model: string;
             /**
              * Origin
-             * @description Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI output and stays labelled until a person confirms it by approving; `user` means a person typed it. Neither tells a reader whether the facts are right.
+             * @description Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI output and stays labelled: a person's approval confirms it, and an independent agent's approval leaves the record machine-confirmed, naming both agents, never confirmed by a person. `user` means a person typed it. Neither tells a reader whether the facts are right.
              */
             origin: string;
             /**
@@ -8554,8 +8707,10 @@ export interface components {
             payload?: {
                 [key: string]: unknown;
             };
-            /** @description The platform person who made the proposal. Null for an agent's proposal, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
+            /** @description The platform person who made the proposal. Null for an agent's proposal, which `proposedByAgent` names instead, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
             proposedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The platform agent that filed the proposal, by definition key, when the key it called with is bound to one. Null for a person's proposal, for one made inside a bank, whichever of its people or keys filed it, and for a key bound to no agent. Four eyes compares this with the reviewing agent: no key of the same definition may decide it. */
+            proposedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Rejectioncode
              * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `poor_wording` and `other`. Empty unless the status is `rejected`.
@@ -8564,17 +8719,19 @@ export interface components {
             rejectionCode: string;
             /**
              * Reviewnote
-             * @description The reviewer's own sentence to the proposer, on an approval or a rejection. A platform person's words; it is not part of the library record.
+             * @description The reviewer's own sentence to the proposer, on an approval or a rejection: a platform person's words, or the deciding agent's output when an agent decided, which is AI output like any other. It is not part of the library record.
              * @default
              */
             reviewNote: string;
             /**
              * Reviewedat
-             * @description When the decision was made: a UTC timestamp, date and time together. Null while the proposal is open.
+             * @description When the decision was made, by a person or by an agent: a UTC timestamp, date and time together. Null while the proposal is open.
              */
             reviewedAt?: string | null;
-            /** @description The platform reviewer who decided it. Always a different person from the proposer, which the database enforces. Null while the proposal is open. */
+            /** @description The platform person who decided it, never the person who proposed it, which the database enforces. Null while the proposal is open, and null when an independent agent decided it, which `reviewedByAgent` then names: a decided proposal names exactly one of the two. */
             reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The independent agent that decided it, by definition key: never the proposing key and never another key of the proposing agent's definition, which the database enforces. Null while the proposal is open and when a person decided it. An agent's approval is machine-confirmed: the record it applied reads as confirmed by that agent and never as verified by a person. */
+            reviewedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Scopesuggestion
              * @description Scope terms an agent suggests for a record it is creating. Always empty today, since the kinds that would carry one are not built: an empty list is not a claim that a record has no scope.
@@ -8645,6 +8802,8 @@ export interface components {
          *       "agentRunId": "5a2b9c7d-1e3f-4a8b-9c0d-2e4f6a8b0c12",
          *       "appliedAt": null,
          *       "changeId": "b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33",
+         *       "correctedBy": null,
+         *       "correctedByAgent": null,
          *       "createdAt": "2026-09-16T07:12:00Z",
          *       "effectiveFrom": "2026-10-01",
          *       "fieldSources": {
@@ -8652,6 +8811,7 @@ export interface components {
          *         "summaries.en": "https://www.fi.se/",
          *         "summaries.sv": "https://www.fi.se/"
          *       },
+         *       "fromOrganisation": false,
          *       "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
          *       "kind": "new_obligation_version",
          *       "model": "agent pipeline 0.4",
@@ -8667,10 +8827,16 @@ export interface components {
          *         }
          *       },
          *       "proposedBy": null,
+         *       "proposedByAgent": {
+         *         "key": "watch-sweeper",
+         *         "label": "watch-sweeper v1",
+         *         "version": 1
+         *       },
          *       "rejectionCode": "",
          *       "reviewNote": "",
          *       "reviewedAt": null,
          *       "reviewedBy": null,
+         *       "reviewedByAgent": null,
          *       "scopeSuggestion": [],
          *       "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
          *       "sourceUrl": "https://www.fi.se/",
@@ -8696,6 +8862,10 @@ export interface components {
              * @description The regulatory change that prompted this, as a UUID, when an agent's watch run found one. Null means nobody linked one, not that no change exists.
              */
             changeId?: string | null;
+            /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
+            correctedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
+            correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Createdat
              * Format: date-time
@@ -8740,7 +8910,7 @@ export interface components {
             model: string;
             /**
              * Origin
-             * @description Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI output and stays labelled until a person confirms it by approving; `user` means a person typed it. Neither tells a reader whether the facts are right.
+             * @description Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI output and stays labelled: a person's approval confirms it, and an independent agent's approval leaves the record machine-confirmed, naming both agents, never confirmed by a person. `user` means a person typed it. Neither tells a reader whether the facts are right.
              */
             origin: string;
             /**
@@ -8750,8 +8920,10 @@ export interface components {
             payload?: {
                 [key: string]: unknown;
             };
-            /** @description The platform person who made the proposal. Null for an agent's proposal, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
+            /** @description The platform person who made the proposal. Null for an agent's proposal, which `proposedByAgent` names instead, and null for one made inside a bank: a bank member's name and id never reach the console. A reader must not read null as "nobody". */
             proposedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The platform agent that filed the proposal, by definition key, when the key it called with is bound to one. Null for a person's proposal, for one made inside a bank, whichever of its people or keys filed it, and for a key bound to no agent. Four eyes compares this with the reviewing agent: no key of the same definition may decide it. */
+            proposedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Rejectioncode
              * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `poor_wording` and `other`. Empty unless the status is `rejected`.
@@ -8760,17 +8932,19 @@ export interface components {
             rejectionCode: string;
             /**
              * Reviewnote
-             * @description The reviewer's own sentence to the proposer, on an approval or a rejection. A platform person's words; it is not part of the library record.
+             * @description The reviewer's own sentence to the proposer, on an approval or a rejection: a platform person's words, or the deciding agent's output when an agent decided, which is AI output like any other. It is not part of the library record.
              * @default
              */
             reviewNote: string;
             /**
              * Reviewedat
-             * @description When the decision was made: a UTC timestamp, date and time together. Null while the proposal is open.
+             * @description When the decision was made, by a person or by an agent: a UTC timestamp, date and time together. Null while the proposal is open.
              */
             reviewedAt?: string | null;
-            /** @description The platform reviewer who decided it. Always a different person from the proposer, which the database enforces. Null while the proposal is open. */
+            /** @description The platform person who decided it, never the person who proposed it, which the database enforces. Null while the proposal is open, and null when an independent agent decided it, which `reviewedByAgent` then names: a decided proposal names exactly one of the two. */
             reviewedBy?: components["schemas"]["ProposalActorRef"] | null;
+            /** @description The independent agent that decided it, by definition key: never the proposing key and never another key of the proposing agent's definition, which the database enforces. Null while the proposal is open and when a person decided it. An agent's approval is machine-confirmed: the record it applied reads as confirmed by that agent and never as verified by a person. */
+            reviewedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Scopesuggestion
              * @description Scope terms an agent suggests for a record it is creating. Always empty today, since the kinds that would carry one are not built: an empty list is not a claim that a record has no scope.
@@ -9828,7 +10002,7 @@ export interface components {
             kind: string;
             /**
              * Status
-             * @description Where the request stands. A fixed kind: `open` is waiting for a library editor, `approved` means every bank's library now carries it, `rejected` means it was refused with a reason and changed nothing, and `superseded` means a later proposal overtook it.
+             * @description Where the request stands. A fixed kind: `open` is waiting for a platform reviewer, `approved` means every bank's library now carries it, `rejected` means it was refused with a reason and changed nothing, and `superseded` means a later proposal overtook it.
              */
             status: string;
             /**
@@ -14837,10 +15011,20 @@ export interface operations {
                  */
                 origin?: string | null;
                 /**
-                 * @description True drops the proposals this reviewer filed themselves, which are exactly the ones four eyes will not let them decide, so the queue shows only work they can actually do. False, the default, returns theirs alongside the rest.
+                 * @description True drops the proposals the reader filed themselves, which are exactly the ones four eyes will not let them decide and the ones `isMine` marks, so the queue shows only work they can actually do: for a person, their own; for an agent's key, the key's own and those of every other key of the same agent definition. `total` then counts what is left. False, the default, returns theirs alongside the rest.
                  * @example true
                  */
                 notMine?: boolean;
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
             };
             header?: never;
             path?: never;

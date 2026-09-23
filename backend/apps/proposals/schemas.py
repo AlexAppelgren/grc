@@ -30,8 +30,45 @@ DayDate = date
 
 
 class ProposalActorRef(CamelSchema):
-    id: UUID
-    name: str
+    """A platform person named on a proposal: who filed it, who corrected it or who decided
+    it. Always bleqq's own staff and never a bank member, whose name and id do not reach the
+    console (PRO-03)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"id": "0b6f2c4e-8d1a-4f3b-9e27-5c8a1d3f6b90", "name": "Kari Nygaard"}]})
+
+    id: UUID = Field(description="The person's platform account, as a UUID that never changes. Compare this, never the name, to tell whether two proposals were handled by the same person.")
+    name: str = Field(description="The person's name as their platform account spells it today, for showing on screen. It may change; the audit trail keeps the name it had at the time.")
+
+
+class ProposalAgentRef(CamelSchema):
+    """One of the platform's agents named on a proposal: the agent that filed it, or the
+    independent agent that decided it (D-62). An agent's decision is machine-confirmed and
+    never reads as a person's; the record it applied says so on its own provenance."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"key": "library-confirmer", "label": "library-confirmer v1", "version": 1}]})
+
+    key: str = Field(
+        description=(
+            "The agent definition's own key, stable and never changed, for example `watch-sweeper`: the folder its "
+            "versioned definition lives in. Store and compare this. Two proposals naming the same key were handled "
+            "by the same agent, whichever of its keys it called with."
+        ),
+        examples=["library-confirmer"],
+    )
+    label: str = Field(
+        description=(
+            "How the audit trail names the agent: its key and the definition version, for example "
+            "`library-confirmer v1`. For showing on screen and for nothing else; compare `key`."
+        ),
+        examples=["library-confirmer v1"],
+    )
+    version: int = Field(
+        description=(
+            "The version of the definition the platform runs for this agent now, counting from 1. The audit row of "
+            "the decision keeps the version the agent ran when it decided, which a later release may have moved on from."
+        ),
+        examples=[1],
+    )
 
 
 # ---------------------------------------------------------------------------------------
@@ -207,8 +244,9 @@ class ProposalRow(CamelSchema):
     origin: str = Field(
         description=(
             "Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI "
-            "output and stays labelled until a person confirms it by approving; `user` means a person "
-            "typed it. Neither tells a reader whether the facts are right."
+            "output and stays labelled: a person's approval confirms it, and an independent agent's "
+            "approval leaves the record machine-confirmed, naming both agents, never confirmed by a "
+            "person. `user` means a person typed it. Neither tells a reader whether the facts are right."
         )
     )
     agent_run_id: UUID | None = Field(default=None, description="The agent run that produced the proposal, as a UUID the run log addresses. Null for a person's proposal.")
@@ -216,9 +254,18 @@ class ProposalRow(CamelSchema):
     proposed_by: ProposalActorRef | None = Field(
         default=None,
         description=(
-            "The platform person who made the proposal. Null for an agent's proposal, and null for one "
-            "made inside a bank: a bank member's name and id never reach the console. A reader must not "
-            "read null as \"nobody\"."
+            "The platform person who made the proposal. Null for an agent's proposal, which "
+            "`proposedByAgent` names instead, and null for one made inside a bank: a bank member's name "
+            "and id never reach the console. A reader must not read null as \"nobody\"."
+        ),
+    )
+    proposed_by_agent: ProposalAgentRef | None = Field(
+        default=None,
+        description=(
+            "The platform agent that filed the proposal, by definition key, when the key it called with is "
+            "bound to one. Null for a person's proposal, for one made inside a bank, whichever of its people "
+            "or keys filed it, and for a key bound to no agent. Four eyes compares this with the reviewing "
+            "agent: no key of the same definition may decide it."
         ),
     )
     from_organisation: bool = Field(
@@ -232,8 +279,40 @@ class ProposalRow(CamelSchema):
         ),
         examples=[False],
     )
-    reviewed_by: ProposalActorRef | None = Field(default=None, description="The platform reviewer who decided it. Always a different person from the proposer, which the database enforces. Null while the proposal is open.")
-    reviewed_at: datetime | None = Field(default=None, description="When the decision was made: a UTC timestamp, date and time together. Null while the proposal is open.")
+    reviewed_by: ProposalActorRef | None = Field(
+        default=None,
+        description=(
+            "The platform person who decided it, never the person who proposed it, which the database "
+            "enforces. Null while the proposal is open, and null when an independent agent decided it, "
+            "which `reviewedByAgent` then names: a decided proposal names exactly one of the two."
+        ),
+    )
+    reviewed_by_agent: ProposalAgentRef | None = Field(
+        default=None,
+        description=(
+            "The independent agent that decided it, by definition key: never the proposing key and never "
+            "another key of the proposing agent's definition, which the database enforces. Null while the "
+            "proposal is open and when a person decided it. An agent's approval is machine-confirmed: the "
+            "record it applied reads as confirmed by that agent and never as verified by a person."
+        ),
+    )
+    corrected_by: ProposalActorRef | None = Field(
+        default=None,
+        description=(
+            "The person who corrected the payload on the way to approving it, which is always the person "
+            "who approved it. Null when nobody corrected it, and null when the approving agent did, which "
+            "`correctedByAgent` then names."
+        ),
+    )
+    corrected_by_agent: ProposalAgentRef | None = Field(
+        default=None,
+        description=(
+            "The independent agent that corrected the payload on the way to approving it, which is always "
+            "the agent that approved it. Null when nobody corrected it and when a person did. What was "
+            "proposed stays in `payload` beside the correction, so the audit trail keeps both."
+        ),
+    )
+    reviewed_at: datetime | None = Field(default=None, description="When the decision was made, by a person or by an agent: a UTC timestamp, date and time together. Null while the proposal is open.")
     rejection_code: str = Field(
         default="",
         description=(
@@ -243,7 +322,7 @@ class ProposalRow(CamelSchema):
             "`not_relevant`, `poor_wording` and `other`. Empty unless the status is `rejected`."
         ),
     )
-    review_note: str = Field(default="", description="The reviewer's own sentence to the proposer, on an approval or a rejection. A platform person's words; it is not part of the library record.")
+    review_note: str = Field(default="", description="The reviewer's own sentence to the proposer, on an approval or a rejection: a platform person's words, or the deciding agent's output when an agent decided, which is AI output like any other. It is not part of the library record.")
     applied_at: datetime | None = Field(default=None, description="When the change reached the library: a UTC timestamp, date and time together, which is the moment of approval. Null unless the status is `approved`.")
     created_at: datetime = Field(description="When the proposal was filed: a UTC timestamp, date and time together. Not the legal date of the change, which is `effectiveFrom`.")
 
@@ -281,7 +360,12 @@ class ProposalRow(CamelSchema):
                     "agentRunId": "5a2b9c7d-1e3f-4a8b-9c0d-2e4f6a8b0c12",
                     "model": "agent pipeline 0.4",
                     "proposedBy": None,
+                    "proposedByAgent": {"key": "watch-sweeper", "label": "watch-sweeper v1", "version": 1},
+                    "fromOrganisation": False,
                     "reviewedBy": None,
+                    "reviewedByAgent": None,
+                    "correctedBy": None,
+                    "correctedByAgent": None,
                     "reviewedAt": None,
                     "rejectionCode": "",
                     "reviewNote": "",
@@ -407,11 +491,12 @@ class ProposalQueueRow(ProposalRow):
     is_mine: bool = Field(
         default=False,
         description=(
-            "True when the person reading this row is the one who filed the proposal, worked out "
-            "by the server from the signed-in session. Four eyes means they may not decide it: "
-            "their own approval answers 409 `four_eyes_violation`, so a screen hides the control "
-            "rather than offering a refusal. Always false for a proposal filed by an agent or "
-            "inside a bank, neither of which is a platform person."
+            "True when the reader filed this proposal themselves, worked out by the server from who "
+            "called and never sent by the client: for a person, the person who filed it; for an "
+            "agent's key, the same key or any key of the same agent definition. Four eyes means the "
+            "reader may not decide it, and their approval answers 409 `four_eyes_violation`, so a "
+            "screen hides the control rather than offering a refusal. Always false for a proposal "
+            "made inside a bank, which no platform reader filed, and exactly the rows `notMine` drops."
         ),
         examples=[False],
     )
@@ -419,8 +504,14 @@ class ProposalQueueRow(ProposalRow):
 
 class ProposalDetail(ProposalQueueRow):
     """One proposal opened for a decision (PRO-02): everything the row carries, plus what the
-    library says today, what the proposal would make it say, and where each changed value came
-    from. Read it before approving; approving is the only door into the shared library."""
+    library says against what the proposal would make it say, and where each changed value
+    came from. Read it before approving; approving is the only door into the shared library.
+
+    What it is compared with depends on where it stands. A proposal still to be decided is
+    read against the version in force today, the wording it would replace. An approved one is
+    read against the version before the one it wrote, and its scope against the scope the
+    approval found, so the comparison a reviewer made stays the same whatever the calendar
+    or a later version says."""
 
     language: str = Field(
         default="",
@@ -435,9 +526,12 @@ class ProposalDetail(ProposalQueueRow):
     current_summary: LocalizedText | None = Field(
         default=None,
         description=(
-            "What the library says today, in the language above: the summary of the version in "
-            "force now. Null when the record has no text in that language, and null on a proposal "
-            "that changes no record text."
+            "The wording the proposal replaces, in the language above. For a proposal not yet "
+            "approved it is the summary of the version in force today, or of the latest version "
+            "when every version starts later. For an approved one it is the summary of the version "
+            "before the one the approval wrote, so it does not move when that version comes into "
+            "force or a later one arrives. Null when that version has no text in this language, "
+            "when there is no earlier version, and on a proposal that changes no record text."
         ),
     )
     proposed_text: str = Field(
@@ -446,7 +540,8 @@ class ProposalDetail(ProposalQueueRow):
             "The wording that would replace it, which is the reviewer's own correction where one "
             "has been made and the proposal's text otherwise. Empty on a proposal that changes no "
             "record text. It is a request, not the library: until the proposal is approved the "
-            "library still says what `currentSummary` says."
+            "library still says what `currentSummary` says, and once it is, `appliedVersion` is "
+            "where the library carries it."
         ),
     )
     diff: list[DiffSegment] = Field(
@@ -469,10 +564,13 @@ class ProposalDetail(ProposalQueueRow):
     scope_before: list[str] = Field(
         default_factory=list,
         description=(
-            "The record's scope facets as the library holds them now, each written "
-            "`dimension:key`, for example `client_category:retail`. Both parts are keys of rows an "
-            "admin manages rather than fixed values, so read the term lists for the labels. Empty "
-            "when the record carries no facets, and empty on a proposal that changes no record."
+            "The record's scope facets before this proposal, each written `dimension:key`, for "
+            "example `client_category:retail`. For a proposal not yet approved it is the scope the "
+            "library holds now. For an approved one that replaced the scope it is the scope the "
+            "approval found, as the audit row of the approval recorded it; one that left the scope "
+            "alone shows the scope the record carries now. Both parts are keys of rows an admin "
+            "manages rather than fixed values, so read the term lists for the labels. Empty when the "
+            "record carries no facets, and empty on a proposal that changes no record."
         ),
         examples=[["service_type:advice", "client_category:retail"]],
     )
@@ -533,7 +631,7 @@ class TenantProposalRow(CamelSchema):
     )
     status: str = Field(
         description=(
-            "Where the request stands. A fixed kind: `open` is waiting for a library editor, "
+            "Where the request stands. A fixed kind: `open` is waiting for a platform reviewer, "
             "`approved` means every bank's library now carries it, `rejected` means it was refused "
             "with a reason and changed nothing, and `superseded` means a later proposal overtook it."
         )
@@ -600,10 +698,77 @@ class TenantProposalQuery(CamelSchema):
 
 
 class ProposalPage(CamelSchema):
-    """A page of the console review queue."""
+    """A page of the console review queue, oldest first, with the count of every proposal
+    matching the filters."""
 
-    items: list[ProposalQueueRow] = Field(description="The proposals matching the filters, oldest first, so the queue reads in the order they arrived.")
-    total: int = Field(description="How many proposals match the filters in all, which is what a tab's count shows.", examples=[4])
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "items": [
+                        {
+                            "id": "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21",
+                            "kind": "new_obligation_version",
+                            "status": "approved",
+                            "title": "Add version 2 of the research payment obligation, in force 1 October 2026",
+                            "targetType": "obligation",
+                            "targetId": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+                            "changeId": "b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33",
+                            "payload": {
+                                "summaries": {
+                                    "sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel eller från ett analyskonto.",
+                                },
+                                "originalLanguage": "sv",
+                                "isMachine": False,
+                                "effectiveFrom": "2026-10-01",
+                                "effectiveFromPrecision": "day",
+                            },
+                            "fieldSources": {"summaries.sv": "https://www.fi.se/", "effectiveFrom": "https://www.fi.se/"},
+                            "scopeSuggestion": [],
+                            "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
+                            "sourceUrl": "https://www.fi.se/",
+                            "effectiveFrom": "2026-10-01",
+                            "origin": "agent",
+                            "agentRunId": "5a2b9c7d-1e3f-4a8b-9c0d-2e4f6a8b0c12",
+                            "model": "agent pipeline 0.4",
+                            "proposedBy": None,
+                            "proposedByAgent": {"key": "watch-sweeper", "label": "watch-sweeper v1", "version": 1},
+                            "fromOrganisation": False,
+                            "reviewedBy": None,
+                            "reviewedByAgent": {"key": "library-confirmer", "label": "library-confirmer v1", "version": 1},
+                            "correctedBy": None,
+                            "correctedByAgent": None,
+                            "reviewedAt": "2026-09-16T09:40:00Z",
+                            "rejectionCode": "",
+                            "reviewNote": "The summary matches the board decision and the date it names.",
+                            "appliedAt": "2026-09-16T09:40:00Z",
+                            "createdAt": "2026-09-16T07:12:00Z",
+                            "target": {
+                                "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+                                "title": "Pay for third-party research only under the permitted models",
+                                "referenceLabel": "Third-party payments",
+                                "instrumentShortName": "FFFS 2017:2",
+                            },
+                            "isMine": False,
+                        }
+                    ],
+                    "total": 1,
+                }
+            ]
+        }
+    )
+
+    items: list[ProposalQueueRow] = Field(
+        description=(
+            f"This page of proposals, oldest first, so the queue reads in the order they arrived and "
+            f"paging is repeatable: {settings.API_PAGE_SIZE_DEFAULT} rows by default and "
+            f"{settings.API_PAGE_SIZE_MAX} at most. Nothing matching the filters is an empty list, never a 404."
+        )
+    )
+    total: int = Field(
+        description="How many proposals match the filters in all, across every page, which is what a tab's count shows. 0 when nothing matches.",
+        examples=[4],
+    )
 
 
 # ---------------------------------------------------------------------------------------
@@ -947,8 +1112,10 @@ class ProposalQuery(CamelSchema):
     not_mine: bool = Field(
         default=False,
         description=(
-            "True drops the proposals this reviewer filed themselves, which are exactly the ones "
-            "four eyes will not let them decide, so the queue shows only work they can actually do. "
+            "True drops the proposals the reader filed themselves, which are exactly the ones four "
+            "eyes will not let them decide and the ones `isMine` marks, so the queue shows only work "
+            "they can actually do: for a person, their own; for an agent's key, the key's own and "
+            "those of every other key of the same agent definition. `total` then counts what is left. "
             "False, the default, returns theirs alongside the rest."
         ),
         examples=[True],
