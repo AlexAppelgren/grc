@@ -12,12 +12,10 @@ reads as a person's check ("AI output is labelled until a person confirms it"; D
 reads as verified by a person"). An approval that writes no wording leaves the row's stamp
 exactly as it was.
 
-An agent still cannot reach this through `approve()`: D-79's refusal (409
-`person_review_required`, apps/proposals/tests_decide.py) stands until Alex confirms the
-provenance design lifts it. The agent's half is therefore driven through `apply.apply()`
-with the `Reviewer` the API's gate would build for a reviewing key, which is exactly what
-`approve()` hands it; the person's half runs through the real routes. The reads are the
-routes every surface calls.
+Both halves run through the real routes, since Alex lifted D-79's interim refusal on
+2026-09-23: an independent agent's key approves through the route a person calls, with the
+model call behind its decision in an open run of its own (D-80). The reads are the routes
+every surface calls.
 """
 
 from __future__ import annotations
@@ -30,7 +28,7 @@ from django.test.utils import CaptureQueriesContext
 
 from apps.agents import testing as agents_testing
 from apps.library.seeds import seed_jurisdictions, seed_languages
-from apps.proposals import apply, logic
+from apps.proposals import logic
 from apps.proposals.models import Proposal
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.audit import Actor, ActorType
@@ -74,16 +72,14 @@ class ListAndTermProvenance(ScenarioTestCase):
         return proposal
 
     def _agent_confirms(self, proposal: Proposal) -> None:
-        """What `approve()` hands `apply()` for a reviewing key bound to another definition
-        (proposals/api.require_reviewer): no person and no step-up."""
-        agent = self.confirming.agent
-        reviewer = logic.Reviewer(
-            actor=Actor(kind=ActorType.AGENT, id=agent.id, label=f"{agent.key} v{agent.current_version}"),
-            api_key_id=self.confirming.id,
-            agent_id=agent.id,
-            api_key_prefix=self.confirming.row.key_prefix,
+        """A reviewing key bound to another definition approves through the route a person
+        calls (proposals/api.approveProposal): no person and no step-up."""
+        approved = self.client.post(
+            f"{V1}/proposals/{proposal.id}/approve", data=agents_testing.decision(self.confirming),
+            content_type="application/json", HTTP_X_API_KEY=self.confirming.plain_key,
         )
-        apply.apply(proposal, actor=reviewer.actor, reviewer=reviewer, step_up=None)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        tenancy.clear_tenant()
 
     def _agents_apply(self, kind: str, payload: dict[str, Any]) -> Proposal:
         proposal = self._agent_proposes(kind, payload)

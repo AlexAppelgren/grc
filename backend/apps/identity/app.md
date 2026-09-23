@@ -411,6 +411,7 @@ Then the answer is 422 "platform_account" with no passkey, no membership and no 
 Given a platform key bound to an agent definition and holding "proposals:review"
 When it reads the proposal queue and approves, corrects or rejects a proposal it did not file
 Then each call succeeds and the change reaches the library only through apply
+And a library list value it approves reaches the library the same way, stamped as confirmed by that agent
 When it writes to an instrument, provision, obligation or library vocabulary route
 Then every such route answers 403 or does not exist, as ID-S21 already proves for every scope
 When a key without "proposals:review" calls the same review routes
