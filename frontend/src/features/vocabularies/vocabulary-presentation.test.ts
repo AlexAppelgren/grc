@@ -168,7 +168,7 @@ describe('keyFromLabel and changeSummary', () => {
   });
 
   it('describes a proposal that came back from a library-list write', () => {
-    expect(changeSummary({ title: 'Add "Client money"' }, t)).toBe('Add "Client money" is waiting for a library editor.');
+    expect(changeSummary({ title: 'Add "Client money"' }, t)).toBe('Add "Client money" is waiting for review.');
   });
 });
 

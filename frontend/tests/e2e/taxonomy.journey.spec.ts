@@ -249,30 +249,33 @@ test.describe('taxonomy journeys', () => {
   });
 
   test("VOC-S11: A library vocabulary change goes through the proposal queue", async ({ page, apiGuard }) => {
-    // pending: VOC-S11 (VOC-07) -> built in chunk 2, the tenant side of the
-    // door: a write to a library list answers with a proposal, shows as
-    // waiting and does not change the list. The second editor's approval is
-    // the platform console's (console chunk). Proposing needs proposals.create,
-    // which the seeded compliance officer holds and the admin does not.
+    // VOC-S11 (VOC-07, PRO-01): a write to a library list answers with a
+    // proposal, shows as waiting in this bank's own pending list and does not
+    // change the list. The second reviewer's approval is the platform
+    // console's. Proposing needs proposals.create, which the seeded
+    // compliance officer holds and the admin does not.
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.complianceOfficer);
     await page.goto('/admin/vocabularies');
     await page.getByRole('tab', { name: 'Shared library lists' }).click();
     await page.locator(`[data-vocabulary-list="${FLAGS}"]`).click();
-    await expect(page.getByText('These lists are shared by every organisation. Suggest a change and a library editor reviews it.')).toBeVisible();
+    await expect(page.getByText('These lists are shared by every organisation. Suggest a change and it is reviewed before anyone can use it.')).toBeVisible();
 
     await page.getByRole('button', { name: 'Suggest a change' }).click();
     const dialog = page.getByRole('dialog', { name: 'Add a value' });
     await dialog.getByLabel('Label', { exact: true }).fill('Outsourcing');
     await dialog.getByRole('button', { name: 'Send for review' }).click();
-    await expect(dialog.getByText(/is waiting for a library editor\.$/)).toBeVisible();
+    await expect(dialog.getByText(/is waiting for review\.$/)).toBeVisible();
     await dialog.getByRole('button', { name: 'Done' }).click();
 
-    // Not in the list until a library editor approves it. The proposal is
-    // confirmed where it was sent; a list of what this tenant proposed comes
-    // with chunk 4's tenant-scoped read.
+    // Waiting in this bank's own pending list, matched by its own label since
+    // other runs may leave proposals there, and not a row of the list until
+    // it is approved.
+    const pending = page.locator(`[data-pending-proposals="${FLAGS}"]`);
+    const waiting = pending.locator('[data-pending-proposal]').filter({ hasText: /\bOutsourcing\b/ }).first();
+    await expect(waiting).toBeVisible();
+    await expect(waiting.getByText('Waiting for review', { exact: true })).toBeVisible();
     await expect(valueRow(page, 'Outsourcing')).toHaveCount(0);
-    await expect(page.locator('[data-pending-proposals]')).toHaveCount(0);
   });
 
   test.fixme("VOC-S12: Bulk tagging from a list previews and writes one audit entry", async () => {
@@ -306,7 +309,7 @@ test.describe('taxonomy journeys', () => {
     await dialog.getByLabel('Usage note').fill('The change concerns how client money is held and segregated.');
     await expect(dialog.locator('[data-swatch-pair] [data-pill="brand"]')).toHaveCount(2);
     await dialog.getByRole('button', { name: 'Send for review' }).click();
-    await expect(dialog.getByText(/is waiting for a library editor\.$/)).toBeVisible();
+    await expect(dialog.getByText(/is waiting for review\.$/)).toBeVisible();
     await dialog.getByRole('button', { name: 'Done' }).click();
 
     // Renamed: a system flag can be relabelled, and on a library list that is a proposal too.
@@ -316,7 +319,7 @@ test.describe('taxonomy journeys', () => {
     const form = page.locator(`[data-rename-form="${key}"]`);
     await form.getByLabel('Label in Swedish').fill('Nytt namn för granskning');
     await form.getByRole('button', { name: 'Send for review' }).click();
-    await expect(page.locator('[data-rename-proposed]').getByText(/is waiting for a library editor\.$/)).toBeVisible();
+    await expect(page.locator('[data-rename-proposed]').getByText(/is waiting for review\.$/)).toBeVisible();
 
     // The watch steps (c5-e2e-vocab-footprint-feed): "Client money" approved,
     // put on a change through the console, and it renders as a brand pill on
@@ -378,7 +381,7 @@ test.describe('taxonomy journeys', () => {
     const renameForm = editor2.locator('[data-rename-form="client_money"]');
     await renameForm.getByLabel('New label', { exact: true }).fill('Segregated client money');
     await renameForm.getByRole('button', { name: 'Send for review' }).click();
-    await expect(editor2.locator('[data-rename-proposed]').getByText(/is waiting for a library editor\.$/)).toBeVisible();
+    await expect(editor2.locator('[data-rename-proposed]').getByText(/is waiting for review\.$/)).toBeVisible();
     await approveQueueProposal(editor, /Change client_money on flag/);
 
     await page.goto(changeUrl);
@@ -396,7 +399,7 @@ test.describe('taxonomy journeys', () => {
     await mergeDialog.locator('#merge-into').selectOption({ label: 'Advice perimeter' });
     await expect(mergeDialog.getByText('What happens')).toBeVisible();
     await mergeDialog.getByRole('button', { name: 'Merge 1 record', exact: true }).click();
-    await expect(mergeDialog.getByText(/is waiting for a library editor\.$/)).toBeVisible();
+    await expect(mergeDialog.getByText(/is waiting for review\.$/)).toBeVisible();
     await mergeDialog.getByRole('button', { name: 'Done' }).click();
     await approveQueueProposal(editor, /Merge client_money into advice_perimeter on flag/);
 
