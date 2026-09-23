@@ -15,6 +15,16 @@ import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
 // payment rules change: a run after that day must pass unchanged.
 const AS_OF = '2026-09-16';
 
+// The day the research payment rules change. The provision tree opens on the
+// version in force today where the seeded bank is (Europe/Stockholm), so a
+// journey works out which version that is from the same tenant-local date
+// rather than assuming one.
+const AMENDMENT_DAY = '2026-10-01';
+
+function tenantToday(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+
 // Library titles are rows, not catalog copy, so a record is found by its
 // stable key and never by a quoted literal.
 const RESEARCH = 'obl-research-payments';
@@ -98,18 +108,25 @@ test.describe('library journeys', () => {
     await signInAs(page, LOGINS.complianceOfficer);
     await openInstrument(page, 'fffs-2017-2');
 
-    // 9 kap. 6 § carries a chip for each version. The one pressed on arrival is
-    // the version in force today, which changes on 1 October 2026 when the
-    // amendment takes effect, so the journey chooses the earlier version by
-    // its own chip before it asserts anything about it.
+    // 9 kap. 6 § carries a chip for each version, and opens on the current
+    // text: the version in force today where the bank is, which changes on
+    // 1 October 2026 when the amendment takes effect. The journey works out
+    // which chip that is from the same date, then chooses each version by its
+    // own chip.
     const section = page.locator('[data-provision="fffs-2017-2/9-6"]');
     await expect(section).toBeVisible();
-    await section.getByRole('button', { name: 'In force 3 Jan 2018 to 30 Sept 2026' }).click();
-    await expect(section.getByRole('button', { name: 'In force 3 Jan 2018 to 30 Sept 2026' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(section.getByRole('button', { name: 'In force from 1 Oct 2026' })).toHaveAttribute('aria-pressed', 'false');
+    const before = section.getByRole('button', { name: 'In force 3 Jan 2018 to 30 Sept 2026' });
+    const amended = section.getByRole('button', { name: 'In force from 1 Oct 2026' });
+    const amendedToday = tenantToday() >= AMENDMENT_DAY;
+    await expect(before).toHaveAttribute('aria-pressed', String(!amendedToday));
+    await expect(amended).toHaveAttribute('aria-pressed', String(amendedToday));
 
-    await section.getByRole('button', { name: 'In force from 1 Oct 2026' }).click();
-    await expect(section.getByRole('button', { name: 'In force from 1 Oct 2026' })).toHaveAttribute('aria-pressed', 'true');
+    await before.click();
+    await expect(before).toHaveAttribute('aria-pressed', 'true');
+    await expect(amended).toHaveAttribute('aria-pressed', 'false');
+
+    await amended.click();
+    await expect(amended).toHaveAttribute('aria-pressed', 'true');
     // The transitional note is the fixture's own text (T8), not app copy.
     await expect(section).toContainText('The annual assessment is first due for research received after 1 October 2026.');
 
