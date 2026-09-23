@@ -25,7 +25,6 @@
   "console.changeFacts.notFoundBody": "Det finns inget på den här adressen i konsolen.",
   "console.changeFacts.suggestedMarker": "Föreslagen av agenten",
   "console.changeFacts.suggestedWithConfidence": "Föreslagen av agenten, tillförlitlighet {confidence}",
-  "console.changeFacts.factConfirmed": "Bekräftad för biblioteket",
   "console.changeFacts.firstSeen": "Först sedd {date}",
   "console.changeFacts.stableKey": "Nyckel {key}",
   "console.changeFacts.range": "{from} till {to} av {total}",
@@ -48,6 +47,12 @@
   "console.changeFacts.typeHint": "Endast termerna på listan Ändringstyp. Saknas någon? Föreslå den under Vokabulärer, så ändras listan för alla när en andra redaktör godkänner den.",
   "console.changeFacts.flagsHint": "Hela uppsättningen för den här ändringen. Töm den och ändringen bär ingen flagga.",
   "console.changeFacts.unknownKey": "Den termen finns inte kvar på listan. Välj en av termerna här och spara igen.",
-  "console.changeFacts.confirmHeldTitle": "Bekräftelse är inte öppen ännu",
-  "console.changeFacts.confirmHeldBody": "Rätta vad du vill på den här sidan, det sparas direkt. Att markera ett faktum som kontrollerat för biblioteket är ett separat beslut som ännu avgörs, så ingenting här säger att en människa har stått bakom det."
+  "console.changeFacts.suggestedByAgent": "Föreslagen av {agent}",
+  "console.changeFacts.confirmedByPerson": "Bekräftad av en person för biblioteket",
+  "console.changeFacts.confirm": "Bekräfta",
+  "console.changeFacts.confirmRest": "Bekräfta resten",
+  "console.changeFacts.confirmLink": "Bekräfta för biblioteket",
+  "console.changeFacts.confirmHint": "När du bekräftar står du bakom de här uppgifterna, så som de visas, för alla organisationer. Du ombeds använda din passkey, och en uppgift du själv har lagt in bekräftas av någon annan.",
+  "console.changeFacts.ownSuggestion": "Du lade in det här själv, så någon annan bekräftar det.",
+  "console.changeFacts.changedMeanwhile": "Ändringen uppdaterades medan du läste den. Kontrollera uppgifterna igen och bekräfta det du ser."
 }

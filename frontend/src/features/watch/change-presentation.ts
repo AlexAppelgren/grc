@@ -3,7 +3,7 @@ import { slotTone, urgencyTone, type UrgencyKind } from '@/features/shared/tone-
 import type { MessageKey, Translate } from '@/shared/i18n';
 import { formatPartialDate, type DatePrecision, type FormatContext } from '@/shared/utils/format';
 
-import type { ChangeRow, LibraryRef } from './api';
+import type { AgentRef, ChangeRow, LibraryRef } from './api';
 
 // Change row and header (design/system/pills-and-labels.md, slot order):
 // change type, urgency, flags, the "Suggested by the agent" marker, library
@@ -126,6 +126,34 @@ export function isSuggested(row: ChangeRow): boolean {
 /** True when an independent agent confirmed any classification on the record (D-74). */
 export function isMachineConfirmed(row: ChangeRow): boolean {
   return [row.changeType, ...row.flags, ...row.terms].some((fact) => fact.confirmedOrigin === 'agent');
+}
+
+/** Who suggested a curated fact and who confirmed it, as every read of one answers it (D-74). */
+export interface FactProvenance {
+  confirmedOrigin?: 'agent' | 'user' | null;
+  suggestedByAgent?: AgentRef | null;
+  confirmedByAgent?: AgentRef | null;
+}
+
+/**
+ * "Machine-confirmed: suggested by watch-sweeper, confirmed by
+ * library-confirmer" for the facts an independent agent confirmed, each pair
+ * of agents once; null when none did. A person's confirmation is never read
+ * here, so a machine's can never borrow its words (D-74). The agents are
+ * named by their definition keys, which never change.
+ */
+export function machineConfirmedBy(facts: readonly FactProvenance[], t: Translate): string | null {
+  const sentences = new Set<string>();
+  for (const fact of facts) {
+    if (fact.confirmedOrigin !== 'agent' || !fact.confirmedByAgent) continue;
+    const confirmer = fact.confirmedByAgent.key;
+    sentences.add(
+      fact.suggestedByAgent
+        ? t('watch.fact.machineConfirmed', { suggester: fact.suggestedByAgent.key, confirmer })
+        : t('watch.fact.machineConfirmedBy', { confirmer }),
+    );
+  }
+  return sentences.size === 0 ? null : [...sentences].join(' · ');
 }
 
 export type CaseCategory = NonNullable<ChangeRow['case']>['category'];

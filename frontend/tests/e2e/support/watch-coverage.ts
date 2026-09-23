@@ -14,6 +14,7 @@ export const CHUNK5_WATCH = {
   timelineChange: 'chg-e2e-c5-timeline',
   obligationsChange: 'chg-e2e-c5-obligations',
   paymentsChange: 'chg-e2e-c5-payments',
+  curationChange: 'chg-e2e-c5-curation',
   healthySource: 'EUR-Lex legal database (E2E)',
   failingSource: 'Open web sweep, payments (E2E)',
   failingSourceError: '502 from the publisher after three retries',

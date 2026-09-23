@@ -18,6 +18,8 @@ export type SourceCoverage = Schemas['WatchSourceCoverage'];
 /** `{ref: {key, kind, label}, confidence, suggested}` — the fact is under `ref`. */
 export type ChangeFact = Schemas['WatchFact'];
 export type LibraryRef = Schemas['LibraryRef'];
+/** A platform agent named by its definition key: who suggested or confirmed a curated fact (D-74). */
+export type AgentRef = Schemas['AgentRef'];
 /** This bank's decision about one suggested obligation link, as the change read carries it. */
 export type CaseObligationDecision = Schemas['WatchCaseObligationDecision'];
 export type CaseSoWhat = Schemas['CasesSoWhat'];

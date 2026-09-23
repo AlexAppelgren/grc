@@ -19,10 +19,21 @@ import {
   type ConsoleChangeRow,
   type ObligationLink,
 } from '@/features/console-watch/change-facts';
-import { linksWithout, useConsoleChange, useCorrectChangeFacts, useSetObligationLinks } from '@/features/console-watch/change-facts-detail';
+import {
+  confirmationOf,
+  linksWithout,
+  useConfirmCuration,
+  useConsoleChange,
+  useCorrectChangeFacts,
+  useScopeTermIds,
+  useSetObligationLinks,
+  type ConfirmPart,
+} from '@/features/console-watch/change-facts-detail';
 import { useFormatContext } from '@/features/identity/hooks';
+import { machineConfirmedBy } from '@/features/watch/change-presentation';
 import { slotTone } from '@/features/shared/tone-by-kind';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
+import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
 // One change in the console (design/screens/console-change-facts.html,
@@ -32,12 +43,21 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 // footprint verdict and its "So what?" are its own and are neither read nor
 // shown here.
 //
-// There is no confirm control. Who settles a change's facts, now that bleqq
-// staffs no editorial function, is not decided, and a change's own type has no
-// column to record a confirmation against. The page says so rather than
-// offering a control that would refuse.
+// Confirming is D-74's: an independent agent confirms most facts, and a
+// person holding proposals.review may confirm one instead, with a passkey the
+// route asks for. A fact a machine confirmed names both agents and never
+// reads as a person's; a person's reads confirmed by a person.
 
 const UNKNOWN_KEY = 'unknown_key';
+
+/** A refusal of a confirmation, read from its code and never from the sentence. */
+function confirmCodes(t: Translate): Record<string, string> {
+  return {
+    own_suggestion: t('console.changeFacts.ownSuggestion'),
+    validation_error: t('console.changeFacts.changedMeanwhile'),
+    step_up_required: t('problem.stepUpCancelled'),
+  };
+}
 
 function Fact({ name, pills, provenance, action }: { name: string; pills: readonly { key: string; label: string; tone: (typeof slotTone)[keyof typeof slotTone]; order: number }[]; provenance: string; action?: React.ReactNode }) {
   return (
@@ -117,14 +137,18 @@ function CorrectFlags({ change, onDone }: { change: ConsoleChangeRow; onDone: ()
 function LinkRow({ change, link }: { change: ConsoleChangeRow; link: ObligationLink }) {
   const t = useT();
   const set = useSetObligationLinks(change.id);
+  const confirm = useConfirmCuration(change.id);
+  const pending = set.isPending || confirm.isPending;
   return (
     <Row data-obligation-id={link.obligationId}>
       <PillRow
         pills={[
           { key: `instrument:${link.obligationId}`, label: link.instrumentShortName, tone: slotTone.instrument, order: 10 },
-          link.confirmed
-            ? { key: 'confirmed', label: t('console.changeFacts.confirmed'), tone: slotTone.confirmed, order: 20 }
-            : { key: 'suggested', label: t('console.changeFacts.suggestedMarker'), tone: slotTone.suggested, order: 20 },
+          !link.confirmed
+            ? { key: 'suggested', label: t('console.changeFacts.suggestedMarker'), tone: slotTone.suggested, order: 20 }
+            : link.confirmedOrigin === 'user'
+              ? { key: 'confirmed', label: t('console.changeFacts.confirmed'), tone: slotTone.confirmed, order: 20 }
+              : { key: 'machine-confirmed', label: t('watch.row.machineConfirmed'), tone: slotTone.machineConfirmed, order: 20 },
         ]}
       />
       <h3 className="mt-1.5 mb-1 font-semibold">{link.title}</h3>
@@ -133,10 +157,16 @@ function LinkRow({ change, link }: { change: ConsoleChangeRow; link: ObligationL
         <span>{linkProvenance(link, t)}</span>
       </Meta>
       {set.isError ? <ProblemAlert error={set.error} /> : null}
+      {confirm.isError ? <ProblemAlert error={confirm.error} codes={confirmCodes(t)} /> : null}
       <ButtonBar>
-        <Button variant="danger" size="small" disabled={set.isPending} onClick={() => set.mutate(linksWithout(change.obligations, link.obligationId))}>
+        <Button variant="danger" size="small" disabled={pending} onClick={() => set.mutate(linksWithout(change.obligations, link.obligationId))}>
           {t('console.changeFacts.removeLink')}
         </Button>
+        {link.confirmed ? null : (
+          <Button size="small" disabled={pending} onClick={() => confirm.mutate({ flags: [], termIds: [], obligationIds: [link.obligationId] })}>
+            {t('console.changeFacts.confirmLink')}
+          </Button>
+        )}
       </ButtonBar>
     </Row>
   );
@@ -148,17 +178,39 @@ function Detail({ change }: { change: ConsoleChangeRow }) {
   const t = useT();
   const ctx = useFormatContext();
   const [correcting, setCorrecting] = useState<Correcting>(null);
-  const correctButton = (which: Exclude<Correcting, null>) => (
-    <Button variant="outline" size="small" onClick={() => setCorrecting(which)}>
-      {t('console.changeFacts.correct')}
-    </Button>
+  const confirm = useConfirmCuration(change.id);
+  const termIdOf = useScopeTermIds(change.terms.some((term) => term.suggested));
+  const confirmButton = (part: ConfirmPart) => {
+    const body = confirmationOf(change, part, termIdOf);
+    const names = body.changeType !== undefined || [...(body.flags ?? []), ...(body.termIds ?? []), ...(body.obligationIds ?? [])].length > 0;
+    return names ? (
+      <Button size={part === 'rest' ? 'default' : 'small'} disabled={confirm.isPending} onClick={() => confirm.mutate(body)}>
+        {t(part === 'rest' ? 'console.changeFacts.confirmRest' : 'console.changeFacts.confirm')}
+      </Button>
+    ) : null;
+  };
+  const actions = (which: Exclude<Correcting, null> | null, part: ConfirmPart) => (
+    <ButtonBar className="mt-0">
+      {which === null ? null : (
+        <Button variant="outline" size="small" onClick={() => setCorrecting(which)}>
+          {t('console.changeFacts.correct')}
+        </Button>
+      )}
+      {confirmButton(part)}
+    </ButtonBar>
   );
   const pillsOf = (facts: readonly ChangeFact[], tone: (typeof slotTone)[keyof typeof slotTone]) =>
     facts.map((fact, i) => ({ key: fact.ref.key, label: fact.ref.label, tone, order: i }));
-  // One sentence for a set: the least confident member is what a reader needs
-  // to know about the set as a whole.
-  const setProvenance = (facts: readonly ChangeFact[], empty: string) =>
-    facts.length === 0 ? empty : factProvenance([...facts].sort((a, b) => (a.confidence ?? 1) - (b.confidence ?? 1))[0]!, t);
+  // One sentence for a set: the least confident suggestion is what a reader
+  // needs to know about the set as a whole. Once none is left, any machine's
+  // confirmation in it is named, so a set a person only partly confirmed never
+  // reads as a person's (D-74).
+  const setProvenance = (facts: readonly ChangeFact[], empty: string) => {
+    const suggested = facts.filter((fact) => fact.suggested).sort((a, b) => (a.confidence ?? 1) - (b.confidence ?? 1));
+    if (suggested[0] !== undefined) return factProvenance(suggested[0], t);
+    return facts[0] === undefined ? empty : (machineConfirmedBy(facts, t) ?? factProvenance(facts[0], t));
+  };
+  const rest = confirmButton('rest');
 
   return (
     <>
@@ -171,29 +223,33 @@ function Detail({ change }: { change: ConsoleChangeRow }) {
         <span className="font-mono">{t('console.changeFacts.stableKey', { key: change.stableKey })}</span>
       </Meta>
       <Notice>{t('console.changeFacts.explain')}</Notice>
-      <Notice tone="warn" data-confirm-held="">
-        <p className="font-medium">{t('console.changeFacts.confirmHeldTitle')}</p>
-        <p>{t('console.changeFacts.confirmHeldBody')}</p>
-      </Notice>
 
       <Panel title={t('console.changeFacts.factsTitle')}>
         <Fact
           name={t('console.changeFacts.fact.type')}
           pills={[{ key: change.changeType.ref.key, label: change.changeType.ref.label, tone: slotTone.changeType, order: 0 }]}
           provenance={factProvenance(change.changeType, t)}
-          action={correctButton('type')}
+          action={actions('type', 'type')}
         />
         <Fact
           name={t('console.changeFacts.fact.flags')}
           pills={pillsOf(change.flags, slotTone.flag)}
           provenance={setProvenance(change.flags, t('console.changeFacts.noFlags'))}
-          action={correctButton('flags')}
+          action={actions('flags', 'flags')}
         />
         <Fact
           name={t('console.changeFacts.fact.scope')}
           pills={pillsOf(change.terms, slotTone.scopeTerm)}
           provenance={setProvenance(change.terms, t('console.changeFacts.noScope'))}
+          action={actions(null, 'scope')}
         />
+        {confirm.isError ? <ProblemAlert error={confirm.error} codes={confirmCodes(t)} /> : null}
+        {rest === null ? null : (
+          <>
+            <p className="mt-3 text-meta text-muted">{t('console.changeFacts.confirmHint')}</p>
+            <ButtonBar>{rest}</ButtonBar>
+          </>
+        )}
       </Panel>
       {correcting === 'type' ? <CorrectType change={change} onDone={() => setCorrecting(null)} /> : null}
       {correcting === 'flags' ? <CorrectFlags change={change} onDone={() => setCorrecting(null)} /> : null}

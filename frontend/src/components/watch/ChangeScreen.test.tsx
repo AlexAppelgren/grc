@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -307,6 +307,14 @@ describe('the obligations affected', () => {
     expect(presentObligationLink({ ...libraryConfirmed, confirmedOrigin: undefined }, undefined, t, ctx)[1]!.label).toBe('Machine-confirmed');
   });
 
+  it('a link a machine confirmed names the agent that suggested it and the one that confirmed it', () => {
+    const byAnAgent = { ...libraryConfirmed, confirmedOrigin: 'agent' as const, suggestedByAgent: { id: 'a1', key: 'watch-sweeper' }, confirmedByAgent: { id: 'a2', key: 'library-confirmer' } };
+    renderLinks({ ...change, obligations: [byAnAgent] });
+    const row = document.querySelector('[data-obligation="o-2"]') as HTMLElement;
+    expect(within(row).getByText('Machine-confirmed')).toHaveAttribute('data-pill', 'information');
+    expect(within(row).getByText('Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer')).toBeInTheDocument();
+  });
+
   it('a suggestion nobody scored still says who put it forward', () => {
     expect(presentObligationLink({ ...suggested, confidence: null }, undefined, t, ctx)[1]!.label).toBe('Suggested by the agent');
   });
@@ -406,6 +414,23 @@ describe('the change screen', () => {
     expect(within(classification).getAllByText('suggested')).toHaveLength(2);
     expect(within(classification).queryByRole('button')).not.toBeInTheDocument();
     expect(within(classification).getByText('Securities')).toHaveAttribute('data-pill', 'brand');
+  });
+
+  it('names both agents once a machine confirmed a classification, and says nothing of a person’s confirmation', async () => {
+    const sweeper = { id: 'a1', key: 'watch-sweeper' };
+    const confirmer = { id: 'a2', key: 'library-confirmer' };
+    const byAgent = { ...change.terms[0]!, suggested: false, confirmedOrigin: 'agent' as const, suggestedByAgent: sweeper, confirmedByAgent: confirmer };
+    serve({ status: 200, data: { ...change, terms: [byAgent] } });
+    renderScreen();
+
+    const classification = (await screen.findByRole('heading', { level: 2, name: 'Classification' })).closest('section')!;
+    expect(within(classification).getByText('Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer')).toBeInTheDocument();
+    cleanup();
+
+    serve({ status: 200, data: { ...change, terms: [{ ...byAgent, confirmedOrigin: 'user', confirmedByAgent: null }] } });
+    renderScreen();
+    const again = (await screen.findByRole('heading', { level: 2, name: 'Classification' })).closest('section')!;
+    expect(within(again).queryByText(/Machine-confirmed/)).not.toBeInTheDocument();
   });
 
   it('a change with no scope term says the scope does not restrict it', async () => {

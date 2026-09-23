@@ -130,6 +130,15 @@ def set_feedback(row: AiGeneration, *, feedback: str, note: str) -> None:
     row.save(update_fields=["feedback", "feedback_note"])
 
 
+def logged_for(*, agent_run_id: uuid.UUID, purpose: AiPurpose, subject_type: str, subject_id: uuid.UUID) -> bool:
+    """Whether this run has already logged a call of this purpose about this subject, read
+    here so the module that writes the log is the one that knows its shape (AUD-02). A
+    caller asks it to tell a retry from a new model call (D-80)."""
+    return AiGeneration.objects.filter(
+        agent_run_id=agent_run_id, purpose=purpose.value, subject_type=subject_type, subject_id=subject_id
+    ).exists()
+
+
 def generations_for(
     *, tenant_id: uuid.UUID | None, filters: AiGenerationQuery, limit: int, offset: int
 ) -> tuple[list[AiGeneration], int]:
