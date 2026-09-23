@@ -478,7 +478,113 @@ section. Copied here as chunk3-rest-T20 requires.
       FP-04), plus TEN-02's `LegalEntity`, which does not exist until chunk 8. Say when
       to schedule a proper planning pass for it (a brief, the way `AGENT_ACCESS.md` got
       one, before chunk 8 or as part of it) — it should not land as a slice on an
-      unrelated push.
+      unrelated push. `AGENT_ACCESS.md` is not on main: it is parked with the
+      agent-access design in commit `cee7cf2` on `origin/claude/r1-integration` (below).
+
+## Parked for your review (2026-09-23, lost-content)
+
+Two designs live on `origin/claude/r1-integration` and nowhere on main. Each lands
+only after you answer it in chat, as its own docs-only change, and never on an
+approval relayed by an agent: (b) takes a four-eyes approval out of what CLAUDE.md
+section 5 guards, and (a) carries a CLAUDE.md paragraph, which no agent may edit.
+When either lands, its decision rows take the numbers `docs/DECISIONS.md` reserves
+for them, matched by title and never by arithmetic.
+
+### (a) PRD 0.5: agent access, the agents a bank runs itself (commit `cee7cf2`)
+
+A bank registers its own agents (a coding agent, a product agent, a procurement
+agent, an internal assistant), narrows each to the departments and products it
+serves, and gives it a service key or a personal access token. The agent only
+reads, through MCP or the API; it reaches the bank's register only after two people
+holding `security.manage` switched tenant reach on. Module ACC (ACC-01 to ACC-09 in
+chunk 11, ACC-10 in chunk 13). The commit carries the PRD 0.5 row and module, ADRs
+0055 to 0057, the brief `docs/plans/briefs/AGENT_ACCESS.md`, and scenarios in the
+agents, governance, identity, integrations, register and taxonomy specs.
+
+Its decisions, by title, with the numbers they land under (the branch numbers them
+D-68 to D-73, and its PRD 0.5 row still cites "D-63 to D-68"):
+
+- "What a bank's own agent may read": D-76 (D-68 on the branch)
+- "How a bank's own agent authenticates": D-77 (D-69 on the branch)
+- "How an agent access entry is narrowed": D-70
+- "What a bank's agent gets when it asks what applies": D-71
+- "How a bank lets its own register leave its zone": D-72
+- "When agent access is built": D-73
+
+Its seven open questions, copied from that commit with the numbers above. Nothing
+here blocks the build, each has a default, and each is reversible.
+
+- [ ] **Comments.** Your free text said the agent should reach "any comments they
+      provided per entry", and your answer on what it reads chose register decisions
+      alone. The build reads that as: the structured notes on the entry are in (the
+      applicability reason, the status note, "how we read this rule"), and COL-01
+      comment threads are out. Say if it is the other way round. Reversing it adds a
+      `comments:read` scope and a decision about mentions of people who never agreed to
+      a machine reading them (D-76).
+- [ ] **REG-04 in chunk 8.** "How we read this rule" is a cuttable Should today, and it
+      is the single field that turns a list of obligations into an answer a developer
+      can build from. Recommended: move it above the descope line in chunk 8's list.
+      D-26 made the order of a chunk's list the thing that protects work, so only you
+      can reorder it (D-73).
+- [ ] **`tokens.create` defaults.** Built as Admin, Compliance officer and Owner; not
+      Approver, Contributor, Reader or Auditor. An auditor running automated evidence
+      pulls is a real case, so say if Auditor should have it by default (D-77).
+- [ ] **Credential expiry.** 90 days for both a service key and a personal access
+      token, settable per environment. Say if a service key should be allowed to live
+      longer (D-77).
+- [ ] **A bank's own model endpoint.** We say a bank pulling its own register into its
+      own agent is the bank's decision, which is what makes it compatible with D-07. A
+      bank running that agent on a model endpoint outside the EU is also the bank's
+      decision, and the first procurement review will ask what we do about it.
+      Proposed: state it plainly in the assurance pack, record the tenant switch's
+      approval and the access log, and do not police the endpoint (ADR 0057).
+- [ ] **An auditor's agent.** An external auditor reading the register through an agent
+      during fieldwork fits this model exactly, but it is a third party inside the
+      bank's tenant. Proposed: the bank registers it like any other entry, under the
+      named engagement, and the entry's expiry does the work. TEN-06's support access
+      grants are the nearer pattern if that is wrong.
+- [ ] **Where the tab lives.** Agent access is built as the second tab of the Agents
+      screen, per your answer. The two tabs must read as different things, because one
+      kind of agent writes on our schedule and the other only reads on the bank's; each
+      tab states in one line what it is. Confirm once you see the screen card.
+
+The CLAUDE.md text that comes with it, which you add yourself:
+
+- [ ] Section 3, the R2 row's outcome ends: "tenant-controlled agents, agent access for
+      the agents a bank runs itself".
+- [ ] Section 5, the bullet that starts "Tenant content never reaches logs" becomes:
+      "Tenant content never reaches logs, Sentry, analytics or an unapproved model
+      endpoint. A bank's own agents read through agent access: their scope is the
+      bank's footprint narrowed by the departments and products they serve, never
+      widened; a record outside it answers 404; they write nothing in R2; and they
+      never narrow silently, so every answer states the scope it was answered in and
+      names what it could not see. The bank's register leaves the zone only after two
+      people holding `security.manage` switched tenant reach on, and a personal access
+      token acts as its person, can never step up and dies with them. PostgreSQL with
+      pgvector everywhere; there is no SQLite."
+
+### (b) D-75: who decides whether an obligation applies (commit `b5b70c5`)
+
+Your words of 2026-09-22, as that commit quotes them: "does not need a second
+sign-off with passkey. That is overkill for 'what applies'. It is enough that one
+compliance person sets it, with a confirmation dialog before it's stored, and that
+an audit event was recorded".
+
+The rule it would replace is PRD REG-01 as it stands: applicability "changes only
+through a request that a second person approves. Many pending requests can be
+decided in one call, with four eyes on every row", which CLAUDE.md section 5's
+"Four eyes, enforced by a check constraint, with a passkey step-up on approvals"
+covers. D-75 instead lets one holder of `applicability.approve` set it directly
+after a confirmation dialog, with one audit event naming the person, the value
+before and after and the reason: no request, no second approver, no step-up, and a
+pasted batch is one confirmed call with an audit event per row. Risk acceptance
+keeps its four eyes, and "applies" and "we comply" stay separate facts. It amends
+PRD REG-01 and J-10 and the register spec's REG-S1, REG-S2, REG-S12 and REG-S14.
+Nothing in REG is built (chunk 8, R2), so it changes what gets built, not what
+exists.
+
+- [ ] Confirm D-75 in chat to the session that merges the build. The change is ready
+      as its own commit and lands as D-75; until then REG-01 stays as the PRD says.
 
 ## The calendar feed carries every roadmap date, whatever the date's precision (2026-09-21, HOM-04)
 
