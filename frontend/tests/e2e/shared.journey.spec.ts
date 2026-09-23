@@ -306,6 +306,8 @@ test.describe('shared journeys', () => {
       await accountMenu.click();
       await english.click();
       await expect(english).toHaveAttribute('aria-checked', 'true');
+      // The menu stays open on a choice and hides the rest of the page until it closes.
+      await page.keyboard.press('Escape');
       await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
     }
   });
