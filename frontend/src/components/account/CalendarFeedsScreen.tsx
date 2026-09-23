@@ -39,8 +39,10 @@ function AddressDialog({ url, onDone }: { url: string; onDone: () => void }) {
       setCopied(false);
     }
   };
+  // Only Done ends the dialog: Escape or a click outside would drop the one
+  // copy of the address and leave a live feed nobody saw.
   return (
-    <Modal open onOpenChange={(next) => (next ? undefined : onDone())} title={t('calendarFeeds.addressTitle')} description={t('calendarFeeds.addressBody')}>
+    <Modal open onOpenChange={() => undefined} title={t('calendarFeeds.addressTitle')} description={t('calendarFeeds.addressBody')}>
       <pre className="m-0 rounded-control border border-line bg-subtle p-3 font-mono break-all whitespace-pre-wrap" data-feed-address="">
         {url}
       </pre>
@@ -64,22 +66,25 @@ function FeedRow({ feed }: { feed: CalendarFeed }) {
     setConfirming(false);
     revoke.reset();
   };
+  // Feeds have no names (D-52), so the created date is what tells one from
+  // another, for the row's Revoke button and for the dialog it opens.
+  const created = formatDateTime(feed.createdAt, ctx);
   return (
     <Row data-feed-id={feed.id}>
       <Meta>
         <PillRow pills={presentCalendarFeed(feed, t)} />
-        <span>{t('calendarFeeds.created', { date: formatDateTime(feed.createdAt, ctx) })}</span>
+        <span>{t('calendarFeeds.created', { date: created })}</span>
         <span>{feed.lastUsedAt === null ? t('calendarFeeds.neverFetched') : t('calendarFeeds.lastFetched', { date: formatDateTime(feed.lastUsedAt, ctx) })}</span>
         {feed.revokedAt !== null ? <span>{t('calendarFeeds.revokedOn', { date: formatDateTime(feed.revokedAt, ctx) })}</span> : null}
       </Meta>
       {feed.revokedAt === null ? (
         <ButtonBar>
-          <Button variant="danger" size="small" onClick={() => setConfirming(true)}>
+          <Button variant="danger" size="small" aria-label={t('calendarFeeds.revokeFeed', { date: created })} onClick={() => setConfirming(true)}>
             {t('calendarFeeds.revoke')}
           </Button>
         </ButtonBar>
       ) : null}
-      <Modal open={confirming} onOpenChange={(next) => (next ? undefined : close())} title={t('calendarFeeds.revokeTitle')} description={t('calendarFeeds.revokeBody')}>
+      <Modal open={confirming} onOpenChange={(next) => (next ? undefined : close())} title={t('calendarFeeds.revokeTitle', { date: created })} description={t('calendarFeeds.revokeBody')}>
         {revoke.isError ? <ProblemAlert error={revoke.error} /> : null}
         <ButtonBar>
           <Button variant="outline" onClick={close} disabled={revoke.isPending}>

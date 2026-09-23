@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -59,6 +59,9 @@ function renderIn(node: ReactNode) {
   return { ...render(<Query>{node}</Query>), queryClient };
 }
 
+// Feeds have no names (D-52): the created date tells one from another.
+const REVOKE_F1 = /^Revoke the feed created 10 Sept? 2026, 10:00$/;
+const REVOKE_F1_DIALOG = /^Revoke the feed created 10 Sept? 2026, 10:00\?$/;
 const rowOf = (id: string) => document.querySelector(`[data-feed-id="${id}"]`) as HTMLElement;
 const writes = (sent: Sent[]) => sent.filter((s) => (s.method === 'post' || s.method === 'delete') && s.path !== REFRESH_PATH);
 
@@ -78,7 +81,8 @@ describe('calendar feeds', () => {
     const first = rowOf('f1');
     expect(within(first).getByText(/^Created 10 Sept? 2026, 10:00$/)).toBeInTheDocument();
     expect(within(first).getByText(/^Last fetched 22 Sept? 2026, 08:02$/)).toBeInTheDocument();
-    expect(within(first).getByRole('button', { name: 'Revoke' })).toBeInTheDocument();
+    // The button says which feed it revokes.
+    expect(within(first).getByRole('button', { name: REVOKE_F1 })).toBeInTheDocument();
 
     // A revoked feed stays listed and dated, and offers nothing to press.
     const second = rowOf('f2');
@@ -119,9 +123,31 @@ describe('calendar feeds', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(document.body.textContent).not.toContain('shown-once-secret');
-    expect(JSON.stringify(sent.filter((s) => s.method !== 'post'))).not.toContain('shown-once-secret');
+    expect(JSON.stringify(sent)).not.toContain('shown-once-secret');
     // Nor does the query client keep the answer once the dialog has closed.
     await waitFor(() => expect(JSON.stringify(queryClient.getMutationCache().getAll().map((m) => m.state.data))).not.toContain('shown-once-secret'));
+  });
+
+  it('keeps the address on screen through Escape and a click outside, so only Done can drop it', async () => {
+    server({ status: 200, data: [] }, creates({ status: 201, data: { feed: live, url: ADDRESS } }));
+    renderIn(<CalendarFeedsScreen />);
+    await screen.findByText('No calendar feeds');
+
+    fireEvent.click(screen.getByRole('button', { name: 'New feed' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Copy this address into your calendar' });
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    // Radix portals the overlay just before the dialog: a mouse press there
+    // is a click outside it.
+    const overlay = dialog.previousElementSibling as HTMLElement;
+    fireEvent.pointerDown(overlay, { button: 0, pointerType: 'mouse' });
+    fireEvent.pointerUp(overlay, { button: 0, pointerType: 'mouse' });
+    fireEvent.click(overlay);
+    // The query client announces a reset on its next tick; let that land.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    expect(screen.getByRole('dialog', { name: 'Copy this address into your calendar' })).toHaveTextContent(ADDRESS);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
   it('asks for the passkey when the sign-in is not recent, and says nothing changed when the person cancels', async () => {
@@ -171,8 +197,8 @@ describe('calendar feeds', () => {
     renderIn(<CalendarFeedsScreen />);
     await screen.findByText('Active');
 
-    fireEvent.click(within(rowOf('f1')).getByRole('button', { name: 'Revoke' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Revoke this feed?' });
+    fireEvent.click(within(rowOf('f1')).getByRole('button', { name: REVOKE_F1 }));
+    const dialog = await screen.findByRole('dialog', { name: REVOKE_F1_DIALOG });
     expect(dialog).toHaveTextContent('The address stops working at once');
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Revoke' }));
@@ -185,8 +211,8 @@ describe('calendar feeds', () => {
     renderIn(<CalendarFeedsScreen />);
     await screen.findByText('Active');
 
-    fireEvent.click(within(rowOf('f1')).getByRole('button', { name: 'Revoke' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Revoke this feed?' });
+    fireEvent.click(within(rowOf('f1')).getByRole('button', { name: REVOKE_F1 }));
+    const dialog = await screen.findByRole('dialog', { name: REVOKE_F1_DIALOG });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(writes(sent)).toEqual([]);
@@ -197,8 +223,8 @@ describe('calendar feeds', () => {
     renderIn(<CalendarFeedsScreen />);
     await screen.findByText('Active');
 
-    fireEvent.click(within(rowOf('f1')).getByRole('button', { name: 'Revoke' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Revoke this feed?' });
+    fireEvent.click(within(rowOf('f1')).getByRole('button', { name: REVOKE_F1 }));
+    const dialog = await screen.findByRole('dialog', { name: REVOKE_F1_DIALOG });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Revoke' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('No such calendar feed.');
   });
