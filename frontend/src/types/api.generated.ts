@@ -9644,6 +9644,13 @@ export interface components {
             labels?: {
                 [key: string]: string;
             };
+            /**
+             * Mirrored
+             * @description True for a term of the dimension that mirrors the markets the platform covers: the reference data keeps those terms in step with the jurisdiction list, so none is proposed, renamed or put on a change or an obligation, and a write that names one answers 422 `jurisdiction_term_mirrored`. A record's market comes from its instrument or its authority instead. False for every other term.
+             * @default false
+             * @example false
+             */
+            mirrored: boolean;
             /** Parentkey */
             parentKey?: string | null;
             /**
@@ -11446,7 +11453,7 @@ export interface components {
             summary: string;
             /**
              * Termids
-             * @description Taxonomy terms that scope the change — its regime, market, product or service — each a UUID, at most 100 of them. Terms are library rows an admin may extend; the ids come from `GET /taxonomy/terms`, which an agent reads at run start. Every change needs at least one regime term or the call answers 422 `regime_required`, and a standard's term is accepted only when the authority's jurisdiction is international, else 422 `standard_term_only_on_standards` (AC-AGT1).
+             * @description Taxonomy terms that scope the change — its regime, product or service — each a UUID, at most 100 of them. Terms are library rows an admin may extend; the ids come from `GET /taxonomy/terms`, which an agent reads at run start. Every change needs at least one regime term or the call answers 422 `regime_required`, and a standard's term is accepted only when the authority's jurisdiction is international, else 422 `standard_term_only_on_standards` (AC-AGT1). A term that list marks `mirrored` answers 422 `jurisdiction_term_mirrored`: a change's market comes from `authorityCode`, never from a term.
              * @example [
              *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
              *     ]
@@ -11618,7 +11625,7 @@ export interface components {
             supersededBy?: string | null;
             /**
              * Termids
-             * @description The whole set of taxonomy term ids for this change, each a UUID and at most 100 of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new set.
+             * @description The whole set of taxonomy term ids for this change, each a UUID and at most 100 of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new set, and a term `GET /taxonomy/terms` marks `mirrored` answers 422 `jurisdiction_term_mirrored`.
              * @example [
              *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
              *     ]

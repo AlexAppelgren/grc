@@ -401,8 +401,12 @@ Then the jurisdiction dimension holds exactly one term per active jurisdiction, 
 And each country's term has the EU's term as parent, Norway's included
 And the international jurisdiction gets no mirrored term
 And GET /tenant/footprint lists five jurisdiction terms
+And GET /taxonomy/terms marks exactly those five terms as mirrored
 When a proposal adds or renames a term in the jurisdiction dimension
-Then it answers 422
+Then it answers 422 jurisdiction_term_mirrored and nothing reaches the queue
+When an obligation proposal's scope or a change's terms name a jurisdiction term
+Then it answers 422 jurisdiction_term_mirrored and nothing is stored
+And the refusal names no dimension and no country
 When seed_reference runs a second time
 Then nothing changes
 ```

@@ -1136,6 +1136,15 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         )
         self.assertTrue(listed["allSelected"])
 
+        # The term list marks exactly the mirrored terms, so an agent or a picker leaves them
+        # out before sending anything, rather than learning the rule from a refusal.
+        term_list = self._get("/taxonomy/terms", sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual(term_list.status_code, 200, term_list.content)
+        self.assertEqual(
+            {(row["dimension"]["key"], row["key"]) for row in term_list.json()["items"] if row["mirrored"]},
+            {(dimension.key, key) for key in rows},
+        )
+
         # When a proposal adds or renames a term of the mirrored dimension, or tags a record
         # with one, it answers 422 and nothing reaches the queue or the library.
         norway = mirrored["no"]
