@@ -231,9 +231,11 @@ class WatchRouteStubs(TestCase):
 
     # What each built write answers once its gate has passed and these constants have
     # reached its logic: 404 for an id nothing holds, 422 `unknown_key` for a body naming a
-    # vocabulary row this bare TestCase never seeded. Either way the gate ran first.
+    # vocabulary row this bare TestCase never seeded, and 422 `run_not_open` for a key's
+    # registration that names no run, the first thing that logic asks (AGT-01). Either way
+    # the gate ran first.
     REACHED_THE_LOGIC = {
-        "createChange": (422, "unknown_key"),
+        "createChange": (422, "run_not_open"),
         "addChangeDocument": (404, "not_found"),
         "updateChange": (404, "not_found"),
         "addChangeEvent": (404, "not_found"),

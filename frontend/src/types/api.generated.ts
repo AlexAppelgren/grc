@@ -173,7 +173,8 @@ export interface paths {
          *
          *     An agent's key holding the scope `sources:write`, on a run that key has open; no
          *     person's session reaches it, and no scope here registers a source or touches the
-         *     obligations inventory. The line and its audit row, with the agent behind the key as the
+         *     obligations inventory. A key that belongs to a bank is refused with
+         *     `tenant_agents_not_available` (403), because in this release every run is the platform's. The line and its audit row, with the agent behind the key as the
          *     actor, are written in one transaction, and every refusal comes before the write, so a
          *     rejected call logs nothing.
          *
@@ -854,7 +855,10 @@ export interface paths {
          *     An agent's key needs the scope `changes:write` and a library editor's session the
          *     permission `proposals.review`, which no bank's role holds. `agentRunId` must name a run
          *     the calling key has open, so every library row an agent wrote can be traced to the night
-         *     that wrote it; a library editor filing one by hand names no run.
+         *     that wrote it: a key that names none answers `run_not_open` (422), exactly as a closed
+         *     run does. A library editor filing one by hand names no run. A key that belongs to a bank
+         *     is refused with `tenant_agents_not_available` (403) whatever scopes it holds, because in
+         *     this release every run, and everything a run files, is the platform's.
          *
          *     One reform is one record, and `stableKey` is what makes that true. Sending a key the
          *     library already holds answers **200** with the change that exists: the pages the call
@@ -959,7 +963,8 @@ export interface paths {
          *
          *     An agent's key needs the scope `changes:write` and a library editor's session the
          *     permission `proposals.review`, which no bank's role holds: a change's classification is
-         *     a library fact and a bank neither writes nor confirms one. Two things only the editor
+         *     a library fact and a bank neither writes nor confirms one, so a key that belongs to a
+         *     bank is refused with `tenant_agents_not_available` (403). Two things only the editor
          *     may set: `status` and `supersededBy`, because deciding that a reform has been replaced
          *     or withdrawn is a reading of the law and not a sighting of it.
          *
@@ -1087,7 +1092,9 @@ export interface paths {
          *
          *     An agent's key holding the scope `changes:write`, and no person's session: a page
          *     arrives from the run that fetched and screened it (AGT-07), never from a screen. No
-         *     scope here reaches the obligations inventory.
+         *     scope here reaches the obligations inventory. A key that belongs to a bank is refused
+         *     with `tenant_agents_not_available` (403), because in this release every run is the
+         *     platform's.
          *
          *     The text of the page is never stored. What is kept is the address, the headline, the
          *     publisher, the time and a hash — for a standards publisher that is all we may keep
@@ -1132,7 +1139,9 @@ export interface paths {
          *
          *     An agent's key needs the scope `changes:write` and a library editor's session the
          *     permission `proposals.review`. The timeline is a library fact shared by every bank; no
-         *     bank's date is ever here. The entry and its audit row are written in one transaction.
+         *     bank's date is ever here, and a key that belongs to a bank is refused with
+         *     `tenant_agents_not_available` (403). The entry and its audit row are written in one
+         *     transaction.
          *
          *     A retry is safe: the entry's label is its name on that change, so posting "Consultation
          *     closed" twice with the same dates answers the entry that is already there instead of
@@ -1178,8 +1187,9 @@ export interface paths {
          *     `sortOrder` 0, no date and no source page. Send the whole entry.
          *
          *     An agent's key needs the scope `changes:write` and a library editor's session the
-         *     permission `proposals.review`. A timeline is a library fact shared by every bank, and
-         *     nothing here is versioned, so no `If-Match` is taken. The entry and its audit row, which
+         *     permission `proposals.review`; a key that belongs to a bank is refused with
+         *     `tenant_agents_not_available` (403). A timeline is a library fact shared by every bank,
+         *     and nothing here is versioned, so no `If-Match` is taken. The entry and its audit row, which
          *     holds the entry as it was and as it now is, are written in one transaction.
          *
          *     Errors to branch on: `validation_error` (422) for a body the schema refuses, including a
@@ -1214,7 +1224,8 @@ export interface paths {
          *     other.
          *
          *     An agent's key needs the scope `changes:write` and a library editor's session the
-         *     permission `proposals.review`. `origin` records which of the two drew the link and never
+         *     permission `proposals.review`; a key that belongs to a bank is refused with
+         *     `tenant_agents_not_available` (403). `origin` records which of the two drew the link and never
          *     changes afterwards; `confidence` is the model's own number, is null when a person set
          *     the link, and orders the list and nothing else.
          *
@@ -2117,7 +2128,45 @@ export interface paths {
          */
         get: operations["listProposals"];
         put?: never;
-        /** Create Proposal */
+        /**
+         * Ask for a change to the shared library, with the source behind every changed value
+         * @description Put one change to the shared library into the review queue, where a second and
+         *     independent reviewer approves, corrects or rejects it; nothing in the library changes
+         *     until then. Call it when a run has read new wording for a duty at the authority's own
+         *     page, and when a person asks for a value on a shared list. `kind` says what is asked
+         *     for: "new_obligation_version" (a new summary of one duty in force from a date, with its
+         *     scope terms); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire",
+         *     "vocabulary_restore" or "vocabulary_merge" (a row of a shared list); or "term_create"
+         *     or "term_update" (a taxonomy term).
+         *
+         *     Who may call it: a bank's member with `proposals.create`, a platform editor with
+         *     `library_vocab.manage`, or an API key with the scope `proposals:write`. A key bound to
+         *     an agent must name, in `agentRunId`, a run that same key has open, so every proposal an
+         *     agent filed can be traced to the model and the night that produced it: naming none, or
+         *     a run that is closed, answers `run_not_open` (422). A run named by anybody is checked
+         *     the same way, so another key's run, and any run a person names, answers `not_found`
+         *     (404) exactly as a run that never existed does. A bank's own key, bound to no agent,
+         *     names no run.
+         *
+         *     A new obligation version carries a source for every value it changes, in
+         *     `fieldSources`: a link to the authority's page or a provision of the library, and none
+         *     for a value it leaves alone. The proposal is linked to the bank it was filed in, and
+         *     the platform's reviewers see only that it came from a bank, never who asked. The
+         *     proposal and its audit row are written in one transaction.
+         *
+         *     Send an `Idempotency-Key`, because an agent retries: the same key with the same body
+         *     answers **200** with the proposal it already made, and records that the retry
+         *     happened. A new proposal answers **201**.
+         *
+         *     Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or
+         *     a closed one; `not_found` (404) when the run named is not one this key opened;
+         *     `source_missing` (422) when a changed value carries no source; `unknown_key` (422) for a
+         *     kind, a list, a language, a term or a target obligation the library does not hold;
+         *     `validation_error` (422) for a body the schema or the kind's payload refuses;
+         *     `idempotency_conflict` (409) when the same `Idempotency-Key` arrives with a different
+         *     body; `permission_denied` (403) without the permission or the scope;
+         *     `unauthenticated` (401) without a credential.
+         */
         post: operations["createProposal"];
         delete?: never;
         options?: never;
@@ -14868,6 +14917,34 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "agentRunId": "3c2a9f1e-6b7d-4e58-a1c4-0f9d8e7b6a52",
+                 *       "changeId": "b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33",
+                 *       "fieldSources": {
+                 *         "effectiveFrom": "https://www.fi.se/en/published/news/2026/research-payments/",
+                 *         "summaries.en": "https://www.fi.se/en/published/news/2026/research-payments/",
+                 *         "summaries.sv": "https://www.fi.se/en/published/news/2026/research-payments/"
+                 *       },
+                 *       "kind": "new_obligation_version",
+                 *       "model": "agent pipeline 0.4",
+                 *       "payload": {
+                 *         "effectiveFrom": "2026-10-01",
+                 *         "effectiveFromPrecision": "day",
+                 *         "isMachine": true,
+                 *         "originalLanguage": "sv",
+                 *         "summaries": {
+                 *           "en": "Research from third parties may be received only if it is paid from the institution's own resources or from a research payment account.",
+                 *           "sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel eller från ett analyskonto."
+                 *         }
+                 *       },
+                 *       "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
+                 *       "sourceUrl": "https://www.fi.se/en/published/news/2026/research-payments/",
+                 *       "targetId": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+                 *       "targetType": "obligation",
+                 *       "title": "Version 2 of the research assessment duty, in force 1 October 2026"
+                 *     }
+                 */
                 "application/json": components["schemas"]["ProposalCreateBody"];
             };
         };

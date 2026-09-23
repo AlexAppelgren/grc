@@ -42,6 +42,7 @@ from django.core.validators import URLValidator
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.agents import runs
 from apps.library.models import DatePrecision
 from apps.library.reading import active_obligation, terms_of, unknown_provision_keys
 from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus, ProposalTenant
@@ -377,7 +378,14 @@ def create(
     effective_from: Any = None,
 ) -> tuple[Proposal, bool]:
     """Create a proposal, or answer the one an earlier identical submission made. Returns
-    `(proposal, created)`."""
+    `(proposal, created)`.
+
+    A key bound to an agent names an open run of its own, so every proposal an agent filed
+    traces to the night that produced it (AGT-01); a run anyone else names is checked the
+    same way, and so is never one they did not open. That is asked first, before anything
+    else is read."""
+    if proposer.agent_id is not None or agent_run_id is not None:
+        runs.require_open_run_of_key(proposer.api_key_id, agent_run_id)
     validated_kind(kind)
     parsed = validated_payload(kind, payload)
     _validate_obligation_target(kind, target_type, target_id)

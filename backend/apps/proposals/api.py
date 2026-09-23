@@ -238,15 +238,93 @@ def list_library_updates(request: HttpRequest, query: Query[LibraryUpdatesQuery]
 
 
 
+# What an agent files after a run read the authority's page: a new version of one duty,
+# sourced field by field, under the run that found it (the prototype's research-payments
+# reform, never a real bank's data).
+_CREATE_EXAMPLE = {
+    "requestBody": {
+        "content": {
+            "application/json": {
+                "example": {
+                    "kind": "new_obligation_version",
+                    "title": "Version 2 of the research assessment duty, in force 1 October 2026",
+                    "targetType": "obligation",
+                    "targetId": "7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44",
+                    "changeId": "b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33",
+                    "agentRunId": "3c2a9f1e-6b7d-4e58-a1c4-0f9d8e7b6a52",
+                    "model": "agent pipeline 0.4",
+                    "payload": {
+                        "summaries": {
+                            "sv": "Investeringsanalys från tredje part får tas emot endast om den betalas med institutets egna medel eller från ett analyskonto.",
+                            "en": "Research from third parties may be received only if it is paid from the institution's own resources or from a research payment account.",
+                        },
+                        "originalLanguage": "sv",
+                        "isMachine": True,
+                        "effectiveFrom": "2026-10-01",
+                        "effectiveFromPrecision": "day",
+                    },
+                    "fieldSources": {
+                        "summaries.sv": "https://www.fi.se/en/published/news/2026/research-payments/",
+                        "summaries.en": "https://www.fi.se/en/published/news/2026/research-payments/",
+                        "effectiveFrom": "https://www.fi.se/en/published/news/2026/research-payments/",
+                    },
+                    "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
+                    "sourceUrl": "https://www.fi.se/en/published/news/2026/research-payments/",
+                }
+            }
+        }
+    }
+}
+
+
 @router.post(
     "/proposals",
     response={200: ProposalRow, 201: ProposalRow},
     auth=[SessionAuth(), ApiKeyAuth()],
     operation_id="createProposal",
     by_alias=True,
+    summary="Ask for a change to the shared library, with the source behind every changed value",
+    openapi_extra=_CREATE_EXAMPLE,
 )
 @answers_problems
 def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
+    """Put one change to the shared library into the review queue, where a second and
+    independent reviewer approves, corrects or rejects it; nothing in the library changes
+    until then. Call it when a run has read new wording for a duty at the authority's own
+    page, and when a person asks for a value on a shared list. `kind` says what is asked
+    for: "new_obligation_version" (a new summary of one duty in force from a date, with its
+    scope terms); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire",
+    "vocabulary_restore" or "vocabulary_merge" (a row of a shared list); or "term_create"
+    or "term_update" (a taxonomy term).
+
+    Who may call it: a bank's member with `proposals.create`, a platform editor with
+    `library_vocab.manage`, or an API key with the scope `proposals:write`. A key bound to
+    an agent must name, in `agentRunId`, a run that same key has open, so every proposal an
+    agent filed can be traced to the model and the night that produced it: naming none, or
+    a run that is closed, answers `run_not_open` (422). A run named by anybody is checked
+    the same way, so another key's run, and any run a person names, answers `not_found`
+    (404) exactly as a run that never existed does. A bank's own key, bound to no agent,
+    names no run.
+
+    A new obligation version carries a source for every value it changes, in
+    `fieldSources`: a link to the authority's page or a provision of the library, and none
+    for a value it leaves alone. The proposal is linked to the bank it was filed in, and
+    the platform's reviewers see only that it came from a bank, never who asked. The
+    proposal and its audit row are written in one transaction.
+
+    Send an `Idempotency-Key`, because an agent retries: the same key with the same body
+    answers **200** with the proposal it already made, and records that the retry
+    happened. A new proposal answers **201**.
+
+    Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or
+    a closed one; `not_found` (404) when the run named is not one this key opened;
+    `source_missing` (422) when a changed value carries no source; `unknown_key` (422) for a
+    kind, a list, a language, a term or a target obligation the library does not hold;
+    `validation_error` (422) for a body the schema or the kind's payload refuses;
+    `idempotency_conflict` (409) when the same `Idempotency-Key` arrives with a different
+    body; `permission_denied` (403) without the permission or the scope;
+    `unauthenticated` (401) without a credential.
+    """
     # Ungated by design: logic-gate (proposals.create, library_vocab.manage or the proposals:write scope; PRO-01).
     who = require_proposer(request)
     proposer = proposer_for(request)

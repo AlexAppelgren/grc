@@ -33,6 +33,7 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Body, Header, Path, Query, Router
 
+from apps.agents import runs
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, PrincipalKind, SessionAuth
 from apps.shared.permissions import requires_permission, requires_scope
@@ -148,11 +149,14 @@ def require_watch_reader(request: HttpRequest) -> None:
 
 def require_change_writer(request: HttpRequest) -> None:
     """A change's library facts: an agent's key with `changes:write`, or a library editor
-    with `proposals.review` (WAT-02, WAT-03, PRO-01)."""
+    with `proposals.review` (WAT-02, WAT-03, PRO-01). A bank's key is refused even with the
+    scope (`tenant_agents_not_available`): in R1 every run and what it files is the
+    platform's (item 14)."""
     who = principal(request)
     if who.kind is PrincipalKind.AGENT:
         if not who.has_scope(perms.SCOPE_CHANGES_WRITE):
             raise deny(perms.SCOPE_CHANGES_WRITE)
+        runs.refuse_tenant_key(who)
         return
     require_any(request, perms.PROPOSALS_REVIEW)
 
@@ -336,7 +340,8 @@ def record_source_check(
 
     An agent's key holding the scope `sources:write`, on a run that key has open; no
     person's session reaches it, and no scope here registers a source or touches the
-    obligations inventory. The line and its audit row, with the agent behind the key as the
+    obligations inventory. A key that belongs to a bank is refused with
+    `tenant_agents_not_available` (403), because in this release every run is the platform's. The line and its audit row, with the agent behind the key as the
     actor, are written in one transaction, and every refusal comes before the write, so a
     rejected call logs nothing.
 
@@ -529,7 +534,10 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     An agent's key needs the scope `changes:write` and a library editor's session the
     permission `proposals.review`, which no bank's role holds. `agentRunId` must name a run
     the calling key has open, so every library row an agent wrote can be traced to the night
-    that wrote it; a library editor filing one by hand names no run.
+    that wrote it: a key that names none answers `run_not_open` (422), exactly as a closed
+    run does. A library editor filing one by hand names no run. A key that belongs to a bank
+    is refused with `tenant_agents_not_available` (403) whatever scopes it holds, because in
+    this release every run, and everything a run files, is the platform's.
 
     One reform is one record, and `stableKey` is what makes that true. Sending a key the
     library already holds answers **200** with the change that exists: the pages the call
@@ -605,7 +613,9 @@ def add_change_document(
 
     An agent's key holding the scope `changes:write`, and no person's session: a page
     arrives from the run that fetched and screened it (AGT-07), never from a screen. No
-    scope here reaches the obligations inventory.
+    scope here reaches the obligations inventory. A key that belongs to a bank is refused
+    with `tenant_agents_not_available` (403), because in this release every run is the
+    platform's.
 
     The text of the page is never stored. What is kept is the address, the headline, the
     publisher, the time and a hash — for a standards publisher that is all we may keep
@@ -622,7 +632,7 @@ def add_change_document(
     `permission_denied` (403) without `changes:write`; `unauthenticated` (401) without a key.
     """
     return registration.add_document(
-        actor=actor_for(request), order=language_order(request), change_id=change_id, body=body
+        who=principal(request), actor=actor_for(request), order=language_order(request), change_id=change_id, body=body
     )
 
 
@@ -657,7 +667,8 @@ def update_change(
 
     An agent's key needs the scope `changes:write` and a library editor's session the
     permission `proposals.review`, which no bank's role holds: a change's classification is
-    a library fact and a bank neither writes nor confirms one. Two things only the editor
+    a library fact and a bank neither writes nor confirms one, so a key that belongs to a
+    bank is refused with `tenant_agents_not_available` (403). Two things only the editor
     may set: `status` and `supersededBy`, because deciding that a reform has been replaced
     or withdrawn is a reading of the law and not a sighting of it.
 
@@ -732,7 +743,9 @@ def add_change_event(
 
     An agent's key needs the scope `changes:write` and a library editor's session the
     permission `proposals.review`. The timeline is a library fact shared by every bank; no
-    bank's date is ever here. The entry and its audit row are written in one transaction.
+    bank's date is ever here, and a key that belongs to a bank is refused with
+    `tenant_agents_not_available` (403). The entry and its audit row are written in one
+    transaction.
 
     A retry is safe: the entry's label is its name on that change, so posting "Consultation
     closed" twice with the same dates answers the entry that is already there instead of
@@ -777,8 +790,9 @@ def update_change_event(
     `sortOrder` 0, no date and no source page. Send the whole entry.
 
     An agent's key needs the scope `changes:write` and a library editor's session the
-    permission `proposals.review`. A timeline is a library fact shared by every bank, and
-    nothing here is versioned, so no `If-Match` is taken. The entry and its audit row, which
+    permission `proposals.review`; a key that belongs to a bank is refused with
+    `tenant_agents_not_available` (403). A timeline is a library fact shared by every bank,
+    and nothing here is versioned, so no `If-Match` is taken. The entry and its audit row, which
     holds the entry as it was and as it now is, are written in one transaction.
 
     Errors to branch on: `validation_error` (422) for a body the schema refuses, including a
@@ -823,7 +837,8 @@ def replace_change_obligations(
     other.
 
     An agent's key needs the scope `changes:write` and a library editor's session the
-    permission `proposals.review`. `origin` records which of the two drew the link and never
+    permission `proposals.review`; a key that belongs to a bank is refused with
+    `tenant_agents_not_available` (403). `origin` records which of the two drew the link and never
     changes afterwards; `confidence` is the model's own number, is null when a person set
     the link, and orders the list and nothing else.
 

@@ -242,6 +242,53 @@ class RegisteringAReform(RegistrationCase):
             self.assertEqual(self.register().status_code, 201)
 
 
+class ABanksKeyWritesNothingToTheWatch(RegistrationCase):
+    """Item 14: in R1 every run is the platform's, so a bank's key writes nothing to the
+    watch, whatever scopes it holds. Each write names the reason, as opening a run does,
+    and stores nothing — the second guard beside the scopes a bank's key is refused at
+    creation, so neither alone is load-bearing."""
+
+    def test_every_watch_write_refuses_a_banks_key_with_the_reason_named(self) -> None:
+        change_id = self.register().json()["id"]
+        event_id = self.stored().events.get(label="Adopted").id
+        bank = factories.tenant(slug="writes-nothing")
+        tenancy.clear_tenant()
+        key = agent_build.tenant_key(
+            bank, scopes=(perms.SCOPE_CHANGES_WRITE, perms.SCOPE_SOURCES_WRITE, perms.SCOPE_AGENT_RUNS_WRITE)
+        )
+        tenancy.clear_tenant()
+        writes = [
+            ("createChange", "post", CHANGES, body(stableKey="chg-bank-own", agentRunId=str(self.open_run.id))),
+            ("createChange without a run", "post", CHANGES, body(stableKey="chg-bank-own")),
+            ("addChangeDocument", "post", f"{CHANGES}/{change_id}/documents", {"url": SECOND_PAGE}),
+            ("updateChange", "patch", f"{CHANGES}/{change_id}", {"title": "A title a bank must not impose"}),
+            ("addChangeEvent", "post", f"{CHANGES}/{change_id}/events", {"label": "Transition ends", "eventDate": "2027-06-30"}),
+            ("updateChangeEvent", "patch", f"{CHANGES}/{change_id}/events/{event_id}", ADOPTED),
+            ("replaceChangeObligations", "put", f"{CHANGES}/{change_id}/obligations", []),
+            (
+                "recordSourceCheck",
+                "post",
+                f"/api/v1/agent-runs/{self.open_run.id}/source-checks",
+                {"sourceName": watch_build.source().name, "status": "ok"},
+            ),
+        ]
+        before = AuditEvent.objects.count()
+        for name, method, path, payload in writes:
+            with self.subTest(operation=name):
+                response = getattr(self.client, method)(
+                    path, data=payload, content_type=JSON, HTTP_X_API_KEY=key.plain_key
+                )
+                self.assertEqual(response.status_code, 403, response.content)
+                self.assertEqual(response.json()["code"], "tenant_agents_not_available")
+        tenancy.clear_tenant()
+        self.assertEqual(RegulatoryChange.objects.count(), 1, "the bank registered nothing")
+        change = self.stored()
+        self.assertEqual(change.title, "FI adopts amended rules on paying for investment research")
+        self.assertEqual(change.documents.count(), 1)
+        self.assertEqual(change.events.count(), 3)
+        self.assertEqual(AuditEvent.objects.count(), before, "a refusal writes nothing, not even its audit row")
+
+
 class SightingAReformAgain(RegistrationCase):
     """AC-WAT1: the same stable key is the same reform, whatever else the call carries."""
 

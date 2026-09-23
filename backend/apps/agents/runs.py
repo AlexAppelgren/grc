@@ -12,13 +12,15 @@ Three rules shape the module:
 
 - **Platform-owned in R1** (Alex, 2026-09-19, item 14). bleqq's watch agents are part of
   the base package, so a run belongs to the platform and to no bank. A tenant-bound key is
-  refused with `tenant_agents_not_available`, and a person's session never arrives at all:
+  refused with `tenant_agents_not_available`, on a run and on every watch write
+  (`refuse_tenant_key`), and a person's session never arrives at all:
   the route takes an API key alone. `c5-platform-agent-keys` strips the agent write scopes
   from a bank's keys at creation; this is the second guard, so neither alone is
   load-bearing. Chunk 11 adds a bank's own agents and their runs, and the model's tenant
   column and policies are already shaped for them, so nothing here needs a migration then.
 - **A key acts only on its own run.** A run of another key answers 404 and never 403, so a
-  run id is not something a key can probe for.
+  run id is not something a key can probe for. What an agent files names the open run it
+  was found in (`require_open_run`), so nothing an agent wrote lacks a night to trace to.
 - **A retry replays.** The same `Idempotency-Key` answers the run it already opened. A
   close repeated with the same values answers the run it already closed, because what makes
   a close idempotent is the closing values themselves and not a stored key.
@@ -111,21 +113,30 @@ def _key_for(who: Principal, wanted: str) -> tuple[ApiKey, uuid.UUID]:
     return key, who.agent_id
 
 
-def open_run(*, who: Principal, body: AgentRunInput, idempotency_key: str | None) -> AgentRunOut:
-    """`POST /agent-runs`: open a run for the key's agent and return it.
-
-    In R1 every run is a platform run (item 14), so a tenant-bound key is refused here as
-    well as at key creation. The refusal comes before any write, so nothing is stored.
-    """
+def refuse_tenant_key(who: Principal) -> None:
+    """In R1 every run is a platform run (item 14), so a bank's key opens none and writes
+    nothing to the watch: not a run, a source check, a change or anything on one. Every
+    such write asks this first, so a bank's key that somehow holds a watch scope is refused
+    with its reason named rather than writing the shared library, and the refusal comes
+    before any write, so nothing is stored."""
     if who.tenant_id is not None:
         raise ProblemError(
             status=403,
             code="tenant_agents_not_available",
             detail=(
-                "Agent runs are opened by the platform. The agents that feed the shared "
-                "library are part of the base package, and agents of your own arrive later."
+                "Agent runs and what they file belong to the platform. The agents that feed "
+                "the shared library are part of the base package, and agents of your own "
+                "arrive later."
             ),
         )
+
+
+def open_run(*, who: Principal, body: AgentRunInput, idempotency_key: str | None) -> AgentRunOut:
+    """`POST /agent-runs`: open a run for the key's agent and return it.
+
+    A bank's key is refused here as well as at key creation (`refuse_tenant_key`).
+    """
+    refuse_tenant_key(who)
     key, agent_id = _key_for(who, body.agent)
     if idempotency_key:
         replayed = _replayed_open(key, body, idempotency_key, who)
@@ -198,11 +209,12 @@ def _record_replay(run: AgentRun, who: Principal, summary: str) -> None:
 # ---------------------------------------------------------------------------------------
 # PATCH /agent-runs/{runId}
 # ---------------------------------------------------------------------------------------
-def _own_run(who: Principal, run_id: uuid.UUID) -> AgentRun:
+def _own_run(api_key_id: uuid.UUID | None, run_id: uuid.UUID) -> AgentRun:
     """The run this key opened. Another key's run, and one that never existed, answer the
-    same 404: which run ids exist is not something a key may probe for."""
+    same 404: which run ids exist is not something a key may probe for. No key at all (a
+    person naming a run) finds nothing, because every run was opened by a key."""
     run = AgentRun.objects.select_related("agent").filter(
-        pk=run_id, api_key_id=who.subject_id
+        pk=run_id, api_key_id=api_key_id
     ).first()  # ordering: pk lookup inside one key, at most one row
     if run is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
@@ -217,7 +229,7 @@ def finish_run(*, who: Principal, run_id: uuid.UUID, body: AgentRunFinish) -> Ag
     lost answer costs nothing; closing it into something else is refused, so a closed run
     is never quietly reopened or rewritten.
     """
-    run = _own_run(who, run_id)
+    run = _own_run(who.subject_id, run_id)
     stats = _stats(body.stats, run.stats)
     output_ref = body.output_ref or ""
     error = body.error or ""
@@ -253,16 +265,28 @@ def finish_run(*, who: Principal, run_id: uuid.UUID, body: AgentRunFinish) -> Ag
 # ---------------------------------------------------------------------------------------
 # The provenance guard the other writers of this chunk ask
 # ---------------------------------------------------------------------------------------
-def require_open_run(who: Principal, run_id: uuid.UUID) -> AgentRun:
+def require_open_run(who: Principal, run_id: uuid.UUID | None) -> AgentRun:
     """The open run this key named, for a write that files something against it: a source
-    check, a registered change, a proposal.
+    check or a registered change. A bank's key is refused first (`refuse_tenant_key`)."""
+    refuse_tenant_key(who)
+    return require_open_run_of_key(who.subject_id, run_id)
 
-    A run of another key answers 404, exactly as closing one does. A run of this key that
-    is already closed answers 422 `run_not_open`, because the caller can fix that by
-    opening a run — and because a closed run is a finished account of a night's work that
-    nothing may be added to afterwards.
+
+def require_open_run_of_key(api_key_id: uuid.UUID | None, run_id: uuid.UUID | None) -> AgentRun:
+    """The open run of the key `api_key_id`, named as `run_id`; for a proposal, whose
+    proposer carries the key rather than the principal.
+
+    Naming no run answers 422 `run_not_open`, and so does a run of this key that is already
+    closed, because the caller fixes both the same way, by opening a run and naming it —
+    and because a closed run is a finished account of a night's work that nothing may be
+    added to afterwards. A run of another key answers 404, exactly as closing one does.
     """
-    run = _own_run(who, run_id)
+    if run_id is None:
+        raise ValidationError(
+            "Name the open run this is filed under in agentRunId. Open one with POST /agent-runs first.",
+            code="run_not_open",
+        )
+    run = _own_run(api_key_id, run_id)
     if run.status != RunStatus.RUNNING.value:
         raise ValidationError(
             "That run is closed. Open a run before filing anything against it.",

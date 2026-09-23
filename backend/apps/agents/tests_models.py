@@ -359,7 +359,9 @@ class AgentKeyActorTests(ScenarioTestCase):
         # request of its own would carry no tenant: what the factory activated goes off again,
         # or the platform rows below are outside this session's zone (H15).
         tenancy.clear_tenant()
-        self.plain_key = platform_key(self.agent)[0]
+        self.plain_key, key = platform_key(self.agent)
+        # What an agent files names an open run of its own key (AGT-01).
+        self.open_run = AgentRun.objects.create(agent=self.agent, api_key=key, model="agent pipeline 0.4", pipeline_version="0.4")
 
     def test_the_principal_carries_the_agent_the_key_is_bound_to(self) -> None:
         with transaction.atomic():
@@ -384,6 +386,7 @@ class AgentKeyActorTests(ScenarioTestCase):
             "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}},
             "sourceLabel": "FFFS 2017:2",
             "sourceUrl": "https://www.fi.se/",
+            "agentRunId": str(self.open_run.id),
         }
         response = self.client.post(
             f"{V1}/proposals", data=body, content_type="application/json", HTTP_X_API_KEY=self.plain_key

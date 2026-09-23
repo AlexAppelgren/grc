@@ -500,3 +500,15 @@ section. Copied here as chunk3-rest-T20 requires.
       roadmap page already shows. Default if you say nothing: it stays as built, and a feed
       never disagrees with the roadmap page beside it, which is the rule chunk 6 ruling 5 set
       for these two reads.
+
+## agent-flow-run-guards: what an agent files names its run (2026-09-23)
+- [ ] **Default taken: an agent's key must name an open run of its own on
+      `POST /changes` and `POST /proposals`** (AGT-01, PRO-01): every key that registers a
+      change, and every key bound to an agent that files a proposal. Naming none, or a closed
+      one, answers 422 `run_not_open`; another key's run answers 404, as does any run a
+      person names. A bank's own key, which is bound to no agent, still files a proposal
+      without a run in R1, as a bank's person does, and every watch write (a run, a source
+      check, a change and anything on one) refuses it with 403 `tenant_agents_not_available`
+      whatever scopes it holds. Say so if a bank key's proposal should need a run too: a
+      bank's key cannot open one in R1, so that would stop bank keys proposing until
+      chunk 11 brings a bank's own agents.

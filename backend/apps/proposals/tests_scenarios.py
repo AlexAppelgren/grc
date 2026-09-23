@@ -148,6 +148,9 @@ class ProposalsScenarioTests(ScenarioTestCase):
             payload["terms"] = ["legal_entity:bank", "client_category:retail"]
             sources["terms"] = "https://www.fi.se/"
         key = key or factories.api_key(self.tenant, scopes=("proposals:write",))
+        # A key bound to an agent files under an open run of its own (AGT-01); a bank's own
+        # key is bound to none and names no run.
+        run = {"agentRunId": str(agents_testing.platform_run(key=key).id)} if getattr(key, "agent", None) else {}
         created = self._post(
             "/proposals",
             {
@@ -160,6 +163,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
                 "fieldSources": sources,
                 "sourceLabel": "Finansinspektionen, board decision 15 September 2026",
                 "sourceUrl": "https://www.fi.se/",
+                **run,
             },
             {"HTTP_X_API_KEY": key.plain_key},
         )
