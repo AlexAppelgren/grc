@@ -42,6 +42,7 @@ vi.mock('next/link', () => ({
 }));
 
 const ME_PATH = '/api/v1/me';
+const LANGUAGES_PATH = '/api/v1/reference/languages';
 const VOCAB_PATH = '/api/v1/vocab';
 const HOME_PATH = '/api/v1/home';
 const EMPTY_HOME = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
@@ -158,7 +159,7 @@ describe('the console landing', () => {
     expect(within(railNav()).queryAllByRole('link')).toHaveLength(0);
   });
 
-  it('fires no tenant query: the console shell asks for the session and nothing else', async () => {
+  it('fires no tenant query: the console shell asks for the session, the interface languages and nothing else', async () => {
     const sent = server(editor);
     renderIn(
       <ConsoleLayout>
@@ -167,7 +168,9 @@ describe('the console landing', () => {
     );
     await waitFor(() => expect(nav.replace).toHaveBeenCalled());
     expect(within(railNav()).getByRole('link', { name: 'Vocabularies' })).toHaveAttribute('href', '/console/vocabularies');
-    expect(new Set(sent.map((s) => `${s.method} ${s.path}`))).toEqual(new Set([`post ${REFRESH_PATH}`, `get ${ME_PATH}`]));
+    // The account menu's language choice reads the platform's own list of languages,
+    // which every session may read; nothing of a tenant's.
+    expect(new Set(sent.map((s) => `${s.method} ${s.path}`))).toEqual(new Set([`post ${REFRESH_PATH}`, `get ${ME_PATH}`, `get ${LANGUAGES_PATH}`]));
   });
 
   it('carries the console kicker, the person’s platform role, and a logo that leads back to the console', async () => {
