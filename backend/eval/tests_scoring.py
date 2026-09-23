@@ -244,6 +244,30 @@ class EndToEnd(unittest.TestCase):
         self.assertIn("cannot be imported", self.output[-1])
         self.assertEqual(self.run_cli("--retriever", "tests_scoring:Missing"), 1)
 
+    def test_a_backend_module_can_be_named_from_the_script(self) -> None:
+        """`apps.search.eval:Retriever` is found although Python puts only scripts/ on the path."""
+        self.write(*self.rows(False), blank_baseline())
+        self.assertEqual(self.run_cli("--retriever", "apps.shared.kinds:Missing"), 1)
+        self.assertIn("Missing is not in apps.shared.kinds", self.output[-1])
+
+    def test_every_run_names_the_tracks_that_do_not_gate_yet(self) -> None:
+        self.write(*self.rows(False), blank_baseline())
+        self.assertEqual(self.run_cli(), 0)
+        self.assertIn("search_eval: no baseline is recorded for retrieval or classification, so a drop there fails nothing yet", self.output)
+
+        half = recorded_baseline()
+        half["tracks"]["retrieval"] = {"recorded": False}
+        half["metrics"].update({m: None for m in se.RETRIEVAL_METRICS})
+        self.write(*self.rows(False), half)
+        self.output.clear()
+        self.assertEqual(self.run_cli("--classifier", "tests_scoring:PerfectClassifier"), 0)
+        self.assertIn("search_eval: no baseline is recorded for retrieval, so a drop there fails nothing yet", self.output)
+
+        self.write(*self.rows(False), recorded_baseline())
+        self.output.clear()
+        self.assertEqual(self.run_cli("--retriever", "tests_scoring:PerfectRetriever", "--classifier", "tests_scoring:PerfectClassifier"), 0)
+        self.assertFalse(any("no baseline is recorded" in line for line in self.output))
+
 
 class PerfectRetriever:
     name = "tests_scoring:PerfectRetriever"
@@ -283,6 +307,37 @@ class RealSets(unittest.TestCase):
         self.assertTrue(all("predictions" not in r for r in retrieval + classification), "committed sets carry no mock predictions")
         se.validate_baseline(se.load_json(se.EVAL / "baseline.json"))
         se.validate_tolerance(se.load_json(se.EVAL / "tolerance.json"))
+
+
+class NoAnswerQuestions(unittest.TestCase):
+    """A retrieval row with no expected keys is a question the library has no answer to
+    (SRC-S12): scored right only when the retriever returns nothing at all."""
+
+    def row(self, **fields: object) -> dict:
+        return {"id": "n", "language": "en", "query": "what does control 5.1 require", "expected": [], "match_kind": "concept", **fields}
+
+    def test_an_empty_expectation_is_right_only_on_an_empty_answer(self) -> None:
+        self.assertEqual(se.recall_at_k([], []), 1.0)
+        self.assertEqual(se.reciprocal_rank([], []), 1.0)
+        self.assertEqual(se.recall_at_k([], ["a"]), 0.0)
+        self.assertEqual(se.reciprocal_rank([], ["a"]), 0.0)
+        self.assertEqual(se.recall_at_k([], ["x"] * se.K + ["a"]), 0.0, "a hit below the top ten is still an answer")
+
+    def test_the_row_validates_and_scores_through_the_harness(self) -> None:
+        rows = [self.row(id="silent", predictions=[]), self.row(id="answers", language="sv", predictions=["obl-costs-charges"])]
+        se.validate_retrieval(rows)
+        result = se.evaluate_retrieval(rows, se.MockRetriever(rows))
+        self.assertEqual(result.per_language["en"], {"retrieval_recall_at_10": 1.0, "retrieval_mrr": 1.0})
+        self.assertEqual(result.per_language["sv"], {"retrieval_recall_at_10": 0.0, "retrieval_mrr": 0.0})
+
+    def test_expected_must_still_be_a_list(self) -> None:
+        for bad in (None, "obl-costs-charges", {}):
+            with self.subTest(expected=bad), self.assertRaises(ValueError):
+                se.validate_retrieval([self.row(expected=bad)])
+        row = self.row()
+        del row["expected"]
+        with self.assertRaisesRegex(ValueError, "expected missing"):
+            se.validate_retrieval([row])
 
 
 if __name__ == "__main__":

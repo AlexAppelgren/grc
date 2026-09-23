@@ -20,9 +20,12 @@ Status rules:
 
 The mock evaluators read a `predictions` field from the rows when every row has one
 (unit tests and dry runs). A real evaluator is named as `module:Class` with
-`--retriever` and `--classifier`; chunk 5 supplies the classifier and chunk 7 the
-retriever. Exit 0 when the gate passes, 1 otherwise. `--self-test` runs
-eval/tests_scoring.py.
+`--retriever` and `--classifier`; chunk 5 supplies the classifier, and the retriever is
+`apps.search.eval:Retriever` (hybrid search over the fixture corpus, in a throwaway
+database). A retrieval row whose `expected` is empty is a question with no answer: it
+scores right only when the retriever returns nothing. Every run says which tracks have no
+recorded baseline, because a drop in those fails nothing yet. Exit 0 when the gate passes,
+1 otherwise. `--self-test` runs eval/tests_scoring.py.
 
 Proven to fail 2026-09-19 with a recorded baseline and no evaluator (exit 1, track
 named), and with a mock prediction set scoring under the floor (exit 1, metric named);
@@ -101,6 +104,10 @@ def load_evaluator(spec: str) -> object:
     module_name, _, class_name = spec.partition(":")
     if not module_name or not class_name:
         raise ValueError(f"evaluator {spec!r} must be module:Class")
+    # The real evaluators live in the Django project (`apps.search.eval:Retriever`), and a
+    # script's own directory is what Python puts on the path, not the backend's.
+    if str(BACKEND) not in sys.path:
+        sys.path.append(str(BACKEND))
     try:
         module = importlib.import_module(module_name)
     except ImportError as exc:
@@ -135,8 +142,10 @@ def validate_retrieval(rows: list[dict]) -> None:
         for key in ("id", "language", "query", "expected", "match_kind"):
             if key not in r:
                 raise ValueError(f"retrieval.jsonl {r.get('id', '?')}: {key} missing")
-        if not r["expected"]:
-            raise ValueError(f"retrieval.jsonl {r['id']}: expected is empty")
+        # An empty list is a question the library has no answer to (SRC-S12): the retriever
+        # must return nothing at all.
+        if not isinstance(r["expected"], list):
+            raise ValueError(f"retrieval.jsonl {r['id']}: expected must be a list of stable keys")
         if r["match_kind"] not in ("keyword", "concept", "both"):
             raise ValueError(f"retrieval.jsonl {r['id']}: match_kind {r['match_kind']!r}")
         if "as_of" in r:
@@ -190,13 +199,15 @@ def validate_tolerance(data: dict) -> None:
 
 # ---------------------------------------------------------------- scoring
 def recall_at_k(expected: list[str], predicted: list[str], k: int = K) -> float:
-    if not expected:
-        return 0.0
+    if not expected:  # a no-answer question: right only when nothing at all came back
+        return 0.0 if predicted else 1.0
     top = set(predicted[:k])
     return sum(1 for key in expected if key in top) / len(expected)
 
 
 def reciprocal_rank(expected: list[str], predicted: list[str]) -> float:
+    if not expected:  # as recall: the first hit is already one too many
+        return 0.0 if predicted else 1.0
     wanted = set(expected)
     for rank, key in enumerate(predicted, start=1):
         if key in wanted:
@@ -387,6 +398,9 @@ def run(argv: list[str], paths: Paths | None = None, out=print) -> int:
         for line in report(track, result, baseline, tolerance):
             out(line)
         failures.extend(decide(track, result, baseline, tolerance))
+    unrecorded = [t for t in TRACKS if not baseline["tracks"][t]["recorded"]]
+    if unrecorded:
+        out("search_eval: no baseline is recorded for " + " or ".join(unrecorded) + ", so a drop there fails nothing yet")
     if args.record:
         try:
             updated = record(baseline, results)
