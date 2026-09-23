@@ -81,14 +81,19 @@ CODE_TOKEN = re.compile(r"`([a-z][a-z0-9]*(?:_[a-z0-9]+)+)`")
 # integrator without the value to branch on (first sweep, 2026-09-20). A test module is
 # not a source: a code only a test names is a code no route raises.
 CODE_LITERAL = re.compile(r"""code\s*=\s*["']([a-z][a-z0-9_]*)["']""")
+# The exception handlers answer for requests no route sees, so their codes are read too:
+# `enrolment_only` is the 403 an enrolment session gets from every route but passkey
+# registration and `GET /me` (AC-ID2), and a caller has to be able to branch on it.
+HANDLER_SOURCES = (BACKEND / "config" / "api.py",)
 # Below this, the scan found nothing rather than the truth: fail closed.
 CODES_FLOOR = 40
 
 
 def raisable_codes() -> frozenset[str]:
-    """Every `code=` literal under `backend/apps/`, outside its tests."""
+    """Every `code=` literal under `backend/apps/`, outside its tests, and in the exception
+    handlers of `config/api.py`."""
     found: set[str] = set()
-    for path in (BACKEND / "apps").rglob("*.py"):
+    for path in [*(BACKEND / "apps").rglob("*.py"), *HANDLER_SOURCES]:
         name = path.name
         if name.startswith("tests_") or "/migrations/" in path.as_posix():
             continue
