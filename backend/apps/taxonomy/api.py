@@ -959,7 +959,7 @@ def create_footprint_request(request: HttpRequest, body: FootprintRequestBody, q
     Errors to branch on: `request_pending` (409) when a change already waits for a decision;
     `unknown_key` (422) for a dimension or term that is not an active one, with the valid
     keys in `detail`; `validation_error` (422) for a change with no term, a term both added
-    and removed, or a body the schema refuses; `permission_denied` (403) without
+    and removed, a term named twice, or a body the schema refuses; `permission_denied` (403) without
     `footprint.request`; `unauthenticated` (401) without a session; `not_found` (404) for a
     principal in no organisation.
     """
@@ -1017,8 +1017,10 @@ def approve_footprint_request(request: HttpRequest, request_id: _FootprintReques
 
     Errors to branch on: `four_eyes_violation` (409) when the requester approves their own
     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
-    `stale_write` (409) when `If-Match` names an old version; `step_up_required` (403)
-    without a fresh passkey step-up; `permission_denied` (403) without `footprint.approve`;
+    `stale_write` (409) when `If-Match` names an old version, or when a term the change
+    adds was retired while it waited, which the approver rejects so the requester can ask
+    again; `step_up_required` (403) without a fresh passkey step-up; `permission_denied`
+    (403) without `footprint.approve`;
     `not_found` (404) for a request that is not here; `validation_error` (422) for an
     `If-Match` that is not a version or a body the schema refuses; `unauthenticated` (401)
     without a session.

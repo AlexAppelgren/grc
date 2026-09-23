@@ -232,6 +232,8 @@ def dry_run(tenant_id: uuid.UUID, adds: list[Any], removes: list[Any], order: li
 def _validate_change(tenant_id: uuid.UUID, adds: list[Any], removes: list[Any]) -> None:
     if not adds and not removes:
         raise ValidationError("Choose at least one term to add or remove.", code="validation_error")
+    if len({term.id for term in adds}) < len(adds) or len({term.id for term in removes}) < len(removes):
+        raise ValidationError("Name each term once in a change.", code="validation_error")
     both = {term.id for term in adds} & {term.id for term in removes}
     if both:
         raise ValidationError("A term cannot be added and removed in the same change.", code="validation_error")
@@ -425,6 +427,13 @@ def approve(
             code="four_eyes_violation",
         )
     adds, removes = _changes(request)
+    # A term retired while the request waited is not the library's any more: nobody may
+    # switch it on, so the approver rejects the change and the requester asks again.
+    if any(not term.active or not term.dimension.active for term in adds):
+        raise ValidationError(
+            "A term in this change was retired after it was asked for. Reject the change so it can be asked for again.",
+            code="stale_write",
+        )
     # Counted before the switch, against the footprint the approver was looking at.
     counted = preview_of(tenant.id, adds, removes)
     _switch_on(
