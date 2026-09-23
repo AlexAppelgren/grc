@@ -63,27 +63,38 @@ export function languageOptions(reference: RoleRef[] | undefined, tenant: Tenant
   return [...known.values()];
 }
 
+const sameOrder = (a: string[], b: string[]) => a.length === b.length && a.every((key, i) => key === b[i]);
+
 function ProfileForm({ tenant, languages }: { tenant: Tenant; languages: RoleRef[] }) {
   const t = useT();
   const update = useUpdateTenant();
+  const held = tenant.contentLanguages.map((l) => l.key);
   const [name, setName] = useState(tenant.name);
   const [timezone, setTimezone] = useState(tenant.timezone);
-  const [defaultLanguage, setDefaultLanguage] = useState(tenant.defaultLanguage?.key ?? languages[0]?.key ?? '');
-  const [content, setContent] = useState<string[]>(tenant.contentLanguages.map((l) => l.key));
+  // A tenant created from the console has no default language yet (D-68): the select
+  // starts on its placeholder rather than on whichever language happens to come first.
+  const [defaultLanguage, setDefaultLanguage] = useState(tenant.defaultLanguage?.key ?? '');
+  const [content, setContent] = useState<string[]>(held);
+  const [languagesMissing, setLanguagesMissing] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const toggle = (key: string, checked: boolean) => {
+    setLanguagesMissing(false);
     setContent((current) => (checked ? [...current.filter((k) => k !== key), key] : current.filter((k) => k !== key)));
   };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setSaved(false);
-    // Omitting a field leaves it alone; an empty list is refused, not accepted as "no
-    // languages" (D-68 can leave a freshly created tenant with none set yet, so saving
-    // just the timezone before any language is chosen must not resend an empty list).
+    // The server refuses an empty list; a tenant that keeps content languages cannot be left with none.
+    if (content.length === 0 && held.length > 0) {
+      setLanguagesMissing(true);
+      return;
+    }
+    // An omitted field is left alone: the languages go only when the draft changed them,
+    // and the default language only once one has been chosen.
     update.mutate(
-      { name: name.trim(), timezone: timezone.trim(), defaultLanguage: defaultLanguage || undefined, contentLanguages: content.length > 0 ? content : undefined },
+      { name: name.trim(), timezone: timezone.trim(), defaultLanguage: defaultLanguage || undefined, contentLanguages: sameOrder(content, held) ? undefined : content },
       { onSuccess: () => setSaved(true) },
     );
   };
@@ -105,6 +116,9 @@ function ProfileForm({ tenant, languages }: { tenant: Tenant; languages: RoleRef
           </Field>
           <Field id="org-default-language" label={t('admin.organisation.defaultLanguage')}>
             <Select id="org-default-language" value={defaultLanguage} onChange={(e) => setDefaultLanguage(e.target.value)}>
+              <option value="" disabled>
+                {t('admin.organisation.defaultLanguagePlaceholder')}
+              </option>
               {languages.map((language) => (
                 <option key={language.key} value={language.key}>
                   {language.label}
@@ -113,7 +127,7 @@ function ProfileForm({ tenant, languages }: { tenant: Tenant; languages: RoleRef
             </Select>
           </Field>
         </div>
-        <CheckGroup legend={t('admin.organisation.contentLanguages')} hint={t('admin.organisation.contentLanguagesHint')}>
+        <CheckGroup legend={t('admin.organisation.contentLanguages')} hint={t('admin.organisation.contentLanguagesHint')} error={languagesMissing ? t('admin.organisation.contentLanguagesRequired') : undefined}>
           {languages.map((language) => (
             <CheckRow key={language.key} id={`org-lang-${language.key}`} label={language.label} checked={content.includes(language.key)} onChange={(checked) => toggle(language.key, checked)} />
           ))}

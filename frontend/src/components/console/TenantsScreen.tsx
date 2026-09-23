@@ -45,9 +45,6 @@ function TenantRow({ tenant }: { tenant: ConsoleTenant }) {
   );
 }
 
-// `languages` is the reference read GET /reference/languages, the same rows
-// the organisation profile offers; it is a capability read for any session, so
-// the console makes it without holding anything of a tenant's.
 function CreateTenantModal({
   open,
   onClose,

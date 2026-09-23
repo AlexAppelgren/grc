@@ -5,6 +5,7 @@ import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent 
 import { tokenStore } from '@/shared/utils/api-client';
 
 import { CONSOLE_TENANTS_PAGE, consoleTenantKeys, useConsoleTenants, useCreateConsoleTenant } from './hooks';
+import type { ConsoleTenantCreate } from './types';
 
 // The read hook asks for one page at the server's maximum; creating a tenant
 // invalidates that page, so the new bank appears without a reload.
@@ -12,12 +13,9 @@ import { CONSOLE_TENANTS_PAGE, consoleTenantKeys, useConsoleTenants, useCreateCo
 const row = { id: 't1', name: 'Example Bank AB', slug: 'example-bank', status: 'active', defaultLanguage: null, createdAt: '2026-09-19T08:00:00Z' };
 const created = { ...row, id: 't3', name: 'Third Bank AB', slug: 'third-bank' };
 
-const body = {
+// Typed, so a field the contract no longer takes fails the typecheck (D-68).
+const body: ConsoleTenantCreate = {
   name: 'Third Bank AB',
-  slug: 'third-bank',
-  timezone: 'Europe/Stockholm',
-  defaultLanguage: 'sv',
-  contentLanguages: ['sv'],
   firstAdminEmail: 'administrator@third-bank.test',
   firstAdminTitle: '',
 };

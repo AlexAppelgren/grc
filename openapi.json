@@ -2374,7 +2374,7 @@
             "type": "string"
           },
           "name": {
-            "description": "The organisation's name as the bank itself will see it, at most 200 characters \u2014 'Example Bank AB'. It is the bank's own from the moment it exists and its administrators reword it themselves afterwards. Blank is refused with a 422. Its short name is derived from this and never typed by a person: lower-cased, hyphenated, and given a numeric suffix if another tenant already derived the same one, so the call can never be refused with `duplicate_key`.",
+            "description": "The organisation's name as the bank itself will see it, at most 200 characters \u2014 'Example Bank AB'. It is the bank's own from the moment it exists and its administrators reword it themselves afterwards. Blank is refused with a 422. Its short name is derived from this and never typed by a person: letters such as \u00f8, \u00e6 and \u00e5 spelled out, lower-cased, hyphenated, cut to at most 80 characters, and given a numeric suffix if another tenant already has the same one, even one created at the same moment, so the call is never refused over it.",
             "maxLength": 200,
             "title": "Name",
             "type": "string"
@@ -2474,7 +2474,7 @@
                 "type": "null"
               }
             ],
-            "description": "The language the bank reads and writes in first, as a reference to a language row by key \u2014 `sv`, `en`, `da`, `nb` or `fi` \u2014 with a label to show. Languages are library reference rows and not a vocabulary a bank's admin may extend. Null only for an organisation that has yet to choose one; every organisation created through this console has one from its first moment."
+            "description": "The language the bank reads and writes in first, as a reference to a language row by key \u2014 `sv`, `en`, `da`, `nb` or `fi` \u2014 with a label to show. Languages are library reference rows and not a vocabulary a bank's admin may extend. Null until the bank's own administrator chooses one on its Organisation profile: an organisation created through this console starts without one."
           },
           "id": {
             "description": "The bank's permanent identifier, a UUID issued once at creation and never reissued. It is the value the console's other calls carry in their path.",
@@ -2488,7 +2488,7 @@
             "type": "string"
           },
           "slug": {
-            "description": "The bank's short name \u2014 lower-case letters, digits and hyphens, `example-bank` \u2014 unique across the platform and fixed at creation. It is how support and URLs name the organisation, and it is the one field here that can never be changed.",
+            "description": "The bank's short name \u2014 lower-case letters, digits and hyphens, at most 80 characters, `example-bank` \u2014 derived from the name when the organisation was created, never typed by a person, unique across the platform and fixed from then on. Support staff use it to name the organisation in a conversation; it never appears in a URL and no call takes it. The list is ordered by it.",
             "title": "Slug",
             "type": "string"
           },
@@ -11390,7 +11390,7 @@
             "description": "The language the bank reads and writes in first: it decides which version of a library record a reader is shown when they have expressed no preference, and which language a briefing is written in. A reference to a language row by its key \u2014 `sv`, `en`, `da`, `nb` or `fi` \u2014 with a label to show. Languages are library reference rows, not a vocabulary a bank's admin may extend; read `GET /reference/languages` for the set on offer. Null only while a brand-new organisation has not chosen one."
           },
           "id": {
-            "description": "The bank's permanent identifier, a UUID issued once when the organisation was created and never reissued. Key your own records on it: the short name in `slug` reads better in a URL, but this is the value that cannot change.",
+            "description": "The bank's permanent identifier, a UUID issued once when the organisation was created and never reissued. Key your own records on it: the short name in `slug` is for people to read, while this is the value every call that names a bank takes.",
             "format": "uuid",
             "title": "Id",
             "type": "string"
@@ -11405,7 +11405,7 @@
             "description": "How far the bank has got through first-run setup, computed by the server on every read. It is progress through a checklist and nothing more: a complete onboarding says the bank has configured the product, never that it applies any obligation to itself and never that it complies with one."
           },
           "slug": {
-            "description": "The bank's short name \u2014 lower-case letters, digits and hyphens, such as `example-bank` \u2014 unique across the platform and fixed when the organisation was created. It appears in URLs and in support conversations. This call cannot change it; only the platform console sets it, and only at creation.",
+            "description": "The bank's short name \u2014 lower-case letters, digits and hyphens, at most 80 characters, such as `example-bank`. Nobody types it: it was derived from the organisation's name when the organisation was created, with letters such as \u00f8 and \u00e6 spelled out and a numeric suffix when another bank already had it. It is unique across the platform and fixed from then on, even when the name is reworded. Support staff use it to name the organisation in a conversation; it never appears in a URL and no call takes it. This call cannot change it.",
             "title": "Slug",
             "type": "string"
           },

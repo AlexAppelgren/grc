@@ -123,7 +123,7 @@ class TenantOut(CamelSchema):
         description=(
             "The bank's permanent identifier, a UUID issued once when the organisation was "
             "created and never reissued. Key your own records on it: the short name in `slug` "
-            "reads better in a URL, but this is the value that cannot change."
+            "is for people to read, while this is the value every call that names a bank takes."
         )
     )
     name: str = Field(
@@ -136,10 +136,13 @@ class TenantOut(CamelSchema):
     )
     slug: str = Field(
         description=(
-            "The bank's short name — lower-case letters, digits and hyphens, such as "
-            "`example-bank` — unique across the platform and fixed when the organisation was "
-            "created. It appears in URLs and in support conversations. This call cannot "
-            "change it; only the platform console sets it, and only at creation."
+            "The bank's short name — lower-case letters, digits and hyphens, at most 80 "
+            "characters, such as `example-bank`. Nobody types it: it was derived from the "
+            "organisation's name when the organisation was created, with letters such as ø and "
+            "æ spelled out and a numeric suffix when another bank already had it. It is unique "
+            "across the platform and fixed from then on, even when the name is reworded. "
+            "Support staff use it to name the organisation in a conversation; it never appears "
+            "in a URL and no call takes it. This call cannot change it."
         )
     )
     timezone: str = Field(
@@ -333,9 +336,11 @@ class ConsoleTenantRow(CamelSchema):
     )
     slug: str = Field(
         description=(
-            "The bank's short name — lower-case letters, digits and hyphens, `example-bank` — "
-            "unique across the platform and fixed at creation. It is how support and URLs name "
-            "the organisation, and it is the one field here that can never be changed."
+            "The bank's short name — lower-case letters, digits and hyphens, at most 80 "
+            "characters, `example-bank` — derived from the name when the organisation was "
+            "created, never typed by a person, unique across the platform and fixed from then "
+            "on. Support staff use it to name the organisation in a conversation; it never "
+            "appears in a URL and no call takes it. The list is ordered by it."
         )
     )
     status: str = Field(
@@ -350,9 +355,9 @@ class ConsoleTenantRow(CamelSchema):
         description=(
             "The language the bank reads and writes in first, as a reference to a language row "
             "by key — `sv`, `en`, `da`, `nb` or `fi` — with a label to show. Languages are "
-            "library reference rows and not a vocabulary a bank's admin may extend. Null only "
-            "for an organisation that has yet to choose one; every organisation created "
-            "through this console has one from its first moment."
+            "library reference rows and not a vocabulary a bank's admin may extend. Null until "
+            "the bank's own administrator chooses one on its Organisation profile: an "
+            "organisation created through this console starts without one."
         )
     )
     created_at: datetime = Field(
@@ -437,9 +442,10 @@ class ConsoleTenantCreateBody(CamelSchema):
             "The organisation's name as the bank itself will see it, at most 200 characters — "
             "'Example Bank AB'. It is the bank's own from the moment it exists and its "
             "administrators reword it themselves afterwards. Blank is refused with a 422. Its "
-            "short name is derived from this and never typed by a person: lower-cased, "
-            "hyphenated, and given a numeric suffix if another tenant already derived the same "
-            "one, so the call can never be refused with `duplicate_key`."
+            "short name is derived from this and never typed by a person: letters such as ø, æ "
+            "and å spelled out, lower-cased, hyphenated, cut to at most 80 characters, and "
+            "given a numeric suffix if another tenant already has the same one, even one "
+            "created at the same moment, so the call is never refused over it."
         ),
     )
     first_admin_email: str = Field(

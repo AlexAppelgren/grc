@@ -11,6 +11,8 @@
   "admin.organisation.defaultLanguage": "Standardspråk",
   "admin.organisation.contentLanguages": "Innehållsspråk, i ordning",
   "admin.organisation.contentLanguagesHint": "Sammanfattningar erbjuds på dessa språk, det första först.",
+  "admin.organisation.defaultLanguagePlaceholder": "Välj ett språk",
+  "admin.organisation.contentLanguagesRequired": "Välj minst ett innehållsspråk.",
   "admin.organisation.checklist": "Kom igång",
   "admin.organisation.progress": "{done} av {total} klara",
   "admin.organisation.step.profile": "Sätt profilen",
