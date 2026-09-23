@@ -5170,17 +5170,20 @@
         "type": "object"
       },
       "MailOutboxMessage": {
-        "description": "One message the mock mailer sent, for E2E journeys (playbook 8.3).",
+        "description": "One message the stand-in mailer sent during an end-to-end test run. Test\nenvironments only: a deployed environment never returns one.",
         "properties": {
           "body": {
+            "description": "The plain-text body as sent, lines separated by a newline. It carries whatever the mail carried, including a one-time enrolment code or an invitation link whose token rides after the `#`, which is exactly why the outbox is readable only in a test environment and never where a real person's mail is sent.",
             "title": "Body",
             "type": "string"
           },
           "subject": {
+            "description": "The subject line as sent, in plain text, for example the sign-in code mail or an invitation naming the bank. It is written for a person to read, so a test should find its mail by address and read the code or link from the body rather than match on this wording.",
             "title": "Subject",
             "type": "string"
           },
           "to": {
+            "description": "The one address the message went to, as the sender wrote it. A message to several people is several entries, so a test filters on this to find the mail meant for the person it is driving.",
             "title": "To",
             "type": "string"
           }
@@ -7508,8 +7511,15 @@
         "type": "object"
       },
       "ProductInfo": {
+        "description": "What a sign-in page needs before anyone has signed in: the product's own name.",
+        "examples": [
+          {
+            "productName": "Compliance Watch"
+          }
+        ],
         "properties": {
           "productName": {
+            "description": "The name this deployment of the product goes by, for a sign-in page to show before anyone has signed in; a passkey prompt names the service by the same name. The platform operator sets it for each deployment, so a rebrand changes it without a new release: show what this returns rather than a name of your own. It is the product's name and never a bank's; nothing about any bank or person is in it.",
             "title": "Productname",
             "type": "string"
           }
@@ -18666,12 +18676,25 @@
     },
     "/api/v1/e2e/mail-outbox": {
       "get": {
+        "description": "For automated end-to-end test runs only. Returns every message the stand-in mailer\nhas sent since the outbox was last cleared, oldest first, so a test journey can read\nthe enrolment code or invitation link a real person would find in their inbox, and can\nprove that a code request for someone who already has a passkey sent nothing.\n\nThe route exists only when the server runs in end-to-end test mode (`E2E_MODE`) with\nthe stand-in mailer. Every deployed environment refuses to boot with that mode on, so\nagainst a real bank's deployment this call always answers `not_found`, exactly like a\npath that does not exist, and no mail ever sent there can be read back through it. It\nstays in the published contract only so the test suite's client is typed against it;\nan integrator never calls it.\n\nNo credential is needed: the test mode is the whole gate. It changes nothing, writes\nnothing to the audit log and does not page, because a test run sends a handful of\nmessages. An empty outbox is a 200 with an empty list.\n\nErrors: `not_found` whenever end-to-end test mode or the stand-in mailer is off, which\nis always the case when deployed.",
         "operationId": "e2eMailOutbox",
         "parameters": [],
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": [
+                  {
+                    "body": "You have been invited to Example Bank AB on Compliance Watch.\nOpen this link within 72 hours to receive your code: http://localhost:3000/invite#example-invitation-token",
+                    "subject": "You are invited to Example Bank AB",
+                    "to": "new.member@example-bank.test"
+                  },
+                  {
+                    "body": "Your code is 123456. It works once and expires in 10 minutes.",
+                    "subject": "Your Compliance Watch sign-in code",
+                    "to": "new.member@example-bank.test"
+                  }
+                ],
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/MailOutboxMessage"
@@ -18684,7 +18707,7 @@
             "description": "OK"
           }
         },
-        "summary": "E2E Mail Outbox",
+        "summary": "Read the mail a test run sent (test environments only)",
         "tags": [
           "Shared"
         ]
@@ -20679,6 +20702,7 @@
     },
     "/api/v1/reference/product": {
       "get": {
+        "description": "Returns the name this deployment of the product goes by. Call it when a screen needs\nthe name before any session exists, such as a sign-in page, so it shows the name the\noperator configured for this deployment rather than one built into the client; the\nsame name is what a passkey prompt shows as the service the passkey belongs to.\n\nNo credential is needed and none is read: the answer is the same for every caller,\nsays nothing about any bank or person, and is safe to keep for the life of a page. It\nchanges nothing and writes nothing to the audit log. The call takes no input, so there\nis no error for a caller to branch on.",
         "operationId": "getProduct",
         "parameters": [],
         "responses": {
@@ -20693,7 +20717,7 @@
             "description": "OK"
           }
         },
-        "summary": "Get Product",
+        "summary": "Read the product's name before anyone has signed in",
         "tags": [
           "Shared"
         ]
