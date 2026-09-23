@@ -19,6 +19,9 @@ export const identityKeys = {
   sessions: ['me', 'sessions'] as const,
 };
 
+/** The sign-out mutation's key: the session gate takes the screens down while it is pending. */
+export const signOutKey = ['sign-out'] as const;
+
 export type SessionStatus = 'loading' | 'anonymous' | 'enrolment' | 'signed-in' | 'error';
 
 export interface SessionState {
@@ -169,12 +172,17 @@ export function useStepUp(): UseMutationResult<StepUpVerifyResponse, unknown, vo
   });
 }
 
-export function useSignOut(): UseMutationResult<void, unknown, void> {
+// `then` sits in the mutation's own options, not in a per-call mutate()
+// callback: the gate unmounts the menu that started the sign-out, and the
+// query client drops per-call callbacks of an unmounted component.
+export function useSignOut(then: () => void): UseMutationResult<void, unknown, void> {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: signOutKey,
     mutationFn: () => signOut(),
     onSettled: () => {
       queryClient.clear();
+      then();
     },
   });
 }
