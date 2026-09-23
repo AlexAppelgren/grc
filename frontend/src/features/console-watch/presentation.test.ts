@@ -4,7 +4,7 @@ import { t } from '@/shared/i18n';
 import { defaultFormatContext } from '@/shared/utils/format';
 
 import { agentKeyState, isLive, presentAgentKey, type AgentKey } from './agent-keys';
-import { authorityAndPublished, factProvenance, linkProvenance, type ConsoleChangeRow, type ObligationLink } from './change-facts';
+import { authorityAndPublished, factProvenance, linkProvenance, presentConsoleChange, type ConsoleChangeRow, type ObligationLink } from './change-facts';
 import { linksWithout } from './change-facts-detail';
 import { applyFilters, coverageSummary, presentSource, registryRows, sourceMeta, type RegistryRow, type Source, type SourceCoverage } from './sources';
 
@@ -54,6 +54,9 @@ describe('agent key state', () => {
 
 const fact = (confidence: number | null, suggested: boolean) => ({ ref: { key: 'k', kind: null, label: 'K' }, confidence, suggested });
 
+const SWEEPER = { id: 'a1', key: 'watch-sweeper' };
+const byAgent = { ...fact(0.9, false), confirmedOrigin: 'agent' as const, suggestedByAgent: SWEEPER, confirmedByAgent: { id: 'a2', key: 'library-confirmer' } };
+
 const changeRow = (over: Partial<ConsoleChangeRow>): ConsoleChangeRow =>
   ({
     id: 'c1',
@@ -77,14 +80,33 @@ describe('change fact provenance', () => {
   it('says who put a fact forward, and with what confidence when one was recorded', () => {
     expect(factProvenance(fact(0.8624, true), t)).toBe('Suggested by the agent, confidence 0.86');
     expect(factProvenance(fact(null, true), t)).toBe('Suggested by the agent');
-    expect(factProvenance(fact(0.5, false), t)).toBe('Confirmed for the library');
+  });
+
+  it('names the agent that suggested a fact when the read says which one', () => {
+    expect(factProvenance({ ...fact(0.8624, true), suggestedByAgent: SWEEPER }, t)).toBe('Suggested by watch-sweeper, confidence 0.86');
+    expect(factProvenance({ ...fact(null, true), suggestedByAgent: SWEEPER }, t)).toBe('Suggested by watch-sweeper');
+  });
+
+  it('a machine’s confirmation names both agents and never reads as a person’s', () => {
+    expect(factProvenance(byAgent, t)).toBe('Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer');
+    expect(factProvenance({ ...fact(null, false), confirmedOrigin: 'user' }, t)).toBe('Confirmed by a person for the library');
+    // A confirmation that does not say who gave it is never taken for a person's.
+    expect(factProvenance(fact(0.5, false), t)).toBe('Machine-confirmed');
   });
 
   it('reads an obligation link the same way, off its confirmation flag', () => {
     const link = (confidence: number | null, confirmed: boolean) =>
       ({ obligationId: 'o1', title: 'A duty', instrumentShortName: 'LVM', refLabel: '9 kap.', origin: 'agent', confidence, confirmed }) as ObligationLink;
     expect(linkProvenance(link(0.41, false), t)).toBe('Suggested by the agent, confidence 0.41');
-    expect(linkProvenance(link(null, true), t)).toBe('Confirmed for the library');
+    expect(linkProvenance({ ...link(null, true), confirmedOrigin: 'user' }, t)).toBe('Confirmed by a person for the library');
+    expect(linkProvenance({ ...link(0.9, true), ...byAgent }, t)).toBe('Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer');
+  });
+
+  it('a change whose facts a machine confirmed says so in the settled slot, and a person’s confirmation reads confirmed', () => {
+    const settled = (row: ConsoleChangeRow) => presentConsoleChange(row, t).at(-1)!;
+    expect(settled(changeRow({ unconfirmedCount: 0, changeType: byAgent }))).toMatchObject({ label: 'Machine-confirmed', tone: 'information' });
+    expect(settled(changeRow({ unconfirmedCount: 0, changeType: { ...fact(null, false), confirmedOrigin: 'user' } }))).toMatchObject({ label: 'Confirmed', tone: 'positive' });
+    expect(settled(changeRow({ unconfirmedCount: 1 }))).toMatchObject({ label: '1 fact to confirm', tone: 'warning' });
   });
 
   it('falls back to the day when a published date carries no precision, and to the authority alone when there is no date', () => {

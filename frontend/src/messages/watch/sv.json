@@ -28,6 +28,8 @@
   "watch.row.authorityAndDate": "{authority}, {date}",
   "watch.row.suggestedByAgent": "Föreslaget av agenten",
   "watch.row.machineConfirmed": "Maskinbekräftad",
+  "watch.fact.machineConfirmed": "Maskinbekräftad: föreslagen av {suggester}, bekräftad av {confirmer}",
+  "watch.fact.machineConfirmedBy": "Maskinbekräftad av {confirmer}",
   "watch.row.duplicatesMerged": "{count, plural, one {# dubblett sammanslagen} other {# dubbletter sammanslagna}}",
   "watch.row.outsideScope": "Utanför vår omfattning: {terms}",
   "watch.row.watchedMarket": "Marknad vi bevakar: {market}",

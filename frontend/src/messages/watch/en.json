@@ -28,6 +28,8 @@
   "watch.row.authorityAndDate": "{authority}, {date}",
   "watch.row.suggestedByAgent": "Suggested by the agent",
   "watch.row.machineConfirmed": "Machine-confirmed",
+  "watch.fact.machineConfirmed": "Machine-confirmed: suggested by {suggester}, confirmed by {confirmer}",
+  "watch.fact.machineConfirmedBy": "Machine-confirmed by {confirmer}",
   "watch.row.duplicatesMerged": "{count, plural, one {# duplicate merged} other {# duplicates merged}}",
   "watch.row.outsideScope": "Outside our scope: {terms}",
   "watch.row.watchedMarket": "Market we watch: {market}",

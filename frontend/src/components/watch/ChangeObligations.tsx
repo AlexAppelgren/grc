@@ -8,6 +8,7 @@ import { useFormatContext } from '@/features/identity/hooks';
 import type { PresentedPill } from '@/features/shared/presentation-types';
 import { slotTone } from '@/features/shared/tone-by-kind';
 import type { CaseObligationDecision, ChangeDetail } from '@/features/watch/api';
+import { machineConfirmedBy } from '@/features/watch/change-presentation';
 import { useAcceptCaseObligationLink, useCanWorkCase, useRemoveCaseObligationLink } from '@/features/watch/hooks';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -89,8 +90,9 @@ export function ChangeObligations({ change }: { change: ChangeDetail }) {
                 {link.title}
               </Link>
             </h3>
-            <p className="text-meta text-muted">
+            <p className="flex flex-wrap gap-x-3 gap-y-1 text-meta text-muted">
               <code className="font-mono">{link.refLabel}</code>
+              {machineConfirmedBy([link], t)}
             </p>
             {canWork && decision === undefined ? <LinkDecision changeId={change.id} obligationId={link.obligationId} /> : null}
           </Row>
