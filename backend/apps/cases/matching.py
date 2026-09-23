@@ -42,14 +42,14 @@ from __future__ import annotations
 import uuid
 
 from django.db import transaction
-from django.db.models import BooleanField, Func, Q, UUIDField, Value
+from django.db.models import Q
 
 from apps.cases import reading
 from apps.cases.models import ChangeCase
 from apps.shared import outbox, tenancy
 from apps.shared.audit import Actor, record
 from apps.shared.models import OutboxEvent, Tenant, TenantStatus
-from apps.taxonomy.matching import SQL_FUNCTION
+from apps.taxonomy.matching import in_footprint_expression
 from apps.taxonomy.models import CaseStatusCategory
 
 # What the two writers already record. One handler per kind, and no second relay.
@@ -117,12 +117,7 @@ def _recompute(tenant_id: uuid.UUID, *, change_id: uuid.UUID | None) -> None:
     row; the `exclude` is the same expression, so only the rows whose answer actually
     changed are written and a re-delivered event costs one statement and no rows.
     """
-    verdict = Func(
-        Value(tenant_id, output_field=UUIDField()),
-        reading.scope_term_ids_of_each_case(),
-        function=SQL_FUNCTION,
-        output_field=BooleanField(),
-    )
+    verdict = in_footprint_expression(tenant_id, reading.scope_term_ids_of_each_case())
     cases = ChangeCase.objects.filter(OPEN_CATEGORIES, tenant_id=tenant_id)
     if change_id is not None:
         cases = cases.filter(change_id=change_id)

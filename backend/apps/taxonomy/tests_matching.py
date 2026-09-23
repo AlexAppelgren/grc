@@ -12,9 +12,12 @@ from __future__ import annotations
 
 import itertools
 import uuid
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from typing import Any
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import connection
+from django.db.models import F, Func, UUIDField
 from django.test import TestCase
 
 from apps.library.reading import terms_of
@@ -286,3 +289,45 @@ class SeededStandard(TestCase):
         for door, resolve in doors.items():
             with self.subTest(door=door):
                 self.assertEqual([term.id for term in resolve()], [self.iso.id])
+
+
+class ListFilterReadsTheFootprintOnce(TestCase):
+    """What a list filters with (`in_footprint_expression`, taxonomy 0008, NFR-02): the same
+    verdict as `taxonomy_in_footprint` row by row, with the bank's guard read once per query
+    rather than once per row. Before 0008 the function re-read the footprint for every row,
+    which put the obligations list over its budget at 3000 obligations (r1-perf)."""
+
+    def setUp(self) -> None:
+        _seed()
+        self.tenant = factories.tenant(slug="once")
+        tenancy.activate(self.tenant.id)
+        for ref in (("service_type", "custody"), ("client_category", "retail")):
+            FootprintTerm.objects.create(tenant=self.tenant, term=tenant_lists_logic.term_by_ref(*ref))
+        # Every term, read as a record carrying that one term.
+        own = Func(F("id"), template="ARRAY[%(expressions)s]", output_field=ArrayField(UUIDField()))
+        self.rows = TaxonomyTerm.objects.annotate(admitted=matching.in_footprint_expression(self.tenant.id, own))
+
+    def test_it_agrees_with_the_function_on_every_term(self) -> None:
+        verdicts = dict(self.rows.values_list("id", "admitted"))
+        self.assertGreater(len(verdicts), 10)
+        self.assertIn(False, verdicts.values(), "the footprint above hides some terms")
+        for term_id, admitted in verdicts.items():
+            self.assertIs(admitted, matching.in_footprint_sql(self.tenant.id, [term_id]), term_id)
+
+    def test_the_guard_runs_once_per_query(self) -> None:
+        sql, params = self.rows.query.sql_with_params()
+        with connection.cursor() as cursor:
+            cursor.execute(f"EXPLAIN (ANALYZE, FORMAT JSON) {sql}", params)
+            plan = cursor.fetchone()[0][0]["Plan"]
+        guards = [node for node in _nodes(plan) if node.get("Function Name") == "taxonomy_footprint_guard"]
+        self.assertEqual(len(guards), len(matching.GUARD_TEMPLATES))
+        for node in guards:
+            self.assertEqual(node["Parent Relationship"], "InitPlan")
+            self.assertEqual(node["Actual Loops"], 1)
+        self.assertGreater(plan["Actual Rows"], 10, "the guard ran once for many rows")
+
+
+def _nodes(plan: dict[str, Any]) -> Iterator[dict[str, Any]]:
+    yield plan
+    for child in plan.get("Plans", []):
+        yield from _nodes(child)
