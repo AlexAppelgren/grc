@@ -53,7 +53,7 @@ def instrument(
     *,
     key: str,
     short_name: str | None = None,
-    regime: str | None = None,
+    regime: str,
     level: str = "act",
     binding: bool = True,
     owner_tenant: Tenant | None = None,
@@ -66,7 +66,8 @@ def instrument(
     last_verified_at: datetime.datetime | None = None,
     verified_by: User | None = None,
 ) -> Instrument:
-    """A Swedish instrument titled by its short name in English, the original."""
+    """A Swedish instrument titled by its short name in English, the original. `regime` is
+    a `regime:<key>` term and required, as the database requires it (D-39)."""
     with library_write(REASON):
         row = Instrument.objects.create(
             stable_key=key,
@@ -78,7 +79,7 @@ def instrument(
             binding=binding,
             jurisdiction=Jurisdiction.objects.get(key="se"),
             authority=Authority.objects.get(key=authority) if authority else None,
-            regime=term(regime) if regime else None,
+            regime=term(regime),
             in_force_from=in_force_from,
             in_force_from_precision=in_force_from_precision,
             in_force_to=in_force_to,

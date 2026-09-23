@@ -311,6 +311,7 @@ class ApprovalCorrectionsAndTheAssertion(ScenarioTestCase):
                 level=InstrumentLevel.objects.get(key="act"),
                 binding=True,
                 jurisdiction=Jurisdiction.objects.get(key="se"),
+                regime=TaxonomyTerm.objects.get(dimension__key="regime", key="securities"),
                 created_origin="user",
             )
             self.obligation = Obligation.objects.create(
@@ -508,6 +509,7 @@ class ReverificationStamp(ScenarioTestCase):
         seed_languages()
         seed_jurisdictions()
         seed_library_vocabularies()
+        seed_taxonomy_terms()
         self.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
         self.actor = Actor(kind=ActorType.USER, id=self.editor.id, label=self.editor.name)
         self.assertion_id = uuid.uuid4()
@@ -520,6 +522,7 @@ class ReverificationStamp(ScenarioTestCase):
                 level=InstrumentLevel.objects.get(key="act"),
                 binding=True,
                 jurisdiction=Jurisdiction.objects.get(key="se"),
+                regime=TaxonomyTerm.objects.get(dimension__key="regime", key="securities"),
                 created_origin="user",
             )
             self.obligation = Obligation.objects.create(

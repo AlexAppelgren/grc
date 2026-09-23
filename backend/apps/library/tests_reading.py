@@ -97,11 +97,13 @@ def set_footprint(tenant: Tenant, refs: tuple[str, ...]) -> None:
 def seed_obligations() -> None:
     """Six shared obligations. By tenant A's footprint: a, d, e and f are inside; b is
     outside by its service and c by its instrument's regime. The first one is complete: it
-    states its duty, cites a provision and is filed beside another obligation."""
+    states its duty, cites a provision and is filed beside another obligation. f names no
+    term of its own and carries only its instrument's regime, which every instrument has
+    (D-39)."""
     lvm = build.instrument(key="lvm", short_name="LVM", regime="regime:securities")
     esma = build.instrument(key="esma", short_name="ESMA guidelines", regime="regime:securities", level="eu_guidance", binding=False)
     lfd = build.instrument(key="lfd", short_name="LFD", regime="regime:insurance")
-    plain = build.instrument(key="plain", short_name="Plain")
+    plain = build.instrument(key="plain", short_name="Plain", regime="regime:securities")
     chapter = build.provision(lvm, key="lvm/9", ref_label="9 kap.")
     appropriateness = build.obligation(
         lvm,
@@ -209,7 +211,7 @@ class ObligationListTests(TestCase):
         self.assertEqual([(r["dimension"]["key"], [t["key"] for t in r["terms"]]) for r in advice], [("service_type", ["advice"])])
         insurance = rows["obl-c-insurance"]["outsideReason"]
         self.assertEqual([(r["dimension"]["key"], [t["key"] for t in r["terms"]]) for r in insurance], [("regime", ["insurance"])])
-        self.assertEqual(rows["obl-f-unscoped"]["outsideReason"], [], "a record with no terms matches every footprint")
+        self.assertEqual(rows["obl-f-unscoped"]["outsideReason"], [], "a record with no terms of its own is judged by its regime alone")
 
     def test_the_scope_rule_and_its_sql_twin_agree(self) -> None:
         # The footprint filter runs in SQL and the verdict in Python: one rule, pinned here.
@@ -301,7 +303,11 @@ class ObligationListTests(TestCase):
         self.assertEqual(keys(self.get({"instrument": "no-such-instrument"})), [], "an unknown key matches nothing")
         self.assertEqual(keys(self.get({"dutyType": "reporting"})), ["obl-d-research"])
         self.assertEqual(keys(self.get({"term": "service_type:execution_only"})), ["obl-a-appropriateness", "obl-e-guidance"])
-        self.assertEqual(keys(self.get({"term": "regime:securities"})), ["obl-a-appropriateness", "obl-d-research", "obl-e-guidance"], "the regime is inherited")
+        self.assertEqual(
+            keys(self.get({"term": "regime:securities"})),
+            ["obl-a-appropriateness", "obl-d-research", "obl-e-guidance", "obl-f-unscoped"],
+            "the regime is inherited",
+        )
         self.assertEqual(keys(self.get({"term": ["service_type:execution_only", "account_type:isk"]})), ["obl-a-appropriateness"], "every term must match")
         self.assertEqual(keys(self.get({"term": "regime:insurance", "outsideFootprint": "true"})), ["obl-c-insurance"])
         self.assertEqual(keys(self.get({"q": "PASSAR"})), ["obl-a-appropriateness"], "a title in any language, any case")

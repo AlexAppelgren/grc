@@ -196,7 +196,7 @@ class RoadmapObligations(TestCase):
         watch_build.seed_watch_reference()
         cls.tenant = factories.tenant(slug="roadmap-links", timezone="Europe/Stockholm")
         editor = factories.platform_user()
-        instrument = library_build.instrument(key="fffs-2017-2", short_name="FFFS 2017:2")
+        instrument = library_build.instrument(key="fffs-2017-2", short_name="FFFS 2017:2", regime="regime:securities")
         cls.confirmed = library_build.obligation(
             instrument, key="obl-research", titles={"en": "Assess the research paid for"}, ref_label="11 kap. 4 §"
         )
@@ -293,7 +293,7 @@ class RoadmapCost(TestCase):
         watch_build.seed_watch_reference()
         cls.tenant = factories.tenant(slug="roadmap-cost", timezone="Europe/Stockholm")
         cls.reader = factories.member_user(cls.tenant, roles=("reader",))
-        instrument = library_build.instrument(key="fffs-cost", short_name="FFFS 2026:1")
+        instrument = library_build.instrument(key="fffs-cost", short_name="FFFS 2026:1", regime="regime:securities")
         editor = factories.platform_user()
         for number in range(30):
             change = a_change(key_date=THIS_QUARTER + datetime.timedelta(days=number), title=f"Reform {number}")

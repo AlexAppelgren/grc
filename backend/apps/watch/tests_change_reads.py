@@ -315,7 +315,7 @@ class RelatedChangesTests(ChangeReadFixture):
 
     def test_an_obligation_no_change_touches_is_an_empty_answer_and_not_a_404(self) -> None:
         quiet = library_build.obligation(
-            library_build.instrument(key="quiet", short_name="QUIET"), key="obl-quiet", titles={"en": "Nothing yet"}
+            library_build.instrument(key="quiet", short_name="QUIET", regime="regime:securities"), key="obl-quiet", titles={"en": "Nothing yet"}
         )
         self.assertEqual(self.related(quiet).json(), {"items": [], "total": 0, "openCount": 0})
 
@@ -327,7 +327,7 @@ class RelatedChangesTests(ChangeReadFixture):
         """A record row-level security does not show the caller is not there, so it answers
         exactly as an id that never existed (INV-07)."""
         private = library_build.obligation(
-            library_build.instrument(key="theirs", short_name="THEIRS", owner_tenant=self.outside),
+            library_build.instrument(key="theirs", short_name="THEIRS", regime="regime:securities", owner_tenant=self.outside),
             key="obl-theirs",
             titles={"en": "Their own duty"},
             owner_tenant=self.outside,

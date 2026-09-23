@@ -54,8 +54,10 @@ SOURCE = "https://www.fi.se/"
 # the page names (2), the versions those changes wrote (1), and the footprint verdict,
 # which is `obligation_scopes()`'s own five queries (its own terms, its instrument id, and
 # `instrument_scopes()`'s pair and term lookups), the bank's footprint (1), the dimensions
-# that restrict it (1) and the dimensions and terms a screen names them by (3).
-UPDATES_QUERIES = 1 + 2 + 6 + 2 + 1 + 2 + 2 + 1 + 9
+# that restrict it (1) and the dimensions and terms a screen names them by (3). Re-measured
+# 2026-09-23 once every instrument carries a regime (library 0008): the regime's term lookup
+# used to be skipped for this test's instrument, which had none, so the verdict read 9.
+UPDATES_QUERIES = 1 + 2 + 6 + 2 + 1 + 2 + 2 + 1 + 10
 
 
 class LibraryUpdates(ScenarioTestCase):
@@ -86,6 +88,7 @@ class LibraryUpdates(ScenarioTestCase):
                 level=InstrumentLevel.objects.get(key="act"),
                 binding=True,
                 jurisdiction=Jurisdiction.objects.get(key="se"),
+                regime=TaxonomyTerm.objects.get(dimension__key="regime", key="securities"),
                 created_origin="user",
             )
 

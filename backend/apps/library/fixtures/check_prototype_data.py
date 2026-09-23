@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 """Referential integrity check for prototype_data.json (chunk 3 seeds load this file).
 
-Every reference in the fixture must resolve: instruments to authorities, regimes and
-jurisdictions; obligations to instruments; terms to taxonomy terms; changes to
-authorities and obligations; proposals to targets, changes and runs; sources to
-authorities; audit rows to their subjects; tenant rows to users and obligations; every
-vocabulary key used to the `vocabularies` section; every date to ISO 8601. Every
-obligation carries a verified date and every version a summary in its original language,
-and `_meta.anchor_date` (an instrument's verified date when nothing else gives one) is a
+Every reference in the fixture must resolve: instruments to authorities, regimes (a term
+of the `regime` dimension, required on every instrument, D-39) and jurisdictions;
+obligations to instruments; terms to taxonomy terms; changes to authorities and
+obligations; proposals to targets, changes and runs; sources to authorities; audit rows to
+their subjects; tenant rows to users and obligations; every vocabulary key used to the
+`vocabularies` section; every date to ISO 8601. Every obligation carries a verified date
+and every version a summary in its original language, no provision sits under an
+instrument whose level's kind is `standard` (D-35: a standard's text is licensed), and
+`_meta.anchor_date` (an instrument's verified date when nothing else gives one) is a
 date. With `--eval` it also checks that backend/eval/retrieval.jsonl and
 classification.jsonl only name keys that exist here, so the evaluation sets cannot drift
 from the corpus.
@@ -39,6 +41,8 @@ class Checker:
         v = data["vocabularies"]
         self.vocab: dict[str, set[str]] = {name: set(rows) for name, rows in v.items()}
         self.terms = {f"{t['dimension']}:{t['key']}" for t in data["taxonomy_terms"]}
+        self.regimes = {f"{t['dimension']}:{t['key']}" for t in data["taxonomy_terms"] if t["dimension"] == "regime"}
+        self.standard_levels = {key for key, row in v["instrument_level"].items() if row.get("kind") == "standard"}
         self.tags = {t["key"] for t in data["tags"]}
         self.jurisdictions = {j["code"] for j in data["jurisdictions"]}
         self.authorities = {a["key"] for a in data["authorities"]}
@@ -137,7 +141,10 @@ class Checker:
         self.unique(d["instruments"], "stable_key", "instruments")
         for i in d["instruments"]:
             where = f"instruments.{i['stable_key']}"
-            self.ref(where, i["regime"], self.terms, "regime term")
+            if i["regime"] is None:
+                self.problem(where, "regime is required")
+            elif i["regime"] not in self.regimes:
+                self.problem(where, f"regime {i['regime']!r} is not a term of the regime dimension")
             self.vocab_key(where, "instrument_level", i["level"])
             self.ref(where, i["authority"], self.authorities, "authority", optional=True)
             self.ref(where, i["jurisdiction"], self.jurisdictions, "jurisdiction")
@@ -156,9 +163,12 @@ class Checker:
             if r["from_instrument"] == r["to_instrument"]:
                 self.problem(where, "relates an instrument to itself")
         self.unique(d["provisions"], "stable_key", "provisions")
+        standards = {i["stable_key"] for i in d["instruments"] if i["level"] in self.standard_levels}
         for p in d["provisions"]:
             where = f"provisions.{p['stable_key']}"
             self.ref(where, p["instrument"], self.instruments, "instrument")
+            if p["instrument"] in standards:
+                self.problem(where, "a standard's text is licensed, so no provision sits under one")
             self.ref(where, p["parent"], self.provisions, "parent", optional=True)
         for op in d["obligation_provisions"]:
             where = f"obligation_provisions.{op['obligation']}"

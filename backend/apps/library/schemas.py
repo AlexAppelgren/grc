@@ -287,20 +287,29 @@ _OBLIGATION_TITLE = (
     "first, then their bank's default, then English, then whatever the record has. Null "
     "only when the record carries no title in any language at all."
 )
+_LEVEL_KIND = (
+    "The kind is null on every level but `standard`, the one value of the "
+    "`instrument_level_kind` kind: it marks an edition of a published standard such as "
+    "ISO/IEC 27001:2022, which binds nobody by law and is not guidance to comply with or "
+    "explain either, so read it as neither. The library holds no provision under it, "
+    "because its text is licensed."
+)
 _BINDING_LEVEL = (
     "What rank of instrument the duty sits in, as key, kind and label: how much weight the "
     "rule carries. The levels are vocabulary rows and not a closed set — a platform admin "
     "may extend, relabel or retire the list without a deploy — so read "
     "`GET /vocab/instrument_level` for the live set and match on the key; "
-    "`eu_regulation`, `eu_directive`, `eu_guidance`, `act` and `authority_regulation` are "
-    "seeded on day one. The level is not the same fact as `binding`: the level carries a "
-    "default and the instrument's own record decides."
+    "`eu_regulation`, `eu_directive`, `eu_guidance`, `act`, `authority_regulation` and "
+    "`standard` are seeded on day one. The level is not the same fact as `binding`: the "
+    "level carries a default and the instrument's own record decides. " + _LEVEL_KIND
 )
 _BINDING = (
     "Whether the instrument behind this duty binds the bank in law. False means guidance a "
-    "bank either complies with or explains, which is what a screen says in those words. It "
-    "is a fact about the rule and not about the bank: neither value says the duty applies "
-    "here, and neither says whether the bank complies with it."
+    "bank either complies with or explains, which is what a screen says in those words, "
+    "unless the level's kind is `standard`: an edition of a standard is false and is "
+    "neither law nor guidance (see the level). It is a fact about the rule and not about "
+    "the bank: neither value says the duty applies here, and neither says whether the bank "
+    "complies with it."
 )
 _DUTY_TYPE = (
     "What kind of duty this is, as key, kind and label. `conduct`, `disclosure`, "
@@ -900,15 +909,15 @@ class ObligationDetail(LibraryResponse):
             "own read."
         )
     )
-    regime: LibraryRef | None = Field(
+    regime: LibraryRef = Field(
         description=(
             "Which body of law the duty belongs to, as a term of the taxonomy's `regime` "
             "dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, "
             "`ai_ict`, `banking` and `payments` are seeded on day one. It is inherited from "
-            "the instrument, which is where the sector boundary is set, and it is null only "
-            "while an instrument carries none. The terms are vocabulary rows a platform "
-            "admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for "
-            "the live set and match on the key."
+            "the instrument, which is where the sector boundary is set, and it is never "
+            "null, because every instrument carries one. The terms are vocabulary rows a "
+            "platform admin may extend or retire without a deploy, so read "
+            "`GET /taxonomy/terms` for the live set and match on the key."
         )
     )
     binding_level: LibraryRef = Field(description=_BINDING_LEVEL)
@@ -1495,24 +1504,27 @@ _INSTRUMENT_LEVEL = (
     "The levels are vocabulary rows and not a closed set — a platform admin may extend, "
     "relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` "
     "for the live set and match on the key; `eu_regulation`, `eu_directive`, "
-    "`eu_guidance`, `act` and `authority_regulation` are seeded on day one."
+    "`eu_guidance`, `act`, `authority_regulation` and `standard` are seeded on day one. " + _LEVEL_KIND
 )
 _INSTRUMENT_JURISDICTION = (
     "Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary "
-    "(`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are rows "
-    "an admin manages, not a closed set: a platform admin may extend, relabel or retire one "
-    "without a deploy, so read `GET /reference/jurisdictions` for the live set and match on "
-    "the key, never on the label. The `kind` says whether it is a country, a union or an "
-    "international body."
+    "(`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values "
+    "are rows an admin manages, not a closed set: a platform admin may extend, relabel or "
+    "retire one without a deploy, so read `GET /reference/jurisdictions` for the live set "
+    "and match on the key, never on the label. The `kind` is one of three kinds fixed in "
+    "code: `country`, `supranational` (the European Union) or `international`, the "
+    "jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates "
+    "in."
 )
 _INSTRUMENT_REGIME = (
     "Which body of law the instrument belongs to, as a term of the taxonomy's `regime` "
     "dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, "
     "`banking` and `payments` are seeded on day one. This is the sector boundary every "
     "instrument carries (playbook 4.3), and it is what an obligation's own scope "
-    "inherits. Null only while an instrument carries none. The terms are vocabulary rows "
-    "a platform admin may extend or retire without a deploy, so read "
-    "`GET /taxonomy/terms` for the live set and match on the key."
+    "inherits. Never null: the library refuses an instrument without one, and a standard "
+    "takes the regime of the family of law it serves. The terms are vocabulary rows a "
+    "platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` "
+    "for the live set and match on the key."
 )
 _INSTRUMENT_OFFICIAL_REF = (
     "The reference the issuing authority itself publishes the instrument under, written "
@@ -1551,7 +1563,11 @@ class InstrumentRow(LibraryResponse):
     this row's reader would see: inside the footprint, or every one when
     `outsideFootprint` is set."""
 
+    # A row is validated again when the page takes it, so a row built any other way than
+    # through this constructor still never reaches the wire unchecked. One config: a second
+    # `model_config` in the class body replaces the first, examples and all.
     model_config = ConfigDict(
+        revalidate_instances="always",
         json_schema_extra={
             "examples": [
                 {
@@ -1596,7 +1612,7 @@ class InstrumentRow(LibraryResponse):
     binding: bool = Field(description=_BINDING, examples=[True])
     jurisdiction: LibraryRef = Field(description=_INSTRUMENT_JURISDICTION)
     authority: InstrumentAuthorityRef | None = Field(description="Who issued the instrument, or null when the fixture carries none.")
-    regime: LibraryRef | None = Field(description=_INSTRUMENT_REGIME)
+    regime: LibraryRef = Field(description=_INSTRUMENT_REGIME)
     official_ref: str = Field(description=_INSTRUMENT_OFFICIAL_REF, examples=["FFFS 2017:2"])
     in_force_from: PartialDate | None = Field(description=_INSTRUMENT_IN_FORCE_FROM)
     in_force_to: PartialDate | None = Field(description=_INSTRUMENT_IN_FORCE_TO)
@@ -1623,8 +1639,6 @@ class InstrumentRow(LibraryResponse):
     source_url: str = Field(
         description=_INSTRUMENT_SOURCE_URL, examples=["https://www.fi.se/en/published/regulations/2017/fffs-20172/"]
     )
-
-    model_config = ConfigDict(revalidate_instances="always")
 
 
 class InstrumentPage(LibraryResponse):
@@ -1810,7 +1824,7 @@ class InstrumentDetail(LibraryResponse):
     binding: bool = Field(description=_BINDING, examples=[True])
     jurisdiction: LibraryRef = Field(description=_INSTRUMENT_JURISDICTION)
     authority: InstrumentAuthorityRef | None = Field(description="Who issued the instrument, in full, or null when the fixture carries none.")
-    regime: LibraryRef | None = Field(description=_INSTRUMENT_REGIME)
+    regime: LibraryRef = Field(description=_INSTRUMENT_REGIME)
     official_ref: str = Field(description=_INSTRUMENT_OFFICIAL_REF, examples=["FFFS 2017:2"])
     eli_uri: str = Field(
         description=(
@@ -2104,11 +2118,12 @@ class LibraryAuthority(LibraryResponse):
     jurisdiction: LibraryRef = Field(
         description=(
             "Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary "
-            "(`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are "
-            "rows an admin manages, not a closed set: a platform admin may extend, relabel or "
-            "retire one without a deploy, so read `GET /reference/jurisdictions` for the live "
-            "set and match on the key, never on the label. The "
-            "`kind` says whether it is a country, a union or an international body; a change "
+            "(`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The "
+            "values are rows an admin manages, not a closed set: a platform admin may extend, "
+            "relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for "
+            "the live set and match on the key, never on the label. The `kind` is one of three "
+            "kinds fixed in code: `country`, `supranational` (the European Union) or "
+            "`international`, where a standards body such as ISO/IEC sits; a change "
             "takes its own jurisdiction from its authority, and a standard's term is accepted "
             "only when that kind is international (FP-04, AC-AGT1). A reader must not conclude "
             "from this alone that a change applies to a bank: applicability is a separate fact "

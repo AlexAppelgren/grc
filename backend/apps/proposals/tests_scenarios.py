@@ -93,6 +93,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
                 level=InstrumentLevel.objects.get(key="act"),
                 binding=True,
                 jurisdiction=Jurisdiction.objects.get(key="se"),
+                regime=TaxonomyTerm.objects.get(dimension__key="regime", key="securities"),
                 created_origin="user",
             )
             return Obligation.objects.create(

@@ -38,7 +38,7 @@ from apps.proposals.schemas import ProposalObligationVersionPayload
 from apps.shared import factories
 from apps.shared.models import AuditEvent
 from apps.shared.tenancy import library_write
-from apps.taxonomy.models import DutyType, InstrumentLevel, ProvisionKind
+from apps.taxonomy.models import DutyType, InstrumentLevel, ProvisionKind, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
 SUMMARIES = {
@@ -90,6 +90,7 @@ class ObligationProposalCreation(TestCase):
                     "level": InstrumentLevel.objects.get(key="act"),
                     "binding": True,
                     "jurisdiction": Jurisdiction.objects.get(key="se"),
+                    "regime": TaxonomyTerm.objects.get(dimension__key="regime", key="securities"),
                     "created_origin": "user",
                 },
             )

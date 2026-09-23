@@ -5883,7 +5883,7 @@ export interface components {
             authority: components["schemas"]["InstrumentAuthorityRef"] | null;
             /**
              * Binding
-             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
+             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words, unless the level's kind is `standard`: an edition of a standard is false and is neither law nor guidance (see the level). It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
              * @example true
              */
             binding: boolean;
@@ -5910,7 +5910,7 @@ export interface components {
             inForceFrom: components["schemas"]["PartialDate"] | null;
             /** @description The legal date the instrument stopped binding, at the precision the source gave it. Null on an instrument still in force, which is most of them. */
             inForceTo: components["schemas"]["PartialDate"] | null;
-            /** @description Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` says whether it is a country, a union or an international body. */
+            /** @description Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in. */
             jurisdiction: components["schemas"]["LibraryRef"];
             /**
              * Lastverifiedat
@@ -5918,7 +5918,7 @@ export interface components {
              * @example 2026-06-30T07:12:44Z
              */
             lastVerifiedAt: string | null;
-            /** @description What rank of instrument this is, as key, kind and label: how much weight it carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act` and `authority_regulation` are seeded on day one. */
+            /** @description What rank of instrument this is, as key, kind and label: how much weight it carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act`, `authority_regulation` and `standard` are seeded on day one. The kind is null on every level but `standard`, the one value of the `instrument_level_kind` kind: it marks an edition of a published standard such as ISO/IEC 27001:2022, which binds nobody by law and is not guidance to comply with or explain either, so read it as neither. The library holds no provision under it, because its text is licensed. */
             level: components["schemas"]["LibraryRef"];
             /**
              * Lineage
@@ -5933,8 +5933,8 @@ export interface components {
              * @example FFFS 2017:2
              */
             officialRef: string;
-            /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits. Null only while an instrument carries none. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
-            regime: components["schemas"]["LibraryRef"] | null;
+            /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
+            regime: components["schemas"]["LibraryRef"];
             /**
              * Shortname
              * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead.
@@ -6099,13 +6099,57 @@ export interface components {
          * @description One row of `GET /instruments` (INV-01). `obligationCount` counts the obligations
          *     this row's reader would see: inside the footprint, or every one when
          *     `outsideFootprint` is set.
+         * @example {
+         *       "authority": {
+         *         "key": "fi",
+         *         "name": "Finansinspektionen",
+         *         "shortName": "FI",
+         *         "url": "https://www.fi.se/"
+         *       },
+         *       "binding": true,
+         *       "id": "3f7c1e92-6b4a-4d3e-9c8f-1a2b3c4d5e6f",
+         *       "implementsNote": "MiFID II delegated directive (EU) 2017/593",
+         *       "inFootprint": true,
+         *       "inForceFrom": {
+         *         "date": "2018-01-03",
+         *         "precision": "day"
+         *       },
+         *       "inForceTo": null,
+         *       "jurisdiction": {
+         *         "key": "se",
+         *         "kind": "country",
+         *         "label": "Sweden"
+         *       },
+         *       "lastVerifiedAt": "2026-06-30T07:12:44Z",
+         *       "level": {
+         *         "key": "authority_regulation",
+         *         "kind": null,
+         *         "label": "Supervisory regulation"
+         *       },
+         *       "name": {
+         *         "isMachine": false,
+         *         "isOriginal": true,
+         *         "language": "sv",
+         *         "text": "FFFS 2017:2 om värdepappersrörelse"
+         *       },
+         *       "obligationCount": 2,
+         *       "officialRef": "FFFS 2017:2",
+         *       "regime": {
+         *         "key": "securities",
+         *         "kind": null,
+         *         "label": "Securities"
+         *       },
+         *       "shortName": "FFFS 2017:2",
+         *       "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
+         *       "stableKey": "fffs-2017-2"
+         *     }
          */
         InstrumentRow: {
             /** @description Who issued the instrument, or null when the fixture carries none. */
             authority: components["schemas"]["InstrumentAuthorityRef"] | null;
             /**
              * Binding
-             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
+             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words, unless the level's kind is `standard`: an edition of a standard is false and is neither law nor guidance (see the level). It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
              * @example true
              */
             binding: boolean;
@@ -6132,7 +6176,7 @@ export interface components {
             inForceFrom: components["schemas"]["PartialDate"] | null;
             /** @description The legal date the instrument stopped binding, at the precision the source gave it. Null on an instrument still in force, which is most of them. */
             inForceTo: components["schemas"]["PartialDate"] | null;
-            /** @description Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` says whether it is a country, a union or an international body. */
+            /** @description Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in. */
             jurisdiction: components["schemas"]["LibraryRef"];
             /**
              * Lastverifiedat
@@ -6140,7 +6184,7 @@ export interface components {
              * @example 2026-06-30T07:12:44Z
              */
             lastVerifiedAt: string | null;
-            /** @description What rank of instrument this is, as key, kind and label: how much weight it carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act` and `authority_regulation` are seeded on day one. */
+            /** @description What rank of instrument this is, as key, kind and label: how much weight it carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act`, `authority_regulation` and `standard` are seeded on day one. The kind is null on every level but `standard`, the one value of the `instrument_level_kind` kind: it marks an edition of a published standard such as ISO/IEC 27001:2022, which binds nobody by law and is not guidance to comply with or explain either, so read it as neither. The library holds no provision under it, because its text is licensed. */
             level: components["schemas"]["LibraryRef"];
             /** @description The instrument's full name, in the best language this reader can be served. The original is the jurisdiction's legal language, so a Swedish regulation read in English usually still answers its Swedish name rather than a translation. Null only when the record carries no name in any language. */
             name: components["schemas"]["LocalizedText"] | null;
@@ -6156,8 +6200,8 @@ export interface components {
              * @example FFFS 2017:2
              */
             officialRef: string;
-            /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits. Null only while an instrument carries none. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
-            regime: components["schemas"]["LibraryRef"] | null;
+            /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
+            regime: components["schemas"]["LibraryRef"];
             /**
              * Shortname
              * @description How the instrument is written on a pill or in a column, in its own language. A label a person wrote and may be reworded, so show it and match on `key` instead.
@@ -6273,7 +6317,7 @@ export interface components {
              * @example 3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11
              */
             id: string;
-            /** @description Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi` and `eu` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` says whether it is a country, a union or an international body; a change takes its own jurisdiction from its authority, and a standard's term is accepted only when that kind is international (FP-04, AC-AGT1). A reader must not conclude from this alone that a change applies to a bank: applicability is a separate fact (REG-01). */
+            /** @description Where the authority sits, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, where a standards body such as ISO/IEC sits; a change takes its own jurisdiction from its authority, and a standard's term is accepted only when that kind is international (FP-04, AC-AGT1). A reader must not conclude from this alone that a change applies to a bank: applicability is a separate fact (REG-01). */
             jurisdiction: components["schemas"]["LibraryRef"];
             /**
              * Key
@@ -7155,11 +7199,11 @@ export interface components {
         ObligationDetail: {
             /**
              * Binding
-             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
+             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words, unless the level's kind is `standard`: an edition of a standard is false and is neither law nor guidance (see the level). It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
              * @example true
              */
             binding: boolean;
-            /** @description What rank of instrument the duty sits in, as key, kind and label: how much weight the rule carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act` and `authority_regulation` are seeded on day one. The level is not the same fact as `binding`: the level carries a default and the instrument's own record decides. */
+            /** @description What rank of instrument the duty sits in, as key, kind and label: how much weight the rule carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act`, `authority_regulation` and `standard` are seeded on day one. The level is not the same fact as `binding`: the level carries a default and the instrument's own record decides. The kind is null on every level but `standard`, the one value of the `instrument_level_kind` kind: it marks an edition of a published standard such as ISO/IEC 27001:2022, which binds nobody by law and is not guidance to comply with or explain either, so read it as neither. The library holds no provision under it, because its text is licensed. */
             bindingLevel: components["schemas"]["LibraryRef"];
             /** @description What kind of duty this is, as key, kind and label. `conduct`, `disclosure`, `record_keeping`, `reporting`, `governance` and `technical` are the rows seeded on day one, and they are vocabulary rows rather than a closed enum: a platform admin may extend, relabel or retire the list without a deploy. Read `GET /vocab/duty_type` for the live set, send the key as `?dutyType=`, and never match on the label. */
             dutyType: components["schemas"]["LibraryRef"];
@@ -7202,8 +7246,8 @@ export interface components {
              * @example Third-party payments
              */
             refLabel: string;
-            /** @description Which body of law the duty belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. It is inherited from the instrument, which is where the sector boundary is set, and it is null only while an instrument carries none. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
-            regime: components["schemas"]["LibraryRef"] | null;
+            /** @description Which body of law the duty belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. It is inherited from the instrument, which is where the sector boundary is set, and it is never null, because every instrument carries one. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
+            regime: components["schemas"]["LibraryRef"];
             /**
              * Related
              * @description The duties a reader should see beside this one, as the library files them. Only records this caller may read appear: a relation to one they may not is left out silently rather than hinted at.
@@ -7672,11 +7716,11 @@ export interface components {
         ObligationRow: {
             /**
              * Binding
-             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
+             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words, unless the level's kind is `standard`: an edition of a standard is false and is neither law nor guidance (see the level). It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
              * @example true
              */
             binding: boolean;
-            /** @description What rank of instrument the duty sits in, as key, kind and label: how much weight the rule carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act` and `authority_regulation` are seeded on day one. The level is not the same fact as `binding`: the level carries a default and the instrument's own record decides. */
+            /** @description What rank of instrument the duty sits in, as key, kind and label: how much weight the rule carries. The levels are vocabulary rows and not a closed set — a platform admin may extend, relabel or retire the list without a deploy — so read `GET /vocab/instrument_level` for the live set and match on the key; `eu_regulation`, `eu_directive`, `eu_guidance`, `act`, `authority_regulation` and `standard` are seeded on day one. The level is not the same fact as `binding`: the level carries a default and the instrument's own record decides. The kind is null on every level but `standard`, the one value of the `instrument_level_kind` kind: it marks an edition of a published standard such as ISO/IEC 27001:2022, which binds nobody by law and is not guidance to comply with or explain either, so read it as neither. The library holds no provision under it, because its text is licensed. */
             bindingLevel: components["schemas"]["LibraryRef"];
             /** @description How the bank has judged its own compliance with this duty, as key, kind and label. This is the bank's own judgement, held in its own zone and never shared with another bank, and it is a different fact from whether the duty applies at all. The statuses are vocabulary rows the bank's own admin may extend, relabel or retire without a deploy, so read `GET /vocab/compliance_status` for the live set and match on the key; `compliant`, `partly_compliant`, `gap` and `not_assessed` are seeded on day one, each carrying its fixed category as its kind. Null until the compliance register arrives in a later release. */
             complianceStatus: components["schemas"]["LibraryRef"] | null;
@@ -9061,7 +9105,7 @@ export interface components {
         RelatedObligation: {
             /**
              * Binding
-             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words. It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
+             * @description Whether the instrument behind this duty binds the bank in law. False means guidance a bank either complies with or explains, which is what a screen says in those words, unless the level's kind is `standard`: an edition of a standard is false and is neither law nor guidance (see the level). It is a fact about the rule and not about the bank: neither value says the duty applies here, and neither says whether the bank complies with it.
              * @example true
              */
             binding: boolean;
