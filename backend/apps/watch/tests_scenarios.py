@@ -290,7 +290,7 @@ class WatchScenarioTests(TestCase):
         registered = self._register(
             suggesting.plain_key,
             {
-                **_CHANGE,
+                **_change(),
                 "agentRunId": str(run.id),
                 "changeTypeConfidence": 0.91,
                 "flags": ["advice_perimeter", "ai"],
