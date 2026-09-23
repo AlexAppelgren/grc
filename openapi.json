@@ -17417,7 +17417,7 @@
     },
     "/api/v1/auth/sign-out": {
       "post": {
-        "description": "Revokes the session behind the refresh cookie and clears the cookie, so neither token\nworks again; drop the access token from memory as well. It answers 204 whatever the state\nof the cookie, present, missing, stale or already signed out, so it is always safe to\ncall. It signs out this device only; `DELETE /me/sessions/{session_id}` signs out\nanother.\n\nNo `Authorization` header is needed: the refresh cookie, sent because it is scoped to\n`/api/v1/auth`, names the session. A live session is revoked with an entry in the\nsecurity log and the audit event `session.revoked`; a call with no live session still\nwrites the audit event `session.sign_out_without_session`. There is no error code to\nbranch on.",
+        "description": "Revokes the session behind the refresh cookie and clears the cookie, so neither token\nworks again; drop the access token from memory as well. It answers 204 whatever the state\nof the cookie, present, missing, stale or already signed out, so it is always safe to\ncall. It signs out this device only; `DELETE /me/sessions/{session_id}` signs out\nanother.\n\nNo `Authorization` header is needed: the refresh cookie, sent because it is scoped to\n`/api/v1/auth`, names the session and carries its secret, which is the proof. A cookie\nthat names a session without holding its current secret signs nobody out. A live\nsession is revoked with an entry in the security log and the audit event\n`session.revoked`; a call that proves no live session still writes the audit event\n`session.sign_out_without_session`. There is no error code to branch on.",
         "operationId": "signOut",
         "parameters": [],
         "responses": {

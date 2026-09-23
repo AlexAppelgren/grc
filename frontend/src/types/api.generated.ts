@@ -688,10 +688,11 @@ export interface paths {
          *     another.
          *
          *     No `Authorization` header is needed: the refresh cookie, sent because it is scoped to
-         *     `/api/v1/auth`, names the session. A live session is revoked with an entry in the
-         *     security log and the audit event `session.revoked`; a call with no live session still
-         *     writes the audit event `session.sign_out_without_session`. There is no error code to
-         *     branch on.
+         *     `/api/v1/auth`, names the session and carries its secret, which is the proof. A cookie
+         *     that names a session without holding its current secret signs nobody out. A live
+         *     session is revoked with an entry in the security log and the audit event
+         *     `session.revoked`; a call that proves no live session still writes the audit event
+         *     `session.sign_out_without_session`. There is no error code to branch on.
          */
         post: operations["signOut"];
         delete?: never;

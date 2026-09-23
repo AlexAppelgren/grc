@@ -220,6 +220,26 @@ class SessionLimits(TestCase):
         with self.assertRaises(ValidationError):
             session_logic.revoke_own_session(user_principal(subject_id=uuid.uuid4()), bundle.session.id, None)
 
+    def test_a_cookie_naming_a_session_without_its_secret_signs_nobody_out(self) -> None:
+        """Sign-out takes no bearer token, so the cookie is the only proof. Session ids are
+        not secret (every `session.created` audit row names one), so a cookie of
+        `<someone's session id>.<anything>` must not end their session or write
+        `session.revoked` in their name."""
+        bundle = self._session()
+        session_logic.sign_out(f"{bundle.session.id.hex}.forged", None)
+        self.assertIsNone(UserSession.objects.get(pk=bundle.session.pk).revoked_at)
+        self.assertFalse(AuditEvent.objects.filter(action="session.revoked", subject_id=bundle.session.id).exists())
+        self.assertTrue(AuditEvent.objects.filter(action="session.sign_out_without_session").exists())
+        session_logic.refresh(bundle.refresh_value, None)  # the owner's cookie still works
+
+    def test_the_cookie_just_rotated_away_still_signs_out_inside_the_grace_window(self) -> None:
+        """A tab signing out while another tab refreshes presents the previous secret; inside
+        the replay grace window that is still the owner's cookie."""
+        bundle = self._session()
+        session_logic.refresh(bundle.refresh_value, None)
+        session_logic.sign_out(bundle.refresh_value, None)
+        self.assertEqual(UserSession.objects.get(pk=bundle.session.pk).revoked_reason, "sign_out")
+
     def test_a_platform_user_gets_a_platform_session(self) -> None:
         staff = factories.platform_user()
         self.assertIsNone(session_logic.choose_tenant(staff))
