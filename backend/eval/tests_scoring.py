@@ -370,11 +370,31 @@ class PerfectRetriever:
     def search(self, query: str, lang: str, as_of: date | None) -> list[str]:
         return ["a"]
 
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]:
+        return ["a"]
+
 
 class EmptyRetriever(PerfectRetriever):
     name = "tests_scoring:EmptyRetriever"
 
     def search(self, query: str, lang: str, as_of: date | None) -> list[str]:
+        return []
+
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]:
+        return []
+
+
+class SearchFindsAskDoesNot:
+    """What SRC-S12 expects of the real retriever: the page finds a record, and Ask's
+    passages hold none."""
+
+    name = "tests_scoring:SearchFindsAskDoesNot"
+    is_mock = False
+
+    def search(self, query: str, lang: str, as_of: date | None) -> list[str]:
+        return ["obl-conformance"]
+
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]:
         return []
 
 
@@ -442,6 +462,24 @@ class NoAnswerQuestions(unittest.TestCase):
         result = se.evaluate_retrieval(rows, se.MockRetriever(rows))
         self.assertEqual(result.per_language["en"], {"retrieval_recall_at_10": 1.0, "retrieval_mrr": 1.0})
         self.assertEqual(result.per_language["sv"], {"retrieval_recall_at_10": 0.0, "retrieval_mrr": 0.0})
+
+    def test_a_row_via_ask_is_scored_against_asks_passages(self) -> None:
+        """SRC-S12: a question about a standard's control is one Search may answer, since it
+        finds the conformance duty, and Ask may not. So the row names `via: "ask"` and is
+        scored on the passages Ask would give a model, not on the search page."""
+        rows = [self.row(id="ask", via="ask"), self.row(id="search", language="sv")]
+        se.validate_retrieval(rows)
+        result = se.evaluate_retrieval(rows, SearchFindsAskDoesNot())
+        self.assertEqual(result.per_language["en"], {"retrieval_recall_at_10": 1.0, "retrieval_mrr": 1.0})
+        self.assertEqual(result.per_language["sv"], {"retrieval_recall_at_10": 0.0, "retrieval_mrr": 0.0})
+        for bad in ("model", "", None):
+            with self.subTest(via=bad), self.assertRaisesRegex(ValueError, "via"):
+                se.validate_retrieval([self.row(via=bad)])
+
+    def test_the_committed_set_holds_a_question_ask_must_not_answer(self) -> None:
+        rows = [r for r in se.load_jsonl(se.EVAL / "retrieval.jsonl") if r.get("via") == "ask"]
+        self.assertTrue(rows, "SRC-S12's no-answer row gates the release")
+        self.assertTrue(all(r["expected"] == [] for r in rows))
 
     def test_expected_must_still_be_a_list(self) -> None:
         for bad in (None, "obl-costs-charges", {}):

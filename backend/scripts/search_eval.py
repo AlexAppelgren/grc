@@ -5,6 +5,7 @@ AGT-08, AC-AGT1).
 Loads the labelled sets under backend/eval/ and scores two pluggable evaluators:
 
     Retriever.search(query, lang, as_of) -> [stable keys, best first]
+    Retriever.ask(query, lang, as_of) -> [stable keys of Ask's passages, best first]
     Classifier.classify(text) -> {"in_scope", "change_type", "flags", "scope", "risk_flags",
                                   "standard_terms"}
 
@@ -27,7 +28,10 @@ The mock evaluators read a `predictions` field from the rows when every row has 
 `--retriever` and `--classifier`; chunk 5 supplies the classifier, and the retriever is
 `apps.search.eval:Retriever` (hybrid search over the fixture corpus, in a throwaway
 database). A retrieval row whose `expected` is empty is a question with no answer: it
-scores right only when the retriever returns nothing. Every run says which tracks have no
+scores right only when the retriever returns nothing. A row with `via: "ask"` is scored
+on the passages Ask would give a model rather than on the search page (SRC-S12, D-81): a
+question about a standard's control is one Search answers with the conformance duty and
+Ask must not answer at all. Every run says which tracks have no
 recorded baseline, because a drop in those fails nothing yet. Exit 0 when the gate passes,
 1 otherwise. `--self-test` runs eval/tests_scoring.py.
 
@@ -66,6 +70,8 @@ SCREEN_FLAG = "embedded_instructions"
 # row names them in `standard_terms` rather than in `scope`.
 STANDARD_TERM = "standard:"
 K = 10
+# Where a retrieval row is scored: the search page, or the passages Ask would give a model.
+VIA = ("search", "ask")
 
 
 # ---------------------------------------------------------------- evaluator interfaces
@@ -74,6 +80,8 @@ class Retriever(Protocol):
     is_mock: bool
 
     def search(self, query: str, lang: str, as_of: date | None) -> list[str]: ...
+
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]: ...
 
 
 class Classifier(Protocol):
@@ -95,6 +103,8 @@ class MockRetriever:
 
     def search(self, query: str, lang: str, as_of: date | None) -> list[str]:
         return self._by_query.get((query, lang, as_of.isoformat() if as_of else None), [])
+
+    ask = search
 
 
 class MockClassifier:
@@ -160,6 +170,8 @@ def validate_retrieval(rows: list[dict]) -> None:
             raise ValueError(f"retrieval.jsonl {r['id']}: match_kind {r['match_kind']!r}")
         if "as_of" in r:
             date.fromisoformat(r["as_of"])
+        if r.get("via", "search") not in VIA:
+            raise ValueError(f"retrieval.jsonl {r['id']}: via {r['via']!r} is not one of {', '.join(VIA)}")
 
 
 def validate_classification(rows: list[dict]) -> None:
@@ -289,7 +301,8 @@ def evaluate_retrieval(rows: list[dict], retriever: Retriever | None) -> TrackRe
     per_row: list[tuple[dict, dict[str, float]]] = []
     for r in rows:
         as_of = date.fromisoformat(r["as_of"]) if r.get("as_of") else None
-        predicted = retriever.search(r["query"], r["language"], as_of)
+        read = retriever.ask if r.get("via") == "ask" else retriever.search
+        predicted = read(r["query"], r["language"], as_of)
         per_row.append((r, {"retrieval_recall_at_10": recall_at_k(r["expected"], predicted), "retrieval_mrr": reciprocal_rank(r["expected"], predicted)}))
     return TrackResult(
         "scored", retriever.name, retriever.is_mock,
