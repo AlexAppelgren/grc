@@ -193,7 +193,8 @@ def revoke_feed(*, tenant: Tenant, user: User, actor: Actor, feed_id: uuid.UUID)
     Another person's subscription and one that never existed both answer `not_found`, so no
     id can be probed for what somebody else holds. Revoking one that is already revoked
     answers the same way and is audited like any other call, because a retry has to be safe
-    and an unaudited 2xx is not a thing this product does (AC-AUD1).
+    and an unaudited 2xx is not a thing this product does (AC-AUD1). Its audit row then
+    says the row was already stopped, and when, rather than that this call stopped it.
     """
     feed = CalendarFeed.objects.filter(
         pk=feed_id,
@@ -202,10 +203,8 @@ def revoke_feed(*, tenant: Tenant, user: User, actor: Actor, feed_id: uuid.UUID)
     ).first()  # ordering: pk lookup inside one owner, at most one row
     if feed is None:
         raise ValidationError("Not found.", code="not_found")
-    before = feed.revoked_at
-    if before is None:
-        feed.revoked_at = timezone.now()
-        feed.save(update_fields=["revoked_at"])
+    stopped = _stop(feed, timezone.now())
+    stamp = feed.revoked_at.isoformat() if feed.revoked_at is not None else None
     record(
         action="calendar_feed.revoked",
         actor=actor,
@@ -214,8 +213,8 @@ def revoke_feed(*, tenant: Tenant, user: User, actor: Actor, feed_id: uuid.UUID)
         subject_title=FEED_SUBJECT,
         summary="Stopped a calendar subscription.",
         tenant_id=tenant.id,
-        before={"revokedAt": before.isoformat() if before is not None else None},
-        after={"revokedAt": feed.revoked_at.isoformat() if feed.revoked_at is not None else None},
+        before={"revokedAt": None if stopped else stamp},
+        after={"revokedAt": stamp},
     )
 
 
@@ -350,12 +349,29 @@ def _enrolled_again(feed: CalendarFeed) -> bool:
     )
 
 
+def _stop(feed: CalendarFeed, now: datetime.datetime) -> bool:
+    """Stamp the row if it still works, and say whether this call is the one that stopped it.
+
+    Conditional in the statement itself, because two requests — two tabs on the account
+    page, a list while a client polls, a person's revoke and the server's — can each read
+    the row as working before either writes. The second one's update waits for the first,
+    finds the row stopped and changes nothing, so the date it stopped never moves (nothing
+    overwritten). `feed` then carries the stamp the row holds, whoever wrote it."""
+    stopped = CalendarFeed.objects.filter(pk=feed.pk, revoked_at__isnull=True).update(revoked_at=now) == 1
+    if stopped:
+        feed.revoked_at = now
+    else:
+        feed.refresh_from_db(fields=["revoked_at"])
+    return stopped
+
+
 def _revoke_automatically(feed: CalendarFeed, now: datetime.datetime, summary: str) -> None:
-    """Stamp the row and record who did it, in this request's transaction. The actor is the
+    """Stop the row and record who did it, in this request's transaction. The actor is the
     system, because nobody asked for it: the bank sees the row a person's revoke would
-    leave, with a summary naming the rule that ended it (ADR 0045)."""
-    feed.revoked_at = now
-    feed.save(update_fields=["revoked_at"])
+    leave, with a summary naming the rule that ended it (ADR 0045). A row somebody else
+    stopped a moment ago is left as it is and audited once, by whoever stopped it."""
+    if not _stop(feed, now):
+        return
     record(
         action="calendar_feed.revoked",
         actor=Actor.system(),

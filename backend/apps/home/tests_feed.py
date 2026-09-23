@@ -340,6 +340,26 @@ class TheIdleRuleOnTheListAndTheCap(FeedFixture):
             [uuid.UUID(created.json()["feed"]["id"])],
         )
 
+    def test_two_reads_that_find_one_idle_subscription_stop_it_once(self) -> None:
+        """Two tabs on the account page, or a list while a calendar client polls, can both read
+        the row as working before either of them writes. The one that writes second finds it
+        stopped already and leaves it alone: the date it stopped does not move, and the audit
+        trail holds one row for one stop, not two claiming the row was working before each."""
+        headers = self.headers()
+        self.subscribe(headers)
+        self.age(list(self.own_rows().values_list("pk", flat=True)))
+        as_the_second_read_it = self.own_rows().get()
+        self.assertEqual(self.client.get(FEEDS, **headers).status_code, 200)
+        stopped_at = self.own_rows().get().revoked_at
+        self.assertIsNotNone(stopped_at)
+
+        a_moment_later = INSTANT + datetime.timedelta(seconds=1)
+        with frozen_at(a_moment_later):
+            feed_logic._revoke_automatically(as_the_second_read_it, a_moment_later, feed_logic._idle_summary())
+
+        self.assertEqual(self.own_rows().get().revoked_at, stopped_at, "the date it stopped moved")
+        self.assertEqual(AuditEvent.objects.filter(action="calendar_feed.revoked").count(), 1)
+
     @override_settings(CALENDAR_FEED_REVOKED_SHOWN=2)
     def test_the_list_holds_what_works_and_only_the_most_recently_stopped(self) -> None:
         """Bounded by design rather than paged: what works is capped, and of what was
