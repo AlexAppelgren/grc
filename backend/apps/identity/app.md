@@ -293,8 +293,9 @@ Then the next call with it answers 401
 
 ### ID-S21 — No API key scope allows a library edit `@integration` (ID-10, AC-PRO1)
 ```gherkin
-Given a key holding every scope that exists
-When it writes to an instrument, provision or obligation route directly
+Given a platform key bound to an agent, holding every scope that exists
+And a bank's key holding every scope a bank's key may hold
+When either writes to an instrument, provision or obligation route directly
 Then every such route answers 403 or does not exist
 And the only library-bound write it can make is a proposal
 ```

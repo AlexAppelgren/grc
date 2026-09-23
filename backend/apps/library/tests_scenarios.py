@@ -494,12 +494,19 @@ class LibraryScenarioTests(ScenarioTestCase):
         self.assertEqual(self._post(f"/obligations/{self.obligation.id}/verifications", {"outcome": "no_change"}, everything).status_code, 403)
 
         # No API key scope reaches it either: the route takes a person's session only, so a
-        # key holding every scope is not even a principal here (AC-PRO1, ID-S21).
-        key = factories.api_key(self.tenant, scopes=tuple(sorted(perms.ALL_SCOPES)))
-        agent = self._post(
-            f"/obligations/{self.obligation.id}/verifications", {"outcome": "no_change"}, {"HTTP_X_API_KEY": key.plain_key}
-        )
-        self.assertIn(agent.status_code, (401, 403))
+        # key holding every scope is not even a principal here (AC-PRO1, ID-S21). Only a
+        # platform key bound to an agent can hold every scope; a bank's key holds at most the
+        # bank's share, so both are tried.
+        from apps.agents import testing as agents_testing
+
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        every_scope = agents_testing.agent_key(scopes=tuple(sorted(perms.ALL_SCOPES)))
+        bank_key = factories.api_key(self.tenant, scopes=tuple(sorted(perms.TENANT_KEY_SCOPES)))
+        for key in (every_scope, bank_key):
+            agent = self._post(
+                f"/obligations/{self.obligation.id}/verifications", {"outcome": "no_change"}, {"HTTP_X_API_KEY": key.plain_key}
+            )
+            self.assertIn(agent.status_code, (401, 403))
 
         self.assertEqual(Verification.objects.count(), 2)
 

@@ -811,7 +811,18 @@ class IdentityScenarioTests(ScenarioTestCase):
 
         No API key scope allows a library edit (ID-10, AC-PRO1).
         """
-        key = factories.api_key(self.tenant, scopes=tuple(sorted(perms.ALL_SCOPES)))
+        from apps.agents import testing as agents_testing
+
+        # Only a platform key bound to an agent can hold every scope that exists; a bank's key
+        # holds at most the bank's share of them (D-61, D-62). Both are probed, and the Given
+        # is proved rather than assumed: the principal each resolves to holds what it claims.
+        tenancy.clear_tenant()
+        platform = agents_testing.agent_key(scopes=tuple(sorted(perms.ALL_SCOPES)))
+        bank = factories.api_key(self.tenant, scopes=tuple(sorted(perms.TENANT_KEY_SCOPES)))
+        for probe, holds in ((platform, perms.ALL_SCOPES), (bank, perms.TENANT_KEY_SCOPES)):
+            resolved = api_keys_logic.resolve_api_key(probe.plain_key)
+            assert resolved is not None
+            self.assertEqual(resolved.scopes, holds)
         self.assertFalse(any("write" in scope and scope.startswith("library") for scope in perms.ALL_SCOPES))
         self.assertFalse(any(scope.split(":")[0] in {"instruments", "provisions", "obligations"} for scope in perms.ALL_SCOPES))
         library_paths = ("/instruments", "/provisions", "/obligations")
@@ -839,9 +850,10 @@ class IdentityScenarioTests(ScenarioTestCase):
                 continue  # a public bootstrap step (code request, sign-in) is no grant to anything
             with self.subTest(route=f"{operation.method} {operation.path}"):
                 url = "/api/v1" + re.sub(r"\{[^}]+\}", "00000000-0000-4000-8000-000000000001", operation.path)
-                for headers in ({"HTTP_AUTHORIZATION": f"Bearer {key.plain_key}"}, {"HTTP_X_API_KEY": key.plain_key}):
-                    response = self.client.generic(operation.method, url, data="{}", content_type="application/json", **headers)
-                    self.assertIn(response.status_code, (401, 403), "a key reached a route it must not")
+                for key in (platform, bank):
+                    for headers in ({"HTTP_AUTHORIZATION": f"Bearer {key.plain_key}"}, {"HTTP_X_API_KEY": key.plain_key}):
+                        response = self.client.generic(operation.method, url, data="{}", content_type="application/json", **headers)
+                        self.assertIn(response.status_code, (401, 403), "a key reached a route it must not")
                 probed += 1
         self.assertGreater(probed, 10)
         # The routes a key may write are named one by one, never waved through by their
