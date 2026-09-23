@@ -18,6 +18,7 @@ import {
   userLocaleOf,
   useSession,
   useSessions,
+  useSetLanguage,
   useSignIn,
   useSignOut,
   useStepUp,
@@ -220,5 +221,29 @@ describe('identity hooks', () => {
     expect(disabled.result.current.fetchStatus).toBe('idle');
     const disabledSessions = renderHook(() => useSessions(false), { wrapper: queryWrapper().wrapper });
     expect(disabledSessions.result.current.fetchStatus).toBe('idle');
+  });
+
+  it('useSetLanguage saves the language on the person and refetches every answer, the session with it, in that language', async () => {
+    tokenStore.set('tok');
+    let locale = 'en';
+    const sent = installAdapter((s) => {
+      if (s.method === 'patch') locale = (s.body as { locale: string }).locale;
+      if (s.path === '/api/v1/me/passkeys') return { status: 200, data: [{ id: 'p1', nickname: locale === 'sv' ? 'Telefon' : 'Phone' }] };
+      return { status: 200, data: { ...me, user: { ...me.user, locale } } };
+    });
+    const { wrapper, queryClient } = queryWrapper();
+    const session = renderHook(() => useSession(), { wrapper });
+    const passkeys = renderHook(() => usePasskeys(), { wrapper });
+    await waitFor(() => expect(userLocaleOf(session.result.current.me)).toBe('en'));
+    await waitFor(() => expect(passkeys.result.current.data?.[0]?.nickname).toBe('Phone'));
+
+    const setLanguage = renderHook(() => useSetLanguage(), { wrapper });
+    await setLanguage.result.current.mutateAsync('sv');
+
+    expect(sent.filter((s) => s.method === 'patch')).toEqual([expect.objectContaining({ path: '/api/v1/me', body: { locale: 'sv' } })]);
+    // Settled only once every answer is back in the new language, so the switch never shows a mix.
+    expect(userLocaleOf(queryClient.getQueryData<Me>(['me']) ?? null)).toBe('sv');
+    expect(queryClient.getQueryData<{ nickname: string }[]>(['me', 'passkeys'])?.[0]?.nickname).toBe('Telefon');
+    await waitFor(() => expect(userLocaleOf(session.result.current.me)).toBe('sv'));
   });
 });

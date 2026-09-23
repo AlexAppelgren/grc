@@ -47,5 +47,7 @@
   "diff.addedStart": "Added text:",
   "diff.addedEnd": "End of added text.",
   "diff.removedStart": "Removed text:",
-  "diff.removedEnd": "End of removed text."
+  "diff.removedEnd": "End of removed text.",
+  "language.label": "Language",
+  "language.failed": "The language could not be changed. Try again."
 }
