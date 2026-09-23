@@ -2,7 +2,8 @@
 `@integration` scenario in app.md, each carrying its ID. Chunk 2 un-skips VOC-S1 to S7,
 VOC-S11, VOC-S14, FP-S1 to S4 and I18N-S1, S2 (backend halves; screens follow in chunk 3).
 FP-S6 (one decision per request, one waiting request) came with the regulatory scope work,
-FP-S17 (the opt-in rule in both twins) with the standards dimension.
+FP-S17 (the opt-in rule in both twins) with the standards dimension, FP-S16's integration
+half (its own class, which switches the held standard on) with the first standard.
 VOC-S8, S9, S10, S12, S13 stay skipped (R2, R3). Never delete a scenario without updating
 app.md.
 
@@ -34,6 +35,7 @@ import datetime
 from apps.cases import matching as case_matching, testing as cases_build
 from apps.cases.models import ChangeCase
 from apps.identity.models import TenantRole, User
+from apps.library import testing as library_build
 from apps.library.models import Authority, Instrument, Jurisdiction, Language, Obligation, ObligationTerm
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import load_library, seed_authorities
@@ -1442,13 +1444,6 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         A change's jurisdiction comes from its authority, and the feed has the watched-market view (FP-04).
         """
 
-    @skip("pending: FP-S16 (FP-01, INV-08, chunk 3)")
-    def test_fp_s16(self) -> None:
-        """FP-S16
-
-        A standard shows only to tenants whose regulatory scope names it (FP-01, INV-08, AC-FP3).
-        """
-
     def test_fp_s17(self) -> None:
         """FP-S17
 
@@ -1533,3 +1528,83 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         An entry's scope narrows the footprint and can never widen it (ACC-02, AC-ACC1).
         """
+
+
+class HeldStandardInScope(ScenarioTestCase):
+    """FP-S16's integration half, with ISO/IEC 27001 switched on here and only here. The
+    seed holds the term inactive until its doors guard it (tests_matching.HeldStandard), and
+    every term door resolves active terms only, so a scope request naming it is refused as
+    seeded. This setUp switches it on the way the test builders write, never a seed or a
+    fixture."""
+
+    def setUp(self) -> None:
+        _seed_library()
+        with library_write("test"):
+            TaxonomyTerm.objects.filter(dimension__key="standard", key="iso_iec_27001").update(active=True)
+        self.tenant = factories.tenant(slug="bank")
+        self.activate(self.tenant)
+        self.officer = factories.member(self.tenant, roles=("compliance_officer",), user_row=factories.user(name="Sara Lindqvist")).user
+        self.approver = factories.member(self.tenant, roles=("approver",), user_row=factories.user(name="Maria Ek")).user
+        self.duty = library_build.standard()
+        FootprintTerm.objects.create(tenant=self.tenant, term=tenant_lists_logic.term_by_ref("regime", "ai_ict"), added_by=self.officer)
+
+    def _inventory(self, headers: dict[str, Any], *, outside: bool = False) -> dict[str, dict[str, Any]]:
+        params = {"outsideFootprint": "true"} if outside else {}
+        response = self.client.get(f"{V1}/obligations", params, **headers)
+        self.assertEqual(response.status_code, 200, response.content)
+        return {row["stableKey"]: row for row in response.json()["items"]}
+
+    def _request(self, body: dict[str, Any], officer: dict[str, Any]) -> dict[str, Any]:
+        """The dry run's preview must be the one the request carries."""
+        dry = Client().post(f"{V1}/tenant/footprint/requests?dryRun=true", data=body, content_type="application/json", **officer)
+        self.assertEqual(dry.status_code, 200, dry.content)
+        created = self.client.post(f"{V1}/tenant/footprint/requests", data=body, content_type="application/json", **officer)
+        self.assertEqual(created.status_code, 201, created.content)
+        request: dict[str, Any] = created.json()
+        self.assertEqual(request["preview"]["obligations"], dry.json()["preview"]["obligations"])
+        return request
+
+    def _approve(self, request: dict[str, Any]) -> None:
+        path = f"{V1}/tenant/footprint/requests/{request['id']}/approve"
+        stale = self.client.post(path, data={}, content_type="application/json", **sign_in(self.approver, tenant=self.tenant))
+        self.assertEqual((stale.status_code, stale.json()["code"]), (403, "step_up_required"))
+        approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
+        approved = self.client.post(path, data={}, content_type="application/json", **approver, HTTP_IF_MATCH=str(request["version"]))
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+    def test_fp_s16(self) -> None:
+        """FP-S16
+
+        A standard shows only to tenants whose regulatory scope names it (FP-01, INV-08, AC-FP3).
+
+        "None followed" on the regulatory scope page and the narrowing warning are the
+        journey's; here the group is empty and the preview hides nothing.
+        """
+        officer = sign_in(self.officer, tenant=self.tenant)
+        standard = {"dimension": "standard", "key": "iso_iec_27001"}
+
+        # The scope holds the regime AI and ICT and no standard: the duty is absent from the
+        # inventory and appears with "Show outside our scope", hidden by the standards group.
+        self.assertNotIn(self.duty.stable_key, self._inventory(officer))
+        outside = self._inventory(officer, outside=True)[self.duty.stable_key]
+        self.assertFalse(outside["inFootprint"])
+        self.assertEqual([reason["dimension"]["key"] for reason in outside["outsideReason"]], ["standard"])
+        groups = {group["dimension"]["key"]: group for group in self.client.get(f"{V1}/tenant/footprint", **officer).json()["dimensions"]}
+        self.assertEqual((groups["standard"]["dimension"]["kind"], groups["standard"]["terms"]), ("opt_in", []))
+
+        # Adding the standard reveals the duty and hides nothing, so nothing narrows.
+        request = self._request({"adds": [standard], "removes": []}, officer)
+        self.assertEqual(request["preview"]["obligations"], {"hidden": 0, "revealed": 1, "available": True})
+
+        # Approval needs a fresh step-up; then the duty is in the inventory, and one audit
+        # event records the added term with the assertion and the request.
+        self._approve(request)
+        self.assertTrue(self._inventory(officer)[self.duty.stable_key]["inFootprint"])
+        self.activate(self.tenant)
+        event = AuditEvent.objects.get(action="footprint.term_added", tenant=self.tenant)
+        self.assertEqual(event.after, {"dimension": "standard", "term": "iso_iec_27001", "request": request["id"]})
+        self.assertIsNotNone(event.step_up_assertion_id)
+
+        # Removing it later counts the duty as hidden, which is what warns.
+        removal = self._request({"adds": [], "removes": [standard]}, officer)
+        self.assertEqual(removal["preview"]["obligations"], {"hidden": 1, "revealed": 0, "available": True})

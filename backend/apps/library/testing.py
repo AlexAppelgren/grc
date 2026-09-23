@@ -49,10 +49,21 @@ def term(ref: str) -> TaxonomyTerm:
     return TaxonomyTerm.objects.select_related("dimension").get(dimension__key=dimension, key=key)
 
 
+def authority(*, key: str, short_name: str, jurisdiction: str = "se") -> Authority:
+    """An issuing authority, named by its short name."""
+    with library_write(REASON):
+        return Authority.objects.create(
+            key=key, short_name=short_name, name=short_name, jurisdiction=Jurisdiction.objects.get(key=jurisdiction), url=SOURCE_URL
+        )
+
+
 def instrument(
     *,
     key: str,
     short_name: str | None = None,
+    official_ref: str | None = None,
+    source_url: str = SOURCE_URL,
+    jurisdiction: str = "se",
     regime: str,
     level: str = "act",
     binding: bool = True,
@@ -66,18 +77,19 @@ def instrument(
     last_verified_at: datetime.datetime | None = None,
     verified_by: User | None = None,
 ) -> Instrument:
-    """A Swedish instrument titled by its short name in English, the original. `regime` is
-    a `regime:<key>` term and required, as the database requires it (D-39)."""
+    """An instrument, Swedish unless `jurisdiction` says otherwise, titled by its short name
+    in English, the original. `regime` is a `regime:<key>` term and required, as the
+    database requires it (D-39)."""
     with library_write(REASON):
         row = Instrument.objects.create(
             stable_key=key,
             short_name=short_name or key.upper(),
-            official_ref=key.upper(),
+            official_ref=official_ref or key.upper(),
             eli_uri=eli_uri,
-            source_url=SOURCE_URL,
+            source_url=source_url,
             level=InstrumentLevel.objects.get(key=level),
             binding=binding,
-            jurisdiction=Jurisdiction.objects.get(key="se"),
+            jurisdiction=Jurisdiction.objects.get(key=jurisdiction),
             authority=Authority.objects.get(key=authority) if authority else None,
             regime=term(regime),
             in_force_from=in_force_from,
@@ -246,3 +258,34 @@ def library_of(count: int) -> list[Obligation]:
         )
         for n in range(count)
     ]
+
+
+# The IEC webstore's catalogue page of the edition (docs/plans/Verification_Log.md).
+ISO_27001_CATALOGUE = "https://webstore.iec.ch/en/publication/79694"
+
+
+def standard() -> Obligation:
+    """ISO/IEC 27001:2022 as INV-S11 and FP-S16 read it (INV-08, D-35): issued by ISO/IEC
+    under International, regime AI and ICT, no provision, and its one conformance duty on
+    the standard's term, whose state this leaves as it is. Returns the duty."""
+    authority(key="iso-iec", short_name="ISO/IEC", jurisdiction="intl")
+    edition = instrument(
+        key="iso-iec-27001-2022",
+        short_name="ISO/IEC 27001:2022",
+        official_ref="ISO/IEC 27001:2022",
+        source_url=ISO_27001_CATALOGUE,
+        jurisdiction="intl",
+        authority="iso-iec",
+        regime="regime:ai_ict",
+        level="standard",
+        binding=False,
+        in_force_from=datetime.date(2022, 10, 25),
+    )
+    return obligation(
+        edition,
+        key="iso-iec-27001-2022-conformance",
+        titles={"en": "ISO/IEC 27001:2022 conformance"},
+        ref_label=edition.official_ref,
+        duty_type="governance",
+        terms=("standard:iso_iec_27001",),
+    )
