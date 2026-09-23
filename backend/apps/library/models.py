@@ -285,8 +285,11 @@ class Provision(LibraryModel):
 
     Never under a standard (INV-08, AC-INV2, D-35): a standard's text is licensed. The
     trigger `provision_not_under_standard` (library 0008) refuses an insert, or a move of
-    `instrument_id`, onto an instrument whose level's kind is `standard`, whatever the write
-    path: a proposal, a seed, the watch pipeline or a tenant's own record."""
+    `instrument_id`, onto an instrument whose level's kind is `standard` or which the writer
+    cannot see, whatever the write path: a proposal, a seed, the watch pipeline or a
+    tenant's own record. Two more triggers there refuse the level paths: an instrument
+    holding provisions moved onto a standard level, and a level given the kind `standard`
+    while provisions sit under it."""
 
     stable_key = models.CharField(max_length=200, unique=True)
     instrument = models.ForeignKey(Instrument, on_delete=models.PROTECT, related_name="provisions")

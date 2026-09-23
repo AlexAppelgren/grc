@@ -38,7 +38,7 @@ from apps.shared import factories, tenancy
 from apps.shared.e2e_seed import SeedRefused
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.tenancy import LibraryWriteRefused, library_write
-from apps.taxonomy.models import InstrumentLevel, InstrumentLevelKind, TaxonomyTerm
+from apps.taxonomy.models import InstrumentLevel, InstrumentLevelKind, ProvisionKind, TaxonomyTerm
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.seeds import MIRRORED_JURISDICTION_KINDS, fixture, seed_library_vocabularies, seed_taxonomy_terms
 
@@ -262,15 +262,15 @@ class SharedOrMineIsolation(TransactionTestCase):
         self.tenant_b = factories.tenant(slug="lib-b")
         self.reporter = factories.user(email="reporter@lib-a.test")
 
-    def _instrument(self, key: str, owner: Tenant | None) -> Instrument:
+    def _instrument(self, key: str, owner: Tenant | None, *, level: str = "act") -> Instrument:
         with library_write("test"):
             return Instrument.objects.using("app").create(
                 stable_key=key,
                 short_name=key,
                 official_ref=key,
                 source_url="https://example.test/",
-                level=InstrumentLevel.objects.get(key="act"),
-                binding=True,
+                level=InstrumentLevel.objects.get(key=level),
+                binding=level != "standard",
                 jurisdiction=Jurisdiction.objects.get(key="se"),
                 regime=build.term("regime:securities"),
                 owner_tenant=owner,
@@ -289,6 +289,43 @@ class SharedOrMineIsolation(TransactionTestCase):
         with self.assertRaises(ProgrammingError), transaction.atomic(using="app"):
             tenancy.activate(self.tenant_b.id, using="app")
             self._instrument("forged", self.tenant_a)
+
+    def _provision(self, under: Instrument, key: str) -> Provision:
+        with library_write("test"):
+            return Provision.objects.using("app").create(
+                stable_key=key, instrument=under, kind=ProvisionKind.objects.using("app").get(key="chapter"), ref_label="1", path=f"{under.short_name} > 1"
+            )
+
+    def test_no_zone_writes_a_provision_under_an_instrument_it_cannot_see(self) -> None:
+        """D-35, INV-07: `provision_not_under_standard` runs as the writer, and row-level
+        security hides another zone's instrument from it, so it fails closed. Under a bank's
+        private standard no zone writes a provision, the bank's own included; under its
+        private law only the bank does, never another bank or the library."""
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            policy = self._instrument("bank-a-policy", self.tenant_a)
+            standard = self._instrument("bank-a-standard", self.tenant_a, level="standard")
+            self._provision(policy, "bank-a-policy/1")
+        for zone, under in (
+            (self.tenant_a, standard),
+            (self.tenant_b, standard),
+            (None, standard),
+            (self.tenant_b, policy),
+            (None, policy),
+        ):
+            with (
+                self.subTest(zone=zone.slug if zone else "library", under=under.stable_key),
+                self.assertRaisesMessage(IntegrityError, "provision_not_under_standard"),
+                transaction.atomic(using="app"),
+            ):
+                if zone:
+                    tenancy.activate(zone.id, using="app")
+                self._provision(under, f"{under.stable_key}/{zone.slug if zone else 'library'}")
+        self.assertEqual(list(Provision.objects.using("app").values_list("stable_key", flat=True)), ["bank-a-policy/1"])
+        # Nor does the library turn a level into a standard while it cannot see where a
+        # provision sits: bank A's is at `act`, hidden from it, and `eu_guidance` is refused too.
+        with self.assertRaisesMessage(IntegrityError, "provision_not_under_standard"), transaction.atomic(using="app"), library_write("test"):
+            InstrumentLevel.objects.using("app").filter(key="eu_guidance").update(kind=InstrumentLevelKind.STANDARD.value)
 
     def test_a_problem_report_stays_with_its_tenant(self) -> None:
         with transaction.atomic(using="app"):
@@ -401,6 +438,28 @@ class StandardsAndRegimes(TestCase):
             Provision.objects.filter(pk=self.chapter.pk).update(instrument=self.standard)
         self.assertIn("provision_not_under_standard", str(caught.exception))
         self.assertEqual(Provision.objects.get(pk=self.chapter.pk).instrument_id, self.law.id)
+
+    def test_the_database_refuses_moving_an_instrument_that_holds_provisions_onto_a_standard_level(self) -> None:
+        standard = InstrumentLevel.objects.get(key="standard")
+        with self.assertRaises(IntegrityError) as caught, transaction.atomic(), library_write("test"):
+            Instrument.objects.filter(pk=self.law.pk).update(level=standard)
+        self.assertIn("provision_not_under_standard", str(caught.exception))
+        self.assertEqual(Instrument.objects.get(pk=self.law.pk).level.key, "authority_regulation")
+        empty = build.instrument(key="sfs-2007-528", short_name="LVM", regime="regime:securities")
+        with library_write("test"):
+            Instrument.objects.filter(pk=empty.pk).update(level=standard)
+        self.assertEqual(Instrument.objects.get(pk=empty.pk).level.key, "standard", "an instrument holding no provision may be filed as a standard")
+
+    def test_the_database_refuses_turning_a_level_that_holds_provisions_into_a_standard(self) -> None:
+        with self.assertRaises(IntegrityError) as caught, transaction.atomic(), library_write("test"):
+            InstrumentLevel.objects.filter(key="authority_regulation").update(kind=InstrumentLevelKind.STANDARD.value)
+        self.assertIn("provision_not_under_standard", str(caught.exception))
+        self.assertIsNone(InstrumentLevel.objects.get(key="authority_regulation").kind)
+        # A deploy still puts the kind back on the standard level itself, which holds no provision.
+        with library_write("test"):
+            InstrumentLevel.objects.filter(key="standard").update(kind=None)
+        seed_library_vocabularies()
+        self.assertEqual(InstrumentLevel.objects.get(key="standard").kind, InstrumentLevelKind.STANDARD.value)
 
     def test_a_provision_under_law_is_written_and_moved_as_before(self) -> None:
         other = build.instrument(key="sfs-2007-528", short_name="LVM", regime="regime:securities")

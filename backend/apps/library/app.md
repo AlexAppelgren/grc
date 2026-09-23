@@ -65,17 +65,18 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 > **Note — what the standard clauses still lack (2026-09-23).** Built: the `standard`
 > instrument level with its tier-one kind (D-37), the seeded International jurisdiction of
 > kind `international`, left out of the footprint mirror (D-38), `instrument.regime` NOT
-> NULL with every seeded regime a term of the `regime` dimension (D-39), and the
-> `provision_not_under_standard` trigger refusing a provision inserted under, or moved to,
-> a standard (D-35, library 0008). Missing, so INV-01, INV-02 and INV-08 stay in progress:
+> NULL with every seeded regime a term of the `regime` dimension (D-39), and the database
+> refusing a provision under a standard on every path a row takes there (D-35, library
+> 0008): a provision inserted under, or moved to, a standard or an instrument the writer
+> cannot see; an instrument holding provisions moved onto a standard level; and an existing
+> level given the kind `standard` while provisions sit under it. Missing, so INV-01, INV-02
+> and INV-08 stay in progress:
 > the seeded ISO/IEC 27001:2022 edition with its one conformance duty and the screens that
 > read "Standard" in the binding slot and "licensed" in the tree (INV-S11); the instrument
 > proposal's apply refusing a regime from another dimension with 422 `not_a_regime`
 > (INV-S12's second half, which is why test_inv_s12 stays skipped); and the proposal checks
 > of D-35 at creation, at a reviewer's correction and at apply (422 `licensed_text`,
-> `one_conformance_obligation`, `standard_term_required`, AC-INV2). The trigger watches the
-> provision row; an instrument moved onto the standard level while it already holds
-> provisions is for that apply check to refuse, since no write path changes a level today.
+> `one_conformance_obligation`, `standard_term_required`, AC-INV2).
 
 ## 3. Acceptance criteria (from PRD, condensed)
 

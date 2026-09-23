@@ -123,7 +123,11 @@ or has differently:
   trigger on `provision` refuses a row under a standard-level instrument
   (INV-01, INV-08, D-35, D-39). Built 2026-09-23 in library 0008: the trigger
   `provision_not_under_standard` fires on insert and on a change of
-  `instrument_id`, and raises `check_violation`.
+  `instrument_id`, and raises `check_violation`; it also refuses a provision
+  under an instrument the writer cannot see, since it runs under row-level
+  security. Two smaller triggers close the other paths under a standard: an
+  instrument holding provisions moved onto a standard level, and an existing
+  level given the kind `standard` while provisions sit under it.
 - `source_check` gains `kind` (`sweep` or `recheck`, default `sweep`) and the
   nullable `subject_type` and `subject_id` a re-check names, which `schema.sql`
   lacks: every watch run re-checks the library records its sources cover and
