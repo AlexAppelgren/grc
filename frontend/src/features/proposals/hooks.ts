@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 import { listScopeTerms } from '@/features/watch/api';
 
 import * as proposals from './api';
-import type { ProposalApproveBody, ProposalPage, ProposalQuery, ProposalRejectBody, ProposalRow, TenantProposalPage, TenantProposalQuery } from './types';
+import type { ProposalApproveBody, ProposalDetail, ProposalPage, ProposalQuery, ProposalRejectBody, ProposalRow, TenantProposalPage, TenantProposalQuery } from './types';
 
 // Query keys and invalidation for the console queue (playbook 6.1). The
 // filters are part of the key, so narrowing the queue re-reads rather than
@@ -22,7 +22,7 @@ export function useProposals(query: ProposalQuery): UseQueryResult<ProposalPage>
   return useQuery({ queryKey: proposalKeys.list(query), queryFn: () => proposals.listProposals(query) });
 }
 
-export function useProposal(proposalId: string): UseQueryResult<ProposalRow> {
+export function useProposal(proposalId: string): UseQueryResult<ProposalDetail> {
   return useQuery({ queryKey: proposalKeys.detail(proposalId), queryFn: () => proposals.getProposal(proposalId) });
 }
 
@@ -69,7 +69,7 @@ export function useScopeTermLabels(refs: readonly string[]): { labelOf: (ref: st
   return { labelOf: (ref) => labels.get(ref) ?? ref, isPending: results.some((result) => result.isPending) };
 }
 
-/** What this tenant itself proposed on one library list and is still waiting on (GET /tenant/proposals, chunk4-T10; not on `main` yet). */
+/** What this tenant itself proposed on one library list and is still waiting on (GET /tenant/proposals). */
 export function useTenantProposals(query: TenantProposalQuery, enabled = true): UseQueryResult<TenantProposalPage> {
   return useQuery({ queryKey: ['proposals', 'tenant', query], queryFn: () => proposals.listTenantProposals(query), enabled });
 }
