@@ -860,3 +860,15 @@ Nothing waits for these; each has the default the build took.
       only this bank's sessions. Default if you say nothing: it stays as built, and the
       published description of `GET /me/sessions` says a person sees only this bank's
       sessions there.
+
+## ai-log-read: a shared "So what?" reads each bank's own review state (2026-09-23, AUD-02)
+
+- [ ] **A library "So what?" in the AI log shows the reading bank's own review, not one
+      shared state.** The row is one per change and every bank reads it; no bank may move it
+      (chunk 5 ruling I), and D-62 leaves the library to agents, so nobody would ever move it
+      and the log would show "draft" forever beside a bank's confirmed case. The default
+      taken: `GET /ai-generations` computes the row's `status`, `reviewedBy` and `reviewedAt`
+      for the reading bank from its own case (`confirmed` as drafted, `edited` when the bank
+      rewrote it, `draft` otherwise), and nothing shared is written. AUD-S4 in
+      `governance/app.md` is reworded to match. Default if you say nothing: it stays this way.
+

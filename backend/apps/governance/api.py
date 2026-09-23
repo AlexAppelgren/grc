@@ -102,13 +102,20 @@ def list_ai_generations(
     own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs
     its own agent against the write routes, which is the agent-access work in R2.
 
+    Call it with `subjectId` to list every call about one record, such as each drafted
+    “So what?” of one change. Each row carries its review state, who stood behind it
+    and when, and, on an Ask answer, the reader's verdict and note. A shared “So
+    what?” is one row every bank reads and none may move, so its review state here is this
+    bank's own, computed from this bank's case for the change; another bank's confirmation
+    never shows, and reading it writes nothing.
+
     Pages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no
     rows, or a filter matching none, is a 200 with an empty `items` and a `total` of 0.
-    Errors: `permission_denied` without `ai_log.read`, with `requiredPermission` named;
-    `unauthenticated` without a session.
+    Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
+    `ai_log.read`, with `requiredPermission` named; `validation_error` (422) when
+    `subjectId` is not a UUID, `purpose` is longer than 32 characters, `status` longer than
+    16, or `limit` or `offset` is out of range.
     """
-    rows, total = ai_log.generations_for(
-        purpose=filters.purpose, status=filters.status, limit=page.limit, offset=page.offset
-    )
     tenant_id = cast(Principal, request.auth).tenant_id  # type: ignore[attr-defined]
+    rows, total = ai_log.generations_for(tenant_id=tenant_id, filters=filters, limit=page.limit, offset=page.offset)
     return AiGenerationPage(items=[ai_log.generation_row(row, tenant_id) for row in rows], total=total)
