@@ -75,6 +75,7 @@ const home: Home = {
       kind: 'regulatory',
       itemType: 'change_date',
       date: '2026-10-01',
+      datePrecision: 'day',
       quarter: '2026-Q4',
       label: 'In force',
       title: 'FI adopts amended rules on paying for investment research',

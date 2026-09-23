@@ -53,6 +53,7 @@ from apps.taxonomy.models import CaseStatusCategory
 from apps.watch.models import ChangeObligation
 from apps.watch.reading import urgency_refs
 from apps.watch.schemas import CaseCategory, Origin, WatchObligationLink
+from apps.watch.schemas import DatePrecision as Precision
 
 # What this release puts on the roadmap: a regulatory change's own key date. Both are
 # tier-one kinds (apps/shared/kinds.py, apps/home/schemas.py); the screen picks its pill
@@ -111,6 +112,7 @@ def _item(case: ChangeCase, urgency: LibraryRef, obligations: list[WatchObligati
         kind=ITEM_KIND,
         item_type=ITEM_TYPE,
         date=day,
+        date_precision=cast(Precision, case.change.key_date_precision),
         quarter=quarter_of(day),
         label=case.change.key_date_label,
         title=case.change.title,
