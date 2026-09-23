@@ -16,11 +16,13 @@ the schema owner through by `session_user`. Each table's doors are the trigger's
 - the inventory and the library vocabularies: an approved proposal or a reference seed;
 - `obligation` and `verification`: those two and the re-verification stamp (INV-06);
 - the seven watch tables: the watch door only (D-64);
-- `search_chunk`: the index door only (D-65).
+- `search_chunk`: the index door only (D-65);
+- `language`, `jurisdiction` and `jurisdiction_label`, the library app's reference rows
+  that are not `LibraryModel`s and that no proposal writes: a reference seed only.
 
 The tables are listed here explicitly; apps/shared/tests_library_db_guard.py reads the app
 registry and fails for any library table this list (or a later table's own migration)
-leaves out. Every app whose tables are listed is a dependency, at its latest migration, so
+leaves out, and for any shared row of a library-zone app that is neither. Every app whose tables are listed is a dependency, at its latest migration, so
 the tables exist when the triggers are attached. A library table created after this
 migration attaches the trigger in its own migration with `library_door_trigger_operations()`.
 """
@@ -30,6 +32,7 @@ from django.db import migrations
 from apps.shared.migration_helpers import (
     INDEX_DOORS,
     INVENTORY_DOORS,
+    REFERENCE_DOORS,
     STAMPED_DOORS,
     WATCH_DOORS,
     library_door_function_operations,
@@ -91,6 +94,7 @@ WATCH_TABLES = (
     "change_obligation",
 )
 INDEX_TABLES = ("search_chunk",)
+REFERENCE_TABLES = ("language", "jurisdiction", "jurisdiction_label")
 
 
 class Migration(migrations.Migration):
@@ -109,4 +113,5 @@ class Migration(migrations.Migration):
         *[operation for table in STAMPED_TABLES for operation in library_door_trigger_operations(table, STAMPED_DOORS)],
         *[operation for table in WATCH_TABLES for operation in library_door_trigger_operations(table, WATCH_DOORS)],
         *[operation for table in INDEX_TABLES for operation in library_door_trigger_operations(table, INDEX_DOORS)],
+        *[operation for table in REFERENCE_TABLES for operation in library_door_trigger_operations(table, REFERENCE_DOORS)],
     ]

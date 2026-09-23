@@ -34,6 +34,8 @@ from typing import Any, Literal, TypeVar
 
 from django.db import DEFAULT_DB_ALIAS, connections, models, transaction
 
+from apps.shared.migration_helpers import LIBRARY_DOOR_SETTING
+
 TENANT_SETTING = "app.tenant_id"
 # The identity-lookup flag (chunk 1). Five tables are read before any tenant is known: an
 # invitation by its token or address, a membership at passkey sign-in (to pick the
@@ -46,14 +48,15 @@ TENANT_SETTING = "app.tenant_id"
 # (apps/shared/tests_rls.py, IDENTITY_LOOKUP_TABLES) and an AST guard restricts callers
 # to apps/shared/authentication.py and the identity app's logic modules.
 IDENTITY_LOOKUP_SETTING = "app.identity_lookup"
-# The door a library-zone write comes through (H16, ADR 0058). The trigger shared 0008
-# puts on every library-zone table reads it and refuses a write from the app role unless it
-# names a door that table accepts: `proposal` and `seed` the inventory and the library
-# vocabularies, `reverification` the obligation and its verification rows only, `watch` the
-# seven watch tables only (D-64) and `index` the search index only (D-65). The compliance
+# The door a library-zone write comes through (H16, ADR 0058) is `LIBRARY_DOOR_SETTING`,
+# imported above from the migration helpers, whose trigger reads the same name: shared 0008
+# puts that trigger on every library-zone table, and it refuses a write from the app role
+# unless the setting names a door that table accepts: `proposal` and `seed` the inventory
+# and the library vocabularies, `reverification` the obligation and its verification rows
+# only, `watch` the seven watch tables only (D-64), `index` the search index only (D-65) and
+# `seed` alone the library app's reference rows (languages, jurisdictions). The compliance
 # lint's `library-door` rule keeps this name in this module, the index door, the migration
 # helpers, migrations and tests.
-LIBRARY_DOOR_SETTING = "cw.library_door"
 LibraryDoor = Literal["proposal", "reverification", "seed", "watch", "index"]
 
 _active_tenant: ContextVar[uuid.UUID | None] = ContextVar("active_tenant", default=None)
@@ -192,8 +195,9 @@ def library_write(reason: str, *, door: LibraryDoor = "seed") -> Iterator[None]:
 
     `door` is what the database is told (H16, ADR 0058): the proposal applier names
     `proposal` or `reverification` and the watch door `watch`; a reference seed and a test
-    builder take the default. Which module may name which door is pinned by the library
-    fence (apps/shared/tests_library_fence.py)."""
+    builder take the default, `seed`, which is also the one door to the library app's
+    reference rows (languages, jurisdictions). Which module may name which door, the
+    default included, is pinned by the library fence (apps/shared/tests_library_fence.py)."""
     if not reason.strip():
         raise ValueError("library_write() needs a reason naming the proposal, step or seed")
     token = _library_write_reason.set(reason)

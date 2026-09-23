@@ -240,11 +240,14 @@ LIBRARY_DOOR_SETTING = "cw.library_door"
 # arguments. The inventory and the library vocabularies change through an approved proposal
 # or a reference seed; the re-verification stamp reaches the obligation and its verification
 # rows and nothing else (INV-06); the watch door reaches the seven watch tables only (D-64);
-# the index door reaches the search index only (D-65).
+# the index door reaches the search index only (D-65). The library app's reference rows —
+# `language`, `jurisdiction` and its labels, which every bank reads and no proposal writes
+# (the jurisdiction list is not proposable) — change through a reference seed alone.
 INVENTORY_DOORS = ("proposal", "seed")
 STAMPED_DOORS = ("proposal", "reverification", "seed")
 WATCH_DOORS = ("watch",)
 INDEX_DOORS = ("index",)
+REFERENCE_DOORS = ("seed",)
 
 # One trigger per library-zone table, per statement and before it, so it fires once however
 # many rows the statement touches, and fires for a statement that touches none: a write
