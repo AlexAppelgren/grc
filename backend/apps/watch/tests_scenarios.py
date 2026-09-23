@@ -260,23 +260,32 @@ class WatchScenarioTests(TestCase):
         """WAT-S4
 
         Types, flags and scope come from vocabularies and stay suggestions until an agent of
-        another definition confirms them, and then read machine-confirmed (WAT-03, D-74).
+        another definition confirms them, and then read machine-confirmed; a person may
+        confirm one instead with a fresh passkey (WAT-03, D-74).
         Operations: `createChange`, `confirmChangeCuration`.
         """
-        run, plain = self._run_with_a_key()
+        watch_build.seed_watch_reference()
+        tenancy.clear_tenant()
+        # The sweeper's key holds the review scope too, so its refusal below is its own
+        # suggestion and not a missing scope.
+        suggesting = agent_build.agent_key(scopes=(*agent_build.WATCH_SCOPES, perms.SCOPE_PROPOSALS_REVIEW))
+        run = agent_build.platform_run(key=suggesting)
         sweeper = run.agent
         banks = self._two_banks()
         officer = factories.member(banks.inside, roles=("compliance_officer",)).user
         reader = sign_in(officer, tenant=banks.inside)
+        editor = factories.platform_user(email="library.editor@bleqq.example")
 
-        # Given an agent classifies a change with a type, a flag and a scope term from the vocabularies
+        # Given an agent classifies a change with a type, a flag and a scope term from the
+        # vocabularies (and a second flag, which a person confirms at the end)
         tenancy.clear_tenant()
         registered = self._register(
-            plain,
+            suggesting.plain_key,
             {
                 **_CHANGE,
                 "agentRunId": str(run.id),
-                "flags": ["advice_perimeter"],
+                "changeTypeConfidence": 0.91,
+                "flags": ["advice_perimeter", "ai"],
                 "termIds": [str(watch_build.term(_SECURITIES).id)],
             },
         )
@@ -284,37 +293,37 @@ class WatchScenarioTests(TestCase):
         change_id = registered.json()["id"]
         _drain()
 
-        # Then each is stored as a key, marked suggested and naming the agent that suggested it,
-        # and the change row a bank reads marks each as a suggestion
-        def facts() -> list[dict[str, Any]]:
+        # Then each is stored as a key, marked suggested and naming the agent that suggested
+        # it, and the change row a bank reads marks each as a suggestion
+        def facts() -> dict[str, dict[str, Any]]:
             feed = self.client.get("/api/v1/changes", {"footprint": "all"}, **reader)
             row = next(item for item in feed.json()["items"] if item["id"] == change_id)
-            return [row["changeType"], *row["flags"], *row["terms"]]
+            return {fact["ref"]["key"]: fact for fact in [row["changeType"], *row["flags"], *row["terms"]]}
 
         suggested = facts()
-        self.assertEqual([fact["ref"]["key"] for fact in suggested], ["adopted", "advice_perimeter", "securities"])
-        for fact in suggested:
+        self.assertEqual(sorted(suggested), ["adopted", "advice_perimeter", "ai", "securities"])
+        self.assertEqual(suggested["adopted"]["confidence"], 0.91)
+        for fact in suggested.values():
             self.assertEqual(
                 (fact["suggested"], fact["confirmedOrigin"], fact["suggestedByAgent"]["key"], fact["confirmedByAgent"]),
                 (True, None, sweeper.key, None),
             )
 
-        body = {
-            "changeType": True,
-            "flags": ["advice_perimeter"],
-            "termIds": [str(watch_build.term(_SECURITIES).id)],
-        }
+        body = {"changeType": "adopted", "flags": ["advice_perimeter"], "termIds": [str(watch_build.term(_SECURITIES).id)]}
         confirmer, review = self._confirmer()
         decided = {**body, "decision": _DECISION, "agentRunId": str(review.id)}
 
-        # And the agent that suggested them cannot confirm them, through any key of its own
+        # And the agent that suggested them cannot confirm them, through any key of its own:
+        # not the very key that filed them, and not another key of the same agent
+        own = self._confirm(change_id, decided | {"agentRunId": str(run.id)}, {"HTTP_X_API_KEY": suggesting.plain_key})
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "own_suggestion"))
         sibling = agent_build.agent_key(agent_row=sweeper, scopes=("agent-runs:write", perms.SCOPE_PROPOSALS_REVIEW))
-        own = self._confirm(
+        same = self._confirm(
             change_id,
             {**decided, "agentRunId": str(agent_build.platform_run(key=sibling).id)},
             {"HTTP_X_API_KEY": sibling.plain_key},
         )
-        self.assertEqual((own.status_code, own.json()["code"]), (409, "same_agent"))
+        self.assertEqual((same.status_code, same.json()["code"]), (409, "same_agent"))
 
         # And a bank's own compliance officer cannot confirm them: a change's type, flag and
         # scope are library facts
@@ -328,11 +337,14 @@ class WatchScenarioTests(TestCase):
 
         # Then suggested becomes false, and each reads machine-confirmed naming the suggesting
         # and the confirming agent, never a person's verification, for every bank
-        for fact in facts():
+        after = facts()
+        for key in ("adopted", "advice_perimeter", "securities"):
+            fact = after[key]
             self.assertEqual(
                 (fact["suggested"], fact["confirmedOrigin"], fact["suggestedByAgent"]["key"], fact["confirmedByAgent"]["key"]),
                 (False, "agent", sweeper.key, "library-confirmer"),
             )
+        self.assertEqual((after["ai"]["suggested"], after["ai"]["confirmedOrigin"]), (True, None), "only what was named")
         page = self.client.get(f"/api/v1/changes/{change_id}", **reader).json()
         self.assertEqual(page["changeTypeFact"]["confirmedOrigin"], "agent")
         self.assertEqual(page["changeTypeFact"]["confirmedByAgent"]["key"], "library-confirmer")
@@ -347,6 +359,25 @@ class WatchScenarioTests(TestCase):
         logged = AiGeneration.objects.get(purpose="agent_review", subject_id=change_id)
         self.assertEqual(logged.agent_run_id, review.id)
         self.assertTrue(logged.model_metadata_reported_by_agent)
+
+        # And a person holding proposals.review may confirm one instead only with a fresh
+        # passkey, and it then reads confirmed by a person
+        session = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
+        with stub_session(user_principal(permissions={perms.PROPOSALS_REVIEW}, subject_id=editor.id)):
+            stale = self._confirm(change_id, {"flags": ["ai"]}, session)
+        self.assertEqual((stale.status_code, stale.json()["code"]), (403, "step_up_required"))
+        with stub_session(user_principal(permissions={perms.PROPOSALS_REVIEW}, subject_id=editor.id, step_up_at=timezone.now())):
+            by_a_person = self._confirm(change_id, {"flags": ["ai"]}, session)
+        self.assertEqual(by_a_person.status_code, 200, by_a_person.content)
+        ai = facts()["ai"]
+        self.assertEqual(
+            (ai["suggested"], ai["confirmedOrigin"], ai["suggestedByAgent"]["key"], ai["confirmedByAgent"]),
+            (False, "user", sweeper.key, None),
+        )
+        tenancy.clear_tenant()
+        by_the_person = AuditEvent.objects.filter(action="regulatory_change.curation_confirmed").order_by("-created", "-id").first()
+        self.assertEqual((by_the_person.actor_type, by_the_person.after["confirmed"]), ("user", ["flag:ai"]))  # type: ignore[union-attr]
+        self.assertIsNotNone(by_the_person.step_up_assertion_id)  # type: ignore[union-attr]
 
     def test_wat_s5(self) -> None:
         """WAT-S5

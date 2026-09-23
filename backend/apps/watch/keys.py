@@ -246,6 +246,22 @@ def change_for_write(change_id: uuid.UUID) -> ChangeRow:
     return change
 
 
+def change_for_update(change_id: uuid.UUID) -> ChangeRow:
+    """The change this call addresses, locked until its transaction ends, for a write that
+    reads what is confirmed and then acts on it (D-74). Correcting a fact, replacing the
+    links and confirming them all take this lock first, so a confirmation cannot land
+    between another call's check and its write, and two confirmations queue. 404 as
+    `change_for_write` answers it.
+
+    The lock is a query of its own on the change's row alone, and the row is read afresh
+    after it: a locking read that joins the type re-checks a row another call has just
+    re-typed against the type it joined before, and finds nothing (proven 2026-09-24,
+    tests_curation_races.py)."""
+    if not list(RegulatoryChange.objects.select_for_update().filter(pk=change_id).values_list("pk", flat=True)):
+        raise ProblemError(status=404, code="not_found", detail="Not found.")
+    return change_for_write(change_id)
+
+
 def event_for_write(change: ChangeRow, event_id: uuid.UUID) -> EventRow:
     """One entry of this change's timeline. An entry of another change answers 404 exactly
     as one that never existed does, so a timeline id tells a caller nothing."""

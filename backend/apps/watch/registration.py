@@ -31,8 +31,8 @@ the reform is.
 
 **Everything a run files is a suggestion.** The type, the flags, the scope terms and the
 obligation links all arrive with `suggested` true and nobody named as having confirmed
-them, whoever sent them, each naming the run's agent and key as its suggester (WAT-03,
-WAT-04, D-74). No line of this module writes `suggested = false`.
+them, whoever sent them, each naming the run's agent and key, or the person who filed it,
+as its suggester (WAT-03, WAT-04, D-74). No line of this module writes `suggested = false`.
 
 Every write goes through `watch_write()` (apps/watch/write.py), which reaches the seven
 watch tables and no inventory table, and through `record()` in the same transaction. This
@@ -118,10 +118,11 @@ def register_change(
         return 200, _merge(existing, actor=actor, order=order, body=body, risk_flags=risk_flags)
 
     origin = OriginType.AGENT.value if who.kind is PrincipalKind.AGENT else OriginType.USER.value
-    # Who suggested what this call files, copied from the run by the one write path, because
-    # a check constraint cannot read a key to find its agent (D-74). A library editor filing
-    # by hand names no run, and so no suggesting agent.
+    # Who suggested what this call files, copied by the one write path, because a check
+    # constraint cannot read a key to find its agent (D-74): the run's agent and key, or the
+    # library editor filing by hand, who names no run and then cannot confirm it alone.
     suggester = {
+        "suggested_by_id": who.subject_id if who.kind is PrincipalKind.USER else None,
         "suggested_by_agent_id": None if run is None else run.agent_id,
         "suggested_by_api_key_id": None if run is None else run.api_key_id,
     }
@@ -130,8 +131,8 @@ def register_change(
             "stable_key": body.stable_key,
             "title": body.title,
             "change_type": change_type,
-            "change_type_suggested_by_agent_id": suggester["suggested_by_agent_id"],
-            "change_type_suggested_by_api_key_id": suggester["suggested_by_api_key_id"],
+            "change_type_confidence": body.change_type_confidence,
+            **{f"change_type_{column}": value for column, value in suggester.items()},
             "authority_id": authority_id,
             "authority_label": body.authority_label,
             "published_on": body.published_on,

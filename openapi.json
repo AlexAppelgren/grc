@@ -14668,6 +14668,7 @@
             "authorityCode": "fi",
             "authorityLabel": "Finansinspektionen",
             "changeType": "adopted",
+            "changeTypeConfidence": 0.91,
             "documents": [
               {
                 "isPrimary": true,
@@ -14771,6 +14772,23 @@
             "minLength": 1,
             "title": "Changetype",
             "type": "string"
+          },
+          "changeTypeConfidence": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How sure the agent was of `changeType`, 0 to 1, its own number; null, the default, when it recorded none or a person files the change. Stored with the type as a suggestion and shown beside it until the type is confirmed; it orders nothing and says nothing about whether the type is right. A later sighting of the same `stableKey` leaves it as it was.",
+            "examples": [
+              0.91
+            ],
+            "title": "Changetypeconfidence"
           },
           "documents": {
             "description": "The pages the change was found on, at most 50 in one call.",
@@ -16326,11 +16344,11 @@
       },
       "WatchCurationConfirmInput": {
         "additionalProperties": false,
-        "description": "`POST /changes/{changeId}/confirmation` (WAT-03, WAT-04, D-74): which of a change's\ncurated facts to confirm for the shared library, as they stand now.\n\nName what you checked and nothing else: the type, flag keys, scope term ids and linked\nobligation ids, each of which must already be on the change. A fact already confirmed\nis left exactly as it is, so repeating a call confirms nothing twice. An agent's key\nsends the model call behind its decision and the open run it was made in; a person's\nsession sends neither.",
+        "description": "`POST /changes/{changeId}/confirmation` (WAT-03, WAT-04, D-74): which of a change's\ncurated facts to confirm for the shared library, as they stand now.\n\nName what you checked and nothing else: the type's key, flag keys, scope term ids and\nlinked obligation ids, each of which must be on the change as it stands. A fact already\nconfirmed is left exactly as it is, so repeating a call confirms nothing twice. An\nagent's key sends the model call behind its decision and the open run it was made in; a\nperson's session sends neither.",
         "examples": [
           {
             "agentRunId": "8e3f2a61-4b7c-4d19-a05e-3c9b1f7d2e84",
-            "changeType": true,
+            "changeType": "adopted",
             "decision": {
               "citations": [
                 {
@@ -16372,13 +16390,21 @@
             "title": "Agentrunid"
           },
           "changeType": {
-            "default": false,
-            "description": "True confirms the change's type as it is stored now; false, the default, leaves the type as it is. To confirm a different type, correct it with `PATCH /changes/{changeId}` first: this call never changes a value.",
-            "examples": [
-              true
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Changetype",
-            "type": "boolean"
+            "description": "The key of the type you checked, a row of the `change_type` library vocabulary, at most 80 characters, which confirms the change's type. It must be the type the change has now: a key the change does not carry answers 422 `validation_error`, because the type moved after you read it or you checked another, and nothing is confirmed unread. Null, the default, leaves the type as it is. To confirm a different type, correct it with `PATCH /changes/{changeId}` first: this call never changes a value. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.",
+            "examples": [
+              "adopted"
+            ],
+            "title": "Changetype"
           },
           "decision": {
             "anyOf": [
@@ -20162,7 +20188,7 @@
     },
     "/api/v1/changes/{change_id}/confirmation": {
       "post": {
-        "description": "Stand behind the facts an agent suggested for a registered reform: its type, its\nflags, its scope terms and the obligations it affects, each named in the body. Call it\nfrom a confirming agent's run once it has checked the named facts against the pages the\nchange cites, and from the console's Change facts detail when a person intervenes. The\nanswer is the change as the console's queue shows it, with who suggested and who\nconfirmed each fact.\n\nTwo callers, never a bank. A platform key bound to an agent definition and holding the\nscope `proposals:review`: it sends `decision`, the model call behind its decision, and\n`agentRunId`, an open run of its own, and the decision is logged in the AI output log\nunder the purpose agent_review, which the platform alone reads (D-80). A key never steps up. Or a\nperson holding `proposals.review`, with a fresh passkey assertion, who sends neither:\nconfirming a library fact is an intervention in the agents' curation. No bank's role\nholds that permission and no bank's key the scope.\n\nA confirmation is not four eyes, because no proposal stands behind it, and it is\nlabelled for what it is (D-74): a fact an agent confirmed reads machine-confirmed,\nnaming the agent that suggested it and the agent that confirmed it, and never as a\nperson's verification. The confirming agent is never the suggesting one: a key cannot\nconfirm what it suggested itself, nor what another key of its own agent suggested, and\nthe database refuses either row on its own if this check is ever bypassed. Every bank\nreads the confirmation; each bank still decides on its own case what a link means to\nit.\n\nOnly facts the change carries now can be confirmed, as they stand: this call changes no\nvalue, and a fact already confirmed is left exactly as it is, so repeating the call\nconfirms nothing twice and a retry is safe; send an `Idempotency-Key` as well. Each\n`decision` sent is one more row in the AI output log, which is a ledger of calls and\nnever deduplicated. The facts, the log row and an audit row naming who confirmed what\nare written in one transaction, and every refusal comes first, so a refused call stores\nnothing. Undoing a confirmation is a person's, with a passkey, through\n`PATCH /changes/{changeId}` or `PUT /changes/{changeId}/obligations`.\n\nErrors to branch on: `own_suggestion` (409) when a named fact was suggested by this very\nkey; `same_agent` (409) when it was suggested by another key of the same agent;\n`validation_error` (422) when the body names nothing, names a flag, a term or an\nobligation the change does not carry, when a key sends no `decision` or a person sends\none or an `agentRunId`, and for a body the schema refuses, including a decision with no\nmodel, version or citation; `run_not_open` (422) when a key names no run or a closed\none; `not_found` (404) when no change has that id, or the run belongs to another key;\n`agent_not_bound` (403) for a key holding the scope but bound to no agent definition;\n`step_up_required` (403) when a person calls without a fresh passkey assertion;\n`permission_denied` (403) without `proposals.review` or `proposals:review`, which is\nwhat every bank's session and key receives; `unauthenticated` (401) without a\ncredential.",
+        "description": "Stand behind the facts an agent suggested for a registered reform: its type, its\nflags, its scope terms and the obligations it affects, each named in the body. Call it\nfrom a confirming agent's run once it has checked the named facts against the pages the\nchange cites, and from the console's Change facts detail when a person intervenes. The\nanswer is the change as the console's queue shows it, with who suggested and who\nconfirmed each fact.\n\nTwo callers, never a bank. A platform key bound to an agent definition and holding the\nscope `proposals:review`: it sends `decision`, the model call behind its decision, and\n`agentRunId`, an open run of its own, and the decision is logged in the AI output log\nunder the purpose agent_review, which the platform alone reads (D-80). A key never steps up. Or a\nperson holding `proposals.review`, with a fresh passkey assertion, who sends neither:\nconfirming a library fact is an intervention in the agents' curation. No bank's role\nholds that permission and no bank's key the scope.\n\nA confirmation is not four eyes, because no proposal stands behind it, and it is\nlabelled for what it is (D-74): a fact an agent confirmed reads machine-confirmed,\nnaming the agent that suggested it and the agent that confirmed it, and never as a\nperson's verification. The confirmer is never the suggester: a key cannot confirm what\nit suggested itself, nor what another key of its own agent suggested, a person cannot\nconfirm what they filed themselves, and the database refuses each of those rows on its\nown if this check is ever bypassed. Every bank reads the confirmation; each bank still\ndecides on its own case what a link means to it.\n\nOnly facts the change carries now can be confirmed, as they stand, and the type is\nnamed by the key you checked, so a type corrected after you read it is refused rather\nthan confirmed unread. This call changes no value, and a fact already confirmed is left\nexactly as it is. A call that finds nothing left to confirm writes nothing \u2014 no log\nrow, no audit row \u2014 once its run has logged a decision on this change, so a retry,\nwith or without an `Idempotency-Key`, answers the change as it now stands; the first\n`decision` a run sends on a change is always logged, because it is a model call. The\nfacts, the log row and an audit row naming who confirmed what are written in one\ntransaction, under a lock on the change that the curation routes take as well, and\nevery refusal comes first, so a refused call stores nothing. Undoing a confirmation is\na person's, with a passkey, through `PATCH /changes/{changeId}` or\n`PUT /changes/{changeId}/obligations`.\n\nErrors to branch on: `own_suggestion` (409) when a named fact was suggested by this very\nkey, or filed by this very person; `same_agent` (409) when it was suggested by another\nkey of the same agent; `validation_error` (422) when the body names nothing, names a\ntype, a flag, a term or an obligation the change does not carry now, when a key sends\nno `decision` or a person sends one or an `agentRunId`, and for a body the schema\nrefuses, including a decision with no model, version or citation; `run_not_open` (422)\nwhen a key names no run or a closed one; `not_found` (404) when no change has that id,\nor the run belongs to another key; `agent_not_bound` (403) for a key holding the scope\nbut bound to no agent definition;\n`step_up_required` (403) when a person calls without a fresh passkey assertion;\n`permission_denied` (403) without `proposals.review` or `proposals:review`, which is\nwhat every bank's session and key receives; `unauthenticated` (401) without a\ncredential.",
         "operationId": "confirmChangeCuration",
         "parameters": [
           {

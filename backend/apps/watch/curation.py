@@ -3,20 +3,25 @@ obligations it affects, and their confirmation (WAT-03, WAT-04, AGT-01, AUD-01, 
 
 An agent suggests and somebody else confirms. Everything filed here is stored as a
 suggestion — the type and each term link with `suggested` true, an obligation link with no
-confirmation on it, and each naming the agent and key that suggested it, copied from the
-caller — and only `confirm_curation` writes a confirmation. A library editor holding
-`proposals.review` may correct a suggestion, and the correction is a suggestion too.
+confirmation on it, and each naming the person, or the agent and key, that suggested it,
+copied from the caller — and only `confirm_curation` writes a confirmation. A library
+editor holding `proposals.review` may correct a suggestion, and the correction is a
+suggestion too, which somebody else confirms.
 
 Who confirms is D-74 (Alex, 2026-09-21, his item 16): an agent of a different definition
 and key, a platform key bound to it and holding `proposals:review`, and the fact then reads
 machine-confirmed, naming the suggesting and the confirming agent. A person holding
 `proposals.review` may intervene, with a fresh passkey assertion. A confirmation is not four
 eyes — no proposal stands behind it — and the database holds what it can: the confirmer is
-a person or an agent-bound key, and never the key or the agent that suggested the fact.
+a person or an agent-bound key, and never the person, the key or the agent that suggested
+the fact.
 
 A call that would drop or replace a fact somebody confirmed is refused outright for an
 agent's key, which never unmakes a confirmation, and needs a fresh passkey assertion from a
-person, whose overturning it is the same intervention as confirming one.
+person, whose overturning it is the same intervention as confirming one. Each of the three
+writes that read what is confirmed takes a lock on the change first
+(`keys.change_for_update`), so a confirmation never lands between a call's check and its
+write.
 
 What each principal may move:
 
@@ -49,7 +54,7 @@ from pydantic.alias_generators import to_camel
 
 from apps.agents import runs
 from apps.governance.ai_log import log_generation
-from apps.governance.models import AiPurpose
+from apps.governance.models import AiGeneration, AiPurpose
 from apps.library.models import DatePrecision
 from apps.proposals.models import OriginType
 from apps.shared.audit import Actor, record
@@ -100,36 +105,38 @@ def update_change_facts(
 ) -> WatchChange:
     """Correct the library facts of a registered change.
 
-    Every key is resolved and every refusal raised before the write opens, so a call that
-    names a key the library does not hold stores nothing at all (AC-WAT2). `flags` and
-    `termIds` each replace the whole set they name rather than adding to it.
+    Every key is resolved and every refusal raised before anything is written, under the
+    lock on the change, so a call that names a key the library does not hold stores nothing
+    at all (AC-WAT2) and a confirmation cannot land between the check and the write.
+    `flags` and `termIds` each replace the whole set they name rather than adding to it.
     `step_up_assertion_id` is a person's fresh passkey assertion, or None: it is asked for
     only when the call would overturn a confirmation, and recorded on the audit row.
     """
-    change = keys.change_for_write(change_id)
     # A field the caller did not send, and a field sent as null, both mean "leave it
     # alone": this route corrects facts and never clears them (`WatchChangePatch`).
     sent = {name: value for name, value in body.model_dump(exclude_unset=True).items() if value is not None}
-    if who.kind is PrincipalKind.AGENT:
-        _refuse_editor_only(sent)
-    change_type = keys.resolve_keys(keys.CHANGE_TYPE_LIST, [sent["change_type"]])[0] if "change_type" in sent else None
-    flags = keys.resolve_keys(keys.FLAG_LIST, sent["flags"]) if "flags" in sent else None
-    terms = keys.resolve_terms(sent["term_ids"]) if "term_ids" in sent else None
-    superseded_by = _superseding(change, sent) if "superseded_by" in sent else None
-    if change_type is not None and change_type.id != change.change_type_id and not change.change_type_suggested:
-        _refuse_confirmed(who, "the type", step_up_assertion_id)
-    if flags is not None:
-        _refuse_dropping_confirmed(who, change, "flag", {row.id for row in flags}, "a flag", step_up_assertion_id)
-    if terms is not None:
-        _refuse_dropping_confirmed(who, change, "term", {row.id for row in terms}, "a scope term", step_up_assertion_id)
     suggester = _suggester(who)
-    before = _facts_of(change)
+    may_overturn = _may_overturn(who, step_up_assertion_id)
     with watch_write("a change's facts"), transaction.atomic():
+        change = keys.change_for_update(change_id)
+        if who.kind is PrincipalKind.AGENT:
+            _refuse_editor_only(sent)
+        change_type = keys.resolve_keys(keys.CHANGE_TYPE_LIST, [sent["change_type"]])[0] if "change_type" in sent else None
+        flags = keys.resolve_keys(keys.FLAG_LIST, sent["flags"]) if "flags" in sent else None
+        terms = keys.resolve_terms(sent["term_ids"]) if "term_ids" in sent else None
+        superseded_by = _superseding(change, sent) if "superseded_by" in sent else None
+        if change_type is not None and change_type.id != change.change_type_id and not change.change_type_suggested:
+            _refuse_confirmed(who, "the type", step_up_assertion_id)
+        if flags is not None:
+            _refuse_dropping_confirmed(who, change, "flag", {row.id for row in flags}, "a flag", step_up_assertion_id)
+        if terms is not None:
+            _refuse_dropping_confirmed(who, change, "term", {row.id for row in terms}, "a scope term", step_up_assertion_id)
+        before = _facts_of(change)
         _apply_columns(change, sent, change_type=change_type, superseded_by=superseded_by, suggester=suggester)
         if flags is not None:
-            _replace_term_links(change, "flag", flags, suggester)
+            _replace_term_links(change, "flag", flags, suggester, may_overturn=may_overturn)
         if terms is not None:
-            _replace_term_links(change, "term", terms, suggester)
+            _replace_term_links(change, "term", terms, suggester, may_overturn=may_overturn)
         if body.so_what is not None:
             # A run that re-read the source can say what the change means; the words, the
             # model behind them and the event that carries them to every bank's unedited
@@ -172,14 +179,25 @@ def _superseding(change: keys.ChangeRow, sent: dict[str, Any]) -> uuid.UUID:
     return keys.change_named(named)
 
 
-def _suggester(who: Principal) -> tuple[uuid.UUID | None, uuid.UUID | None]:
-    """The agent and the key a fact this call files is suggested by (D-74): an agent-bound
-    key and its agent, as a run names them, or nobody — for a person, and for a key bound
-    to no agent, which cannot confirm anything and so needs no telling apart. Copied here, by
-    the one write path, because a check constraint cannot read a key to find its agent."""
-    if who.kind is PrincipalKind.AGENT and who.agent_id is not None:
-        return who.agent_id, who.subject_id
-    return None, None
+def _suggester(who: Principal) -> dict[str, uuid.UUID | None]:
+    """Who a fact this call files is suggested by (D-74), as the three suggester columns: a
+    person by their own id, so they cannot confirm it themselves; an agent-bound key and
+    its agent, as a run names them; or nobody, for a key bound to no agent, which cannot
+    confirm anything and so needs no telling apart. Copied here, by the one write path,
+    because a check constraint cannot read a key to find its agent."""
+    bound = who.kind is PrincipalKind.AGENT and who.agent_id is not None
+    return {
+        "suggested_by_id": who.subject_id if who.kind is PrincipalKind.USER else None,
+        "suggested_by_agent_id": who.agent_id if bound else None,
+        "suggested_by_api_key_id": who.subject_id if bound else None,
+    }
+
+
+def _may_overturn(who: Principal, step_up_assertion_id: uuid.UUID | None) -> bool:
+    """Whether this call's replacing set may delete a confirmed row it leaves out: only a
+    person's, with a fresh passkey assertion. A key's write deletes suggestions and nothing
+    else, whatever its checks found, so an agent never unmakes a confirmation (D-74)."""
+    return who.kind is PrincipalKind.USER and step_up_assertion_id is not None
 
 
 def _apply_columns(
@@ -188,7 +206,7 @@ def _apply_columns(
     *,
     change_type: Any,
     superseded_by: uuid.UUID | None,
-    suggester: tuple[uuid.UUID | None, uuid.UUID | None],
+    suggester: dict[str, uuid.UUID | None],
 ) -> None:
     """The change's own columns, written once. Only what the caller sent moves, so
     correcting one fact never restates another.
@@ -203,7 +221,9 @@ def _apply_columns(
         change.change_type = change_type
         change.change_type_suggested = True
         change.change_type_confidence = None
-        change.change_type_suggested_by_agent_id, change.change_type_suggested_by_api_key_id = suggester
+        change.change_type_suggested_by_id = suggester["suggested_by_id"]
+        change.change_type_suggested_by_agent_id = suggester["suggested_by_agent_id"]
+        change.change_type_suggested_by_api_key_id = suggester["suggested_by_api_key_id"]
         change.change_type_confirmed_by_id = None
         change.change_type_confirmed_by_api_key_id = None
         change.change_type_confirmed_by_agent_id = None
@@ -212,6 +232,7 @@ def _apply_columns(
             "change_type",
             "change_type_suggested",
             "change_type_confidence",
+            "change_type_suggested_by",
             "change_type_suggested_by_agent",
             "change_type_suggested_by_api_key",
             "change_type_confirmed_by",
@@ -235,28 +256,28 @@ def _confirmed_term_ids(change: keys.ChangeRow, column: str) -> set[uuid.UUID]:
 
 
 def _replace_term_links(
-    change: keys.ChangeRow, column: str, rows: list[Any], suggester: tuple[uuid.UUID | None, uuid.UUID | None]
+    change: keys.ChangeRow, column: str, rows: list[Any], suggester: dict[str, uuid.UUID | None], *, may_overturn: bool
 ) -> None:
     """One kind of term link — the flags, or the scope terms — replaced by the set the
     caller sent.
 
     Every row written is a suggestion by this caller: `suggested` true, nobody confirming
-    it, and the caller's agent and key as its suggester, whoever sent it (WAT-03, D-74). A
-    confirmed row the set keeps is kept exactly as it is; one the set leaves out goes, which
-    was refused before this write opened unless a person with a fresh passkey sent it. A
-    term link's `confidence` is not on this call's shape — a patch carries bare keys — so a
-    correction stores none; an agent's own number arrives with the registration.
+    it, and the caller as its suggester, whoever sent it (WAT-03, D-74). A confirmed row the
+    set keeps is kept exactly as it is; one the set leaves out goes only when `may_overturn`
+    says a person with a fresh passkey sent it, and stays otherwise, so a key's write never
+    deletes a confirmation whatever its check found. A term link's `confidence` is not on
+    this call's shape — a patch carries bare keys — so a correction stores none; an agent's
+    own number arrives with the registration.
     """
     wanted = {row.id for row in rows}
     stored = change.term_links.filter(**{f"{column}__isnull": False})
     stored.filter(suggested=True).delete()
-    stored.exclude(**{f"{column}_id__in": wanted}).delete()
+    if may_overturn:
+        stored.exclude(**{f"{column}_id__in": wanted}).delete()
     confirmed = {getattr(link, f"{column}_id") for link in stored}
-    agent_id, api_key_id = suggester
     for row in rows:
         if row.id not in confirmed:
-            link = {column: row, "suggested": True, "suggested_by_agent_id": agent_id, "suggested_by_api_key_id": api_key_id}
-            change.term_links.create(**link)
+            change.term_links.create(**{column: row, "suggested": True, **suggester})
 
 
 def _facts_of(change: keys.ChangeRow) -> dict[str, Any]:
@@ -421,33 +442,31 @@ def set_obligation_links(
     Library facts only: a bank's own decision about a suggested link lives on that bank's
     case and changes nothing here, so one bank removing a link leaves every other bank still
     seeing it (ruling C). `step_up_assertion_id` is asked for only when the set would drop a
-    confirmed link, as on `update_change_facts`.
+    confirmed link, as on `update_change_facts`, and the check and the write run under the
+    same lock on the change.
     """
-    change = keys.change_for_write(change_id)
-    wanted = _one_link_per_obligation(body)
-    # Read for its refusal, before the write opens: an obligation the library does not
-    # hold, or has retired, never reaches a link (AC-PRO1).
-    keys.obligations_for(list(wanted))
-    stored = {link.obligation_id: link for link in change.obligation_links.all()}
-    confirmed = {obligation_id for obligation_id, link in stored.items() if link.confirmed_at is not None}
-    if confirmed - set(wanted):
-        _refuse_confirmed(who, "an obligation link", step_up_assertion_id)
     origin = OriginType.AGENT.value if who.kind is PrincipalKind.AGENT else OriginType.USER.value
-    agent_id, api_key_id = _suggester(who)
-    before = sorted(str(obligation_id) for obligation_id in stored)
+    suggester = _suggester(who)
     with watch_write("the obligations a change affects"), transaction.atomic():
+        change = keys.change_for_update(change_id)
+        wanted = _one_link_per_obligation(body)
+        # Read for its refusal, before anything is written: an obligation the library does
+        # not hold, or has retired, never reaches a link (AC-PRO1).
+        keys.obligations_for(list(wanted))
+        stored = {link.obligation_id: link for link in change.obligation_links.all()}
+        confirmed = {obligation_id for obligation_id, link in stored.items() if link.confirmed_at is not None}
+        if confirmed - set(wanted):
+            _refuse_confirmed(who, "an obligation link", step_up_assertion_id)
+        before = sorted(str(obligation_id) for obligation_id in stored)
         # Confirmed links the set keeps are kept as they are; the set being replaced is the
         # set of suggestions, plus any confirmed link a person with a fresh passkey dropped.
         change.obligation_links.filter(confirmed_at__isnull=True).delete()
-        change.obligation_links.exclude(obligation_id__in=list(wanted)).delete()
+        if _may_overturn(who, step_up_assertion_id):
+            change.obligation_links.exclude(obligation_id__in=list(wanted)).delete()
         for obligation_id, link in wanted.items():
             if obligation_id not in confirmed:
                 change.obligation_links.create(
-                    obligation_id=obligation_id,
-                    origin=origin,
-                    confidence=link.confidence,
-                    suggested_by_agent_id=agent_id,
-                    suggested_by_api_key_id=api_key_id,
+                    obligation_id=obligation_id, origin=origin, confidence=link.confidence, **suggester
                 )
         record(
             action=LINKS_REPLACED,
@@ -535,26 +554,37 @@ def confirm_curation(
     The confirmer is an agent-bound platform key holding `proposals:review`, which sends the
     model call behind its decision and the open run it made it in, logged under
     `agent_review` (D-80), or a person holding `proposals.review` with a fresh passkey
-    assertion, who sends neither. The route's gate has checked which. An agent never
-    confirms what it suggested itself (409 `own_suggestion`) or what another key of its own
-    agent suggested (409 `same_agent`); the check constraints say the same if this is ever
-    bypassed. A fact already confirmed is left as it is, so a repeated call confirms
-    nothing twice. Every refusal comes before the write, so a refused call stores nothing.
+    assertion, who sends neither. The route's gate has checked which. Nobody confirms what
+    they suggested themselves (409 `own_suggestion`, for a person as for a key), and an agent
+    never confirms what another key of its own agent suggested (409 `same_agent`); the check
+    constraints say the same if this is ever bypassed.
+
+    Everything runs under the lock on the change, so the facts are read as they stand when
+    they are confirmed: the type is named by the key the confirmer checked, and a type that
+    moved since is refused rather than confirmed unread. A fact already confirmed is left as
+    it is. A call that finds nothing left to confirm writes nothing, unless it is an agent's
+    first decision on this change in its run, which is a model call and is logged. Every
+    refusal comes before the write, so a refused call stores nothing.
     """
-    change = keys.change_for_write(change_id)
-    run = _decision_run(who, body)
-    type_named, term_links, obligation_links = _named_facts(change, body)
-    if who.kind is PrincipalKind.AGENT:
-        suggesters = [(link.suggested_by_api_key_id, link.suggested_by_agent_id) for link in term_links + obligation_links]
-        if type_named:
-            suggesters.append((change.change_type_suggested_by_api_key_id, change.change_type_suggested_by_agent_id))
-        _refuse_own_suggestion(who, suggesters)
-    by_person = who.subject_id if who.kind is PrincipalKind.USER else None
-    by_key = who.subject_id if who.kind is PrincipalKind.AGENT else None
-    by_agent = who.agent_id if who.kind is PrincipalKind.AGENT else None
-    now = timezone.now()
-    confirmed = _names(change, type_named, term_links, obligation_links)
     with watch_write("a confirmation of a change's curated facts"), transaction.atomic():
+        change = keys.change_for_update(change_id)
+        run = _decision_run(who, body)
+        type_named, term_links, obligation_links = _named_facts(change, body)
+        suggesters = [(link.suggested_by_id, link.suggested_by_api_key_id, link.suggested_by_agent_id) for link in term_links + obligation_links]
+        if type_named:
+            suggesters.append(
+                (change.change_type_suggested_by_id, change.change_type_suggested_by_api_key_id, change.change_type_suggested_by_agent_id)
+            )
+        _refuse_own_suggestion(who, suggesters)
+        confirmed = _names(change, type_named, term_links, obligation_links)
+        if not confirmed and (run is None or _decided_in(run, change)):
+            # Nothing left to confirm and no new decision to log: a retry, or a person
+            # repeating a confirmation. It writes nothing and answers the change as it stands.
+            return reading.console_change(order, change.id)
+        by_person = who.subject_id if who.kind is PrincipalKind.USER else None
+        by_key = who.subject_id if who.kind is PrincipalKind.AGENT else None
+        by_agent = who.agent_id if who.kind is PrincipalKind.AGENT else None
+        now = timezone.now()
         if type_named and change.change_type_suggested:
             change.change_type_suggested = False
             change.change_type_confirmed_by_id = by_person
@@ -620,6 +650,15 @@ def confirm_curation(
     return reading.console_change(order, change.id)
 
 
+def _decided_in(run: Any, change: keys.ChangeRow) -> bool:
+    """Whether this run has already logged a decision on this change. A call that confirms
+    nothing new and whose decision the run has already logged is a retry, and logging it
+    again would count one model call twice (D-80)."""
+    return AiGeneration.objects.filter(
+        agent_run_id=run.id, purpose=AiPurpose.AGENT_REVIEW.value, subject_type=SUBJECT_TYPE, subject_id=change.id
+    ).exists()
+
+
 def _decision_run(who: Principal, body: WatchCurationConfirmInput) -> Any:
     """The open run an agent's decision was made in, or None for a person (D-80).
 
@@ -644,13 +683,18 @@ def _decision_run(who: Principal, body: WatchCurationConfirmInput) -> Any:
 
 
 def _named_facts(change: keys.ChangeRow, body: WatchCurationConfirmInput) -> tuple[bool, list[Any], list[Any]]:
-    """The facts the call names, each of which must be on the change: a confirmation is of
-    what is there, and never creates a flag, a term or a link. Nothing named is refused."""
+    """The facts the call names, each of which must be on the change as it stands: a
+    confirmation is of what is there, and never creates a flag, a term or a link. The type
+    is named by its key, and a key other than the change's type now is refused like a flag
+    the change does not carry, because the confirmer checked a type the change no longer
+    has. Nothing named is refused too."""
     term_links = list(change.term_links.select_related("flag").filter(flag__key__in=body.flags))
     term_links += list(change.term_links.filter(term_id__in=body.term_ids))
     obligation_links = list(change.obligation_links.filter(obligation_id__in=body.obligation_ids))
+    type_named = body.change_type is not None
     missing = (
-        [f"the flag {key}" for key in body.flags if key not in {link.flag.key for link in term_links if link.flag is not None}]
+        ([f"the type {body.change_type}"] if type_named and body.change_type != change.change_type.key else [])
+        + [f"the flag {key}" for key in body.flags if key not in {link.flag.key for link in term_links if link.flag is not None}]
         + [f"the term {term_id}" for term_id in body.term_ids if term_id not in {link.term_id for link in term_links}]
         + [
             f"the obligation {obligation_id}"
@@ -661,25 +705,30 @@ def _named_facts(change: keys.ChangeRow, body: WatchCurationConfirmInput) -> tup
     if missing:
         raise ValidationError(
             f"This change does not carry {', '.join(missing)}. Confirm only what the change "
-            "carries now; a link or a term is added through the curation routes first.",
+            "carries now; read it again, and a type, a link or a term is corrected through the "
+            "curation routes first.",
             code="validation_error",
         )
-    if not (body.change_type or term_links or obligation_links):
+    if not (type_named or term_links or obligation_links):
         raise ValidationError(
             "Name at least one fact to confirm: the type, a flag, a scope term or a linked obligation.",
             code="validation_error",
         )
-    return body.change_type, term_links, obligation_links
+    return type_named, term_links, obligation_links
 
 
-def _refuse_own_suggestion(who: Principal, suggesters: list[tuple[uuid.UUID | None, uuid.UUID | None]]) -> None:
-    """An agent's key never confirms a suggestion of its own, nor one another key of its own
-    agent definition filed, so two keys of one agent cannot confirm each other (D-74). The
-    key is compared first because it is the narrower fact and says the more exact thing."""
-    for api_key_id, agent_id in suggesters:
-        if api_key_id is not None and api_key_id == who.subject_id:
+def _refuse_own_suggestion(who: Principal, suggesters: list[tuple[uuid.UUID | None, uuid.UUID | None, uuid.UUID | None]]) -> None:
+    """Nobody confirms a suggestion of their own — a person what they filed, a key what it
+    filed — and an agent's key never confirms one another key of its own agent definition
+    filed, so two keys of one agent cannot confirm each other (D-74). The person or the key
+    is compared first because it is the narrower fact and says the more exact thing."""
+    for person_id, api_key_id, agent_id in suggesters:
+        if who.subject_id in (person_id, api_key_id):
             raise ValidationError(
-                "This key suggested that fact itself. A confirmation comes from an agent of "
+                "You filed that fact yourself. A confirmation comes from somebody else: an agent "
+                "of another definition, or another person."
+                if who.kind is PrincipalKind.USER
+                else "This key suggested that fact itself. A confirmation comes from an agent of "
                 "another definition and key.",
                 code="own_suggestion",
             )

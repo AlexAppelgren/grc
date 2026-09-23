@@ -105,21 +105,23 @@ And no second change row exists
 
 ### WAT-S4 — Types, flags and scope come from vocabularies and stay suggestions until confirmed `@integration` `@e2e` (WAT-03)
 ```gherkin
-Given an agent classifies a change as type "adopted" with the flag "advice_perimeter" and the scope "securities"
-Then each is stored as a key, marked suggested and naming the agent that suggested it
+Given an agent classifies a change as type "adopted" with confidence 0.91, with the flag "advice_perimeter" and the scope "securities"
+Then each is stored as a key, marked suggested and naming the agent that suggested it, the type with the agent's confidence
 And the change row shows the type as a notice pill, the flag as a brand pill, each marked as a suggestion
 When an agent of another definition confirms them, with the model call behind its decision, inside its own open run
 Then suggested becomes false and each reads machine-confirmed, naming the suggesting and the confirming agent, never as a person's verification
 And the audit event records which agent confirmed, and its decision is in the AI output log under agent_review
-And the agent that suggested them cannot confirm them through any key of its own
+And the agent that suggested them cannot confirm them through any key of its own, the very key that filed them included
 And a bank's own compliance officer cannot confirm them, because a change's type, flag and scope are library facts
 And a person holding proposals.review may confirm one instead only with a fresh passkey, and it then reads confirmed by a person
 ```
 A curation confirmation is D-74's: an agent-bound key of another definition with
 `proposals:review`, or a person with `proposals.review` who steps up. It is not four eyes
-(no proposal stands behind it) and is labelled machine-confirmed when an agent gave it. The
-person's path is proven in `tests_curation.py`. `@e2e` stays `test.fixme()`: the screen, its
-seed and the journey are `watch-curation-confirm-frontend`'s.
+(no proposal stands behind it) and is labelled machine-confirmed when an agent gave it.
+Nobody confirms what they filed themselves, a person included, and the confirmer names the
+type it checked by its key, so a type corrected meanwhile is not confirmed unread
+(`tests_curation.py`, `tests_curation_races.py`). `@e2e` stays `test.fixme()`: the screen,
+its seed and the journey are `watch-curation-confirm-frontend`'s.
 
 ### WAT-S5 — An unknown key answers unknown_key with the valid keys `@integration` (WAT-03, AC-WAT2)
 ```gherkin

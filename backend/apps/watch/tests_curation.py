@@ -20,10 +20,13 @@ import uuid
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
+from unittest import mock
 
-from django.db import IntegrityError, transaction
-from django.test import TestCase
+from django.db import IntegrityError, connection, transaction
+from django.test import SimpleTestCase, TestCase
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
+from pydantic import ValidationError as PydanticValidationError
 
 from apps.agents import testing as agent_build
 from apps.agents.models import AgentRun, RunStatus
@@ -31,6 +34,7 @@ from apps.governance.models import AiGeneration
 from apps.identity.models import User
 from apps.library import testing as library_build
 from apps.library.models import Instrument, Obligation
+from apps.library.schemas import AgentRef, LibraryRef
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.models import AuditEvent
 from apps.shared.testing import (
@@ -41,8 +45,9 @@ from apps.shared.testing import (
     stub_session,
     user_principal,
 )
-from apps.watch import testing as watch_build
+from apps.watch import curation, testing as watch_build
 from apps.watch.models import ChangeObligation, ChangeTerm, RegulatoryChange
+from apps.watch.schemas import WatchFact, WatchObligationLink
 from apps.watch.write import watch_write
 
 AS_KEY: dict[str, Any] = {"HTTP_X_API_KEY": API_KEY_FOR_TESTS}
@@ -333,6 +338,27 @@ class AConfirmedFactStands(CurationCase):
         self.assertIsNotNone(self.confirmed.confirmed_by_id)
         self.assertEqual(len(self.term_links(flags=True)), 2)
 
+    def test_a_keys_write_deletes_no_confirmation_even_past_its_check(self) -> None:
+        """The write itself holds the rule, not only the check before it: with the check
+        made to find nothing — as a confirmation landing just after it would — a key's
+        replacing set still deletes suggestions and nothing else (D-74). Proven red
+        2026-09-24 against the delete that ran for every caller."""
+        with mock.patch.object(curation, "_refuse_confirmed"), as_agent():
+            response = self.patch_change({"flags": ["ai"]})
+        self.assertEqual(response.status_code, 200, response.content)
+        self.confirmed.refresh_from_db()
+        self.assertFalse(self.confirmed.suggested, "the confirmation stands")
+        self.assertEqual(sorted(self.flag_keys()), ["advice_perimeter", "ai"])
+
+    def test_the_write_locks_the_change_before_it_reads_what_is_confirmed(self) -> None:
+        """Each write that reads what is confirmed takes the change's row lock first, so a
+        confirmation cannot land between its check and its write; the race itself is proven
+        with two sessions in tests_curation_races.py."""
+        with as_agent(), CaptureQueriesContext(connection) as queries:
+            self.patch_change({"flags": ["advice_perimeter", "ai"]})
+        on_the_change = [query["sql"] for query in queries if 'FROM "regulatory_change"' in query["sql"]]
+        self.assertIn("FOR UPDATE", on_the_change[0])
+
 
 class OnlyTheConfirmPathConfirms(TestCase):
     """Read off the source: no function of `curation.py` but `confirm_curation` writes
@@ -384,6 +410,42 @@ class OnlyTheConfirmPathConfirms(TestCase):
         change says `suggested` true, so the AST test above is not passing on an absence."""
         source = (Path(__file__).resolve().parent / "curation.py").read_text(encoding="utf-8")
         self.assertIn('"suggested": True', source)
+
+
+class AConfirmedFactSaysWhoConfirmedIt(SimpleTestCase):
+    """A read that builds a confirmed fact without its provenance fails loudly rather than
+    answering `confirmedOrigin: null`, which the contract defines as a suggestion, so a
+    machine's confirmation can never reach a bank unlabelled (D-74). The roadmap's own
+    link read did exactly that until 2026-09-24."""
+
+    REF = LibraryRef(key="advice_perimeter", kind=None, label="Advice perimeter")
+    CONFIRMER = AgentRef(id=uuid.uuid4(), key="library-confirmer")
+
+    def link(self, *, confirmed_origin: Any = None, confirmed_by_agent: AgentRef | None = None) -> WatchObligationLink:
+        return WatchObligationLink(
+            obligation_id=uuid.uuid4(),
+            title="A duty",
+            instrument_short_name="FFFS 2017:2",
+            ref_label="11 kap. 4 §",
+            origin="agent",
+            confidence=0.8,
+            confirmed=True,
+            confirmed_origin=confirmed_origin,
+            confirmed_by_agent=confirmed_by_agent,
+        )
+
+    def test_a_confirmed_fact_or_link_names_who_confirmed_it(self) -> None:
+        refused = {
+            "a fact with no origin": lambda: WatchFact(ref=self.REF, confidence=None, suggested=False),
+            "a link with no origin": lambda: self.link(),
+            "a machine's confirmation naming no agent": lambda: self.link(confirmed_origin="agent"),
+        }
+        for what, build in refused.items():
+            with self.subTest(what), self.assertRaises(PydanticValidationError):
+                build()
+        machine = self.link(confirmed_origin="agent", confirmed_by_agent=self.CONFIRMER)
+        self.assertEqual(machine.confirmed_by_agent, self.CONFIRMER)
+        self.assertIsNone(WatchFact(ref=self.REF, confidence=0.7, suggested=True).confirmed_origin, "a suggestion names nobody")
 
 
 def _writes(node: ast.AST, calls: frozenset[str]) -> list[tuple[str, ast.expr]]:
@@ -558,6 +620,20 @@ class ObligationLinks(CurationCase):
         self.assertEqual(overturned.status_code, 200, overturned.content)
         self.assertEqual(list(self.change.obligation_links.values_list("obligation_id", flat=True)), [self.second.id])
 
+    def test_a_keys_set_deletes_no_confirmed_link_even_past_its_check(self) -> None:
+        """As for a flag: with the check made to find nothing, a key's set still leaves a
+        confirmed link where it is (D-74)."""
+        link = confirm(watch_build.obligation_link(self.change, self.first))
+        with mock.patch.object(curation, "_refuse_confirmed"), as_agent():
+            response = self.put_links([{"obligationId": str(self.second.id)}])
+        self.assertEqual(response.status_code, 200, response.content)
+        link.refresh_from_db()
+        self.assertIsNotNone(link.confirmed_at, "the confirmation stands")
+        self.assertEqual(
+            sorted(str(link.obligation_id) for link in self.change.obligation_links.all()),
+            sorted([str(self.first.id), str(self.second.id)]),
+        )
+
     def test_a_confirmed_link_that_stays_keeps_its_confirmation(self) -> None:
         link = confirm(watch_build.obligation_link(self.change, self.first))
         with as_agent():
@@ -681,11 +757,14 @@ class ConfirmingCuration(CurationCase):
 
     def everything(self) -> dict[str, Any]:
         return {
-            "changeType": True,
+            "changeType": "adopted",
             "flags": ["advice_perimeter"],
             "termIds": [str(watch_build.term("regime:securities").id)],
             "obligationIds": [str(self.first.id)],
         }
+
+    def term_links_of(self, change: RegulatoryChange) -> list[ChangeTerm]:
+        return list(change.term_links.filter(flag__isnull=False))
 
     def nothing_confirmed(self) -> bool:
         self.reform.refresh_from_db()
@@ -732,7 +811,7 @@ class ConfirmingCuration(CurationCase):
         self.assertEqual(own.status_code, 409, own.content)
         self.assertEqual(own.json()["code"], "own_suggestion")
         sibling = agent_build.agent_key(agent_row=self.sweeper.agent, scopes=("agent-runs:write", perms.SCOPE_PROPOSALS_REVIEW))
-        same = self.as_key(sibling, {"changeType": True}, run=agent_build.platform_run(key=sibling))
+        same = self.as_key(sibling, {"changeType": "adopted"}, run=agent_build.platform_run(key=sibling))
         self.assertEqual(same.status_code, 409, same.content)
         self.assertEqual(same.json()["code"], "same_agent")
         self.assertTrue(self.nothing_confirmed())
@@ -804,6 +883,34 @@ class ConfirmingCuration(CurationCase):
         self.assertEqual(audit.after["confirmedOrigin"], "user")
         self.assertFalse(AiGeneration.objects.filter(purpose="agent_review").exists(), "a person's confirmation is no model call")
 
+    def test_a_person_never_confirms_what_they_filed(self) -> None:
+        """D-74's independence holds for a person too: an editor who corrects a fact files a
+        suggestion in their own name, and somebody else — an agent of another definition or
+        another person — confirms it."""
+        flags = {"flags": ["advice_perimeter", "ai"]}
+        with as_editor(self.editor, stepped_up=True):
+            filed = self.client.patch(f"/api/v1/changes/{self.reform.id}", data=flags, content_type="application/json", **AS_SESSION)
+            own = self.post({"flags": ["ai"]}, AS_SESSION)
+        self.assertEqual(filed.status_code, 200, filed.content)
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "own_suggestion"))
+        filed_by = {(link.suggested_by_id, link.suggested_by_agent_id, link.suggested) for link in self.term_links_of(self.reform)}
+        self.assertEqual(filed_by, {(self.editor.id, None, True)}, "a refusal confirms nothing")
+        another = factories.platform_user(email="second.editor@bleqq.example")
+        with as_editor(another, stepped_up=True):
+            by_another_person = self.post({"flags": ["ai"]}, AS_SESSION)
+        self.assertEqual(by_another_person.status_code, 200, by_another_person.content)
+        by_an_agent = self.as_key(self.confirmer, {"flags": ["advice_perimeter"]})
+        self.assertEqual(by_an_agent.status_code, 200, by_an_agent.content)
+
+    def test_a_type_that_moved_since_it_was_checked_is_not_confirmed(self) -> None:
+        """The confirmer names the type it checked; a type corrected since is refused rather
+        than confirmed unread."""
+        response = self.as_key(self.confirmer, {"changeType": "proposal"})
+        self.assertEqual((response.status_code, response.json()["code"]), (422, "validation_error"))
+        self.assertIn("the type proposal", response.json()["detail"])
+        self.assertTrue(self.nothing_confirmed())
+        self.assertFalse(AiGeneration.objects.filter(purpose="agent_review").exists(), "a refusal logs nothing")
+
     def test_only_what_the_change_carries_is_confirmed(self) -> None:
         for body in ({"flags": ["ai"]}, {"obligationIds": [str(self.second.id)]}, {"termIds": [str(uuid.uuid4())]}, {}):
             with self.subTest(body=body):
@@ -811,12 +918,32 @@ class ConfirmingCuration(CurationCase):
                 self.assertEqual((response.status_code, response.json()["code"]), (422, "validation_error"))
         self.assertTrue(self.nothing_confirmed())
 
-    def test_a_repeated_confirmation_confirms_nothing_twice(self) -> None:
+    def test_a_repeated_confirmation_confirms_nothing_twice_and_writes_nothing(self) -> None:
+        """A retry in the same run answers the change as it stands and writes nothing: the
+        run's decision on this change is logged once, and so is the audit row."""
         self.as_key(self.confirmer, {"flags": ["advice_perimeter"]})
         first = self.reform.term_links.get(flag__key="advice_perimeter").confirmed_at
         again = self.as_key(self.confirmer, {"flags": ["advice_perimeter"]})
         self.assertEqual(again.status_code, 200, again.content)
+        self.assertEqual(again.json()["flags"][0]["confirmedOrigin"], "agent")
         self.assertEqual(self.reform.term_links.get(flag__key="advice_perimeter").confirmed_at, first)
+        self.assertEqual(AiGeneration.objects.filter(purpose="agent_review", subject_id=self.reform.id).count(), 1)
+        self.assertEqual(AuditEvent.objects.filter(action="regulatory_change.curation_confirmed").count(), 1)
+        with as_editor(self.editor, stepped_up=True):
+            repeated = self.post({"flags": ["advice_perimeter"]}, AS_SESSION)
+        self.assertEqual(repeated.status_code, 200, repeated.content)
+        self.assertEqual(AuditEvent.objects.filter(action="regulatory_change.curation_confirmed").count(), 1)
+
+    def test_another_runs_decision_on_confirmed_facts_is_still_logged(self) -> None:
+        """A decision is a model call, and every model call is logged (D-80): a second run
+        that finds the facts already confirmed still has its first decision on the change
+        recorded, and confirms nothing."""
+        self.as_key(self.confirmer, {"flags": ["advice_perimeter"]})
+        later = agent_build.platform_run(key=self.confirmer)
+        again = self.as_key(self.confirmer, {"flags": ["advice_perimeter"]}, run=later)
+        self.assertEqual(again.status_code, 200, again.content)
+        logged = AiGeneration.objects.filter(purpose="agent_review", subject_id=self.reform.id)
+        self.assertEqual(sorted(str(row.agent_run_id) for row in logged), sorted([str(self.review.id), str(later.id)]))
         latest = AuditEvent.objects.filter(action="regulatory_change.curation_confirmed").order_by("-created", "-id").first()
         self.assertEqual(latest.after["confirmed"], [])  # type: ignore[union-attr]
 
@@ -825,7 +952,10 @@ class ConfirmingCuration(CurationCase):
         flag = self.reform.term_links.get(flag__key="advice_perimeter")
         now = timezone.now()
         confirmer, sweeper = self.confirmer, self.sweeper
+        with watch_write("test"):
+            ChangeTerm.objects.filter(pk=flag.pk).update(suggested_by_id=self.editor.id)
         refused: dict[str, dict[str, Any]] = {
+            "the suggesting person": {"confirmed_by_id": self.editor.id},
             "the suggesting agent": {"confirmed_by_api_key_id": confirmer.id, "confirmed_by_agent_id": sweeper.agent.id},
             "the suggesting key": {"confirmed_by_api_key_id": sweeper.id, "confirmed_by_agent_id": confirmer.agent.id},
             "a key with no agent": {"confirmed_by_api_key_id": confirmer.id},

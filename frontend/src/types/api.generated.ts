@@ -1536,29 +1536,34 @@ export interface paths {
          *     A confirmation is not four eyes, because no proposal stands behind it, and it is
          *     labelled for what it is (D-74): a fact an agent confirmed reads machine-confirmed,
          *     naming the agent that suggested it and the agent that confirmed it, and never as a
-         *     person's verification. The confirming agent is never the suggesting one: a key cannot
-         *     confirm what it suggested itself, nor what another key of its own agent suggested, and
-         *     the database refuses either row on its own if this check is ever bypassed. Every bank
-         *     reads the confirmation; each bank still decides on its own case what a link means to
-         *     it.
+         *     person's verification. The confirmer is never the suggester: a key cannot confirm what
+         *     it suggested itself, nor what another key of its own agent suggested, a person cannot
+         *     confirm what they filed themselves, and the database refuses each of those rows on its
+         *     own if this check is ever bypassed. Every bank reads the confirmation; each bank still
+         *     decides on its own case what a link means to it.
          *
-         *     Only facts the change carries now can be confirmed, as they stand: this call changes no
-         *     value, and a fact already confirmed is left exactly as it is, so repeating the call
-         *     confirms nothing twice and a retry is safe; send an `Idempotency-Key` as well. Each
-         *     `decision` sent is one more row in the AI output log, which is a ledger of calls and
-         *     never deduplicated. The facts, the log row and an audit row naming who confirmed what
-         *     are written in one transaction, and every refusal comes first, so a refused call stores
-         *     nothing. Undoing a confirmation is a person's, with a passkey, through
-         *     `PATCH /changes/{changeId}` or `PUT /changes/{changeId}/obligations`.
+         *     Only facts the change carries now can be confirmed, as they stand, and the type is
+         *     named by the key you checked, so a type corrected after you read it is refused rather
+         *     than confirmed unread. This call changes no value, and a fact already confirmed is left
+         *     exactly as it is. A call that finds nothing left to confirm writes nothing — no log
+         *     row, no audit row — once its run has logged a decision on this change, so a retry,
+         *     with or without an `Idempotency-Key`, answers the change as it now stands; the first
+         *     `decision` a run sends on a change is always logged, because it is a model call. The
+         *     facts, the log row and an audit row naming who confirmed what are written in one
+         *     transaction, under a lock on the change that the curation routes take as well, and
+         *     every refusal comes first, so a refused call stores nothing. Undoing a confirmation is
+         *     a person's, with a passkey, through `PATCH /changes/{changeId}` or
+         *     `PUT /changes/{changeId}/obligations`.
          *
          *     Errors to branch on: `own_suggestion` (409) when a named fact was suggested by this very
-         *     key; `same_agent` (409) when it was suggested by another key of the same agent;
-         *     `validation_error` (422) when the body names nothing, names a flag, a term or an
-         *     obligation the change does not carry, when a key sends no `decision` or a person sends
-         *     one or an `agentRunId`, and for a body the schema refuses, including a decision with no
-         *     model, version or citation; `run_not_open` (422) when a key names no run or a closed
-         *     one; `not_found` (404) when no change has that id, or the run belongs to another key;
-         *     `agent_not_bound` (403) for a key holding the scope but bound to no agent definition;
+         *     key, or filed by this very person; `same_agent` (409) when it was suggested by another
+         *     key of the same agent; `validation_error` (422) when the body names nothing, names a
+         *     type, a flag, a term or an obligation the change does not carry now, when a key sends
+         *     no `decision` or a person sends one or an `agentRunId`, and for a body the schema
+         *     refuses, including a decision with no model, version or citation; `run_not_open` (422)
+         *     when a key names no run or a closed one; `not_found` (404) when no change has that id,
+         *     or the run belongs to another key; `agent_not_bound` (403) for a key holding the scope
+         *     but bound to no agent definition;
          *     `step_up_required` (403) when a person calls without a fresh passkey assertion;
          *     `permission_denied` (403) without `proposals.review` or `proposals:review`, which is
          *     what every bank's session and key receives; `unauthenticated` (401) without a
@@ -13557,6 +13562,7 @@ export interface components {
          *       "authorityCode": "fi",
          *       "authorityLabel": "Finansinspektionen",
          *       "changeType": "adopted",
+         *       "changeTypeConfidence": 0.91,
          *       "documents": [
          *         {
          *           "isPrimary": true,
@@ -13633,6 +13639,12 @@ export interface components {
              * @example adopted
              */
             changeType: string;
+            /**
+             * Changetypeconfidence
+             * @description How sure the agent was of `changeType`, 0 to 1, its own number; null, the default, when it recorded none or a person files the change. Stored with the type as a suggestion and shown beside it until the type is confirmed; it orders nothing and says nothing about whether the type is right. A later sighting of the same `stableKey` leaves it as it was.
+             * @example 0.91
+             */
+            changeTypeConfidence?: number | null;
             /**
              * Documents
              * @description The pages the change was found on, at most 50 in one call.
@@ -14526,14 +14538,14 @@ export interface components {
          * @description `POST /changes/{changeId}/confirmation` (WAT-03, WAT-04, D-74): which of a change's
          *     curated facts to confirm for the shared library, as they stand now.
          *
-         *     Name what you checked and nothing else: the type, flag keys, scope term ids and linked
-         *     obligation ids, each of which must already be on the change. A fact already confirmed
-         *     is left exactly as it is, so repeating a call confirms nothing twice. An agent's key
-         *     sends the model call behind its decision and the open run it was made in; a person's
-         *     session sends neither.
+         *     Name what you checked and nothing else: the type's key, flag keys, scope term ids and
+         *     linked obligation ids, each of which must be on the change as it stands. A fact already
+         *     confirmed is left exactly as it is, so repeating a call confirms nothing twice. An
+         *     agent's key sends the model call behind its decision and the open run it was made in; a
+         *     person's session sends neither.
          * @example {
          *       "agentRunId": "8e3f2a61-4b7c-4d19-a05e-3c9b1f7d2e84",
-         *       "changeType": true,
+         *       "changeType": "adopted",
          *       "decision": {
          *         "citations": [
          *           {
@@ -14566,11 +14578,10 @@ export interface components {
             agentRunId?: string | null;
             /**
              * Changetype
-             * @description True confirms the change's type as it is stored now; false, the default, leaves the type as it is. To confirm a different type, correct it with `PATCH /changes/{changeId}` first: this call never changes a value.
-             * @default false
-             * @example true
+             * @description The key of the type you checked, a row of the `change_type` library vocabulary, at most 80 characters, which confirms the change's type. It must be the type the change has now: a key the change does not carry answers 422 `validation_error`, because the type moved after you read it or you checked another, and nothing is confirmed unread. Null, the default, leaves the type as it is. To confirm a different type, correct it with `PATCH /changes/{changeId}` first: this call never changes a value. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             * @example adopted
              */
-            changeType: boolean;
+            changeType?: string | null;
             /** @description The model call behind an agent's decision to confirm: the model, its version, the prompt's name and hash, what it concluded and at least one public page it rests on (D-80). Required from an agent's key and logged in the AI output log under `agent_review`, which the platform alone reads; refused from a person's session, whose confirmation is their own. Null by default. */
             decision?: components["schemas"]["AgentDecision"] | null;
             /**

@@ -260,6 +260,7 @@ def term_link(
             flag=None if flag_key is None else Flag.objects.get(key=flag_key),
             confidence=confidence,
             suggested=suggested,
+            suggested_by_id=row.change_type_suggested_by_id,
             suggested_by_agent_id=row.change_type_suggested_by_agent_id,
             suggested_by_api_key_id=row.change_type_suggested_by_api_key_id,
         )
@@ -281,6 +282,7 @@ def obligation_link(
             obligation=obligation,
             origin=origin.value,
             confidence=confidence,
+            suggested_by_id=row.change_type_suggested_by_id,
             suggested_by_agent_id=row.change_type_suggested_by_agent_id,
             suggested_by_api_key_id=row.change_type_suggested_by_api_key_id,
         )

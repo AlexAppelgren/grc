@@ -9,8 +9,9 @@ queue: a console session belongs to no tenant, so a case cannot be joined, and t
 must carry no `case` member at all rather than a null one — a null would invite a screen to
 render a bank's judgement in the console.
 
-Nothing here is a settled fact. A change is what an agent sighted: its type stays the
-agent's suggestion until a library editor confirms it, its links carry a confidence, and
+Nothing here is a settled fact until it is confirmed. A change is what an agent sighted: its
+type stays the agent's suggestion until an agent of another definition or a person confirms
+it (D-74), its links carry a confidence, and
 `inFootprint` says the change is worth this bank's attention, never that an obligation
 applies to it or that it complies (REG-01, REG-02).
 

@@ -44,11 +44,11 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from typing import Literal
+from typing import Literal, Self
 
 from django.conf import settings
 from ninja import Field
-from pydantic import ConfigDict, HttpUrl
+from pydantic import ConfigDict, HttpUrl, model_validator
 from pydantic.json_schema import JsonDict
 
 from apps.governance.schemas import AiCitation
@@ -252,7 +252,7 @@ CHANGE_DETAIL_EXAMPLE: JsonDict = CHANGE_EXAMPLE | {
 # What a confirming agent sends: the facts it checked against the pages the change cites,
 # and the model call behind that decision (D-74, D-80).
 CURATION_CONFIRM_EXAMPLE: JsonDict = {
-    "changeType": True,
+    "changeType": "adopted",
     "flags": ["advice_perimeter"],
     "termIds": ["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"],
     "obligationIds": ["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"],
@@ -314,6 +314,18 @@ _SUGGESTED_BY_AGENT = (
     "it by hand or a key bound to no agent did. It names a platform agent, never a person "
     "or a bank."
 )
+
+def _names_its_confirmer(*, confirmed: bool, origin: str | None, agent: AgentRef | None) -> None:
+    """A confirmed fact always says who confirmed it, so a read that forgets the provenance
+    fails loudly instead of answering `confirmedOrigin: null`, which the contract defines
+    as a suggestion: a machine's confirmation would then carry no machine label (D-74). The
+    fields default to null only so a client written before them keeps working."""
+    if confirmed and origin is None:
+        raise ValueError("A confirmed fact names who confirmed it: build it with keys.provenance().")
+    if origin == "agent" and agent is None:
+        raise ValueError("A fact an agent confirmed names that agent.")
+
+
 _CONFIRMED_BY_AGENT = (
     "The independent agent that confirmed it, by its definition key, when `confirmedOrigin` "
     "is `agent`. Never the agent that suggested it: the database refuses that row. Null, "
@@ -1062,6 +1074,11 @@ class WatchObligationLink(LibraryResponse):
     suggested_by_agent: AgentRef | None = Field(default=None, description=_SUGGESTED_BY_AGENT)
     confirmed_by_agent: AgentRef | None = Field(default=None, description=_CONFIRMED_BY_AGENT)
 
+    @model_validator(mode="after")
+    def _says_who_confirmed(self) -> Self:
+        _names_its_confirmer(confirmed=self.confirmed, origin=self.confirmed_origin, agent=self.confirmed_by_agent)
+        return self
+
 
 # ---------------------------------------------------------------------------------------
 # The change itself (WAT-02, WAT-03)
@@ -1079,6 +1096,7 @@ class WatchChangeInput(WriteBody):
                     "stableKey": "chg-fi-2026-research-payments",
                     "title": "FI adopts amended rules on paying for investment research",
                     "changeType": "adopted",
+                    "changeTypeConfidence": 0.91,
                     "authorityLabel": "Finansinspektionen",
                     "authorityCode": "fi",
                     "publishedOn": "2026-09-15",
@@ -1153,6 +1171,19 @@ class WatchChangeInput(WriteBody):
             f"`unknown_key` with the valid keys (AC-WAT2). {_VOCABULARY}"
         ),
         examples=["adopted"],
+    )
+    change_type_confidence: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+        description=(
+            "How sure the agent was of `changeType`, 0 to 1, its own number; null, the default, "
+            "when it recorded none or a person files the change. Stored with the type as a "
+            "suggestion and shown beside it until the type is confirmed; it orders nothing and "
+            "says nothing about whether the type is right. A later sighting of the same "
+            "`stableKey` leaves it as it was."
+        ),
+        examples=[0.91],
     )
     authority_label: str = Field(
         min_length=1,
@@ -1420,22 +1451,28 @@ class WatchCurationConfirmInput(WriteBody):
     """`POST /changes/{changeId}/confirmation` (WAT-03, WAT-04, D-74): which of a change's
     curated facts to confirm for the shared library, as they stand now.
 
-    Name what you checked and nothing else: the type, flag keys, scope term ids and linked
-    obligation ids, each of which must already be on the change. A fact already confirmed
-    is left exactly as it is, so repeating a call confirms nothing twice. An agent's key
-    sends the model call behind its decision and the open run it was made in; a person's
-    session sends neither."""
+    Name what you checked and nothing else: the type's key, flag keys, scope term ids and
+    linked obligation ids, each of which must be on the change as it stands. A fact already
+    confirmed is left exactly as it is, so repeating a call confirms nothing twice. An
+    agent's key sends the model call behind its decision and the open run it was made in; a
+    person's session sends neither."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [CURATION_CONFIRM_EXAMPLE]})
 
-    change_type: bool = Field(
-        default=False,
+    change_type: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=KEY_MAX,
         description=(
-            "True confirms the change's type as it is stored now; false, the default, leaves "
-            "the type as it is. To confirm a different type, correct it with "
-            "`PATCH /changes/{changeId}` first: this call never changes a value."
+            f"The key of the type you checked, a row of the `change_type` library vocabulary, "
+            f"at most {KEY_MAX} characters, which confirms the change's type. It must be the "
+            "type the change has now: a key the change does not carry answers 422 "
+            "`validation_error`, because the type moved after you read it or you checked "
+            "another, and nothing is confirmed unread. Null, the default, leaves the type as it "
+            "is. To confirm a different type, correct it with `PATCH /changes/{changeId}` "
+            f"first: this call never changes a value. {_VOCABULARY}"
         ),
-        examples=[True],
+        examples=["adopted"],
     )
     flags: list[str] = Field(
         default_factory=list,
@@ -1647,6 +1684,11 @@ class WatchFact(LibraryResponse):
     confirmed_origin: Origin | None = Field(default=None, description=_CONFIRMED_ORIGIN, examples=[None])
     suggested_by_agent: AgentRef | None = Field(default=None, description=_SUGGESTED_BY_AGENT)
     confirmed_by_agent: AgentRef | None = Field(default=None, description=_CONFIRMED_BY_AGENT)
+
+    @model_validator(mode="after")
+    def _says_who_confirmed(self) -> Self:
+        _names_its_confirmer(confirmed=not self.suggested, origin=self.confirmed_origin, agent=self.confirmed_by_agent)
+        return self
 
 
 class WatchCaseObligationDecision(LibraryResponse):

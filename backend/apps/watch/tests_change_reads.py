@@ -70,8 +70,9 @@ RELATED_QUERIES = 2 + 6 + 2 + 2 + 1 + 2 + 1 + 3 + 2 + 1 + 1
 
 
 def confirm_link(change: RegulatoryChange, obligation: Obligation, editor: User) -> None:
-    """A library editor confirms the link for the shared library. Through the watch door,
-    because `change_obligation` is a library row."""
+    """A person confirms the link for the shared library, as a library editor still may
+    with a passkey (D-74). Through the watch door, because `change_obligation` is a library
+    row."""
     with watch_write("test fixture"):
         ChangeObligation.objects.filter(change=change, obligation=obligation).update(
             confirmed_by=editor, confirmed_at=build.ANCHOR
@@ -79,9 +80,9 @@ def confirm_link(change: RegulatoryChange, obligation: Obligation, editor: User)
 
 
 def confirm_flag(change: RegulatoryChange, flag_key: str, editor: User) -> None:
-    """A library editor confirms one flag of a change for the shared library. `suggested`
-    and the two confirmation columns move together because `change_term`'s check constraint
-    refuses any other combination (WAT-03)."""
+    """A person confirms one flag of a change for the shared library, as a library editor
+    still may with a passkey (D-74). `suggested` and the confirmation columns move together
+    because `change_term`'s check constraint refuses any other combination (WAT-03)."""
     with watch_write("test fixture"):
         ChangeTerm.objects.filter(
             change=change,

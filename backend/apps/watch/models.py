@@ -18,10 +18,11 @@ What the designed schema has differently (INPUT_DELTAS §1, recorded there):
   are the screen's own findings (apps/agents/screen.py), not a list an admin curates.
 - A curated fact — the change's type, a flag or scope term, an obligation link — says who
   suggested it and who confirmed it (D-74, watch 0002). The suggester is copied from the
-  run or the key that filed it; the confirmer is a person holding `proposals.review`, or
-  an agent-bound platform key holding `proposals:review`, never both. A check constraint
-  keeps the confirming key and the confirming agent from being the suggesting ones, so two
-  keys of one agent cannot confirm each other and an unbound key cannot pass on a null.
+  run, the key or the person that filed it; the confirmer is a person holding
+  `proposals.review`, or an agent-bound platform key holding `proposals:review`, never
+  both. A check constraint keeps the confirming person, key and agent from being the
+  suggesting ones, so nobody settles a fact they filed, two keys of one agent cannot
+  confirm each other and an unbound key cannot pass on a null.
   That is scope separation, not four eyes: there is no proposal row here, and an agent's
   confirmation reads machine-confirmed, never as a person's verification.
 - `source_check` gains `kind`, `subject_type` and `subject_id`, which the library
@@ -59,15 +60,19 @@ def _api_key() -> models.ForeignKey:
     return models.ForeignKey("identity.ApiKey", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
 
 
+def _person() -> models.ForeignKey:
+    return models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+
+
 def _curation_constraints(table: str, prefix: str = "", *, suggested: bool = True) -> list[models.CheckConstraint]:
     """The two rules every curated fact carries (D-74), for a table whose columns are named
     `<prefix>confirmed_by` and so on.
 
     A confirmation names a person, or an agent-bound key and its agent, with the time; a
     suggestion names neither. `suggested`, where the table has it, moves with them. And the
-    confirming key and agent are never the suggesting ones: compared both ways because a
-    key that files a suggestion may be bound to no agent, and then only the key tells the
-    two principals apart."""
+    confirmer is never the suggester — not the same person, not the same key, not the same
+    agent: the key and the agent are compared both ways because a key that files a
+    suggestion may be bound to no agent, and then only the key tells the two apart."""
 
     def isnull(column: str, value: bool) -> models.Q:
         return models.Q(**{f"{prefix}{column}__isnull": value})
@@ -80,10 +85,11 @@ def _curation_constraints(table: str, prefix: str = "", *, suggested: bool = Tru
     by_an_agent = isnull("confirmed_at", False) & isnull("confirmed_by", True) & isnull("confirmed_by_api_key", False) & isnull("confirmed_by_agent", False)
 
     def differs(column: str) -> models.Q:
+        confirmer, suggester = f"confirmed_by{column}", f"suggested_by{column}"
         return (
-            isnull(f"confirmed_by_{column}", True)
-            | isnull(f"suggested_by_{column}", True)
-            | ~models.Q(**{f"{prefix}confirmed_by_{column}": models.F(f"{prefix}suggested_by_{column}")})
+            isnull(confirmer, True)
+            | isnull(suggester, True)
+            | ~models.Q(**{f"{prefix}{confirmer}": models.F(f"{prefix}{suggester}")})
         )
 
     return [
@@ -92,7 +98,7 @@ def _curation_constraints(table: str, prefix: str = "", *, suggested: bool = Tru
             name=f"{table}_confirmation_names_a_person_or_an_agent",
         ),
         models.CheckConstraint(
-            condition=differs("agent") & differs("api_key"),
+            condition=differs("") & differs("_agent") & differs("_api_key"),
             name=f"{table}_confirmer_is_not_the_suggester",
         ),
     ]
@@ -214,9 +220,10 @@ class RegulatoryChange(LibraryModel):
     # who suggested it and who confirmed it, under the same two constraints.
     change_type_suggested = models.BooleanField(default=True)
     change_type_confidence = models.DecimalField(max_digits=4, decimal_places=3, null=True, blank=True)
+    change_type_suggested_by = _person()
     change_type_suggested_by_agent = _agent()
     change_type_suggested_by_api_key = _api_key()
-    change_type_confirmed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    change_type_confirmed_by = _person()
     change_type_confirmed_by_api_key = _api_key()
     change_type_confirmed_by_agent = _agent()
     change_type_confirmed_at = models.DateTimeField(null=True, blank=True)
@@ -330,9 +337,10 @@ class ChangeTerm(LibraryModel):
     flag = models.ForeignKey("taxonomy.Flag", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     confidence = models.DecimalField(max_digits=4, decimal_places=3, null=True, blank=True)
     suggested = models.BooleanField(default=True)
+    suggested_by = _person()
     suggested_by_agent = _agent()
     suggested_by_api_key = _api_key()
-    confirmed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    confirmed_by = _person()
     confirmed_by_api_key = _api_key()
     confirmed_by_agent = _agent()
     confirmed_at = models.DateTimeField(null=True, blank=True)
@@ -371,9 +379,10 @@ class ChangeObligation(LibraryModel):
     obligation = models.ForeignKey("library.Obligation", on_delete=models.PROTECT, related_name="change_links")
     origin = models.CharField(max_length=16, choices=_choices(OriginType))
     confidence = models.DecimalField(max_digits=4, decimal_places=3, null=True, blank=True)
+    suggested_by = _person()
     suggested_by_agent = _agent()
     suggested_by_api_key = _api_key()
-    confirmed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    confirmed_by = _person()
     confirmed_by_api_key = _api_key()
     confirmed_by_agent = _agent()
     confirmed_at = models.DateTimeField(null=True, blank=True)
