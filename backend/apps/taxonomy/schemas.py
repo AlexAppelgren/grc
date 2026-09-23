@@ -183,8 +183,41 @@ class VocabularySuggestionRow(CamelSchema):
 
 
 class VocabularySuggestionPage(CamelSchema):
-    items: list[VocabularySuggestionRow]
-    total: int
+    """`GET /vocab/{list}/suggestions`: one page of the suggestions waiting in one of the
+    organisation's own lists, oldest first."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "items": [
+                        {
+                            "id": "6d2f9a14-8b3e-4c71-a5d0-3e9b1f7c2a58",
+                            "list": "tenant_tag",
+                            "key": "pension_transfers",
+                            "labels": {"en": "Pension transfers"},
+                            "usageNote": "Moving an occupational pension from one provider to another.",
+                            "suggestedBy": {"id": "0b7e4c2d-9f61-4a38-b5e2-7c1d8a3f6e90", "name": "Oskar Lund"},
+                            "status": "pending",
+                            "createdAt": "2026-09-18T10:12:00Z",
+                        }
+                    ],
+                    "total": 1,
+                }
+            ]
+        }
+    )
+
+    items: list[VocabularySuggestionRow] = Field(
+        description=(
+            "This page of the list's waiting suggestions, oldest first, at most `limit` of them. Only a "
+            "suggestion an admin has not answered yet is here: one whose row was created, or that was "
+            "declined, has left the inbox."
+        )
+    )
+    total: int = Field(
+        description="How many suggestions wait in this list across every page, counted at the moment of the call."
+    )
 
 
 # ---------------------------------------------------------------------------------------
@@ -327,8 +360,66 @@ class FootprintView(CamelSchema):
 
 
 class FootprintRequestPage(CamelSchema):
-    items: list[FootprintRequestRow]
-    total: int
+    """`GET /tenant/footprint/requests`: one page of the organisation's regulatory scope
+    change requests, newest first."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "items": [
+                        {
+                            "id": "5b0c7e1a-3f2d-4c8e-9a61-2d7f0e4b9c13",
+                            "status": "pending",
+                            "requestedBy": {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Sara Lindqvist"},
+                            "requestedAt": "2026-09-18T07:40:00Z",
+                            "adds": [
+                                {"key": "insurance_distribution", "kind": None, "label": "Insurance distribution", "dimension": "service_type"},
+                                {"key": "retail", "kind": None, "label": "Retail", "dimension": "client_category"},
+                            ],
+                            "removes": [{"key": "advice", "kind": None, "label": "Advice", "dimension": "service_type"}],
+                            "preview": {
+                                "obligations": {"hidden": 2, "revealed": 2, "available": True},
+                                "cases": {"hidden": 0, "revealed": 0, "available": False},
+                            },
+                            "decidedBy": None,
+                            "decidedAt": None,
+                            "decisionNote": "",
+                            "version": 1,
+                        },
+                        {
+                            "id": "e41f7b2c-6a95-4d08-b3c1-9f2e8d7a6b54",
+                            "status": "rejected",
+                            "requestedBy": {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Sara Lindqvist"},
+                            "requestedAt": "2026-09-01T13:20:00Z",
+                            "adds": [],
+                            "removes": [{"key": "tax", "kind": None, "label": "Tax", "dimension": "regime"}],
+                            "preview": {
+                                "obligations": {"hidden": 3, "revealed": 0, "available": True},
+                                "cases": {"hidden": 0, "revealed": 0, "available": False},
+                            },
+                            "decidedBy": {"id": "c7d2e9a1-4b6f-4c83-a0e5-6f1b9d2c8e47", "name": "Maria Ek"},
+                            "decidedAt": "2026-09-02T07:40:00Z",
+                            "decisionNote": "ISK tax reporting is ours.",
+                            "version": 2,
+                        },
+                    ],
+                    "total": 2,
+                }
+            ]
+        }
+    )
+
+    items: list[FootprintRequestRow] = Field(
+        description=(
+            "This page of the organisation's regulatory scope change requests, newest first, at most "
+            "`limit` of them: the one waiting for a second person, if there is one, and every request "
+            "already approved, rejected or withdrawn. A decided request is never deleted."
+        )
+    )
+    total: int = Field(
+        description="How many change requests the organisation has sent in all, across every page, counted at the moment of the call."
+    )
 
 
 class FootprintTermSelector(CamelSchema):
@@ -374,4 +465,11 @@ class VocabularyMergeQuery(CamelSchema):
 
 
 class FootprintRequestQuery(CamelSchema):
-    dry_run: bool = False
+    dry_run: bool = Field(
+        default=False,
+        description=(
+            "True previews the change and stores nothing: the answer is a 200 with what it would hide "
+            "and reveal, no request is created, no second person is asked and no audit event is written. "
+            "False, the default, sends the request for approval and answers 201."
+        ),
+    )

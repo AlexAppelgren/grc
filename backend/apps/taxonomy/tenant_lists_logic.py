@@ -674,17 +674,18 @@ def suggestion_row(suggestion: Any, status: str | None = None) -> VocabularySugg
     )
 
 
-def suggestions_of(list_name: str, tenant_id: uuid.UUID) -> list[Any]:
+def suggestions_of(
+    list_name: str, tenant_id: uuid.UUID, *, limit: int, offset: int
+) -> tuple[list[VocabularySuggestionRow], int]:
+    """One page of the list's waiting suggestions (VOC-03, NFR-02), oldest first because
+    the inbox is worked in the order it filled, and how many wait in all. The id settles two
+    sent in the same instant, so two reads always agree on the order."""
     from apps.taxonomy.models import SuggestionStatus, VocabularySuggestion
 
     entry_for(list_name)
-    return list(
-        VocabularySuggestion.objects.filter(
-            tenant_id=tenant_id, list_name=list_name, status=SuggestionStatus.PENDING.value
-        )
-        .select_related("suggested_by")
-        .order_by("created_at", "id")
-    )
+    found = VocabularySuggestion.objects.filter(tenant_id=tenant_id, list_name=list_name, status=SuggestionStatus.PENDING.value)
+    page = found.select_related("suggested_by").order_by("created_at", "id")[offset : offset + limit]
+    return [suggestion_row(suggestion) for suggestion in page], found.count()
 
 
 def _resolve_suggestions(list_name: str, tenant: Tenant, key: str) -> int:

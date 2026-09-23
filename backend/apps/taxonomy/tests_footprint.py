@@ -12,8 +12,9 @@ Proven to fail 2026-09-19 without the row lock and the partial unique constraint
 decision races both decisions landed, and the second request never waited on the first, so
 two requests would have waited at once.
 
-The last class pins the other thing only the app role can prove: a scope change's preview
-counts what the organisation may see and nothing else (INV-07, AC-FP1).
+The third class pins the other thing only the app role can prove: a scope change's preview
+counts what the organisation may see and nothing else (INV-07, AC-FP1). The last pins what a
+person reads when a request is refused or logged: "regulatory scope", the screen's name.
 """
 
 from __future__ import annotations
@@ -36,6 +37,7 @@ from apps.library.tests_reading import as_app_role
 from apps.shared import factories, tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
+from apps.shared.testing import sign_in
 from apps.taxonomy import footprint_logic, terms_logic
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintHistory
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
@@ -255,3 +257,83 @@ class PreviewIsolation(TransactionTestCase):
         self.assertEqual(self._hidden_by_removing_advice(self.tenant_a.id), 1, "the shared obligation only")
         # The owner counts its own beside the shared one, so the proof above is not vacuous.
         self.assertEqual(self._hidden_by_removing_advice(self.tenant_b.id), 2)
+
+
+class RefusalsSayRegulatoryScope(TestCase):
+    """What a person reads names the section as the screen does: "regulatory scope", never
+    "footprint" (PRD glossary; app.md, the note under the acceptance criteria). The codes,
+    the audit actions and the subject types are keys a client branches on, and they keep
+    the word."""
+
+    def setUp(self) -> None:
+        _seed_library()
+        self.tenant = factories.tenant(slug="copy")
+        self.officer = factories.member(self.tenant, roles=("compliance_officer",)).user
+        self.approver = factories.member(self.tenant, roles=("approver",)).user
+        self.advice = terms_logic.term_by_ref("service_type", "advice")
+        self.retail = terms_logic.term_by_ref("client_category", "retail")
+        tenancy.activate(self.tenant.id)
+        footprint_logic.seed_terms(tenant=self.tenant, actor=Actor.system("test"), terms=[self.advice])
+
+    def _create(self) -> FootprintChangeRequest:
+        return footprint_logic.create_request(
+            tenant=self.tenant, requester=self.officer, actor=_actor(self.officer), adds=[self.retail], removes=[self.advice]
+        )
+
+    def _refusal(self, act: Callable[[], object]) -> tuple[str, str]:
+        with self.assertRaises(ValidationError) as caught:
+            act()
+        return str(caught.exception.code), caught.exception.messages[0]
+
+    def assert_reads_regulatory_scope(self, text: str) -> None:
+        self.assertIn("regulatory scope", text.lower())
+        self.assertNotIn("footprint", text.lower())
+
+    def test_every_refusal_and_audit_summary_says_regulatory_scope(self) -> None:
+        waiting = self._create()
+        refusals = {
+            "request_pending": self._refusal(self._create),
+            "approved_by_requester": self._refusal(
+                lambda: footprint_logic.approve(
+                    tenant=self.tenant, request=waiting, decider=self.officer, actor=_actor(self.officer), note="", step_up_assertion_id=uuid.uuid4()
+                )
+            ),
+            "rejected_by_requester": self._refusal(
+                lambda: footprint_logic.reject(tenant=self.tenant, request=waiting, decider=self.officer, actor=_actor(self.officer), note="")
+            ),
+        }
+        footprint_logic.withdraw(tenant=self.tenant, request=waiting, requester=self.officer, actor=_actor(self.officer))
+        refusals["decided_twice"] = self._refusal(
+            lambda: footprint_logic.withdraw(tenant=self.tenant, request=waiting, requester=self.officer, actor=_actor(self.officer))
+        )
+        self.assertEqual(
+            {name: code for name, (code, _) in refusals.items()},
+            {
+                "request_pending": "request_pending",
+                "approved_by_requester": "four_eyes_violation",
+                "rejected_by_requester": "four_eyes_violation",
+                "decided_twice": "invalid_transition",
+            },
+        )
+        for name, (_, text) in refusals.items():
+            with self.subTest(refusal=name):
+                self.assert_reads_regulatory_scope(text)
+        # An approval switches one term on and one off, so every summary the log can hold is here.
+        footprint_logic.approve(
+            tenant=self.tenant, request=self._create(), decider=self.approver, actor=_actor(self.approver), note="", step_up_assertion_id=uuid.uuid4()
+        )
+        events = AuditEvent.objects.filter(tenant=self.tenant, action__startswith="footprint.")
+        self.assertEqual(
+            {event.action for event in events},
+            {"footprint.term_added", "footprint.term_removed", "footprint.change_requested", "footprint.change_withdrawn", "footprint.change_approved"},
+        )
+        for event in events:
+            with self.subTest(action=event.action):
+                self.assert_reads_regulatory_scope(event.summary)
+
+    def test_a_request_that_is_not_here_says_regulatory_scope(self) -> None:
+        response = self.client.post(
+            f"/api/v1/tenant/footprint/requests/{uuid.uuid4()}/withdraw", content_type="application/json", **sign_in(self.officer, tenant=self.tenant)
+        )
+        self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"))
+        self.assert_reads_regulatory_scope(response.json()["detail"])

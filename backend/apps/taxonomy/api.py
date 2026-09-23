@@ -13,16 +13,17 @@ Every route here is gated with `@requires_permission` or listed in `UNGATED_BY_D
 (apps/shared/permissions.py) with its reason; `answers_problems` is always innermost.
 """
 
-from typing import Any
+from typing import Annotated, Any
 
 from django.http import HttpRequest
-from ninja import Query, Router
+from ninja import Path, Query, Router
 
 from apps.proposals import logic as proposals_logic
 from apps.proposals.schemas import ProposalAccepted
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
+from apps.shared.schemas import PageQuery
 from apps.taxonomy import footprint_logic, library_lists_logic, markets_logic, reading, terms_logic
 from apps.taxonomy import tenant_lists_logic as lists
 from apps.taxonomy.http import (
@@ -79,6 +80,13 @@ router = Router(tags=["Taxonomy"])
 
 SESSION = SessionAuth()
 SESSION_OR_KEY = [SessionAuth(), ApiKeyAuth()]
+
+_SUGGESTION_LIST = (
+    "The name of the list whose suggestions to read, such as `tenant_tag` for the "
+    "organisation's own tags: one of the names `GET /vocab` returns in `list`. The set of "
+    "lists is fixed by the product, not by an admin, who adds rows to a list and never a "
+    "list; a name that is not a vocabulary list answers 404 `not_found`."
+)
 
 
 def _accepted(proposal: Any) -> tuple[int, ProposalAccepted]:
@@ -154,13 +162,41 @@ def suggest_vocabulary_row(request: HttpRequest, list_name: str, body: Vocabular
     auth=SESSION,
     operation_id="listVocabularySuggestions",
     by_alias=True,
+    summary="Work through what members suggested adding to one of our lists",
 )
 @requires_permission(perms.VOCAB_MANAGE)
 @answers_problems
-def list_vocabulary_suggestions(request: HttpRequest, list_name: str) -> VocabularySuggestionPage:
+def list_vocabulary_suggestions(
+    request: HttpRequest, list_name: Annotated[str, Path(description=_SUGGESTION_LIST)], page: Query[PageQuery]
+) -> VocabularySuggestionPage:
+    """The suggestions still waiting in one of the organisation's own lists, oldest first,
+    because the inbox is worked in the order it filled. A member without `vocab.manage` who
+    types a value a picker does not have suggests it (`POST /vocab/{list}/suggest`); an admin
+    reads them here and either creates the row, which answers every suggestion for that key,
+    or declines it with `POST /vocab/{list}/suggestions/{suggestionId}/decline`. Either way
+    it leaves this list.
+
+    A shared library list has no inbox here: a suggestion for it becomes a proposal that the
+    platform decides, so its inbox is always empty.
+
+    Paginated: 20 suggestions by default and 100 at most, with a larger limit refused rather
+    than quietly trimmed, and `total` counting every waiting suggestion. The order is by
+    when a suggestion was sent, oldest first, and by its id where two were sent in the same
+    instant, so two calls always agree on it; a suggestion answered between them shifts the
+    later page, as `offset` explains. An empty inbox is a 200 with an empty list and a total
+    of 0.
+
+    A read: it changes nothing and writes no audit event. Needs `vocab.manage` in the
+    caller's organisation and a person's session; an API key is refused.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without `vocab.manage`; `not_found` (404) for a list name that is not a
+    vocabulary list, with the valid names in `detail`; `validation_error` (422) when the
+    page size or offset is out of range.
+    """
     tenant = caller_tenant(request)
-    rows = [lists.suggestion_row(s) for s in lists.suggestions_of(list_name, tenant.id)]
-    return VocabularySuggestionPage(items=rows, total=len(rows))
+    rows, total = lists.suggestions_of(list_name, tenant.id, limit=page.limit, offset=page.offset)
+    return VocabularySuggestionPage(items=rows, total=total)
 
 
 @router.post(
@@ -425,15 +461,47 @@ def get_footprint(request: HttpRequest) -> FootprintView:
 
 
 @router.get(
-    "/tenant/footprint/requests", response=FootprintRequestPage, auth=SESSION, operation_id="listFootprintRequests", by_alias=True
+    "/tenant/footprint/requests",
+    response=FootprintRequestPage,
+    auth=SESSION,
+    operation_id="listFootprintRequests",
+    by_alias=True,
+    summary="Read the history of changes to our regulatory scope",
 )
 @answers_problems
-def list_footprint_requests(request: HttpRequest) -> FootprintRequestPage:
+def list_footprint_requests(request: HttpRequest, page: Query[PageQuery]) -> FootprintRequestPage:
+    """Every change to the organisation's regulatory scope that anyone asked for, newest
+    first: the one waiting for a second person, if there is one, and every request already
+    approved, rejected or withdrawn, with who asked, who decided, when and the note they
+    left. Call it for the history on the Regulatory scope screen; `GET /tenant/footprint`
+    carries the waiting request on its own.
+
+    A waiting request's `preview` is counted again on every read, against today's library,
+    so the approver decides on what the change would hide and reveal now. A decided request
+    keeps the counts it was decided against, the same ones its decision's audit event holds.
+
+    Paginated: 20 requests by default and 100 at most, with a larger limit refused rather
+    than quietly trimmed, and `total` counting every request. The order is by when a request
+    was sent, newest first, and by its id where two were sent in the same instant, so two
+    calls always agree on it; a request sent between them shifts the later page by one, as
+    `offset` explains. An organisation that never asked for a change gets a 200 with an
+    empty list and a total of 0, never a 404.
+
+    A read: it changes nothing and writes no audit event. Any member of the organisation
+    may call it, because every member sees what the scope hides and why; it needs a
+    person's session and no permission beyond membership, and an API key is refused. The
+    path says `footprint`, the code's name for what the screens call the regulatory scope.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
+    principal in no organisation; `validation_error` (422) when the page size or offset is
+    out of range.
+    """
     # Ungated by design: capability (any member sees what was asked and decided, FP-02).
     tenant = caller_tenant(request)
-    order = reading.language_order(request, tenant=tenant)
-    rows = [footprint_logic.request_row(r, order) for r in footprint_logic.requests_of(tenant.id)]
-    return FootprintRequestPage(items=rows, total=len(rows))
+    rows, total = footprint_logic.requests_of(
+        tenant.id, reading.language_order(request, tenant=tenant), limit=page.limit, offset=page.offset
+    )
+    return FootprintRequestPage(items=rows, total=total)
 
 
 @router.post(
@@ -468,7 +536,7 @@ def _footprint_request(tenant: Any, request_id: str) -> FootprintChangeRequest:
     if found is None:
         from django.core.exceptions import ValidationError
 
-        raise ValidationError("That footprint change is not here.", code="not_found")
+        raise ValidationError("That regulatory scope change is not here.", code="not_found")
     return found
 
 

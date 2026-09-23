@@ -2794,7 +2794,34 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Footprint Requests */
+        /**
+         * Read the history of changes to our regulatory scope
+         * @description Every change to the organisation's regulatory scope that anyone asked for, newest
+         *     first: the one waiting for a second person, if there is one, and every request already
+         *     approved, rejected or withdrawn, with who asked, who decided, when and the note they
+         *     left. Call it for the history on the Regulatory scope screen; `GET /tenant/footprint`
+         *     carries the waiting request on its own.
+         *
+         *     A waiting request's `preview` is counted again on every read, against today's library,
+         *     so the approver decides on what the change would hide and reveal now. A decided request
+         *     keeps the counts it was decided against, the same ones its decision's audit event holds.
+         *
+         *     Paginated: 20 requests by default and 100 at most, with a larger limit refused rather
+         *     than quietly trimmed, and `total` counting every request. The order is by when a request
+         *     was sent, newest first, and by its id where two were sent in the same instant, so two
+         *     calls always agree on it; a request sent between them shifts the later page by one, as
+         *     `offset` explains. An organisation that never asked for a change gets a 200 with an
+         *     empty list and a total of 0, never a 404.
+         *
+         *     A read: it changes nothing and writes no audit event. Any member of the organisation
+         *     may call it, because every member sees what the scope hides and why; it needs a
+         *     person's session and no permission beyond membership, and an API key is refused. The
+         *     path says `footprint`, the code's name for what the screens call the regulatory scope.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
+         *     principal in no organisation; `validation_error` (422) when the page size or offset is
+         *     out of range.
+         */
         get: operations["listFootprintRequests"];
         put?: never;
         /** Create Footprint Request */
@@ -3264,7 +3291,33 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Vocabulary Suggestions */
+        /**
+         * Work through what members suggested adding to one of our lists
+         * @description The suggestions still waiting in one of the organisation's own lists, oldest first,
+         *     because the inbox is worked in the order it filled. A member without `vocab.manage` who
+         *     types a value a picker does not have suggests it (`POST /vocab/{list}/suggest`); an admin
+         *     reads them here and either creates the row, which answers every suggestion for that key,
+         *     or declines it with `POST /vocab/{list}/suggestions/{suggestionId}/decline`. Either way
+         *     it leaves this list.
+         *
+         *     A shared library list has no inbox here: a suggestion for it becomes a proposal that the
+         *     platform decides, so its inbox is always empty.
+         *
+         *     Paginated: 20 suggestions by default and 100 at most, with a larger limit refused rather
+         *     than quietly trimmed, and `total` counting every waiting suggestion. The order is by
+         *     when a suggestion was sent, oldest first, and by its id where two were sent in the same
+         *     instant, so two calls always agree on it; a suggestion answered between them shifts the
+         *     later page, as `offset` explains. An empty inbox is a 200 with an empty list and a total
+         *     of 0.
+         *
+         *     A read: it changes nothing and writes no audit event. Needs `vocab.manage` in the
+         *     caller's organisation and a person's session; an API key is refused.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without `vocab.manage`; `not_found` (404) for a list name that is not a
+         *     vocabulary list, with the valid names in `detail`; `validation_error` (422) when the
+         *     page size or offset is out of range.
+         */
         get: operations["listVocabularySuggestions"];
         put?: never;
         post?: never;
@@ -4809,17 +4862,117 @@ export interface components {
             /** Removes */
             removes?: components["schemas"]["FootprintTermSelector"][];
         };
-        /** FootprintRequestPage */
+        /**
+         * FootprintRequestPage
+         * @description `GET /tenant/footprint/requests`: one page of the organisation's regulatory scope
+         *     change requests, newest first.
+         * @example {
+         *       "items": [
+         *         {
+         *           "adds": [
+         *             {
+         *               "dimension": "service_type",
+         *               "key": "insurance_distribution",
+         *               "kind": null,
+         *               "label": "Insurance distribution"
+         *             },
+         *             {
+         *               "dimension": "client_category",
+         *               "key": "retail",
+         *               "kind": null,
+         *               "label": "Retail"
+         *             }
+         *           ],
+         *           "decidedAt": null,
+         *           "decidedBy": null,
+         *           "decisionNote": "",
+         *           "id": "5b0c7e1a-3f2d-4c8e-9a61-2d7f0e4b9c13",
+         *           "preview": {
+         *             "cases": {
+         *               "available": false,
+         *               "hidden": 0,
+         *               "revealed": 0
+         *             },
+         *             "obligations": {
+         *               "available": true,
+         *               "hidden": 2,
+         *               "revealed": 2
+         *             }
+         *           },
+         *           "removes": [
+         *             {
+         *               "dimension": "service_type",
+         *               "key": "advice",
+         *               "kind": null,
+         *               "label": "Advice"
+         *             }
+         *           ],
+         *           "requestedAt": "2026-09-18T07:40:00Z",
+         *           "requestedBy": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Sara Lindqvist"
+         *           },
+         *           "status": "pending",
+         *           "version": 1
+         *         },
+         *         {
+         *           "adds": [],
+         *           "decidedAt": "2026-09-02T07:40:00Z",
+         *           "decidedBy": {
+         *             "id": "c7d2e9a1-4b6f-4c83-a0e5-6f1b9d2c8e47",
+         *             "name": "Maria Ek"
+         *           },
+         *           "decisionNote": "ISK tax reporting is ours.",
+         *           "id": "e41f7b2c-6a95-4d08-b3c1-9f2e8d7a6b54",
+         *           "preview": {
+         *             "cases": {
+         *               "available": false,
+         *               "hidden": 0,
+         *               "revealed": 0
+         *             },
+         *             "obligations": {
+         *               "available": true,
+         *               "hidden": 3,
+         *               "revealed": 0
+         *             }
+         *           },
+         *           "removes": [
+         *             {
+         *               "dimension": "regime",
+         *               "key": "tax",
+         *               "kind": null,
+         *               "label": "Tax"
+         *             }
+         *           ],
+         *           "requestedAt": "2026-09-01T13:20:00Z",
+         *           "requestedBy": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Sara Lindqvist"
+         *           },
+         *           "status": "rejected",
+         *           "version": 2
+         *         }
+         *       ],
+         *       "total": 2
+         *     }
+         */
         FootprintRequestPage: {
-            /** Items */
+            /**
+             * Items
+             * @description This page of the organisation's regulatory scope change requests, newest first, at most `limit` of them: the one waiting for a second person, if there is one, and every request already approved, rejected or withdrawn. A decided request is never deleted.
+             */
             items: components["schemas"]["FootprintRequestRow"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many change requests the organisation has sent in all, across every page, counted at the moment of the call.
+             */
             total: number;
         };
         /** FootprintRequestQuery */
         FootprintRequestQuery: {
             /**
              * Dryrun
+             * @description True previews the change and stores nothing: the answer is a 200 with what it would hide and reveal, no request is created, no second person is asked and no audit event is written. False, the default, sends the request for approval and answers 201.
              * @default false
              */
             dryRun: boolean;
@@ -10264,11 +10417,41 @@ export interface components {
              */
             usageNote: string;
         };
-        /** VocabularySuggestionPage */
+        /**
+         * VocabularySuggestionPage
+         * @description `GET /vocab/{list}/suggestions`: one page of the suggestions waiting in one of the
+         *     organisation's own lists, oldest first.
+         * @example {
+         *       "items": [
+         *         {
+         *           "createdAt": "2026-09-18T10:12:00Z",
+         *           "id": "6d2f9a14-8b3e-4c71-a5d0-3e9b1f7c2a58",
+         *           "key": "pension_transfers",
+         *           "labels": {
+         *             "en": "Pension transfers"
+         *           },
+         *           "list": "tenant_tag",
+         *           "status": "pending",
+         *           "suggestedBy": {
+         *             "id": "0b7e4c2d-9f61-4a38-b5e2-7c1d8a3f6e90",
+         *             "name": "Oskar Lund"
+         *           },
+         *           "usageNote": "Moving an occupational pension from one provider to another."
+         *         }
+         *       ],
+         *       "total": 1
+         *     }
+         */
         VocabularySuggestionPage: {
-            /** Items */
+            /**
+             * Items
+             * @description This page of the list's waiting suggestions, oldest first, at most `limit` of them. Only a suggestion an admin has not answered yet is here: one whose row was created, or that was declined, has left the inbox.
+             */
             items: components["schemas"]["VocabularySuggestionRow"][];
-            /** Total */
+            /**
+             * Total
+             * @description How many suggestions wait in this list across every page, counted at the moment of the call.
+             */
             total: number;
         };
         /** VocabularySuggestionRow */
@@ -15564,7 +15747,18 @@ export interface operations {
     };
     listFootprintRequests: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -15585,6 +15779,7 @@ export interface operations {
     createFootprintRequest: {
         parameters: {
             query?: {
+                /** @description True previews the change and stores nothing: the answer is a 200 with what it would hide and reveal, no request is created, no second person is asked and no audit event is written. False, the default, sends the request for approval and answers 201. */
                 dryRun?: boolean;
             };
             header?: never;
@@ -16374,9 +16569,21 @@ export interface operations {
     };
     listVocabularySuggestions: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+            };
             header?: never;
             path: {
+                /** @description The name of the list whose suggestions to read, such as `tenant_tag` for the organisation's own tags: one of the names `GET /vocab` returns in `list`. The set of lists is fixed by the product, not by an admin, who adds rows to a list and never a list; a name that is not a vocabulary list answers 404 `not_found`. */
                 list_name: string;
             };
             cookie?: never;
