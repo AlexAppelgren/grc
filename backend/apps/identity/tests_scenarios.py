@@ -603,14 +603,14 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(failed.status_code, 400)
         self.assertEqual(failed.json()["code"], "step_up_failed")
 
-    @skip("pending: ID-S16 (ID-07, R2)")
+    @skip("pending: ID-S16 (ID-07, chunk 11)")
     def test_id_s16(self) -> None:
         """ID-S16
 
         A tenant can require attested device-bound authenticators (ID-07).
         """
 
-    @skip("pending: ID-S17 (ID-08, R2)")
+    @skip("pending: ID-S17 (ID-08, chunk 11)")
     def test_id_s17(self) -> None:
         """ID-S17
 
@@ -911,14 +911,14 @@ class IdentityScenarioTests(ScenarioTestCase):
                 with transaction.atomic():
                     cursor.execute("DELETE FROM login_event WHERE id = %s", [row.id])
 
-    @skip("pending: ID-S23 (ID-12, R3)")
+    @skip("pending: ID-S23 (ID-12, chunk 13)")
     def test_id_s23(self) -> None:
         """ID-S23
 
         SSO and SCIM never introduce a password (ID-12).
         """
 
-    @skip("pending: ID-S24 (ID-13, R3)")
+    @skip("pending: ID-S24 (ID-13, chunk 13)")
     def test_id_s24(self) -> None:
         """ID-S24
 
@@ -943,21 +943,21 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertTrue(body["detail"])
         self.assertTrue(body["title"])
 
-    @skip("pending: ID-S27 (ID-12, R3)")
+    @skip("pending: ID-S27 (ID-12, chunk 13)")
     def test_id_s27(self) -> None:
         """ID-S27
 
         SSO proves who a person is and never opens a session on its own (ID-12).
         """
 
-    @skip("pending: ID-S28 (ID-12, R3)")
+    @skip("pending: ID-S28 (ID-12, chunk 13)")
     def test_id_s28(self) -> None:
         """ID-S28
 
         A SCIM key carries one scope and its default role holds no admin permission (ID-12).
         """
 
-    @skip("pending: ID-S29 (ID-07, R2)")
+    @skip("pending: ID-S29 (ID-07, chunk 11)")
     def test_id_s29(self) -> None:
         """ID-S29
 

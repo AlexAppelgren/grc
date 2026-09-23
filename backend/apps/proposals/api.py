@@ -378,7 +378,7 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     auth=REVIEWER_AUTH,
     operation_id="getProposal",
     by_alias=True,
-    summary="Open one proposal and read it against what the library says today",
+    summary="Open one proposal and read it against the library version it replaces",
 )
 @answers_problems
 def get_proposal(
@@ -391,14 +391,23 @@ def get_proposal(
         ),
     ),
 ) -> ProposalDetail:
-    """One proposal as a reviewer decides it: the record it would change, what that record
-    says today against what this would make it say, the two compared sentence by sentence,
-    the source behind every changed value, and the scope before and after. Call it before
-    approving, correcting or rejecting: read it, open the sources, and only then decide.
+    """One proposal as a reviewer decides it: the record it would change, the wording it is
+    compared with against what this would make it say, the two compared sentence by
+    sentence, the source behind every changed value, and the scope before and after. Call it
+    before approving, correcting or rejecting: read it, open the sources, and only then
+    decide.
+
+    What it is compared with depends on where it stands. A proposal that was not approved,
+    open or rejected, is read against the version in force today and the scope the record
+    carries now, so its comparison moves when a version comes into force or another is
+    approved. An approved one is pinned: it is read against the version numbered just before
+    the one it wrote, and the scope its approval found, so its comparison stays the same
+    whatever the calendar or a later version says.
 
     What comes back is a request and not the library: until the proposal is approved the
-    library still says what `currentSummary` says. Reading it changes nothing and records
-    nothing. A proposal filed inside a bank arrives without its proposer, as in the list.
+    library still says what the version in force says. Reading it changes nothing and
+    records nothing. A proposal filed inside a bank arrives without its proposer, as in the
+    list.
 
     Needs the platform permission `proposals.review` from a person, or the platform-only
     scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): an

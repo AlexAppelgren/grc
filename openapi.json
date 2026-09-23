@@ -22342,7 +22342,7 @@
     },
     "/api/v1/proposals/{proposal_id}": {
       "get": {
-        "description": "One proposal as a reviewer decides it: the record it would change, what that record\nsays today against what this would make it say, the two compared sentence by sentence,\nthe source behind every changed value, and the scope before and after. Call it before\napproving, correcting or rejecting: read it, open the sources, and only then decide.\n\nWhat comes back is a request and not the library: until the proposal is approved the\nlibrary still says what `currentSummary` says. Reading it changes nothing and records\nnothing. A proposal filed inside a bank arrives without its proposer, as in the list.\n\nNeeds the platform permission `proposals.review` from a person, or the platform-only\nscope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): an\nindependent agent opens the same proposal a person opens before it decides. No bank role\nand no bank's key reaches it.\n\nErrors to branch on: `unauthenticated` (401) without a session or a key;\n`permission_denied` (403) without `proposals.review` or `proposals:review`, or for a\nbank's key; `agent_not_bound` (403) for a key holding the scope but bound to no agent\ndefinition; `not_found` (404) for a proposal that does not exist and for anything that\nis not a UUID.",
+        "description": "One proposal as a reviewer decides it: the record it would change, the wording it is\ncompared with against what this would make it say, the two compared sentence by\nsentence, the source behind every changed value, and the scope before and after. Call it\nbefore approving, correcting or rejecting: read it, open the sources, and only then\ndecide.\n\nWhat it is compared with depends on where it stands. A proposal that was not approved,\nopen or rejected, is read against the version in force today and the scope the record\ncarries now, so its comparison moves when a version comes into force or another is\napproved. An approved one is pinned: it is read against the version numbered just before\nthe one it wrote, and the scope its approval found, so its comparison stays the same\nwhatever the calendar or a later version says.\n\nWhat comes back is a request and not the library: until the proposal is approved the\nlibrary still says what the version in force says. Reading it changes nothing and\nrecords nothing. A proposal filed inside a bank arrives without its proposer, as in the\nlist.\n\nNeeds the platform permission `proposals.review` from a person, or the platform-only\nscope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054): an\nindependent agent opens the same proposal a person opens before it decides. No bank role\nand no bank's key reaches it.\n\nErrors to branch on: `unauthenticated` (401) without a session or a key;\n`permission_denied` (403) without `proposals.review` or `proposals:review`, or for a\nbank's key; `agent_not_bound` (403) for a key holding the scope but bound to no agent\ndefinition; `not_found` (404) for a proposal that does not exist and for anything that\nis not a UUID.",
         "operationId": "getProposal",
         "parameters": [
           {
@@ -22377,7 +22377,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "summary": "Open one proposal and read it against what the library says today",
+        "summary": "Open one proposal and read it against the library version it replaces",
         "tags": [
           "Proposals"
         ]

@@ -586,7 +586,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.activate(self.tenant)
         self.assertEqual(ProblemReport.objects.filter(subject_id=obligation.id).count(), 1, "no platform session filed one either")
 
-    @skip("pending: PRO-S8 (PRO-04, R2)")
+    @skip("pending: PRO-S8 (PRO-04, chunk 11)")
     def test_pro_s8(self) -> None:
         """PRO-S8
 
