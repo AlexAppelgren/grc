@@ -54,13 +54,16 @@ from apps.library import reports
 from apps.library.models import DatePrecision, Language, ProblemReport, ReportStatus, SubjectType
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import RESEARCH_OBLIGATION, load_library, seed_authorities
-from apps.proposals.logic import Proposer
+from apps.proposals.apply import apply_reverification
+from apps.proposals.logic import Proposer, Reviewer
+from apps.proposals.logic import approve as approve_proposal
 from apps.proposals.logic import create as create_proposal
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
 from apps.shared import outbox, tenancy
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
+from apps.shared.schemas import AgentDecision
 from apps.taxonomy.models import CaseStatusCategory
 from apps.watch import e2e_seed as watch_e2e_seed
 from apps.watch.models import CheckFrequency, CheckStatus
@@ -918,8 +921,11 @@ def seed_search_index() -> dict[str, int]:
 
     reindex_all()
     embed_backlog()
-    chunk_model = django_apps.get_model("search", "SearchChunk")
-    return {"search_chunks": chunk_model.objects.count()}
+    return {"search_chunks": _search_chunk_count()}
+
+
+def _search_chunk_count() -> int:
+    return int(django_apps.get_model("search", "SearchChunk").objects.count())
 
 
 @dataclass(frozen=True)
@@ -1235,6 +1241,159 @@ def seed_outside_scope_terms() -> None:
     watch_e2e_seed.seed_scope_term_link(change, term_ref=EXPECTED_OUTSIDE_SCOPE.term)
 
 
+# --- lib-machine-confirmed-journey (INV-S14) ---------------------------------------------
+# Two records whose newest wording the watch sweeper filed and the library confirmer, an
+# independent definition with a key and a run of its own, approved (INV-05, PRO-02, D-62,
+# D-80), through the same proposal logic the queue's routes call. A library editor then
+# re-verified the second one against its source, so INV-S14 reads one record still labelled
+# machine-confirmed and one whose stamp names that person (D-74). Both are named by no other
+# spec or seed and sit inside tenant A's scope with or without Advice, and each new version
+# carries no effective date, so it is the one in force whatever day a screen reads.
+@dataclass(frozen=True)
+class SeedMachineConfirmed:
+    journey: str
+    machine_confirmed: str
+    reverified: str
+    reverifier_email: str
+
+
+EXPECTED_MACHINE_CONFIRMED = SeedMachineConfirmed(
+    journey="INV-S14",
+    machine_confirmed="obl-product-governance",
+    reverified="obl-isk-approved-assets",
+    reverifier_email=LIBRARY_EDITOR_EMAIL,
+)
+# The runs behind each record's proposal and its decision, fixed so a reseed finds them.
+MACHINE_CONFIRMED_RUNS: dict[str, tuple[uuid.UUID, uuid.UUID]] = {
+    "obl-product-governance": (uuid.UUID("00000000-0000-4000-9000-000000000014"), uuid.UUID("00000000-0000-4000-9000-000000000015")),
+    "obl-isk-approved-assets": (uuid.UUID("00000000-0000-4000-9000-000000000016"), uuid.UUID("00000000-0000-4000-9000-000000000017")),
+}
+# The seed's stand-in for the passkey assertion a person's re-verification carries on its
+# audit row: the seed signs nobody in, and it refuses to run deployed (refuse_when_deployed).
+SEED_REVERIFICATION_STEP_UP = uuid.UUID("00000000-0000-4000-9000-000000000018")
+_CONFIRMER_SCOPES: tuple[str, ...] = ("agent-runs:write", "library:read", "proposals:review")
+_MACHINE_CONFIRMED_WORDING: dict[str, dict[str, str]] = {
+    "obl-product-governance": {
+        "sv": (
+            "För varje finansiellt instrument som produceras eller distribueras ska institutet fastställa en "
+            "målgrupp, säkerställa att distributionsstrategin passar den och regelbundet se över båda, minst "
+            "en gång om året och när något inträffar som kan påverka instrumentets risker."
+        ),
+        "en": (
+            "For every financial instrument manufactured or distributed, the institution defines a target "
+            "market, checks that the distribution strategy fits it, and reviews both at least once a year and "
+            "whenever an event could affect the instrument's risks."
+        ),
+    },
+    "obl-isk-approved-assets": {
+        "sv": (
+            "På ett investeringssparkonto får endast godkända investeringstillgångar förvaras. Tillgångar som "
+            "upphör att vara godkända ska flyttas från kontot inom den tid lagen anger, och kunden ska "
+            "informeras om det."
+        ),
+        "en": (
+            "Only approved investment assets may be held on an investment savings account. Assets that stop "
+            "qualifying must be moved out within the period the act allows, and the customer is told."
+        ),
+    },
+}
+
+
+def _confirmer_key() -> tuple[ApiKey, Any]:
+    """The library confirmer's platform key, found by its name or made once, and the agent
+    it is bound to: a definition other than the sweeper's, holding the review scope and never
+    the scope to propose. Its plain value is dropped, as the sweeper key's is (H15)."""
+    seed_agent_definitions()
+    agent = _agent("library-confirmer")
+    _plain, prefix, key_hash = tokens.new_api_key()
+    with tenancy.platform_zone():
+        key, _created = ApiKey.objects.get_or_create(
+            name="Library confirmer (E2E)",
+            defaults={"tenant": None, "agent": agent, "key_prefix": prefix, "key_hash": key_hash, "scopes": list(_CONFIRMER_SCOPES)},
+        )
+    return key, agent
+
+
+def _agents_confirm(stable_key: str) -> None:
+    """The sweeper files a new wording of `stable_key` in its own open run and the confirmer
+    approves it in a run of its own key, with the model call behind its decision (D-80)."""
+    obligation_id = _obligation_id(stable_key)
+    sweep_run, review_run = MACHINE_CONFIRMED_RUNS[stable_key]
+    filer, sweeper = _sweeper_key()
+    confirmer_key, confirmer = _confirmer_key()
+    with tenancy.platform_zone():
+        AgentRun.objects.get_or_create(pk=sweep_run, defaults={"agent": sweeper, "api_key": filer, "model": AGENT_MODEL, "pipeline_version": "0.4"})
+        AgentRun.objects.get_or_create(
+            pk=review_run, defaults={"agent": confirmer, "api_key": confirmer_key, "model": AGENT_MODEL, "pipeline_version": "0.4"}
+        )
+    source_url = "https://www.fi.se/"
+    wording = _MACHINE_CONFIRMED_WORDING[stable_key]
+    proposal, _created = create_proposal(
+        kind=ProposalKind.NEW_OBLIGATION_VERSION.value,
+        title="Refresh the wording against the source",
+        payload={"summaries": wording, "original_language": "sv", "is_machine": True},
+        proposer=Proposer(actor=Actor(kind=ActorType.AGENT, id=sweeper.id, label=sweeper.key), api_key_id=filer.id, agent_id=sweeper.id),
+        agent_run_id=sweep_run,
+        target_type="obligation",
+        target_id=obligation_id,
+        model=AGENT_MODEL,
+        field_sources={f"summaries.{language}": source_url for language in wording},
+        source_label="Finansinspektionen, consolidated regulation",
+        source_url=source_url,
+    )
+    reviewer_actor = Actor(kind=ActorType.AGENT, id=confirmer.id, label=f"{confirmer.key} v{confirmer.current_version}")
+    approve_proposal(
+        proposal=proposal,
+        reviewer=Reviewer(actor=reviewer_actor, api_key_id=confirmer_key.id, agent_id=confirmer.id, api_key_prefix=confirmer_key.key_prefix),
+        actor=reviewer_actor,
+        note="",
+        step_up_assertion_id=None,
+        decision=AgentDecision.model_validate(
+            {
+                "model": AGENT_MODEL,
+                "modelVersion": "0.4",
+                "promptTemplate": "library-confirmer/decide/v1",
+                "promptHash": "e2e0000000000014",
+                "output": "Approve. The proposed wording matches the consolidated regulation the proposal cites.",
+                "citations": [{"label": "Finansinspektionen, consolidated regulation", "url": source_url}],
+            }
+        ),
+        agent_run_id=review_run,
+    )
+
+
+def seed_machine_confirmed() -> int:
+    """INV-S14: both records confirmed by agents, then the second re-verified by the library
+    editor. A record whose agents' approval is already applied is left as it is, so a reseed
+    changes nothing. Returns how many records agents confirmed."""
+    tenancy.clear_tenant()
+    expected = EXPECTED_MACHINE_CONFIRMED
+    for stable_key in (expected.machine_confirmed, expected.reverified):
+        applied = Proposal.objects.filter(
+            kind=ProposalKind.NEW_OBLIGATION_VERSION.value, target_id=_obligation_id(stable_key), status=ProposalStatus.APPROVED.value
+        ).exists()
+        if applied:
+            continue
+        _agents_confirm(stable_key)
+        if stable_key == expected.reverified:
+            editor = User.objects.get(email=expected.reverifier_email)
+            apply_reverification(
+                _obligation(stable_key),
+                actor=SEED_ACTOR,
+                verified_by=editor,
+                outcome="no_change",
+                note="Read against the consolidated regulation after the agents confirmed the new wording.",
+                step_up_assertion_id=SEED_REVERIFICATION_STEP_UP,
+            )
+    # Applying a version reindexes its record; embed it now, as seed_search_index() does, so
+    # no journey races the outbox worker for its vector (SRC-01).
+    from apps.search.indexing import embed_backlog
+
+    embed_backlog()
+    return 2
+# --- end lib-machine-confirmed-journey ---------------------------------------------------
+
+
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
@@ -1269,6 +1428,9 @@ def seed_e2e() -> dict[str, int]:
         seed_chunk5_sources(closed_run)
         seed_chunk5_changes(closed_run)
         chunk5_cases = seed_chunk5_cases(tenants)
+        # INV-S14, after the logins: the re-verification names a seeded library editor.
+        machine_confirmed = seed_machine_confirmed()
+        search_index["search_chunks"] = _search_chunk_count()
     return {
         "tenants": len(tenants),
         "logins": logins,
@@ -1277,6 +1439,7 @@ def seed_e2e() -> dict[str, int]:
         "problem_reports": problem_reports,
         "home_cases": home_cases,
         "chunk5_cases": chunk5_cases,
+        "machine_confirmed": machine_confirmed,
         **library,
         **search_index,
     }

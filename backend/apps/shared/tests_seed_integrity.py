@@ -28,6 +28,7 @@ from django.test import TestCase, override_settings
 
 from apps.agents.models import AgentRun
 from apps.cases.models import ChangeCase
+from apps.governance.models import AiGeneration
 from apps.home.models import Briefing, BriefingItem
 from apps.home.roadmap import quarter_of
 from apps.identity import tokens
@@ -52,6 +53,7 @@ from apps.shared.e2e_seed import (
     EXPECTED_FOOTPRINTS,
     EXPECTED_HOME,
     EXPECTED_LIBRARY,
+    EXPECTED_MACHINE_CONFIRMED,
     EXPECTED_OUTSIDE_SCOPE,
     EXPECTED_PENDING_REQUEST,
     EXPECTED_PROBLEM_REPORT,
@@ -738,4 +740,67 @@ class SeedIntegrityGuard(TestCase):
             EXPECTED_OUTSIDE_SCOPE.obligation,
             spoken_for,
             "FP-S4 keeps this obligation outside tenant A's scope: point the proposal or record that names it at one that stays inside",
+        )
+
+    # --- lib-machine-confirmed-journey (INV-S14) -------------------------------------------
+    def test_inv_s14_finds_a_record_agents_confirmed_and_one_a_person_re_verified_since(self) -> None:
+        """INV-S14 (INV-05, INV-06, PRO-02, D-74): two records whose version in force was filed
+        by the watch sweeper in its own run and approved by the library confirmer, a second
+        definition with a key and a run of its own, its model call logged. The second record
+        was then re-verified by a named platform person, strictly after the approval even at
+        the millisecond a screen compares, so its label gives way and the first one's never
+        does. Both sit inside tenant A's scope and no other journey names them."""
+        seed_e2e()
+        expected = EXPECTED_MACHINE_CONFIRMED
+        editor = User.objects.get(email=expected.reverifier_email)
+        for stable_key in (expected.machine_confirmed, expected.reverified):
+            with self.subTest(record=stable_key):
+                obligation = Obligation.objects.select_related("verified_by").get(stable_key=stable_key)
+                version = ObligationVersion.objects.select_related("verified_by_agent", "applied_by_proposal__proposed_by_agent").filter(obligation=obligation).order_by("-version_number").first()
+                assert version is not None and version.applied_by_proposal is not None and version.approved_at is not None
+                proposal = version.applied_by_proposal
+                self.assertEqual(version.verified_origin, "agent")
+                self.assertEqual(getattr(version.verified_by_agent, "key", None), "library-confirmer")
+                self.assertEqual(getattr(proposal.proposed_by_agent, "key", None), "watch-sweeper")
+                self.assertEqual(proposal.status, ProposalStatus.APPROVED.value)
+                self.assertIsNone(proposal.reviewed_by_id, "no person approved it")
+                self.assertEqual(getattr(proposal.reviewed_by_agent, "key", None), "library-confirmer")
+                self.assertIsNone(version.effective_from, "in force whatever date a screen reads it as of")
+                decision = AiGeneration.objects.get(purpose="agent_review", subject_id=proposal.id)
+                assert decision.agent_run is not None
+                self.assertEqual(decision.agent_run.agent.key, "library-confirmer")
+                self.assertEqual(decision.agent_run.api_key_id, proposal.reviewed_by_api_key_id, "decided in a run of the deciding key")
+                self.assertNotEqual(proposal.reviewed_by_api_key_id, proposal.proposed_by_api_key_id, "the confirmer used a key of its own")
+                if stable_key == expected.reverified:
+                    self.assertEqual(obligation.verified_by, editor)
+                    assert obligation.last_verified_at is not None
+                    stamped_ms, approved_ms = (int(moment.timestamp() * 1000) for moment in (obligation.last_verified_at, version.approved_at))
+                    self.assertGreater(stamped_ms, approved_ms)
+                else:
+                    self.assertIsNone(obligation.verified_by, "nobody has re-verified it since")
+
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        footprint = footprint_of(tenant_a.id)
+        for stable_key in (expected.machine_confirmed, expected.reverified):
+            obligation = Obligation.objects.select_related("instrument__regime__dimension").get(stable_key=stable_key)
+            self.assertTrue(in_footprint(_scope(obligation), footprint, restricting=restricting_dimensions()), stable_key)
+        spoken_for = {proposal.target for proposal in EXPECTED_PROPOSALS} | {
+            EXPECTED_LIBRARY.advice_only_obligation,
+            EXPECTED_LIBRARY.research_obligation,
+            EXPECTED_PROBLEM_REPORT.obligation,
+            EXPECTED_OUTSIDE_SCOPE.obligation,
+            RECHECK_OBLIGATION,
+            CONFIRMED_LINK_OBLIGATION,
+            SUGGESTED_LINK_OBLIGATION,
+        }
+        self.assertEqual({expected.machine_confirmed, expected.reverified} & spoken_for, set())
+
+    def test_inv_s14_reseed_changes_nothing(self) -> None:
+        seed_e2e()
+        counts = (Proposal.objects.count(), ObligationVersion.objects.count(), Verification.objects.count(), AgentRun.objects.count(), ApiKey.objects.count(), AiGeneration.objects.count())
+        seed_e2e()
+        self.assertEqual(
+            (Proposal.objects.count(), ObligationVersion.objects.count(), Verification.objects.count(), AgentRun.objects.count(), ApiKey.objects.count(), AiGeneration.objects.count()),
+            counts,
         )
