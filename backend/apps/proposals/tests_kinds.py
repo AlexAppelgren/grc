@@ -1,5 +1,6 @@
-"""The kinds that bring a new record into the library: `new_instrument` and `new_obligation`
-(PRO-01, PRO-02, INV-01, INV-03, INV-05, INV-08, D-39, D-62).
+"""The kinds that bring a new record into the library: `new_instrument`, `new_obligation` and
+`new_provision`, with `new_provision_version` beside them (PRO-01, PRO-02, INV-01, INV-02,
+INV-03, INV-05, INV-08, D-35, D-39, D-62).
 
 Each kind's payload is named and checked when the proposal is made and again over a
 reviewer's correction, with an https link as the source of every fact it sets. Approval
@@ -10,6 +11,12 @@ re-index in one transaction. An instrument's regime is a term of the regime dime
 Provenance is proven through `apply.apply` for an agent reviewer, because an agent's
 `approve()` of these kinds still waits for a person (D-79) until the vocabulary and term
 provenance lands; the record must say an agent confirmed it the moment one may.
+
+The standards check (INV-08, D-35, D-36) answers at the same three doors: `licensed_text`
+for a provision under a standard or a non-link source on a standard's obligation,
+`one_conformance_obligation` for a second obligation under one, `standard_term_required`
+for a standard's obligation with no standard term or two, and
+`standard_term_only_on_standards` for a standard's term on a law's new obligation.
 """
 
 from __future__ import annotations
@@ -23,10 +30,19 @@ from django.core.exceptions import ValidationError
 
 from apps.agents import testing as agents_testing
 from apps.library import testing as library_build
-from apps.library.models import Instrument, InstrumentTitle, Obligation, ObligationTerm, ObligationVersion
+from apps.library.models import (
+    Instrument,
+    InstrumentTitle,
+    Obligation,
+    ObligationTerm,
+    ObligationVersion,
+    Provision,
+    ProvisionText,
+    ProvisionVersion,
+)
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
-from apps.proposals import apply, logic
+from apps.proposals import apply, logic, standards
 from apps.proposals.models import Proposal, ProposalStatus
 from apps.proposals.schemas import ProposalObligationPayload
 from apps.search.models import SearchChunk
@@ -35,6 +51,7 @@ from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
 from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
+from apps.taxonomy.models import TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
 V1 = "/api/v1"
@@ -46,6 +63,10 @@ EXECUTION_DUTY = "obl-fffs-2026-9-execution"
 # The shared instrument a new obligation is broken out of; a scenario builds it with the
 # library's own test builder.
 PARENT_KEY = "fffs-2017-2-kinds"
+PROVISION_KEY = "fffs-2017-2-9-kap-6"
+# A standard edition, whose text is licensed (INV-08, D-35), and its one standard term.
+STANDARD_KEY = "iso-iec-27001-2022"
+STANDARD_TERM = "standard:iso_iec_27001"
 
 
 def instrument_body(**payload: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper overriding payload fields
@@ -105,10 +126,47 @@ def obligation_body(instrument: str = PARENT_KEY, **payload: Any) -> dict[str, A
     }
 
 
+def provision_body(instrument: str = PARENT_KEY, **payload: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper overriding payload fields
+    """A new provision of `instrument` with its first text, every fact sourced."""
+    fields: dict[str, Any] = {
+        "key": PROVISION_KEY,
+        "instrument": instrument,
+        "provisionKind": "section",
+        "refLabel": "9 kap. 6 §",
+        "texts": {"sv": "Ett värdepappersinstitut ska inhämta uppgifter om kunden.", "en": "A securities institution shall obtain information about the client."},
+        "originalLanguage": "sv",
+        "isMachine": True,
+        "effectiveFrom": "2027-01-01",
+        **payload,
+    }
+    return {
+        "kind": "new_provision",
+        "title": "New provision: 9 kap. 6 §",
+        "payload": fields,
+        "fieldSources": {field: SOURCE for field in _facts(fields)},
+        "sourceLabel": "Finansinspektionen, FFFS 2017:2, 9 kap. 6 §",
+        "sourceUrl": SOURCE,
+    }
+
+
+def provision_version_body(provision: Provision) -> dict[str, Any]:
+    """A new text of `provision`, in force from 1 January 2028, every field sourced."""
+    return {
+        "kind": "new_provision_version",
+        "title": f"New text of {provision.ref_label}",
+        "targetType": "provision",
+        "targetId": str(provision.id),
+        "payload": {"texts": {"sv": "Institutet ska inhämta uppgifter om kundens mål."}, "originalLanguage": "sv", "effectiveFrom": "2028-01-01"},
+        "fieldSources": {"texts.sv": SOURCE, "effectiveFrom": SOURCE},
+        "sourceLabel": "Finansinspektionen, FFFS 2027:1",
+        "sourceUrl": SOURCE,
+    }
+
+
 def _facts(fields: dict[str, Any]) -> list[str]:
     """The fields a source is owed for, spelled out here rather than read from the code
     under test, so the test states the rule instead of echoing it."""
-    unsourced = {"key", "originalLanguage", "isMachine", "effectiveFromPrecision", "inForceFromPrecision", "inForceToPrecision"}
+    unsourced = {"key", "originalLanguage", "isMachine", "effectiveFromPrecision", "inForceFromPrecision", "inForceToPrecision", "sortOrder"}
     facts: list[str] = []
     for name, value in fields.items():
         if name in unsourced:
@@ -422,3 +480,185 @@ class NewRecordsInLibraryUpdates(KindsTestCase):
         everything = {item["id"]: item for item in self._read("?outsideFootprint=true")}
         self.assertFalse(everything[outside["id"]]["inFootprint"])
         self.assertEqual(everything[outside["id"]]["outsideReason"][0]["dimension"]["key"], "service_type")
+
+    def test_a_laws_new_text_is_a_record_of_the_library_and_never_cut(self) -> None:
+        """A provision names no duty, so like a new instrument it reaches every bank uncut."""
+        provision = library_build.provision(self.parent, key=PROVISION_KEY)
+        proposal = self._filed(provision_version_body(provision))
+        self.assertEqual(self._approve(proposal["id"]).status_code, 200)
+        tenancy.clear_tenant()
+
+        items = {item["id"]: item for item in self._read()}
+
+        item = items[proposal["id"]]
+        self.assertEqual((item["kind"], item["target"], item["vocabularyList"], item["inFootprint"]), ("new_provision_version", None, None, True))
+
+
+class NewProvision(KindsTestCase):
+    """A law's verbatim text enters as a node with its first version, and a later text as a
+    new version, each with its audit row and its re-index in the approval's transaction
+    (INV-02, PRO-02)."""
+
+    def test_a_person_approves_and_the_provision_arrives_with_its_first_text(self) -> None:
+        chapter = library_build.provision(self.parent, key="fffs-2017-2-9-kap")
+        proposal = self._filed(provision_body(parent=chapter.stable_key, heading="Kundkännedom"))
+        self.assertFalse(Provision.objects.filter(stable_key=PROVISION_KEY).exists(), "nothing changes until approval")
+
+        approved = self._approve(proposal["id"])
+
+        self.assertEqual(approved.status_code, 200, approved.content)
+        provision = Provision.objects.get(stable_key=PROVISION_KEY)
+        self.assertEqual(
+            (provision.instrument_id, provision.parent_id, provision.kind.key, provision.ref_label, provision.heading),
+            (self.parent.id, chapter.id, "section", "9 kap. 6 §", "Kundkännedom"),
+        )
+        self.assertEqual(provision.path, f"{chapter.path} > 9 kap. 6 §")
+        version = ProvisionVersion.objects.get(provision=provision)
+        self.assertEqual((version.version_number, version.effective_from), (1, datetime.date(2027, 1, 1)))
+        self.assertEqual(str(version.applied_by_proposal_id), proposal["id"])
+        texts = {row.language_id: (row.is_original, row.is_machine) for row in ProvisionText.objects.filter(version=version)}
+        self.assertEqual(texts, {"sv": (True, False), "en": (False, True)})
+        self.assertTrue(SearchChunk.objects.filter(source_id=version.id).exists(), "indexed in the same transaction")
+        event = AuditEvent.objects.get(action="provision.created", subject_id=provision.id)
+        self.assertIsNotNone(event.step_up_assertion_id)
+        self.assertEqual((event.after["versionNumber"], event.after["proposal"]), (1, proposal["id"]))
+
+    def test_a_new_text_is_a_new_version_and_the_old_one_stays(self) -> None:
+        provision = library_build.provision(self.parent, key=PROVISION_KEY, ref_label="9 kap. 6 §")
+        first = library_build.provision_version(provision, texts={"sv": "Den tidigare lydelsen."})
+        proposal = self._filed(provision_version_body(provision))
+
+        approved = self._approve(proposal["id"])
+
+        self.assertEqual(approved.status_code, 200, approved.content)
+        versions = list(ProvisionVersion.objects.filter(provision=provision).order_by("version_number"))
+        self.assertEqual([(row.id, row.version_number) for row in versions][0], (first.id, 1))
+        second = versions[1]
+        self.assertEqual((second.version_number, second.effective_from, str(second.applied_by_proposal_id)), (2, datetime.date(2028, 1, 1), proposal["id"]))
+        self.assertEqual(ProvisionText.objects.get(version=first).text, "Den tidigare lydelsen.")
+        self.assertTrue(SearchChunk.objects.filter(source_id=second.id).exists())
+        event = AuditEvent.objects.get(action="provision.version_applied", subject_id=provision.id)
+        self.assertEqual((event.before["versionNumber"], event.after["versionNumber"]), (1, 2))
+
+    def test_a_failed_reindex_writes_nothing(self) -> None:
+        proposal = self._filed(provision_body())
+        with mock.patch.object(apply, "reindex_provision", side_effect=RuntimeError("index unavailable")):
+            failed = self._approve(proposal["id"])
+        self.assertEqual(failed.status_code, 500, failed.content)
+        self.assertFalse(Provision.objects.filter(stable_key=PROVISION_KEY).exists())
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
+        self.assertFalse(AuditEvent.objects.filter(action="provision.created").exists())
+
+    def test_the_payload_is_checked_when_it_is_made(self) -> None:
+        other = library_build.instrument(key="fffs-2014-1", regime="regime:securities")
+        elsewhere = library_build.provision(other, key="fffs-2014-1-1-kap")
+        taken = library_build.provision(self.parent, key="fffs-2017-2-kinds-1-kap")
+        for case, body, status, code in (
+            ("unknown instrument", provision_body("fffs-1999-1"), 422, "unknown_key"),
+            ("a parent of another instrument", provision_body(parent=elsewhere.stable_key), 422, "unknown_key"),
+            ("unknown provision kind", provision_body(provisionKind="verse"), 422, "unknown_key"),
+            ("key taken", provision_body(key=taken.stable_key), 409, "duplicate_key"),
+            ("original not among the texts", provision_body(originalLanguage="fi"), 422, "validation_error"),
+            ("a provision key as a source", {**provision_body(), "fieldSources": {**provision_body()["fieldSources"], "refLabel": taken.stable_key}}, 422, "validation_error"),
+            ("a target named", {**provision_body(), "targetType": "provision", "targetId": str(taken.id)}, 422, "validation_error"),
+        ):
+            with self.subTest(case=case):
+                self._refused(self._file(body), status, code)
+        without_target = {key: value for key, value in provision_version_body(taken).items() if key not in {"targetType", "targetId"}}
+        self._refused(self._file(without_target), 422, "validation_error")
+        self._refused(self._file({**provision_version_body(taken), "targetId": str(uuid.uuid4())}), 422, "unknown_key")
+        self.assertFalse(Proposal.objects.exists())
+
+    def test_an_agent_cannot_approve_a_provision_yet(self) -> None:
+        """A provision version has nowhere to say an agent confirmed it (INV-05, D-79)."""
+        proposal = Proposal.objects.get(pk=self._filed(provision_body())["id"])
+        reviewer = self._agent_reviewer()
+        with self.assertRaises(ValidationError) as caught:
+            logic.approve(proposal=proposal, reviewer=reviewer, actor=reviewer.actor, note="", step_up_assertion_id=None)
+        self.assertEqual(caught.exception.code, "person_review_required")
+        self.assertFalse(Provision.objects.filter(stable_key=PROVISION_KEY).exists())
+
+
+class StandardsCheck(KindsTestCase):
+    """The standards rules at creation, over a reviewer's correction and at apply, for the
+    kinds that write a standard's records (INV-08, AC-INV2, D-35, D-36)."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        # The seeds keep the one standard term switched off until its records exist (D-47).
+        with library_write("test"):
+            TaxonomyTerm.objects.filter(dimension__key="standard", key="iso_iec_27001").update(active=True)
+        self.standard = library_build.instrument(key=STANDARD_KEY, short_name="ISO/IEC 27001:2022", regime="regime:ai_ict", level="standard", binding=False)
+
+    def _conformance(self, **payload: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper overriding payload fields
+        fields = {"key": "obl-iso-iec-27001-2022-conformance", "refLabel": "ISO/IEC 27001:2022", "terms": [STANDARD_TERM], **payload}
+        return obligation_body(STANDARD_KEY, **fields)
+
+    def test_a_standards_conformance_obligation_enters_with_its_one_term(self) -> None:
+        proposal = self._filed(self._conformance())
+        approved = self._approve(proposal["id"])
+        self.assertEqual(approved.status_code, 200, approved.content)
+        obligation = Obligation.objects.get(instrument=self.standard)
+        self.assertEqual([f"{link.term.dimension.key}:{link.term.key}" for link in ObligationTerm.objects.filter(obligation=obligation)], [STANDARD_TERM])
+
+    def test_a_provision_under_a_standard_is_licensed_text_and_nothing_is_stored(self) -> None:
+        self._refused(self._file(provision_body(STANDARD_KEY)), 422, "licensed_text")
+        self.assertFalse(Proposal.objects.exists())
+        # A version of a standard's provision cannot be proposed either. The database holds
+        # no such provision (the trigger `provision_not_under_standard`), so the rule is
+        # proven on the check itself.
+        with self.assertRaises(ValidationError) as caught:
+            standards.check("new_provision_version", self.standard, None, {})
+        self.assertEqual(caught.exception.code, "licensed_text")
+
+    def test_a_non_link_source_on_a_standards_obligation_is_licensed_text(self) -> None:
+        body = self._conformance()
+        pasted = "5.1 Leadership and commitment: top management shall demonstrate"
+        self._refused(self._file({**body, "fieldSources": {**body["fieldSources"], "summaries.en": pasted}}), 422, "licensed_text")
+        self.assertFalse(Proposal.objects.exists())
+
+    def test_a_second_obligation_under_a_standard_is_refused_at_creation_and_at_apply(self) -> None:
+        library_build.obligation(self.standard, key="obl-iso-conformance", terms=[STANDARD_TERM])
+        second = self._conformance(key="obl-iso-second")
+        self._refused(self._file(second), 422, "one_conformance_obligation")
+        self.assertFalse(Proposal.objects.exists())
+        stored = self._stored(second)
+        self._refused(self._approve(str(stored.id)), 422, "one_conformance_obligation")
+        self.assertFalse(Obligation.objects.filter(stable_key="obl-iso-second").exists())
+        self.assertFalse(AuditEvent.objects.filter(action="obligation.created").exists())
+
+    def test_a_standards_obligation_carries_exactly_one_standard_term(self) -> None:
+        with library_write("test"):
+            TaxonomyTerm.objects.create(dimension=library_build.term(STANDARD_TERM).dimension, key="iso_22301", sort_order=2)
+        for case, terms in (("none", ["legal_entity:bank"]), ("no scope at all", None), ("two", [STANDARD_TERM, "standard:iso_22301"])):
+            body = self._conformance(terms=terms)
+            if terms is None:
+                del body["payload"]["terms"]
+                del body["fieldSources"]["terms"]
+            with self.subTest(case=case):
+                self._refused(self._file(body), 422, "standard_term_required")
+                stored = self._stored(body)
+                self._refused(self._approve(str(stored.id)), 422, "standard_term_required")
+                self.assertFalse(Obligation.objects.filter(instrument=self.standard).exists())
+        # Over a correction: the one term replaced by none.
+        proposal = self._filed(self._conformance())
+        self._refused(self._approve(proposal["id"], {"payloadOverrides": {"terms": ["legal_entity:bank"]}}), 422, "standard_term_required")
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).corrected_payload, None)
+
+    def test_a_standards_term_on_a_laws_new_obligation_is_refused_at_every_door(self) -> None:
+        with_standard = obligation_body(terms=["legal_entity:bank", STANDARD_TERM])
+        self._refused(self._file(with_standard), 422, "standard_term_only_on_standards")
+        self.assertFalse(Proposal.objects.exists())
+        proposal = self._filed(obligation_body())
+        self._refused(self._approve(proposal["id"], {"payloadOverrides": {"terms": ["legal_entity:bank", STANDARD_TERM]}}), 422, "standard_term_only_on_standards")
+        stored = self._stored({**with_standard, "title": "Filed before the rule"})
+        self._refused(self._approve(str(stored.id)), 422, "standard_term_only_on_standards")
+        self.assertFalse(Obligation.objects.filter(stable_key=OBLIGATION_KEY).exists())
+
+    def test_a_correction_moving_a_provision_under_a_standard_writes_nothing(self) -> None:
+        proposal = self._filed(provision_body())
+        self._refused(self._approve(proposal["id"], {"payloadOverrides": {"instrument": STANDARD_KEY}}), 422, "licensed_text")
+        row = Proposal.objects.get(pk=proposal["id"])
+        self.assertEqual((row.status, row.corrected_payload), (ProposalStatus.OPEN.value, None))
+        self.assertFalse(Provision.objects.exists())
+        self.assertFalse(AuditEvent.objects.filter(action__in=("proposal.approved", "provision.created")).exists())

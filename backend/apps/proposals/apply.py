@@ -39,18 +39,30 @@ from apps.library.models import (
     ObligationTerm,
     ObligationTitle,
     ObligationVersion,
+    Provision,
+    ProvisionText,
+    ProvisionVersion,
     SubjectType,
     Verification,
     VerificationOutcome,
 )
-from apps.library.reading import active_obligation, live_duty_type, terms_of
+from apps.library.reading import active_obligation, active_provision, live_duty_type, terms_of
 from apps.proposals import standards
-from apps.proposals.logic import Reviewer, as_reviewer, parsed_payload, validated_instrument, validated_obligation
+from apps.proposals.logic import (
+    Reviewer,
+    as_reviewer,
+    parsed_payload,
+    validated_instrument,
+    validated_obligation,
+    validated_provision,
+)
 from apps.proposals.models import OriginType, Proposal, ProposalKind
 from apps.proposals.schemas import (
     ProposalInstrumentPayload,
     ProposalObligationPayload,
     ProposalObligationVersionPayload,
+    ProposalProvisionPayload,
+    ProposalProvisionVersionPayload,
     ProposalTermCreatePayload,
     ProposalTermUpdatePayload,
     ProposalVocabularyCreatePayload,
@@ -58,7 +70,7 @@ from apps.proposals.schemas import (
     ProposalVocabularyRelabelPayload,
     ProposalVocabularyRetirePayload,
 )
-from apps.search.logic import reindex
+from apps.search.logic import reindex, reindex_provision
 from apps.shared.audit import Actor, record
 from apps.shared.tenancy import library_write
 from apps.taxonomy import repoint
@@ -115,6 +127,12 @@ def apply(proposal: Proposal, *, actor: Actor, reviewer: "Reviewer | Any", step_
         elif proposal.kind == ProposalKind.NEW_OBLIGATION.value:
             assert isinstance(payload, ProposalObligationPayload)
             _new_obligation(payload, proposal, actor, reviewer, step_up)
+        elif proposal.kind == ProposalKind.NEW_PROVISION.value:
+            assert isinstance(payload, ProposalProvisionPayload)
+            _new_provision(payload, proposal, actor, reviewer, step_up)
+        elif proposal.kind == ProposalKind.NEW_PROVISION_VERSION.value:
+            assert isinstance(payload, ProposalProvisionVersionPayload)
+            _provision_version(payload, proposal, actor, reviewer, step_up)
         else:
             # Reached by a kind that enters the queue before the apply that writes it
             # exists: an approval of one is refused where the reviewer can see it, never
@@ -253,8 +271,14 @@ def _new_obligation(
     instrument may have been retired, or the key taken, while the proposal waited. The
     search index moves inside this transaction, so an index that cannot be written takes
     the obligation down with it and leaves the proposal open.
+
+    The standards check runs here too (INV-08, D-35): a standard holds one conformance
+    obligation with one standard term, and a law's obligation none. The instrument's row is
+    locked first, so two approvals under one standard cannot both find it empty.
     """
     instrument, terms = validated_obligation(payload)
+    Instrument.objects.select_for_update().filter(pk=instrument.pk).exists()
+    standards.check(proposal.kind, instrument, [term.id for term in terms], proposal.field_sources)
     verified_origin = _verified_origin(reviewer)
     obligation = Obligation.objects.create(
         stable_key=payload.key,
@@ -371,7 +395,10 @@ def _obligation_version(
     # empty filter matches every term.
     terms = terms_of(payload.terms) if payload.terms else []
     refuse_mirrored(term.dimension_id for term in terms)
-    standards.check(proposal.kind, obligation.instrument, [term.id for term in terms])
+    # A payload without `terms` leaves the scope alone, so it asks nothing of the standard
+    # term rule; an empty list clears the scope, and is checked as one.
+    scope = None if payload.terms is None else [term.id for term in terms]
+    standards.check(proposal.kind, obligation.instrument, scope, proposal.field_sources)
     highest = (
         ObligationVersion.objects.filter(obligation=obligation)
         .order_by("-version_number")
@@ -432,6 +459,114 @@ def _obligation_version(
             "effectiveFromPrecision": payload.effective_from_precision,
             "languages": sorted(payload.summaries),
             "terms": scope_after,
+            "proposal": str(proposal.id),
+        },
+        step_up_assertion_id=step_up,
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# Provisions (INV-02, INV-08, PRO-02)
+# ---------------------------------------------------------------------------------------
+def _provision_texts(
+    version: ProvisionVersion, payload: ProposalProvisionPayload | ProposalProvisionVersionPayload, reviewer: Reviewer
+) -> None:
+    for language, text, is_original, is_machine in _texts(payload.texts, payload.original_language, payload.is_machine, reviewer):
+        ProvisionText.objects.create(version=version, language_id=language, text=text, is_original=is_original, is_machine=is_machine)
+
+
+def _new_provision(
+    payload: ProposalProvisionPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
+) -> None:
+    """Add the provision the proposal asks for, with its first verbatim text, which names
+    the proposal that filed it.
+
+    Checked again by the function creation ran (`logic.validated_provision`) and by the
+    standards check: a standard's text is licensed (422 `licensed_text`), and the trigger
+    `provision_not_under_standard` refuses the row on its own if this is ever bypassed. The
+    index moves in this transaction, so a failed re-index writes nothing.
+    """
+    instrument, parent, kind = validated_provision(payload)
+    standards.check(proposal.kind, instrument, None, proposal.field_sources)
+    provision = Provision.objects.create(
+        stable_key=payload.key,
+        instrument=instrument,
+        parent=parent,
+        kind=kind,
+        ref_label=payload.ref_label,
+        heading=payload.heading,
+        path=f"{parent.path if parent else instrument.short_name} > {payload.ref_label}",
+        sort_order=payload.sort_order,
+    )
+    version = ProvisionVersion.objects.create(
+        provision=provision,
+        version_number=1,
+        effective_from=payload.effective_from,
+        effective_from_precision=payload.effective_from_precision,
+        applied_by_proposal=proposal,
+    )
+    _provision_texts(version, payload, reviewer)
+    reindex_provision(provision.id)
+    record(
+        action="provision.created",
+        actor=actor,
+        subject_type=SubjectType.PROVISION.value,
+        subject_id=provision.id,
+        subject_title=provision.stable_key,
+        summary=f"Added the provision {provision.stable_key} under {instrument.stable_key} (proposal {proposal.id}).",
+        tenant_id=None,
+        after={
+            "stableKey": provision.stable_key,
+            "instrument": instrument.stable_key,
+            "versionNumber": version.version_number,
+            "versionId": str(version.id),
+            "languages": sorted(payload.texts),
+            "proposal": str(proposal.id),
+        },
+        step_up_assertion_id=step_up,
+    )
+
+
+def _provision_version(
+    payload: ProposalProvisionVersionPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
+) -> None:
+    """Add the text of a provision in force from a date, and nothing else (INV-02): every
+    earlier version stays as it was written. The provision is read again, and locked, so a
+    retired one is refused and two approvals number their versions one after the other."""
+    assert proposal.target_id is not None
+    Provision.objects.select_for_update().filter(pk=proposal.target_id).exists()
+    provision = active_provision(proposal.target_id)
+    standards.check(proposal.kind, provision.instrument, None, proposal.field_sources)
+    highest = (
+        ProvisionVersion.objects.filter(provision=provision)
+        .order_by("-version_number")
+        .values_list("version_number", flat=True)
+        .first()
+    )
+    version = ProvisionVersion.objects.create(
+        provision=provision,
+        version_number=(highest or 0) + 1,
+        effective_from=payload.effective_from,
+        effective_from_precision=payload.effective_from_precision,
+        applied_by_proposal=proposal,
+    )
+    _provision_texts(version, payload, reviewer)
+    reindex_provision(provision.id)
+    record(
+        action="provision.version_applied",
+        actor=actor,
+        subject_type=SubjectType.PROVISION.value,
+        subject_id=provision.id,
+        subject_title=provision.stable_key,
+        summary=f"Filed version {version.version_number} of {provision.stable_key} (proposal {proposal.id}).",
+        tenant_id=None,
+        before={"versionNumber": highest},
+        after={
+            "versionNumber": version.version_number,
+            "versionId": str(version.id),
+            "effectiveFrom": payload.effective_from.isoformat() if payload.effective_from else None,
+            "effectiveFromPrecision": payload.effective_from_precision,
+            "languages": sorted(payload.texts),
             "proposal": str(proposal.id),
         },
         step_up_assertion_id=step_up,

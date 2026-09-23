@@ -319,7 +319,8 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     scope terms); "new_instrument" (a law, regulation, guideline or standard edition the
     library does not hold yet, with its regime); "new_obligation" (a duty the library does
     not hold yet, under an instrument it does, with its first summary and scope);
-    "vocabulary_create", "vocabulary_relabel", "vocabulary_retire", "vocabulary_restore" or
+    "new_provision" (a node of a law's text, with its first verbatim text);
+    "new_provision_version" (a provision's text in force from a date); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire", "vocabulary_restore" or
     "vocabulary_merge" (a row of a shared list); or "term_create" or "term_update" (a
     taxonomy term).
 
@@ -338,7 +339,11 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     `targetId`, carries a source for every fact it sets, each an https link since the record
     has no provision of its own yet, and gives `sourceUrl`, the link the new record keeps
     as its own source. An instrument's `regime` is a term of the regime dimension, written
-    `regime:<key>`. The proposal is linked to the bank it was filed in, and
+    `regime:<key>`. A new provision is sourced like a new record, and a provision version
+    like an obligation version. A standard's text is licensed, so nothing of it enters: no
+    provision under a standard, and only https links as sources on a standard's one
+    conformance obligation, which carries exactly one standard term. The proposal is
+    linked to the bank it was filed in, and
     the platform's reviewers see only that it came from a bank, never who asked. The
     proposal and its audit row are written in one transaction.
 
@@ -352,14 +357,18 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     a closed one; `not_found` (404) when the run named is not one this key opened;
     `source_missing` (422) when a changed value carries no source, or a new record no
     `sourceUrl`; `unknown_key` (422) for a kind, a list, a language, a term, a target
-    obligation, an instrument, a level, a jurisdiction, an authority or a duty type the
+    obligation or provision, an instrument, a parent provision, a provision kind, a level, a jurisdiction, an authority or a duty type the
     library does not hold; `not_a_regime` (422) when a new instrument's regime is not a
     term of the regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes
     an obligation with a term of a dimension that mirrors the jurisdiction list;
     `duplicate_key` (409) when a new record's key is already a record's;
     `validation_error` (422) for a body the schema or the kind's payload refuses;
     `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
-    obligation whose instrument is not a standard; `idempotency_conflict` (409) when the
+    obligation whose instrument is not a standard; `licensed_text` (422) for a provision or
+    provision version under a standard, or a source on a standard's obligation that is not
+    an https link; `one_conformance_obligation` (422) for a new obligation under a standard
+    that already holds one; `standard_term_required` (422) when a standard's obligation
+    would carry no standard term, or more than one; `idempotency_conflict` (409) when the
     same `Idempotency-Key` arrives with a different body; `permission_denied` (403) without
     the permission or the scope; `unauthenticated` (401) without a credential.
     """

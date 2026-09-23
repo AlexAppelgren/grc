@@ -341,12 +341,46 @@ def live_duty_type(key: str) -> Any:
 
 
 def stable_key_taken(subject: str, key: str) -> bool:
-    """Whether an instrument or obligation (`subject`) already carries `key`, whoever owns
-    it: a stable key is unique across the library and is never reused."""
+    """Whether an instrument, provision or obligation (`subject`) already carries `key`,
+    whoever owns it: a stable key is unique across the library and is never reused."""
     from apps.library.models import SubjectType
 
-    model = Instrument if subject == SubjectType.INSTRUMENT.value else Obligation
-    return model.objects.filter(stable_key__iexact=key).exists()
+    models: dict[str, Any] = {SubjectType.INSTRUMENT.value: Instrument, SubjectType.PROVISION.value: Provision}
+    return bool(models.get(subject, Obligation).objects.filter(stable_key__iexact=key).exists())
+
+
+# ---------------------------------------------------------------------------------------
+# What a provision proposal names (PRO-01, INV-02)
+# ---------------------------------------------------------------------------------------
+def active_provision(provision_id: uuid.UUID) -> Provision:
+    """The shared provision `provision_id` while it is active, with its instrument, or 422
+    `unknown_key`: a version of a provision nobody can find is never applied."""
+    provision = (
+        Provision.objects.select_related("instrument__level")
+        .filter(pk=provision_id, instrument__owner_tenant__isnull=True)
+        .first()  # ordering: pk lookup, at most one row
+    )
+    if provision is None:
+        raise ValidationError("That provision is not here.", code="unknown_key")
+    if provision.status != RecordStatus.ACTIVE.value:
+        raise ValidationError("That provision is retired: propose a change to one that is in force.", code="unknown_key")
+    return provision
+
+
+def parent_provision(instrument: Instrument, key: str) -> Provision:
+    """The active provision `key` of `instrument` a new provision sits under, or 422
+    `unknown_key`: a node never hangs under another instrument's tree."""
+    parent = Provision.objects.filter(stable_key=key, instrument=instrument, status=RecordStatus.ACTIVE.value).first()  # ordering: a unique key
+    if parent is None:
+        raise ValidationError(f"{key!r} is not a provision of {instrument.stable_key!r} in force.", code="unknown_key")
+    return parent
+
+
+def live_provision_kind(key: str) -> Any:
+    """The live provision kind `key` (chapter, section, article), or 422 `unknown_key`."""
+    from apps.taxonomy.models import ProvisionKind
+
+    return _live_row(ProvisionKind, key, "a provision kind")
 
 
 # ---------------------------------------------------------------------------------------

@@ -206,6 +206,52 @@ class ProposalObligationPayload(WriteBody):
     terms: TermRefs | None = Field(default=None, max_length=settings.PROPOSAL_SCOPE_MAX_TERMS)
 
 
+class ProposalProvisionPayload(WriteBody):
+    """`new_provision` (PRO-01, INV-02): a node of a law's structure the library does not
+    hold yet, with its first verbatim text.
+
+    `key` is the stable key the provision keeps for ever, `instrument` the stable key of the
+    shared instrument it belongs to and `parent` the stable key of the provision of that
+    instrument it sits under, left out at the top of the tree. `provisionKind` is a key of
+    the provision kind list; `refLabel` and `heading` are how the text cites and names it.
+    `texts` is the verbatim text per content language, `originalLanguage` the one the
+    authority published and `isMachine` saying the others are machine-made (INV-05). The
+    date is a plain legal date with a precision.
+
+    Never under a standard, whose text is licensed: 422 `licensed_text` (INV-08, D-35).
+    Every fact here needs its source, an https link, in `fieldSources`.
+    """
+
+    key: str = Field(max_length=200, pattern=STABLE_KEY_PATTERN)
+    instrument: str
+    parent: str | None = None
+    provision_kind: str
+    ref_label: str = Field(min_length=1, max_length=200)
+    heading: str = ""
+    sort_order: int = 0
+    texts: dict[str, str]
+    original_language: str
+    is_machine: bool = False
+    effective_from: date | None = None
+    effective_from_precision: str = "day"
+
+
+class ProposalProvisionVersionPayload(WriteBody):
+    """`new_provision_version` (PRO-01, INV-02): the verbatim text of a provision that
+    exists, in force from a date. Nothing is overwritten; the earlier text stays.
+
+    `texts`, `originalLanguage`, `isMachine` and the date read as on `new_provision`. Never
+    on a standard's provision: 422 `licensed_text` (INV-08, D-35). Every field needs its
+    source in `fieldSources`.
+    """
+
+    texts: dict[str, str]
+    original_language: str
+    is_machine: bool = False
+    effective_from: date | None = None
+    effective_from_precision: str = "day"
+
+
 class ProposalPayload(CamelSchema):
     """The union as the contract states it: every field of every kind's payload, optional,
     with the kind saying which ones are read. Ninja flattens components, so one named
@@ -254,8 +300,9 @@ class ProposalRow(CamelSchema):
             "What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, "
             "not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, "
             "`new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a "
-            "duty under an instrument it holds, with its first version, "
-            "`vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, "
+            "duty under an instrument it holds, with its first version, `new_provision` adds a node of a "
+            "law's text with its first verbatim text, `new_provision_version` adds a text to a provision "
+            "that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, "
             "`vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` "
             "points a row's users at another row and retires it, and `term_create` and `term_update` do "
             "the same for a taxonomy term. The other kinds of the data model are not built yet, so a "
@@ -696,7 +743,9 @@ class TenantProposalRow(CamelSchema):
             "adds a row to a shared list, `vocabulary_relabel` rewords one, `vocabulary_retire` and "
             "`vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users "
             "at another row and retires it, and `term_create` and `term_update` do the same for a "
-            "taxonomy term. `new_obligation_version` adds a version to a duty."
+            "taxonomy term. `new_obligation_version` adds a version to a duty, and `new_instrument`, "
+            "`new_obligation`, `new_provision` and `new_provision_version` bring a record or a text "
+            "the library does not hold yet."
         )
     )
     status: str = Field(
@@ -916,7 +965,8 @@ class LibraryUpdateRow(CamelSchema):
             "What kind of change it was, and therefore which of the fields below are filled. A "
             "fixed kind: `new_obligation_version` is a new wording of a duty, `new_obligation` is a "
             "duty new to the library with its first wording, `new_instrument` is an instrument new to "
-            "the library, which names no duty and no list, and "
+            "the library, which names no duty and no list, `new_provision` and `new_provision_version` "
+            "are a law's verbatim text, new or amended, which name no duty and no list either, and "
             "`vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore`, "
             "`vocabulary_merge`, `term_create` and `term_update` are changes to a shared list or "
             "to the taxonomy every bank reads."
@@ -1166,7 +1216,9 @@ class ProposalCreateBody(WriteBody):
             "`new_obligation_version` is a new summary of one duty in force from a date, with its scope "
             "terms; `new_instrument` is a law, regulation, guideline or standard edition the library "
             "does not hold yet; `new_obligation` is a duty the library does not hold yet, under an "
-            "instrument it does, with its first summary; `vocabulary_create`, `vocabulary_relabel`, "
+            "instrument it does, with its first summary; `new_provision` is a node of a law's text with "
+            "its first verbatim text, and `new_provision_version` a provision's text in force from a "
+            "date, neither ever under a standard (422 `licensed_text`); `vocabulary_create`, `vocabulary_relabel`, "
             "`vocabulary_retire`, `vocabulary_restore` and `vocabulary_merge` add, reword, turn off, "
             "turn on again or fold together a row of a shared list; `term_create` and `term_update` add "
             "or reword a taxonomy term. Any other value answers 422 `unknown_key` naming the valid ones."
@@ -1198,7 +1250,15 @@ class ProposalCreateBody(WriteBody):
             "`inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: "
             "`key`, `instrument` (the stable key of a shared instrument in force), `titles` and "
             "`summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, "
-            "`effectiveFrom`, `effectiveFromPrecision` and `terms`. The vocabulary and term kinds name a "
+            "`effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one "
+            "conformance obligation, carrying exactly one standard term (else 422 "
+            "`one_conformance_obligation` or `standard_term_required`), and a law's obligation carries "
+            "none (422 `standard_term_only_on_standards`). `new_provision`: `key`, `instrument`, "
+            "`parent` (the stable key of a provision of the same instrument, left out at the top), "
+            "`provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, "
+            "`originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. "
+            "`new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and "
+            "`effectiveFromPrecision`. The vocabulary and term kinds name a "
             "`list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and "
             "term keys are library rows that change only through proposals; `GET /vocabularies` and "
             "`GET /taxonomy/terms` return the live sets."
@@ -1209,8 +1269,9 @@ class ProposalCreateBody(WriteBody):
         max_length=64,
         description=(
             "What the proposal changes, when it changes a record that exists: `obligation` for "
-            "`new_obligation_version`, at most 64 characters. Empty for every other kind; a new "
-            "instrument or obligation that names a target answers 422 `validation_error`, since the "
+            "`new_obligation_version` and `provision` for `new_provision_version`, at most 64 "
+            "characters. Empty for every other kind; a new instrument, obligation or provision that "
+            "names a target answers 422 `validation_error`, since the "
             "record does not exist until the proposal is approved."
         ),
         examples=["obligation"],
@@ -1219,8 +1280,8 @@ class ProposalCreateBody(WriteBody):
         default=None,
         description=(
             "The record changed, as a UUID, with `targetType`. For `new_obligation_version` it must be "
-            "an obligation the library holds and has not retired, else 422 `unknown_key`. Null for "
-            "every other kind."
+            "an obligation, and for `new_provision_version` a provision, the library holds and has not "
+            "retired, else 422 `unknown_key`. Null for every other kind."
         ),
         examples=["7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44"],
     )
@@ -1256,10 +1317,12 @@ class ProposalCreateBody(WriteBody):
         default_factory=dict,
         description=(
             "Per field the payload sets, where its value came from, keyed as the queue names the field "
-            "(`summaries.sv`, `effectiveFrom`, `terms`, `regime`). Each source is at most "
+            "(`summaries.sv`, `texts.sv`, `effectiveFrom`, `terms`, `regime`). Each source is at most "
             f"{settings.PROPOSAL_SOURCE_MAX_CHARS} characters and is an https link, or for an obligation "
-            "version also the stable key of a provision the library holds. A new instrument or "
-            "obligation takes https links only, since it has no provision of its own yet. A field "
+            "or provision version also the stable key of a provision the library holds. A new "
+            "instrument, obligation or provision takes https links only, since it has no provision of "
+            "its own yet, and so does every obligation of a standard: anything else there answers 422 "
+            "`licensed_text`. A field "
             "without a source answers 422 `source_missing`; a source that is neither, or one given for a "
             "field the proposal does not set, answers 422 `validation_error`. The vocabulary kinds need "
             "none, since a person writes their wording."
@@ -1281,7 +1344,8 @@ class ProposalCreateBody(WriteBody):
         max_length=2000,
         description=(
             "The authority's page the proposal was read from, at most 2000 characters. Required for a "
-            "new instrument or obligation, as an https link the new record keeps as its own source: "
+            "new instrument, obligation or provision, as an https link (a new instrument or obligation "
+            "keeps it as its own source): "
             "without one it answers 422 `source_missing`. Optional on the other kinds."
         ),
         examples=["https://www.fi.se/en/published/news/2026/research-payments/"],

@@ -41,7 +41,8 @@ class ProposalKind(enum.StrEnum):
     the scope terms it changes. R1 wave 2 adds `new_instrument` and `new_obligation`, which
     create a record rather than change one and so name no target (PRO-01, INV-01, INV-03).
     `update_obligation` and `retire_record` wait for a scenario that needs them, and a
-    watch link is never a proposal (D-64)."""
+    watch link is never a proposal (D-64). Wave 3 adds `new_provision` and
+    `new_provision_version`, a law's verbatim text, never a standard's (INV-02, INV-08)."""
 
     VOCABULARY_CREATE = "vocabulary_create"
     VOCABULARY_RELABEL = "vocabulary_relabel"
@@ -53,6 +54,8 @@ class ProposalKind(enum.StrEnum):
     NEW_OBLIGATION_VERSION = "new_obligation_version"
     NEW_INSTRUMENT = "new_instrument"
     NEW_OBLIGATION = "new_obligation"
+    NEW_PROVISION = "new_provision"
+    NEW_PROVISION_VERSION = "new_provision_version"
 
 
 class ProposalStatus(enum.StrEnum):
