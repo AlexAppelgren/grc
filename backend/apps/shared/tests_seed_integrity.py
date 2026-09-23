@@ -724,7 +724,7 @@ class SeedIntegrityGuard(TestCase):
 
     # --- std-journeys (FP-S16) ------------------------------------------------------------
     def test_e2e_switches_the_standard_on_and_logs_it_once(self) -> None:
-        """FP-S16 (FP-01, INV-08, D-8x std-journeys): a scope request names active terms only,
+        """FP-S16 (FP-01, INV-08, D-85): a scope request names active terms only,
         so seed_e2e switches ISO/IEC 27001 on for E2E alone, with one version bump and one
         audit row, and a second run changes nothing. The reference seed keeps it off
         everywhere else (apps/taxonomy/tests_matching.HeldStandard)."""

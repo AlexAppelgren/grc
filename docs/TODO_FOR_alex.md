@@ -1044,7 +1044,7 @@ Nothing waits for these; each has the default the build took.
 
 ## std-journeys: a standard shows only to banks that follow it (2026-09-23, FP-01, FP-02, INV-08, AC-FP3)
 
-- [ ] Default taken (D-8x std-journeys in `docs/DECISIONS.md`): `seed_e2e` switches the
+- [ ] Default taken (D-85 in `docs/DECISIONS.md`): `seed_e2e` switches the
       ISO/IEC 27001 term on so FP-S16 can follow it through the regulatory scope request;
       the reference seed still files it off, so nothing deployed changes. Say if a journey
       should instead wait until you answer "Legal, before any standard is seeded" above.
@@ -1101,3 +1101,23 @@ Nothing waits for these; each has the default the build took.
       so until then the row scores right against any retriever and proves the harness path,
       not the filter; `test_src_s12` proves the filter over an invented standard of its own.
       Default if you say nothing: stays as built.
+
+## r1-int-w23: the wave 2 and 3 integration (2026-09-23, D-84 to D-87, H16, FP-04, AGT-01)
+
+Forty-five cloud branches are merged on `claude/r1-int-w23`. Nothing blocks; one default
+was taken, and three statuses moved because the merged code earns them.
+
+- [ ] **The evaluation set has a library door of its own (D-87).** The H16 census counts
+      every shared row of a library-zone app, and `eval_question` and `eval_run` (search
+      0002) are in the search app. They are platform rows no proposal carries, so the two
+      remedies the census names did not fit: a `LibraryModel` would put a console write
+      behind a proposal, and the seed door would let a console write open every inventory
+      table. Search 0003 gives them the trigger with a door named `eval`, opened only by
+      `create_question()` and `record_run()`. Default if you say nothing: the door stays.
+      The alternative is moving the two tables out of the search app.
+- [ ] **A merge approval opens the watch door for the watch rows it moves (D-87).**
+      `watch/write.py`'s `repoint()` now names the watch door to the database inside the
+      proposal door, as `index_write()` does for a rebuild. Default: it stays.
+- FP-04 and AGT-01 read `built`: every FP-04 scenario (FP-S8 to FP-S15) and every AGT-01
+  scenario (AGT-S1, AGT-S2, AGT-S10, AGT-S15) is un-skipped and green over the merged
+  branch.

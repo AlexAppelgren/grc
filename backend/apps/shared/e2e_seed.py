@@ -211,7 +211,7 @@ E2E_STANDARD_OBLIGATION = "iso-iec-27001-2022-conformance"
 
 # --- std-journeys (FP-S16) ----------------------------------------------------------------
 # A scope request names active terms only, so FP-S16 cannot follow the standard while its
-# term is off. E2E switches it on (D-8x std-journeys); the reference seed keeps it off until
+# term is off. E2E switches it on (D-85); the reference seed keeps it off until
 # Alex answers the legal question, and no E2E tenant follows it, so the duty stays hidden
 # until a journey adds the term and takes it out again.
 E2E_STANDARD_TERM = ("standard", "iso_iec_27001")

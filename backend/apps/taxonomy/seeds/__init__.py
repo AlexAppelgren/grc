@@ -357,7 +357,7 @@ def _mirror_jurisdiction_terms(dimension: TermDimension) -> int:
 
 def switch_on_term(dimension: str, key: str) -> None:
     """Switch one seeded term on, for a seed that needs it where the reference list keeps it
-    off: seed_e2e alone, for ISO/IEC 27001 (FP-S16, D-8x std-journeys). One version bump and
+    off: seed_e2e alone, for ISO/IEC 27001 (FP-S16, D-85). One version bump and
     one audit row the first time; a term already on is left alone."""
     with transaction.atomic(), library_write(SEED_REASON):
         term = TaxonomyTerm.objects.select_for_update().get(dimension__key=dimension, key=key)

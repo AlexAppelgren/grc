@@ -56,7 +56,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict, except an opt-in dimension (standards), which matches only what the scope names; an obligation also needs its instrument's regime | M | R1 | in_progress |
 | FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, one audit event per term | M | R1 | built |
 | FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it | M | R1 | in_progress |
-| FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | in_progress |
+| FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | built |
 | I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
 | ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | pending |
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -425,7 +425,8 @@ And watching one answers 403 with requiredPermission "footprint.request"
 > log, and unwatches. Its read-only view is the approver's, who holds `footprint.approve`
 > and not `footprint.request`: a Reader holds neither, so the screen is closed to them
 > (FP-S7), and the Reader's 403 on a watch stays with the `@integration` half, as does the
-> 409 `already_watching`. FP-04 stays `in_progress` until FP-S13 and FP-S15 land.
+> 409 `already_watching`. With FP-S13 (tax-watched-inventory) and FP-S15 (tax-watched-feed)
+> green as well, every FP-04 scenario runs, and FP-04 is built.
 
 ### FP-S11 — A market's level is computed, and operating comes first `@integration` (FP-04)
 ```gherkin
@@ -474,7 +475,7 @@ And the list takes one footprint filter value, so no contradictory pair can be s
 > and inside it once the jurisdiction terms it reaches are set aside; a derived jurisdiction
 > must be one the bank watches. Each obligation row carries its instrument's `jurisdiction`,
 > which the screen's "Market we watch: Denmark" reads. `GET /library-updates` keeps its
-> boolean `outsideFootprint` (D-8x, tax-watched-inventory).
+> boolean `outsideFootprint` (D-84).
 
 ### FP-S14 — Markets stay inside the tenant and out of logs and error reports `@integration` (FP-04, NFR-01, AC-NFR1)
 ```gherkin
