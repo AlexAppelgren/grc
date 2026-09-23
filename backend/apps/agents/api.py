@@ -75,12 +75,12 @@ def start_agent_run(
     even when the run failed.
 
     Authenticated by an API key alone — no session, tenant or platform, can open a run —
-    and the key must carry the `agent-runs:write` scope. The run belongs to whatever the
-    key belongs to and never to anything else: the platform's own key opens the library
-    runs that feed the shared inventory, a bank's key opens runs in that bank's zone, and
-    any other pairing is refused. No key scope of any kind reaches the shared library:
-    what an agent finds becomes a proposal or a private record, never a library edit, so
-    opening a run grants nothing beyond the right to file work for review.
+    and the key must carry the `agent-runs:write` scope, which only a platform key bound to
+    an agent definition can hold: in this release the agents that feed the shared library
+    are part of the base package, so a bank opens no run of its own and its key is never
+    given the scope. The run belongs to the platform. No key scope of any kind reaches the
+    shared library: what an agent finds becomes a proposal or a private record, never a
+    library edit, so opening a run grants nothing beyond the right to file work for review.
 
     Send `Idempotency-Key`. A retry with the same key returns the run that key already
     opened; without one a lost answer becomes a duplicate run and a duplicated night's
@@ -88,11 +88,8 @@ def start_agent_run(
     named, not the key's identifier.
 
     Answers 201 with the open run, its status `running` and its counters at zero. A replay
-    answers 201 with the run that key already opened. Errors: `tenant_agents_not_available`
-    when the key belongs to a bank rather than to the platform, because in this release the
-    agents that feed the shared library are part of the base package and a bank opens no run
-    of its own; `permission_denied` when the key lacks `agent-runs:write`, which a bank's key
-    never holds and so meets first, or when `agent`
+    answers 201 with the run that key already opened. Errors: `permission_denied` when the
+    key lacks `agent-runs:write`, which is how a bank's key is refused, or when `agent`
     is not the definition this key is bound to — a key runs exactly one definition, so a
     name this build does not ship and a name that belongs to another key are the same
     refusal, and trying names tells a caller nothing about which definitions exist;

@@ -216,11 +216,14 @@ def create_agent_key(
 
 
 def revoke_agent_key(*, actor: Actor, revoked_by: User, key_id: uuid.UUID) -> ApiKey:
+    """Revoking twice is a safe retry: the second call changes nothing and, like every 2xx,
+    is still audited (AC-AUD1), with a summary that says so and `before` equal to `after`."""
     tenancy.clear_tenant()
     key = ApiKey.objects.select_related("agent").filter(pk=key_id, tenant__isnull=True).first()  # ordering: pk lookup, at most one row
     if key is None:
         raise ValidationError("Not found.", code="not_found")
-    if key.revoked_at is None:
+    before = key.revoked_at
+    if before is None:
         key.revoked_at = timezone.now()
         key.save(update_fields=["revoked_at"])
         log_event(event=LoginEventKind.KEY_REVOKED, method=LoginMethod.API_KEY, success=True, request=None, user=revoked_by, api_key=key)
@@ -230,8 +233,9 @@ def revoke_agent_key(*, actor: Actor, revoked_by: User, key_id: uuid.UUID) -> Ap
         subject_type="api_key",
         subject_id=key.id,
         subject_title=key.name,
-        summary=f"Agent key {key.key_prefix} revoked.",
+        summary=f"Agent key {key.key_prefix} revoked." if before is None else f"Agent key {key.key_prefix} was already revoked; nothing changed.",
         tenant_id=None,
+        before={"revokedAt": before.isoformat() if before else None},
         after={"revokedAt": key.revoked_at.isoformat() if key.revoked_at else None},
     )
     return key

@@ -651,7 +651,8 @@ def revoke_agent_key(
     screen and never here. The revocation is recorded in the audit log as
     `agent_key.revoked` and in the security log as the event "key_revoked", and the key
     stays listed with its revocation time. Revoking a key that is already revoked changes
-    nothing and answers the key as it stands.
+    nothing and answers the key as it stands, so a retry is safe; the retry is audited too,
+    as `agent_key.revoked` saying the key was already revoked and nothing changed.
 
     Answers 200 with the key. Errors: `not_found` when no platform key has that identifier;
     `permission_denied` without `agent_definitions.manage`; `unauthenticated` without a

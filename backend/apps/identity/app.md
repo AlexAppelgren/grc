@@ -283,8 +283,11 @@ When they ask for "agent-runs:write", "sources:write" or "changes:write"
 Then the request answers 422 with code "unknown_key" naming the scopes a bank's key may hold
 And a bank's key that already holds one works without it, and the security log records "key_scopes_withheld"
 Given a platform admin with agent_definitions.manage and a fresh step-up assertion
-When they create a key bound to an agent definition, with scopes that may include "proposals:review"
-Then the plain key appears once, and the row stores its hash, no tenant and the agent
+When they read the platform's agent definitions
+Then each is listed by key, with its identifier, its version and whether it is released
+When they create a key bound to one of them, with scopes that may include "proposals:review"
+Then the plain key appears in that one response and nowhere else
+And the row stores its hash, no tenant and the agent
 And the audit event references the step-up assertion
 And the security log records "key_created", "key_used" and "key_revoked" for it
 When the key is revoked

@@ -394,8 +394,9 @@ class PermissionOut(CamelSchema):
 _TENANT_KEY_SCOPES_TEXT = (
     "`library:read` reads the shared library's instruments, provisions and obligations; "
     "`search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; "
-    "`tenant:read` reads the bank's own profile; and `proposals:write` files a proposal to the "
-    "shared library, which changes nothing until someone independent approves it. No scope "
+    "`tenant:read` is set aside for reading the bank's own profile, and no route reads with it "
+    "yet; and `proposals:write` files a proposal to the shared library, which changes nothing "
+    "until someone independent approves it. No scope "
     "writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and "
     "`proposals:review` belong to the platform's own agents and are refused on a bank's key."
 )
@@ -461,8 +462,9 @@ _AGENT_KEY_SCOPES_TEXT = (
     "reads the proposal queue and approves, corrects or rejects a proposal someone else filed, "
     "as the independent second pair of eyes; `search:read` searches the library; `library:read` "
     "reads its records and vocabularies; `upcoming:read` reads the public dates coming up; "
-    "`tenant:read` reads a bank's profile, of which a key that belongs to no bank has none. No "
-    "scope writes a library record: a finding becomes a change or a proposal, never an edit."
+    "`tenant:read` is set aside for reading a bank's profile, no route reads with it yet, and a "
+    "key that belongs to no bank has no profile to read. No scope writes a library record: a "
+    "finding becomes a change or a proposal, never an edit."
 )
 _EXAMPLE_AGENT_ID = "3c9e1f27-58b4-4d6a-a0e2-6f41b7c8d953"
 _EXAMPLE_AGENT_KEY: dict[str, Any] = {

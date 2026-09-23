@@ -769,10 +769,19 @@ class IdentityScenarioTests(ScenarioTestCase):
         sweeper = agents_testing.agent()
         platform_admin = factories.platform_user(roles=("platform_admin",))
         console = sign_in(platform_admin, step_up=True)
+        # The admin picks the agent from the platform's definitions, listed by key.
+        definitions = self.client.get("/api/v1/agent-definitions?limit=100", **console)
+        self.assertEqual(definitions.status_code, 200, definitions.content)
+        listed_keys = [item["key"] for item in definitions.json()["items"]]
+        self.assertEqual(listed_keys, sorted(listed_keys))
+        picked = next(item for item in definitions.json()["items"] if item["key"] == sweeper.key)
+        self.assertEqual((picked["id"], picked["currentVersion"], picked["active"]), (str(sweeper.id), sweeper.current_version, sweeper.active))
         agent_scopes = [perms.SCOPE_AGENT_RUNS_WRITE, perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_REVIEW]
-        minted = self._post("/agent-keys", {"name": "Watch sweeper, nightly", "agentId": str(sweeper.id), "scopes": agent_scopes}, **console)
+        minted = self._post("/agent-keys", {"name": "Watch sweeper, nightly", "agentId": picked["id"], "scopes": agent_scopes}, **console)
         self.assertEqual(minted.status_code, 201, minted.content)
         agent_plain = minted.json()["plainKey"]
+        self.assertTrue(agent_plain.startswith(f"cw_{minted.json()['keyPrefix']}_"))
+        self.assertNotIn(agent_plain, minted.content.decode().replace(agent_plain, "", 1), "the plain key appears once")
         tenancy.clear_tenant()
         agent_row = ApiKey.objects.get(pk=minted.json()["id"])
         self.assertEqual((agent_row.tenant_id, agent_row.agent_id, agent_row.created_by_id), (None, sweeper.id, platform_admin.id))

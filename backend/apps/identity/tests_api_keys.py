@@ -105,9 +105,18 @@ class AgentKeyRoutes(ScenarioTestCase):
         self.assertEqual(again.json()["revokedAt"], first.json()["revokedAt"], "a revocation is never moved")
         tenancy.clear_tenant()
         self.assertEqual(LoginEvent.objects.filter(api_key_id=key_id, event=LoginEventKind.KEY_REVOKED.value).count(), 1)
-        self.assertEqual(AuditEvent.objects.filter(action="agent_key.revoked", subject_id=key_id).count(), 2)
+        # A 2xx is always audited (AC-AUD1), so the retry leaves a row too, and that row says
+        # nothing changed rather than reading as a second revocation.
+        revoked, repeated = AuditEvent.objects.filter(action="agent_key.revoked", subject_id=key_id).order_by("created", "id")
+        self.assertEqual(revoked.before, {"revokedAt": None})
+        self.assertEqual(repeated.before, repeated.after)
+        self.assertEqual(repeated.after, revoked.after)
+        self.assertIn("already revoked", repeated.summary)
+        self.assertNotIn("already revoked", revoked.summary)
 
     def test_the_definitions_read_names_what_a_key_binds_to(self) -> None:
+        tenancy.clear_tenant()
+        first = agents_testing.agent(key="aaa-first-by-key")
         page = self.client.get(f"{V1}/agent-definitions?limit=100", **self.console)
         self.assertEqual(page.status_code, 200, page.content)
         row = next(item for item in page.json()["items"] if item["id"] == str(self.sweeper.id))
@@ -122,6 +131,7 @@ class AgentKeyRoutes(ScenarioTestCase):
             },
         )
         keys = [item["key"] for item in page.json()["items"]]
+        self.assertLess(keys.index(first.key), keys.index(self.sweeper.key), "ordered by key")
         self.assertEqual(keys, sorted(keys))
         tenancy.clear_tenant()
         self.assertEqual(self.client.get(f"{V1}/agent-definitions", HTTP_X_API_KEY=agents_testing.agent_key().plain_key).status_code, 401)

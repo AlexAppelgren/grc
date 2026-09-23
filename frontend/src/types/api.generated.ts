@@ -119,7 +119,8 @@ export interface paths {
          *     screen and never here. The revocation is recorded in the audit log as
          *     `agent_key.revoked` and in the security log as the event "key_revoked", and the key
          *     stays listed with its revocation time. Revoking a key that is already revoked changes
-         *     nothing and answers the key as it stands.
+         *     nothing and answers the key as it stands, so a retry is safe; the retry is audited too,
+         *     as `agent_key.revoked` saying the key was already revoked and nothing changed.
          *
          *     Answers 200 with the key. Errors: `not_found` when no platform key has that identifier;
          *     `permission_denied` without `agent_definitions.manage`; `unauthenticated` without a
@@ -174,12 +175,12 @@ export interface paths {
          *     even when the run failed.
          *
          *     Authenticated by an API key alone — no session, tenant or platform, can open a run —
-         *     and the key must carry the `agent-runs:write` scope. The run belongs to whatever the
-         *     key belongs to and never to anything else: the platform's own key opens the library
-         *     runs that feed the shared inventory, a bank's key opens runs in that bank's zone, and
-         *     any other pairing is refused. No key scope of any kind reaches the shared library:
-         *     what an agent finds becomes a proposal or a private record, never a library edit, so
-         *     opening a run grants nothing beyond the right to file work for review.
+         *     and the key must carry the `agent-runs:write` scope, which only a platform key bound to
+         *     an agent definition can hold: in this release the agents that feed the shared library
+         *     are part of the base package, so a bank opens no run of its own and its key is never
+         *     given the scope. The run belongs to the platform. No key scope of any kind reaches the
+         *     shared library: what an agent finds becomes a proposal or a private record, never a
+         *     library edit, so opening a run grants nothing beyond the right to file work for review.
          *
          *     Send `Idempotency-Key`. A retry with the same key returns the run that key already
          *     opened; without one a lost answer becomes a duplicate run and a duplicated night's
@@ -187,11 +188,8 @@ export interface paths {
          *     named, not the key's identifier.
          *
          *     Answers 201 with the open run, its status `running` and its counters at zero. A replay
-         *     answers 201 with the run that key already opened. Errors: `tenant_agents_not_available`
-         *     when the key belongs to a bank rather than to the platform, because in this release the
-         *     agents that feed the shared library are part of the base package and a bank opens no run
-         *     of its own; `permission_denied` when the key lacks `agent-runs:write`, which a bank's key
-         *     never holds and so meets first, or when `agent`
+         *     answers 201 with the run that key already opened. Errors: `permission_denied` when the
+         *     key lacks `agent-runs:write`, which is how a bank's key is refused, or when `agent`
          *     is not the definition this key is bound to — a key runs exactly one definition, so a
          *     name this build does not ship and a name that belongs to another key are the same
          *     refusal, and trying names tells a caller nothing about which definitions exist;
@@ -3477,7 +3475,7 @@ export interface components {
             active: boolean;
             /**
              * Currentversion
-             * @description The version of the definition this build loaded — its prompt, tools and budgets — counting from 1. Runs started from now on run it; an earlier run keeps the version it ran.
+             * @description The version of the definition this build loaded — its prompt, tools and budgets — counting from 1. Runs started from now on run it.
              */
             currentVersion: number;
             /**
@@ -3559,7 +3557,7 @@ export interface components {
             name: string;
             /**
              * Scopes
-             * @description What the key may do: at least one and at most 9 scope keys, each counted once. Give the key the least its agent needs. `agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources a run checked; `changes:write` registers a regulatory change and writes its facts on the watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` reads the proposal queue and approves, corrects or rejects a proposal someone else filed, as the independent second pair of eyes; `search:read` searches the library; `library:read` reads its records and vocabularies; `upcoming:read` reads the public dates coming up; `tenant:read` reads a bank's profile, of which a key that belongs to no bank has none. No scope writes a library record: a finding becomes a change or a proposal, never an edit. Any other value is refused with `unknown_key`, and the message lists the valid scopes.
+             * @description What the key may do: at least one and at most 9 scope keys, each counted once. Give the key the least its agent needs. `agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources a run checked; `changes:write` registers a regulatory change and writes its facts on the watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` reads the proposal queue and approves, corrects or rejects a proposal someone else filed, as the independent second pair of eyes; `search:read` searches the library; `library:read` reads its records and vocabularies; `upcoming:read` reads the public dates coming up; `tenant:read` is set aside for reading a bank's profile, no route reads with it yet, and a key that belongs to no bank has no profile to read. No scope writes a library record: a finding becomes a change or a proposal, never an edit. Any other value is refused with `unknown_key`, and the message lists the valid scopes.
              */
             scopes: string[];
         };
@@ -3623,7 +3621,7 @@ export interface components {
             plainKey: string;
             /**
              * Scopes
-             * @description What the key may do, as scope keys, sorted. `agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources a run checked; `changes:write` registers a regulatory change and writes its facts on the watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` reads the proposal queue and approves, corrects or rejects a proposal someone else filed, as the independent second pair of eyes; `search:read` searches the library; `library:read` reads its records and vocabularies; `upcoming:read` reads the public dates coming up; `tenant:read` reads a bank's profile, of which a key that belongs to no bank has none. No scope writes a library record: a finding becomes a change or a proposal, never an edit.
+             * @description What the key may do, as scope keys, sorted. `agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources a run checked; `changes:write` registers a regulatory change and writes its facts on the watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` reads the proposal queue and approves, corrects or rejects a proposal someone else filed, as the independent second pair of eyes; `search:read` searches the library; `library:read` reads its records and vocabularies; `upcoming:read` reads the public dates coming up; `tenant:read` is set aside for reading a bank's profile, no route reads with it yet, and a key that belongs to no bank has no profile to read. No scope writes a library record: a finding becomes a change or a proposal, never an edit.
              */
             scopes: string[];
         };
@@ -3699,7 +3697,7 @@ export interface components {
             revokedAt: string | null;
             /**
              * Scopes
-             * @description What the key may do, as scope keys, sorted. `agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources a run checked; `changes:write` registers a regulatory change and writes its facts on the watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` reads the proposal queue and approves, corrects or rejects a proposal someone else filed, as the independent second pair of eyes; `search:read` searches the library; `library:read` reads its records and vocabularies; `upcoming:read` reads the public dates coming up; `tenant:read` reads a bank's profile, of which a key that belongs to no bank has none. No scope writes a library record: a finding becomes a change or a proposal, never an edit.
+             * @description What the key may do, as scope keys, sorted. `agent-runs:write` opens and closes the agent's runs; `sources:write` logs which sources a run checked; `changes:write` registers a regulatory change and writes its facts on the watch feed; `proposals:write` files a proposal to the shared library; `proposals:review` reads the proposal queue and approves, corrects or rejects a proposal someone else filed, as the independent second pair of eyes; `search:read` searches the library; `library:read` reads its records and vocabularies; `upcoming:read` reads the public dates coming up; `tenant:read` is set aside for reading a bank's profile, no route reads with it yet, and a key that belongs to no bank has no profile to read. No scope writes a library record: a finding becomes a change or a proposal, never an edit.
              */
             scopes: string[];
         };
@@ -4396,7 +4394,7 @@ export interface components {
             name: string;
             /**
              * Scopes
-             * @description What the new key may do, at least one scope key, each counted once. A bank's key may hold only these: `library:read` reads the shared library's instruments, provisions and obligations; `search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; `tenant:read` reads the bank's own profile; and `proposals:write` files a proposal to the shared library, which changes nothing until someone independent approves it. No scope writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and `proposals:review` belong to the platform's own agents and are refused on a bank's key. Anything else is refused with `unknown_key`, and the message lists the valid scopes.
+             * @description What the new key may do, at least one scope key, each counted once. A bank's key may hold only these: `library:read` reads the shared library's instruments, provisions and obligations; `search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; `tenant:read` is set aside for reading the bank's own profile, and no route reads with it yet; and `proposals:write` files a proposal to the shared library, which changes nothing until someone independent approves it. No scope writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and `proposals:review` belong to the platform's own agents and are refused on a bank's key. Anything else is refused with `unknown_key`, and the message lists the valid scopes.
              */
             scopes: string[];
         };
@@ -4422,7 +4420,7 @@ export interface components {
             plainKey: string;
             /**
              * Scopes
-             * @description What the new key may do, as scope keys, sorted. `library:read` reads the shared library's instruments, provisions and obligations; `search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; `tenant:read` reads the bank's own profile; and `proposals:write` files a proposal to the shared library, which changes nothing until someone independent approves it. No scope writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and `proposals:review` belong to the platform's own agents and are refused on a bank's key.
+             * @description What the new key may do, as scope keys, sorted. `library:read` reads the shared library's instruments, provisions and obligations; `search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; `tenant:read` is set aside for reading the bank's own profile, and no route reads with it yet; and `proposals:write` files a proposal to the shared library, which changes nothing until someone independent approves it. No scope writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and `proposals:review` belong to the platform's own agents and are refused on a bank's key.
              */
             scopes: string[];
         };
@@ -4450,7 +4448,7 @@ export interface components {
             revokedAt: string | null;
             /**
              * Scopes
-             * @description What this key may do, as scope keys. A bank's key holds only these: `library:read` reads the shared library's instruments, provisions and obligations; `search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; `tenant:read` reads the bank's own profile; and `proposals:write` files a proposal to the shared library, which changes nothing until someone independent approves it. No scope writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and `proposals:review` belong to the platform's own agents and are refused on a bank's key. A key created before that rule may still list a platform scope here; it works without it, and the security log records `key_scopes_withheld` when it is used.
+             * @description What this key may do, as scope keys. A bank's key holds only these: `library:read` reads the shared library's instruments, provisions and obligations; `search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; `tenant:read` is set aside for reading the bank's own profile, and no route reads with it yet; and `proposals:write` files a proposal to the shared library, which changes nothing until someone independent approves it. No scope writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and `proposals:review` belong to the platform's own agents and are refused on a bank's key. A key created before that rule may still list a platform scope here; it works without it, and the security log records `key_scopes_withheld` when it is used.
              */
             scopes: string[];
         };

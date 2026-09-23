@@ -367,8 +367,7 @@ class AgentDefinitionOut(CamelSchema):
     current_version: int = Field(
         description=(
             "The version of the definition this build loaded — its prompt, tools and budgets — "
-            "counting from 1. Runs started from now on run it; an earlier run keeps the version "
-            "it ran."
+            "counting from 1. Runs started from now on run it."
         )
     )
     active: bool = Field(
