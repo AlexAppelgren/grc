@@ -3707,7 +3707,7 @@ export interface components {
             label: string;
             /**
              * Url
-             * @description The public page the citation points at, 1 to 2000 characters, so the claim can be opened and read. Source: the public source the model was given. It is always a public page: no bank's own record is ever cited here, because nothing from a bank's zone reaches a prompt (NFR-04, D-07).
+             * @description The public page the citation points at, 1 to 2000 characters starting with http:// or https://, so the claim can be opened and read; any other address is refused with a 422 naming the field. Source: the public source the model was given. It is always a public page: no bank's own record is ever cited here, because nothing from a bank's zone reaches a prompt (NFR-04, D-07).
              * @example https://www.fi.se/en/published/news/2026/reporting/
              */
             url: string;

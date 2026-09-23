@@ -507,6 +507,8 @@ class AgentDecisionTests(SimpleTestCase):
             ({"output": "x" * over}, "an output over the cap, refused rather than cut short"),
             ({"citations": [{"label": "x", "url": "https://www.fi.se/"}] * (settings.AI_GENERATION_CITATIONS_MAX + 1)}, "too many citations"),
             ({"prompt": "the whole prompt"}, "a field the shape does not name, such as the prompt itself"),
+            ({"citations": [{"label": "x", "url": "javascript:alert(1)"}]}, "a citation that is not a web page"),
+            ({"citations": [{"label": "x", "url": "file:///etc/passwd"}]}, "a citation that is not a web page"),
         ):
             with self.assertRaises(SchemaError, msg=why):
                 AgentDecision.model_validate({**self.DECISION, **change})
