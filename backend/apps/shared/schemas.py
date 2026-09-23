@@ -42,7 +42,20 @@ VocabularyExtra = Annotated[dict[str, Any], AfterValidator(_no_chosen_tone)]
 
 
 class ProductInfo(CamelSchema):
-    product_name: str
+    """What a sign-in page needs before anyone has signed in: the product's own name."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"productName": "Compliance Watch"}]})
+
+    product_name: str = Field(
+        description=(
+            "The name this deployment of the product goes by, for a sign-in page to show "
+            "before anyone has signed in; a passkey prompt names the service by the same "
+            "name. The platform operator sets it for each deployment, so a rebrand changes "
+            "it without a new release: show what this returns rather than a name of your "
+            "own. It is the product's name and never a bank's; nothing about any bank or "
+            "person is in it."
+        )
+    )
 
 
 class PageQuery(Schema):
@@ -81,11 +94,32 @@ class PageQuery(Schema):
 
 
 class MailOutboxMessage(CamelSchema):
-    """One message the mock mailer sent, for E2E journeys (playbook 8.3)."""
+    """One message the stand-in mailer sent during an end-to-end test run. Test
+    environments only: a deployed environment never returns one."""
 
-    to: str
-    subject: str
-    body: str
+    to: str = Field(
+        description=(
+            "The one address the message went to, as the sender wrote it. A message to "
+            "several people is several entries, so a test filters on this to find the mail "
+            "meant for the person it is driving."
+        )
+    )
+    subject: str = Field(
+        description=(
+            "The subject line as sent, in plain text, for example the sign-in code mail or "
+            "an invitation naming the bank. It is written for a person to read, so a test "
+            "should find its mail by address and read the code or link from the body rather "
+            "than match on this wording."
+        )
+    )
+    body: str = Field(
+        description=(
+            "The plain-text body as sent, lines separated by a newline. It carries whatever "
+            "the mail carried, including a one-time enrolment code or an invitation link "
+            "whose token rides after the `#`, which is exactly why the outbox is readable "
+            "only in a test environment and never where a real person's mail is sent."
+        )
+    )
 
 
 class VocabularyEntry(CamelSchema):

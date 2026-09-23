@@ -1860,7 +1860,29 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** E2E Mail Outbox */
+        /**
+         * Read the mail a test run sent (test environments only)
+         * @description For automated end-to-end test runs only. Returns every message the stand-in mailer
+         *     still holds, oldest first, so a test journey can read the enrolment code or invitation
+         *     link a real person would find in their inbox, and can prove that a code request for
+         *     someone who already has a passkey sent nothing.
+         *
+         *     The route is always registered, but it answers 404 with the problem code `not_found`
+         *     unless the server runs in end-to-end test mode (`E2E_MODE`) with the stand-in mailer.
+         *     Every deployed environment refuses to boot with that mode on, so against a real bank's
+         *     deployment this call always answers `not_found`, and no mail ever sent there can be
+         *     read back through it. It stays in the published contract because the contract lists
+         *     every route the server registers; an integrator never calls it.
+         *
+         *     No credential is needed: the test mode is the whole gate. It changes nothing and writes
+         *     nothing to the audit log. It returns the whole outbox in one answer, unpaged: the
+         *     stand-in mailer keeps every message until the server's cache is cleared, so the list
+         *     grows across test runs that share one cache. An empty outbox is a 200 with an empty
+         *     list.
+         *
+         *     Errors: `not_found` (404) whenever end-to-end test mode or the stand-in mailer is off,
+         *     which is always the case when deployed.
+         */
         get: operations["e2eMailOutbox"];
         put?: never;
         post?: never;
@@ -2926,7 +2948,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Product */
+        /**
+         * Read the product's name before anyone has signed in
+         * @description Returns the name this deployment of the product goes by. Call it when a screen needs
+         *     the name before any session exists, such as a sign-in page, so it shows the name the
+         *     operator configured for this deployment rather than one built into the client; the
+         *     same name is what a passkey prompt shows as the service the passkey belongs to.
+         *
+         *     No credential is needed and none is read: the answer is the same for every caller,
+         *     says nothing about any bank or person, and is safe to keep for the life of a page. It
+         *     changes nothing and writes nothing to the audit log. The call takes no input, so there
+         *     is no error for a caller to branch on.
+         */
         get: operations["getProduct"];
         put?: never;
         post?: never;
@@ -7770,14 +7803,24 @@ export interface components {
         };
         /**
          * MailOutboxMessage
-         * @description One message the mock mailer sent, for E2E journeys (playbook 8.3).
+         * @description One message the stand-in mailer sent during an end-to-end test run. Test
+         *     environments only: a deployed environment never returns one.
          */
         MailOutboxMessage: {
-            /** Body */
+            /**
+             * Body
+             * @description The plain-text body as sent, lines separated by a newline. It carries whatever the mail carried, including a one-time enrolment code or an invitation link whose token rides after the `#`, which is exactly why the outbox is readable only in a test environment and never where a real person's mail is sent.
+             */
             body: string;
-            /** Subject */
+            /**
+             * Subject
+             * @description The subject line as sent, in plain text, for example the sign-in code mail or an invitation naming the bank. It is written for a person to read, so a test should find its mail by address and read the code or link from the body rather than match on this wording.
+             */
             subject: string;
-            /** To */
+            /**
+             * To
+             * @description The one address the message went to, as the sender wrote it. A message to several people is several entries, so a test filters on this to find the mail meant for the person it is driving.
+             */
             to: string;
         };
         /**
@@ -9531,9 +9574,18 @@ export interface components {
              */
             status: string;
         };
-        /** ProductInfo */
+        /**
+         * ProductInfo
+         * @description What a sign-in page needs before anyone has signed in: the product's own name.
+         * @example {
+         *       "productName": "Compliance Watch"
+         *     }
+         */
         ProductInfo: {
-            /** Productname */
+            /**
+             * Productname
+             * @description The name this deployment of the product goes by, for a sign-in page to show before anyone has signed in; a passkey prompt names the service by the same name. The platform operator sets it for each deployment, so a rebrand changes it without a new release: show what this returns rather than a name of your own. It is the product's name and never a bank's; nothing about any bank or person is in it.
+             */
             productName: string;
         };
         /**
@@ -16243,6 +16295,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "body": "You have been invited to Example Bank AB on Compliance Watch.\nOpen this link within 72 hours to receive your code: http://localhost:3000/invite#example-invitation-token",
+                     *         "subject": "You are invited to Example Bank AB",
+                     *         "to": "new.member@example-bank.test"
+                     *       },
+                     *       {
+                     *         "body": "Your code is 123456. It works once and expires in 10 minutes.",
+                     *         "subject": "Your Compliance Watch sign-in code",
+                     *         "to": "new.member@example-bank.test"
+                     *       }
+                     *     ]
+                     */
                     "application/json": components["schemas"]["MailOutboxMessage"][];
                 };
             };
