@@ -32,7 +32,7 @@ from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, ScenarioTestCase, stub_session, user_principal
 from apps.watch import registration
 from apps.watch import testing as watch_build
-from apps.watch.models import ChangeDocument, RegulatoryChange
+from apps.watch.models import ChangeDocument, ChangeObligation, ChangeTerm, RegulatoryChange
 
 CHANGES = "/api/v1/changes"
 JSON = "application/json"
@@ -156,6 +156,49 @@ class RegisteringAReform(RegistrationCase):
                 self.assertTrue(watch_build.is_a_suggestion(link))
         confidence = change.obligation_links.get().confidence
         self.assertEqual(None if confidence is None else float(confidence), 0.82)
+
+    def test_every_suggestion_names_the_run_agent_and_key_that_filed_it(self) -> None:
+        """Copied from the run by the one write path, because a check constraint cannot read
+        a key to find its agent, and it is what keeps the agent that suggested a fact from
+        confirming it (D-74). A library editor filing by hand names no run, so no agent, and
+        is named as the suggester instead, so they cannot confirm it alone. The type carries
+        the agent's own confidence when it sends one."""
+        obligation = self.an_obligation()
+        self.register(
+            body(
+                agentRunId=str(self.open_run.id),
+                changeTypeConfidence=0.91,
+                termIds=[str(watch_build.term(SECURITIES).id)],
+                obligationLinks=[{"obligationId": str(obligation.id), "confidence": 0.82}],
+            )
+        )
+        change = self.stored()
+        suggester = (None, self.open_run.agent_id, self.open_run.api_key_id)
+        self.assertEqual(
+            (change.change_type_suggested_by_id, change.change_type_suggested_by_agent_id, change.change_type_suggested_by_api_key_id),
+            suggester,
+        )
+        self.assertTrue(change.change_type_suggested)
+        self.assertEqual(float(change.change_type_confidence or 0), 0.91)
+        links: list[ChangeTerm | ChangeObligation] = [*change.term_links.all(), *change.obligation_links.all()]
+        self.assertEqual(len(links), 3)
+        for link in links:
+            with self.subTest(link=str(link)):
+                self.assertEqual((link.suggested_by_id, link.suggested_by_agent_id, link.suggested_by_api_key_id), suggester)
+
+        editor = factories.platform_user(email="library.editor@bleqq.example")
+        with stub_session(user_principal(permissions={perms.PROPOSALS_REVIEW}, subject_id=editor.id)):
+            self.client.post(
+                CHANGES,
+                data=body(stableKey="chg-fi-2026-by-hand", termIds=[str(watch_build.term(SECURITIES).id)]),
+                content_type=JSON,
+                HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}",
+            )
+        by_hand = RegulatoryChange.objects.get(stable_key="chg-fi-2026-by-hand")
+        self.assertEqual((by_hand.change_type_suggested_by_id, by_hand.change_type_suggested_by_agent_id), (editor.id, None))
+        self.assertIsNone(by_hand.change_type_confidence, "a person records no confidence")
+        self.assertTrue(by_hand.change_type_suggested, "a person's filing is a suggestion too")
+        self.assertEqual({(link.suggested_by_id, link.suggested_by_agent_id) for link in by_hand.term_links.all()}, {(editor.id, None)})
 
     def test_the_change_and_its_audit_and_outbox_rows_land_together(self) -> None:
         self.register()

@@ -18,9 +18,11 @@ import { formatDate, type FormatContext } from '@/shared/utils/format';
 // way into the obligation itself.
 //
 // Two decisions meet here and stay apart. A link is a library fact:
-// `confirmed` says a library editor stood behind it for every bank, and until
-// then the confidence the agent recorded is shown as what it is, a
-// suggestion. This bank's own decision lives on its case: "Confirm link"
+// `confirmed` says somebody stood behind it for every bank — a person, or an
+// independent agent, whose confirmation reads machine-confirmed and never as
+// a person's (D-74) — and until then the confidence the agent recorded is
+// shown as what it is, a suggestion. This bank's own decision lives on its
+// case: "Confirm link"
 // says the duty really is affected here, "Not related" says it is not, and
 // neither moves the library's link or what another bank sees (ruling C). A
 // link this bank removed is hidden from this bank's page; it stays stored,
@@ -36,8 +38,9 @@ export function decisionsOf(change: ChangeDetail): Map<string, CaseObligationDec
 /**
  * The link's pills: the instrument it belongs to, then whether it is settled.
  * This bank's own confirmation says the most to this reader, so it wins the
- * slot; a library editor's confirmation comes next; otherwise the agent's
- * confidence, as a suggestion.
+ * slot; the library's confirmation comes next, a person's only when the
+ * server says a person gave it and machine-confirmed otherwise; otherwise the
+ * agent's confidence, as a suggestion.
  */
 export function presentObligationLink(link: ObligationLink, decision: CaseObligationDecision | undefined, t: Translate, ctx: FormatContext): PresentedPill[] {
   let settled: PresentedPill;
@@ -48,8 +51,10 @@ export function presentObligationLink(link: ObligationLink, decision: CaseObliga
       tone: slotTone.confirmed,
       order: 20,
     };
-  } else if (link.confirmed) {
+  } else if (link.confirmed && link.confirmedOrigin === 'user') {
     settled = { key: `confirmed:${link.obligationId}`, label: t('watch.change.linkConfirmed'), tone: slotTone.confirmed, order: 20 };
+  } else if (link.confirmed) {
+    settled = { key: `machine-confirmed:${link.obligationId}`, label: t('watch.row.machineConfirmed'), tone: slotTone.machineConfirmed, order: 20 };
   } else {
     settled = {
       key: `suggested:${link.obligationId}`,

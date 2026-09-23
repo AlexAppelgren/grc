@@ -99,6 +99,7 @@ const change: ChangeDetail = {
       confidence: null,
       confirmed: true,
       origin: 'user',
+      confirmedOrigin: 'user',
     },
   ],
   case: {
@@ -156,6 +157,21 @@ describe('the change header', () => {
 
   it('a change a library editor registered carries no suggestion marker', () => {
     expect(presentChangeDetail({ ...change, origin: 'user', case: null }, t).map((pill) => pill.label)).toEqual(['Adopted rule', 'Act now', 'Inducements']);
+  });
+
+  it('a type an independent agent confirmed reads machine-confirmed, and only a person’s confirmation takes the label off', () => {
+    const typeFact = (confirmedOrigin: 'agent' | 'user') => ({
+      ...change,
+      case: null,
+      changeTypeFact: { ref: change.changeType, confidence: 0.91, suggested: false, confirmedOrigin, suggestedByAgent: null, confirmedByAgent: null },
+    });
+    expect(presentChangeDetail(typeFact('agent'), t).map((pill) => [pill.label, pill.tone])).toEqual([
+      ['Adopted rule', 'notice'],
+      ['Act now', 'negative'],
+      ['Inducements', 'brand'],
+      ['Machine-confirmed', 'information'],
+    ]);
+    expect(presentChangeDetail(typeFact('user'), t).map((pill) => pill.label)).toEqual(['Adopted rule', 'Act now', 'Inducements']);
   });
 
   it('reads the authority, the published date, the merged duplicates and who found it', () => {
@@ -277,6 +293,17 @@ describe('the obligations affected', () => {
     ]);
     expect(presentObligationLink(libraryConfirmed, { ...accepted, obligationId: 'o-2' }, t, ctx)[1]!.label).toBe('Confirmed for us, 17 Sept 2026');
     expect(decisionsOf({ ...change, case: null }).size).toBe(0);
+  });
+
+  it('a link an independent agent confirmed reads machine-confirmed, never as a library editor’s verification', () => {
+    const byAnAgent = { ...libraryConfirmed, confirmedOrigin: 'agent' as const };
+    expect(presentObligationLink(byAnAgent, undefined, t, ctx).map((pill) => [pill.label, pill.tone])).toEqual([
+      ['LVM', 'brand'],
+      ['Machine-confirmed', 'information'],
+    ]);
+    expect(presentObligationLink(byAnAgent, undefined, sv, svCtx)[1]!.label).toBe('Maskinbekräftad');
+    // A confirmation that does not say who gave it is never read as a person's.
+    expect(presentObligationLink({ ...libraryConfirmed, confirmedOrigin: undefined }, undefined, t, ctx)[1]!.label).toBe('Machine-confirmed');
   });
 
   it('a suggestion nobody scored still says who put it forward', () => {

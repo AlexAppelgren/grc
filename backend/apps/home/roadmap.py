@@ -50,6 +50,7 @@ from apps.library.reading import localized, today_for
 from apps.library.schemas import LibraryRef
 from apps.shared.models import Tenant
 from apps.taxonomy.models import CaseStatusCategory
+from apps.watch import keys
 from apps.watch.models import ChangeObligation
 from apps.watch.reading import urgency_refs
 from apps.watch.schemas import CaseCategory, Origin, WatchObligationLink
@@ -141,14 +142,16 @@ def _obligation_links(
     """The obligations each change touches, most confident first, as the watch feed answers
     them (WAT-04).
 
-    Only links a library editor has confirmed: an agent's suggestion is not a checked fact,
-    and the roadmap is where a person plans work. A bank's own decision about a link lives
-    on its case and never reaches a library row, so nothing here is one bank's judgement.
+    Only confirmed links: an agent's suggestion is not a checked fact, and the roadmap is
+    where a person plans work. Each says who confirmed it exactly as the change page does, so
+    a link an independent agent confirmed reads machine-confirmed, naming both agents, and
+    never as a person's verification (D-74). A bank's own decision about a link lives on its
+    case and never reaches a library row, so nothing here is one bank's judgement.
     """
     links = list(
         ChangeObligation.objects.filter(change_id__in=change_ids)
         .filter(confirmed_at__isnull=False)
-        .select_related("obligation__instrument")
+        .select_related("obligation__instrument", *keys.CURATION_AGENTS)
     )
     titles: dict[uuid.UUID, list[ObligationTitle]] = {}
     for title in ObligationTitle.objects.filter(obligation_id__in=[link.obligation_id for link in links]):
@@ -165,6 +168,7 @@ def _obligation_links(
                 origin=cast(Origin, link.origin),
                 confidence=None if link.confidence is None else float(link.confidence),
                 confirmed=True,
+                **keys.provenance(link),
             )
         )
     return by_change

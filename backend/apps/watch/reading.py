@@ -16,11 +16,13 @@ belongs to no tenant, so there is no case to join and `WatchConsoleChangeRow` ca
 `case` member at all — a member that were merely null would invite a console screen to
 render one bank's judgement.
 
-Nothing here is a settled fact. A change is what an agent sighted: its classification
-carries the agent's confidence and a `suggested` marker until a library editor confirms it
-(WAT-03), a link is a suggestion until then (WAT-04), and `inFootprint` says only that the
-change is worth this bank's attention — never that an obligation applies to it or that it
-complies, which are separate facts (REG-01, REG-02).
+Nothing here is a settled fact until somebody confirms it. A change is what an agent
+sighted: its type and classification carry the agent's confidence and a `suggested` marker
+until an independent agent or a person confirms them (WAT-03, D-74), a link is a
+suggestion until then (WAT-04), each fact names who suggested and who confirmed it, an
+agent's confirmation reads machine-confirmed and never as a person's verification, and
+`inFootprint` says only that the change is worth this bank's attention — never that an
+obligation applies to it or that it complies, which are separate facts (REG-01, REG-02).
 
 The footprint rule is the one in `apps/library/reading.py` and the SQL function behind it,
 used exactly as the obligations list uses them: `taxonomy_in_footprint` narrows the query
@@ -57,12 +59,12 @@ from apps.cases.models import CaseObligationLink, ChangeCase
 from apps.library.models import ObligationTitle
 from apps.library.reading import NOT_FOUND, localized, obligation_subject, outside_reasons, vocabulary_refs
 from apps.library.schemas import LibraryRef
-from apps.proposals.models import OriginType
 from apps.shared.models import Tenant
 from apps.shared.schemas import PageQuery
 from apps.taxonomy import matching
 from apps.taxonomy.models import CaseStatusCategory, ChangeTypeLabel, FlagLabel, TaxonomyTermLabel, Urgency, UrgencyLabel
 from apps.taxonomy.reading import Labels, label_of
+from apps.watch import keys
 from apps.watch.models import ChangeObligation, ChangeTerm, RegulatoryChange
 from apps.watch.schemas import (
     CaseCategory,
@@ -105,6 +107,11 @@ _CASE_COLUMNS = (
 # ---------------------------------------------------------------------------------------
 # The pieces both lists are built from
 # ---------------------------------------------------------------------------------------
+# What every change row is loaded with: its type, and the two agents behind the type's
+# suggestion and confirmation, so a row names them without a query of its own (D-74).
+_CHANGE_JOINS = ("change_type", *keys.CHANGE_TYPE_AGENTS)
+
+
 def _scope_term_ids() -> ArraySubquery:
     """A change's scope term ids as one `uuid[]`, for the database's footprint function. A
     flag is a `change_term` row too and never scopes a change: it says what the reform is
@@ -145,7 +152,9 @@ class _Classification:
     grows with the page and not with its square (NFR-02)."""
 
     def __init__(self, change_ids: Collection[uuid.UUID], order: list[str]) -> None:
-        links = list(ChangeTerm.objects.filter(change_id__in=change_ids).select_related("term__dimension", "flag"))
+        links = list(
+            ChangeTerm.objects.filter(change_id__in=change_ids).select_related("term__dimension", "flag", *keys.CURATION_AGENTS)
+        )
         flag_refs = vocabulary_refs(FlagLabel, (link.flag for link in links if link.flag is not None), order)
         term_refs = vocabulary_refs(
             TaxonomyTermLabel, (link.term for link in links if link.term is not None), order, field="term"
@@ -160,10 +169,14 @@ class _Classification:
         for link in links:
             confidence = None if link.confidence is None else float(link.confidence)
             if link.flag_id is not None:
-                fact = WatchFact(ref=flag_refs[link.flag_id], confidence=confidence, suggested=link.suggested)
+                fact = WatchFact(
+                    ref=flag_refs[link.flag_id], confidence=confidence, suggested=link.suggested, **keys.provenance(link)
+                )
                 self.flags.setdefault(link.change_id, []).append(fact)
             elif link.term is not None:
-                fact = WatchFact(ref=term_refs[link.term.id], confidence=confidence, suggested=link.suggested)
+                fact = WatchFact(
+                    ref=term_refs[link.term.id], confidence=confidence, suggested=link.suggested, **keys.provenance(link)
+                )
                 self.terms.setdefault(link.change_id, []).append(fact)
                 self.scope.setdefault(link.change_id, {}).setdefault(link.term.dimension.key, set()).add(link.term.key)
             if link.suggested:
@@ -171,17 +184,16 @@ class _Classification:
 
 
 def _change_type_fact(change: RegulatoryChange, refs: Mapping[uuid.UUID, LibraryRef]) -> WatchFact:
-    """The change's type as a fact with its provenance.
-
-    The library stores no confidence and no confirmation for the type itself — only
-    `change_term` and `change_obligation` carry those four columns (INPUT_DELTAS §1) — so
-    the honest answer is the one the row can support: a change a run registered carries a
-    type no person has stood behind, and it stays `suggested` until the editor's
-    confirmation lands with `c5-watch-curation-confirm`; a change a library editor
-    registered carries the type that editor chose. `confidence` is null because nobody
-    recorded one.
-    """
-    return WatchFact(ref=refs[change.change_type_id], confidence=None, suggested=change.origin == OriginType.AGENT.value)
+    """The change's type as a fact with its provenance, read off the type's own columns
+    (watch 0002, D-74) exactly as a flag's are read off its link. The change must be loaded
+    with `keys.CHANGE_TYPE_AGENTS`, so naming the agents costs no query."""
+    confidence = change.change_type_confidence
+    return WatchFact(
+        ref=refs[change.change_type_id],
+        confidence=None if confidence is None else float(confidence),
+        suggested=change.change_type_suggested,
+        **keys.provenance(change, "change_type_"),
+    )
 
 
 class _SuggestedLinks:
@@ -193,7 +205,9 @@ class _SuggestedLinks:
     them."""
 
     def __init__(self, change_ids: Collection[uuid.UUID], order: list[str]) -> None:
-        links = list(ChangeObligation.objects.filter(change_id__in=change_ids).select_related("obligation__instrument"))
+        links = list(
+            ChangeObligation.objects.filter(change_id__in=change_ids).select_related("obligation__instrument", *keys.CURATION_AGENTS)
+        )
         titles: dict[uuid.UUID, list[ObligationTitle]] = {}
         for title in ObligationTitle.objects.filter(obligation_id__in={link.obligation_id for link in links}):
             titles.setdefault(title.obligation_id, []).append(title)
@@ -210,6 +224,7 @@ class _SuggestedLinks:
                     origin=cast(Origin, link.origin),
                     confidence=None if link.confidence is None else float(link.confidence),
                     confirmed=link.confirmed_at is not None,
+                    **keys.provenance(link),
                 )
             )
             if link.confirmed_at is None:
@@ -351,7 +366,7 @@ def change_rows(tenant: Tenant, order: list[str], change_ids: Collection[uuid.UU
     The same fixed number of queries whatever is asked for, exactly as a page of the feed
     costs (NFR-02).
     """
-    page = list(_with_own_case(tenant).select_related("change_type").filter(id__in=change_ids))
+    page = list(_with_own_case(tenant).select_related(*_CHANGE_JOINS).filter(id__in=change_ids))
     rows = _feed_rows(page, order, matching.footprint_of(tenant.id), matching.restricting_dimensions())
     return {row.id: row for row in rows}
 
@@ -363,7 +378,7 @@ def list_changes(tenant: Tenant, order: list[str], query: WatchChangeQuery) -> W
     restricting = matching.restricting_dimensions()
     queryset = _feed_queryset(tenant, query)
     total = queryset.count()
-    page = list(queryset.select_related("change_type")[query.offset : query.offset + query.limit])
+    page = list(queryset.select_related(*_CHANGE_JOINS)[query.offset : query.offset + query.limit])
 
     return WatchChangePage(items=_feed_rows(page, order, footprint, restricting), total=total)
 
@@ -419,9 +434,9 @@ def _console_queryset(query: WatchConsoleChangeQuery) -> QuerySet[RegulatoryChan
     queryset = RegulatoryChange.objects.all()
     if query.confirmed == "false":
         queryset = queryset.filter(
-            # The type of a change a run registered is the run's reading and nobody has
-            # stood behind it; the flags, scope terms and links say so on their own rows.
-            Q(origin=OriginType.AGENT.value)
+            # The type, the flags, the scope terms and the links each say on their own
+            # columns whether anybody has stood behind them yet (D-74).
+            Q(change_type_suggested=True)
             | Exists(ChangeTerm.objects.filter(change=OuterRef("pk"), suggested=True))
             | Exists(ChangeObligation.objects.filter(change=OuterRef("pk"), confirmed_at__isnull=True))
         )
@@ -433,18 +448,30 @@ def _console_queryset(query: WatchConsoleChangeQuery) -> QuerySet[RegulatoryChan
 
 
 def list_console_changes(order: list[str], query: WatchConsoleChangeQuery) -> WatchConsoleChangePage:
-    """`GET /console/changes`: the changes carrying a fact no library editor has confirmed
+    """`GET /console/changes`: the changes carrying a fact nobody has confirmed
     (WAT-02, WAT-03, WAT-04, PRO-01)."""
     queryset = _console_queryset(query)
     total = queryset.count()
-    page = list(queryset.select_related("change_type")[query.offset : query.offset + query.limit])
+    page = list(queryset.select_related(*_CHANGE_JOINS)[query.offset : query.offset + query.limit])
+    return WatchConsoleChangePage(items=_console_rows(page, order), total=total)
 
+
+def console_change(order: list[str], change_id: uuid.UUID) -> WatchConsoleChangeRow:
+    """One change as the console's queue shows it, which is what a curation confirmation
+    answers: the facts with who suggested and who confirmed each (D-74). No case is joined,
+    because the confirmer is a platform key or a console session and belongs to no bank."""
+    change = RegulatoryChange.objects.select_related(*_CHANGE_JOINS).get(pk=change_id)
+    return _console_rows([change], order)[0]
+
+
+def _console_rows(page: Sequence[RegulatoryChange], order: list[str]) -> list[WatchConsoleChangeRow]:
+    """The console's rows for a page of changes, from the same fixed number of queries
+    whatever its size (NFR-02)."""
     ids = [change.id for change in page]
     classification = _Classification(ids, order)
     links = _SuggestedLinks(ids, order)
     type_refs = vocabulary_refs(ChangeTypeLabel, (change.change_type for change in page), order)
-
-    rows = [
+    return [
         WatchConsoleChangeRow(
             id=change.id,
             stable_key=change.stable_key,
@@ -459,7 +486,7 @@ def list_console_changes(order: list[str], query: WatchConsoleChangeQuery) -> Wa
             terms=classification.terms.get(change.id, []),
             obligations=links.links.get(change.id, []),
             unconfirmed_count=(
-                int(change.origin == OriginType.AGENT.value)
+                int(change.change_type_suggested)
                 + classification.unconfirmed.get(change.id, 0)
                 + links.unconfirmed.get(change.id, 0)
             ),
@@ -467,7 +494,6 @@ def list_console_changes(order: list[str], query: WatchConsoleChangeQuery) -> Wa
         )
         for change in page
     ]
-    return WatchConsoleChangePage(items=rows, total=total)
 
 
 # ---------------------------------------------------------------------------------------
@@ -480,7 +506,7 @@ def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID) -> WatchC
 
     A change nobody registered and a change the caller cannot see answer the same 404, so
     no id can be probed for."""
-    change = _with_own_case(tenant).select_related("change_type").filter(pk=change_id).first()  # ordering: pk lookup, at most one row
+    change = _with_own_case(tenant).select_related(*_CHANGE_JOINS).filter(pk=change_id).first()  # ordering: pk lookup, at most one row
     if change is None:
         raise ValidationError(NOT_FOUND, code="not_found")
 
@@ -497,6 +523,7 @@ def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID) -> WatchC
         stable_key=change.stable_key,
         title=change.title,
         change_type=type_refs[change.change_type_id],
+        change_type_fact=_change_type_fact(change, type_refs),
         authority_label=change.authority_label,
         authority_id=change.authority_id,
         published_on=change.published_on,
@@ -581,6 +608,6 @@ def list_obligation_changes(tenant: Tenant, order: list[str], obligation_id: uui
         .exclude(status__in=(CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value))
         .count()
     )
-    page = list(queryset.select_related("change_type")[page_query.offset : page_query.offset + page_query.limit])
+    page = list(queryset.select_related(*_CHANGE_JOINS)[page_query.offset : page_query.offset + page_query.limit])
     rows = _feed_rows(page, order, matching.footprint_of(tenant.id), matching.restricting_dimensions())
     return WatchObligationChangePage(items=rows, total=total, open_count=open_count)

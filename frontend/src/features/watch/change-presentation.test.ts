@@ -9,6 +9,7 @@ import {
   caseStatusLabel,
   daysUntil,
   factsOfChange,
+  isMachineConfirmed,
   isSuggested,
   keyDateMeta,
   presentChange,
@@ -180,6 +181,25 @@ describe('isSuggested', () => {
 
   it('is false once a person has settled every one of them', () => {
     expect(isSuggested(row)).toBe(false);
+  });
+});
+
+describe('isMachineConfirmed', () => {
+  const byAnAgent = (key: string, label: string) => ({ ...fact(key, label, false), confirmedOrigin: 'agent' as const });
+
+  it('is true once an independent agent confirmed any classification, and never for a person’s confirmation', () => {
+    expect(isMachineConfirmed({ ...row, flags: [byAnAgent('ai', 'AI')] })).toBe(true);
+    expect(isMachineConfirmed({ ...row, changeType: byAnAgent('adopted', 'Adopted rule') })).toBe(true);
+    expect(isMachineConfirmed({ ...row, flags: [{ ...fact('ai', 'AI', false), confirmedOrigin: 'user' }] })).toBe(false);
+    expect(isMachineConfirmed(row)).toBe(false);
+  });
+
+  it('a row an agent confirmed keeps a machine label, and a suggestion still wins the slot', () => {
+    const confirmed = { ...row, changeType: byAnAgent('adopted', 'Adopted rule') };
+    expect(presentChangeRow(confirmed, 'row', t).map((p) => [p.label, p.tone])).toContainEqual(['Machine-confirmed', 'information']);
+    const mixed = { ...confirmed, flags: [fact('ai', 'AI', true)] };
+    expect(presentChangeRow(mixed, 'row', t).map((p) => p.label)).toContain('Suggested by the agent');
+    expect(presentChangeRow(mixed, 'row', t).map((p) => p.label)).not.toContain('Machine-confirmed');
   });
 });
 
