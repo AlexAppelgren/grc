@@ -9,8 +9,8 @@ that labels, files or searches. They are therefore plain models rather than
 `LibraryModel`s, so the tenant profile and role logic can name them beside their own
 writes without tripping the library fence's AST heuristic
 (apps/shared/tests_library_fence.py). `Jurisdiction` is a `Vocabulary` so it carries
-labels per language and the immutable-key rule; its `kind` (supranational or country)
-is the tier-one `JurisdictionKind`."""
+labels per language and the immutable-key rule; its `kind` (supranational, country or
+international) is the tier-one `JurisdictionKind`."""
 
 from __future__ import annotations
 
@@ -47,16 +47,22 @@ class Language(models.Model):
 
 
 class JurisdictionKind(enum.StrEnum):
-    """Tier-one kind (apps/shared/kinds.py): supranational (EU) or country."""
+    """Tier-one kind (apps/shared/kinds.py): supranational (EU), country, or international
+    (INV-01, INV-08, D-38) for a standards body such as ISO/IEC, which issues from no
+    market a bank operates in. `international` is deliberately left out of
+    `MIRRORED_JURISDICTION_KINDS` (apps/taxonomy/seeds/__init__.py): mirroring it into the
+    footprint's jurisdiction dimension would offer "International" as an operating market,
+    which a standards body is not."""
 
     SUPRANATIONAL = "supranational"
     COUNTRY = "country"
+    INTERNATIONAL = "international"
 
 
 class Jurisdiction(Vocabulary):
     """A jurisdiction (I18N-01, schema v0.3 `jurisdiction`): `eu`, `se`, `dk`, `no`,
-    `fi`, seeded with a parent and the language its legal texts are written in. Instruments
-    and authorities reference it from chunk 3.
+    `fi` and `intl` (D-38), seeded with a parent and the language its legal texts are
+    written in. Instruments and authorities reference it from chunk 3.
 
     `parent` is the jurisdiction whose rules reach this one (D-28, ADR 0026), not
     membership: Norway is outside the Union and still reached by EU financial rules
@@ -184,9 +190,15 @@ class Authority(LibraryModel):
 
 
 class Instrument(LibraryModel):
-    """A law, regulation or guideline (INV-01). The name is translation rows
-    (`InstrumentTitle`); `binding` starts from the level's default, false meaning
-    guidance, comply or explain."""
+    """A law, regulation, guideline or edition of a standard (INV-01, INV-08). The name is
+    translation rows (`InstrumentTitle`); `binding` starts from the level's default, false
+    meaning guidance, comply or explain unless the level's kind is `standard`.
+
+    `regime` is required (D-39, library 0008): it is the sector boundary, and an instrument
+    without one would match every bank's footprint. It must be a term of the `regime`
+    dimension: the seed-integrity test and the fixture check hold the seeded rows to that,
+    and the instrument proposal kind, when it lands, answers 422 `not_a_regime` at apply
+    otherwise (INV-S12)."""
 
     stable_key = models.SlugField(max_length=120, unique=True)
     short_name = models.CharField(max_length=120)
@@ -197,7 +209,7 @@ class Instrument(LibraryModel):
     binding = models.BooleanField()
     jurisdiction = models.ForeignKey(Jurisdiction, on_delete=models.PROTECT, related_name="+")
     authority = models.ForeignKey(Authority, null=True, blank=True, on_delete=models.PROTECT, related_name="instruments")
-    regime = models.ForeignKey("taxonomy.TaxonomyTerm", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+    regime = models.ForeignKey("taxonomy.TaxonomyTerm", on_delete=models.PROTECT, related_name="+")
     in_force_from = models.DateField(null=True, blank=True)
     in_force_from_precision = _precision()
     in_force_to = models.DateField(null=True, blank=True)
@@ -269,7 +281,12 @@ class InstrumentRelation(LibraryModel):
 
 class Provision(LibraryModel):
     """A node of an instrument's structure (INV-02): chapter, section, article. The legal
-    text lives in `ProvisionVersion` rows, never on the node."""
+    text lives in `ProvisionVersion` rows, never on the node.
+
+    Never under a standard (INV-08, AC-INV2, D-35): a standard's text is licensed. The
+    trigger `provision_not_under_standard` (library 0008) refuses an insert, or a move of
+    `instrument_id`, onto an instrument whose level's kind is `standard`, whatever the write
+    path: a proposal, a seed, the watch pipeline or a tenant's own record."""
 
     stable_key = models.CharField(max_length=200, unique=True)
     instrument = models.ForeignKey(Instrument, on_delete=models.PROTECT, related_name="provisions")

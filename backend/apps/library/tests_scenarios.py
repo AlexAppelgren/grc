@@ -128,7 +128,7 @@ class LibraryScenarioTests(ScenarioTestCase):
         cls.other = factories.tenant(slug="other-bank")
         tenancy.activate(cls.other.id)
         cls.private = build.obligation(
-            build.instrument(key="other-bank-source", owner_tenant=cls.other),
+            build.instrument(key="other-bank-source", regime="regime:securities", owner_tenant=cls.other),
             key="other-bank-duty",
             owner_tenant=cls.other,
         )

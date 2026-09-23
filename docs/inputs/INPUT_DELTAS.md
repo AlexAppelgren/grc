@@ -47,9 +47,13 @@ Every vocabulary row: immutable `key`, optional `kind`, labels per language,
   dimension matches only when the regulatory scope names that term (FP-01,
   INV-08, D-36).
 - A new, optional `instrument_level_kind` whose only value is `standard`. The
-  five existing level rows keep a null kind (INV-01, INV-08, D-37).
+  five existing level rows keep a null kind (INV-01, INV-08, D-37). Built
+  2026-09-23 as `InstrumentLevelKind` (apps/taxonomy/models.py), the
+  `instrument_level` list's optional kind, with one seeded row `standard`
+  (`binding_default` false, rank 60) from the prototype fixture.
 - `jurisdiction_kind` gains `international`, for standards bodies (INV-08,
-  I18N-01, D-38).
+  I18N-01, D-38). Built 2026-09-23 with one seeded row, `intl`, no parent,
+  outside the footprint's jurisdiction mirror.
 - `WorkReason` (`owner`, `participant`), `WorkBucket` (`overdue`, `due_soon`,
   `aware`, `open`) and `WorkDateKind`, each value with its reason (HOM-05,
   D-23).
@@ -117,7 +121,9 @@ or has differently:
   Norway points at the EU under the EEA Agreement. No new column (FP-04, D-28).
 - `Instrument.regime` becomes NOT NULL, as `schema.sql` already has it; one
   trigger on `provision` refuses a row under a standard-level instrument
-  (INV-01, INV-08, D-35, D-39).
+  (INV-01, INV-08, D-35, D-39). Built 2026-09-23 in library 0008: the trigger
+  `provision_not_under_standard` fires on insert and on a change of
+  `instrument_id`, and raises `check_violation`.
 - `source_check` gains `kind` (`sweep` or `recheck`, default `sweep`) and the
   nullable `subject_type` and `subject_id` a re-check names, which `schema.sql`
   lacks: every watch run re-checks the library records its sources cover and

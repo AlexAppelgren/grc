@@ -130,7 +130,7 @@ def _instrument(spec: dict[str, Any], terms: dict[str, TaxonomyTerm], verified_o
             "binding": spec["binding"],
             "jurisdiction": jurisdiction,
             "authority": Authority.objects.get(key=spec["authority"]) if spec["authority"] else None,
-            "regime": terms[spec["regime"]] if spec["regime"] else None,
+            "regime": terms[spec["regime"]],
             "in_force_from": _date(spec["in_force_from"]),
             "in_force_to": _date(spec["in_force_to"]),
             "implements_note": spec["implements_note"] or "",

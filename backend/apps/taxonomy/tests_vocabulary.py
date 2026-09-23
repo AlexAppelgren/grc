@@ -53,9 +53,8 @@ from config.api import api
 
 V1 = "/api/v1"
 SEED = Actor.system("seed_reference")
-# The kind f03-T30 seeds the International row under (D-38): no bank operates there, so it
-# must stay out of the mirror. Written here rather than imported because that row, and the
-# JurisdictionKind member it carries, land with that task.
+# The kind the International row is seeded under (D-38): no bank operates there, so it must
+# stay out of the mirror. Written as the literal the wire carries, so a renamed member fails here.
 UNOPERATED_JURISDICTION_KIND = "international"
 # schema v0.3's `proposal.rejection_code` CHECK, in its order: the only list the inputs define.
 REJECTION_REASONS = ["wrong_fact", "wrong_scope", "bad_source", "duplicate", "not_relevant", "poor_wording", "other"]
@@ -537,18 +536,14 @@ class JurisdictionTermMirror(ScenarioTestCase):
         self.assertTrue(all(row["isSystem"] for row in rows))
 
     def test_a_jurisdiction_nobody_operates_in_is_not_mirrored(self) -> None:
-        """f03-T30 adds the International row that standards bodies issue under. It must get
-        no term: a tenant naming its markets would otherwise stop seeing standards (D-38,
-        ADR 0032)."""
-        Jurisdiction.objects.create(
-            key="intl",
-            kind=UNOPERATED_JURISDICTION_KIND,
-            default_language=Language.objects.get(key="en"),
-            sort_order=len(self._terms()),
-            is_system=True,
-        )
+        """The seeded International row standards bodies issue under gets no term: a tenant
+        naming its markets would otherwise stop seeing standards (D-38, ADR 0032)."""
+        international = Jurisdiction.objects.get(key="intl")
+        self.assertEqual(international.kind, UNOPERATED_JURISDICTION_KIND)
+        self.assertNotIn(international.kind, MIRRORED_JURISDICTION_KINDS)
         seed_taxonomy_terms()
         self.assertEqual(set(self._terms()), {"eu", "se", "dk", "no", "fi"})
+        self.assertFalse(TaxonomyTerm.objects.filter(jurisdiction=international).exists())
 
     def test_the_seed_records_every_mirrored_term_it_files(self) -> None:
         filed = self._term_events().filter(action="taxonomy.term_created")

@@ -8,7 +8,8 @@ language.
 
 Jurisdictions (I18N-01, playbook 17, chunk 2): EU, SE, DK, NO, FI as rows with a parent,
 a kind and the language their legal texts are written in, so no column or branch ever
-names a country. Without this seed no instrument can be filed (chunk 3)."""
+names a country, and International (D-38) for standards bodies. Without this seed no
+instrument can be filed (chunk 3)."""
 
 from __future__ import annotations
 
@@ -39,6 +40,10 @@ JURISDICTIONS: dict[str, tuple[JurisdictionKind, str | None, str, dict[str, str]
     "dk": (JurisdictionKind.COUNTRY, "eu", "da", {"en": "Denmark", "sv": "Danmark"}),
     "no": (JurisdictionKind.COUNTRY, "eu", "nb", {"en": "Norway", "sv": "Norge"}),
     "fi": (JurisdictionKind.COUNTRY, "eu", "fi", {"en": "Finland", "sv": "Finland"}),
+    # INV-01, INV-08 (D-38): the jurisdiction of an international standards body such as
+    # ISO/IEC, no bank's own market. Its kind keeps it out of MIRRORED_JURISDICTION_KINDS
+    # (apps/taxonomy/seeds), so it never offers "International" as an operating market.
+    "intl": (JurisdictionKind.INTERNATIONAL, None, "en", {"en": "International", "sv": "Internationell"}),
 }
 DEFAULT_JURISDICTION = "eu"
 # The language every seeded label is first written in: the original of its translation rows

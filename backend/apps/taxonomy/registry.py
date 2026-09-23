@@ -41,6 +41,7 @@ from apps.taxonomy.models import (
     Flag,
     FlagLabel,
     InstrumentLevel,
+    InstrumentLevelKind,
     InstrumentLevelLabel,
     LibraryTag,
     LibraryTagLabel,
@@ -115,7 +116,8 @@ REGISTRY: dict[str, VocabularyList] = {
     for entry in (
         # --- tier 2: library lists, curated through proposals (VOC-07) ---
         VocabularyList("term_dimension", LIBRARY_TIER, TermDimension, TermDimensionLabel, "term_dimension_kind", _values(TermDimensionKind), True, ("restricts_footprint",), usage=_count("terms")),
-        VocabularyList("instrument_level", LIBRARY_TIER, InstrumentLevel, InstrumentLevelLabel, extra_fields=("binding_default", "rank")),
+        # The kind is optional (D-37): null on the five law and guidance levels, `standard` on one.
+        VocabularyList("instrument_level", LIBRARY_TIER, InstrumentLevel, InstrumentLevelLabel, "instrument_level_kind", _values(InstrumentLevelKind), False, ("binding_default", "rank")),
         VocabularyList("provision_kind", LIBRARY_TIER, ProvisionKind, ProvisionKindLabel, "provision_structural_kind", _values(ProvisionStructuralKind), True, ("jurisdiction",), references={"jurisdiction": "jurisdiction"}),
         VocabularyList("change_type", LIBRARY_TIER, ChangeType, ChangeTypeLabel, "change_lifecycle_kind", _values(ChangeLifecycleKind), True),
         VocabularyList("duty_type", LIBRARY_TIER, DutyType, DutyTypeLabel),

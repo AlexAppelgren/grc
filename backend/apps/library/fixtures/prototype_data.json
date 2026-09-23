@@ -115,6 +115,14 @@
     "rank": 50,
     "binding_default": true,
     "usage_note": "Binding rules issued by the supervisor under delegation (FFFS in Sweden)."
+   },
+   "standard": {
+    "label_en": "Standard",
+    "label_sv": "Standard",
+    "kind": "standard",
+    "rank": 60,
+    "binding_default": false,
+    "usage_note": "One edition of a published standard, such as ISO/IEC 27001:2022, filed under International and a regime. Not law: its pill reads Standard, never Guidance, comply or explain. Its text is licensed and never held here, so it has no provisions, only its public facts and one conformance duty in our own words."
    }
   },
   "change_type": {
@@ -1080,6 +1088,12 @@
    "name": "Finland",
    "parent_code": "EU",
    "kind": "country"
+  },
+  {
+   "code": "INTL",
+   "name": "International",
+   "parent_code": null,
+   "kind": "international"
   }
  ],
  "authorities": [

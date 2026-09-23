@@ -53,14 +53,29 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| INV-01 | Instruments with level (a standard's level says so), binding force, official reference, ELI where available, jurisdiction (International for standards bodies), authority, a regime, in-force dates and lineage | M | R1 | built |
-| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes; never for a standard, whose text is licensed | S | R1 | built |
+| INV-01 | Instruments with level (a standard's level says so), binding force, official reference, ELI where available, jurisdiction (International for standards bodies), authority, a regime, in-force dates and lineage | M | R1 | in_progress |
+| INV-02 | Provision tree with verbatim text versions, in-force dates and transitional notes; never for a standard, whose text is licensed | S | R1 | in_progress |
 | INV-03 | Obligations: plain-language duty, duty type, scope facets, trigger, retention, sanction exposure, provenance, related obligations | M | R1 | built |
 | INV-04 | Versioned summaries with effective dates, "as of" reads and a sentence-level diff | M | R1 | built |
 | INV-05 | Text in the original language plus translations, machine translations labelled | M | R1 | built |
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | built |
 | INV-07 | Tenant-private instruments and obligations from the tenant's own sources, proposed and approved inside that bank by a second person; never seen by platform staff, a model, the search index or another tenant (D-57) | C | R3 | pending |
-| INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere | M | R1 | pending |
+| INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere | M | R1 | in_progress |
+
+> **Note — what the standard clauses still lack (2026-09-23).** Built: the `standard`
+> instrument level with its tier-one kind (D-37), the seeded International jurisdiction of
+> kind `international`, left out of the footprint mirror (D-38), `instrument.regime` NOT
+> NULL with every seeded regime a term of the `regime` dimension (D-39), and the
+> `provision_not_under_standard` trigger refusing a provision inserted under, or moved to,
+> a standard (D-35, library 0008). Missing, so INV-01, INV-02 and INV-08 stay in progress:
+> the seeded ISO/IEC 27001:2022 edition with its one conformance duty and the screens that
+> read "Standard" in the binding slot and "licensed" in the tree (INV-S11); the instrument
+> proposal's apply refusing a regime from another dimension with 422 `not_a_regime`
+> (INV-S12's second half, which is why test_inv_s12 stays skipped); and the proposal checks
+> of D-35 at creation, at a reviewer's correction and at apply (422 `licensed_text`,
+> `one_conformance_obligation`, `standard_term_required`, AC-INV2). The trigger watches the
+> provision row; an instrument moved onto the standard level while it already holds
+> provisions is for that apply check to refuse, since no write path changes a level today.
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
