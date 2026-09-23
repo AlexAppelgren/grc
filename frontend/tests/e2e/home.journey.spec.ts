@@ -177,55 +177,63 @@ test.describe('home journeys', () => {
     await expect(page).toHaveURL(/\/me\/calendar-feeds$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Calendar feeds' })).toBeVisible();
 
-    // Settle before reading the list: a retried run may find a feed of its own.
-    await expect(page.locator('[data-feeds-list]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
-    const feedIds = () => page.locator('[data-feed-id]').evaluateAll((rows) => rows.map((row) => row.getAttribute('data-feed-id')));
-    const before = await feedIds();
-
+    // Pinned by the id this run created: a revoked feed stays listed, so an
+    // earlier attempt's row must not match (playbook 8.3 rule 4).
+    const answered = page.waitForResponse((r) => r.url().endsWith('/api/v1/calendar-feeds') && r.request().method() === 'POST' && r.ok());
     await page.getByRole('button', { name: 'New feed' }).click();
-    const shown = page.getByRole('dialog', { name: 'Copy this address into your calendar' });
-    await expect(shown).toBeVisible();
-    const address = (await shown.locator('[data-feed-address]').innerText()).trim();
-    const token = new URL(address).searchParams.get('token') ?? '';
-    expect(new URL(address).pathname).toBe('/api/v1/calendar/feed.ics');
-    expect(token).toMatch(/^[^.]+\.[^.]+$/);
-    expect(page.url()).not.toContain(token);
+    const { feed } = (await (await answered).json()) as { feed: { id: string } };
+    const row = page.locator(`[data-feed-id="${feed.id}"]`);
+    const revokeRow = async () => {
+      await row.getByRole('button', { name: /^Revoke the feed created / }).click();
+      const confirm = page.getByRole('dialog', { name: /^Revoke the feed created .+\?$/ });
+      await confirm.getByRole('button', { name: 'Revoke', exact: true }).click();
+      await expect(confirm).toBeHidden();
+      await expect(row.getByText('Revoked', { exact: true })).toBeVisible();
+    };
+    try {
+      const shown = page.getByRole('dialog', { name: 'Copy this address into your calendar' });
+      await expect(shown).toBeVisible();
+      const address = (await shown.locator('[data-feed-address]').innerText()).trim();
+      const token = new URL(address).searchParams.get('token') ?? '';
+      expect(new URL(address).pathname).toBe('/api/v1/calendar/feed.ics');
+      expect(token).toMatch(/^[^.]+\.[^.]+$/);
+      expect(page.url()).not.toContain(token);
 
-    // A calendar client's own fetch: the address alone, no session and no key.
-    const served = await page.request.get(address);
-    expect(served.status()).toBe(200);
-    expect(served.headers()['content-type']).toContain('text/calendar');
-    // RFC 5545 folds a line longer than 75 octets onto the next, which starts
-    // with a space; a calendar client reads it as one line, so this does too.
-    const ics = (await served.text()).replace(/\r\n[ \t]/g, '');
-    expect(ics).toContain('BEGIN:VCALENDAR');
-    expect(ics).toContain('SUMMARY:In force: FI adopts amended rules on paying for investment research\r\n');
-    // Public facts only: the bank's own "So what?" never travels in a
-    // calendar, and nothing outside the regulatory scope is in it.
-    expect(ics).not.toContain('Confirm the annual assessment criteria');
-    expect(ics).not.toContain('Insurance distribution guidance outside our scope');
+      // A calendar client's own fetch: the address alone, no session and no key.
+      const served = await page.request.get(address);
+      expect(served.status()).toBe(200);
+      expect(served.headers()['content-type']).toContain('text/calendar');
+      // RFC 5545 folds a line longer than 75 octets onto the next, which starts
+      // with a space; a calendar client reads it as one line, so this does too.
+      const ics = (await served.text()).replace(/\r\n[ \t]/g, '');
+      expect(ics).toContain('BEGIN:VCALENDAR');
+      expect(ics).toContain('SUMMARY:In force: FI adopts amended rules on paying for investment research\r\n');
+      // Public facts only: the bank's own "So what?" never travels in a
+      // calendar, and nothing outside the regulatory scope is in it.
+      expect(ics).not.toContain('Confirm the annual assessment criteria');
+      expect(ics).not.toContain('Insurance distribution guidance outside our scope');
 
-    await shown.getByRole('button', { name: 'Done' }).click();
-    await expect(shown).toBeHidden();
-    await expect(page.locator('[data-feed-id]')).toHaveCount(before.length + 1);
-    const created = (await feedIds()).find((id) => !before.includes(id));
-    expect(created).toBeTruthy();
-    // Shown once: neither the list nor a reload shows the address again.
-    await page.reload();
-    const row = page.locator(`[data-feed-id="${created}"]`);
-    await expect(row.getByText('Active', { exact: true })).toBeVisible();
-    await expect(page.getByText(token)).toHaveCount(0);
+      await shown.getByRole('button', { name: 'Done' }).click();
+      await expect(shown).toBeHidden();
+      // Shown once: neither the list nor a reload shows the address again.
+      await page.reload();
+      await expect(row.getByText('Active', { exact: true })).toBeVisible();
+      await expect(page.getByText(token)).toHaveCount(0);
 
-    await row.getByRole('button', { name: 'Revoke' }).click();
-    const confirm = page.getByRole('dialog', { name: 'Revoke this feed?' });
-    await confirm.getByRole('button', { name: 'Revoke' }).click();
-    await expect(confirm).toBeHidden();
-    await expect(row.getByText('Revoked', { exact: true })).toBeVisible();
-
-    apiGuard.allow(/\/calendar\/feed\.ics/, 404, 'the address was revoked, so it is refused from the next fetch on (HOM-S5)');
-    const refused = await page.request.get(address);
-    expect(refused.status()).toBe(404);
-    expect(await refused.text()).not.toContain('BEGIN:VCALENDAR');
+      await revokeRow();
+      // Asserted on the answer itself: page.request bypasses the page's
+      // response listener, so the guard never sees this 404. The allow still
+      // declares it where it happens, should the fetch ever move to the page.
+      apiGuard.allow(/\/calendar\/feed\.ics/, 404, 'the address was revoked, so it is refused from the next fetch on (HOM-S5)');
+      const refused = await page.request.get(address);
+      expect(refused.status()).toBe(404);
+      expect(await refused.text()).not.toContain('BEGIN:VCALENDAR');
+    } finally {
+      // Teardown that runs on failure too: a live address never outlives the attempt.
+      await page.goto('/me/calendar-feeds');
+      await expect(row).toBeVisible();
+      if ((await row.getByRole('button', { name: /^Revoke the feed created / }).count()) > 0) await revokeRow();
+    }
   });
 
   test('HOM-S6: A regulatory date on the roadmap wears its urgency as a pill', async ({ page, apiGuard }) => {
