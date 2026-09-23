@@ -17,7 +17,7 @@ from django.db import DEFAULT_DB_ALIAS, IntegrityError, ProgrammingError, transa
 from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
 
 from apps.library import testing as build
-from apps.library.fixtures.check_prototype_data import FIXTURE, Checker
+from apps.library.fixtures.check_prototype_data import E2E_STANDARD, FIXTURE, Checker, check_e2e_standard, no_standard_in_prototype
 from apps.library.logic import in_force
 from apps.library.models import (
     Instrument,
@@ -503,4 +503,42 @@ class FixtureCheck(SimpleTestCase):
         instruments["sfs-2007-528"]["level"] = "standard"
         self.assertIn(
             "provisions.sfs-2007-528/9: a standard's text is licensed, so no provision sits under one", Checker(data).run()
+        )
+
+    def standard(self) -> dict[str, Any]:
+        data: dict[str, Any] = json.loads(E2E_STANDARD.read_text(encoding="utf-8"))
+        return data
+
+    def test_the_e2e_standard_passes_and_the_prototype_holds_none(self) -> None:
+        """INV-08: seed_demo loads the prototype, so the one standard lives in the E2E file
+        until the legal question in TODO_FOR_alex.md is answered."""
+        self.assertEqual(check_e2e_standard(self.load(), self.standard()), [])
+        self.assertEqual(no_standard_in_prototype(self.load()), [])
+        data = self.load()
+        data["instruments"][0]["level"] = "standard"
+        self.assertEqual(
+            no_standard_in_prototype(data),
+            [f"instruments.{data['instruments'][0]['stable_key']}: a standard lives in e2e_standard.json until the legal question is answered, never here"],
+        )
+
+    def test_a_standard_holds_exactly_one_conformance_duty_in_either_file(self) -> None:
+        """INV-08, D-35: a second obligation under a standard is refused, whichever file holds it."""
+        standard = self.standard()
+        duty = standard["obligations"][0]
+        standard["obligations"].append({**duty, "stable_key": "iso-iec-27001-2022-second"})
+        standard["obligation_versions"].append({**standard["obligation_versions"][0], "obligation": "iso-iec-27001-2022-second"})
+        problems = check_e2e_standard(self.load(), standard)
+        self.assertIn("e2e_standard: instruments.iso-iec-27001-2022: a standard holds exactly one obligation, its conformance duty, not 2", problems)
+        self.assertIn(
+            "e2e_standard: obligations.iso-iec-27001-2022-second: a standard's conformance duty carries a term of the standard dimension", problems
+        )
+        # The same rule in the prototype's own rows: a standard there with two duties.
+        data = self.load()
+        instrument = data["instruments"][0]
+        instrument["level"] = "standard"
+        under = [o["stable_key"] for o in data["obligations"] if o["instrument"] == instrument["stable_key"]]
+        self.assertGreater(len(under), 1)
+        self.assertIn(
+            f"instruments.{instrument['stable_key']}: a standard holds exactly one obligation, its conformance duty, not {len(under)}",
+            Checker(data).run(),
         )

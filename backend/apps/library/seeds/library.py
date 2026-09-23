@@ -22,6 +22,8 @@ tenant user, and a library record is verified by a library editor (INV-S8)."""
 from __future__ import annotations
 
 import datetime
+import json
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -87,23 +89,27 @@ def _audit(subject_type: str, row: Any, key: str) -> None:
     )
 
 
+def _authorities(specs: list[dict[str, Any]]) -> None:
+    jurisdictions = {row.key: row for row in Jurisdiction.objects.all()}
+    for spec in specs:
+        row, created = Authority.objects.get_or_create(
+            key=spec["key"],
+            defaults={
+                "short_name": spec["code"],
+                "name": spec["name"],
+                "jurisdiction": jurisdictions[spec["jurisdiction"].lower()],
+                "url": spec["url"],
+            },
+        )
+        if created:
+            _audit("authority", row, row.key)
+
+
 def seed_authorities() -> int:
     """The issuing authorities. Without them no instrument names who issued it."""
-    jurisdictions = {row.key: row for row in Jurisdiction.objects.all()}
     specs = fixture.load()["authorities"]
     with library_write("seed_reference"):
-        for spec in specs:
-            row, created = Authority.objects.get_or_create(
-                key=spec["key"],
-                defaults={
-                    "short_name": spec["code"],
-                    "name": spec["name"],
-                    "jurisdiction": jurisdictions[spec["jurisdiction"].lower()],
-                    "url": spec["url"],
-                },
-            )
-            if created:
-                _audit("authority", row, row.key)
+        _authorities(specs)
     return len(specs)
 
 
@@ -217,12 +223,18 @@ def _version_specs(data: dict[str, Any]) -> list[dict[str, Any]]:
     return specs
 
 
-def load_library() -> dict[str, int]:
-    data = fixture.load()
+def load_library(path: Path | None = None) -> dict[str, int]:
+    """The prototype's library, or the library fixture at `path` (seed_e2e's
+    e2e_standard.json), which names its own authorities and otherwise has the prototype's
+    sections and references its vocabularies. Terms resolve whatever their state: a fixture
+    may link an obligation to a held term without switching it on."""
+    data = fixture.load() if path is None else json.loads(path.read_text(encoding="utf-8"))
     terms = {f"{term.dimension.key}:{term.key}": term for term in TaxonomyTerm.objects.select_related("dimension")}
     relation_types = {row.key: row for row in RelationType.objects.all()}
     verified_on = _instrument_verified_on(data)
     with library_write(SEED_REASON):
+        if path is not None:
+            _authorities(data["authorities"])
         instruments = {spec["stable_key"]: _instrument(spec, terms, verified_on[spec["stable_key"]]) for spec in data["instruments"]}
         for spec in data["instrument_relations"]:
             InstrumentRelation.objects.get_or_create(

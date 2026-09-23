@@ -50,6 +50,8 @@ from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
 from apps.search.models import SearchChunk, SearchSource
 from apps.shared.e2e_seed import (
     CONFIRMED_LINK_OBLIGATION,
+    E2E_STANDARD_INSTRUMENT,
+    E2E_STANDARD_OBLIGATION,
     EXPECTED_CHUNK5_WATCH,
     EXPECTED_FOOTPRINTS,
     EXPECTED_HOME,
@@ -324,7 +326,11 @@ class SeedIntegrityGuard(TestCase):
         scopes = {
             o.stable_key: _scope(o) for o in Obligation.objects.select_related("instrument__regime__dimension").prefetch_related("terms__dimension")
         }
-        self.assertEqual([key for key, scope in scopes.items() if not in_footprint(scope, footprint, restricting=restricting)], [EXPECTED_OUTSIDE_SCOPE.obligation])
+        # The E2E standard's duty is hidden too: tenant A follows no standard.
+        self.assertEqual(
+            sorted(key for key, scope in scopes.items() if not in_footprint(scope, footprint, restricting=restricting)),
+            sorted([EXPECTED_OUTSIDE_SCOPE.obligation, E2E_STANDARD_OBLIGATION]),
+        )
         hidden = [key for key, scope in scopes.items() if not in_footprint(scope, without, restricting=restricting)]
         self.assertIn(EXPECTED_LIBRARY.advice_only_obligation, hidden)
 
@@ -663,6 +669,32 @@ class SeedIntegrityGuard(TestCase):
                 tenant = Tenant.objects.get(slug=slug)
                 tenancy.activate(tenant.id)
                 self.assertFalse(FootprintTerm.objects.filter(tenant=tenant, term__dimension__key__in=opt_in).exists())
+
+    # --- lib-standard-e2e-seed (INV-S11, FP-S16) -------------------------------------------
+    def test_the_e2e_standard_is_public_facts_and_one_duty_on_a_held_term(self) -> None:
+        """INV-08, D-35, D-36: seed_e2e files ISO/IEC 27001:2022 under International and
+        ISO/IEC with no provision and exactly one duty, whose one term is the standard's.
+        The term stays inactive and no seeded bank sees the duty in its inventory. That the
+        prototype seed_demo loads holds no standard is check_prototype_data's to refuse."""
+        seed_e2e()
+        standard = Instrument.objects.select_related("level", "jurisdiction", "authority", "regime").get(stable_key=E2E_STANDARD_INSTRUMENT)
+        self.assertEqual(
+            (standard.level.kind, standard.jurisdiction.key, standard.authority.key if standard.authority else None, standard.regime.key),
+            ("standard", "intl", "iso-iec", "ai_ict"),
+        )
+        self.assertEqual((standard.official_ref, standard.binding, standard.provisions.count()), ("ISO/IEC 27001:2022", False, 0))
+        # No official title anywhere: the edition is titled by its reference alone.
+        self.assertEqual(list(standard.titles.values_list("text", flat=True)), ["ISO/IEC 27001:2022"])
+        duty = Obligation.objects.get(instrument=standard)
+        self.assertEqual((duty.stable_key, duty.ref_label), (E2E_STANDARD_OBLIGATION, standard.official_ref))
+        self.assertEqual([(t.dimension.key, t.key, t.active) for t in duty.terms.select_related("dimension")], [("standard", "iso_iec_27001", False)])
+        self.assertFalse(Instrument.objects.filter(level__kind="standard").exclude(pk=standard.pk).exists())
+        restricting = restricting_dimensions()
+        for tenant in Tenant.objects.order_by("slug"):
+            with self.subTest(tenant=tenant.slug):
+                tenancy.activate(tenant.id)
+                self.assertFalse(in_footprint(_scope(duty), footprint_of(tenant.id), restricting=restricting))
+    # --- end lib-standard-e2e-seed ---------------------------------------------------------
 
     # --- library-updates-frontend (PRO-S7) ---------------------------------------------
     def test_the_obligation_pro_s7_approves_reaches_tenant_a_with_or_without_advice(self) -> None:
