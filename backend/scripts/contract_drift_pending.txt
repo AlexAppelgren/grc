@@ -26,7 +26,6 @@ GET /notifications chunk 10
 GET /obligations/{}/attestations chunk 13 REG-06, attestations and waivers, is R3
 GET /obligations/{}/internal-links chunk 8
 GET /obligations/{}/waivers chunk 13 REG-06, attestations and waivers, is R3
-GET /problem-reports chunk 4
 GET /reports/gaps chunk 12
 GET /reports/overdue-actions chunk 12
 GET /reports/summary chunk 12
@@ -36,7 +35,6 @@ GET /webhooks/{}/deliveries chunk 13
 PATCH /actions/{} chunk 9
 PATCH /comments/{} chunk 10
 PATCH /obligations/{}/register chunk 8
-PATCH /problem-reports/{} chunk 4
 PATCH /webhooks/{} chunk 13
 POST /applicability-requests/{}/approve chunk 8
 POST /applicability-requests/{}/reject chunk 8
