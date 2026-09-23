@@ -11,7 +11,7 @@ run those guard proofs, so one source proves each rule. AUD-S7 reads through
 GET /audit-events (chunk 4).
 
 Operations exercised (the audit-on-write guard reads these names): createProposal,
-approveProposal, createConsoleTenant, updateTenant, createFootprintRequest. ADM-S4 also drives the
+approveProposal, createConsoleTenant, updateTenant, createFootprintRequest, closeProblemReport. ADM-S4 also drives the
 console routes other apps register — the source registry, the platform agent keys and the
 agent definitions they bind to — by their gate alone; what each one then does is its own
 app's scenario.
@@ -112,7 +112,8 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
 
 # Console routes whose caller a logic gate decides instead of a decorator (they carry a
 # `logic-gate` reason in UNGATED_BY_DESIGN). Each still answers 403 with the permission it
-# wanted, to the platform role that does not hold it. chunk4-T16b adds GET /problem-reports.
+# wanted, to the platform role that does not hold it. No problem-report route is here: a
+# report is read and closed inside its bank under `problems.report` (D-50, AUD-S5).
 LOGIC_GATED_PLATFORM_ROUTES: dict[str, tuple[str, str, dict[str, Any] | None, str]] = {
     "createProposal": (
         "POST",
@@ -174,12 +175,146 @@ class GovernanceScenarioTests(ScenarioTestCase):
         Every model output is logged with its review state (AUD-02).
         """
 
-    @skip("pending: AUD-S5 (AUD-03, chunk 4)")
     def test_aud_s5(self) -> None:
         """AUD-S5
 
         A problem report stays inside the bank that filed it (AUD-03).
+
+        The integration half: the report is read by its own bank only, through
+        listProblemReports and closeProblemReport, and refused to a library editor, another
+        bank and a key; no problem-report route is gated by anything a platform role holds;
+        the words reach no audit row and no outbox payload (what a webhook or SIEM stream
+        carries); and the loop back to the library is an agent's proposal in an open run,
+        approved by an editor, which the bank reads under Library updates. The dialog's copy
+        is the journey's (`@e2e`). No model reads a report because nothing passes one to a
+        model: `apps/shared/ai.py` is the only caller and takes no report.
         """
+        from apps.agents import testing as agents_testing
+        from apps.library import testing as build
+        from apps.library.models import ProblemReport
+        from apps.shared.models import OutboxEvent
+        from apps.shared.permissions import Gate
+        from apps.taxonomy import footprint_logic
+        from apps.taxonomy.models import TaxonomyTerm
+        from apps.shared.audit import Actor
+        from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
+
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_term_dimensions()
+        seed_taxonomy_terms()
+        obligation = build.obligation(
+            build.instrument(key="aud-s5-instrument", regime="regime:securities"),
+            key="obl-aud-s5",
+            terms=("service_type:advice",),
+        )
+        tenant_a = factories.tenant(slug="aud-s5-a")
+        tenant_b = factories.tenant(slug="aud-s5-b")
+        self.activate(tenant_a)
+        ensure_tenant_vocabularies(tenant_a, actor=Actor.system("test"))
+        footprint_logic.seed_terms(
+            tenant=tenant_a,
+            actor=Actor.system("test"),
+            terms=[TaxonomyTerm.objects.get(dimension__key="service_type", key="advice")],
+        )
+        reader_a = factories.member(tenant_a, roles=("reader",)).user
+        officer_a = factories.member(tenant_a, roles=("compliance_officer",)).user
+        officer_b = factories.member(tenant_b, roles=("compliance_officer",)).user
+        editor = factories.platform_user(roles=("library_editor",))
+
+        # Given a reader in tenant A reported "This looks wrong" on an obligation.
+        words = "This looks wrong: the source says the review is annual, the summary says every two years."
+        filed = self._post(f"/obligations/{obligation.id}/problem-reports", {"description": words}, sign_in(reader_a, tenant=tenant_a))
+        self.assertEqual(filed.status_code, 201, filed.content)
+        report_id = filed.json()["id"]
+
+        # Then the report is readable by tenant A only.
+        listed = self.client.get(f"{V1}/problem-reports", **sign_in(officer_a, tenant=tenant_a))
+        self.assertEqual([row["id"] for row in listed.json()["items"]], [report_id])
+        self.assertEqual(listed.json()["items"][0]["description"], words)
+        closed = self.client.patch(
+            f"{V1}/problem-reports/{report_id}",
+            data={"status": "answered", "resolutionNote": "The watch will re-check it against the source."},
+            content_type="application/json",
+            **sign_in(officer_a, tenant=tenant_a),
+        )
+        self.assertEqual(closed.status_code, 200, closed.content)
+
+        # When a library editor, another tenant, an API key or an agent asks for it, each
+        # answers 403 or 404.
+        other_bank = sign_in(officer_b, tenant=tenant_b)
+        self.assertEqual(self.client.get(f"{V1}/problem-reports", **other_bank).json()["items"], [])
+        reopen = {"status": "fixed", "resolutionNote": "Not ours to close."}
+        self.assertEqual(
+            self.client.patch(f"{V1}/problem-reports/{report_id}", data=reopen, content_type="application/json", **other_bank).status_code,
+            404,
+        )
+        platform = sign_in(editor)
+        self.assertEqual(self.client.get(f"{V1}/problem-reports", **platform).status_code, 403)
+        self.assertEqual(
+            self.client.patch(f"{V1}/problem-reports/{report_id}", data=reopen, content_type="application/json", **platform).status_code,
+            403,
+        )
+        tenancy.clear_tenant()
+        agent = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE, perms.SCOPE_LIBRARY_READ))
+        bank_key = factories.api_key(tenant_a, scopes=tuple(sorted(perms.ALL_SCOPES)))
+        # A key is not a session, so both routes refuse it before any gate: 401, as every
+        # session-only route answers a key (INPUT_DELTAS §14).
+        for key in (agent.plain_key, bank_key.plain_key):
+            self.assertEqual(self.client.get(f"{V1}/problem-reports", HTTP_X_API_KEY=key).status_code, 401)
+            self.assertEqual(
+                self.client.patch(f"{V1}/problem-reports/{report_id}", data=reopen, content_type="application/json", HTTP_X_API_KEY=key).status_code,
+                401,
+            )
+        # And the console has no problem-report surface: every route that serves a report
+        # is gated by `problems.report`, which no platform role holds.
+        report_gates = {gate_of(op.view_func) for op in iter_operations(api) if "problem-report" in op.path}
+        self.assertEqual(report_gates, {Gate("permission", perms.PROBLEMS_REPORT)})
+        for role in PLATFORM_ROLES:
+            self.assertNotIn(perms.PROBLEMS_REPORT, perms.SYSTEM_ROLES[role])
+
+        # When the watch agents' re-check proposes the correction, in an open run of its own,
+        # and an editor approves it.
+        tenancy.clear_tenant()
+        run = agents_testing.platform_run(key=agent)
+        proposed = self._post(
+            "/proposals",
+            {
+                "kind": "new_obligation_version",
+                "title": "Re-check against the source: the review is annual",
+                "targetType": "obligation",
+                "targetId": str(obligation.id),
+                "payload": {"summaries": {"en": "The institution reviews the duty every year."}, "originalLanguage": "en", "isMachine": True},
+                "fieldSources": {"summaries.en": "https://www.fi.se/"},
+                "sourceLabel": "Finansinspektionen",
+                "sourceUrl": "https://www.fi.se/",
+                "model": agents_testing.SWEEPER_MODEL,
+                "agentRunId": str(run.id),
+            },
+            {"HTTP_X_API_KEY": agent.plain_key, "HTTP_IDEMPOTENCY_KEY": str(uuid.uuid4())},
+        )
+        self.assertEqual(proposed.status_code, 201, proposed.content)
+        self.assertNotIn(words, proposed.content.decode(), "the correction carries no bank's words")
+        approved = self._post(f"/proposals/{proposed.json()['id']}/approve", {}, sign_in(editor, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+        # Then tenant A sees the corrected record under "Library updates".
+        updates = self.client.get(f"{V1}/library-updates", **sign_in(reader_a, tenant=tenant_a))
+        self.assertEqual(updates.status_code, 200, updates.content)
+        items = [item for day in updates.json()["days"] for item in day["items"]]
+        self.assertIn(proposed.json()["id"], [item["id"] for item in items])
+        self.assertIn(str(obligation.id), [item["target"]["id"] for item in items])
+
+        # And the report's words reached no audit row and no outbox payload, in either zone.
+        self.activate(tenant_a)
+        carried = [
+            " ".join([event.summary, event.subject_title, str(event.before), str(event.after)])
+            for event in AuditEvent.objects.all()
+        ] + [str(event.payload) for event in OutboxEvent.objects.all()]
+        self.assertTrue(carried)
+        self.assertEqual([text for text in carried if words in text], [])
+        self.assertEqual(ProblemReport.objects.get(id=report_id).text, words)
 
     @skip("pending: AUD-S6 (AUD-04, chunk 12)")
     def test_aud_s6(self) -> None:

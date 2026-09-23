@@ -558,7 +558,14 @@ class ProposalsScenarioTests(ScenarioTestCase):
         # read a platform session can make, on its own or naming the reported duty, its
         # instrument or the proposal the editor just opened, answers with the report's id
         # or its words.
-        ids = {"obligation_id": str(obligation.id), "instrument_id": str(obligation.instrument_id), "proposal_id": proposal["id"]}
+        ids = {
+            "obligation_id": str(obligation.id),
+            "instrument_id": str(obligation.instrument_id),
+            "proposal_id": proposal["id"],
+            "report_id": report_id,
+        }
+        # Each route's body is one its schema accepts, so the refusal is the gate's and not a 422.
+        bodies = {"PATCH": {"status": "fixed", "resolutionNote": "A platform note."}}
         filing = [op for op in iter_operations(api) if "problem-report" in op.path]
         self.assertTrue(filing, "the report routes are what this drives")
         reads = [
@@ -571,7 +578,11 @@ class ProposalsScenarioTests(ScenarioTestCase):
             platform = sign_in(person)
             for op in filing:
                 answer = self.client.generic(
-                    op.method, V1 + op.path.format(**ids), json.dumps({"description": "A platform note."}), content_type="application/json", **platform
+                    op.method,
+                    V1 + op.path.format(**ids),
+                    json.dumps(bodies.get(op.method, {"description": "A platform note."})),
+                    content_type="application/json",
+                    **platform,
                 )
                 self.assertIn(answer.status_code, (403, 404), f"{op.method} {op.path}: {answer.content!r}")
             for path in ("/console/problem-reports", f"/console/problem-reports/{report_id}", "/console/reports"):

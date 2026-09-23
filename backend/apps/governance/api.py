@@ -1,22 +1,29 @@
 """Routes of the governance app: auth class, permission or scope, step-up where playbook 4.2
 lists the action, no business logic (playbook 4.1)."""
 
-from typing import Any, cast
+import uuid
+from typing import Annotated, Any, cast
 
 from django.http import HttpRequest
-from ninja import Query, Router
+from ninja import Path, Query, Router
 
-from apps.governance import ai_log, logic
+from apps.governance import ai_log, logic, problem_reports_logic
 from apps.governance.schemas import (
     AiGenerationPage,
     AiGenerationQuery,
     AuditEventPage,
     AuditEventQuery,
+    ProblemReportClose,
+    ProblemReportPage,
+    ProblemReportQuery,
+    ProblemReportRow,
 )
 from apps.shared import permissions as perms
 from apps.shared.authentication import Principal, SessionAuth
 from apps.shared.permissions import requires_permission
 from apps.shared.schemas import PageQuery
+from apps.taxonomy.http import actor_for, answers_problems, caller_user
+from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Governance"])
 
@@ -112,3 +119,100 @@ def list_ai_generations(
     )
     tenant_id = cast(Principal, request.auth).tenant_id  # type: ignore[attr-defined]
     return AiGenerationPage(items=[ai_log.generation_row(row, tenant_id) for row in rows], total=total)
+
+
+# ---------------------------------------------------------------------------------------
+# Problem reports (AUD-03, D-50): read and closed inside the bank that filed them
+# ---------------------------------------------------------------------------------------
+_REPORTS_REACH = (
+    "Who sees what: a member holding `proposals.create` (the compliance officer) reaches "
+    "every report of their own bank; every other member reaches only the reports they "
+    "filed. Both need `problems.report`, which every member of a bank holds and no platform "
+    "role does, so bleqq's own staff are refused. Another bank's report is never reached: "
+    "row-level security in the database hides it, so it reads as not found. A report is "
+    "the bank's own content, and neither its text nor a closing note reaches the audit "
+    "log, an outbox event, a log line or a model."
+)
+
+
+@router.get(
+    "/problem-reports",
+    response=ProblemReportPage,
+    auth=SessionAuth(),
+    operation_id="listProblemReports",
+    by_alias=True,
+    summary="See what your colleagues reported as looking wrong in the library, and how each report was closed",
+    description=(
+        "The bank's “this looks wrong” reports on library records, newest first: what was "
+        "reported, on which record, by whom, and, once closed, who closed it, when and why. "
+        "Call it to work the bank's open reports (`status=open`), or to show the reports on "
+        "one record beside it (`subjectType` with `subjectId`).\n\n"
+        f"{_REPORTS_REACH}\n\n"
+        "A read: it changes nothing and writes no audit row. Pages with `limit` and `offset`, "
+        "20 rows by default and 100 at most. No report, or filters matching none, is a 200 "
+        "with an empty `items` and a `total` of 0.\n\n"
+        "Errors: `unauthenticated` (401) without a session, an agent's key included; "
+        "`permission_denied` (403) without `problems.report`, with `requiredPermission` "
+        "named, which is what a platform console session gets; `not_found` (404) for a "
+        "session in no bank; `validation_error` (422) when `subjectId` is not a UUID, a "
+        "filter is too long, or `limit` or `offset` is out of range."
+    ),
+)
+@requires_permission(perms.PROBLEMS_REPORT)
+@answers_problems
+def list_problem_reports(
+    request: HttpRequest, filters: Query[ProblemReportQuery], page: PageQuery = Query(...)
+) -> Any:
+    principal = cast(Principal, request.auth)  # type: ignore[attr-defined]
+    rows, total = problem_reports_logic.reports_for(
+        principal, filters, language_order(request), limit=page.limit, offset=page.offset
+    )
+    return ProblemReportPage(items=rows, total=total)
+
+
+@router.patch(
+    "/problem-reports/{report_id}",
+    response=ProblemReportRow,
+    auth=SessionAuth(),
+    operation_id="closeProblemReport",
+    by_alias=True,
+    summary="Close a problem report with a note saying what you found",
+    description=(
+        "Close one of the bank's problem reports as `answered`, `fixed` or `rejected`, with "
+        "a note for the reporter. The reporter closes their own; a colleague holding "
+        "`proposals.create` closes any of the bank's. A report closes once, and nothing but "
+        "its state, the note, who closed it and when is ever written: the reporter's words, "
+        "the record it names and the bank it belongs to never change. Closing a report does "
+        "not change the library: a wrong record is corrected through the watch agents' "
+        "re-check and a proposal. The reporter is not notified; they see the close on the "
+        "report.\n\n"
+        f"{_REPORTS_REACH}\n\n"
+        "Records `problem_report.closed` in the audit log, with the states before and after "
+        "and never the words, and emits the outbox event of the same name. No passkey "
+        "step-up and no second person: the close changes nothing outside the report. "
+        "Answers the closed report.\n\n"
+        "Errors: `unauthenticated` (401) without a session, an agent's key included; "
+        "`permission_denied` (403) without `problems.report`, or on a colleague's report "
+        "without `proposals.create`, with `requiredPermission` naming the one missing; "
+        "`not_found` (404) for an id this bank has no report under; `already_closed` (409) "
+        "for a report that is closed already; `validation_error` (422) for a status other "
+        "than the three or a note that is missing or too long, and `note_required` (422) for "
+        "a note that is only whitespace."
+    ),
+)
+@requires_permission(perms.PROBLEMS_REPORT)
+@answers_problems
+def close_problem_report(
+    request: HttpRequest,
+    report_id: Annotated[uuid.UUID, Path(description="The id of the report to close, a UUID as `GET /problem-reports` lists it; a value that is not a UUID is refused with `validation_error` (422).")],
+    body: ProblemReportClose,
+) -> Any:
+    closer = caller_user(request)
+    return problem_reports_logic.close(
+        cast(Principal, request.auth),  # type: ignore[attr-defined]
+        report_id,
+        body,
+        closer=closer,
+        actor=actor_for(request, closer),
+        order=language_order(request),
+    )
