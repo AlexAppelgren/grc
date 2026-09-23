@@ -168,3 +168,16 @@ to `proposal`, "Supervision", "Enforcement" and "Recurring date" to their keys.
 - **The prototype has the tenant's compliance officer approving agent proposals.**
   INPUT_DELTAS section 5 says that review belongs to `library_editor` in the platform
   console; the audit rows here are unchanged, the journey is not.
+- **Danish and Norwegian rules (tax-nordic-seed, FP-04).** The markets journeys need rules
+  from a market a bank watches, and the prototype has none. Added with `from_prototype:
+  false`, every fact fetched from the legislator's or the authority's own site and logged in
+  `docs/plans/Verification_Log.md`: the two supervisory authorities (`finanstilsynet-dk`,
+  `finanstilsynet-no`) and Stortinget; Kapitalmarkedsloven (`dk-lov-2017-650`, the
+  tenant-inventory card's watched-market example) with the custody duty of an
+  account-holding institution (`obl-dk-csd-registration`, §§ 184-185); and
+  verdipapirhandelloven (`no-lov-2007-06-29-75`) with the suitability duty
+  (`obl-no-suitability`, § 10-15 (1)), which names Advice and Portfolio management so J-6's
+  switch-off does not hide it. Instruments may carry `in_force_from_precision` (a
+  `date_precision` kind; the loader defaults to `day`). The summaries are our own words in
+  English with a Swedish rendering, never verbatim law. The Danish act has no issuer until
+  Folketinget can be filed (`docs/TODO_FOR_alex.md`).

@@ -58,6 +58,7 @@ from apps.proposals.logic import Proposer
 from apps.proposals.logic import create as create_proposal
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
 from apps.shared import outbox, tenancy
+from apps.shared.adapters.mailer import MockMailer
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
@@ -65,8 +66,8 @@ from apps.taxonomy.models import CaseStatusCategory
 from apps.watch import e2e_seed as watch_e2e_seed
 from apps.watch.models import CheckFrequency, CheckStatus
 from apps.shared.models import Tenant
-from apps.taxonomy import footprint_logic, terms_logic
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintTerm
+from apps.taxonomy import footprint_logic, markets_logic, terms_logic
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintTerm, WatchedMarket
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.tenants.logic import set_content_languages
@@ -173,9 +174,11 @@ class SeedLibrary:
 # FFFS 2017:2's own provision tree has something that amends it), the obligation whose
 # second version is still ahead, and the one sample obligation whose only service is
 # advice, which J-6's switch-off hides (the prototype's 15 obligations plus that one).
+# tax-nordic-seed (FP-04): plus Kapitalmarkedsloven and verdipapirhandelloven with one
+# obligation each, the Danish one for Custody and the Norwegian one for Advice.
 EXPECTED_LIBRARY = SeedLibrary(
-    instruments=16,
-    obligations=16,
+    instruments=18,
+    obligations=18,
     research_obligation=RESEARCH_OBLIGATION,
     advice_only_obligation="obl-suitability-statement",
     anchor_date=datetime.date(2026, 9, 16),
@@ -1209,6 +1212,25 @@ class SeedOutsideScope:
     change: str
 
 
+# --- tax-nordic-seed (FP-04, FP-S10) -----------------------------------------------------
+# Tenant A watches Denmark, the design card's watched market; tenant B watches nothing.
+EXPECTED_WATCHED_MARKETS: dict[str, tuple[str, ...]] = {
+    TENANT_A_SLUG: ("dk",),
+    TENANT_B_SLUG: (),
+}
+
+
+def seed_watched_markets(tenants: list[Tenant]) -> None:
+    """Through markets_logic.watch(), so the seed makes the audited write the product makes.
+    watch() answers already_watching on a repeat, so a market already watched is skipped."""
+    for tenant in tenants:
+        tenancy.activate(tenant.id)
+        for key in EXPECTED_WATCHED_MARKETS[tenant.slug]:
+            if not WatchedMarket.objects.filter(tenant=tenant, jurisdiction__key=key).exists():
+                markets_logic.watch(tenant=tenant, actor=SEED_ACTOR, key=key)
+# --- end tax-nordic-seed -------------------------------------------------------------------
+
+
 # The journey cannot narrow the scope itself: FP-S5 (J-6) changes tenant A's scope, and
 # every home and watch journey reads it in parallel. So tenant A holds the prototype's scope
 # less pension accounts, which leaves exactly one library obligation outside it (the
@@ -1238,6 +1260,9 @@ def seed_outside_scope_terms() -> None:
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
+    # The mock outbox is one cache entry that never expires, and an E2E run recreates the
+    # database but not the cache: empty it first, so no journey reads an earlier run's mail.
+    MockMailer.reset()
     with transaction.atomic():
         seed_languages()
         seed_jurisdictions()
@@ -1258,6 +1283,7 @@ def seed_e2e() -> dict[str, int]:
         logins = seed_logins(tenants)
         footprint_terms = seed_footprints(tenants)
         seed_pending_footprint_request(tenants)
+        seed_watched_markets(tenants)
         proposals = seed_proposals()
         problem_reports = seed_problem_report(tenants)
         home_cases = seed_home_cases(tenants, home)

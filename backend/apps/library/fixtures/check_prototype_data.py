@@ -151,6 +151,10 @@ class Checker:
             self.ref(where, i["verified_by"], self.users, "verified_by", optional=True)
             self.kind(where, "record_status", i["status"])
             self.date(where + ".in_force_from", i["in_force_from"])
+            # A precision is optional (the loader defaults to a day) and goes with its date.
+            self.kind(where, "date_precision", i.get("in_force_from_precision"), optional=True)
+            if i.get("in_force_from_precision") and i["in_force_from"] is None:
+                self.problem(where, "in_force_from_precision needs in_force_from")
             self.date(where + ".in_force_to", i["in_force_to"])
             self.date(where + ".last_verified_at", i["last_verified_at"])
             if not i["source_url"]:

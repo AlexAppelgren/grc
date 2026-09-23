@@ -636,9 +636,11 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(dry.status_code, 200, dry.content)
         self.assertTrue(dry.json()["dryRun"])
         self.assertEqual([t["key"] for t in dry.json()["removes"]], ["advice"])
-        # Four of the six obligations in scope are advised business the change would hide;
-        # adding retail hides none, because the client category group was empty before.
-        self.assertEqual(dry.json()["preview"]["obligations"], {"hidden": 4, "revealed": 0, "available": True})
+        # Five of the eight obligations in scope are advised business the change would hide
+        # (the Norwegian suitability duty among them, since portfolio management is outside
+        # this footprint); adding retail hides none, because the client category group was
+        # empty before.
+        self.assertEqual(dry.json()["preview"]["obligations"], {"hidden": 5, "revealed": 0, "available": True})
         # The other direction: widening the regimes reveals two insurance obligations it hid.
         widen = {"adds": [{"dimension": "regime", "key": "insurance"}], "removes": []}
         wider = self._preview("/tenant/footprint/requests?dryRun=true", widen, officer)
@@ -655,7 +657,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(request["removes"][0]["label"], "Advice")
         # The preview lists what would be hidden and revealed per record kind; the kinds that
         # have no table yet say so instead of pretending.
-        self.assertEqual(request["preview"]["obligations"], {"hidden": 4, "revealed": 0, "available": True})
+        self.assertEqual(request["preview"]["obligations"], {"hidden": 5, "revealed": 0, "available": True})
         self.assertEqual(request["preview"]["cases"], {"hidden": 0, "revealed": 0, "available": False})
         self.assertEqual(self._footprint(officer)["pendingRequest"]["id"], request["id"])
         # The library changes while the request waits: the suitability statement now covers
@@ -666,7 +668,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
                 obligation=Obligation.objects.get(stable_key="obl-suitability-statement"),
                 term=tenant_lists_logic.term_by_ref("service_type", "custody"),
             )
-        today = {"hidden": 3, "revealed": 0, "available": True}
+        today = {"hidden": 4, "revealed": 0, "available": True}
         self.assertEqual(self._footprint(officer)["pendingRequest"]["preview"]["obligations"], today)
         # One pending request at a time; an unknown term is refused with the valid keys.
         again = self._post("/tenant/footprint/requests", body, officer)
@@ -717,11 +719,11 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(listed.json()["items"][0]["decisionNote"], "Advice was wound down in June.")
         self.assertEqual(listed.json()["items"][0]["preview"], decision.after["preview"])
         # A request can be rejected with a note, or withdrawn by its requester. Adding
-        # portfolio management would bring back three securities obligations; by the time it
+        # portfolio management would bring back four securities obligations; by the time it
         # is rejected the ESMA warnings cover it too, and the rejection keeps that count.
         widening = {"adds": [{"dimension": "service_type", "key": "portfolio_management"}], "removes": []}
         rejected_request = self._post("/tenant/footprint/requests", widening, officer).json()
-        self.assertEqual(rejected_request["preview"]["obligations"], {"hidden": 0, "revealed": 3, "available": True})
+        self.assertEqual(rejected_request["preview"]["obligations"], {"hidden": 0, "revealed": 4, "available": True})
         with library_write("test"):
             ObligationTerm.objects.create(
                 obligation=Obligation.objects.get(stable_key="obl-esma-warnings"),
@@ -732,7 +734,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(rejected.json()["status"], "rejected")
         self.activate(self.tenant)
         rejection = AuditEvent.objects.get(action="footprint.change_rejected", tenant=self.tenant)
-        self.assertEqual(rejection.after["preview"]["obligations"], {"hidden": 0, "revealed": 4, "available": True})
+        self.assertEqual(rejection.after["preview"]["obligations"], {"hidden": 0, "revealed": 5, "available": True})
         self.assertEqual(rejected.json()["preview"], rejection.after["preview"])
         withdrawn_request = self._post("/tenant/footprint/requests", {"adds": [{"dimension": "channel", "key": "digital"}], "removes": []}, officer).json()
         self.assertEqual(self._post(f"/tenant/footprint/requests/{withdrawn_request['id']}/withdraw", {}, approver, HTTP_IF_MATCH="1").status_code, 403)
