@@ -31,6 +31,7 @@ const question = (key: string, lang: string, extra: Record<string, unknown> = {}
   expected: ['obl-costs-charges'],
   matchKind: 'keyword',
   asOf: null,
+  via: 'search',
   notes: '',
   active: true,
   inGate: true,
@@ -212,6 +213,7 @@ describe('console evaluation', () => {
       question: 'kostnader och avgifter före tjänsten',
       expected: ['obl-costs-charges', 'obl-other', 'obl-third'],
       matchKind: 'both',
+      via: 'search',
       notes: '',
     });
   });

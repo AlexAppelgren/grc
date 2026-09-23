@@ -124,6 +124,8 @@ function AddQuestionModal({ open, onClose, onAdded, languages }: { open: boolean
         .map((key) => key.trim())
         .filter((key) => key !== ''),
       matchKind: form.matchKind,
+      // A question added here is scored on search's hits; the gate's file marks the few Ask rows.
+      via: 'search',
       notes: form.notes.trim(),
       ...(form.asOf === '' ? {} : { asOf: form.asOf }),
     };
