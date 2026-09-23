@@ -24,6 +24,12 @@ describe('tenant-admin api', () => {
     expect(sent[1]?.body).toEqual({ timezone: 'Europe/Helsinki', contentLanguages: ['fi', 'sv', 'en'] });
   });
 
+  it('switches the organisation\'s AI features with a PUT of the one boolean', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { id: 't1', aiEnabled: false } }));
+    expect((await admin.setTenantAi(false)).aiEnabled).toBe(false);
+    expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([['put', '/api/v1/tenant/ai', { enabled: false }]]);
+  });
+
   it('lists members with paging and manages one member', async () => {
     const sent = installAdapter((s) => ({ status: s.method === 'delete' || s.path.endsWith('reissue-enrolment') ? 204 : 200, data: s.method === 'get' ? { items: [], total: 0 } : { userId: 'u1' } }));
     expect(await admin.listMembers({ limit: 100, offset: 0 })).toEqual({ items: [], total: 0 });

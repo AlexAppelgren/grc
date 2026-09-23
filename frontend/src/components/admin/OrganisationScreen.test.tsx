@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { OrganisationScreen } from '@/components/admin/OrganisationScreen';
 import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { REFRESH_PATH, setStepUpHandler } from '@/shared/utils/api-client';
 
 // The Organisation profile form (TEN-01, ADM-S17) saves what it says: an
 // omitted field is left alone by the server, and an empty list of content
@@ -13,6 +13,7 @@ import { REFRESH_PATH } from '@/shared/utils/api-client';
 // created from the console starts with neither (D-68).
 
 const TENANT_PATH = '/api/v1/tenant';
+const AI_PATH = '/api/v1/tenant/ai';
 const LANGUAGES_PATH = '/api/v1/reference/languages';
 
 const svenska = { key: 'sv', kind: null, label: 'Svenska' };
@@ -24,7 +25,7 @@ const onboarding = {
   steps: ['profile', 'members', 'footprint', 'vocabularies', 'passkey'].map((key) => ({ key, done: false })),
 };
 
-const seeded = { id: 'ta', name: 'Example Bank AB', slug: 'example-bank', timezone: 'Europe/Stockholm', status: 'active', defaultLanguage: svenska, contentLanguages: [svenska, english], onboarding };
+const seeded = { id: 'ta', name: 'Example Bank AB', slug: 'example-bank', timezone: 'Europe/Stockholm', status: 'active', defaultLanguage: svenska, contentLanguages: [svenska, english], aiEnabled: true, onboarding };
 const fresh = { ...seeded, id: 'tn', name: 'Third Bank AB', slug: 'third-bank-ab', defaultLanguage: null, contentLanguages: [] };
 
 /** The server: the tenant as given, the three reference languages, and a PATCH that answers the tenant back. */
@@ -104,5 +105,107 @@ describe('the organisation profile form', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'English' }));
     expect(screen.queryByText('Choose at least one content language.')).toBeNull();
     expect(await save(sent, 1)).toMatchObject({ contentLanguages: ['en'] });
+  });
+});
+
+// The organisation's own switch over Ask and AI drafts (D-07, SRC-03): a security
+// change, so the server asks for a passkey (the api client opens the prompt on
+// step_up_required and retries once) and refuses a member without security.manage.
+// The profile's Save never sends it.
+
+type Answer = { status: number; data: unknown };
+
+/** The server for the switch: the tenant as given, and each PUT answered by `answer` (by default, the tenant switched). */
+function aiServer(tenant: typeof seeded, answer?: (count: number) => Answer): Sent[] {
+  let puts = 0;
+  return installAdapter((sent) => {
+    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
+    if (sent.path === LANGUAGES_PATH) return { status: 200, data: [svenska, english, suomi] };
+    if (sent.path === TENANT_PATH && sent.method === 'get') return { status: 200, data: tenant };
+    if (sent.path === AI_PATH && sent.method === 'put') {
+      puts += 1;
+      const enabled = (sent.body as { enabled: boolean }).enabled;
+      return answer === undefined ? { status: 200, data: { ...tenant, aiEnabled: enabled } } : answer(puts);
+    }
+    return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
+  });
+}
+
+const aiPuts = (sent: Sent[]) => sent.filter((s) => s.method === 'put' && s.path === AI_PATH).map((s) => s.body);
+const stepUpRequired: Answer = { status: 403, data: { code: 'step_up_required', detail: 'Confirm with your passkey.', status: 403 } };
+
+describe('the Ask and AI drafts switch', () => {
+  it('reads as on for this organisation and switches off', async () => {
+    const sent = aiServer(seeded);
+    await renderScreen();
+    expect(screen.getByText('On for Example Bank AB. Members can ask questions and have a model draft text for them.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Switch off' }));
+    expect(await screen.findByText('Off for Example Bank AB. Ask and AI drafts are refused, and nothing of yours is sent to a model.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Switch on' })).toBeEnabled();
+    expect(aiPuts(sent)).toEqual([{ enabled: false }]);
+    expect(patches(sent)).toHaveLength(0);
+  });
+
+  it('reads as off and switches back on', async () => {
+    const sent = aiServer({ ...seeded, aiEnabled: false });
+    await renderScreen();
+    fireEvent.click(screen.getByRole('button', { name: 'Switch on' }));
+    expect(await screen.findByRole('button', { name: 'Switch off' })).toBeEnabled();
+    expect(aiPuts(sent)).toEqual([{ enabled: true }]);
+  });
+
+  it('shows it is switching, and takes no second click, while the passkey prompt is open', async () => {
+    let confirm: (given: boolean) => void = () => undefined;
+    const sent = aiServer(seeded, (count) => (count === 1 ? stepUpRequired : { status: 200, data: { ...seeded, aiEnabled: false } }));
+    setStepUpHandler(
+      () =>
+        new Promise<boolean>((resolve) => {
+          confirm = resolve;
+        }),
+    );
+    await renderScreen();
+    fireEvent.click(screen.getByRole('button', { name: 'Switch off' }));
+    const busy = await screen.findByRole('button', { name: 'Switching…' });
+    expect(busy).toBeDisabled();
+    fireEvent.click(busy);
+    expect(aiPuts(sent)).toHaveLength(1);
+    confirm(true);
+    expect(await screen.findByRole('button', { name: 'Switch on' })).toBeEnabled();
+    expect(aiPuts(sent)).toHaveLength(2);
+  });
+
+  it('asks for the passkey when the server wants a step-up, and retries once it is given', async () => {
+    const sent = aiServer(seeded, (count) => (count === 1 ? stepUpRequired : { status: 200, data: { ...seeded, aiEnabled: false } }));
+    const prompts: number[] = [];
+    setStepUpHandler(() => {
+      prompts.push(1);
+      return Promise.resolve(true);
+    });
+    await renderScreen();
+    fireEvent.click(screen.getByRole('button', { name: 'Switch off' }));
+    expect(await screen.findByRole('button', { name: 'Switch on' })).toBeEnabled();
+    expect(prompts).toHaveLength(1);
+    expect(aiPuts(sent)).toEqual([{ enabled: false }, { enabled: false }]);
+  });
+
+  it('changes nothing when the passkey prompt is cancelled, and says so', async () => {
+    const sent = aiServer(seeded, () => stepUpRequired);
+    setStepUpHandler(() => Promise.resolve(false));
+    await renderScreen();
+    fireEvent.click(screen.getByRole('button', { name: 'Switch off' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Nothing changed. Switching needs your passkey.');
+    expect(screen.getByRole('button', { name: 'Switch off' })).toBeEnabled();
+    expect(screen.getByText('On for Example Bank AB. Members can ask questions and have a model draft text for them.')).toBeInTheDocument();
+    expect(aiPuts(sent)).toHaveLength(1);
+  });
+
+  it('renders the server\'s refusal in place for a member without security.manage', async () => {
+    aiServer(seeded, () => ({ status: 403, data: { code: 'permission_denied', detail: 'You do not have permission to do this.', status: 403, requiredPermission: 'security.manage' } }));
+    await renderScreen();
+    fireEvent.click(screen.getByRole('button', { name: 'Switch off' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('You do not have permission to do this.');
+    expect(alert).toHaveAttribute('data-problem-code', 'permission_denied');
+    expect(screen.getByRole('button', { name: 'Switch off' })).toBeEnabled();
   });
 });
