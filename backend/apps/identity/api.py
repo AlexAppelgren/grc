@@ -47,6 +47,7 @@ from apps.identity.schemas import (
     MemberPatch,
     MembersPage,
     MePatch,
+    MEMBER_SESSIONS_EXAMPLE,
     MY_PASSKEYS_EXAMPLE,
     MY_SESSIONS_EXAMPLE,
     PasskeyAssertBody,
@@ -54,9 +55,11 @@ from apps.identity.schemas import (
     PasskeyPatch,
     PasskeyRegisterBody,
     PasskeyRegistered,
+    PERMISSIONS_EXAMPLE,
     PermissionOut,
     RefreshResult,
     RoleCreate,
+    ROLES_EXAMPLE,
     RoleOut,
     RoleRef,
     RolePatch,
@@ -848,18 +851,99 @@ def revoke_my_session(request: HttpRequest, session_id: uuid.UUID = _SESSION_ID)
 
 
 # ---------------------------------------------------------------------------------------
-# Tenant admin: members (members.manage)
+# Tenant admin: members (members.manage). Each docstring is the route's published
+# description (API_DOCUMENTATION.md).
 # ---------------------------------------------------------------------------------------
-@router.get("/tenant/members", response=MembersPage, auth=SessionAuth(), operation_id="listMembers", by_alias=True)
+_MEMBER_ID = Path(
+    ...,
+    description=(
+        "The account identifier of a current member of the bank this session is signed in to, "
+        "the UUID `GET /tenant/members` lists as `userId`. A deactivated member, a member of "
+        "another bank or an unknown identifier all answer `not_found` alike."
+    ),
+)
+_INVITATION_ID = Path(
+    ...,
+    description=(
+        "The identifier of one of this bank's invitations, the UUID `GET /tenant/invitations` "
+        "lists as `id`, never the token in the emailed link. Another bank's invitation or an "
+        "unknown identifier answers `not_found`."
+    ),
+)
+_ROLE_KEY = Path(
+    ...,
+    description=(
+        "The stable key of one of this bank's roles, such as `dora_reviewer`, as "
+        "`GET /tenant/roles` lists it; matched without regard to case or surrounding spaces. A "
+        "retired role is still found here. A key the bank does not have answers `not_found`."
+    ),
+)
+_API_KEY_ID = Path(
+    ...,
+    description=(
+        "The identifier of one of this bank's own API keys, the UUID `GET /tenant/api-keys` "
+        "lists as `id`, never the key itself. A platform key, another bank's key or an unknown "
+        "identifier answers `not_found`."
+    ),
+)
+
+
+@router.get(
+    "/tenant/members",
+    response=MembersPage,
+    auth=SessionAuth(),
+    operation_id="listMembers",
+    by_alias=True,
+    summary="See everyone who belongs to your bank",
+)
 @requires_permission(perms.MEMBERS_MANAGE)
 def list_members(request: HttpRequest, page: PageQuery = Query(...)) -> MembersPage:
+    """Returns the bank's members one page at a time, the earliest to join first: each
+    person's name, address, roles and title, whether they can still sign in, how many
+    passkeys they hold and how many sessions they have open in this bank. Deactivated
+    members stay in the list with the status `deactivated`; people invited who have not
+    enrolled yet are in `GET /tenant/invitations`. Role labels come in the caller's language.
+
+    Needs `members.manage` on a person's session in the bank; API keys cannot reach it. It
+    changes nothing and writes no audit event. An empty page is a 200 with an empty list.
+
+    Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
+    depth; `permission_denied` (403) without `members.manage`; `unauthenticated` (401)
+    without a live session; `enrolment_only` (403) from an enrolment session.
+    """
     items, total = members_logic.list_members(_tenant_id(request), _order(request), limit=page.limit, offset=page.offset)
     return MembersPage(items=[MemberOut.model_validate(item) for item in items], total=total)
 
 
-@router.post("/tenant/members", response={201: InvitationOut}, auth=SessionAuth(), operation_id="inviteMember", by_alias=True)
+@router.post(
+    "/tenant/members",
+    response={201: InvitationOut},
+    auth=SessionAuth(),
+    operation_id="inviteMember",
+    by_alias=True,
+    summary="Invite a person to your bank with the roles they will hold",
+)
 @requires_permission(perms.MEMBERS_MANAGE)
+@_quoting_settings
 def invite_member(request: HttpRequest, body: MemberInvite) -> tuple[int, InvitationOut]:
+    """Sends an invitation to a work email address and answers it with the status
+    `pending`. The mail carries a link that works for $invitation_hours hours; opening it
+    emails a one-time code, and the person enrols a passkey with it. Only when that first
+    passkey is stored do they become a member, with the roles and title given here. An open
+    invitation already sent to the same address by this bank is replaced and stops working.
+    A deactivated member can be invited back this way and returns with the new roles.
+
+    Needs `members.manage` on a person's session in the bank. Records the audit event
+    `invitation.created` with the roles and the expiry; the token is never recorded.
+
+    Errors: `already_member` (409) when the address belongs to a current member;
+    `unknown_key` (422) for a role key the bank does not have or has retired;
+    `invalid_email` (422) for an address without an `@`; `platform_account` (422) when the
+    address belongs to platform staff, who never hold a bank membership;
+    `validation_error` (422) for an empty role list or a field over its length;
+    `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
+    live session.
+    """
     actor_user = _actor_user(request)
     invitation = members_logic.invite_member(
         tenant=_tenant(request), actor=session_logic.actor_of(actor_user), invited_by=actor_user, email=body.email, role_keys=body.role_keys, title=body.title
@@ -867,9 +951,36 @@ def invite_member(request: HttpRequest, body: MemberInvite) -> tuple[int, Invita
     return 201, InvitationOut.model_validate(members_logic.invitation_out(invitation, _order(request)))
 
 
-@router.patch("/tenant/members/{user_id}", response=MemberOut, auth=SessionAuth(), operation_id="updateMember", by_alias=True)
+@router.patch(
+    "/tenant/members/{user_id}",
+    response=MemberOut,
+    auth=SessionAuth(),
+    operation_id="updateMember",
+    by_alias=True,
+    summary="Change a member's roles or title",
+)
 @requires_permission(perms.MEMBERS_MANAGE)
-def update_member(request: HttpRequest, user_id: uuid.UUID, body: MemberPatch) -> MemberOut:
+@_quoting_settings
+def update_member(request: HttpRequest, body: MemberPatch, user_id: uuid.UUID = _MEMBER_ID) -> MemberOut:
+    """Changes what a member may do in this bank, their job title, or both, and answers the
+    member as they now stand. `roleKeys` replaces the whole set of roles; what is left out
+    of the body is kept. The change applies from the member's next call: their open sessions
+    carry the new permissions at once.
+
+    Needs `members.manage`, and, when `roleKeys` is sent, a passkey step-up on this session
+    younger than $step_up_minutes minutes; changing only the title needs none. A bank always
+    keeps at least one member holding `members.manage`, so no change may take it from the
+    last one. Records the audit event `member.updated` with the roles and title before and
+    after, and the step-up assertion when there was one.
+
+    Errors: `step_up_required` (403) when `roleKeys` is sent without a fresh step-up, which
+    the screen answers by opening the passkey prompt and retrying; `last_admin` (409) when
+    the change would leave nobody holding `members.manage`; `roles_required` (422) for an
+    empty role list; `unknown_key` (422) for a role the bank does not have or has retired;
+    `not_found` (404) when the person is not a current member; `validation_error` (422) for
+    a title over 200 characters; `permission_denied` (403) without `members.manage`;
+    `unauthenticated` (401) without a live session.
+    """
     # Step-up when the roles change (playbook 4.2: role and permission changes).
     assertion_id = enforce_step_up(request) if body.role_keys is not None else None
     membership = members_logic.update_member(
@@ -883,30 +994,124 @@ def update_member(request: HttpRequest, user_id: uuid.UUID, body: MemberPatch) -
     return MemberOut.model_validate(members_logic.member_detail(membership.tenant_id, membership.user_id, _order(request)))
 
 
-@router.delete("/tenant/members/{user_id}", response={204: None}, auth=SessionAuth(), operation_id="deactivateMember", by_alias=True)
+@router.delete(
+    "/tenant/members/{user_id}",
+    response={204: None},
+    auth=SessionAuth(),
+    operation_id="deactivateMember",
+    by_alias=True,
+    summary="Remove a person from your bank",
+)
 @requires_permission(perms.MEMBERS_MANAGE)
-def deactivate_member(request: HttpRequest, user_id: uuid.UUID) -> tuple[int, None]:
+def deactivate_member(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) -> tuple[int, None]:
+    """Deactivates a member: every session they have open in this bank ends at once, any
+    invitation or re-issued enrolment still open for their address here is closed, and they
+    can no longer sign in to this bank. Nothing is deleted: the member stays listed with the
+    status `deactivated` and everything they did stays in the audit trail. Their account and
+    passkeys are left alone, because the same person may belong to another bank. To let them
+    back in, invite them again.
+
+    Needs `members.manage`. A bank always keeps at least one member holding
+    `members.manage`, so the last one cannot be removed. Writes a "session_revoked" entry to
+    the security log for each ended session, and the audit events `session.revoked` for each
+    and `member.deactivated` with how many sessions and invitations were closed. Answers 204.
+    Removing someone already removed answers `not_found`.
+
+    Errors: `last_admin` (409) for the last member holding `members.manage`; `not_found`
+    (404) when the person is not a current member; `permission_denied` (403) without
+    `members.manage`; `unauthenticated` (401) without a live session.
+    """
     members_logic.deactivate_member(tenant=_tenant(request), actor=session_logic.actor_of(_actor_user(request)), user_id=user_id, request=request)
     return 204, None
 
 
-@router.get("/tenant/members/{user_id}/sessions", response=list[SessionOut], auth=SessionAuth(), operation_id="listMemberSessions", by_alias=True)
+@router.get(
+    "/tenant/members/{user_id}/sessions",
+    response=list[SessionOut],
+    auth=SessionAuth(),
+    operation_id="listMemberSessions",
+    by_alias=True,
+    summary="See where a member is signed in to your bank",
+    openapi_extra=_example(200, MEMBER_SESSIONS_EXAMPLE),
+)
 @requires_permission(perms.MEMBERS_MANAGE)
-def list_member_sessions(request: HttpRequest, user_id: uuid.UUID) -> list[SessionOut]:
+def list_member_sessions(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) -> list[SessionOut]:
+    """Every live signed-in session a member has in this bank, most recently active first:
+    when it began, when it last refreshed, and the network address and browser it came from.
+    Call it before signing a member out, for instance when a device is reported lost. Their
+    sessions in any other bank are not listed and cannot be reached from here; enrolment
+    sessions and ended ones are not listed either. `current` is always false in this list.
+    An empty answer is a 200 with an empty list.
+
+    Needs `members.manage`. It changes nothing and writes no audit event.
+
+    Errors: `not_found` (404) when the person is not a current member; `permission_denied`
+    (403) without `members.manage`; `unauthenticated` (401) without a live session.
+    """
     return [_session_out(row, None) for row in members_logic.member_sessions(_tenant_id(request), user_id)]
 
 
-@router.delete("/tenant/members/{user_id}/sessions", response={204: None}, auth=SessionAuth(), operation_id="revokeMemberSessions", by_alias=True)
+@router.delete(
+    "/tenant/members/{user_id}/sessions",
+    response={204: None},
+    auth=SessionAuth(),
+    operation_id="revokeMemberSessions",
+    by_alias=True,
+    summary="Sign a member out of your bank on every device",
+)
 @requires_permission(perms.MEMBERS_MANAGE)
-def revoke_member_sessions(request: HttpRequest, user_id: uuid.UUID) -> tuple[int, None]:
+def revoke_member_sessions(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) -> tuple[int, None]:
+    """Ends every session the member has open in this bank at once: each access token stops
+    working on its next call and no refresh token can renew it. Their passkeys and
+    membership stay, so they can sign in again; to stop that too, remove the member or
+    re-issue their enrolment. Sessions they hold in another bank are not touched. Answers 204
+    also when there was nothing to end.
+
+    Needs `members.manage`, and no step-up: ending sessions only takes access away. Writes a
+    "session_revoked" entry to the security log for each session with the reason
+    "revoked_by_admin", the audit event `session.revoked` for each, and
+    `member.sessions_revoked` with how many there were.
+
+    Errors: `not_found` (404) when the person is not a current member; `permission_denied`
+    (403) without `members.manage`; `unauthenticated` (401) without a live session.
+    """
     members_logic.revoke_member_sessions(tenant=_tenant(request), actor=session_logic.actor_of(_actor_user(request)), user_id=user_id, request=request)
     return 204, None
 
 
-@router.post("/tenant/members/{user_id}/reissue-enrolment", response={202: Empty}, auth=SessionAuth(), operation_id="reissueEnrolment", by_alias=True)
+@router.post(
+    "/tenant/members/{user_id}/reissue-enrolment",
+    response={202: Empty},
+    auth=SessionAuth(),
+    operation_id="reissueEnrolment",
+    by_alias=True,
+    summary="Let a member who lost their passkeys enrol again",
+    openapi_extra=_example(202, {}),
+)
 @requires_permission(perms.MEMBERS_MANAGE)
 @requires_step_up
-def reissue_enrolment(request: HttpRequest, user_id: uuid.UUID) -> tuple[int, Empty]:
+@_quoting_settings
+def reissue_enrolment(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) -> tuple[int, Empty]:
+    """The only way back in for a member who lost every passkey, and the way to lock out a
+    passkey that may be compromised. It retires every passkey the person holds, ends every
+    session they have, in this bank and in any other, sets them back to `invited`, and
+    emails them a re-enrolment link that works for $invitation_hours hours, keeping their
+    roles and title. Every other member holding `members.manage`, apart from the caller, is
+    told by email. The person enrols a new passkey through the link exactly as at their first
+    enrolment. Answers 202 with `{}` once the mails are queued.
+
+    Needs `members.manage` and a passkey step-up on this session younger than
+    $step_up_minutes minutes. Writes "reenrolment_issued" and a "session_revoked" entry per
+    ended session to the security log, and the audit events `session.revoked`,
+    `enrolment.reissued` for the new invitation and `member.enrolment_reissued` with how many
+    sessions and passkeys were affected and the step-up assertion.
+
+    Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
+    opening the passkey prompt and retrying; `not_found` (404) when the person is not a
+    current member; `platform_account` (422) when the address belongs to platform staff;
+    `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
+    live session.
+    """
     actor_user = _actor_user(request)
     members_logic.reissue_enrolment(
         tenant=_tenant(request),
@@ -919,25 +1124,81 @@ def reissue_enrolment(request: HttpRequest, user_id: uuid.UUID) -> tuple[int, Em
     return 202, Empty()
 
 
-@router.get("/tenant/invitations", response=InvitationsPage, auth=SessionAuth(), operation_id="listInvitations", by_alias=True)
+@router.get(
+    "/tenant/invitations",
+    response=InvitationsPage,
+    auth=SessionAuth(),
+    operation_id="listInvitations",
+    by_alias=True,
+    summary="See the invitations your bank has sent and where each stands",
+)
 @requires_permission(perms.MEMBERS_MANAGE)
 def list_invitations(request: HttpRequest, page: PageQuery = Query(...)) -> InvitationsPage:
+    """Returns the bank's invitations and re-issued enrolments one page at a time, newest
+    first, in every status: `pending`, `accepted`, `revoked` and `expired`. Call it to see
+    who has not enrolled yet and to resend or withdraw a link. The link's token is never
+    listed. Role labels come in the caller's language.
+
+    Needs `members.manage`. It changes nothing and writes no audit event. An empty page is a
+    200 with an empty list.
+
+    Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
+    depth; `permission_denied` (403) without `members.manage`; `unauthenticated` (401)
+    without a live session.
+    """
     items, total = members_logic.list_invitations(_tenant_id(request), _order(request), limit=page.limit, offset=page.offset)
     return InvitationsPage(items=[InvitationOut.model_validate(item) for item in items], total=total)
 
 
-@router.post("/tenant/invitations/{invitation_id}/resend", response=InvitationOut, auth=SessionAuth(), operation_id="resendInvitation", by_alias=True)
+@router.post(
+    "/tenant/invitations/{invitation_id}/resend",
+    response=InvitationOut,
+    auth=SessionAuth(),
+    operation_id="resendInvitation",
+    by_alias=True,
+    summary="Send an invitation again with a fresh link",
+)
 @requires_permission(perms.MEMBERS_MANAGE)
-def resend_invitation(request: HttpRequest, invitation_id: uuid.UUID) -> InvitationOut:
+@_quoting_settings
+def resend_invitation(request: HttpRequest, invitation_id: uuid.UUID = _INVITATION_ID) -> InvitationOut:
+    """Emails the invitation again with a new link, which works for $invitation_hours hours
+    from now; the link sent before stops working. A pending invitation and an expired one
+    can both be resent, and the answer shows it `pending` with its new expiry. The roles and
+    title stay as they were: to change them, revoke it and invite again.
+
+    Needs `members.manage`. Records the audit event `invitation.resent` with the new expiry;
+    the token is never recorded.
+
+    Errors: `invitation_closed` (409) when the invitation was already accepted or revoked;
+    `not_found` (404) when this bank has no such invitation; `permission_denied` (403)
+    without `members.manage`; `unauthenticated` (401) without a live session.
+    """
     tenant = _tenant(request)
     invitation = members_logic.tenant_invitation(tenant.id, invitation_id)
     issued = invitation_logic.resend_invitation(tenant=tenant, invitation=invitation, actor=session_logic.actor_of(_actor_user(request)))
     return InvitationOut.model_validate(members_logic.invitation_out(issued.invitation, _order(request)))
 
 
-@router.delete("/tenant/invitations/{invitation_id}", response={204: None}, auth=SessionAuth(), operation_id="revokeInvitation", by_alias=True)
+@router.delete(
+    "/tenant/invitations/{invitation_id}",
+    response={204: None},
+    auth=SessionAuth(),
+    operation_id="revokeInvitation",
+    by_alias=True,
+    summary="Withdraw an invitation so its link stops working",
+)
 @requires_permission(perms.MEMBERS_MANAGE)
-def revoke_invitation(request: HttpRequest, invitation_id: uuid.UUID) -> tuple[int, None]:
+def revoke_invitation(request: HttpRequest, invitation_id: uuid.UUID = _INVITATION_ID) -> tuple[int, None]:
+    """Withdraws an invitation or re-issued enrolment at once: its link stops working and it
+    is listed as `revoked`. An invitation already revoked, or already accepted, is left as it
+    is and still answers 204, so a retry is safe; revoking an accepted invitation does not
+    remove the member, which is `DELETE /tenant/members/{user_id}`.
+
+    Needs `members.manage`. Records the audit event `invitation.revoked`, the retry included.
+
+    Errors: `not_found` (404) when this bank has no such invitation; `permission_denied`
+    (403) without `members.manage`; `unauthenticated` (401) without a live session.
+    """
     tenant = _tenant(request)
     invitation = members_logic.tenant_invitation(tenant.id, invitation_id)
     invitation_logic.revoke_invitation(tenant=tenant, invitation=invitation, actor=session_logic.actor_of(_actor_user(request)))
@@ -947,17 +1208,62 @@ def revoke_invitation(request: HttpRequest, invitation_id: uuid.UUID) -> tuple[i
 # ---------------------------------------------------------------------------------------
 # Roles (ID-09)
 # ---------------------------------------------------------------------------------------
-@router.get("/tenant/roles", response=list[RoleOut], auth=SessionAuth(), operation_id="listRoles", by_alias=True)
+@router.get(
+    "/tenant/roles",
+    response=list[RoleOut],
+    auth=SessionAuth(),
+    operation_id="listRoles",
+    by_alias=True,
+    summary="See the roles your bank gives its members",
+    openapi_extra=_example(200, ROLES_EXAMPLE),
+)
 def list_roles(request: HttpRequest) -> list[RoleOut]:
+    """Every active role of the bank, in the bank's order: the seven system roles and any the
+    bank added, each with its labels, usage note and permissions. Retired roles are not
+    listed. Call it to fill a role picker or the role editor; labels come in the caller's
+    language.
+
+    Any member's session in the bank may read it, with no permission, because every screen
+    that names a role needs its label; API keys cannot. It changes nothing and writes no audit
+    event.
+
+    Errors: `not_found` (404) from a platform session, which belongs to no bank;
+    `unauthenticated` (401) without a live session; `enrolment_only` (403) from an enrolment
+    session.
+    """
     # Ungated by design: capability (any member; pickers need labels).
     order = _order(request)
     return [RoleOut.model_validate(roles_logic.role_out(role, order)) for role in roles_logic.tenant_roles(_tenant_id(request))]
 
 
-@router.post("/tenant/roles", response={201: RoleOut}, auth=SessionAuth(), operation_id="createRole", by_alias=True)
+@router.post(
+    "/tenant/roles",
+    response={201: RoleOut},
+    auth=SessionAuth(),
+    operation_id="createRole",
+    by_alias=True,
+    summary="Add a role of your own, composed from the product's permissions",
+)
 @requires_permission(perms.ROLES_MANAGE)
 @requires_step_up
+@_quoting_settings
 def create_role(request: HttpRequest, body: RoleCreate) -> tuple[int, RoleOut]:
+    """Creates a role the bank can then give its members, placed after its existing roles,
+    and answers it with 201. A role is a named set of the permissions
+    `GET /reference/permissions` lists; the bank chooses the key once and may reword the
+    labels at any time.
+
+    Needs `roles.manage` and a passkey step-up on this session younger than $step_up_minutes
+    minutes. Records the audit event `role.created` with the key, labels and permissions and
+    the step-up assertion.
+
+    Errors: `step_up_required` (403) without a fresh step-up; `duplicate_key` (409) for a
+    key the bank already has, retired roles included; `key_required` (422) for a blank key;
+    `label_required` (422) when no label is given; `unknown_key` (422) for a language the
+    product does not offer or a key that is not a bank permission; `validation_error` (422)
+    for a field over its length; `permission_denied` (403) without `roles.manage`;
+    `unauthenticated` (401) without a live session.
+    """
     role = roles_logic.create_role(
         tenant=_tenant(request),
         actor=session_logic.actor_of(_actor_user(request)),
@@ -971,9 +1277,35 @@ def create_role(request: HttpRequest, body: RoleCreate) -> tuple[int, RoleOut]:
     return 201, RoleOut.model_validate(roles_logic.role_out(role, _order(request)))
 
 
-@router.patch("/tenant/roles/{key}", response=RoleOut, auth=SessionAuth(), operation_id="updateRole", by_alias=True)
+@router.patch(
+    "/tenant/roles/{key}",
+    response=RoleOut,
+    auth=SessionAuth(),
+    operation_id="updateRole",
+    by_alias=True,
+    summary="Rename a role or change what it grants",
+)
 @requires_permission(perms.ROLES_MANAGE)
-def update_role(request: HttpRequest, key: str, body: RolePatch) -> RoleOut:
+@_quoting_settings
+def update_role(request: HttpRequest, body: RolePatch, key: str = _ROLE_KEY) -> RoleOut:
+    """Changes a role's labels, usage note or permissions and answers the role as it now
+    stands; what is left out of the body is kept, and the key never changes. A change of
+    permissions reaches every member holding the role from their next call. A system role
+    can be relabelled and its note rewritten, but its permissions follow the product.
+
+    Needs `roles.manage`, and, when `permissions` is sent, a passkey step-up on this session
+    younger than $step_up_minutes minutes; relabelling needs none. Records the audit event
+    `role.updated` with the permissions, note and labels before and after, and the step-up
+    assertion when there was one.
+
+    Errors: `step_up_required` (403) when `permissions` is sent without a fresh step-up;
+    `system_role` (422) for a change of a system role's permissions; `label_required` (422)
+    when every label sent is blank; `unknown_key` (422) for a language the product does not
+    offer or a key that is not a bank permission; `not_found` (404) when the bank has no
+    role with that key; `validation_error` (422) for a note over 1000 characters;
+    `permission_denied` (403) without `roles.manage`; `unauthenticated` (401) without a live
+    session.
+    """
     # Step-up when the permissions change (playbook 4.2).
     assertion_id = enforce_step_up(request) if body.permissions is not None else None
     tenant = _tenant(request)
@@ -990,17 +1322,56 @@ def update_role(request: HttpRequest, key: str, body: RolePatch) -> RoleOut:
     return RoleOut.model_validate(roles_logic.role_out(role, _order(request)))
 
 
-@router.post("/tenant/roles/{key}/retire", response=RoleOut, auth=SessionAuth(), operation_id="retireRole", by_alias=True)
+@router.post(
+    "/tenant/roles/{key}/retire",
+    response=RoleOut,
+    auth=SessionAuth(),
+    operation_id="retireRole",
+    by_alias=True,
+    summary="Retire a role your bank no longer uses",
+)
 @requires_permission(perms.ROLES_MANAGE)
-def retire_role(request: HttpRequest, key: str) -> RoleOut:
+def retire_role(request: HttpRequest, key: str = _ROLE_KEY) -> RoleOut:
+    """Retires one of the bank's own roles and answers it with `active` false: it leaves the
+    role list and the pickers and can no longer be given to anyone. Nothing is deleted, and
+    its key stays taken, so it is never reused for a different role. Only a role no current
+    member holds can be retired: reassign them first. The seven system roles cannot be
+    retired.
+
+    Needs `roles.manage`, and no step-up: a role nobody holds grants nothing. Records the
+    audit event `role.retired`.
+
+    Errors: `role_in_use` (409) while a current member holds the role, the message saying
+    how many; `system_role` (422) for a system role; `not_found` (404) when the bank has no
+    role with that key; `permission_denied` (403) without `roles.manage`; `unauthenticated`
+    (401) without a live session.
+    """
     tenant = _tenant(request)
     role = roles_logic.tenant_role_by_key(tenant.id, key)
     role = roles_logic.retire_role(tenant=tenant, actor=session_logic.actor_of(_actor_user(request)), role=role)
     return RoleOut.model_validate(roles_logic.role_out(role, _order(request)))
 
 
-@router.get("/reference/permissions", response=list[PermissionOut], auth=SessionAuth(), operation_id="listPermissions", by_alias=True)
+@router.get(
+    "/reference/permissions",
+    response=list[PermissionOut],
+    auth=SessionAuth(),
+    operation_id="listPermissions",
+    by_alias=True,
+    summary="See every permission a role of your bank can grant",
+    openapi_extra=_example(200, PERMISSIONS_EXAMPLE),
+)
 def list_permissions(request: HttpRequest) -> list[PermissionOut]:
+    """Every permission a bank's role can grant, sorted by key, each with its area and a
+    sentence saying what it lets a person do. The set is fixed by the product; a bank composes
+    roles from it and cannot add to it. The platform's own permissions are not listed.
+
+    Any signed-in session may read it, with no permission; API keys cannot. It changes
+    nothing and writes no audit event.
+
+    Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
+    enrolment session.
+    """
     # Ungated by design: capability (any session; the role editor lists the constants).
     return [
         PermissionOut(key=key, group=perms.permission_group(key), description=perms.PERMISSION_DESCRIPTIONS[key])
@@ -1011,17 +1382,68 @@ def list_permissions(request: HttpRequest) -> list[PermissionOut]:
 # ---------------------------------------------------------------------------------------
 # API keys (ID-10) and the security log (ID-11)
 # ---------------------------------------------------------------------------------------
-@router.get("/tenant/api-keys", response=ApiKeysPage, auth=SessionAuth(), operation_id="listApiKeys", by_alias=True)
+@router.get(
+    "/tenant/api-keys",
+    response=ApiKeysPage,
+    auth=SessionAuth(),
+    operation_id="listApiKeys",
+    by_alias=True,
+    summary="See your bank's API keys and whether each still works",
+)
 @requires_permission(perms.INTEGRATIONS_MANAGE)
 def list_api_keys(request: HttpRequest, page: PageQuery = Query(...)) -> ApiKeysPage:
+    """Returns the bank's own API keys one page at a time, newest first: what each may do,
+    when it was last used, and whether it has expired or been revoked. Revoked and expired
+    keys stay in the list, so it is the whole history. The secret of a key is never shown
+    again after creation: a row carries its eight-character prefix and nothing more. The
+    platform's agent keys are never here.
+
+    Needs `integrations.manage` on a person's session in the bank; an API key cannot list
+    keys. It changes nothing and writes no audit event. An empty page is a 200 with `total` 0.
+
+    Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
+    depth; `permission_denied` (403) without `integrations.manage`; `unauthenticated` (401)
+    without a live session.
+    """
     items, total = api_keys_logic.list_api_keys(_tenant_id(request), limit=page.limit, offset=page.offset)
     return ApiKeysPage(items=[ApiKeyOut.model_validate(row) for row in items], total=total)
 
 
-@router.post("/tenant/api-keys", response={201: ApiKeyCreated}, auth=SessionAuth(), operation_id="createApiKey", by_alias=True)
+@router.post(
+    "/tenant/api-keys",
+    response={201: ApiKeyCreated},
+    auth=SessionAuth(),
+    operation_id="createApiKey",
+    by_alias=True,
+    summary="Create an API key for one of your bank's integrations",
+)
 @requires_permission(perms.INTEGRATIONS_MANAGE)
 @requires_step_up
+@_quoting_settings
 def create_api_key(request: HttpRequest, body: ApiKeyCreate) -> tuple[int, ApiKeyCreated]:
+    """Creates an API key that belongs to the bank and answers it once, with 201. Put
+    `plainKey` straight into the integration's secret store: the server keeps only a hash of
+    the secret and never shows it again, so a lost key is revoked and replaced, never
+    recovered. Everything the key does is recorded against it and the bank.
+
+    A bank's key may hold only the reading scopes and `proposals:write`, which files a
+    proposal that changes nothing until someone independent approves it. `proposals:review`
+    and the agent scopes `agent-runs:write`, `sources:write` and `changes:write` belong to
+    the platform's own agents and are refused here; no scope writes a library record. Give
+    the key the least its integration needs.
+
+    Needs `integrations.manage` and a passkey step-up on this session younger than
+    $step_up_minutes minutes; an API key cannot create a key. Records the audit event
+    `api_key.created` with the prefix, scopes and expiry, never the secret, and with the
+    step-up assertion.
+
+    Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
+    opening the passkey prompt and retrying; `unknown_key` (422) for a scope a bank's key may
+    not hold, the message naming the valid scopes; `name_required` (422) for a name of spaces
+    alone; `expiry_in_past` (422) for an expiry that is not in the future; `validation_error`
+    (422) for an empty scope list or a name over 200 characters; `permission_denied` (403)
+    without `integrations.manage`; `unauthenticated` (401) without a live session.
+    """
     actor_user = _actor_user(request)
     key, plain = api_keys_logic.create_api_key(
         tenant=_tenant(request),
@@ -1037,9 +1459,33 @@ def create_api_key(request: HttpRequest, body: ApiKeyCreate) -> tuple[int, ApiKe
     )
 
 
-@router.delete("/tenant/api-keys/{key_id}", response={204: None}, auth=SessionAuth(), operation_id="revokeApiKey", by_alias=True)
+@router.delete(
+    "/tenant/api-keys/{key_id}",
+    response={204: None},
+    auth=SessionAuth(),
+    operation_id="revokeApiKey",
+    by_alias=True,
+    summary="Stop one of your bank's API keys working for good; a repeat revoke answers 204 again",
+)
 @requires_permission(perms.INTEGRATIONS_MANAGE)
-def revoke_api_key(request: HttpRequest, key_id: uuid.UUID) -> tuple[int, None]:
+def revoke_api_key(request: HttpRequest, key_id: uuid.UUID = _API_KEY_ID) -> tuple[int, None]:
+    """Revokes one of the bank's own keys at once: from this moment every call made with it
+    answers `unauthenticated`. Call it when a key may have leaked, when an integration is
+    retired, or when a key is replaced. There is no way to turn a revoked key back on; create
+    a new one instead. The key stays listed with its revocation time.
+
+    Revoking a key that is already revoked changes nothing and answers 204 again, so a retry
+    is safe; the retry is recorded in the audit log too, but writes no second security-log
+    entry.
+
+    Needs `integrations.manage`, and no step-up: stopping a key only takes power away. Writes
+    "key_revoked" to the security log the first time and the audit event `api_key.revoked`
+    each time.
+
+    Errors: `not_found` (404) when the bank has no key with that identifier;
+    `permission_denied` (403) without `integrations.manage`; `unauthenticated` (401) without
+    a live session.
+    """
     api_keys_logic.revoke_api_key(tenant=_tenant(request), actor=session_logic.actor_of(_actor_user(request)), key_id=key_id)
     return 204, None
 
@@ -1198,8 +1644,30 @@ def revoke_agent_key(
     return _agent_key_out(key)
 
 
-@router.get("/tenant/security-log", response=SecurityLogPage, auth=SessionAuth(), operation_id="listSecurityLog", by_alias=True)
+@router.get(
+    "/tenant/security-log",
+    response=SecurityLogPage,
+    auth=SessionAuth(),
+    operation_id="listSecurityLog",
+    by_alias=True,
+    summary="Read your bank's security log of sign-ins, failures and key use",
+)
 @requires_permission(perms.SECURITY_MANAGE)
 def list_security_log(request: HttpRequest, page: PageQuery = Query(...)) -> SecurityLogPage:
+    """Returns the bank's security log one page at a time, newest first: every enrolment code
+    sent or refused, every passkey sign-in and step-up with its failures, every session ended
+    early, every re-issued enrolment, and the use and revocation of the bank's API keys and
+    calendar feeds. Call it to investigate a suspicious sign-in or to show a reviewer who got
+    in and how. Only this bank's entries appear. The log is append-only: nothing in it is ever
+    edited or removed.
+
+    Needs `security.manage` on a person's session in the bank; API keys cannot read it.
+    Reading it changes nothing and writes no audit event. An empty page is a 200 with an
+    empty list.
+
+    Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
+    depth; `permission_denied` (403) without `security.manage`; `unauthenticated` (401)
+    without a live session; `enrolment_only` (403) from an enrolment session.
+    """
     items, total = security_log.list_events(_tenant_id(request), limit=page.limit, offset=page.offset)
     return SecurityLogPage(items=[SecurityEventOut.model_validate(row) for row in items], total=total)

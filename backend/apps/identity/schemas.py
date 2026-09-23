@@ -1304,80 +1304,503 @@ class SessionOut(CamelSchema):
 
 
 # ---------------------------------------------------------------------------------------
-# Tenant admin: members, invitations, roles, keys, security log
+# Tenant admin: members, invitations, roles, keys, security log. Every example is the
+# prototype's Example Bank AB, never a real bank or person.
 # ---------------------------------------------------------------------------------------
+_MEMBER_STATUS_TEXT = (
+    "`invited` means an administrator re-issued the person's enrolment and they have not "
+    "enrolled a new passkey yet, so they cannot sign in until they do; `active` means they "
+    "hold a passkey and can sign in; `deactivated` means the bank removed them, their sessions "
+    "here were ended and they can no longer sign in to this bank, though the record stays for "
+    "the audit trail."
+)
+_ROLE_KEYS_TEXT = (
+    "Role keys come from the bank's own role list, a vocabulary its administrators extend with "
+    "`POST /tenant/roles`: the system roles seeded on day one are `admin`, `compliance_officer`, "
+    "`owner`, `approver`, `contributor`, `reader` and `auditor`, and a bank may have added more. "
+    "Read `GET /tenant/roles` for the live set and store keys, never labels."
+)
+_INVITATION_STATUS_TEXT = (
+    "`pending` means the link still works and nobody has enrolled with it; `accepted` means the "
+    "person enrolled their first passkey with it; `revoked` means an administrator withdrew it, "
+    "a newer invitation to the same address replaced it, or the member was removed; `expired` "
+    "means nobody used the link within its lifetime. Only a pending or expired invitation can be "
+    "resent."
+)
+_EXAMPLE_ROLE_OFFICER: dict[str, JsonValue] = {"key": "compliance_officer", "kind": None, "label": "Compliance officer"}
+_EXAMPLE_ROLE_READER: dict[str, JsonValue] = {"key": "reader", "kind": None, "label": "Reader"}
+_EXAMPLE_MEMBER: dict[str, JsonValue] = {
+    "userId": "00000000-0000-4000-8000-000000000102",
+    "email": "compliance_officer@example-bank.test",
+    "name": "Sara Lindqvist",
+    "status": "active",
+    "roles": [_EXAMPLE_ROLE_OFFICER],
+    "title": "Head of Regulatory Compliance",
+    "lastSeenAt": "2026-09-22T06:58:04Z",
+    "passkeyCount": 2,
+    "activeSessions": 1,
+}
+_EXAMPLE_INVITATION: dict[str, JsonValue] = {
+    "id": "7d2e9b14-6a3c-4f58-b1d0-3e8c5a7f2b96",
+    "email": "anna@example-bank.test",
+    "roles": [_EXAMPLE_ROLE_READER],
+    "title": "Compliance analyst",
+    "kind": "invite",
+    "status": "pending",
+    "createdAt": "2026-09-22T08:15:00Z",
+    "expiresAt": "2026-09-25T08:15:00Z",
+}
+_EXAMPLE_ROLE: dict[str, JsonValue] = {
+    "key": "dora_reviewer",
+    "kind": None,
+    "label": "DORA reviewer",
+    "labels": {"en": "DORA reviewer", "sv": "DORA-granskare"},
+    "usageNote": "Reads the register and works the ICT-risk cases it is asked to help with.",
+    "permissions": ["cases.contribute", "cases.read", "library.read", "register.read"],
+    "isSystem": False,
+    "active": True,
+}
+_EXAMPLE_API_KEY: dict[str, JsonValue] = {
+    "id": "c4a81e5f-3b92-4d07-8e6a-2f1b9d5c7a30",
+    "name": "Policy portal sync",
+    "keyPrefix": "9a1f3c7e",
+    "scopes": ["library:read", "search:read"],
+    "createdAt": "2026-09-15T09:30:00Z",
+    "expiresAt": "2027-09-15T23:59:59Z",
+    "revokedAt": None,
+    "lastUsedAt": "2026-09-22T05:00:12Z",
+}
+_EXAMPLE_API_KEY_CREATED: dict[str, JsonValue] = {
+    key: value for key, value in _EXAMPLE_API_KEY.items() if key not in ("revokedAt", "lastUsedAt")
+} | {"plainKey": "cw_9a1f3c7e_<secret-shown-once>"}
+_EXAMPLE_SECURITY_EVENT: dict[str, JsonValue] = {
+    "id": 48213,
+    "occurredAt": "2026-09-22T06:58:04Z",
+    "method": "passkey",
+    "event": "signin",
+    "success": True,
+    "failureReason": "",
+    "userId": "00000000-0000-4000-8000-000000000102",
+    "email": "compliance_officer@example-bank.test",
+    "ip": "192.0.2.41",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+}
+_EXAMPLE_FAILED_CODE_EVENT: dict[str, JsonValue] = {
+    "id": 48207,
+    "occurredAt": "2026-09-22T06:41:39Z",
+    "method": "email_code",
+    "event": "code_failed",
+    "success": False,
+    "failureReason": "wrong_code",
+    "userId": "9f3b2c1d-4e5a-4b6c-8d7e-0a1b2c3d4e5f",
+    "email": "anna@example-bank.test",
+    "ip": "198.51.100.7",
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1",
+}
+
+# A list answer has no component schema of its own to carry an example, so api.py hangs these
+# on the operations that return them.
+ROLES_EXAMPLE: list[JsonValue] = [
+    {
+        "key": "reader",
+        "kind": None,
+        "label": "Reader",
+        "labels": {"en": "Reader", "sv": "Läsare"},
+        "usageNote": "Reads everything, changes nothing.",
+        "permissions": [
+            "audit.read",
+            "cases.read",
+            "comments.write",
+            "library.read",
+            "problems.report",
+            "register.read",
+            "reports.read",
+            "roadmap.read",
+            "search.use",
+            "watch.read",
+        ],
+        "isSystem": True,
+        "active": True,
+    },
+    _EXAMPLE_ROLE,
+]
+PERMISSIONS_EXAMPLE: list[JsonValue] = [
+    {"key": "cases.signoff", "group": "cases", "description": "Sign off a case worked by someone else."},
+    {"key": "members.manage", "group": "members", "description": "Invite, change and deactivate members; re-issue enrolment; revoke sessions."},
+]
+MEMBER_SESSIONS_EXAMPLE: list[JsonValue] = [_EXAMPLE_SESSION | {"current": False}]
+
+
 class MemberOut(CamelSchema):
-    user_id: uuid.UUID
-    email: str
-    name: str
-    status: str
-    roles: list[RoleRef]
-    title: str
-    last_seen_at: datetime | None
-    passkey_count: int
-    active_sessions: int
+    """One person in this bank as the members screen lists them: who they are, what they
+    may do here, and whether they can still sign in."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_MEMBER]})
+
+    user_id: uuid.UUID = Field(
+        description=(
+            "The person's permanent account identifier, a UUID. Pass it to the member routes "
+            "under `/tenant/members/{user_id}`. One account may belong to several banks; the "
+            "identifier is the same in each, while everything else here is this bank's alone."
+        )
+    )
+    email: str = Field(
+        description=(
+            "The person's work email address, lowercased, where their enrolment mail went. It is "
+            "their identity across the platform and cannot be changed here."
+        )
+    )
+    name: str = Field(
+        description=(
+            "The person's display name, as they set it on their own profile. Until they set one "
+            "it is the part of the email address before the `@`."
+        )
+    )
+    status: str = Field(
+        description=(
+            "Where the person stands in this bank, one of three values. "
+            + _MEMBER_STATUS_TEXT
+            + " Deactivated members stay in the list so the bank can see who was removed."
+        )
+    )
+    roles: list[RoleRef] = Field(
+        description=(
+            "The roles the person holds in this bank, each as its stable key with a label in the "
+            "reader's language; what they may do is the union of the permissions of these roles. "
+            + _ROLE_KEYS_TEXT
+        )
+    )
+    title: str = Field(
+        description=(
+            "The person's job title in this bank, such as `Head of Regulatory Compliance`, shown "
+            "beside their name. Free text, empty when none was given, and never read by any rule."
+        )
+    )
+    last_seen_at: datetime | None = Field(
+        description=(
+            "When the person last enrolled or signed in with a passkey, to any bank, as a UTC "
+            "timestamp. Null for someone who has never enrolled. It moves at sign-in, not on "
+            "every call, so it says whether the account is in use rather than what they did."
+        )
+    )
+    passkey_count: int = Field(
+        description=(
+            "How many live passkeys the person holds. Zero means they cannot sign in until they "
+            "enrol, which is the state after an invitation or a re-issued enrolment."
+        )
+    )
+    active_sessions: int = Field(
+        description=(
+            "How many signed-in sessions the person has open in this bank right now; their "
+            "sessions in any other bank are not counted and not visible here. See them with "
+            "`GET /tenant/members/{user_id}/sessions`."
+        )
+    )
 
 
 class MembersPage(CamelSchema):
-    items: list[MemberOut]
-    total: int
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_MEMBER], "total": 1}]})
+
+    items: list[MemberOut] = Field(
+        description=(
+            "The bank's members on this page, the earliest to join first, deactivated members "
+            "included. People who were invited but have not enrolled yet are listed under "
+            "`GET /tenant/invitations` instead."
+        )
+    )
+    total: int = Field(description="How many members the bank has in total, not how many are on this page; use it to size a pager.")
 
 
 class MemberInvite(CamelSchema):
-    email: str = Field(max_length=254)
-    role_keys: list[str] = Field(min_length=1)
-    title: str = Field(default="", max_length=200)
+    """`POST /tenant/members`: invite a person by work email with the roles they will hold."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"email": "anna@example-bank.test", "roleKeys": ["reader"], "title": "Compliance analyst"}]}
+    )
+
+    email: str = Field(
+        max_length=254,
+        description=(
+            "The work email address to invite, at most 254 characters. Surrounding spaces are "
+            "trimmed and it is lowercased; an address without an `@` is refused with "
+            "`invalid_email`. The invitation link goes to this address and nowhere else."
+        ),
+    )
+    role_keys: list[str] = Field(
+        min_length=1,
+        description=(
+            "The roles the person will hold once they enrol, at least one key, each counted once. "
+            + _ROLE_KEYS_TEXT
+            + " A key the bank does not have, or a role it retired, is refused with `unknown_key`."
+        ),
+    )
+    title: str = Field(
+        default="",
+        max_length=200,
+        description=(
+            "The person's job title in this bank, at most 200 characters, surrounding spaces "
+            "trimmed. Leave it out or send an empty string (the default) for none."
+        ),
+    )
 
 
 class MemberPatch(CamelSchema):
-    role_keys: list[str] | None = None
-    title: str | None = Field(default=None, max_length=200)
+    """`PATCH /tenant/members/{user_id}`: send only what changes."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"roleKeys": ["compliance_officer", "approver"]}]})
+
+    role_keys: list[str] | None = Field(
+        default=None,
+        description=(
+            "The member's complete new set of roles, which replaces the old set rather than adding "
+            "to it; leave it out, or send null (the default), to keep the roles as they are. "
+            "Sending it needs a fresh passkey step-up. "
+            + _ROLE_KEYS_TEXT
+            + " An empty list is refused with `roles_required` and a key the bank does not have "
+            "with `unknown_key`; a change that would leave the bank with nobody holding "
+            "`members.manage` is refused with `last_admin`."
+        ),
+    )
+    title: str | None = Field(
+        default=None,
+        max_length=200,
+        description=(
+            "The member's new job title in this bank, at most 200 characters, surrounding spaces "
+            "trimmed; an empty string clears it. Leave it out, or send null (the default), to keep "
+            "it as it is. Changing only the title needs no step-up."
+        ),
+    )
 
 
 class InvitationOut(CamelSchema):
-    id: uuid.UUID
-    email: str
-    roles: list[RoleRef]
-    title: str
-    kind: str
-    status: str
-    created_at: datetime
-    expires_at: datetime
+    """One invitation or re-issued enrolment for this bank. The link's token is never here:
+    it exists only in the mail the person received."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_INVITATION]})
+
+    id: uuid.UUID = Field(
+        description=(
+            "The invitation's identifier, a UUID. Pass it to "
+            "`POST /tenant/invitations/{invitation_id}/resend` or "
+            "`DELETE /tenant/invitations/{invitation_id}`; it is not the token in the link and "
+            "cannot open it."
+        )
+    )
+    email: str = Field(description="The lowercased address the invitation was sent to, the only address its code will go to.")
+    roles: list[RoleRef] = Field(
+        description=(
+            "The roles the person receives when they enrol with this invitation, each as its "
+            "stable key with a label in the reader's language. " + _ROLE_KEYS_TEXT
+        )
+    )
+    title: str = Field(
+        description="The job title the person will carry in this bank once they enrol, empty when none was given."
+    )
+    kind: str = Field(
+        description=(
+            "Why the invitation exists, one of two values. `invite` is a first invitation to "
+            "join the bank. `reenrolment` is an administrator's re-issued enrolment for an "
+            "existing member whose passkeys were retired; enrolling with it keeps their "
+            "membership and roles rather than creating new ones."
+        )
+    )
+    status: str = Field(
+        description=(
+            "Where the invitation stands, computed by the server at the moment of the call, one "
+            "of four values. " + _INVITATION_STATUS_TEXT
+        )
+    )
+    created_at: datetime = Field(description="When the invitation was first sent, as a UTC timestamp set by the server.")
+    expires_at: datetime = Field(
+        description=(
+            "When the link stops working, as a UTC timestamp: "
+            f"{settings.INVITATION_TTL_HOURS} hours after it was sent or last resent (a setting). "
+            "Resending moves it forward."
+        )
+    )
 
 
 class InvitationsPage(CamelSchema):
-    items: list[InvitationOut]
-    total: int
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_INVITATION], "total": 1}]})
+
+    items: list[InvitationOut] = Field(
+        description=(
+            "The bank's invitations on this page, newest first, in every status, re-issued "
+            "enrolments included, so the list is the whole history. An empty list is a 200."
+        )
+    )
+    total: int = Field(description="How many invitations the bank has sent in total, not how many are on this page.")
 
 
 class RoleOut(CamelSchema):
-    key: str
-    kind: str | None
-    label: str
-    labels: dict[str, str]
-    usage_note: str
-    permissions: list[str]
-    is_system: bool
-    active: bool
+    """One role of this bank: a named set of permissions a member can be given."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_ROLE]})
+
+    key: str = Field(
+        description=(
+            "The role's stable key, lowercase, such as `compliance_officer`: a row of the bank's "
+            "role vocabulary, which its administrators extend. The system roles seeded on day "
+            "one are `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` "
+            "and `auditor`; any other key is one the bank added. It never changes once issued, so "
+            "store and compare it and never the label. Nothing in the product decides anything "
+            "by a role's key: what counts is its `permissions`."
+        )
+    )
+    kind: str | None = Field(
+        description="The kind of row within the role list. Roles have no kinds, so it is null for every role today."
+    )
+    label: str = Field(
+        description=(
+            "The role's name in the reader's language: the label in their own language if the "
+            "role has one, then in the bank's default language, then in English, then the "
+            "original, then the key itself. For display only."
+        )
+    )
+    labels: dict[str, str] = Field(
+        description=(
+            "Every label the role has, keyed by content-language key such as `en` or `sv`, so a "
+            "role editor can show and change each one. The bank may reword them freely."
+        )
+    )
+    usage_note: str = Field(
+        description=(
+            "A sentence telling an administrator who the role is for, shown in the role picker, "
+            "such as `Reads everything, changes nothing.` Empty when none was written."
+        )
+    )
+    permissions: list[str] = Field(
+        description=(
+            "The permission keys the role grants, sorted, such as `cases.signoff`. The complete "
+            "set, each with its meaning, is `GET /reference/permissions`; the set is fixed by the "
+            "product and a bank cannot add to it. A person's permissions are the union of their "
+            "roles' permissions."
+        )
+    )
+    is_system: bool = Field(
+        description=(
+            "True for one of the seven roles the product seeds in every bank. A system role can "
+            "be relabelled and its usage note rewritten, but its permissions follow the product "
+            "and it cannot be retired. False for a role the bank added."
+        )
+    )
+    active: bool = Field(
+        description=(
+            "True while the role can be given to members. A retired role is false; it is no longer "
+            "listed or offered, and it cannot be brought back through the API."
+        )
+    )
 
 
 class RoleCreate(CamelSchema):
-    key: str = Field(max_length=80)
-    labels: dict[str, str]
-    usage_note: str = Field(default="", max_length=1000)
-    permissions: list[str]
+    """`POST /tenant/roles`: a new role the bank composes from the product's permissions."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "key": "dora_reviewer",
+                    "labels": {"en": "DORA reviewer", "sv": "DORA-granskare"},
+                    "usageNote": "Reads the register and works the ICT-risk cases it is asked to help with.",
+                    "permissions": ["cases.contribute", "cases.read", "library.read", "register.read"],
+                }
+            ]
+        }
+    )
+
+    key: str = Field(
+        max_length=80,
+        description=(
+            "The new role's stable key, at most 80 characters, such as `dora_reviewer`; "
+            "surrounding spaces are trimmed and it is lowercased. Use lowercase letters, digits "
+            "and underscores. It can never be changed afterwards. A blank key is refused with "
+            "`key_required`, and a key the bank already has, retired roles included, with "
+            "`duplicate_key`."
+        ),
+    )
+    labels: dict[str, str] = Field(
+        description=(
+            "The role's name per content language, keyed by language key such as `en` or `sv`, at "
+            "least one non-blank. Blank entries are dropped; a map with none left is refused with "
+            "`label_required`, and a language the product does not offer with `unknown_key`."
+        )
+    )
+    usage_note: str = Field(
+        default="",
+        max_length=1000,
+        description=(
+            "A sentence telling administrators who the role is for, at most 1000 characters, "
+            "surrounding spaces trimmed; empty (the default) for none."
+        ),
+    )
+    permissions: list[str] = Field(
+        description=(
+            "The permission keys the role grants, from `GET /reference/permissions`; duplicates "
+            "count once and an empty list makes a role that grants nothing. A key that is not a "
+            "bank permission is refused with `unknown_key`."
+        )
+    )
 
 
 class RolePatch(CamelSchema):
-    labels: dict[str, str] | None = None
-    usage_note: str | None = Field(default=None, max_length=1000)
-    permissions: list[str] | None = None
+    """`PATCH /tenant/roles/{key}`: send only what changes. The key never changes."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"labels": {"sv": "DORA-granskare"}}]})
+
+    labels: dict[str, str] | None = Field(
+        default=None,
+        description=(
+            "Labels to set, keyed by language key such as `sv`. Each language sent replaces that "
+            "language's label and the others are kept; blank entries are ignored. Leave it out, or "
+            "send null (the default), to keep every label. A map with only blank labels is "
+            "refused with `label_required`, and a language the product does not offer with "
+            "`unknown_key`."
+        ),
+    )
+    usage_note: str | None = Field(
+        default=None,
+        max_length=1000,
+        description=(
+            "The new usage note, at most 1000 characters, surrounding spaces trimmed; an empty "
+            "string clears it. Leave it out, or send null (the default), to keep it."
+        ),
+    )
+    permissions: list[str] | None = Field(
+        default=None,
+        description=(
+            "The role's complete new set of permission keys, which replaces the old set. Sending "
+            "it needs a fresh passkey step-up, and a system role refuses it with `system_role`, "
+            "because its permissions follow the product. A key that is not a bank permission is "
+            "refused with `unknown_key`. Leave it out, or send null (the default), to keep them."
+        ),
+    )
 
 
 class PermissionOut(CamelSchema):
-    key: str
-    group: str
-    description: str
+    """One permission a bank's role can grant."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [PERMISSIONS_EXAMPLE[0]]})
+
+    key: str = Field(
+        description=(
+            "The permission's stable key, such as `cases.signoff`: what a role's `permissions` "
+            "lists and what every route checks. The set is fixed by the product, not a vocabulary "
+            "a bank extends; a new release may add keys."
+        )
+    )
+    group: str = Field(
+        description=(
+            "The area the permission belongs to, the part of its key before the first dot, such "
+            "as `cases`, so a role editor can group the list."
+        )
+    )
+    description: str = Field(
+        description="What holding the permission lets a person do, in one English sentence for the role editor to show."
+    )
 
 
 # What a bank's key may hold, in words, beside the set that enforces it
@@ -1394,9 +1817,31 @@ _TENANT_KEY_SCOPES_TEXT = (
 
 
 class ApiKeyOut(CamelSchema):
-    id: uuid.UUID
-    name: str
-    key_prefix: str
+    """One of the bank's own API keys as the keys screen lists it. The secret is never here,
+    only its prefix."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_API_KEY]})
+
+    id: uuid.UUID = Field(
+        description=(
+            "The key's permanent identifier, a UUID the server issues. Pass it to "
+            "`DELETE /tenant/api-keys/{key_id}`; it is not the key itself and cannot sign a request."
+        )
+    )
+    name: str = Field(
+        description=(
+            "The name an administrator gave the key, such as `Policy portal sync`, to tell keys "
+            "apart on screen. A label only; nothing reads it."
+        )
+    )
+    key_prefix: str = Field(
+        description=(
+            "The first part of the key, eight hexadecimal characters such as `9a1f3c7e`, kept in "
+            "the clear so a key found in a log or a vault can be matched to this row. It is not a "
+            "secret and is not enough to call the API: the rest was shown once, at creation, and "
+            "only its hash is stored."
+        )
+    )
     scopes: list[str] = Field(
         description=(
             "What this key may do, as scope keys. A bank's key holds only these: "
@@ -1405,19 +1850,63 @@ class ApiKeyOut(CamelSchema):
             "without it, and the security log records `key_scopes_withheld` when it is used."
         )
     )
-    created_at: datetime
-    expires_at: datetime | None
-    revoked_at: datetime | None
-    last_used_at: datetime | None
+    created_at: datetime = Field(description="When the key was created, as a UTC timestamp in ISO 8601, set by the server.")
+    expires_at: datetime | None = Field(
+        description=(
+            "When the key stops working on its own, as a UTC timestamp in ISO 8601; from that "
+            "moment every call with it answers `unauthenticated`. Null for a key that does not "
+            "expire, which stays live until it is revoked."
+        )
+    )
+    revoked_at: datetime | None = Field(
+        description=(
+            "When an administrator revoked the key, as a UTC timestamp in ISO 8601; from that "
+            "moment every call with it answers `unauthenticated`. A revoked key stays listed and "
+            "cannot be turned back on. Null while it is live."
+        )
+    )
+    last_used_at: datetime | None = Field(
+        description=(
+            "When the key last authenticated a call, as a UTC timestamp in ISO 8601. It moves at "
+            f"most once every {settings.API_KEY_LAST_USED_THROTTLE_SECONDS} seconds by default (a "
+            "setting), so it says a key is in use rather than counting its calls. Null for a key "
+            "that has never been used."
+        )
+    )
 
 
 class ApiKeysPage(CamelSchema):
-    items: list[ApiKeyOut]
-    total: int
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_API_KEY], "total": 1}]})
+
+    items: list[ApiKeyOut] = Field(
+        description=(
+            "The bank's own keys on this page, newest first, revoked and expired ones included so "
+            "that the list is the whole history. The platform's agent keys are never here. An "
+            "empty list is a 200 and means the bank has no key yet."
+        )
+    )
+    total: int = Field(description="How many keys the bank has in total, not how many are on this page; use it to size a pager.")
 
 
 class ApiKeyCreate(CamelSchema):
-    name: str = Field(max_length=200)
+    """`POST /tenant/api-keys`: a new key for one of the bank's integrations."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"name": "Policy portal sync", "scopes": ["library:read", "search:read"], "expiresAt": "2027-09-15T23:59:59Z"}]
+        }
+    )
+
+    name: str = Field(
+        max_length=200,
+        description=(
+            "A name to tell the key apart on screen, at most 200 characters, such as `Policy "
+            "portal sync`. Surrounding spaces are trimmed, and a name of spaces alone is refused "
+            "with `name_required`."
+        ),
+    )
     scopes: list[str] = Field(
         min_length=1,
         description=(
@@ -1427,17 +1916,42 @@ class ApiKeyCreate(CamelSchema):
             + " Anything else is refused with `unknown_key`, and the message lists the valid scopes."
         ),
     )
-    expires_at: datetime | None = None
+    expires_at: datetime | None = Field(
+        default=None,
+        description=(
+            "When the key should stop working on its own, as a UTC timestamp in ISO 8601 that "
+            "must lie in the future, or `expiry_in_past` is answered. Leave it out or send null "
+            "(the default) for a key that lives until it is revoked."
+        ),
+    )
 
 
 class ApiKeyCreated(CamelSchema):
-    id: uuid.UUID
-    name: str
-    key_prefix: str
+    """The secret appears here and nowhere else: no log, no audit value, no outbox payload."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_API_KEY_CREATED]})
+
+    id: uuid.UUID = Field(description="The new key's permanent identifier, a UUID: the handle to revoke it by, never the key itself.")
+    name: str = Field(description="The name the key was given, trimmed, exactly as it will be listed.")
+    key_prefix: str = Field(
+        description=(
+            "The eight hexadecimal characters the key begins with after `cw_`, kept in the clear "
+            "so the key can be recognised in the list later without the secret."
+        )
+    )
     scopes: list[str] = Field(description="What the new key may do, as scope keys, sorted. " + _TENANT_KEY_SCOPES_TEXT)
-    created_at: datetime
-    expires_at: datetime | None
-    plain_key: str
+    created_at: datetime = Field(description="When the key was created, as a UTC timestamp in ISO 8601, set by the server.")
+    expires_at: datetime | None = Field(
+        description="When the key stops working on its own, as a UTC timestamp in ISO 8601, or null for a key with no expiry."
+    )
+    plain_key: str = Field(
+        description=(
+            "The key itself, `cw_<prefix>_<secret>`, to be sent as `X-API-Key` or as a bearer "
+            "token. This answer is the only time it exists outside the caller: the server keeps "
+            "only a hash of the secret, never logs it and never shows it again, so put it straight "
+            "into the integration's secret store. A lost key is revoked and replaced, not recovered."
+        )
+    )
 
 
 # ---------------------------------------------------------------------------------------
@@ -1648,18 +2162,100 @@ class AgentKeyCreated(CamelSchema):
 
 
 class SecurityEventOut(CamelSchema):
-    id: int
-    occurred_at: datetime
-    method: str
-    event: str
-    success: bool
-    failure_reason: str
-    user_id: uuid.UUID | None
-    email: str
-    ip: str | None
-    user_agent: str
+    """One entry of the bank's security log: a sign-in, a failure, an enrolment, a recovery
+    or the use of a key. Entries are append-only and are never edited or removed."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_SECURITY_EVENT]})
+
+    id: int = Field(
+        description=(
+            "The entry's number, issued by the server in increasing order across the platform. "
+            "Numbers are not contiguous within one bank, since other banks' entries sit between."
+        )
+    )
+    occurred_at: datetime = Field(description="When the event happened, as a UTC timestamp set by the server.")
+    method: str = Field(
+        description=(
+            "Which credential the event concerned, one of three values. `email_code` is the "
+            "one-time enrolment code sent by email, and an enrolment session ending; `passkey` is "
+            "a passkey sign-in, step-up or enrolment, and a signed-in session ending; `api_key` "
+            "is one of the bank's API keys or a person's calendar feed link."
+        )
+    )
+    event: str = Field(
+        description=(
+            "What happened, one of these values. `code_sent`: an enrolment code was emailed. "
+            "`code_refused_enrolled`: a code was asked for an address that already holds a "
+            "passkey, and none was sent. `code_failed`: a code did not verify. `code_locked`: too "
+            "many wrong codes, so the code stopped working. `enrolled`: a person registered their "
+            "first passkey. `signin` and `signin_failed`: a passkey sign-in succeeded or failed. "
+            "`step_up` and `step_up_failed`: a passkey confirmation of a protected action "
+            "succeeded or failed. `refresh_replay`: a used refresh token was presented again, so "
+            "the session was ended as possibly stolen. `session_revoked`: a session ended before "
+            "its time. `reenrolment_issued`: an administrator re-issued a member's enrolment. "
+            "`key_used`: an API key authenticated a call, logged at most once every "
+            f"{settings.API_KEY_LAST_USED_THROTTLE_SECONDS} seconds per key by default (a setting). "
+            "`key_revoked`: an API key was revoked. `key_created`: a platform agent key was "
+            "created, which never appears in a bank's log. `key_scopes_withheld`: a key created "
+            "before the platform-only scopes rule presented one and worked without it. "
+            "`feed_used`: a calendar client fetched a person's subscribed feed. A new release may "
+            "add events, so treat an unfamiliar value as new data and not an error."
+        )
+    )
+    success: bool = Field(
+        description=(
+            "True when the event is something that worked, false for a failure or a refusal. "
+            "`key_scopes_withheld` is false: the key worked, but without the scopes it listed."
+        )
+    )
+    failure_reason: str = Field(
+        description=(
+            "A short snake_case reason, empty when there is none. On a failure it says why, such "
+            "as `wrong_code`, `too_many_attempts`, `no_open_code`, `already_consumed`, "
+            "`no_open_invitation`, `unknown_credential` or `passkey_enrolled`. On "
+            "`session_revoked` it says why the session ended: `sign_out`, `idle`, "
+            "`revoked_by_user`, `revoked_by_admin`, `member_deactivated`, `reenrolment`, "
+            "`enrolment_completed` or `refresh_replay`. On `key_scopes_withheld` it lists the "
+            "scopes that were withheld, comma-separated."
+        )
+    )
+    user_id: uuid.UUID | None = Field(
+        description=(
+            "The account identifier of the person the event concerns, a UUID, or null when no "
+            "known person was involved, such as an API key's use or a code typed for an unknown "
+            "address."
+        )
+    )
+    email: str = Field(
+        description=(
+            "The email address the event concerns: the person's address, or for a code event the "
+            "address that was typed, which may belong to nobody. Empty for a key's events."
+        )
+    )
+    ip: str | None = Field(
+        description=(
+            "The network address the request came from, IPv4 or IPv6 as text, or null when the "
+            "event had no request of its own, such as a key's use or revocation."
+        )
+    )
+    user_agent: str = Field(
+        description=(
+            "The browser's own description of itself (its User-Agent header), stored up to 500 "
+            "characters and empty when there was none. It is the browser's claim and proves "
+            "nothing about the device."
+        )
+    )
 
 
 class SecurityLogPage(CamelSchema):
-    items: list[SecurityEventOut]
-    total: int
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_SECURITY_EVENT, _EXAMPLE_FAILED_CODE_EVENT], "total": 2}]})
+
+    items: list[SecurityEventOut] = Field(
+        description=(
+            "The bank's security log entries on this page, newest first. Only this bank's entries "
+            "appear; the platform's own entries and other banks' never do. An empty list is a 200."
+        )
+    )
+    total: int = Field(description="How many entries the bank's security log holds in total, not how many are on this page.")

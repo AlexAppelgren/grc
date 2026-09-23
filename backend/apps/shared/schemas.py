@@ -132,7 +132,7 @@ class MailOutboxMessage(CamelSchema):
     )
     subject: str = Field(
         description=(
-            "The subject line as sent, in plain text, for example the sign-in code mail or "
+            "The subject line as sent, in plain text, for example the enrolment code mail or "
             "an invitation naming the bank. It is written for a person to read, so a test "
             "should find its mail by address and read the code or link from the body rather "
             "than match on this wording."
