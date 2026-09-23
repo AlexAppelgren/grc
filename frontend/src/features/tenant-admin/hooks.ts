@@ -58,6 +58,12 @@ export function useUpdateTenant(): UseMutationResult<Tenant, unknown, TenantUpda
   });
 }
 
+// A security change: the api client opens the passkey prompt on the server's step_up_required.
+export function useSetTenantAi(): UseMutationResult<Tenant, unknown, boolean> {
+  const queryClient = useQueryClient();
+  return useMutation({ mutationFn: (enabled) => admin.setTenantAi(enabled), onSuccess: (tenant) => queryClient.setQueryData(adminKeys.tenant, tenant) });
+}
+
 // `enabled` is false while nobody is signed in: the shell's account menu reads
 // this list, and a shell still on screen as a person signs out fetches nothing.
 export function useLanguages(enabled = true): UseQueryResult<LanguageRef[]> {

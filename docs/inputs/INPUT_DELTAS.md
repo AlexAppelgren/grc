@@ -1187,3 +1187,16 @@ not name answers 422 rather than being dropped. The reject route keeps
   and `closed_at` (library 0009), with a check constraint that a report is open with none
   of the three or closed with all three and a note. `tenant_id` stays nullable and the
   table stays mixed until Alex decides otherwise (docs/TODO_FOR_alex.md, item 3).
+
+## 16. A bank switches its own AI features off with a passkey (2026-09-23, ask-switch-route)
+
+`PUT /tenant/ai` (`setTenantAi`) and `TenantOut.aiEnabled` are not in the designed contract,
+which has no way to reach D-07's per-bank switch: `tenant.ai_enabled` (shared 0007) was read
+before every model call and nothing set it. The route takes `{enabled}`, a strict boolean
+and nothing else, and answers the profile as it now stands. It needs `security.manage` and a
+passkey step-up, because whether a bank's own words may leave it for a model is a security
+change (CLAUDE.md section 5), and it is recorded as `tenant.ai_switched` with the state
+before and after and the step-up assertion. It is a route of its own rather than a field on
+`PATCH /tenant` (`updateTenant`), which stays as designed, so a profile edit never needs a
+passkey and never moves the switch. The switch covers the bank's own Ask and drafts only; a
+platform run is in no bank's zone and never reads it (owner item 14).

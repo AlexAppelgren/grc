@@ -4,6 +4,7 @@ and ADM-S3; TEN-S2 to S6 stay skipped (R2, chunk 8). Never delete a scenario wit
 updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): updateTenant,
+setTenantAi (its branches in tests_organisation.py),
 consoleReissueEnrolment (proven in identity ID-S13).
 
 Prefixes hosted: ADM, TEN.
