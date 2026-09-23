@@ -9,56 +9,46 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: SRC.
 """
 
+import datetime
+import json
+import re
 import uuid
 from typing import Any, ClassVar
 from unittest import mock, skip
 
 from django.contrib.postgres.search import SearchQuery
-from django.db import connection
+from django.db import connection, transaction
 from django.test import Client, TestCase
 from django.test.utils import CaptureQueriesContext
 
+from apps.governance.models import AiGeneration, AiPurpose
 from apps.identity.models import User
 from apps.library.models import ProblemReport, SubjectType
 from apps.library.seeds import seed_languages
+from apps.search import ask, hybrid
 from apps.search.indexing import index_write
 from apps.search.models import SearchChunk, SearchSource
 from apps.search.tests_hybrid import (
+    COSTS_SUMMARY_FI,
+    COSTS_SUMMARY_SV,
     COSTS_TITLE_FI,
     COSTS_TITLE_SV,
+    EU_REPORTING_SUMMARY,
     EU_REPORTING_TITLE,
     FFFS,
+    REPORTING_SUMMARY_V1,
+    REPORTING_SUMMARY_V2,
     REPORTING_TITLE,
+    WARNINGS_SUMMARY,
     WARNINGS_TITLE,
     CorpusMixin,
 )
-from apps.shared import factories, tenancy
-from apps.shared.adapters import reranker
-from apps.shared.models import AuditEvent
+from apps.shared import ai, factories, tenancy
+from apps.shared.adapters import llm, reranker
+from apps.shared.models import AuditEvent, Tenant
+from apps.shared.tenancy import library_write
 from apps.shared.testing import sign_in
 from apps.taxonomy.models import DutyType
-from apps.shared.tenancy import library_write
-
-# SRC-S4 to SRC-S6, Ask (the block at the end of this file).
-import datetime
-import json
-import re
-
-from django.db import transaction
-
-from apps.governance.models import AiGeneration, AiPurpose
-from apps.search import ask, hybrid
-from apps.search.tests_hybrid import (
-    COSTS_SUMMARY_FI,
-    COSTS_SUMMARY_SV,
-    EU_REPORTING_SUMMARY,
-    REPORTING_SUMMARY_V1,
-    REPORTING_SUMMARY_V2,
-    WARNINGS_SUMMARY,
-)
-from apps.shared import ai
-from apps.shared.adapters import llm
-from apps.shared.models import Tenant
 from apps.watch import testing as watch
 from apps.watch.models import ChangeObligation
 from apps.watch.write import watch_write

@@ -97,8 +97,8 @@ MODEL_UNAVAILABLE = "The answer could not be finished. Ask again in a moment."
 
 # The lifecycle kinds whose key date moves the law: a rule decided with its application
 # still ahead, and one in force from a later day. A proposal, a supervisory statement and
-# a recurring date move no law on their date. The kind decides, never the key, so a bank's
-# own change type of either kind is flagged too.
+# a recurring date move no law on their date. The kind decides, never the key, so a change
+# type the library adds later under a key of its own is flagged by the kind it carries.
 MOVES_THE_LAW = (ChangeLifecycleKind.ADOPTED.value, ChangeLifecycleKind.IN_FORCE.value)
 
 # Where a sentence ends: a full stop, a question or an exclamation mark with the citations

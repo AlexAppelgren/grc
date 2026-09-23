@@ -19,6 +19,8 @@ What these tests hold in place, in the order a reviewer would ask about it:
    everything the answer rests on was read before it left.
 7. **The question stays the bank's own.** It reaches no log line, no audit row and no
    outbox row.
+8. **The settings bound what reaches the model.** The retrieval depth is how many passages
+   the prompt holds, and a depth or a token cap outside its bounds refuses to boot.
 """
 
 from __future__ import annotations
@@ -26,7 +28,10 @@ from __future__ import annotations
 import datetime
 import json
 import logging
-import time
+import os
+import re
+import subprocess
+import sys
 import uuid
 from collections.abc import Iterator
 from typing import Any, ClassVar
@@ -35,7 +40,7 @@ from unittest import mock
 from django.conf import settings
 from django.core.signals import request_finished
 from django.db import connection
-from django.test import Client, TestCase, override_settings
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
 from apps.governance.models import AiGeneration, AiPurpose, AiStatus
@@ -55,7 +60,7 @@ from apps.shared.adapters import llm
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.tenancy import library_write
 from apps.shared.testing import sign_in
-from apps.taxonomy.models import FootprintTerm, TaxonomyTerm
+from apps.taxonomy.models import ChangeLifecycleKind, ChangeType, FootprintTerm, TaxonomyTerm
 from apps.watch import testing as watch
 from apps.watch.models import ChangeObligation, ChangeStatus
 from apps.watch.write import watch_write
@@ -346,12 +351,28 @@ class AskPendingChangeTests(AskTestCase):
 
         self.assertIsNone(self.statement()["pendingChangeId"])
 
-    def test_the_lifecycle_kind_decides_and_not_the_key(self) -> None:
+    def test_a_rule_in_force_from_a_later_day_is_flagged_as_an_adopted_one_is(self) -> None:
         """`in_force` is a type of its own whose kind moves the law: a rule already decided
         that applies from a later day is flagged exactly as an adopted one is."""
         row = self.link(change_type="in_force", key_date=datetime.date(2026, 11, 1))
 
         self.assertEqual(self.statement()["pendingChangeId"], str(row.id))
+
+    def test_a_type_keyed_apart_from_its_kind_is_flagged_by_its_kind(self) -> None:
+        """The seeded keys spell their own kinds, so only a key the rule has never heard of
+        tells a rule on the kind from a rule on the key."""
+        with library_write("test fixture: a change type whose key is not a kind"):
+            ChangeType.objects.create(key="fi_decision", kind=ChangeLifecycleKind.ADOPTED.value)
+        row = self.link(change_type="fi_decision", key_date=datetime.date(2026, 11, 1))
+
+        self.assertEqual(self.statement()["pendingChangeId"], str(row.id))
+
+    def test_the_type_keyed_adopted_is_not_flagged_once_its_kind_moves_no_law(self) -> None:
+        with library_write("test fixture: the adopted type read as a proposal"):
+            ChangeType.objects.filter(key="adopted").update(kind=ChangeLifecycleKind.PRE_ADOPTION.value)
+        self.link(change_type="adopted", key_date=datetime.date(2026, 10, 1))
+
+        self.assertIsNone(self.statement()["pendingChangeId"])
 
     def test_a_link_nobody_confirmed_is_a_suggestion_and_is_not_flagged(self) -> None:
         self.link(confirmed=False, key_date=datetime.date(2026, 10, 1))
@@ -467,7 +488,9 @@ class AskLogTests(AskTestCase):
 
 
 class AskStreamTests(AskTestCase):
-    """SRC-S9: a first token under 2 s, however long the whole answer takes."""
+    """NFR-02's first token under 2 s, however long the whole answer takes: the first event
+    leaves before the model is asked, which is an order and so is proven as one. SRC-S9's
+    budget is measured apart from this suite."""
 
     def test_the_answer_is_an_event_stream_nothing_may_hold_back(self) -> None:
         response = self.post({"question": COSTS_QUESTION})
@@ -479,22 +502,16 @@ class AskStreamTests(AskTestCase):
         self.assertEqual(events_of(response)[0]["event"], "start")
 
     def test_the_first_event_leaves_before_the_model_is_asked_anything(self) -> None:
-        mock_stream = llm.MockLlm.stream  # the real one, before the patch below replaces it
-
-        def slow(self: llm.MockLlm, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | llm.Completion]:
-            time.sleep(0.5)
-            yield from mock_stream(self, system=system, prompt=prompt, max_tokens=max_tokens)
-
-        with mock.patch.object(llm.MockLlm, "stream", autospec=True, side_effect=slow):
-            started = time.monotonic()
+        with mock.patch.object(llm.MockLlm, "stream", autospec=True, side_effect=llm.MockLlm.stream) as model:
             response = self.post({"question": COSTS_QUESTION})
-            first = next(iter(response.streaming_content))
-            waited = time.monotonic() - started
-            list(response.streaming_content)
+            stream = iter(response.streaming_content)
+            first = next(stream)
+            model.assert_not_called()
+            rest = list(stream)
 
         self.assertIn(b'"event": "start"', first)
-        self.assertLess(waited, 0.5, "the first event does not wait for the model")
-        self.assertLess(waited, 2.0)
+        model.assert_called_once()
+        self.assertIn(b'"event": "answer"', rest[-1])
 
     def test_every_answer_has_an_id_of_its_own(self) -> None:
         first = answer_of(self.ask(COSTS_QUESTION))["id"]
@@ -559,3 +576,57 @@ class AskPrivacyTests(AskTestCase):
         self.assertEqual(OutboxEvent.objects.count(), outbox, "an answer changes no record, so nothing is published")
         row = AiGeneration.objects.get()
         self.assertNotIn("Ekeroth", f"{row.output} {row.prompt_hash} {row.prompt_template} {row.citations}")
+
+
+class AskDepthTests(AskTestCase):
+    """ASK_RETRIEVAL_DEPTH is how many passages the model is given, and so how many an
+    answer can cite."""
+
+    # Matches both reporting duties in the corpus, one Swedish and one European.
+    QUESTION = "report"
+
+    def passages_given(self) -> tuple[int, dict[str, Any]]:
+        with mock.patch.object(llm.MockLlm, "stream", autospec=True, side_effect=llm.MockLlm.stream) as model:
+            answer = answer_of(self.ask(self.QUESTION))
+        return len(re.findall(r"^\[\d+\] ", model.call_args.kwargs["prompt"], re.MULTILINE)), answer
+
+    def test_the_prompt_holds_no_more_passages_than_the_depth(self) -> None:
+        wide, _ = self.passages_given()
+        with override_settings(ASK_RETRIEVAL_DEPTH=1):
+            narrow, answer = self.passages_given()
+
+        self.assertGreater(wide, 1, "at the default depth the question finds more than one passage")
+        self.assertEqual(narrow, 1)
+        self.assertEqual(len(answer["citations"]), 1)
+
+
+class AskSettingsBoundsTests(SimpleTestCase):
+    """The depth and the token cap refuse to boot outside their bounds: no passage at all
+    would make every question "no answer" without anybody deciding so, a depth above the
+    log's citation cap could cite a passage its row cannot record, and no tokens is no
+    answer. The settings module is imported in a process of its own, as a boot reads it."""
+
+    def boot(self, variable: str, value: int) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, "-c", "import config.settings"],
+            cwd=str(settings.BASE_DIR),
+            env={**os.environ, variable: str(value), "PYTHONIOENCODING": "utf-8"},
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+
+    def test_a_depth_or_a_token_cap_outside_its_bounds_refuses_to_boot(self) -> None:
+        ceiling = settings.AI_GENERATION_CITATIONS_MAX
+        for variable, value in (("ASK_RETRIEVAL_DEPTH", 0), ("ASK_RETRIEVAL_DEPTH", ceiling + 1), ("ASK_MAX_TOKENS", 0)):
+            with self.subTest(variable=variable, value=value):
+                result = self.boot(variable, value)
+                self.assertNotEqual(result.returncode, 0, f"{variable}={value} booted")
+                self.assertIn("ImproperlyConfigured", result.stderr)
+                self.assertIn(f"{variable} is {value}", result.stderr)
+
+    def test_the_depth_boots_at_the_citation_cap(self) -> None:
+        result = self.boot("ASK_RETRIEVAL_DEPTH", settings.AI_GENERATION_CITATIONS_MAX)
+
+        self.assertEqual(result.returncode, 0, result.stderr[-800:])
