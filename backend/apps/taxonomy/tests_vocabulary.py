@@ -686,3 +686,14 @@ class LibraryListUsage(ScenarioTestCase):
         with self.assertRaises(watch_door.WatchWriteRefused), transaction.atomic(), library_write("test"):
             watch_door.repoint(conduct, conduct.none(), "duty_type", DutyType.objects.get(key="disclosure"))
         self.assertTrue(conduct.exists())
+
+    def test_a_library_list_moves_nothing_outside_an_approved_merge(self) -> None:
+        # The preview a library list offers counts what would move and refuses to move it:
+        # its rows move only inside the approval (VOC-07). A list nothing references moves
+        # nothing either way.
+        conduct, disclosure = DutyType.objects.get(key="conduct"), DutyType.objects.get(key="disclosure")
+        preview = REGISTRY["duty_type"].repoint
+        self.assertEqual(preview(conduct, disclosure, dry_run=True), Obligation.objects.filter(duty_type=conduct).count())
+        with self.assertRaises(RuntimeError):
+            preview(conduct, disclosure)
+        self.assertEqual(REGISTRY["rejection_reason"].repoint(conduct, disclosure), 0)
