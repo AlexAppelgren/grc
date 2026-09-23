@@ -6,7 +6,7 @@ Taken from the prototype. The build reproduces it and the agents feed it.
 
 | Tone | Background token (light / dark) | Text token | Contrast light / dark | Means |
 |---|---|---|---|---|
-| `information` | `l3-neutral-02` | `content-neutral-01` | 16.50 / 11.69 | Neutral fact: regime, workflow status, "Guidance", "Monitor", "Not assessed", risk, match kind |
+| `information` | `l3-neutral-02` | `content-neutral-01` | 16.50 / 11.69 | Neutral fact: regime, workflow status, "Guidance", "Standard", "Monitor", "Not assessed", risk, match kind |
 | `notice` | `l3-notice-02` / `l3-notice-03` | `content-notice-01` | 5.67 / 5.74 | What kind of change this is, and counts: change type, "2 open changes", "6+ months", a running agent |
 | `positive` | `l3-positive-02` / `l3-positive-03` | `content-positive-03` | 6.05 / 8.06 | Good on a severity scale: "Compliant", "No action", "Closed" gap, a finished run |
 | `warning` | `l3-warning-02` / `l3-warning-03` | `content-warning-01` | 5.16 / 5.92 | Needs attention: "Within 3 months", "Partly compliant", "Remediating", "Waiting for approval", "Guidance, comply or explain" |
@@ -47,8 +47,9 @@ A new compliance sub-status inherits the tone of its category.
 | Record | Order |
 |---|---|
 | Change row and header | Change type, urgency, flags, then workflow status (header only), then authority and date as plain meta text |
-| Obligation row | Instrument, "Guidance" if not binding, applicability, compliance status if it applies, "Change waiting for approval", "N open changes" |
-| Obligation header | Instrument, regime, binding level, compliance status |
+| Obligation row | Instrument, "Guidance" if not binding ("Standard" when the binding level's kind is `standard`), applicability, compliance status if it applies, "Change waiting for approval", "N open changes" |
+| Obligation header | Instrument, regime, binding level ("Standard" when its kind is `standard`), compliance status |
+| Instrument header and row | Short name, level, binding level ("Standard" when the level's kind is `standard`), jurisdiction, regime |
 | Scope block | One `brand` pill per term. "All services" when every term is selected. Plain text "Not client-specific" when the list is empty, because empty means no restriction |
 | Gap | Gap status, severity, source |
 | Roadmap item | Urgency or "Our deadline", then date and days left as text |
@@ -56,7 +57,10 @@ A new compliance sub-status inherits the tone of its category.
 ## Labels
 
 Phrases, never codes: `new` reads "Needs triage", `signoff` reads "Waiting
-for sign-off", non-binding reads "Guidance, comply or explain". Vocabulary
+for sign-off", non-binding reads "Guidance, comply or explain", and a
+level whose kind is `standard` reads "Standard" in `information` in both
+binding slots whatever `binding` says, because an edition of a standard is
+neither law nor guidance (D-37). Vocabulary
 labels come from their rows in the user's language. Computed labels come
 from the message catalogs with plural forms. The API sends keys, kinds and
 facts, never a phrase.
