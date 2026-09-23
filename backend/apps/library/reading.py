@@ -6,12 +6,13 @@ and the diffs between two versions. Nothing here writes.
 - `partial_date()` is a legal date with its precision (playbook 4.3).
 - `vocabulary_refs()` labels every distinct vocabulary row or term of a page from one
   query over its label table.
-- `instrument_scopes()` is the one place for an instrument's own scope: its regime, the
-  one dimension an instrument itself carries. `obligation_scopes()` inherits through it:
-  an obligation's scope is its own terms plus its instrument's scope. Neither inherits a
-  jurisdiction term. `instrument_scope_term_ids()` and `scope_term_ids()` are their SQL
-  twins, which the lists hand to the database's `taxonomy_in_footprint` and to the term
-  filter; the tests pin them to their Python counterparts.
+- `instrument_scopes()` is the one place for an instrument's own scope: its regime and
+  the jurisdictions its rules reach, derived from its jurisdiction and never stored
+  (D-28, D-29). `obligation_scopes()` inherits through it: an obligation's scope is its
+  own terms plus its instrument's scope. `instrument_scope_term_ids()` and
+  `scope_term_ids()` are their SQL twins, which the lists and search hand to the
+  database's `taxonomy_in_footprint`, unchanged, and to the term filter; the tests pin
+  them to their Python counterparts.
 - `outside_reasons()` is the footprint verdict and its reason, built on
   `taxonomy.matching`: a record is inside when it has no reason to be outside, and
   `scope_and_verdict()` builds both for a row of the list and for a record's own card.
@@ -270,27 +271,45 @@ def unknown_provision_keys(keys: Collection[str]) -> set[str]:
 # Scope and footprint (FP-01, FP-03)
 # ---------------------------------------------------------------------------------------
 def instrument_scopes(instrument_ids: Collection[uuid.UUID] | None = None) -> dict[uuid.UUID, dict[str, list[TaxonomyTerm]]]:
-    """An instrument's own scope, in one place: its regime, the one dimension an instrument
-    itself carries (INV-01, FP-03). `obligation_scopes()` inherits through this, so the
+    """An instrument's own scope, in one place (INV-01, FP-03, FP-04): its regime, and the
+    jurisdictions its rules reach. `obligation_scopes()` inherits through this, so the
     list's footprint verdict and the instrument's own can never disagree. For the given
-    instruments, or for every one the caller can see; two queries either way. An instrument
-    with no regime has no entry: it matches every footprint."""
+    instruments, or for every one the caller can see; two queries either way.
+
+    The jurisdictions are derived here, at match time, and never stored (D-28, D-29): the
+    term that mirrors the instrument's own jurisdiction and the terms that mirror every
+    jurisdiction whose parent that one is, read from the mirror link and the parent link
+    alone, so a Union rule reaches each member country and Norway and a national rule its
+    own country only. A jurisdiction that no term mirrors derives nothing (D-38)."""
     instruments = Instrument.objects.all() if instrument_ids is None else Instrument.objects.filter(id__in=instrument_ids)
-    pairs = set(instruments.filter(regime__isnull=False).order_by().values_list("id", "regime_id"))
-    terms = TaxonomyTerm.objects.select_related("dimension").in_bulk({term_id for _, term_id in pairs})
+    rows = list(instruments.order_by().values_list("id", "regime_id", "jurisdiction_id"))
+    jurisdictions = {jurisdiction_id for _, _, jurisdiction_id in rows}
+    terms = (
+        TaxonomyTerm.objects.select_related("dimension")
+        .annotate(parent_jurisdiction_id=F("jurisdiction__parent"))
+        .filter(Q(id__in={regime_id for _, regime_id, _ in rows}) | Q(jurisdiction__in=jurisdictions) | Q(jurisdiction__parent__in=jurisdictions))
+        .order_by("sort_order", "key")
+    )
+    by_id: dict[uuid.UUID, TaxonomyTerm] = {}
+    derived_for: dict[uuid.UUID, list[TaxonomyTerm]] = {}  # a jurisdiction's id: the terms its instruments derive
+    for term in terms:
+        by_id[term.id] = term
+        for jurisdiction_id in {term.jurisdiction_id, term.parent_jurisdiction_id} - {None}:
+            derived_for.setdefault(jurisdiction_id, []).append(term)
     scopes: dict[uuid.UUID, dict[str, list[TaxonomyTerm]]] = {}
-    for instrument_id, term_id in pairs:
-        term = terms[term_id]
-        scopes.setdefault(instrument_id, {})[term.dimension.key] = [term]
+    for instrument_id, regime_id, jurisdiction_id in rows:
+        regime = by_id[regime_id]
+        scope = scopes[instrument_id] = {regime.dimension.key: [regime]}
+        for derived in derived_for.get(jurisdiction_id, []):
+            scope.setdefault(derived.dimension.key, []).append(derived)
     return scopes
 
 
 def obligation_scopes(obligation_ids: Collection[uuid.UUID] | None = None) -> dict[uuid.UUID, dict[str, list[TaxonomyTerm]]]:
     """The scope rule, in one place: an obligation's own terms plus its instrument's own
-    scope (`instrument_scopes()`, its regime), grouped by dimension key in the terms'
-    order. For the given obligations, or for every one the caller can see; five queries
-    either way. An obligation with no terms and an unscoped instrument has no entry: it
-    matches every footprint."""
+    scope (`instrument_scopes()`: its regime and the jurisdictions it reaches), grouped by
+    dimension key in the terms' order, each term once. For the given obligations, or for
+    every one the caller can see; five queries either way."""
     obligations = Obligation.objects.all() if obligation_ids is None else Obligation.objects.filter(id__in=obligation_ids)
     own_pairs = set(ObligationTerm.objects.filter(obligation__in=obligations).order_by().values_list("obligation_id", "term_id"))
     by_instrument = dict(obligations.order_by().values_list("id", "instrument_id"))
@@ -302,27 +321,38 @@ def obligation_scopes(obligation_ids: Collection[uuid.UUID] | None = None) -> di
         scopes.setdefault(obligation_id, {}).setdefault(term.dimension.key, []).append(term)
     for obligation_id, instrument_id in by_instrument.items():
         for dimension_key, dimension_terms in inherited.get(instrument_id, {}).items():
-            scopes.setdefault(obligation_id, {}).setdefault(dimension_key, []).extend(dimension_terms)
+            carried = scopes.setdefault(obligation_id, {}).setdefault(dimension_key, [])
+            known = {term.id for term in carried}
+            carried.extend(term for term in dimension_terms if term.id not in known)
     return scopes
 
 
-def _regime_array(field: str) -> Func:
-    """One instrument regime id as a `uuid[]`, empty when it carries none: the SQL half of
-    an instrument's own scope (`instrument_scopes()`), shared by both SQL twins below."""
-    return Func(F(field), template="array_remove(ARRAY[%(expressions)s], NULL)", output_field=ArrayField(UUIDField()))
+def _instrument_scope(path: str) -> ArraySubquery:
+    """The SQL half of `instrument_scopes()`, shared by both SQL twins below: the term that
+    is the instrument's regime and the terms that mirror a jurisdiction its rules reach,
+    read from the same two links, as one uuid[]. `path` leads from the outer row to the
+    instrument: nothing from an instrument, `instrument__` from an obligation."""
+    return ArraySubquery(
+        TaxonomyTerm.objects.filter(
+            Q(id=OuterRef(f"{path}regime_id"))
+            | Q(jurisdiction=OuterRef(f"{path}jurisdiction_id"))
+            | Q(jurisdiction__parent=OuterRef(f"{path}jurisdiction_id"))
+        )
+        .order_by()
+        .values("id")
+    )
 
 
-def instrument_scope_term_ids() -> Func:
-    """The SQL twin of `instrument_scopes()`: an instrument's own scope is its regime id
-    alone, as one uuid[]."""
-    return _regime_array("regime_id")
+def instrument_scope_term_ids() -> ArraySubquery:
+    """The SQL twin of `instrument_scopes()`: an instrument's own scope, as one uuid[]."""
+    return _instrument_scope("")
 
 
 def scope_term_ids() -> Func:
     """The SQL twin of `obligation_scopes()`: the obligation's own term ids plus its
-    instrument's own scope (`instrument_scope_term_ids()`), as one uuid[]."""
+    instrument's own scope, as one uuid[]."""
     own = ArraySubquery(ObligationTerm.objects.filter(obligation=OuterRef("pk")).order_by().values("term_id"))
-    return Func(own, _regime_array("instrument__regime_id"), function="array_cat", output_field=ArrayField(UUIDField()))
+    return Func(own, _instrument_scope("instrument__"), function="array_cat", output_field=ArrayField(UUIDField()))
 
 
 def outside_reasons(
@@ -813,7 +843,7 @@ def instrument_detail(order: list[str], instrument_id: uuid.UUID) -> InstrumentD
         Instrument.objects.select_related("level", "authority", "jurisdiction", "regime__dimension", "verified_by").prefetch_related("titles"),
         instrument_id,
     )
-    regime_refs = vocabulary_refs(TaxonomyTermLabel, [instrument.regime] if instrument.regime else [], order, field="term")
+    regime_refs = vocabulary_refs(TaxonomyTermLabel, [instrument.regime], order, field="term")
     level_refs = vocabulary_refs(InstrumentLevelLabel, [instrument.level], order)
     jurisdiction_refs = vocabulary_refs(JurisdictionLabel, [instrument.jurisdiction], order)
     verifier = instrument.verified_by

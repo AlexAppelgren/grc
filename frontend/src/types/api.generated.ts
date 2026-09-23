@@ -7168,7 +7168,7 @@ export interface components {
              * @example FFFS 2017:2
              */
             officialRef: string;
-            /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
+            /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits, beside the jurisdictions the instrument's rules reach, which are derived from `jurisdiction` when the record is read and never stored. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
             regime: components["schemas"]["LibraryRef"];
             /**
              * Shortname
@@ -7409,7 +7409,7 @@ export interface components {
             implementsNote: string;
             /**
              * Infootprint
-             * @description Whether the instrument's own scope (its regime) overlaps the bank's footprint. It is a filter and not a decision: it says nothing about whether any duty of this instrument applies to this bank, which a person judges separately.
+             * @description Whether the instrument's own scope (its regime, and the jurisdictions its rules reach, derived from `jurisdiction` and never stored) overlaps the bank's footprint. It is a filter and not a decision: it says nothing about whether any duty of this instrument applies to this bank, which a person judges separately.
              * @example true
              */
             inFootprint: boolean;
@@ -7441,7 +7441,7 @@ export interface components {
              * @example FFFS 2017:2
              */
             officialRef: string;
-            /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
+            /** @description Which body of law the instrument belongs to, as a term of the taxonomy's `regime` dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, `banking` and `payments` are seeded on day one. This is the sector boundary every instrument carries (playbook 4.3), and it is what an obligation's own scope inherits, beside the jurisdictions the instrument's rules reach, which are derived from `jurisdiction` when the record is read and never stored. Never null: the library refuses an instrument without one, and a standard takes the regime of the family of law it serves. The terms are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key. */
             regime: components["schemas"]["LibraryRef"];
             /**
              * Shortname
@@ -8536,6 +8536,21 @@ export interface components {
          *               "label": "Ongoing"
          *             }
          *           ]
+         *         },
+         *         {
+         *           "allSelected": false,
+         *           "dimension": {
+         *             "key": "jurisdiction",
+         *             "kind": null,
+         *             "label": "Jurisdiction"
+         *           },
+         *           "terms": [
+         *             {
+         *               "key": "se",
+         *               "kind": null,
+         *               "label": "Sweden"
+         *             }
+         *           ]
          *         }
          *       ],
          *       "stableKey": "obl-research-payments",
@@ -8700,7 +8715,7 @@ export interface components {
             sanctionExposure: string;
             /**
              * Scope
-             * @description Which banks and which business the duty reaches, one entry per active dimension of the taxonomy. This is the record's own scope as the library states it: it is not the bank's footprint, and it is not the judgement that the duty applies to this bank.
+             * @description Which banks and which business the duty reaches, one entry per active dimension of the taxonomy. This is the record's own scope as the library states it: it is not the bank's footprint, and it is not the judgement that the duty applies to this bank. Its instrument's regime is part of it, and so are the jurisdictions the instrument's rules reach. Those are derived when the record is read and never stored: the term of the instrument's own jurisdiction and the term of every jurisdiction its rules reach, so a European Union instrument reaches Sweden, Denmark, Norway and Finland, a national one its own country only, and an international standard no jurisdiction at all.
              */
             scope: components["schemas"]["ScopeDimension"][];
             /**
@@ -8941,6 +8956,21 @@ export interface components {
          *                   "key": "ongoing",
          *                   "kind": null,
          *                   "label": "Ongoing"
+         *                 }
+         *               ]
+         *             },
+         *             {
+         *               "allSelected": false,
+         *               "dimension": {
+         *                 "key": "jurisdiction",
+         *                 "kind": null,
+         *                 "label": "Jurisdiction"
+         *               },
+         *               "terms": [
+         *                 {
+         *                   "key": "se",
+         *                   "kind": null,
+         *                   "label": "Sweden"
          *                 }
          *               ]
          *             }
@@ -9221,7 +9251,7 @@ export interface components {
             refLabel: string;
             /**
              * Scope
-             * @description Which banks and which business the duty reaches, one entry per active dimension of the taxonomy. This is the record's own scope as the library states it: it is not the bank's footprint, and it is not the judgement that the duty applies to this bank.
+             * @description Which banks and which business the duty reaches, one entry per active dimension of the taxonomy. This is the record's own scope as the library states it: it is not the bank's footprint, and it is not the judgement that the duty applies to this bank. Its instrument's regime is part of it, and so are the jurisdictions the instrument's rules reach. Those are derived when the record is read and never stored: the term of the instrument's own jurisdiction and the term of every jurisdiction its rules reach, so a European Union instrument reaches Sweden, Denmark, Norway and Finland, a national one its own country only, and an international standard no jurisdiction at all.
              */
             scope: components["schemas"]["ScopeDimension"][];
             /**
@@ -9375,7 +9405,7 @@ export interface components {
             dimension: components["schemas"]["LibraryRef"];
             /**
              * Terms
-             * @description The terms the record carries in that dimension, so a reader can see what the bank's footprint would have to include for the record to appear. They are vocabulary rows a platform admin may extend or retire, matched on the key. This is the record's own scope and never the bank's footprint: nothing here says what the bank does.
+             * @description The terms the record carries in that dimension, so a reader can see what the bank's footprint would have to include for the record to appear. They are vocabulary rows a platform admin may extend or retire, matched on the key. This is the record's own scope and never the bank's footprint: nothing here says what the bank does. In the `jurisdiction` dimension they are the jurisdictions the record's instrument reaches, derived when the record is read and never stored, as `scope` explains.
              */
             terms: components["schemas"]["LibraryRef"][];
         };
@@ -11068,7 +11098,7 @@ export interface components {
             dimension: components["schemas"]["LibraryRef"];
             /**
              * Terms
-             * @description The terms this record carries in that dimension, in the picker's order. An empty list means the record puts no restriction on this facet and so reaches every bank in it — never that the facet is unknown. The terms are vocabulary rows a platform admin may extend or retire without a deploy, and a member of a bank may propose a new one, so read `GET /taxonomy/terms` for the live set and match on the key. A term's `kind` is null: its dimension is its kind.
+             * @description The terms this record carries in that dimension, in the picker's order. An empty list means the record puts no restriction on this facet and so reaches every bank in it — never that the facet is unknown. The terms are vocabulary rows a platform admin may extend or retire without a deploy, and a member of a bank may propose a new one, so read `GET /taxonomy/terms` for the live set and match on the key. A term's `kind` is null: its dimension is its kind. In the `jurisdiction` dimension the terms are not stored on the record: they are derived each time it is read, from its instrument's jurisdiction, as the term of that jurisdiction plus the term of every jurisdiction its rules reach. So a European Union instrument's duty lists `eu`, `se`, `dk`, `no` and `fi`, a Swedish one lists `se` alone, and an international standard's lists none.
              */
             terms: components["schemas"]["LibraryRef"][];
         };

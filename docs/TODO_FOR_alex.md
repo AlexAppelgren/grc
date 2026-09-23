@@ -826,12 +826,29 @@ Nothing waits for these; each has the default the build took.
       the gate fails when a recorded score drops, but with only the mock embedder there is
       nothing honest to record: a mock can never set the bar. Nothing to do beyond the D-09
       key already listed under "Before the first test deploy"; the run that chooses the
-      model records the baseline and removes this line (`backend/eval/README.md`). Two
-      things that run needs first, neither of them yours: a settings route with a real
-      embedder and a throwaway database (today's test settings fix the embedder to the
-      mock), and hybrid search breaking ties on something a rebuild keeps, because today two
-      of the 53 questions can come back in a different order from one fresh database to the
-      next.
+      model records the baseline and removes this line (`backend/eval/README.md`). The ties
+      are fixed (tax-jurisdiction-derivation, 2026-09-23): hybrid search now breaks them on
+      the record's stable key, the kind, the language and the start date, never on an id,
+      so every question comes back in the same order from one fresh database to the next.
+      Only D-09's key remains, plus one thing that run needs that is not yours: a settings
+      route with a real embedder and a throwaway database (today's test settings fix the
+      embedder to the mock).
+
+## tax-jurisdiction-derivation: where a record's derived jurisdictions show (2026-09-23, FP-04, D-28, D-29)
+
+- [ ] **A record's scope block and its "outside our scope" reason now list the
+      jurisdictions its instrument's rules reach.** They are derived at match time and never
+      stored, as D-28 and D-29 say, and the card shows the scope the rule matched on: a
+      Swedish obligation shows one pill, Sweden, and a Union one five pills, European
+      Union, Sweden, Denmark, Norway and Finland. The API marks that Union group as all
+      selected, but the card folds a group into one "all" pill only for services, so it
+      lists the five. An obligation hidden by a Denmark-only scope says it is outside by
+      its jurisdiction, Sweden. A standard's obligation lists none (International is
+      mirrored by no term, D-38). Two other readings: the card folds a fully selected
+      jurisdiction group into one "All jurisdictions" pill, as it does for services; or it
+      shows only the instrument's own jurisdiction, or none, while still matching on all
+      of them. Default if you say nothing: the card lists every derived term as its own
+      pill, because the card and the rule then cannot disagree.
 
 ## Ask sends a reader's question to the model (search-ask-backend, 2026-09-23)
 
