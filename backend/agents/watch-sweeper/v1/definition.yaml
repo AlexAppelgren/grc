@@ -53,7 +53,7 @@ tools:
   - name: finishAgentRun
     operation: PATCH /agent-runs/{runId}
     scopes: [agent-runs:write]
-    purpose: Close the run with status and stats. Last call, also after a failure.
+    purpose: Close the run with status and stats, outOfScope among them (documents outside the sector scope, counted on their source's check and never registered or proposed, AGT-08). Last call, also after a failure.
     input: AgentRunFinish
     output: AgentRun
 
@@ -90,5 +90,5 @@ budget_defaults:
 
 evals:
   cases: evals/cases.jsonl
-  scored_by: backend/scripts/search_eval.py   # classification track, eval/classification.jsonl
+  scored_by: backend/scripts/search_eval.py   # classification track, eval/classification.jsonl: change type, flags, scope, screen, in-scope and standard term
   gate: backend/eval/tolerance.json

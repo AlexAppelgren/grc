@@ -1,11 +1,17 @@
 {
-  "_comment": "How far each metric may fall under its recorded baseline before search_eval.py fails CI. Absolute points on a 0 to 1 scale. The set is small (53 questions, 52 texts), so one question is roughly 0.02 of recall; 0.05 lets a reranker or embedder swap lose two questions without a red build and catches a third. The screen tolerance is 0: an embedded-instruction case that stops being flagged is a security regression (AGT-07), never noise.",
+  "_comment": "How far each metric may fall under its recorded baseline before search_eval.py fails CI. Absolute points on a 0 to 1 scale. The set is small (53 questions, 60 texts), so one question is roughly 0.02 of recall; 0.05 lets a reranker or embedder swap lose two questions without a red build and catches a third. The screen tolerance is 0: an embedded-instruction case that stops being flagged is a security regression (AGT-07), never noise. The two AGT-08 metrics carry their own reasons in _rationale.",
+  "_rationale": {
+    "classification_in_scope_accuracy": "0.02. One text of the 60 is 0.017 of this metric, so 0.02 lets one borderline text flip between runs of a non-deterministic model and fails on the second. The set holds four off-sector texts: the 0.05 the other fields use would let three of them be registered without a red build, which is the failure AGT-08 exists to prevent. The number assumes one text is worth more than 0.01; revisit it when the set passes 100 texts.",
+    "classification_standard_term_accuracy": "0. The opt-in term decides who sees a record. On a law it hides that law from every bank that has not opted in to the standard, so a bank misses a rule that binds it; missing from a standard's own record, it shows the standard to banks that never chose it. Three standards texts and one law citing a standard carry the rule, and one wrong text is 0.017 of the metric, so any tolerance that let a drop pass would let one of those four fail unseen. Like the screen, a wrong term is a visibility defect and never noise."
+  },
   "metrics": {
     "retrieval_recall_at_10": 0.05,
     "retrieval_mrr": 0.05,
     "classification_change_type_accuracy": 0.05,
     "classification_flags_accuracy": 0.05,
     "classification_scope_accuracy": 0.05,
-    "classification_screen_accuracy": 0.0
+    "classification_screen_accuracy": 0.0,
+    "classification_in_scope_accuracy": 0.02,
+    "classification_standard_term_accuracy": 0.0
   }
 }
