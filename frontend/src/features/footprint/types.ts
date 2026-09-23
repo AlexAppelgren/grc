@@ -21,6 +21,8 @@ export interface TaxonomyTerm extends TermRef {
   usageNote?: string;
   sortOrder?: number;
   active?: boolean;
+  /** True for a term that mirrors a jurisdiction row: its group is the markets we operate in. */
+  mirrored?: boolean;
 }
 
 export interface TaxonomyDimension extends TermRef {
@@ -74,9 +76,24 @@ export interface FootprintChangeRequest {
   version: number;
 }
 
+/** A market's level is a kind the server computes: operating first, then watching, otherwise not followed. */
+export type MarketLevel = 'operating' | 'watching' | 'not_followed';
+
+/** One active country and how closely the organisation follows it. */
+export interface Market {
+  jurisdiction: TermRef;
+  level: MarketLevel;
+}
+
+/** A jurisdiction from the reference list, with the one whose rules reach it. */
+export interface JurisdictionRef extends TermRef {
+  parentKey: string | null;
+}
+
 export interface Footprint {
   dimensions: FootprintDimension[];
   pendingRequest: FootprintChangeRequest | null;
+  markets: Market[];
 }
 
 export interface FootprintRequestCreate {

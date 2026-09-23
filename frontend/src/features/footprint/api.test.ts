@@ -45,11 +45,19 @@ describe('footprint api', () => {
     const view = {
       dimensions: [{ dimension: { key: 'service_type', kind: null, label: 'Services we provide' }, restrictsFootprint: true, allSelected: false, terms: [{ key: 'advice', label: 'Advice' }] }],
       pendingRequest: serverRequest,
+      markets: [
+        { jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' }, level: 'operating' },
+        { jurisdiction: { key: 'no', label: 'Norway' }, level: 'watching' },
+      ],
     };
     const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/requests') ? { items: [serverRequest], total: 1 } : view }));
     expect(await footprint.getFootprint()).toEqual({
       dimensions: [{ dimension: { key: 'service_type', kind: null, label: 'Services we provide' }, restrictsFootprint: true, terms: [{ key: 'advice', kind: null, label: 'Advice' }], allSelected: false }],
       pendingRequest: screenRequest,
+      markets: [
+        { jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' }, level: 'operating' },
+        { jurisdiction: { key: 'no', kind: null, label: 'Norway' }, level: 'watching' },
+      ],
     });
     expect(await footprint.listFootprintRequests({ limit: 20, offset: 0 })).toEqual({ items: [screenRequest], total: 1 });
     expect(await footprint.listFootprintRequests()).toEqual({ items: [screenRequest], total: 1 });
@@ -64,6 +72,7 @@ describe('footprint api', () => {
     expect(footprint.footprintOf({ dimensions: [{ dimension: { key: 'channel', label: 'Channels' }, restrictsFootprint: true, allSelected: true }], pendingRequest: null })).toEqual({
       dimensions: [{ dimension: { key: 'channel', kind: null, label: 'Channels' }, restrictsFootprint: true, terms: [], allSelected: true }],
       pendingRequest: null,
+      markets: [],
     });
     expect(footprint.footprintOf({ dimensions: [] }).pendingRequest).toBeNull();
   });
@@ -126,7 +135,7 @@ describe('footprint api', () => {
       { key: 'other', label: 'Other' },
     ];
     const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/dimensions') ? { items: dimensions, total: 3 } : { items: [term], total: 1 } }));
-    const expected = [{ dimension: 'service_type', key: 'advice', kind: null, label: 'Advice', usageNote: '', sortOrder: 0, active: true }];
+    const expected = [{ dimension: 'service_type', key: 'advice', kind: null, label: 'Advice', usageNote: '', sortOrder: 0, active: true, mirrored: false }];
     expect(await footprint.listTerms()).toEqual(expected);
     expect(await footprint.listTerms('service_type')).toEqual(expected);
     expect(await footprint.listDimensions()).toEqual([
@@ -135,11 +144,39 @@ describe('footprint api', () => {
       { key: 'other', kind: null, label: 'Other', restrictsFootprint: false },
     ]);
     expect(footprint.taxonomyTermOf({ ...term, active: false, usageNote: 'n', sortOrder: 3 }).active).toBe(false);
+    expect(footprint.taxonomyTermOf({ ...term, mirrored: true }).mirrored).toBe(true);
     expect(sent.map((s) => [s.path, s.params])).toEqual([
       ['/api/v1/taxonomy/terms', {}],
       ['/api/v1/taxonomy/terms', { dimension: 'service_type' }],
       ['/api/v1/taxonomy/dimensions', null],
     ]);
+  });
+
+  it('watches and unwatches a market with its key in the body, never in the path or the query', async () => {
+    const sent = installAdapter((s) => ({ status: 200, data: { jurisdiction: { key: 'no', kind: 'country', label: 'Norway' }, level: s.path.endsWith('/remove') ? 'not_followed' : 'watching' } }));
+    expect(await footprint.watchMarket('no')).toEqual({ jurisdiction: { key: 'no', kind: 'country', label: 'Norway' }, level: 'watching' });
+    expect(await footprint.unwatchMarket('no')).toEqual({ jurisdiction: { key: 'no', kind: 'country', label: 'Norway' }, level: 'not_followed' });
+    expect(sent.map((s) => [s.method, s.path, s.params, s.body])).toEqual([
+      ['post', '/api/v1/tenant/footprint/watching', null, { jurisdiction: 'no' }],
+      ['post', '/api/v1/tenant/footprint/watching/remove', null, { jurisdiction: 'no' }],
+    ]);
+  });
+
+  it('reads the jurisdictions with the one whose rules reach each', async () => {
+    const sent = installAdapter(() => ({
+      status: 200,
+      data: [
+        { key: 'eu', kind: 'supranational', label: 'European Union', parentKey: null, defaultLanguage: null },
+        { key: 'no', kind: 'country', label: 'Norway', parentKey: 'eu' },
+        { key: 'xx', label: 'Nowhere' },
+      ],
+    }));
+    expect(await footprint.listJurisdictions()).toEqual([
+      { key: 'eu', kind: 'supranational', label: 'European Union', parentKey: null },
+      { key: 'no', kind: 'country', label: 'Norway', parentKey: 'eu' },
+      { key: 'xx', kind: null, label: 'Nowhere', parentKey: null },
+    ]);
+    expect(sent.map((s) => [s.method, s.path])).toEqual([['get', '/api/v1/reference/jurisdictions']]);
   });
 
   it('suggests a term and reads the proposal back, nested or flat', async () => {

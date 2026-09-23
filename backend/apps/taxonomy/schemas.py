@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import builtins
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -455,11 +455,18 @@ class FootprintRequestRow(CamelSchema):
     version: int = 1
 
 
+MarketLevel = Literal["operating", "watching", "not_followed"]
+
+
 class MarketRow(CamelSchema):
     """One active country's market level (FP-04), computed fresh on every read and never
-    stored: operating when the jurisdiction's mirrored term sits in the tenant's footprint,
-    set only through a footprint change request (FP-02); watching when a `watched_market`
-    row names it, a direct write that hides nothing. Both false reads as not followed."""
+    stored, so it cannot drift from the two facts it is read from: the tenant's regulatory
+    scope, which only a footprint change request changes (FP-02), and the tenant's watch
+    list, a direct write that hides nothing."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "level": "watching"}]}
+    )
 
     jurisdiction: TermRef = Field(
         description=(
@@ -468,18 +475,21 @@ class MarketRow(CamelSchema):
             "lists the live set."
         )
     )
-    operating: bool = Field(
+    level: MarketLevel = Field(
         description=(
-            "True when this country's mirrored jurisdiction term is in the tenant's footprint. Changes "
-            "only through a footprint change request with its preview, second person and step-up."
-        )
-    )
-    watching: bool = Field(
-        description=(
-            "True when the tenant has a `watched_market` row naming this country. Set directly with "
-            "`POST /tenant/footprint/watching`, with no preview, no second person and no step-up, "
-            "because watching hides nothing."
-        )
+            "How closely the tenant follows this country, computed by the server on every read and never stored. "
+            "Operating comes first, then watching:\n"
+            "- `operating`: the country's mirrored jurisdiction term is in the tenant's regulatory scope, so its "
+            "rules are part of what applies. Changes only through a footprint change request with its preview, "
+            "second person and step-up.\n"
+            "- `watching`: not operating, and the tenant has a `watched_market` row naming the country, set directly "
+            "with `POST /tenant/footprint/watching` with no second person and no step-up, because watching hides "
+            "nothing. A country watched before it started operating reads as `watching` again once operating stops.\n"
+            "- `not_followed`: neither; approving or reversing a scope change never writes a watch row, so a country "
+            "never watched drops back here when operating stops.\n"
+            "Operating or watching says nothing about whether the tenant complies with anything there."
+        ),
+        examples=["operating"],
     )
 
 

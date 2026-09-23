@@ -17,11 +17,15 @@ import { FootprintScreen } from './FootprintScreen';
 // scope opens read-only, "Propose a change" turns it into checkboxes with a
 // change panel, a waiting request marks the terms it changes, a second person
 // decides in a dialog, and every send and decision moves focus to the status line.
+// Under it, states 17 to 19: the markets we operate in and watch, with a Watching
+// toggle that saves at once, and the request history one page at a time.
 
 const ME = '/api/v1/me';
 const FOOTPRINT = '/api/v1/tenant/footprint';
 const REQUESTS = `${FOOTPRINT}/requests`;
 const TERMS = '/api/v1/taxonomy/terms';
+const JURISDICTIONS = '/api/v1/reference/jurisdictions';
+const WATCHING = `${FOOTPRINT}/watching`;
 
 const REQUEST_AND_APPROVE = ['footprint.request', 'footprint.approve'];
 const SARA = { id: 'u1', name: 'Sara Lindqvist' };
@@ -60,11 +64,20 @@ const DIMENSIONS = [
   dimension('jurisdiction', 'Jurisdiction', [held('se', 'Sweden')]),
 ];
 
-function scope(pendingRequest: unknown = null, dimensions: unknown[] = DIMENSIONS) {
-  return { dimensions, pendingRequest };
+type Level = 'operating' | 'watching' | 'not_followed';
+const country = (key: string, label: string, level: Level) => ({ jurisdiction: { key, kind: 'country', label }, level });
+const MARKETS = [country('se', 'Sweden', 'operating'), country('dk', 'Denmark', 'watching'), country('no', 'Norway', 'watching'), country('fi', 'Finland', 'not_followed')];
+const REFERENCE = [
+  { key: 'eu', kind: 'supranational', label: 'European Union', parentKey: null },
+  ...MARKETS.map((m) => ({ key: m.jurisdiction.key, kind: 'country', label: m.jurisdiction.label, parentKey: 'eu' })),
+];
+
+function scope(pendingRequest: unknown = null, dimensions: unknown[] = DIMENSIONS, markets: unknown[] = MARKETS) {
+  return { dimensions, pendingRequest, markets };
 }
 
-const term = (dimensionKey: string, key: string, label: string) => ({ id: `${dimensionKey}:${key}`, dimension: { key: dimensionKey, kind: null, label: dimensionKey }, key, kind: null, label, usageNote: '', sortOrder: 0, active: true });
+// A jurisdiction term mirrors a jurisdiction row; the screen knows its group by that, never by the dimension's key.
+const term = (dimensionKey: string, key: string, label: string) => ({ id: `${dimensionKey}:${key}`, dimension: { key: dimensionKey, kind: null, label: dimensionKey }, key, kind: null, label, usageNote: '', sortOrder: 0, active: true, mirrored: dimensionKey === 'jurisdiction' });
 const TAXONOMY = {
   items: [
     term('regime', 'securities', 'Securities'),
@@ -117,16 +130,17 @@ const HISTORY = {
   total: 1,
 };
 
-type Server = { pending: unknown; dimensions: unknown[] };
+type Server = { pending: unknown; dimensions: unknown[]; markets: ReturnType<typeof country>[] };
 type Mutation = (sent: Sent, server: Server) => Answer;
 
 /** The server for one test: reads answer from `server`, and each write is the test's own script. */
 function serve(me: Me, pending: unknown = null, write: Mutation = () => ({ status: 500 }), taxonomy = TAXONOMY): { sent: Sent[]; server: Server } {
-  const server: Server = { pending, dimensions: DIMENSIONS };
+  const server: Server = { pending, dimensions: DIMENSIONS, markets: MARKETS };
   const sent = installAdapter((s) => {
     if (s.path === ME) return { status: 200, data: me };
-    if (s.path === FOOTPRINT) return { status: 200, data: scope(server.pending, server.dimensions) };
+    if (s.path === FOOTPRINT) return { status: 200, data: scope(server.pending, server.dimensions, server.markets) };
     if (s.path === TERMS) return { status: 200, data: taxonomy };
+    if (s.path === JURISDICTIONS) return { status: 200, data: REFERENCE };
     if (s.method === 'get' && s.path === REQUESTS) return { status: 200, data: HISTORY };
     return write(s, server);
   });
@@ -558,6 +572,119 @@ describe('FootprintScreen: deciding', () => {
     await waitFor(() => expect(document.activeElement).toBe(statusLine()));
     expect(statusLine()).toHaveTextContent('Rejected.');
     expect(sent.find((s) => s.path === `${REQUESTS}/r1/reject`)?.body).toEqual({ note: 'We still advise in private banking' });
+  });
+});
+
+describe('FootprintScreen: markets we watch', () => {
+  const panel = () => document.querySelector<HTMLElement>('[data-markets]')!;
+  const market = (key: string) => panel().querySelector<HTMLElement>(`[data-market="${key}"]`)!;
+
+  /** The watch routes as the server answers them: a repeat is 409, an unwatched market 404. */
+  const watching: Mutation = (s, server) => {
+    const key = (s.body as { jurisdiction: string }).jurisdiction;
+    const row = server.markets.find((m) => m.jurisdiction.key === key)!;
+    const adding = s.path === WATCHING;
+    if (adding && row.level === 'watching') return { status: 409, data: { code: 'already_watching', detail: `'${key}' is already watched.` } };
+    if (!adding && row.level !== 'watching') return { status: 404, data: { code: 'not_found', detail: `'${key}' is not watched.` } };
+    const next = { ...row, level: adding ? ('watching' as const) : ('not_followed' as const) };
+    server.markets = server.markets.map((m) => (m.jurisdiction.key === key ? next : m));
+    return { status: 200, data: next };
+  };
+
+  it('lists every country with its level for someone who can watch: Operating as text, a pressed Watching toggle, and the two notes', async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    const { sent, server } = serve(me, null, watching);
+    open(me);
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Markets we watch' })).toBeVisible();
+    expect(within(panel()).getByText('The jurisdictions in our regulatory scope are the markets we operate in. Watching a market hides nothing.')).toBeVisible();
+    expect([...panel().querySelectorAll('[data-market]')].map((row) => row.getAttribute('data-market'))).toEqual(['se', 'dk', 'no', 'fi']);
+    expect(market('se')).toHaveTextContent('SwedenOperating');
+    expect(within(market('se')).queryByRole('button')).toBeNull();
+    expect(within(market('dk')).getByRole('button', { name: 'Watching Denmark' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(market('fi')).getByRole('button', { name: 'Watching Finland' })).toHaveAttribute('aria-pressed', 'false');
+    expect(await within(panel()).findByText('European Union rules reach Sweden, Denmark, Norway and Finland, so they show wherever those markets do.')).toBeVisible();
+    expect(within(panel()).getByRole('heading', { level: 3, name: 'Also included' })).toBeVisible();
+    expect(within(panel()).getByRole('heading', { level: 3, name: 'Everywhere else' })).toBeVisible();
+    expect(within(panel()).getByText('Our research sweeps every source in the library for every market, whatever you choose here.')).toBeVisible();
+    expect(within(panel()).queryByRole('status')).toBeNull();
+
+    // Watching saves at once, with the key in the body and never in the path.
+    fireEvent.click(within(market('fi')).getByRole('button', { name: 'Watching Finland' }));
+    await waitFor(() => expect(within(market('fi')).getByRole('button', { name: 'Watching Finland' })).toHaveAttribute('aria-pressed', 'true'));
+    fireEvent.click(within(market('dk')).getByRole('button', { name: 'Watching Denmark' }));
+    await waitFor(() => expect(within(market('dk')).getByRole('button', { name: 'Watching Denmark' })).toHaveAttribute('aria-pressed', 'false'));
+    expect(sent.filter((s) => s.method === 'post').map((s) => [s.path, s.params, s.body])).toEqual([
+      [WATCHING, null, { jurisdiction: 'fi' }],
+      [`${WATCHING}/remove`, null, { jurisdiction: 'dk' }],
+    ]);
+    expect(server.markets.map((m) => m.level)).toEqual(['operating', 'not_followed', 'watching', 'watching']);
+    expect(statusLine()).toBeEmptyDOMElement();
+  });
+
+  it('reads every level in words for someone who can only approve, under a notice of its own, with nothing to press', async () => {
+    const me = meOf(MARIA, ['footprint.approve']);
+    serve(me);
+    open(me);
+    await screen.findByRole('heading', { level: 2, name: 'Markets we watch' });
+    expect(within(panel()).getByText('You can see the regulatory scope. Changing it needs footprint request; ask a compliance officer or an administrator.')).toBeVisible();
+    expect(within(panel()).queryAllByRole('button')).toHaveLength(0);
+    expect(['se', 'dk', 'no', 'fi'].map((key) => market(key).textContent)).toEqual(['SwedenOperating', 'DenmarkWatching', 'NorwayWatching', 'FinlandNot watched']);
+  });
+
+  it('says a market was not saved when the server refuses, and keeps the level the server holds', async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    const { server } = serve(me, null, watching);
+    open(me);
+    const norway = await waitFor(() => within(market('no')).getByRole('button', { name: 'Watching Norway' }));
+    // Someone else stopped watching Norway after this page read it: the unwatch answers 404.
+    server.markets = server.markets.map((m) => (m.jurisdiction.key === 'no' ? { ...m, level: 'not_followed' as const } : m));
+    fireEvent.click(norway);
+
+    const refusal = await within(panel()).findByRole('alert');
+    expect(refusal).toHaveTextContent('Norway was not saved. Try again.');
+    await waitFor(() => expect(within(market('no')).getByRole('button', { name: 'Watching Norway' })).toHaveAttribute('aria-pressed', 'false'));
+    expect(statusLine()).toBeEmptyDOMElement();
+
+    // A repeated watch is the same state: 409, and the toggle shows what the server holds.
+    server.markets = server.markets.map((m) => (m.jurisdiction.key === 'no' ? { ...m, level: 'watching' as const } : m));
+    fireEvent.click(within(market('no')).getByRole('button', { name: 'Watching Norway' }));
+    await waitFor(() => expect(within(market('no')).getByRole('button', { name: 'Watching Norway' })).toHaveAttribute('aria-pressed', 'true'));
+    expect(within(panel()).getByRole('alert')).toHaveTextContent('Norway was not saved. Try again.');
+  });
+});
+
+describe('FootprintScreen: the history, one page at a time', () => {
+  it('shows the first page and "Show more" while the total says there are more, reading on from where it ended', async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    const decided = (i: number) => ({ ...HISTORY.items[0], id: `h${i}`, decisionNote: `Reason ${i}` });
+    const sent = installAdapter((s) => {
+      if (s.path === ME) return { status: 200, data: me };
+      if (s.path === FOOTPRINT) return { status: 200, data: scope() };
+      if (s.path === TERMS) return { status: 200, data: TAXONOMY };
+      if (s.path === JURISDICTIONS) return { status: 200, data: REFERENCE };
+      const { limit, offset } = s.params as { limit: number; offset: number };
+      const total = limit + 1;
+      return { status: 200, data: { items: Array.from({ length: Math.min(limit, total - offset) }, (_, i) => decided(offset + i)), total } };
+    });
+    open(me);
+    const history = await waitFor(() => {
+      const found = document.querySelector<HTMLElement>('[data-footprint-history]');
+      if (found === null) throw new Error('no history yet');
+      return found;
+    });
+    const more = await within(history).findByRole('button', { name: 'Show more' });
+    const first = history.querySelectorAll('[data-history-entry]').length;
+    expect(first).toBeGreaterThan(0);
+
+    fireEvent.click(more);
+    await waitFor(() => expect(history.querySelectorAll('[data-history-entry]')).toHaveLength(first + 1));
+    expect(within(history).queryByRole('button', { name: 'Show more' })).toBeNull();
+    const pages = sent.filter((s) => s.path === REQUESTS).map((s) => s.params as { limit: number; offset: number });
+    expect(pages).toEqual([
+      { limit: first, offset: 0 },
+      { limit: first, offset: first },
+    ]);
   });
 });
 

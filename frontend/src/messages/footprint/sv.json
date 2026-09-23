@@ -60,5 +60,17 @@
   "footprint.history.rejected": "avvisade \"{title}\" begärd av {requester}: \"{note}\"",
   "footprint.history.withdrawn": "återkallade \"{title}\".",
   "footprint.history.pending": "begärde \"{title}\".",
-  "footprint.errorTitle": "Kunde inte läsa in den regulatoriska omfattningen"
+  "footprint.errorTitle": "Kunde inte läsa in den regulatoriska omfattningen",
+  "footprint.history.showMore": "Visa fler",
+  "footprint.markets.title": "Marknader vi bevakar",
+  "footprint.markets.intro": "Jurisdiktionerna i vår regulatoriska omfattning är de marknader vi är verksamma på. Att bevaka en marknad döljer ingenting.",
+  "footprint.markets.approverOnly": "Du kan se den regulatoriska omfattningen. För att ändra den krävs {permission}; fråga en compliance officer eller en administratör.",
+  "footprint.markets.operating": "Verksamma",
+  "footprint.markets.watching": "Bevakar",
+  "footprint.markets.notWatched": "Bevakas inte",
+  "footprint.markets.alsoIncluded": "Ingår också",
+  "footprint.markets.reach": "Regler från {parent} når {markets}, så de visas överallt där de marknaderna visas.",
+  "footprint.markets.everywhereElse": "Överallt annars",
+  "footprint.markets.sweep": "Vår research går igenom varje källa i biblioteket för varje marknad, oavsett vad du väljer här.",
+  "footprint.markets.notSaved": "{market} sparades inte. Försök igen."
 }
