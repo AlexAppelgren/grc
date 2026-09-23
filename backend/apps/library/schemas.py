@@ -260,7 +260,12 @@ class ScopeDimension(LibraryResponse):
             "every bank in it — never that the facet is unknown. The terms are vocabulary "
             "rows a platform admin may extend or retire without a deploy, and a member of a "
             "bank may propose a new one, so read `GET /taxonomy/terms` for the live set and "
-            "match on the key. A term's `kind` is null: its dimension is its kind."
+            "match on the key. A term's `kind` is null: its dimension is its kind. In the "
+            "`jurisdiction` dimension the terms are not stored on the record: they are "
+            "derived each time it is read, from its instrument's jurisdiction, as the term "
+            "of that jurisdiction plus the term of every jurisdiction its rules reach. So a "
+            "European Union instrument's duty lists `eu`, `se`, `dk`, `no` and `fi`, a "
+            "Swedish one lists `se` alone, and an international standard's lists none."
         ),
     )
     all_selected: bool = Field(
@@ -293,7 +298,9 @@ class OutsideReason(LibraryResponse):
             "bank's footprint would have to include for the record to appear. They are "
             "vocabulary rows a platform admin may extend or retire, matched on the key. "
             "This is the record's own scope and never the bank's footprint: nothing here "
-            "says what the bank does."
+            "says what the bank does. In the `jurisdiction` dimension they are the "
+            "jurisdictions the record's instrument reaches, derived when the record is read "
+            "and never stored, as `scope` explains."
         ),
     )
 
@@ -384,7 +391,12 @@ _TAGS = (
 _SCOPE = (
     "Which banks and which business the duty reaches, one entry per active dimension of the "
     "taxonomy. This is the record's own scope as the library states it: it is not the bank's "
-    "footprint, and it is not the judgement that the duty applies to this bank."
+    "footprint, and it is not the judgement that the duty applies to this bank. Its "
+    "instrument's regime is part of it, and so are the jurisdictions the instrument's rules "
+    "reach. Those are derived when the record is read and never stored: the term of the "
+    "instrument's own jurisdiction and the term of every jurisdiction its rules reach, so "
+    "a European Union instrument reaches Sweden, Denmark, Norway and Finland, a national "
+    "one its own country only, and an international standard no jurisdiction at all."
 )
 _IN_FOOTPRINT = (
     "Whether the duty's scope overlaps the bank's own footprint, which is what decides "
@@ -533,6 +545,11 @@ _SAMPLE_SCOPE: list[Any] = [
     {
         "dimension": {"key": "lifecycle_stage", "kind": None, "label": "Lifecycle stage"},
         "terms": [{"key": "ongoing", "kind": None, "label": "Ongoing"}],
+        "allSelected": False,
+    },
+    {
+        "dimension": {"key": "jurisdiction", "kind": None, "label": "Jurisdiction"},
+        "terms": [{"key": "se", "kind": None, "label": "Sweden"}],
         "allSelected": False,
     },
 ]
@@ -1608,7 +1625,8 @@ _INSTRUMENT_REGIME = (
     "dimension: `securities`, `insurance`, `tax`, `data_protection`, `aml`, `ai_ict`, "
     "`banking` and `payments` are seeded on day one. This is the sector boundary every "
     "instrument carries (playbook 4.3), and it is what an obligation's own scope "
-    "inherits. Never null: the library refuses an instrument without one, and a standard "
+    "inherits, beside the jurisdictions the instrument's rules reach, which are derived "
+    "from `jurisdiction` when the record is read and never stored. Never null: the library refuses an instrument without one, and a standard "
     "takes the regime of the family of law it serves. The terms are vocabulary rows a "
     "platform admin may extend or retire without a deploy, so read `GET /taxonomy/terms` "
     "for the live set and match on the key."
@@ -1715,7 +1733,8 @@ class InstrumentRow(LibraryResponse):
     )
     in_footprint: bool = Field(
         description=(
-            "Whether the instrument's own scope (its regime) overlaps the bank's "
+            "Whether the instrument's own scope (its regime, and the jurisdictions its "
+            "rules reach, derived from `jurisdiction` and never stored) overlaps the bank's "
             "footprint. It is a filter and not a decision: it says nothing about whether "
             "any duty of this instrument applies to this bank, which a person judges "
             "separately."
