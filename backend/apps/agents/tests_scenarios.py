@@ -9,6 +9,7 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: AGT.
 """
 
+import uuid
 from typing import Any
 from unittest import skip
 
@@ -16,7 +17,8 @@ from django.test import TestCase
 
 from apps.agents import testing as agent_build, tests_flow as agent_flow
 from apps.agents.screen import EMBEDDED_INSTRUCTIONS
-from apps.shared import permissions as perms, tenancy
+from apps.proposals.models import Proposal
+from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.models import AuditEvent
 from apps.watch import registration, sources, testing as watch_build
 from apps.watch.models import ChangeDocument, RegulatoryChange, SourceCheck
@@ -107,10 +109,49 @@ class AgentsScenarioTests(TestCase):
         self.assertEqual(refused.status_code, 403, refused.content)
         self.assertEqual(refused.json()["requiredPermission"], perms.SCOPE_PROPOSALS_WRITE)
 
-        # And another key's run answers 404, as a run that never existed does
+        # And a step naming another key's run answers 404, as a run that never existed does
         tenancy.clear_tenant()
         stranger = agent_flow.Flow(self.client, agent_build.agent_key(scopes=agent_flow.FLOW_SCOPES))
-        self.assertEqual(stranger.check(run_id).status_code, 404)
+        agent_flow.assert_refused(self, stranger.check(run_id), 404, "not_found")
+        agent_flow.assert_refused(self, flow.check(uuid.uuid4()), 404, "not_found")
+
+        # And a change or a proposal from the key that names no run, or a closed one, answers 422
+        refused_filings = {
+            "a change naming no run": flow.register(None),
+            "a proposal naming no run": flow.propose(None, obligation_id=hits[0]),
+            "a change naming the closed run": flow.register(run_id),
+            "a proposal naming the closed run": flow.propose(run_id, obligation_id=hits[0]),
+        }
+        for filing, response in refused_filings.items():
+            with self.subTest(filing=filing):
+                agent_flow.assert_refused(self, response, 422, "run_not_open")
+        self.assertEqual(Proposal.objects.count(), 1, "nothing more was filed")
+
+        # And a bank's key is refused on every watch write, whatever scopes it holds, even
+        # naming a run that is open
+        second_run = flow.open().json()["id"]
+        bank = factories.tenant(slug="agt-s1-bank")
+        bank_key = agent_build.tenant_key(bank, scopes=agent_flow.FLOW_SCOPES)
+        tenancy.clear_tenant()
+        banks = agent_flow.Flow(self.client, bank_key)
+        bank_writes = {
+            "open a run": banks.open(agent=world.key.agent.key),
+            "log a source check": banks.check(second_run),
+            "register a change": banks.register(second_run),
+            "close a run": banks.close(second_run),
+        }
+        for write, response in bank_writes.items():
+            with self.subTest(write=write):
+                agent_flow.assert_refused(self, response, 403, "tenant_agents_not_available")
+        tenancy.clear_tenant()
+        self.assertEqual(SourceCheck.objects.count(), 1, "the bank logged nothing")
+        self.assertEqual(RegulatoryChange.objects.count(), 1, "the bank registered nothing")
+
+        # And a run closes as failed from its failure path, with the error it met; the bank's
+        # close above left it open, or this would answer invalid_transition
+        failed = flow.close(second_run, status="failed", error="The fetch budget ran out before the sweep ended.")
+        self.assertEqual(failed.status_code, 200, failed.content)
+        self.assertEqual((failed.json()["status"], failed.json()["error"]), ("failed", "The fetch budget ran out before the sweep ended."))
 
     def test_agt_s2(self) -> None:
         """AGT-S2

@@ -512,3 +512,9 @@ section. Copied here as chunk3-rest-T20 requires.
       whatever scopes it holds. Say so if a bank key's proposal should need a run too: a
       bank's key cannot open one in R1, so that would stop bank keys proposing until
       chunk 11 brings a bank's own agents.
+- [ ] **Default taken: finding similar records names no run** (AGT-01, AGT-S1).
+      `POST /search/similar` is a read, so it takes no `agentRunId` and leaves nothing
+      behind to trace; AGT-S1 therefore says "each write references the run" rather than
+      "each step". Every write of the flow (opening and closing the run, a source check, a
+      change, a proposal) names it. Say so if you want the lookups an agent makes traced to
+      its run as well: that is an optional, checked `agentRunId` on the similar-records call.

@@ -356,8 +356,9 @@ def record_source_check(
     `validation_error` (422) when a failed check carries no `error`, when a successful one
     carries an error, when a `recheck` names no `subjectType` and `subjectId`, or when a
     `sweep` names one; `not_found` (404) when the run belongs to another key or to nobody,
-    answered alike so no run id can be probed for; `permission_denied` (403) without
-    `sources:write`; `unauthenticated` (401) without a key.
+    answered alike so no run id can be probed for; `tenant_agents_not_available` (403) from
+    a key that belongs to a bank; `permission_denied` (403) without `sources:write`;
+    `unauthenticated` (401) without a key.
     """
     sources.record_check(
         who=principal(request), actor=actor_for(request), run_id=run_id, body=body
@@ -574,12 +575,14 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     row that opens the cases all go in one transaction, and every key is resolved first, so
     a refusal stores nothing at all.
 
-    Errors to branch on: `run_not_open` (422) when `agentRunId` names a run that is closed;
+    Errors to branch on: `run_not_open` (422) when a key names no run in `agentRunId`, or
+    one that is closed;
     `unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an
     `obligationId` or `authorityCode` names a row the library does not hold or has retired,
     with the valid keys listed for a vocabulary; `validation_error` (422) for a body the
     schema refuses, for the same obligation named twice, for two pages both marked primary,
     and for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;
+    `tenant_agents_not_available` (403) from a key that belongs to a bank;
     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
     without a credential.
     """
@@ -629,6 +632,7 @@ def add_change_document(
     Errors to branch on: `validation_error` (422) when the change already has a primary page
     and this one is marked primary too, and for a body the schema refuses, including a `url`
     that is not http or https; `not_found` (404) when no change has that id;
+    `tenant_agents_not_available` (403) from a key that belongs to a bank;
     `permission_denied` (403) without `changes:write`; `unauthenticated` (401) without a key.
     """
     return registration.add_document(
@@ -703,7 +707,8 @@ def update_change(
     which is the confirmation half of this feature; `validation_error` (422) for a field the
     schema refuses, for a change asked to supersede itself, and for a `soWhat` whose words
     carry no model, no model version or no citation; `not_found` (404) when no
-    change has that id; `permission_denied` (403) without the scope or the permission;
+    change has that id; `tenant_agents_not_available` (403) from a key that belongs to a
+    bank; `permission_denied` (403) without the scope or the permission;
     `unauthenticated` (401) without a credential.
     """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
@@ -756,7 +761,8 @@ def add_change_event(
     Errors to branch on: `duplicate_key` (409) when this change already has a milestone with
     that label and other dates; `validation_error` (422) for a body the schema refuses,
     including a timestamp where a plain date belongs and a precision outside `day`, `month`,
-    `quarter` and `year`; `not_found` (404) when no change has that id; `permission_denied`
+    `quarter` and `year`; `not_found` (404) when no change has that id;
+    `tenant_agents_not_available` (403) from a key that belongs to a bank; `permission_denied`
     (403) without the scope or the permission; `unauthenticated` (401) without a credential.
     """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
@@ -799,6 +805,7 @@ def update_change_event(
     timestamp where a plain date belongs and a precision outside `day`, `month`, `quarter`
     and `year`; `not_found` (404) when no change has that id, or the entry belongs to
     another change — the two are answered alike so no id can be probed;
+    `tenant_agents_not_available` (403) from a key that belongs to a bank;
     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
     without a credential.
     """
@@ -858,6 +865,7 @@ def replace_change_obligations(
     `confirmed_fact` (422) when a key's new set would drop a link a library editor
     confirmed; `not_built` (501) when an editor's call would do the same, which is the
     confirmation half of this feature; `not_found` (404) when no change has that id;
+    `tenant_agents_not_available` (403) from a key that belongs to a bank;
     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
     without a credential.
     """

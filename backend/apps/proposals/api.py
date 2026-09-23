@@ -314,7 +314,9 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
 
     Send an `Idempotency-Key`, because an agent retries: the same key with the same body
     answers **200** with the proposal it already made, and records that the retry
-    happened. A new proposal answers **201**.
+    happened. An agent retries before it closes the run: once the run is closed, the retry
+    answers `run_not_open` (422) like any other filing against that run. A new proposal
+    answers **201**.
 
     Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or
     a closed one; `not_found` (404) when the run named is not one this key opened;

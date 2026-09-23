@@ -107,17 +107,24 @@ class Flow:
         self.client = client
         self.key = key
 
-    def _send(self, method: str, path: str, body: Any) -> Any:
+    def _send(self, method: str, path: str, body: Any, idempotency_key: str | None = None) -> Any:
+        """One call as the key makes it, under a fresh `Idempotency-Key` unless a retry names
+        the one it already sent."""
         return getattr(self.client, method)(
             path,
             data=body,
             content_type=JSON,
             HTTP_X_API_KEY=self.key.plain_key,
-            HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+            HTTP_IDEMPOTENCY_KEY=idempotency_key or str(uuid.uuid4()),
         )
 
-    def open(self) -> Any:
-        body = {"agent": self.key.agent.key, "model": agent_build.SWEEPER_MODEL, "pipelineVersion": agent_build.SWEEPER_PIPELINE}
+    def open(self, *, agent: str | None = None) -> Any:
+        """Open a run of the key's own agent, or of `agent` for a key bound to none."""
+        body = {
+            "agent": agent or self.key.agent.key,
+            "model": agent_build.SWEEPER_MODEL,
+            "pipelineVersion": agent_build.SWEEPER_PIPELINE,
+        }
         return self._send("post", RUNS, body)
 
     def check(self, run_id: Any) -> Any:
@@ -148,7 +155,9 @@ class Flow:
             body["obligationLinks"] = [{"obligationId": str(obligation_id), "confidence": 0.82}]
         return self._send("post", CHANGES, _with_run(body, run_id))
 
-    def propose(self, run_id: Any, *, obligation_id: Any, change_id: Any = None) -> Any:
+    def propose(
+        self, run_id: Any, *, obligation_id: Any, change_id: Any = None, idempotency_key: str | None = None
+    ) -> Any:
         body: dict[str, Any] = {
             "kind": "new_obligation_version",
             "title": "Version 2 of the research assessment duty",
@@ -162,10 +171,10 @@ class Flow:
         }
         if change_id is not None:
             body["changeId"] = str(change_id)
-        return self._send("post", PROPOSALS, _with_run(body, run_id))
+        return self._send("post", PROPOSALS, _with_run(body, run_id), idempotency_key)
 
-    def close(self, run_id: Any) -> Any:
-        return self._send("patch", f"{RUNS}/{run_id}", {"status": "succeeded", "stats": STATS})
+    def close(self, run_id: Any, *, status: str = "succeeded", error: str | None = None) -> Any:
+        return self._send("patch", f"{RUNS}/{run_id}", {"status": status, "stats": STATS, "error": error})
 
 
 def _with_run(body: dict[str, Any], run_id: Any) -> dict[str, Any]:
@@ -270,6 +279,20 @@ class WhatAnAgentFilesNamesAnOpenRunOfItsOwn(TestCase):
         assert_refused(self, self.flow.register(None), 422, "run_not_open")
         self.assertFalse(Proposal.objects.exists())
         self.assertFalse(RegulatoryChange.objects.exists())
+
+    def test_a_retry_answers_while_its_run_is_open_and_is_refused_once_it_closed(self) -> None:
+        """The run is checked before the retry is looked up, so an agent retries a lost answer
+        before it closes the run; afterwards the retry is a filing against a closed run."""
+        run_id = self.flow.open().json()["id"]
+        obligation_id = self.world.obligation.id
+        first = self.flow.propose(run_id, obligation_id=obligation_id, idempotency_key="retry-of-one-proposal")
+        again = self.flow.propose(run_id, obligation_id=obligation_id, idempotency_key="retry-of-one-proposal")
+        self.assertEqual((first.status_code, again.status_code), (201, 200), again.content)
+        self.assertEqual(again.json()["id"], first.json()["id"])
+        self.assertEqual(self.flow.close(run_id).status_code, 200)
+        late = self.flow.propose(run_id, obligation_id=obligation_id, idempotency_key="retry-of-one-proposal")
+        assert_refused(self, late, 422, "run_not_open")
+        self.assertEqual(Proposal.objects.count(), 1)
 
     def test_a_proposal_or_a_change_naming_a_closed_run_is_refused(self) -> None:
         run_id = self.flow.open().json()["id"]

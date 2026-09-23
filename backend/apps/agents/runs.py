@@ -227,8 +227,9 @@ def finish_run(*, who: Principal, run_id: uuid.UUID, body: AgentRunFinish) -> Ag
 
     A run closes once. Repeating the same close answers the run it already closed, so a
     lost answer costs nothing; closing it into something else is refused, so a closed run
-    is never quietly reopened or rewritten.
+    is never quietly reopened or rewritten. A bank's key is refused first, as on opening one.
     """
+    refuse_tenant_key(who)
     run = _own_run(who.subject_id, run_id)
     stats = _stats(body.stats, run.stats)
     output_ref = body.output_ref or ""
