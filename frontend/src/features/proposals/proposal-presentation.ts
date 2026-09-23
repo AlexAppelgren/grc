@@ -3,24 +3,23 @@ import { byOrder, type PresentedPill } from '@/features/shared/presentation-type
 import { proposalStatusTone, slotTone } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
 
-import type { ObligationVersionPayload, ProposalKind, ProposalRow, ProposalStatus, VocabularyProposalPayload } from './types';
+import { TERM_KINDS, VOCABULARY_KINDS, type ObligationVersionPayload, type ProposalKind, type ProposalQueueRow, type ProposalRow, type ProposalStatus, type VocabularyProposalPayload } from './types';
 
 // Pills and derived facts for the console queue (design/screens/console-queue.html;
 // PRO-01, PRO-02, PRO-03, AC-PRO2). Tone is never chosen by a person: the kind pill
 // sits in the same slot a change type does (notice), the status pill's tone comes
-// from the fixed status kind, and "Yours" is the computed `you` slot (positive).
-//
-// GET /proposals and GET /proposals/{id} answer the plain `ProposalRow` on `main`
-// today (chunk4-T10's enrichment — target title, target reference, instrument short
-// name, a server-computed `isMine`, `fromOrganisation` — is not built yet). `isMine`
-// is therefore computed here from `proposedBy.id`, which the row already carries for
-// a proposal this reader may see decided; that is not a new disclosure; a proposal
-// made in a bank never reaches the console with a proposer at all).
+// from the fixed status kind, and "Yours" is the server's `isMine` in the `you` slot
+// (positive). An agent that decided or corrected a proposal is named as an agent,
+// never in a person's slot, and its decision reads as machine-confirmed.
 
 const SLOT_ORDER = { kind: 10, status: 20, yours: 30 } as const;
 
 const KIND_LABEL: Readonly<Record<ProposalKind, MessageKey>> = {
+  new_instrument: 'console.queue.kind.newInstrument',
+  new_obligation: 'console.queue.kind.newObligation',
   new_obligation_version: 'console.queue.kind.newObligationVersion',
+  new_provision: 'console.queue.kind.newProvision',
+  new_provision_version: 'console.queue.kind.newProvisionVersion',
   vocabulary_create: 'console.queue.kind.vocabulary',
   vocabulary_relabel: 'console.queue.kind.vocabulary',
   vocabulary_retire: 'console.queue.kind.vocabulary',
@@ -57,32 +56,71 @@ export function statusTone(status: string): PillTone {
   return isProposalStatus(status) ? proposalStatusTone[status] : 'information';
 }
 
-/** The signed-in reader made this proposal: computed client-side from the row's own `proposedBy.id` (see the module note). */
-export function isMineOf(row: Pick<ProposalRow, 'proposedBy'>, meId: string | null): boolean {
-  return meId !== null && row.proposedBy?.id === meId;
-}
-
-export function presentProposal(row: Pick<ProposalRow, 'kind' | 'status'>, isMine: boolean, t: Translate): PresentedPill[] {
+export function presentProposal(row: Pick<ProposalQueueRow, 'kind' | 'status' | 'isMine'>, t: Translate): PresentedPill[] {
   const pills: PresentedPill[] = [
     { key: 'kind', label: kindLabel(row.kind, t), tone: slotTone.proposalKind, order: SLOT_ORDER.kind },
     { key: 'status', label: statusLabel(row.status, t), tone: statusTone(row.status), order: SLOT_ORDER.status },
   ];
-  if (isMine) pills.push({ key: 'yours', label: t('console.queue.yours'), tone: slotTone.you, order: SLOT_ORDER.yours });
+  if (row.isMine === true) pills.push({ key: 'yours', label: t('console.queue.yours'), tone: slotTone.you, order: SLOT_ORDER.yours });
   return pills.sort(byOrder);
 }
 
 /**
- * Who proposed it, in one line. `proposedBy` is null for an agent's proposal and for one
- * made inside a bank alike (a bank member's identity never reaches the console); the two
- * are told apart here by `agentRunId`, since `fromOrganisation` is not on the wire yet
- * (see the module note) — a tenant-made proposal without an agent run therefore also
- * falls back to the organisation phrase, which is the same words the enrichment would
- * have shown it under.
+ * Who proposed it, in one line: the platform person by name; the organisation phrase for
+ * a proposal made inside a bank (`fromOrganisation`), whose people and agents never reach
+ * the console by name; otherwise an agent, by the model that drafted it.
  */
-export function proposerLine(row: Pick<ProposalRow, 'proposedBy' | 'agentRunId' | 'model'>, t: Translate): string {
+export function proposerLine(row: Pick<ProposalRow, 'proposedBy' | 'fromOrganisation' | 'model'>, t: Translate): string {
   if (row.proposedBy !== null && row.proposedBy !== undefined) return row.proposedBy.name;
-  if (row.agentRunId !== null && row.agentRunId !== undefined) return row.model.trim() || t('console.queue.proposedByAgent');
-  return t('console.queue.proposedByOrganisation');
+  if (row.fromOrganisation === true) return t('console.queue.proposedByOrganisation');
+  return row.model.trim() || t('console.queue.proposedByAgent');
+}
+
+/** The library record a row would change, by its own title and instrument; null for a vocabulary change. */
+export function targetLine(row: Pick<ProposalQueueRow, 'target'>, t: Translate): string | null {
+  const target = row.target ?? null;
+  if (target === null) return null;
+  const title = target.title !== '' ? target.title : target.referenceLabel;
+  return target.instrumentShortName === '' ? title : t('console.queue.target', { title, instrument: target.instrumentShortName });
+}
+
+type Decision = Pick<ProposalRow, 'status' | 'reviewedBy' | 'reviewedByAgent' | 'correctedByAgent' | 'reviewedAt' | 'appliedAt' | 'reviewNote'>;
+
+/**
+ * The decision in one sentence, dated and naming who decided: an agent by its key, as
+ * machine-confirmed on an approval; a person by name; and nobody, rather than an empty
+ * name, should a decided row name neither. Null while nothing is decided or dated.
+ */
+export function decisionLine(row: Decision, formatDate: (iso: string) => string, t: Translate): string | null {
+  const agent = row.reviewedByAgent?.key;
+  const name = row.reviewedBy?.name ?? '';
+  const reviewer = name === '' ? undefined : name;
+  if (row.status === 'approved' && typeof row.appliedAt === 'string') {
+    const date = formatDate(row.appliedAt);
+    if (agent !== undefined) return t('console.queue.detail.appliedByAgent', { date, agent });
+    if (reviewer !== undefined) return t('console.queue.detail.appliedBy', { date, reviewer });
+    return t('console.queue.detail.applied', { date });
+  }
+  if (row.status === 'rejected' && typeof row.reviewedAt === 'string') {
+    const date = formatDate(row.reviewedAt);
+    if (agent !== undefined) return t('console.queue.detail.rejectedByAgent', { date, agent });
+    if (reviewer !== undefined) return t('console.queue.detail.rejectedBy', { date, reviewer });
+    return t('console.queue.detail.rejected', { date });
+  }
+  return null;
+}
+
+/** The decider's note, labelled as the agent's when an agent decided (AI output stays labelled). */
+export function decisionNoteLine(row: Decision, t: Translate): string | null {
+  if (row.reviewNote === '') return null;
+  const agentDecided = row.reviewedByAgent !== null && row.reviewedByAgent !== undefined;
+  return t(agentDecided ? 'console.queue.detail.agentNote' : 'console.queue.detail.reviewNote', { note: row.reviewNote });
+}
+
+/** The agent that corrected the payload on the way to approving it, named as an agent. */
+export function agentCorrectionLine(row: Decision, t: Translate): string | null {
+  const agent = row.correctedByAgent?.key;
+  return agent === undefined ? null : t('console.queue.detail.correctedByAgent', { agent });
 }
 
 export function sourceLine(row: Pick<ProposalRow, 'sourceLabel'>, t: Translate): string | null {
@@ -95,8 +133,9 @@ export function isObligationVersion(kind: string): boolean {
   return kind === 'new_obligation_version';
 }
 
+/** The vocabulary and term kinds; a new record's kinds are neither this nor a version. */
 export function isVocabularyKind(kind: string): boolean {
-  return kind !== 'new_obligation_version';
+  return (VOCABULARY_KINDS as readonly string[]).includes(kind) || (TERM_KINDS as readonly string[]).includes(kind);
 }
 
 export function obligationPayloadOf(row: Pick<ProposalRow, 'payload'>): ObligationVersionPayload | null {

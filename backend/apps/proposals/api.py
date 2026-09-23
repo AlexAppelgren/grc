@@ -138,8 +138,10 @@ def list_proposals(request: HttpRequest, query: Query[ProposalQuery], page: Quer
     Nothing here changes a record and nothing is written to the audit trail: it is a read.
 
     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
-    quietly trimmed, oldest first so paging is repeatable, and `total` counting every
-    proposal matching the filters across every page. Nothing matching is a 200 with an empty
+    quietly trimmed, and `total` counting every proposal matching the filters across every
+    page. Oldest filed first by default, the order the Waiting tab is worked in; `order=newest`
+    turns it round for the Approved and Rejected tabs. Either way the id breaks a tie, so
+    paging is repeatable. Nothing matching is a 200 with an empty
     items list and a total of 0, never a 404.
 
     Needs the platform permission `proposals.review` from a person, or the platform-only
@@ -148,7 +150,9 @@ def list_proposals(request: HttpRequest, query: Query[ProposalQuery], page: Quer
 
     Errors to branch on: `unauthenticated` (401) without a session or a key;
     `permission_denied` (403) without `proposals.review` or `proposals:review`;
-    `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`;
+    `agent_not_bound` (403) for a key holding the scope but bound to no agent definition;
+    `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`, or
+    `order` one that is neither `oldest` nor `newest`;
     `validation_error` (422) when the page size or offset is out of range.
     """
     reviewer = require_reviewer(request)
@@ -159,6 +163,7 @@ def list_proposals(request: HttpRequest, query: Query[ProposalQuery], page: Quer
         target_list=query.target_list,
         origin=query.origin,
         not_mine=query.not_mine,
+        order=query.order,
     )
     total = queryset.count()
     rows = reading.queue_rows(list(queryset[page.offset : page.offset + page.limit]), language_order(request), reviewer=reviewer)

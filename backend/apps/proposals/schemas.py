@@ -760,8 +760,8 @@ class ProposalPage(CamelSchema):
 
     items: list[ProposalQueueRow] = Field(
         description=(
-            f"This page of proposals, oldest first, so the queue reads in the order they arrived and "
-            f"paging is repeatable: {settings.API_PAGE_SIZE_DEFAULT} rows by default and "
+            f"This page of proposals, oldest first unless `order` asks for the newest first, by when "
+            f"each was filed with the id breaking a tie, so paging is repeatable: {settings.API_PAGE_SIZE_DEFAULT} rows by default and "
             f"{settings.API_PAGE_SIZE_MAX} at most. Nothing matching the filters is an empty list, never a 404."
         )
     )
@@ -1268,4 +1268,16 @@ class ProposalQuery(CamelSchema):
             "False, the default, returns theirs alongside the rest."
         ),
         examples=[True],
+    )
+    order: str | None = Field(
+        default=None,
+        description=(
+            "Which end of the queue comes first, by when each proposal was filed, with the id "
+            "breaking a tie so paging is repeatable. The values are `oldest` (the default: the "
+            "order proposals arrived in, which is how the Waiting tab is worked) and `newest` (the "
+            "latest filed first, which is how the Approved and Rejected tabs read). Those are the "
+            "only two values; anything else is refused with 422 `unknown_key`. Left out, the "
+            "queue reads oldest first."
+        ),
+        examples=["newest"],
     )

@@ -169,7 +169,7 @@ test.describe('proposals journeys', () => {
     // (backend/apps/proposals/logic.py `_decidable` answers 409 four_eyes_violation to
     // anyone who calls the route directly, proven at the integration level).
     await expect(page.getByText('You proposed this.')).toBeVisible();
-    await expect(page.getByText('A second library editor has to approve it.')).toBeVisible();
+    await expect(page.getByText('Someone else has to approve it.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Approve and apply' })).toHaveCount(0);
   });
 

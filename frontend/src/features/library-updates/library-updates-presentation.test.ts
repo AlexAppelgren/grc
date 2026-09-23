@@ -57,6 +57,16 @@ describe('updateKindLabel', () => {
     }
   });
 
+  it('names each kind of new record by its own label, in both languages', () => {
+    expect(['new_instrument', 'new_obligation', 'new_provision', 'new_provision_version'].map((kind) => updateKindLabel(kind, t))).toEqual([
+      'New instrument',
+      'New obligation',
+      'New provision',
+      'New provision version',
+    ]);
+    expect(updateKindLabel('new_obligation', sv)).toBe('Ny skyldighet');
+  });
+
   it('falls back for an unknown kind rather than throwing', () => {
     expect(updateKindLabel('something_new', t)).toBe('Update');
   });
