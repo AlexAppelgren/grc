@@ -19,11 +19,15 @@ export type ProposalApproveBody = Schemas['ProposalApproveBody'];
 export type ProposalRejectBody = Schemas['ProposalRejectBody'];
 
 // Local: the generator renders every query parameter as optional strings;
-// this is the same shape, named for the feature.
+// this is the same shape, named for the feature. `origin`, `notMine` and
+// `limit` are the console queue's own and GET /tenant/proposals ignores them.
 export interface ProposalQuery {
   status?: string;
   kind?: string;
   targetList?: string;
+  origin?: string;
+  notMine?: boolean;
+  limit?: number;
 }
 
 // GET /tenant/proposals is chunk4-T10's route ("Queue reads, rejection

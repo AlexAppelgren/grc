@@ -59,6 +59,7 @@
   "console.queue.empty.filtered.title": "Inga förslag matchar",
   "console.queue.empty.filtered.body": "Rensa ett filter för att se mer av kön.",
   "console.queue.errorTitle": "Kunde inte läsa kön",
+  "console.queue.more": "Visar de första {shown} av {total}, äldst först.",
   "console.queue.detail.back": "Kö",
   "console.queue.detail.notFoundBody": "Det finns inget sådant förslag, eller så är det ett du inte får granska.",
   "console.queue.detail.errorTitle": "Kunde inte läsa förslaget",

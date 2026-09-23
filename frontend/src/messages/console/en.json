@@ -60,6 +60,7 @@
   "console.queue.empty.filtered.title": "No proposals match",
   "console.queue.empty.filtered.body": "Clear a filter to see more of the queue.",
   "console.queue.errorTitle": "Could not load the queue",
+  "console.queue.more": "Showing the first {shown} of {total}, oldest first.",
 
   "console.queue.detail.back": "Queue",
   "console.queue.detail.notFoundBody": "There is no such proposal, or it is one you may not review.",

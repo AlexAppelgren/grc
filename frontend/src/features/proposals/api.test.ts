@@ -27,6 +27,13 @@ describe('proposals api', () => {
     expect(sent[0]?.params).toEqual({});
   });
 
+  it('sends the queue\'s origin, notMine and page size for the route to filter, and leaves them out when unset', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { items: [], total: 0 } }));
+    await proposals.listProposals({ status: 'open', origin: 'agent', notMine: true, limit: 100 });
+    await proposals.listProposals({ origin: '', notMine: false });
+    expect([sent[0]?.params, sent[1]?.params]).toEqual([{ status: 'open', origin: 'agent', notMine: 'true', limit: '100' }, {}]);
+  });
+
   it('reads one proposal by id', async () => {
     const sent = installAdapter(() => ({ status: 200, data: { id: 'p-1' } }));
     await proposals.getProposal('p-1');
