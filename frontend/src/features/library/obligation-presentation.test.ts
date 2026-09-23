@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
+import { defaultFormatContext } from '@/shared/utils/format';
 
-import { outsideFootprintLabel, presentChangePending, presentObligation, presentScope, type ObligationFacts } from './obligation-presentation';
+import {
+  machineConfirmedLabel,
+  outsideFootprintLabel,
+  presentChangePending,
+  presentObligation,
+  presentScope,
+  type ObligationFacts,
+} from './obligation-presentation';
+import type { ObligationVersionRow } from './types';
 
 const t = createT('en');
 const sv = createT('sv');
@@ -159,5 +168,49 @@ describe('outsideFootprintLabel', () => {
 describe('presentChangePending', () => {
   it('is a warning pill with the formatted date', () => {
     expect(presentChangePending('1 Oct 2026', t)).toEqual({ key: 'change-pending', label: 'Change pending: 1 Oct 2026', tone: 'warning', order: 0 });
+  });
+});
+
+describe('machineConfirmedLabel', () => {
+  // Fixed instants, never today: a person's stamp in June, the agents' approval in
+  // August, and a person's later stamp in December.
+  const JUNE_STAMP = '2026-06-30T07:12:44Z';
+  const AUGUST_APPROVAL = '2026-08-17T14:02:11Z';
+  const DECEMBER_STAMP = '2026-12-01T09:00:00Z';
+  const byAgents: ObligationVersionRow = {
+    versionNumber: 2,
+    effectiveFrom: { date: '2026-10-01', precision: 'day' },
+    effectiveTo: null,
+    approvedAt: AUGUST_APPROVAL,
+    verifiedOrigin: 'agent',
+    confirmedByAgent: { id: 'ag-2', key: 'library-confirmer' },
+    proposedByAgent: { id: 'ag-1', key: 'watch-sweeper' },
+  };
+  const both = 'Machine-confirmed 17 Aug 2026: proposed by watch-sweeper, confirmed by library-confirmer';
+
+  it('labels a version agents confirmed after a person last verified the record, naming both agents', () => {
+    expect(machineConfirmedLabel(byAgents, JUNE_STAMP, t, defaultFormatContext)).toBe(both);
+    expect(machineConfirmedLabel(byAgents, null, t, defaultFormatContext)).toBe(both);
+    expect(machineConfirmedLabel(byAgents, JUNE_STAMP, sv, { ...defaultFormatContext, locale: 'sv' })).toMatch(
+      /^Maskinbekräftad 17 aug\.? 2026: föreslagen av watch-sweeper, bekräftad av library-confirmer$/,
+    );
+  });
+
+  it('gives way to the person wording once a person re-verifies the record after the agents approved it', () => {
+    expect(machineConfirmedLabel(byAgents, DECEMBER_STAMP, t, defaultFormatContext)).toBeNull();
+    // A stamp at the very moment of the approval has seen nothing later: the label stays.
+    expect(machineConfirmedLabel(byAgents, AUGUST_APPROVAL, t, defaultFormatContext)).toBe(both);
+  });
+
+  it('follows who confirmed, never which agents are named', () => {
+    // A person proposed and an agent confirmed: machine-confirmed, naming the one agent.
+    expect(machineConfirmedLabel({ ...byAgents, proposedByAgent: null }, JUNE_STAMP, t, defaultFormatContext)).toBe(
+      'Machine-confirmed 17 Aug 2026 by library-confirmer',
+    );
+    // A person approved an agent's proposal, and a seeded version nobody approved: the person wording.
+    expect(machineConfirmedLabel({ ...byAgents, verifiedOrigin: 'user', confirmedByAgent: null }, null, t, defaultFormatContext)).toBeNull();
+    const seeded = { ...byAgents, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null, approvedAt: null };
+    expect(machineConfirmedLabel(seeded, null, t, defaultFormatContext)).toBeNull();
+    expect(machineConfirmedLabel(null, null, t, defaultFormatContext)).toBeNull();
   });
 });

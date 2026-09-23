@@ -9,7 +9,7 @@ import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing
 import { tokenStore } from '@/shared/utils/api-client';
 
 import { ObligationScreen, diffSentence, effectiveIn, languageChoices, originalLanguage, textIn } from './ObligationScreen';
-import type { LocalizedText, ObligationDetail, VersionDiff } from '@/features/library/types';
+import type { LocalizedText, ObligationDetail, ObligationVersionRow, VersionDiff } from '@/features/library/types';
 import { defaultFormatContext } from '@/shared/utils/format';
 
 // The obligation card (design/screens/tenant-obligation.html): the header
@@ -21,6 +21,34 @@ const t = createT('en');
 
 const sv: LocalizedText = { text: 'Investeringsanalys från tredje part får tas emot endast…', language: 'sv', isOriginal: true, isMachine: false };
 const en: LocalizedText = { text: 'Research from third parties may be received only if…', language: 'en', isOriginal: false, isMachine: true };
+
+// Version 1 was seeded, so nobody approved it; version 2 a person approved.
+// Every instant is fixed: nothing on this card reads today's date.
+const nobody = { verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null };
+const seeded: ObligationVersionRow = {
+  versionNumber: 1,
+  effectiveFrom: null,
+  effectiveTo: { date: '2026-09-30', precision: 'day' },
+  approvedAt: null,
+  ...nobody,
+};
+const byPerson: ObligationVersionRow = {
+  versionNumber: 2,
+  effectiveFrom: { date: '2026-10-01', precision: 'day' },
+  effectiveTo: null,
+  approvedAt: '2026-08-17T14:02:11Z',
+  verifiedOrigin: 'user',
+  confirmedByAgent: null,
+  proposedByAgent: null,
+};
+// The same version 2, proposed by one agent and confirmed by an independent one.
+const byAgents: ObligationVersionRow = {
+  ...byPerson,
+  verifiedOrigin: 'agent',
+  confirmedByAgent: { id: 'ag-2', key: 'library-confirmer' },
+  proposedByAgent: { id: 'ag-1', key: 'watch-sweeper' },
+};
+const MACHINE_CONFIRMED = 'Machine-confirmed 17 Aug 2026: proposed by watch-sweeper, confirmed by library-confirmer';
 
 const research: ObligationDetail = {
   id: 'ob-1',
@@ -51,11 +79,8 @@ const research: ObligationDetail = {
   outsideReason: [],
   summary: en,
   translations: [sv, en],
-  version: { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null },
-  versions: [
-    { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null },
-    { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' }, effectiveTo: null, approvedAt: '2026-09-17T14:02:11Z' },
-  ],
+  version: seeded,
+  versions: [seeded, byPerson],
   related: [
     {
       id: 'ob-2',
@@ -73,6 +98,7 @@ const research: ObligationDetail = {
     createdAt: '2026-03-12T08:45:03Z',
     createdOrigin: 'agent',
     createdModel: 'agent pipeline 0.3',
+    ...nobody,
   },
 };
 
@@ -243,6 +269,59 @@ describe('ObligationScreen', () => {
     expect(screen.getByText('Not verified yet')).toBeInTheDocument();
     expect(screen.getByText('The library files no other duty beside this one.')).toBeInTheDocument();
     expect(screen.getByText(/^12 Mar 2026.*through proposal review$/)).toBeInTheDocument();
+  });
+
+  describe('a version independent agents confirmed', () => {
+    const sara = { id: 'u-9', name: 'Sara Lindqvist' };
+    const confirmedByAgents = { verifiedOrigin: 'agent', confirmedByAgent: byAgents.confirmedByAgent, proposedByAgent: byAgents.proposedByAgent };
+
+    async function open(record: ObligationDetail) {
+      serve(record);
+      renderIn(<ObligationScreen obligationId="ob-1" />);
+      await screen.findByRole('heading', { level: 1, name: 'Pay for third-party research only under the permitted models' });
+    }
+
+    it('reads machine-confirmed where a person\'s verification would, when a person last verified the record before it', async () => {
+      // Sara verified the record on 30 June; the agents confirmed version 2 in August, and it is in force.
+      await open({
+        ...research,
+        version: byAgents,
+        versions: [seeded, byAgents],
+        provenance: { ...research.provenance, verifiedBy: sara, ...confirmedByAgents },
+      });
+      const verified = document.querySelector('[data-last-verified]');
+      expect(verified?.textContent).toBe(MACHINE_CONFIRMED);
+      expect(verified).toHaveAttribute('data-machine-confirmed');
+      expect(screen.queryByText(/Sara Lindqvist/)).not.toBeInTheDocument();
+      expect(document.querySelector('[data-version-row="2"] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
+      expect(document.querySelector('[data-version-row="1"] [data-machine-confirmed]')).toBeNull();
+    });
+
+    it('labels the version before it takes effect, beside the person\'s verification of the one in force', async () => {
+      await open({ ...research, versions: [seeded, byAgents], provenance: { ...research.provenance, verifiedBy: sara } });
+      const verified = document.querySelector('[data-last-verified]');
+      expect(verified?.textContent).toBe('30 Jun 2026 by Sara Lindqvist');
+      expect(verified).not.toHaveAttribute('data-machine-confirmed');
+      expect(document.querySelector('[data-version-row="2"] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
+    });
+
+    it('gives way once a person re-verifies the record after the agents approved it', async () => {
+      await open({
+        ...research,
+        version: byAgents,
+        versions: [seeded, byAgents],
+        provenance: { ...research.provenance, lastVerifiedAt: '2026-12-01T09:00:00Z', verifiedBy: sara, ...confirmedByAgents },
+      });
+      expect(document.querySelector('[data-last-verified]')?.textContent).toBe('1 Dec 2026 by Sara Lindqvist');
+      expect(document.querySelector('[data-machine-confirmed]')).toBeNull();
+      expect(document.querySelector('[data-version-row="2"]')).toHaveTextContent('Approved 17 Aug 2026');
+    });
+
+    it('reads a person\'s approval as it always has', async () => {
+      await open({ ...research, version: byPerson, versions: [seeded, byPerson] });
+      expect(document.querySelector('[data-machine-confirmed]')).toBeNull();
+      expect(document.querySelector('[data-version-row="2"]')).toHaveTextContent('Approved 17 Aug 2026');
+    });
   });
 
   it('renders Not found for an id this bank cannot read, and the error state otherwise', async () => {

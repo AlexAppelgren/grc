@@ -40,6 +40,8 @@
   "inventory.obligation.sanctionLabel": "Sanction exposure",
   "inventory.obligation.versionsTitle": "Versions",
   "inventory.obligation.versionApproved": "Approved {date}",
+  "inventory.obligation.machineConfirmed": "Machine-confirmed {date}: proposed by {proposer}, confirmed by {confirmer}",
+  "inventory.obligation.machineConfirmedBy": "Machine-confirmed {date} by {confirmer}",
   "inventory.obligation.relatedTitle": "Related obligations",
   "inventory.obligation.relatedEmpty": "The library files no other duty beside this one.",
   "inventory.obligation.provenanceTitle": "Where it comes from",

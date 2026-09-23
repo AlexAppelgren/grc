@@ -56,6 +56,9 @@ const screenRow = {
   complianceStatus: null,
 };
 
+// A seeded version nobody approved, and the provenance of one in force.
+const nobody = { verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null };
+
 const serverDetail = {
   id: '11111111-1111-4111-8111-111111111111',
   stableKey: 'obl-research-payments',
@@ -86,10 +89,19 @@ const serverDetail = {
     { text: 'Investeringsanalys från tredje part…', language: 'sv', isOriginal: true, isMachine: false },
     { text: 'Research from third parties may be received only if…', language: 'en', isOriginal: false, isMachine: true },
   ],
-  version: { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null },
+  version: { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null, ...nobody },
   versions: [
-    { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null },
-    { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' }, effectiveTo: null, approvedAt: '2026-09-17T14:02:11Z' },
+    { versionNumber: 1, effectiveFrom: null, effectiveTo: { date: '2026-09-30', precision: 'day' }, approvedAt: null, ...nobody },
+    // Proposed by one agent and confirmed by an independent one: both are named (INV-05).
+    {
+      versionNumber: 2,
+      effectiveFrom: { date: '2026-10-01', precision: 'day' },
+      effectiveTo: null,
+      approvedAt: '2026-09-17T14:02:11Z',
+      verifiedOrigin: 'agent',
+      confirmedByAgent: { id: 'ag-2', key: 'library-confirmer' },
+      proposedByAgent: { id: 'ag-1', key: 'watch-sweeper' },
+    },
   ],
   related: [
     {
@@ -108,6 +120,7 @@ const serverDetail = {
     createdAt: '2026-03-12T08:45:03Z',
     createdOrigin: 'agent',
     createdModel: 'agent pipeline 0.3',
+    ...nobody,
   },
 };
 
@@ -169,7 +182,7 @@ describe('library api', () => {
   it('reads a version, a legal date and a compliance status only when the server sent one it knows', () => {
     expect(library.versionOf(null)).toBeNull();
     expect(library.versionOf(undefined)).toBeNull();
-    expect(library.versionOf({ versionNumber: 3, effectiveFrom: null })).toEqual({ versionNumber: 3, effectiveFrom: null });
+    expect(library.versionOf({ versionNumber: 3, effectiveFrom: null, ...nobody })).toEqual({ versionNumber: 3, effectiveFrom: null });
     expect(library.partialDateOf({ date: '2026-10-01', precision: 'quarter' })).toEqual({ date: '2026-10-01', precision: 'quarter' });
     // A precision the screen has no rule for reads as the day the string carries, never as a crash.
     expect(library.partialDateOf({ date: '2026-10-01', precision: 'decade' })).toEqual({ date: '2026-10-01', precision: 'day' });

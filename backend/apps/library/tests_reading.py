@@ -24,8 +24,10 @@ from unittest import mock
 from django.conf import settings
 from django.db import DEFAULT_DB_ALIAS, connection, connections, transaction
 from django.test import TestCase, TransactionTestCase
+from django.test.utils import CaptureQueriesContext
 from pydantic import ValidationError
 
+from apps.agents import testing as agents_testing
 from apps.identity.models import User
 from apps.library import reading
 from apps.library import testing as build
@@ -77,6 +79,8 @@ LIST_QUERIES = 2 + 6 + 2 + 2 + 2 + 2 + 5 + 2 + 4 + 2
 # with their term counts and labels (2); the footprint and its restricting dimensions (2);
 # the relations, the titles of what they point at and the relation types' labels (3).
 DETAIL_QUERIES = 2 + 6 + 2 + 1 + 6 + 5 + 4 + 2 + 2 + 3
+# Who confirmed a version the library was seeded with: nobody, since nobody approved it.
+SEEDED = {"verifiedOrigin": "", "confirmedByAgent": None, "proposedByAgent": None}
 
 
 def seed_reference() -> None:
@@ -181,7 +185,7 @@ class ObligationListTests(TestCase):
         self.assertEqual([term["key"] for term in scope["service_type"]["terms"]], ["non_advised", "execution_only"])
         self.assertEqual(scope["client_category"]["terms"], [], "an empty dimension is listed: it means no restriction")
         self.assertEqual(scope["jurisdiction"]["terms"], [], "no jurisdiction term is inherited")
-        self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": None})
+        self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": None, **SEEDED})
         self.assertIsNone(row["upcomingVersion"])
         self.assertEqual((row["inFootprint"], row["outsideReason"]), (True, []))
         self.assertEqual(row["lastVerifiedAt"], "2026-06-30T08:00:00Z")
@@ -276,8 +280,8 @@ class ObligationListTests(TestCase):
 
     def test_as_of_returns_the_version_in_force_and_the_one_to_come(self) -> None:
         before = self.row("obl-d-research", {"asOf": EARLY.isoformat()})
-        self.assertEqual(before["version"], {"versionNumber": 1, "effectiveFrom": {"date": "2025-01-01", "precision": "day"}})
-        self.assertEqual(before["upcomingVersion"], {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}})
+        self.assertEqual(before["version"], {"versionNumber": 1, "effectiveFrom": {"date": "2025-01-01", "precision": "day"}, **SEEDED})
+        self.assertEqual(before["upcomingVersion"], {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}, **SEEDED})
         on = self.row("obl-d-research", {"asOf": CHANGE_DAY.isoformat()})
         self.assertEqual(on["version"]["versionNumber"], 2)
         self.assertIsNone(on["upcomingVersion"])
@@ -507,12 +511,14 @@ class ObligationDetailTests(TestCase):
                     "effectiveFrom": {"date": "2025-01-01", "precision": "day"},
                     "effectiveTo": {"date": "2026-09-30", "precision": "day"},
                     "approvedAt": None,
+                    **SEEDED,
                 },
                 {
                     "versionNumber": 2,
                     "effectiveFrom": {"date": "2026-10-01", "precision": "day"},
                     "effectiveTo": None,
                     "approvedAt": None,
+                    **SEEDED,
                 },
             ],
             "a version runs until the day before the next one takes effect; nothing stores an end date",
@@ -654,6 +660,7 @@ class ObligationDiffTests(TestCase):
         self.assertEqual((body["fromVersion"], body["toVersion"]), (1, 2))
         self.assertEqual(body["fromEffective"], {"date": "2025-01-01", "precision": "day"})
         self.assertEqual(body["toEffective"], {"date": "2026-10-01", "precision": "day"})
+        self.assertEqual((body["fromConfirmation"], body["toConfirmation"]), (SEEDED, SEEDED), "seeded: nobody approved either")
         self.assertEqual((body["language"], body["isMachine"]), ("en", True), "the reader reads the machine translation")
         self.assertEqual(
             body["segments"],
@@ -710,6 +717,128 @@ class ObligationDiffTests(TestCase):
         for written in ("Endast", "svenska", "English only", str(self.apart.id)):
             self.assertNotIn(written, lines[0], "no library text and no record the reader asked for")
         self.assertEqual(json.loads(lines[0])["message"], "422 GET api/v1/obligations/<obligation_id>/diff")
+
+
+class MachineConfirmedVersionTests(TestCase):
+    """Who confirmed each version travels with that version (INV-05, INV-06, PRO-02, D-62):
+    on the list's version and upcoming version, on the card's version list and provenance,
+    and on both sides of the diff, so wording an independent agent confirmed is labelled
+    wherever it shows, including before it takes effect. A person's re-verification stamp
+    and a version's approval are both reported as stored, with their times; which one a
+    screen reads is the screen's rule (obligation-presentation.ts)."""
+
+    tenant: Tenant
+    reader: User
+    editor: User
+    obligation: Obligation
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        seed_reference()
+        cls.tenant = factories.tenant(slug="machine-a")
+        set_footprint(cls.tenant, FOOTPRINT)
+        cls.reader = factories.member_user(cls.tenant, roles=("reader",))
+        cls.editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        cls.obligation = build.obligation(
+            build.instrument(key="lvm", short_name="LVM", regime="regime:securities"),
+            key="obl-machine-confirmed",
+            titles={"en": "A duty the agents keep current"},
+            terms=("service_type:non_advised",),
+            versions=((D(2025, 1, 1), {"en": "The duty as it first read."}),),
+        )
+
+    def agents_apply(self, effective_from: datetime.date) -> dict[str, Any]:
+        """One agent proposes a new version and an independent agent confirms it, through the
+        queue as production does (PRO-S13); answers the three facts the version should carry."""
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        proposer = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        confirmer = agents_testing.reviewer_api_key()
+        body = {
+            "kind": "new_obligation_version",
+            "title": "Keep the wording current with the source",
+            "targetType": "obligation",
+            "targetId": str(self.obligation.id),
+            "payload": {
+                "summaries": {"en": f"The duty as the agents read it from {effective_from.isoformat()}."},
+                "originalLanguage": "en",
+                "isMachine": True,
+                "effectiveFrom": effective_from.isoformat(),
+                "effectiveFromPrecision": "day",
+            },
+            "fieldSources": {"summaries.en": build.SOURCE_URL, "effectiveFrom": build.SOURCE_URL},
+        }
+        created = self.client.post("/api/v1/proposals", body, content_type="application/json", HTTP_X_API_KEY=proposer.plain_key)
+        self.assertEqual(created.status_code, 201, created.content)
+        approved = self.client.post(
+            f"/api/v1/proposals/{created.json()['id']}/approve", {}, content_type="application/json", HTTP_X_API_KEY=confirmer.plain_key
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+        return {
+            "verifiedOrigin": "agent",
+            "confirmedByAgent": {"id": str(confirmer.agent.id), "key": confirmer.agent.key},
+            "proposedByAgent": {"id": str(proposer.agent.id), "key": proposer.agent.key},
+        }
+
+    def read(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
+        response = self.client.get(path, params, **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual(response.status_code, 200, response.content)
+        return dict(response.json())
+
+    def queries_of(self, path: str, params: dict[str, Any]) -> int:
+        headers = sign_in(self.reader, tenant=self.tenant)
+        with CaptureQueriesContext(connection) as queries:
+            response = self.client.get(path, params, **headers)
+        self.assertEqual(response.status_code, 200, response.content)
+        return len(queries.captured_queries)
+
+    def test_a_persons_stamp_then_a_later_agent_confirmed_version_reads_agent(self) -> None:
+        """Regression pin: a person re-verified the record, then agents confirmed a new
+        version. The provenance names both agents, and the person's stamp beside it is older
+        than that version's approval, so the stamp cannot vouch for wording no person saw."""
+        stamped = self.client.post(
+            f"{URL}/{self.obligation.id}/verifications", {"outcome": "no_change"}, content_type="application/json", **sign_in(self.editor, step_up=True)
+        )
+        self.assertEqual(stamped.status_code, 201, stamped.content)
+        agents = self.agents_apply(D(2026, 1, 1))
+
+        card = self.read(f"{URL}/{self.obligation.id}", {"asOf": EARLY.isoformat()})
+        provenance, version = card["provenance"], card["version"]
+        self.assertEqual(version["versionNumber"], 2, "the agents' version is the one in force")
+        self.assertEqual({key: provenance[key] for key in agents}, agents)
+        self.assertEqual({key: version[key] for key in agents}, agents)
+        self.assertEqual(provenance["verifiedBy"]["name"], self.editor.name, "the stamp stays the person's own")
+        self.assertLess(
+            datetime.datetime.fromisoformat(provenance["lastVerifiedAt"]), datetime.datetime.fromisoformat(version["approvedAt"])
+        )
+        self.assertEqual({key: card["versions"][0][key] for key in agents}, SEEDED, "the seeded version is nobody's approval")
+
+    def test_an_upcoming_agent_confirmed_version_is_labelled_on_the_list_the_card_and_the_diff(self) -> None:
+        agents = self.agents_apply(CHANGE_DAY)
+
+        rows = self.read(URL, {"asOf": EARLY.isoformat()})["items"]
+        row = next(row for row in rows if row["stableKey"] == self.obligation.stable_key)
+        self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": {"date": "2025-01-01", "precision": "day"}, **SEEDED})
+        self.assertEqual(row["upcomingVersion"], {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}, **agents})
+
+        card = self.read(f"{URL}/{self.obligation.id}", {"asOf": EARLY.isoformat()})
+        self.assertEqual({key: card["provenance"][key] for key in agents}, SEEDED, "the version in force was seeded")
+        self.assertEqual({key: card["versions"][1][key] for key in agents}, agents, "labelled before it binds")
+        self.assertIsNotNone(card["versions"][1]["approvedAt"])
+
+        diff = self.read(f"{URL}/{self.obligation.id}/diff", {})
+        self.assertEqual((diff["fromVersion"], diff["toVersion"]), (1, 2))
+        self.assertEqual((diff["fromConfirmation"], diff["toConfirmation"]), (SEEDED, agents))
+
+        on = self.read(f"{URL}/{self.obligation.id}", {"asOf": CHANGE_DAY.isoformat()})
+        self.assertEqual({key: on["provenance"][key] for key in agents}, agents, "in force, the provenance names the agents too")
+
+    def test_naming_the_agents_costs_no_query_per_version(self) -> None:
+        card, page = f"{URL}/{self.obligation.id}", URL
+        params = {"asOf": EARLY.isoformat()}
+        before = (self.queries_of(card, params), self.queries_of(page, params))
+        self.agents_apply(D(2026, 1, 1))
+        self.agents_apply(CHANGE_DAY)
+        self.assertEqual((self.queries_of(card, params), self.queries_of(page, params)), before)
 
 
 @contextmanager
@@ -1166,6 +1295,7 @@ class ProvisionTreeTests(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         body = response.json()
         self.assertEqual((body["fromVersion"], body["toVersion"]), (1, 2))
+        self.assertEqual((body["fromConfirmation"], body["toConfirmation"]), (None, None), "a provision's text records no approval")
         self.assertEqual(
             body["segments"],
             [

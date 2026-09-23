@@ -21,6 +21,7 @@ from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from zoneinfo import ZoneInfo
 
+from apps.agents import testing as agents_testing
 from apps.identity.models import Membership
 from apps.library.models import (
     Instrument,
@@ -35,6 +36,7 @@ from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import logic
 from apps.proposals.models import Proposal
 from apps.shared import factories, tenancy
+from apps.shared import permissions as perms
 from apps.shared.audit import Actor, ActorType
 from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
@@ -180,6 +182,41 @@ class LibraryUpdates(ScenarioTestCase):
         assert applied is not None
         self.assertEqual(body["days"][0]["date"], timezone.localdate(applied, timezone=ZoneInfo(self.tenant.timezone)).isoformat())
         self.assertLess(body["since"], applied.isoformat())
+
+    def test_a_change_names_the_agents_behind_it_and_never_a_person(self) -> None:
+        """INV-05, D-62: a change an independent agent confirmed names both agents by their
+        definition keys, so it never reads as a person's approval; one a person approved
+        reads `user` and names nobody."""
+        by_agents = self._obligation("obl-agents", "service_type:advice")
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        proposer = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        confirmer = agents_testing.reviewer_api_key()
+        body = {
+            "kind": "new_obligation_version",
+            "title": "Keep the wording current",
+            "targetType": "obligation",
+            "targetId": str(by_agents.id),
+            "payload": {"summaries": {"sv": "Institutet bedömer kunden varje år."}, "originalLanguage": "sv", "isMachine": True},
+            "fieldSources": {"summaries.sv": SOURCE},
+        }
+        created = self.client.post(f"{V1}/proposals", data=body, content_type="application/json", HTTP_X_API_KEY=proposer.plain_key)
+        self.assertEqual(created.status_code, 201, created.content)
+        approved = self.client.post(
+            f"{V1}/proposals/{created.json()['id']}/approve", data={}, content_type="application/json", HTTP_X_API_KEY=confirmer.plain_key
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+        by_person = self._obligation("obl-person", "service_type:advice")
+        self._apply_version(by_person)
+
+        items = {item["target"]["id"]: item for item in self._items(self._read(self.reader, self.tenant))}
+        agents = items[str(by_agents.id)]
+        self.assertEqual(
+            (agents["verifiedOrigin"], agents["confirmedByAgent"]["key"], agents["proposedByAgent"]["key"]),
+            ("agent", confirmer.agent.key, proposer.agent.key),
+        )
+        person = items[str(by_person.id)]
+        self.assertEqual((person["verifiedOrigin"], person["confirmedByAgent"], person["proposedByAgent"]), ("user", None, None))
+        self.assertNotIn(self.editor.name, repr(person), "the person who approved is never named")
 
     def test_a_duty_outside_the_footprint_is_hidden_until_the_reader_asks_for_it(self) -> None:
         """FP-03: the same rule the inventory applies. Asking for the rest says which facet

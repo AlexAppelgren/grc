@@ -22,6 +22,11 @@ and the diffs between two versions. Nothing here writes.
   proposals app (PRO-01).
 - "As of" a date is `logic.in_force()` and nothing else (AC-INV1). A version's end date is
   never stored: `version_rows()` derives it from the version that follows (INV-04).
+- `confirmation_of()` is who confirmed each version's approval and which agent proposed it
+  (INV-05, PRO-02, D-62), read the same way wherever a version appears: the list's
+  versions, the card's version list and provenance, and both sides of a diff. Every read
+  that names a version fetches it through `versions_with_confirmation()`, so naming both
+  agents costs no query per version.
 - `_visible()` is the one lookup of a record by id, and `obligation_subject()` and
   `instrument_subject()` are what the write routes address their record through: what
   row-level security does not show the caller is a 404, never a 403, so no id can be
@@ -49,9 +54,10 @@ from django.contrib.postgres.expressions import ArraySubquery
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.lookups import DataContains
 from django.core.exceptions import ValidationError
-from django.db.models import BooleanField, Count, Exists, F, Func, Model, OuterRef, Q, QuerySet, UUIDField, Value
+from django.db.models import BooleanField, Count, Exists, F, Func, Model, OuterRef, Prefetch, Q, QuerySet, UUIDField, Value
 from django.utils import timezone
 
+from apps.agents.models import Agent
 from apps.library.logic import in_force, version_diff
 from apps.library.models import (
     Authority,
@@ -101,6 +107,7 @@ from apps.library.schemas import (
     ProvisionVersionRow,
     RelatedObligation,
     ScopeDimension,
+    VersionConfirmation,
     VersionDiff,
     VersionDiffQuery,
 )
@@ -372,12 +379,42 @@ def scope_and_verdict(
 # ---------------------------------------------------------------------------------------
 # GET /obligations
 # ---------------------------------------------------------------------------------------
+def agent_ref(agent: Agent | None) -> AgentRef | None:
+    """An agent as a screen names it: by its definition key (AUD-02)."""
+    return None if agent is None else AgentRef(id=agent.id, key=agent.key)
+
+
+def versions_with_confirmation() -> Prefetch[Any]:
+    """An obligation's versions with the confirming agent and the proposing agent joined in
+    the same query, so `confirmation_of()` never costs a query per version (playbook 10)."""
+    return Prefetch(
+        "versions", queryset=ObligationVersion.objects.select_related("verified_by_agent", "applied_by_proposal__proposed_by_agent")
+    )
+
+
+def confirmation_of(version: ObligationVersion) -> VersionConfirmation:
+    """Who confirmed the approval that wrote `version`, and which agent proposed it, as
+    stored (INV-05, PRO-02, D-62). The version names its confirmer; the proposer is read
+    through the proposal that wrote it. The label is the screen's to decide: a later
+    re-verification by a person is on the record, not here."""
+    proposal = version.applied_by_proposal
+    return VersionConfirmation(
+        verified_origin=version.verified_origin,
+        confirmed_by_agent=agent_ref(version.verified_by_agent),
+        proposed_by_agent=agent_ref(None if proposal is None else proposal.proposed_by_agent),
+    )
+
+
 def _version_ref(version: ObligationVersion | None) -> ObligationVersionRef | None:
     if version is None:
         return None
+    confirmed = confirmation_of(version)
     return ObligationVersionRef(
         version_number=version.version_number,
         effective_from=partial_date(version.effective_from, version.effective_from_precision),
+        verified_origin=confirmed.verified_origin,
+        confirmed_by_agent=confirmed.confirmed_by_agent,
+        proposed_by_agent=confirmed.proposed_by_agent,
     )
 
 
@@ -412,7 +449,7 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
         )
     total = queryset.count()
     page = list(
-        queryset.order_by("stable_key").select_related("instrument__level", "duty_type").prefetch_related("titles", "versions")[
+        queryset.order_by("stable_key").select_related("instrument__level", "duty_type").prefetch_related("titles", versions_with_confirmation())[
             offset : offset + limit
         ]
     )
@@ -507,11 +544,15 @@ def version_rows(versions: list[ObligationVersion]) -> dict[int, ObligationVersi
             and (version.effective_from is None or following.effective_from > version.effective_from)
         ):
             ends = partial_date(following.effective_from - datetime.timedelta(days=1), following.effective_from_precision)
+        confirmed = confirmation_of(version)
         rows[version.version_number] = ObligationVersionRow(
             version_number=version.version_number,
             effective_from=partial_date(version.effective_from, version.effective_from_precision),
             effective_to=ends,
             approved_at=version.approved_at,
+            verified_origin=confirmed.verified_origin,
+            confirmed_by_agent=confirmed.confirmed_by_agent,
+            proposed_by_agent=confirmed.proposed_by_agent,
         )
     return rows
 
@@ -548,7 +589,7 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
     or related obligations the record carries."""
     obligation = _visible(
         Obligation.objects.select_related("instrument__level", "duty_type", "verified_by").prefetch_related(
-            "titles", "instrument__titles", "versions__summaries", "tags", "provisions"
+            "titles", "instrument__titles", versions_with_confirmation(), "versions__summaries", "tags", "provisions"
         ),
         obligation_id,
     )
@@ -568,16 +609,8 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
     )
     rows = version_rows(versions)
     verifier = obligation.verified_by
-    confirmed_by_agent = None
-    proposed_by_agent = None
-    verified_origin = ""
-    if current is not None:
-        verified_origin = current.verified_origin
-        if current.verified_by_agent is not None:
-            confirmed_by_agent = AgentRef(id=current.verified_by_agent.id, key=current.verified_by_agent.key)
-        proposing_agent = current.applied_by_proposal.proposed_by_agent if current.applied_by_proposal is not None else None
-        if proposing_agent is not None:
-            proposed_by_agent = AgentRef(id=proposing_agent.id, key=proposing_agent.key)
+    # The provenance repeats who confirmed the version in force; the row already says it.
+    in_force_row = rows[current.version_number] if current is not None else None
     return ObligationDetail(
         id=obligation.id,
         stable_key=obligation.stable_key,
@@ -604,7 +637,7 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
         outside_reason=outside,
         summary=localized(summaries, order),
         translations=[text_of(summary) for summary in summaries],
-        version=rows[current.version_number] if current is not None else None,
+        version=in_force_row,
         versions=list(rows.values()),
         provisions=[
             ObligationProvisionRef(id=provision.id, ref_label=provision.ref_label, path=provision.path)
@@ -619,9 +652,9 @@ def obligation_detail(tenant: Tenant, order: list[str], obligation_id: uuid.UUID
             last_verified_at=obligation.last_verified_at,
             source_url=obligation.source_url,
             source_label=obligation.source_label,
-            verified_origin=verified_origin,
-            confirmed_by_agent=confirmed_by_agent,
-            proposed_by_agent=proposed_by_agent,
+            verified_origin="" if in_force_row is None else in_force_row.verified_origin,
+            confirmed_by_agent=None if in_force_row is None else in_force_row.confirmed_by_agent,
+            proposed_by_agent=None if in_force_row is None else in_force_row.proposed_by_agent,
         ),
     )
 
@@ -638,7 +671,7 @@ def obligation_diff(order: list[str], obligation_id: uuid.UUID, query: VersionDi
     """"Show what changed" between two versions of one obligation (INV-04, AC-INV1), by
     default the latest against the one before it. The comparison itself is `version_diff`,
     which is pure and writes nothing to a log: the summaries are the library's content."""
-    obligation = _visible(Obligation.objects.prefetch_related("versions__summaries"), obligation_id)
+    obligation = _visible(Obligation.objects.prefetch_related(versions_with_confirmation(), "versions__summaries"), obligation_id)
     versions = list(obligation.versions.all())
     if len(versions) < 2 and (query.from_version is None or query.to_version is None):
         raise ValidationError("There are not two versions of this obligation to compare.")
@@ -653,6 +686,8 @@ def obligation_diff(order: list[str], obligation_id: uuid.UUID, query: VersionDi
         to_version=newer.version_number,
         from_effective=partial_date(older.effective_from, older.effective_from_precision),
         to_effective=partial_date(newer.effective_from, newer.effective_from_precision),
+        from_confirmation=confirmation_of(older),
+        to_confirmation=confirmation_of(newer),
         language=language,
         is_machine=is_machine,
         segments=[DiffSegment(op=op, text=text) for op, text in segments],
@@ -909,6 +944,9 @@ def provision_diff(order: list[str], provision_id: uuid.UUID, query: VersionDiff
         to_version=newer.version_number,
         from_effective=partial_date(older.effective_from, older.effective_from_precision),
         to_effective=partial_date(newer.effective_from, newer.effective_from_precision),
+        # No proposal kind writes a provision's text, so its versions record no approval.
+        from_confirmation=None,
+        to_confirmation=None,
         language=language,
         is_machine=is_machine,
         segments=[DiffSegment(op=op, text=text) for op, text in segments],

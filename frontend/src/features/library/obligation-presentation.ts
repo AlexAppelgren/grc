@@ -7,6 +7,9 @@ import {
   type ComplianceKind,
 } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
+import { formatDate, type FormatContext } from '@/shared/utils/format';
+
+import type { ObligationVersionRow } from './types';
 
 // Obligation row and header (design/system/pills-and-labels.md, slot order).
 // Row: instrument, "Guidance" if not binding, applicability, compliance
@@ -185,4 +188,25 @@ export function outsideFootprintLabel(terms: readonly VocabularyRef[], t: Transl
 // waiting for approval. The caller formats the date with formatDate().
 export function presentChangePending(formattedDate: string, t: Translate): PresentedPill {
   return { key: 'change-pending', label: t('pill.changePending', { date: formattedDate }), tone: slotTone.changePending, order: 0 };
+}
+
+// "Machine-confirmed 17 Aug 2026: proposed by watch-sweeper, confirmed by
+// library-confirmer", read where a person's approval or verification would be
+// (INV-05, INV-06, PRO-02). A version an independent agent confirmed reads
+// this way until a person re-verifies the record after that approval; null
+// means the person wording stands. It follows who confirmed alone, never which
+// agents are named, since a person may propose what an agent confirms.
+export function machineConfirmedLabel(
+  version: ObligationVersionRow | null,
+  lastVerifiedAt: string | null,
+  t: Translate,
+  ctx: FormatContext,
+): string | null {
+  if (version === null || version.verifiedOrigin !== 'agent' || version.approvedAt === null) return null;
+  if (lastVerifiedAt !== null && Date.parse(lastVerifiedAt) > Date.parse(version.approvedAt)) return null;
+  const date = formatDate(version.approvedAt, ctx);
+  const confirmer = version.confirmedByAgent?.key ?? '';
+  return version.proposedByAgent === null
+    ? t('inventory.obligation.machineConfirmedBy', { date, confirmer })
+    : t('inventory.obligation.machineConfirmed', { date, proposer: version.proposedByAgent.key, confirmer });
 }

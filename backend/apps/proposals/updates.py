@@ -6,9 +6,11 @@ approved and applied — and it reads them as the library's own facts:
 
 - Every item is titled by the library record it touched, never by the proposal that carried
   it, so one bank's wording can never reach another bank as a heading.
-- No proposer, no reviewer and no note: who asked for a change is nobody's business outside
-  the console, and a bank that filed one reads its own request through
-  `GET /tenant/proposals` instead.
+- No person as proposer or reviewer, and no note: who asked for a change is nobody's
+  business outside the console, and a bank that filed one reads its own request through
+  `GET /tenant/proposals` instead. The platform agents that proposed or confirmed it are
+  named by definition key (INV-05, D-62), read from the proposal itself, so a change an
+  independent agent confirmed never reads as a person's approval, whatever kind it is.
 - The cut to the bank's own business is `taxonomy.matching`, the one footprint rule, applied
   in the database by the same SQL function the inventory list uses, so a duty hidden from
   the inventory is hidden here too. A change to a shared list is never cut: a list belongs
@@ -32,6 +34,7 @@ from django.utils import timezone
 from apps.library.models import Obligation, ObligationVersion
 from apps.library.reading import (
     RecordHeading,
+    agent_ref,
     footprint_dimensions,
     obligation_headings,
     obligation_scopes,
@@ -41,7 +44,7 @@ from apps.library.reading import (
 )
 from apps.library.schemas import LibraryRef, OutsideReason
 from apps.proposals import logic
-from apps.proposals.models import Proposal, ProposalStatus
+from apps.proposals.models import OriginType, Proposal, ProposalStatus
 from apps.proposals.schemas import LibraryUpdateDay, LibraryUpdateRow, LibraryUpdatesPage, LibraryUpdateTarget
 from apps.taxonomy import matching
 from apps.taxonomy.models import TaxonomyTerm, TaxonomyTermLabel
@@ -172,6 +175,9 @@ def _row(
         vocabulary=vocabulary,
         in_footprint=in_footprint,
         outside_reason=outside,
+        verified_origin=(OriginType.AGENT if proposal.reviewed_by_agent_id is not None else OriginType.USER).value,
+        confirmed_by_agent=agent_ref(proposal.reviewed_by_agent),
+        proposed_by_agent=agent_ref(proposal.proposed_by_agent),
     )
 
 
@@ -190,7 +196,7 @@ def page(
     since = since_for(tenant, membership)
     queryset = _applied(since=since, kind=kind, outside_footprint=outside_footprint, tenant_id=tenant.id)
     total = queryset.count()
-    applied = list(queryset[offset : offset + limit])
+    applied = list(queryset.select_related("proposed_by_agent", "reviewed_by_agent")[offset : offset + limit])
     headings = obligation_headings([proposal.target_id for proposal in applied if proposal.target_id is not None], order)
     versions = _versions(applied)
     vocabularies = _vocabulary_refs(applied, order)

@@ -4848,10 +4848,14 @@
         "type": "object"
       },
       "LibraryUpdateRow": {
-        "description": "One change that reached the shared library while this reader was away (PRO-03,\nINV-04): what changed, when it was applied, when it starts binding, and whether it\nreaches this bank. It is a fact about the library and never a task: whether the duty\napplies here, and whether this bank complies with it, are the bank's own judgements\nrecorded elsewhere. Nobody's name appears: who proposed a change is not a bank's\nbusiness, and a change another bank asked for reads exactly like any other.",
+        "description": "One change that reached the shared library while this reader was away (PRO-03,\nINV-04): what changed, when it was applied, when it starts binding, whether it reaches\nthis bank, and who confirmed it. It is a fact about the library and never a task:\nwhether the duty applies here, and whether this bank complies with it, are the bank's\nown judgements recorded elsewhere. No person is named: who asked for a change is not a\nbank's business, and a change another bank asked for reads exactly like any other. The\nplatform agents that proposed or confirmed it are named by definition key (INV-05,\nD-62), so a change an independent agent confirmed never reads as a person's approval.",
         "examples": [
           {
             "appliedAt": "2026-09-18T09:20:00Z",
+            "confirmedByAgent": {
+              "id": "2f7a9c14-3b8e-4d61-9a05-c8e1f4b27d93",
+              "key": "library-confirmer"
+            },
             "effectiveFrom": {
               "date": "2026-10-01",
               "precision": "day"
@@ -4860,12 +4864,17 @@
             "inFootprint": true,
             "kind": "new_obligation_version",
             "outsideReason": [],
+            "proposedByAgent": {
+              "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+              "key": "watch-sweeper"
+            },
             "target": {
               "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
               "instrumentShortName": "FFFS 2017:2",
               "referenceLabel": "Third-party payments",
               "title": "Pay for third-party research only under the permitted models"
             },
+            "verifiedOrigin": "agent",
             "versionNumber": 2,
             "vocabulary": null,
             "vocabularyList": null
@@ -4880,6 +4889,17 @@
             "format": "date-time",
             "title": "Appliedat",
             "type": "string"
+          },
+          "confirmedByAgent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The independent agent that confirmed the change, by its definition key, when `verifiedOrigin` is `agent`. Null whenever a person approved it. It names a platform agent definition, never a person or a bank."
           },
           "effectiveFrom": {
             "anyOf": [
@@ -4920,6 +4940,17 @@
             "title": "Outsidereason",
             "type": "array"
           },
+          "proposedByAgent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The agent that proposed the change, by its definition key. Null whenever the proposer was not a key bound to an agent, which is every change a person asked for, whoever confirmed it; that person is never named. It is independent of `verifiedOrigin`: a person may have approved an agent's proposal, and an agent may have confirmed a person's."
+          },
           "target": {
             "anyOf": [
               {
@@ -4930,6 +4961,14 @@
               }
             ],
             "description": "The duty that changed, named by the library's own wording. Null on a change to a shared list, which names no single record; `vocabularyList` then says which list it was."
+          },
+          "verifiedOrigin": {
+            "description": "Who confirmed the approval that applied this change: `agent` when the reviewer was a second, independent agent, which a screen labels machine-confirmed and never as a person's verification; `user` when a person approved it, who is never named here. A fixed kind, not a vocabulary.",
+            "examples": [
+              "agent"
+            ],
+            "title": "Verifiedorigin",
+            "type": "string"
           },
           "versionNumber": {
             "anyOf": [
@@ -4976,7 +5015,10 @@
         "required": [
           "id",
           "kind",
-          "appliedAt"
+          "appliedAt",
+          "verifiedOrigin",
+          "confirmedByAgent",
+          "proposedByAgent"
         ],
         "title": "LibraryUpdateRow",
         "type": "object"
@@ -5033,6 +5075,10 @@
                 "items": [
                   {
                     "appliedAt": "2026-09-18T09:20:00Z",
+                    "confirmedByAgent": {
+                      "id": "2f7a9c14-3b8e-4d61-9a05-c8e1f4b27d93",
+                      "key": "library-confirmer"
+                    },
                     "effectiveFrom": {
                       "date": "2026-10-01",
                       "precision": "day"
@@ -5041,12 +5087,17 @@
                     "inFootprint": true,
                     "kind": "new_obligation_version",
                     "outsideReason": [],
+                    "proposedByAgent": {
+                      "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+                      "key": "watch-sweeper"
+                    },
                     "target": {
                       "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
                       "instrumentShortName": "FFFS 2017:2",
                       "referenceLabel": "Third-party payments",
                       "title": "Pay for third-party research only under the permitted models"
                     },
+                    "verifiedOrigin": "agent",
                     "versionNumber": 2,
                     "vocabulary": null,
                     "vocabularyList": null
@@ -5692,7 +5743,7 @@
                 "id": "0a2e6b81-5f4d-4a3b-9c77-1d8e3f5a6c20",
                 "name": "Johan Ek"
               },
-              "verifiedOrigin": "user"
+              "verifiedOrigin": ""
             },
             "provisions": [
               {
@@ -5903,30 +5954,45 @@
             "triggerFrequency": "Annual assessment from 1 October 2026",
             "version": {
               "approvedAt": null,
+              "confirmedByAgent": null,
               "effectiveFrom": null,
               "effectiveTo": {
                 "date": "2026-09-30",
                 "precision": "day"
               },
+              "proposedByAgent": null,
+              "verifiedOrigin": "",
               "versionNumber": 1
             },
             "versions": [
               {
                 "approvedAt": null,
+                "confirmedByAgent": null,
                 "effectiveFrom": null,
                 "effectiveTo": {
                   "date": "2026-09-30",
                   "precision": "day"
                 },
+                "proposedByAgent": null,
+                "verifiedOrigin": "",
                 "versionNumber": 1
               },
               {
                 "approvedAt": "2026-09-15T14:02:11Z",
+                "confirmedByAgent": {
+                  "id": "2f7a9c14-3b8e-4d61-9a05-c8e1f4b27d93",
+                  "key": "library-confirmer"
+                },
                 "effectiveFrom": {
                   "date": "2026-10-01",
                   "precision": "day"
                 },
                 "effectiveTo": null,
+                "proposedByAgent": {
+                  "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+                  "key": "watch-sweeper"
+                },
+                "verifiedOrigin": "agent",
                 "versionNumber": 2
               }
             ]
@@ -6416,14 +6482,26 @@
                   "text": "Pay for third-party research only under the permitted models"
                 },
                 "upcomingVersion": {
+                  "confirmedByAgent": {
+                    "id": "2f7a9c14-3b8e-4d61-9a05-c8e1f4b27d93",
+                    "key": "library-confirmer"
+                  },
                   "effectiveFrom": {
                     "date": "2026-10-01",
                     "precision": "day"
                   },
+                  "proposedByAgent": {
+                    "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+                    "key": "watch-sweeper"
+                  },
+                  "verifiedOrigin": "agent",
                   "versionNumber": 2
                 },
                 "version": {
+                  "confirmedByAgent": null,
                   "effectiveFrom": null,
+                  "proposedByAgent": null,
+                  "verifiedOrigin": "",
                   "versionNumber": 1
                 }
               }
@@ -6457,7 +6535,7 @@
         "type": "object"
       },
       "ObligationProvenance": {
-        "description": "Where the record came from and when it was last checked against its source (INV-06).\n`verifiedBy` is a platform person or null: a seeded record has never been re-verified.\n\n`verifiedOrigin`, `confirmedByAgent` and `proposedByAgent` (INV-05, PRO-02, D-62) are a\nsecond pair of facts, about who confirmed the approval of the version now in force, not\nabout who last re-verified it: `agent` means two independent agents proposed and\nconfirmed it, naming both, and never reads as a person's verification; `user`, and\nempty for a version applied before this existed, means a person confirmed it and\nneither agent field is set. This response decides nothing itself: `verifiedBy` being\nset is a person's own later re-verification, and the screen, not this answer, is where\nthat is read as superseding the machine-confirmed label.",
+        "description": "Where the record came from and when it was last checked against its source (INV-06).\n`verifiedBy` is a platform person or null: a seeded record has never been re-verified.\n\n`verifiedOrigin`, `confirmedByAgent` and `proposedByAgent` (INV-05, PRO-02, D-62) are\nother facts: who confirmed the approval that wrote the version in force on the read's\ndate, and which agent proposed it, the same three `version` carries. The proposer and\nthe confirmer are independent, so all four pairings occur: `agent` with both agents\nnamed, `agent` with only `confirmedByAgent` (a person proposed and an agent confirmed),\n`user` with only `proposedByAgent` (a person approved an agent's proposal) and `user`\nwith neither. Decide the machine-confirmed label from `verifiedOrigin` alone. This\nanswer applies no rule of its own: a person's re-verification is `verifiedBy` and\n`lastVerifiedAt`, and a screen reads one later than the version's `approvedAt` as\nsuperseding the machine-confirmed label.",
         "properties": {
           "confirmedByAgent": {
             "anyOf": [
@@ -6468,7 +6546,7 @@
                 "type": "null"
               }
             ],
-            "description": "The independent agent that confirmed the approval, by definition key, when `verifiedOrigin` is `agent`. Null when a person confirmed it."
+            "description": "The independent agent that confirmed the approval, by definition key, when `verifiedOrigin` is `agent`. Null when a person approved it."
           },
           "createdAt": {
             "description": "When the record was first written into the library, as a UTC timestamp. It is not the date the rule began to bind anyone: that is the version's effective date, which can be years earlier.",
@@ -6520,7 +6598,7 @@
                 "type": "null"
               }
             ],
-            "description": "The agent that proposed the version, by definition key, read from the approving proposal and named beside `confirmedByAgent` so a machine-confirmed record is never shown with only one agent's name. Null when a person proposed it, whoever confirmed it."
+            "description": "The agent that proposed the version in force, by definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it. It is independent of `verifiedOrigin`: `agent` with this null means a person proposed what an agent confirmed, and `user` with this set means a person approved an agent's proposal."
           },
           "sourceLabel": {
             "description": "What that page is called, in the words a reader recognises, down to the place in it the record came from. A label for a person, not a citation a machine resolves.",
@@ -6551,7 +6629,7 @@
           },
           "verifiedOrigin": {
             "default": "",
-            "description": "Who confirmed the approval of the version now in force: `agent` when a second, independent agent did, `user` when a person did. Empty for a version applied before this existed, which reads the same as `user`: a person's approval, unlabelled. Never confuse this with `verifiedBy`, which is a later re-verification.",
+            "description": "Who confirmed the approval that wrote the version in force on the read's date: `agent` when the reviewer was a second, independent agent, `user` when a person approved it. Empty for a version the library was seeded with or applied before this was recorded, and when no version is in force, which reads the same as `user`: a person's approval, unlabelled. Never confuse this with `verifiedBy`, which is a later re-verification.",
             "examples": [
               "agent"
             ],
@@ -6886,8 +6964,19 @@
         "type": "object"
       },
       "ObligationVersionRef": {
-        "description": "A summary version by number and the date it takes effect; null means since the\nobligation began (INV-04).",
+        "description": "A summary version by number and the date it takes effect; null means since the\nobligation began (INV-04). It carries who confirmed its approval as well (the three\nfields of `VersionConfirmation`), so a row saying new wording is coming can say whether\nan independent agent, rather than a person, confirmed that wording (INV-05).",
         "properties": {
+          "confirmedByAgent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The independent agent that confirmed the approval, by its definition key, when `verifiedOrigin` is `agent`. Null whenever a person approved it. It names a platform agent definition, never a person or a bank."
+          },
           "effectiveFrom": {
             "anyOf": [
               {
@@ -6899,6 +6988,25 @@
             ],
             "description": "The legal date this version starts binding the bank, at the precision the source gave it. Null means the version has been in force since the obligation entered the library, never that the date is unknown. A shared library fact, identical for every bank: taken from the public source the record's provenance names, and changed only through a proposal a second, independent principal approved."
           },
+          "proposedByAgent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The agent that proposed this version, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`."
+          },
+          "verifiedOrigin": {
+            "description": "Who confirmed the approval that wrote this version: `agent` when the reviewer was a second, independent agent, which a screen labels machine-confirmed and never as a person's verification; `user` when a person approved it, who is not named here. An empty string on a version the library was seeded with or applied before this was recorded, which reads the same as `user`. A fixed kind, not a vocabulary.",
+            "examples": [
+              "agent"
+            ],
+            "title": "Verifiedorigin",
+            "type": "string"
+          },
           "versionNumber": {
             "description": "Which version of this duty's summary it is, numbered from 1 in the order the versions took effect. A version row is written once and never overwritten, so a number always addresses the same words; it is the number to send to the diff as `from` or `to`.",
             "examples": [
@@ -6909,6 +7017,9 @@
           }
         },
         "required": [
+          "verifiedOrigin",
+          "confirmedByAgent",
+          "proposedByAgent",
           "versionNumber",
           "effectiveFrom"
         ],
@@ -6916,7 +7027,7 @@
         "type": "object"
       },
       "ObligationVersionRow": {
-        "description": "One summary version on the card's version list (INV-04): when it took effect,\n`effectiveTo` derived as the day before the next version did, and when a library editor\napproved it. The approver is not named: the card names none.",
+        "description": "One summary version on the card's version list (INV-04): when it took effect,\n`effectiveTo` derived as the day before the next version did, when the proposal that\nwrote it was approved, and who confirmed that approval (the three fields of\n`VersionConfirmation`, INV-05). A person who approved is never named here; an agent\nthat confirmed is named by its definition key.",
         "properties": {
           "approvedAt": {
             "anyOf": [
@@ -6928,11 +7039,22 @@
                 "type": "null"
               }
             ],
-            "description": "When a library editor approved the proposal that wrote this version, as a UTC timestamp. Null on a version the library was seeded with rather than proposed. It is the moment of the decision, never the date the wording takes effect, which is `effectiveFrom`. The approver is not named: this card names none.",
+            "description": "When the proposal that wrote this version was approved, as a UTC timestamp, by a person or by an independent agent: `verifiedOrigin` says which. Null on a version the library was seeded with rather than proposed. It is the moment of the decision, never the date the wording takes effect, which is `effectiveFrom`. A person who approved is not named on this card.",
             "examples": [
               "2026-09-15T14:02:11Z"
             ],
             "title": "Approvedat"
+          },
+          "confirmedByAgent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The independent agent that confirmed the approval, by its definition key, when `verifiedOrigin` is `agent`. Null whenever a person approved it. It names a platform agent definition, never a person or a bank."
           },
           "effectiveFrom": {
             "anyOf": [
@@ -6956,6 +7078,25 @@
             ],
             "description": "The last day this version was in force, worked out as the day before the next version took effect: nothing is stored, because a version row is written once and never touched afterwards. Null on the version still in force, on one whose successor carries no date, and on one corrected the same day it took effect."
           },
+          "proposedByAgent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The agent that proposed this version, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`."
+          },
+          "verifiedOrigin": {
+            "description": "Who confirmed the approval that wrote this version: `agent` when the reviewer was a second, independent agent, which a screen labels machine-confirmed and never as a person's verification; `user` when a person approved it, who is not named here. An empty string on a version the library was seeded with or applied before this was recorded, which reads the same as `user`. A fixed kind, not a vocabulary.",
+            "examples": [
+              "agent"
+            ],
+            "title": "Verifiedorigin",
+            "type": "string"
+          },
           "versionNumber": {
             "description": "Which version of this duty's summary it is, numbered from 1 in the order the versions took effect. It is the number to send to the diff as `from` or `to`, and it never addresses another obligation's version.",
             "examples": [
@@ -6966,6 +7107,9 @@
           }
         },
         "required": [
+          "verifiedOrigin",
+          "confirmedByAgent",
+          "proposedByAgent",
           "versionNumber",
           "effectiveFrom",
           "effectiveTo",
@@ -10620,10 +10764,57 @@
         "title": "VerificationCreated",
         "type": "object"
       },
+      "VersionConfirmation": {
+        "description": "Who confirmed the approval that wrote a version, and which agent proposed it (INV-05,\nPRO-02, D-62), exactly as stored and never combined into a verdict.\n\nThe proposer and the confirmer are separate facts, so all four pairings occur: `agent`\nwith both agents named (an agent proposed and an independent agent confirmed), `agent`\nwith only `confirmedByAgent` (a person proposed and an agent confirmed), `user` with\nonly `proposedByAgent` (a person confirmed an agent's proposal) and `user` with neither.\nDecide the machine-confirmed label from `verifiedOrigin` alone, never from which agent\nfields are present. A person's re-verification of the record later than the version's\napproval is what lets that label give way; the record's provenance carries that stamp,\nand this answer applies no such rule itself.",
+        "properties": {
+          "confirmedByAgent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The independent agent that confirmed the approval, by its definition key, when `verifiedOrigin` is `agent`. Null whenever a person approved it. It names a platform agent definition, never a person or a bank."
+          },
+          "proposedByAgent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The agent that proposed this version, by its definition key, read from the approved proposal. Null whenever the proposer was not a key bound to an agent, which is every proposal a person made, whoever confirmed it. It is independent of `verifiedOrigin`: an agent's proposal a person approved names the agent here beside `verifiedOrigin` `user`."
+          },
+          "verifiedOrigin": {
+            "description": "Who confirmed the approval that wrote this version: `agent` when the reviewer was a second, independent agent, which a screen labels machine-confirmed and never as a person's verification; `user` when a person approved it, who is not named here. An empty string on a version the library was seeded with or applied before this was recorded, which reads the same as `user`. A fixed kind, not a vocabulary.",
+            "examples": [
+              "agent"
+            ],
+            "title": "Verifiedorigin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "verifiedOrigin",
+          "confirmedByAgent",
+          "proposedByAgent"
+        ],
+        "title": "VersionConfirmation",
+        "type": "object"
+      },
       "VersionDiff": {
-        "description": "\"Show what changed\" between two versions (INV-04, AC-INV1, INV-05): the two version\nnumbers and the dates they took effect, the language both versions have and whether a\nmachine translated it, and the sentences. Serves obligations now and provisions next.",
+        "description": "\"Show what changed\" between two versions (INV-04, AC-INV1, INV-05): the two version\nnumbers, the dates they took effect and who confirmed each one's approval, the language\nboth versions have and whether a machine translated it, and the sentences. Serves\nobligations and provisions.",
         "examples": [
           {
+            "fromConfirmation": {
+              "confirmedByAgent": null,
+              "proposedByAgent": null,
+              "verifiedOrigin": ""
+            },
             "fromEffective": null,
             "fromVersion": 1,
             "isMachine": true,
@@ -10642,6 +10833,17 @@
                 "text": "If the research does not contribute to better investment decisions, the institution takes corrective action."
               }
             ],
+            "toConfirmation": {
+              "confirmedByAgent": {
+                "id": "2f7a9c14-3b8e-4d61-9a05-c8e1f4b27d93",
+                "key": "library-confirmer"
+              },
+              "proposedByAgent": {
+                "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+                "key": "watch-sweeper"
+              },
+              "verifiedOrigin": "agent"
+            },
             "toEffective": {
               "date": "2026-10-01",
               "precision": "day"
@@ -10650,6 +10852,17 @@
           }
         ],
         "properties": {
+          "fromConfirmation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VersionConfirmation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who confirmed the approval that wrote the older version, and which agent proposed it, so wording an independent agent confirmed is labelled machine-confirmed on either side of the comparison (INV-05). Null on a provision's diff: a provision's text versions record no approval of their own."
+          },
           "fromEffective": {
             "anyOf": [
               {
@@ -10693,6 +10906,17 @@
             "title": "Segments",
             "type": "array"
           },
+          "toConfirmation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VersionConfirmation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The same for the newer version, whose words are the ones a reader is weighing when a change is assessed, and which may not be in force yet. Null on a provision's diff, for the same reason."
+          },
           "toEffective": {
             "anyOf": [
               {
@@ -10718,6 +10942,8 @@
           "toVersion",
           "fromEffective",
           "toEffective",
+          "fromConfirmation",
+          "toConfirmation",
           "language",
           "isMachine",
           "segments"
