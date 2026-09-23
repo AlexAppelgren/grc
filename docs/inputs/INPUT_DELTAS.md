@@ -1200,3 +1200,38 @@ before and after and the step-up assertion. It is a route of its own rather than
 `PATCH /tenant` (`updateTenant`), which stays as designed, so a profile edit never needs a
 passkey and never moves the switch. The switch covers the bank's own Ask and drafts only; a
 platform run is in no bank's zone and never reads it (owner item 14).
+
+## 17. The evaluation set is the platform's, not the library's (2026-09-23, search-eval-sets)
+
+`docs/inputs/schema.sql` labels `eval_question` and `eval_run` LIBRARY. They are not: a
+library row is a sourced public fact every bank reads and that changes only through a
+proposal, and an evaluation question is the platform staff's own test of search, which no
+bank reads and no proposal carries. Search 0002 builds both as platform tables: no tenant
+column, row-level security enabled and forced, and one policy, `platform_only`, FOR ALL,
+refusing any session with a tenant active (`PLATFORM_ONLY_TABLES` in
+`apps/shared/tests_rls.py`). The console reads them under `eval.manage`, the library
+editor's permission.
+
+The shapes depart from the design on purpose:
+
+- A question names what it expects by stable key in one list, `expected`, where the design
+  had `expected_obligation_ids` and `expected_provision_ids` as uuid arrays. The gate's file,
+  `backend/eval/retrieval.jsonl`, names obligations, provisions and changes by stable key,
+  and the corpus the gate builds gets new ids in every database; a key never changes. The
+  question also carries its own stable `key` (the file's `id`), its `matchKind` (`keyword`,
+  `concept`, `both`, what AC-SRC1 expects to win it) and a server-computed `inGate`, and
+  `lang` is a key of the language rows rather than the design's two-value check (§3).
+- `GET /eval/questions` (`listEvalQuestions`) and `GET /eval/runs` (`listEvalRuns`) answer
+  `{items, total}` paged with `limit` and `offset`, like every other list (playbook 10),
+  rather than bare arrays. `POST /eval/questions` (`createEvalQuestion`) takes
+  `{key, lang, question, expected?, matchKind, asOf?, notes?}` and answers 201 with the
+  question, `inGate` false: the release gate reads only the file, so a question added in the
+  console reaches it through `dump_eval_questions` and a reviewed commit.
+- A run's `config` is `{retriever, isMock, questions}`, its `metrics`
+  `{overall, perLanguage, perMatchKind}` of `{recallAt10, mrr}`, and its `results` a list,
+  one `{questionKey, returned, recallAt10, mrr}` per question asked, where the design left
+  all three as open objects. The design's `run_by` is not built: runs are recorded by the
+  `record_eval_run` command, which is no person, and its audit row names the actor.
+- `POST /eval/runs` (`startEvalRun`) waits for chunk 14's job runner
+  (`backend/scripts/contract_drift_pending.txt`): a run builds the sample corpus in a
+  database of its own and takes minutes, which no request should hold open.
