@@ -236,6 +236,16 @@ class ObligationVersionRef(VersionConfirmation):
             f"{LIBRARY_FACT}"
         ),
     )
+    approved_at: datetime.datetime | None = Field(
+        description=(
+            "When the proposal that wrote this version was approved, as a UTC timestamp, by a "
+            "person or by an independent agent: `verifiedOrigin` says which. Null on a version "
+            "the library was seeded with rather than proposed. A row compares it with "
+            "`lastVerifiedAt`: wording an agent confirmed reads machine-confirmed until a named "
+            "person re-verifies the record after this moment."
+        ),
+        examples=["2026-09-15T14:02:11Z"],
+    )
 
 
 class ScopeDimension(LibraryResponse):
@@ -439,6 +449,13 @@ class ObligationRow(LibraryResponse):
     )
     in_footprint: bool = Field(description=_IN_FOOTPRINT, examples=[True])
     outside_reason: list[OutsideReason] = Field(description=_OUTSIDE_REASON)
+    verified_by: PersonRef | None = Field(
+        description=(
+            "The bleqq platform person who made the `lastVerifiedAt` check, by id and name, or "
+            "null when no named person has. Never a member of a bank: re-verifying a shared fact "
+            "is bleqq's own check."
+        )
+    )
     last_verified_at: datetime.datetime | None = Field(
         description=(
             "When a bleqq library editor last read this record against its public source "
@@ -570,11 +587,17 @@ _SAMPLE_ROW: dict[str, Any] = {
     "dutyType": {"key": "governance", "kind": None, "label": "Governance"},
     "tags": _SAMPLE_TAGS,
     "scope": _SAMPLE_SCOPE,
-    "version": {**_SAMPLE_SEEDED, "versionNumber": 1, "effectiveFrom": None},
-    "upcomingVersion": {**_SAMPLE_BY_AGENTS, "versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}},
+    "version": {**_SAMPLE_SEEDED, "versionNumber": 1, "effectiveFrom": None, "approvedAt": None},
+    "upcomingVersion": {
+        **_SAMPLE_BY_AGENTS,
+        "versionNumber": 2,
+        "effectiveFrom": {"date": "2026-10-01", "precision": "day"},
+        "approvedAt": "2026-09-15T14:02:11Z",
+    },
     "inFootprint": True,
     "outsideReason": [],
     "lastVerifiedAt": "2026-06-30T07:12:44Z",
+    "verifiedBy": None,
     "openChangeCount": 0,
     "pendingApplicability": None,
     "complianceStatus": None,
