@@ -12,8 +12,9 @@ import type { InstrumentDetail, Obligation } from '@/features/library/types';
 
 // The instrument card (design/screens/tenant-instrument.html; INV-01, INV-06,
 // FP-03): the header pills, the Identity panel, the source link, lineage
-// grouped by relation, the obligations from this instrument, and every state
-// the card names. Nothing here writes but "This looks wrong".
+// grouped by relation and direction, the obligations from this instrument
+// inside our scope unless asked otherwise, and every state the card names.
+// Nothing here writes but "This looks wrong".
 
 const fffs: InstrumentDetail = {
   id: 'in-1',
@@ -93,11 +94,11 @@ function renderIn(node: ReactNode, permissions: string[] = ['library.read', 'pro
   );
 }
 
-/** The server: /me, the card, its obligations and the report. */
-function serve(answer: InstrumentDetail | number, obligations: Obligation[] = [researchObligation]) {
+/** The server: /me, the card, its obligations (`total` beyond the page when given) and the report. */
+function serve(answer: InstrumentDetail | number, obligations: Obligation[] = [researchObligation], total = obligations.length) {
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/me') return { status: 200, data: ME };
-    if (sent.path === '/api/v1/obligations') return { status: 200, data: { items: obligations, total: obligations.length } };
+    if (sent.path === '/api/v1/obligations') return { status: 200, data: { items: obligations, total } };
     if (sent.path.endsWith('/provisions')) return { status: 200, data: [] };
     if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
@@ -142,18 +143,69 @@ describe('InstrumentScreen', () => {
     expect(await screen.findByText('Pay for third-party research only under the permitted models')).toBeInTheDocument();
   });
 
-  it('groups the lineage by relation, and shows an empty state when there is none', async () => {
+  it('groups the lineage by relation and direction, each under its own heading', async () => {
     serve(fffs);
     renderIn(<InstrumentScreen instrumentId="in-1" />);
     await screen.findByRole('heading', { level: 1 });
-    expect(within(document.querySelector('[data-lineage-group="Amended by"]') as HTMLElement).getByText('FFFS 2026:11')).toBeInTheDocument();
-    expect(within(document.querySelector('[data-lineage-group="Amended by"]') as HTMLElement).getByText('Amends FFFS 2017:2, in force 1 October 2026.')).toBeInTheDocument();
-    expect(within(document.querySelector('[data-lineage-group="Implements"]') as HTMLElement).getByText('Delegated directive (EU) 2017/593')).toBeInTheDocument();
-    expect(document.querySelector('[data-lineage-group="Elaborated by"]')).toBeNull();
+    const groups = [...document.querySelectorAll('[data-lineage-group]')];
+    expect(groups.map((group) => [group.getAttribute('data-lineage-group'), group.querySelector('h3')?.textContent])).toEqual([
+      ['amends:incoming', 'Amends this instrument'],
+      ['implements:outgoing', 'Implements'],
+    ]);
+    const amendedBy = document.querySelector('[data-lineage-group="amends:incoming"]') as HTMLElement;
+    expect(within(amendedBy).getByText('FFFS 2026:11')).toBeInTheDocument();
+    expect(within(amendedBy).getByText('Amends FFFS 2017:2, in force 1 October 2026.')).toBeInTheDocument();
+    expect(within(document.querySelector('[data-lineage-group="implements:outgoing"]') as HTMLElement).getByText('Delegated directive (EU) 2017/593')).toBeInTheDocument();
+  });
 
+  it('shows what implements this instrument and what it amends, pairs no fixed list names', async () => {
+    // The directive's card sees FFFS 2017:2 implementing it (incoming implements);
+    // the amending instrument's card sees its own amendment going out.
+    const lineage: InstrumentDetail['lineage'] = [
+      { relation: { key: 'implements', kind: null, label: 'Implements' }, direction: 'incoming', instrument: { key: 'fffs-2017-2', shortName: 'FFFS 2017:2' }, note: '', toRef: '' },
+      { relation: { key: 'amends', kind: null, label: 'Amends' }, direction: 'outgoing', instrument: { key: 'fffs-2017-1', shortName: 'FFFS 2017:1' }, note: '', toRef: '9 kap. 6 §' },
+    ];
+    serve({ ...fffs, lineage });
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    await screen.findByRole('heading', { level: 1 });
+    const implementedBy = document.querySelector('[data-lineage-group="implements:incoming"]') as HTMLElement;
+    expect(within(implementedBy).getByRole('heading', { level: 3 })).toHaveTextContent('Implements this instrument');
+    expect(within(implementedBy).getByText('FFFS 2017:2')).toBeInTheDocument();
+    const amends = document.querySelector('[data-lineage-group="amends:outgoing"]') as HTMLElement;
+    expect(within(amends).getByRole('heading', { level: 3 })).toHaveTextContent('Amends');
+    expect(within(amends).getByText('FFFS 2017:1')).toBeInTheDocument();
+    expect(screen.queryByText('The library files no other instrument beside this one.')).toBeNull();
+  });
+
+  it('shows the lineage empty state when the instrument has none', async () => {
     serve({ ...fffs, lineage: [] });
     renderIn(<InstrumentScreen instrumentId="in-1" />);
     expect(await screen.findByText('The library files no other instrument beside this one.')).toBeVisible();
+    expect(document.querySelector('[data-lineage-group]')).toBeNull();
+  });
+
+  it('reads the obligations inside our scope first, with the total and a link to the same list in the inventory', async () => {
+    const sent = serve(fffs, [researchObligation], 34);
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    await screen.findByText('Pay for third-party research only under the permitted models');
+    const read = sent.filter((s) => s.path === '/api/v1/obligations');
+    expect(read[0]?.params).toMatchObject({ instrument: 'fffs-2017-2' });
+    expect(read[0]?.params).not.toHaveProperty('outsideFootprint');
+    const panel = document.querySelector('[data-obligations-panel]') as HTMLElement;
+    expect(within(panel).getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
+    expect(panel.querySelector('[data-obligations-total]')).toHaveTextContent('34 obligations');
+    expect(within(panel).getByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2');
+  });
+
+  it('asks for the obligations outside our scope on request, and the link follows', async () => {
+    const sent = serve(fffs);
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    await screen.findByText('Pay for third-party research only under the permitted models');
+    const panel = document.querySelector('[data-obligations-panel]') as HTMLElement;
+    fireEvent.click(within(panel).getByRole('button', { name: 'Show outside our scope' }));
+    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/obligations').at(-1)?.params).toMatchObject({ instrument: 'fffs-2017-2', outsideFootprint: true }));
+    expect(within(panel).getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await within(panel).findByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2&outside=true');
   });
 
   it('shows the ELI when the instrument carries one, and "by <name>" when someone verified it', async () => {
@@ -164,9 +216,12 @@ describe('InstrumentScreen', () => {
     expect(document.querySelector('[data-last-verified]')?.textContent).toBe('30 Jun 2026 by Johan Ek');
   });
 
-  it('shows the empty state when the instrument has no obligation yet', async () => {
+  it('says none is in our scope, and none at all once the reader looks outside it', async () => {
     serve(fffs, []);
     renderIn(<InstrumentScreen instrumentId="in-1" />);
+    expect(await screen.findByText('No obligation from this instrument is in our scope.')).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'Open in the inventory' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Show outside our scope' }));
     expect(await screen.findByText('This instrument has no obligation yet.')).toBeVisible();
   });
 

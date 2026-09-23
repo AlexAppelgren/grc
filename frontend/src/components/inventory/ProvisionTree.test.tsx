@@ -74,10 +74,10 @@ const diff = {
   ],
 };
 
-function serve(nodes: ProvisionNode[]) {
+function serve(nodes: ProvisionNode[], answer: typeof diff = diff) {
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/me') return { status: 200, data: { user: { id: 'u1', name: 'Sara', locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: [], enrolmentPending: false } };
-    if (sent.path.endsWith('/diff')) return { status: 200, data: diff };
+    if (sent.path.endsWith('/diff')) return { status: 200, data: answer };
     return { status: 200, data: nodes };
   });
 }
@@ -126,7 +126,7 @@ describe('ProvisionTree', () => {
     expect(link).toHaveAttribute('href', '/inventory/obligations/ob-1');
   });
 
-  it('opens the diff through "Show what changed", naming what it compares', async () => {
+  it('opens the diff through "Show what changed", naming the two versions it compares and labelling a machine translation', async () => {
     serve([chapter]);
     renderIn(<ProvisionTree instrumentId="in-1" />);
     await screen.findByText('Betalning för analys');
@@ -135,6 +135,22 @@ describe('ProvisionTree', () => {
     const text = document.querySelector('[data-legal-text]') as HTMLElement;
     expect(within(text).getByText('Research payment under the earlier rules.').tagName).toBe('DEL');
     expect(within(text).getByText('Research payment under the new rules.').tagName).toBe('INS');
+    expect(document.querySelector('[data-diff-banner]')).toHaveTextContent(
+      'Comparing version 1 (in force from 3 Jan 2018) with version 2 (in force from 1 Oct 2026).',
+    );
+    // Either side machine translated: the diff says so exactly as the text it replaces did.
+    const labels = document.querySelectorAll('[data-machine-translation]');
+    expect([...labels].map((label) => label.textContent)).toEqual(['Machine translation. The original is authoritative.']);
+  });
+
+  it('leaves the machine translation label off a diff between two texts a person wrote', async () => {
+    serve([chapter], { ...diff, isMachine: false, language: 'sv' });
+    renderIn(<ProvisionTree instrumentId="in-1" />);
+    await screen.findByText('Betalning för analys');
+    fireEvent.click(screen.getByRole('button', { name: 'Show what changed' }));
+    await waitFor(() => expect(document.querySelector('[data-diff-banner]')).not.toBeNull());
+    expect(document.querySelector('[data-machine-translation]')).toBeNull();
+    expect(document.querySelector('[data-legal-text] [lang]')).toHaveAttribute('lang', 'sv');
   });
 
   it('leaves the diff chip and the version chips out of a unit with no text of its own', async () => {

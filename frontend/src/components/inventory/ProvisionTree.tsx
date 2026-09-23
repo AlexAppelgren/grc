@@ -7,6 +7,8 @@ import { Chip, ChipRow } from '@/components/ui/Chip';
 import { DiffText } from '@/components/inventory/DiffText';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LegalText } from '@/components/inventory/LegalText';
+import { diffSentence } from '@/components/inventory/ObligationScreen';
+import { Notice } from '@/components/ui/Notice';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
@@ -25,12 +27,25 @@ import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 // of translations (that is the obligation card's own shape): there is no
 // language here to name as "the original", so a machine translation is
 // labelled on its own terms rather than through LegalText's `translatedFrom`,
-// which needs that language and would otherwise have to guess it.
+// which needs that language and would otherwise have to guess it. The diff
+// carries the same label when either side of it is machine translated, and
+// names the two versions it compares, which are the latest and the one
+// before it whichever chip is pressed.
 
 /** The version a node opens on: the one in force on the read's date, or its first version when none is in force. */
 export function defaultVersion(node: ProvisionNode): number | null {
   if (node.inForceVersion !== null) return node.inForceVersion;
   return node.versions[0]?.versionNumber ?? null;
+}
+
+/** The label a machine-translated text carries until a person confirms it (INV-05). */
+function MachineTranslation() {
+  const t = useT();
+  return (
+    <p className="mb-2 text-meta font-medium text-brass" data-machine-translation="">
+      {t('inventory.instrument.provisionMachineTranslation')}
+    </p>
+  );
 }
 
 function ProvisionUnit({ node }: { node: ProvisionNode }) {
@@ -67,16 +82,16 @@ function ProvisionUnit({ node }: { node: ProvisionNode }) {
 
               {showDiff && diff.isError ? <ErrorState title={t('inventory.obligation.diffErrorTitle')} onRetry={() => void diff.refetch()} /> : null}
               {showDiff && diff.data !== undefined ? (
-                <LegalText lang={diff.data.language} reference={node.refLabel}>
-                  <DiffText segments={diff.data.segments} />
-                </LegalText>
+                <>
+                  <Notice data-diff-banner="">{diffSentence(diff.data, t, ctx)}</Notice>
+                  {diff.data.isMachine ? <MachineTranslation /> : null}
+                  <LegalText lang={diff.data.language} reference={node.refLabel}>
+                    <DiffText segments={diff.data.segments} />
+                  </LegalText>
+                </>
               ) : version === undefined || version.text === null ? null : (
                 <>
-                  {version.text.isMachine ? (
-                    <p className="mb-2 text-meta font-medium text-brass" data-machine-translation="">
-                      {t('inventory.instrument.provisionMachineTranslation')}
-                    </p>
-                  ) : null}
+                  {version.text.isMachine ? <MachineTranslation /> : null}
                   <LegalText lang={version.text.language} reference={node.refLabel}>
                     {version.text.text}
                   </LegalText>

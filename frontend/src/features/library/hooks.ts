@@ -75,11 +75,14 @@ export function useReportObligationProblem(obligationId: string): UseMutationRes
 /** Playbook 10: the Instruments tab's own page size, like the obligations list. */
 export const INSTRUMENT_PAGE = 20;
 
-/** The Instruments tab and the instrument filter's own options; both read the same page. */
-export function useInstruments(query: InstrumentQuery): UseQueryResult<Page<Instrument>> {
+/** The route's maximum page: the instrument filter's options, so a picker is not cut at the tab's first page. */
+export const INSTRUMENT_OPTIONS = 100;
+
+/** The Instruments tab (a page of 20) and the instrument filter's options (the route's maximum of 100). */
+export function useInstruments(query: InstrumentQuery, limit: number = INSTRUMENT_PAGE): UseQueryResult<Page<Instrument>> {
   return useQuery({
-    queryKey: libraryKeys.instruments(query, INSTRUMENT_PAGE),
-    queryFn: () => library.listInstruments({ ...query, limit: INSTRUMENT_PAGE, offset: 0 }),
+    queryKey: libraryKeys.instruments(query, limit),
+    queryFn: () => library.listInstruments({ ...query, limit, offset: 0 }),
   });
 }
 

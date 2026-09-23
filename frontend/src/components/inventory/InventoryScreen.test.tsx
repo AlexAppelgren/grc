@@ -295,21 +295,40 @@ describe('InventoryScreen', () => {
     expect(screen.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('lists an instrument filter whose options carry the obligation count', async () => {
-    serve({ items: [research], total: 1 });
+  it('lists an instrument filter whose options carry the obligation count, read at the route maximum of 100', async () => {
+    const sent = serve({ items: [research], total: 1 });
     renderIn(<InventoryScreen />);
     const instrument = await screen.findByLabelText('Instrument');
     await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined());
+    // The picker's own read, not the Instruments tab's page of 20.
+    expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ limit: 100 }));
     fireEvent.change(instrument, { target: { value: 'fffs-2017-2' } });
     expect(nav.replace).toHaveBeenCalledWith('/inventory?instrument=fffs-2017-2');
   });
 
-  it('switches to the Instruments tab, carrying the tab in the URL, and lists instrument rows', async () => {
+  it('keeps an instrument the options do not list as the picked one, never "All instruments", while it filters', async () => {
+    // An instrument outside our scope, reached from its own card: the list is
+    // filtered by it, so the picker says so rather than claiming no filter.
+    nav.search = 'instrument=lfd-2005-405';
+    const sent = serve({ items: [], total: 0 });
+    renderIn(<InventoryScreen />);
+    const instrument = (await screen.findByLabelText('Instrument')) as HTMLSelectElement;
+    await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined());
+    expect(instrument.value).toBe('lfd-2005-405');
+    expect(within(instrument).getByRole('option', { name: 'lfd-2005-405' })).toHaveProperty('selected', true);
+    expect(sent.find((s) => s.path === '/api/v1/obligations')?.params).toMatchObject({ instrument: 'lfd-2005-405' });
+    // Choosing "All instruments" clears it like any other filter.
+    fireEvent.change(instrument, { target: { value: '' } });
+    expect(nav.replace).toHaveBeenCalledWith('/inventory');
+  });
+
+  it('switches to the Instruments tab, carrying the tab and the filters in the URL', async () => {
+    nav.search = 'regime=securities&outside=true';
     serve({ items: [research], total: 1 });
     renderIn(<InventoryScreen />);
     await screen.findByText('1 obligation');
     fireEvent.click(screen.getByRole('tab', { name: 'Instruments' }));
-    expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments');
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&regime=securities&outside=true');
   });
 
   it('reads the Instruments tab from the URL directly and shows its own rows and count', async () => {
@@ -324,11 +343,24 @@ describe('InventoryScreen', () => {
 
   it('narrows the Instruments tab by regime, and shows outside the footprint on request', async () => {
     nav.search = 'tab=instruments';
-    serve({ items: [], total: 0 }, { items: [], total: 0 });
+    const sent = serve({ items: [], total: 0 }, { items: [], total: 0 });
     renderIn(<InventoryScreen />);
     await screen.findByText('No instruments match');
+    expect(sent.find((s) => s.path === '/api/v1/instruments')?.params).not.toHaveProperty('outsideFootprint');
     fireEvent.change(screen.getByLabelText('Regime'), { target: { value: 'securities' } });
     expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&regime=securities');
+    fireEvent.click(screen.getByRole('button', { name: 'Show outside our scope' }));
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&outside=true');
+  });
+
+  it('asks the Instruments tab for everything once "Show outside our scope" is on', async () => {
+    nav.search = 'tab=instruments&outside=true';
+    const sent = serve({ items: [], total: 0 }, { items: [{ ...fffs, inFootprint: false }], total: 1 });
+    renderIn(<InventoryScreen />);
+    await waitFor(() => expect(document.querySelector('[data-instrument-rows]')).not.toBeNull());
+    expect(sent.find((s) => s.path === '/api/v1/instruments')?.params).toMatchObject({ outsideFootprint: true });
+    expect(screen.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'true');
+    expect(document.querySelector('[data-instrument-rows] [data-outside-footprint]')).not.toBeNull();
   });
 });
 
