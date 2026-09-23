@@ -30,7 +30,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import OuterRef, Subquery
 
 from apps.library.models import Authority, Obligation, RecordStatus
-from apps.library.reading import localized, vocabulary_refs
+from apps.library.reading import agent_ref, localized, vocabulary_refs
 from apps.shared.errors import ProblemError
 from apps.taxonomy.models import (
     ChangeTypeLabel,
@@ -482,13 +482,39 @@ def event_out(event: EventRow) -> WatchChangeEvent:
     )
 
 
+def provenance(row: Any, prefix: str = "") -> dict[str, Any]:
+    """Who suggested a curated fact and who confirmed it, as every read answers it (D-74).
+
+    `row` is a change term or obligation link, or a change with `prefix` "change_type_" for
+    its type, loaded with its two agents (`CURATION_AGENTS`). Whether a confirmation is a
+    machine's is read off the confirming agent's column alone, which the check constraint
+    sets exactly when a key confirmed, so an agent's confirmation never reads as a person's.
+    """
+    confirmed = getattr(row, f"{prefix}confirmed_at") is not None
+    by_an_agent = getattr(row, f"{prefix}confirmed_by_agent_id") is not None
+    origin: Origin | None = None if not confirmed else ("agent" if by_an_agent else "user")
+    return {
+        "confirmed_origin": origin,
+        "suggested_by_agent": agent_ref(getattr(row, f"{prefix}suggested_by_agent")),
+        "confirmed_by_agent": agent_ref(getattr(row, f"{prefix}confirmed_by_agent")),
+    }
+
+
+# What `provenance()` reads, joined in the query that loads the rows so naming the agents
+# costs no query per fact (NFR-02).
+CURATION_AGENTS = ("suggested_by_agent", "confirmed_by_agent")
+CHANGE_TYPE_AGENTS = ("change_type_suggested_by_agent", "change_type_confirmed_by_agent")
+
+
 def links_out(change: ChangeRow, order: list[str]) -> list[WatchObligationLink]:
     """The obligations this change affects, most confident first (the model's own order).
-    `confirmed` is the library editor's decision and is false while the link is a
-    suggestion; a bank's own decision about a link lives on its case and never here
-    (WAT-04, ruling C)."""
+    `confirmed` is the shared library's confirmation, by an independent agent or a person,
+    and false while the link is a suggestion; a bank's own decision about a link lives on
+    its case and never here (WAT-04, ruling C, D-74)."""
     links = list(
-        change.obligation_links.select_related("obligation__instrument").prefetch_related("obligation__titles").all()
+        change.obligation_links.select_related("obligation__instrument", *CURATION_AGENTS)
+        .prefetch_related("obligation__titles")
+        .all()
     )
     return [
         WatchObligationLink(
@@ -498,7 +524,8 @@ def links_out(change: ChangeRow, order: list[str]) -> list[WatchObligationLink]:
             ref_label=link.obligation.ref_label,
             origin=cast(Origin, link.origin),
             confidence=None if link.confidence is None else float(link.confidence),
-            confirmed=link.confirmed_by_id is not None,
+            confirmed=link.confirmed_at is not None,
+            **provenance(link),
         )
         for link in links
     ]

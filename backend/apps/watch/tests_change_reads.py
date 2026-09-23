@@ -194,11 +194,26 @@ class ChangeDetailTests(ChangeReadFixture):
         self.assertEqual(facts, {fact["ref"]["key"]: fact for fact in row["flags"] + row["terms"]})
         self.assertEqual(
             facts["advice_perimeter"],
-            {"ref": {"key": "advice_perimeter", "kind": None, "label": "Advice perimeter"}, "confidence": 0.74, "suggested": False},
+            {
+                "ref": {"key": "advice_perimeter", "kind": None, "label": "Advice perimeter"},
+                "confidence": 0.74,
+                "suggested": False,
+                # A person confirmed it, so it reads as a person's and names no agent (D-74).
+                "confirmedOrigin": "user",
+                "suggestedByAgent": None,
+                "confirmedByAgent": None,
+            },
         )
         self.assertEqual(
             facts["securities"],
-            {"ref": {"key": "securities", "kind": None, "label": "Securities"}, "confidence": 0.74, "suggested": True},
+            {
+                "ref": {"key": "securities", "kind": None, "label": "Securities"},
+                "confidence": 0.74,
+                "suggested": True,
+                "confirmedOrigin": None,
+                "suggestedByAgent": None,
+                "confirmedByAgent": None,
+            },
         )
 
     def test_the_timeline_is_in_sort_order_with_each_date_precision(self) -> None:

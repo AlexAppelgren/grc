@@ -1354,13 +1354,17 @@ export interface paths {
          *     `watch.read` in their own bank. Everything outside `case` is a library fact shared by
          *     every bank and changed only by a library editor or through a proposal; everything inside
          *     `case` is this bank's own and is invisible to bleqq, to every other bank and to every
-         *     model endpoint. An obligation link says on itself whether a library editor confirmed it;
+         *     model endpoint. An obligation link says on itself whether it was confirmed;
          *     `confirmed: false` is a suggestion an agent made and must not be read as checked, nor as
          *     a statement that the change does not touch that duty. Each flag and each scope term says
-         *     the same on itself, as `{ref, confidence, suggested}` exactly as a feed row answers it:
-         *     `suggested: true` is the agent's reading and not a checked fact, `confidence` is the
-         *     agent's own number and orders nothing here. A library editor confirms them in the console
-         *     queue rather than here, and a bank never confirms one at all.
+         *     the same on itself exactly as a feed row answers it, and so does the type, in
+         *     `changeTypeFact`: `suggested: true` is the agent's reading and not a checked fact,
+         *     `confidence` is the agent's own number and orders nothing here. Each also names the agent
+         *     that suggested it and, once confirmed, whether an independent agent confirmed it
+         *     (`confirmedOrigin` `agent`, which reads machine-confirmed and never as a person's
+         *     verification, naming that agent) or a person did (D-74). Confirming is
+         *     `POST /changes/{changeId}/confirmation`, never this read, and a bank never confirms a
+         *     library fact at all.
          *
          *     Errors: `not_found` when no change has that id, when the caller may not see it, or when
          *     the session belongs to no bank — all answered the same way on purpose, so no id can be
@@ -1392,13 +1396,15 @@ export interface paths {
          *     may set: `status` and `supersededBy`, because deciding that a reform has been replaced
          *     or withdrawn is a reading of the law and not a sighting of it.
          *
-         *     Everything written here is a suggestion. A flag or a term arrives with `suggested` true
-         *     and nobody named as having confirmed it, whoever sent it, and a reader must not treat it
-         *     as checked. Confirming one is a library editor's act on a library row and is not built
-         *     yet, so a call that would drop or overwrite something already confirmed answers
-         *     `not_built` to that editor and is refused outright to a key. The whole call is one
-         *     transaction that writes an audit row naming who changed which facts, and the keys are
-         *     resolved before anything is stored, so a refusal stores nothing.
+         *     Everything written here is a suggestion. A new type, a flag or a term arrives with
+         *     `suggested` true, nobody named as having confirmed it and the calling key's agent named
+         *     as its suggester, whoever sent it, and a reader must not treat it as checked. Confirming
+         *     one is `POST /changes/{changeId}/confirmation`. A call that would drop a flag or a term,
+         *     or replace a type, that somebody has confirmed is refused outright to a key, and needs
+         *     a fresh passkey assertion from a person, because overturning a confirmation is the same
+         *     intervention as giving one; the assertion is recorded on the audit row. The whole call
+         *     is one transaction that writes an audit row naming who changed which facts, and the keys
+         *     are resolved before anything is stored, so a refusal stores nothing.
          *
          *     **A drafted “So what?” may be filed here too** (D-66, WAT-05): send `soWhat`
          *     with the words, the model and the model version that wrote them and the public pages
@@ -1420,9 +1426,9 @@ export interface paths {
          *     listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a term id is a term
          *     that mirrors the jurisdiction list, since a change's market comes from its authority and
          *     never from a tag; `editor_only_field` (422) when a key sends `status` or
-         *     `supersededBy`; `confirmed_fact` (422) when a key's new set would drop a flag or a term
-         *     a library editor confirmed; `not_built` (501) when an editor's call would do the same,
-         *     which is the confirmation half of this feature; `validation_error` (422) for a field the
+         *     `supersededBy`; `confirmed_fact` (422) when a key's call would drop a flag or a term, or
+         *     replace a type, that somebody confirmed; `step_up_required` (403) when a person's call
+         *     would do the same without a fresh passkey assertion; `validation_error` (422) for a field the
          *     schema refuses, for a change asked to supersede itself, and for a `soWhat` whose words
          *     carry no model, no model version or no citation; `not_found` (404) when no
          *     change has that id; `tenant_agents_not_available` (403) from a key that belongs to a
@@ -1496,6 +1502,70 @@ export interface paths {
          *     session.
          */
         delete: operations["removeCaseObligationLink"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes/{change_id}/confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm a change's type, flags, scope terms and obligation links for every bank
+         * @description Stand behind the facts an agent suggested for a registered reform: its type, its
+         *     flags, its scope terms and the obligations it affects, each named in the body. Call it
+         *     from a confirming agent's run once it has checked the named facts against the pages the
+         *     change cites, and from the console's Change facts detail when a person intervenes. The
+         *     answer is the change as the console's queue shows it, with who suggested and who
+         *     confirmed each fact.
+         *
+         *     Two callers, never a bank. A platform key bound to an agent definition and holding the
+         *     scope `proposals:review`: it sends `decision`, the model call behind its decision, and
+         *     `agentRunId`, an open run of its own, and the decision is logged in the AI output log
+         *     under the purpose agent_review, which the platform alone reads (D-80). A key never steps up. Or a
+         *     person holding `proposals.review`, with a fresh passkey assertion, who sends neither:
+         *     confirming a library fact is an intervention in the agents' curation. No bank's role
+         *     holds that permission and no bank's key the scope.
+         *
+         *     A confirmation is not four eyes, because no proposal stands behind it, and it is
+         *     labelled for what it is (D-74): a fact an agent confirmed reads machine-confirmed,
+         *     naming the agent that suggested it and the agent that confirmed it, and never as a
+         *     person's verification. The confirming agent is never the suggesting one: a key cannot
+         *     confirm what it suggested itself, nor what another key of its own agent suggested, and
+         *     the database refuses either row on its own if this check is ever bypassed. Every bank
+         *     reads the confirmation; each bank still decides on its own case what a link means to
+         *     it.
+         *
+         *     Only facts the change carries now can be confirmed, as they stand: this call changes no
+         *     value, and a fact already confirmed is left exactly as it is, so repeating the call
+         *     confirms nothing twice and a retry is safe; send an `Idempotency-Key` as well. Each
+         *     `decision` sent is one more row in the AI output log, which is a ledger of calls and
+         *     never deduplicated. The facts, the log row and an audit row naming who confirmed what
+         *     are written in one transaction, and every refusal comes first, so a refused call stores
+         *     nothing. Undoing a confirmation is a person's, with a passkey, through
+         *     `PATCH /changes/{changeId}` or `PUT /changes/{changeId}/obligations`.
+         *
+         *     Errors to branch on: `own_suggestion` (409) when a named fact was suggested by this very
+         *     key; `same_agent` (409) when it was suggested by another key of the same agent;
+         *     `validation_error` (422) when the body names nothing, names a flag, a term or an
+         *     obligation the change does not carry, when a key sends no `decision` or a person sends
+         *     one or an `agentRunId`, and for a body the schema refuses, including a decision with no
+         *     model, version or citation; `run_not_open` (422) when a key names no run or a closed
+         *     one; `not_found` (404) when no change has that id, or the run belongs to another key;
+         *     `agent_not_bound` (403) for a key holding the scope but bound to no agent definition;
+         *     `step_up_required` (403) when a person calls without a fresh passkey assertion;
+         *     `permission_denied` (403) without `proposals.review` or `proposals:review`, which is
+         *     what every bank's session and key receives; `unauthenticated` (401) without a
+         *     credential.
+         */
+        post: operations["confirmChangeCuration"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1659,12 +1729,14 @@ export interface paths {
          *     changes afterwards; `confidence` is the model's own number, is null when a person set
          *     the link, and orders the list and nothing else.
          *
-         *     Two decisions that look alike and are not. `confirmed` here is a library editor's, and a
-         *     confirmed link reads the same for every bank; confirming one is not built yet, so a call
-         *     that would drop a link somebody has confirmed answers `not_built` to an editor and is
-         *     refused outright to a key. A bank accepting or removing a suggested link is a different
-         *     act entirely, lives on that bank's own case, is invisible to everyone else and changes
-         *     no row here — so `false` never means "not related", only "nobody has confirmed it".
+         *     Two decisions that look alike and are not. `confirmed` here is the shared library's,
+         *     given by an independent agent or a person through `POST /changes/{changeId}/confirmation`,
+         *     and a confirmed link reads the same for every bank. A call that would drop a link
+         *     somebody has confirmed is refused outright to a key and needs a fresh passkey assertion
+         *     from a person, which is recorded on the audit row. A bank accepting or removing a
+         *     suggested link is a different act entirely, lives on that bank's own case, is invisible
+         *     to everyone else and changes no row here — so `false` never means "not related", only
+         *     "nobody has confirmed it".
          *
          *     The set and its audit row are written in one transaction, and sending the same set again
          *     leaves it exactly as it was, so a retry costs nothing.
@@ -1672,9 +1744,9 @@ export interface paths {
          *     Errors to branch on: `unknown_key` (422) when an `obligationId` names no active
          *     obligation of the library; `validation_error` (422) when the same obligation is named
          *     twice, or for a body the schema refuses, including more than 200 links;
-         *     `confirmed_fact` (422) when a key's new set would drop a link a library editor
-         *     confirmed; `not_built` (501) when an editor's call would do the same, which is the
-         *     confirmation half of this feature; `not_found` (404) when no change has that id;
+         *     `confirmed_fact` (422) when a key's new set would drop a link somebody confirmed;
+         *     `step_up_required` (403) when a person's set would do the same without a fresh passkey
+         *     assertion; `not_found` (404) when no change has that id;
          *     `tenant_agents_not_available` (403) from a key that belongs to a bank;
          *     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
          *     without a credential.
@@ -4111,6 +4183,72 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * AgentDecision
+         * @description The model call behind a confirming agent's decision on another agent's work:
+         *     approving, correcting or rejecting a proposal, or confirming a watch item's curation.
+         *
+         *     An agent's decision is a model call, and every model call is logged (AUD-02), so the
+         *     agent sends this with the decision and the write turns it into one `ai_generation` row
+         *     under the purpose `agent_review`, marked as reported by the agent, naming the run the
+         *     decision was made in and the proposal or change it was about (D-80). A decision sent
+         *     without a model, a version or a citation is refused rather than logged as one nobody
+         *     can attribute or check.
+         *
+         *     Public facts only: the sources a confirming agent reads are the pages the proposal or
+         *     the change already cites, and nothing from a bank's zone ever reaches its prompt
+         *     (NFR-04, D-07).
+         * @example {
+         *       "citations": [
+         *         {
+         *           "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+         *           "url": "https://www.fi.se/en/published/news/2026/reporting/"
+         *         }
+         *       ],
+         *       "model": "claude-opus-5",
+         *       "modelVersion": "2026-05-01",
+         *       "output": "Approve. The proposed wording matches the amended regulation as the decision memorandum publishes it, and the date it applies from is the one the memorandum states.",
+         *       "promptHash": "9f2a1c7d4b8e05f3",
+         *       "promptTemplate": "library-confirmer/decide/v1"
+         *     }
+         */
+        AgentDecision: {
+            /**
+             * Citations
+             * @description The public pages the decision rests on, at least one and at most 20; none, or more, answers 422 naming the field. At least one, because a decision a reader cannot check against a source is not one to let into the shared library. Every citation is a public page: no bank's own record is ever cited, because nothing from a bank's zone reaches the prompt (NFR-04, D-07).
+             */
+            citations: components["schemas"]["AiCitation"][];
+            /**
+             * Model
+             * @description Which model made the decision, as the provider names it, 1 to 120 characters. Reported by the agent that made the decision, not measured by bleqq (D-80, as D-66 for a drafted “So what?”). In R1 every agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs its own reviewing agent. Required: a decision nobody can attribute to a model is not something the AI output log can record, so the call is refused rather than stored.
+             * @example claude-opus-5
+             */
+            model: string;
+            /**
+             * Modelversion
+             * @description Which version of that model, 1 to 120 characters, so two decisions months apart can be told apart. Reported by the agent that made the decision, not measured by bleqq (D-80, as D-66 for a drafted “So what?”). In R1 every agent is bleqq's own, so this is a reporting boundary; it becomes a trust boundary the day a bank runs its own reviewing agent. Required, for the same reason as `model`.
+             * @example 2026-05-01
+             */
+            modelVersion: string;
+            /**
+             * Output
+             * @description What the model concluded and why, 1 to 20000 characters: the decision in words and what in the cited sources supports it, or what they did not support. Longer is refused with a 422 naming the field rather than cut short. It is stored as AI output, labelled as such, and never reads as a person's review.
+             * @example Approve. The proposed wording matches the amended regulation as published.
+             */
+            output: string;
+            /**
+             * Prompthash
+             * @description A hash of the prompt actually sent, at most 128 characters, so two calls can be compared without either prompt being kept. Optional, and the only thing about the input that is stored.
+             * @example 9f2a1c7d4b8e05f3
+             */
+            promptHash?: string | null;
+            /**
+             * Prompttemplate
+             * @description Which prompt produced the decision, by name and version, at most 200 characters, so an odd decision can be traced to the instructions behind it. Optional. Send the name, never the prompt: bleqq stores no prompt text at all.
+             * @example library-confirmer/decide/v1
+             */
+            promptTemplate?: string | null;
+        };
+        /**
          * AgentDefinitionOut
          * @description One agent definition as the platform ships it, loaded from its versioned folder.
          * @example {
@@ -6245,23 +6383,35 @@ export interface components {
          *         },
          *         "changeType": {
          *           "confidence": 0.91,
+         *           "confirmedByAgent": null,
+         *           "confirmedOrigin": null,
          *           "ref": {
          *             "key": "adopted",
          *             "kind": "adopted",
          *             "label": "Adopted"
          *           },
-         *           "suggested": true
+         *           "suggested": true,
+         *           "suggestedByAgent": {
+         *             "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *             "key": "watch-sweeper"
+         *           }
          *         },
          *         "firstSeenAt": "2026-09-16T06:02:00Z",
          *         "flags": [
          *           {
          *             "confidence": 0.74,
+         *             "confirmedByAgent": null,
+         *             "confirmedOrigin": null,
          *             "ref": {
          *               "key": "advice_perimeter",
          *               "kind": null,
          *               "label": "Advice perimeter"
          *             },
-         *             "suggested": true
+         *             "suggested": true,
+         *             "suggestedByAgent": {
+         *               "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *               "key": "watch-sweeper"
+         *             }
          *           }
          *         ],
          *         "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -6281,12 +6431,21 @@ export interface components {
          *         "terms": [
          *           {
          *             "confidence": null,
+         *             "confirmedByAgent": {
+         *               "id": "2b7c9e14-5d3a-4f86-9e02-7a1c4b8d6f39",
+         *               "key": "library-confirmer"
+         *             },
+         *             "confirmedOrigin": "agent",
          *             "ref": {
          *               "key": "securities",
          *               "kind": null,
          *               "label": "Securities"
          *             },
-         *             "suggested": false
+         *             "suggested": false,
+         *             "suggestedByAgent": {
+         *               "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *               "key": "watch-sweeper"
+         *             }
          *           }
          *         ],
          *         "title": "FI adopts amended rules on paying for investment research"
@@ -6409,23 +6568,35 @@ export interface components {
          *           },
          *           "changeType": {
          *             "confidence": 0.91,
+         *             "confirmedByAgent": null,
+         *             "confirmedOrigin": null,
          *             "ref": {
          *               "key": "adopted",
          *               "kind": "adopted",
          *               "label": "Adopted"
          *             },
-         *             "suggested": true
+         *             "suggested": true,
+         *             "suggestedByAgent": {
+         *               "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *               "key": "watch-sweeper"
+         *             }
          *           },
          *           "firstSeenAt": "2026-09-16T06:02:00Z",
          *           "flags": [
          *             {
          *               "confidence": 0.74,
+         *               "confirmedByAgent": null,
+         *               "confirmedOrigin": null,
          *               "ref": {
          *                 "key": "advice_perimeter",
          *                 "kind": null,
          *                 "label": "Advice perimeter"
          *               },
-         *               "suggested": true
+         *               "suggested": true,
+         *               "suggestedByAgent": {
+         *                 "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *                 "key": "watch-sweeper"
+         *               }
          *             }
          *           ],
          *           "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -6445,12 +6616,21 @@ export interface components {
          *           "terms": [
          *             {
          *               "confidence": null,
+         *               "confirmedByAgent": {
+         *                 "id": "2b7c9e14-5d3a-4f86-9e02-7a1c4b8d6f39",
+         *                 "key": "library-confirmer"
+         *               },
+         *               "confirmedOrigin": "agent",
          *               "ref": {
          *                 "key": "securities",
          *                 "kind": null,
          *                 "label": "Securities"
          *               },
-         *               "suggested": false
+         *               "suggested": false,
+         *               "suggestedByAgent": {
+         *                 "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *                 "key": "watch-sweeper"
+         *               }
          *             }
          *           ],
          *           "title": "FI adopts amended rules on paying for investment research"
@@ -6478,23 +6658,35 @@ export interface components {
          *         },
          *         "changeType": {
          *           "confidence": 0.91,
+         *           "confirmedByAgent": null,
+         *           "confirmedOrigin": null,
          *           "ref": {
          *             "key": "adopted",
          *             "kind": "adopted",
          *             "label": "Adopted"
          *           },
-         *           "suggested": true
+         *           "suggested": true,
+         *           "suggestedByAgent": {
+         *             "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *             "key": "watch-sweeper"
+         *           }
          *         },
          *         "firstSeenAt": "2026-09-16T06:02:00Z",
          *         "flags": [
          *           {
          *             "confidence": 0.74,
+         *             "confirmedByAgent": null,
+         *             "confirmedOrigin": null,
          *             "ref": {
          *               "key": "advice_perimeter",
          *               "kind": null,
          *               "label": "Advice perimeter"
          *             },
-         *             "suggested": true
+         *             "suggested": true,
+         *             "suggestedByAgent": {
+         *               "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *               "key": "watch-sweeper"
+         *             }
          *           }
          *         ],
          *         "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -6514,12 +6706,21 @@ export interface components {
          *         "terms": [
          *           {
          *             "confidence": null,
+         *             "confirmedByAgent": {
+         *               "id": "2b7c9e14-5d3a-4f86-9e02-7a1c4b8d6f39",
+         *               "key": "library-confirmer"
+         *             },
+         *             "confirmedOrigin": "agent",
          *             "ref": {
          *               "key": "securities",
          *               "kind": null,
          *               "label": "Securities"
          *             },
-         *             "suggested": false
+         *             "suggested": false,
+         *             "suggestedByAgent": {
+         *               "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *               "key": "watch-sweeper"
+         *             }
          *           }
          *         ],
          *         "title": "FI adopts amended rules on paying for investment research"
@@ -12478,10 +12679,16 @@ export interface components {
          *         {
          *           "confidence": 0.82,
          *           "confirmed": false,
+         *           "confirmedByAgent": null,
+         *           "confirmedOrigin": null,
          *           "instrumentShortName": "FFFS 2017:2",
          *           "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
          *           "origin": "agent",
          *           "refLabel": "11 kap. 4 §",
+         *           "suggestedByAgent": {
+         *             "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *             "key": "watch-sweeper"
+         *           },
          *           "title": "Assess the quality of investment research paid for"
          *         }
          *       ],
@@ -12772,12 +12979,9 @@ export interface components {
          *     (WAT-03). The change page used to flatten each fact to its `ref` and lose the
          *     provenance the feed row carries (2026-09-21).
          *
-         *     `changeType` stays a `LibraryRef` here, where a feed row answers a fact. It is not the
-         *     same gap: the library stores no confidence and no confirmation for the type itself, so
-         *     the row's fact derives `suggested` from the change's own `origin` — and this response
-         *     already carries `origin`, `model` and `agentRunId` at the top level. An individual flag
-         *     or scope term has no such field to be read off, which is why those two had to carry
-         *     their own.
+         *     `changeType` stays a `LibraryRef` here, where a feed row answers a fact, so a client
+         *     that reads it keeps working; since the type carries its own suggestion and confirmation
+         *     (D-74, watch 0002) the same fact a feed row answers is `changeTypeFact` beside it.
          * @example {
          *       "agentRunId": "5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21",
          *       "authorityId": "3a1c94c2-3f41-4f0e-9a4e-5b2a1d0c7e11",
@@ -12803,6 +13007,21 @@ export interface components {
          *         "key": "adopted",
          *         "kind": "adopted",
          *         "label": "Adopted"
+         *       },
+         *       "changeTypeFact": {
+         *         "confidence": 0.91,
+         *         "confirmedByAgent": null,
+         *         "confirmedOrigin": null,
+         *         "ref": {
+         *           "key": "adopted",
+         *           "kind": "adopted",
+         *           "label": "Adopted"
+         *         },
+         *         "suggested": true,
+         *         "suggestedByAgent": {
+         *           "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *           "key": "watch-sweeper"
+         *         }
          *       },
          *       "documents": [
          *         {
@@ -12832,12 +13051,18 @@ export interface components {
          *       "flags": [
          *         {
          *           "confidence": 0.74,
+         *           "confirmedByAgent": null,
+         *           "confirmedOrigin": null,
          *           "ref": {
          *             "key": "advice_perimeter",
          *             "kind": null,
          *             "label": "Advice perimeter"
          *           },
-         *           "suggested": true
+         *           "suggested": true,
+         *           "suggestedByAgent": {
+         *             "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *             "key": "watch-sweeper"
+         *           }
          *         }
          *       ],
          *       "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -12850,10 +13075,16 @@ export interface components {
          *         {
          *           "confidence": 0.82,
          *           "confirmed": false,
+         *           "confirmedByAgent": null,
+         *           "confirmedOrigin": null,
          *           "instrumentShortName": "FFFS 2017:2",
          *           "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
          *           "origin": "agent",
          *           "refLabel": "11 kap. 4 §",
+         *           "suggestedByAgent": {
+         *             "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *             "key": "watch-sweeper"
+         *           },
          *           "title": "Assess the quality of investment research paid for"
          *         }
          *       ],
@@ -12875,12 +13106,21 @@ export interface components {
          *       "terms": [
          *         {
          *           "confidence": null,
+         *           "confirmedByAgent": {
+         *             "id": "2b7c9e14-5d3a-4f86-9e02-7a1c4b8d6f39",
+         *             "key": "library-confirmer"
+         *           },
+         *           "confirmedOrigin": "agent",
          *           "ref": {
          *             "key": "securities",
          *             "kind": null,
          *             "label": "Securities"
          *           },
-         *           "suggested": false
+         *           "suggested": false,
+         *           "suggestedByAgent": {
+         *             "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *             "key": "watch-sweeper"
+         *           }
          *         }
          *       ],
          *       "title": "FI adopts amended rules on paying for investment research"
@@ -12909,6 +13149,8 @@ export interface components {
             case: components["schemas"]["WatchChangeCase"] | null;
             /** @description The kind of change, as `{key, kind, label}` from the `change_type` library vocabulary; the label is in the reader's language. The `kind` member is the `change_lifecycle_kind` the rules branch on. Never a phrase to match and never a tone. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
             changeType: components["schemas"]["LibraryRef"];
+            /** @description The change's type as a fact, exactly as a feed row answers its `changeType`: `ref` is the same row as `changeType`, beside the agent's confidence, whether it is still a suggestion and who suggested and who confirmed it. This read always sends it; the default of null exists only because the property was added after `changeType`, which stays a bare reference so a client reading it keeps working. A type an independent agent confirmed reads machine-confirmed, never as a person's verification (WAT-03, D-74). */
+            changeTypeFact?: components["schemas"]["WatchFact"] | null;
             /**
              * Documents
              * @description The pages the change was found on, the primary page first.
@@ -12934,7 +13176,7 @@ export interface components {
             firstSeenAt: string;
             /**
              * Flags
-             * @description What the change is about across subject areas, each as a fact rather than a bare reference. `ref` is the row of the `flag` library vocabulary itself, as `{key, kind, label}` — `ai` and `advice_perimeter` on day one. `confidence` is how sure the agent that put the flag there was, 0 to 1, or null when a library editor set it by hand; it orders nothing on this screen and says nothing about whether the flag is right. `suggested` is true while no library editor has confirmed the flag, and the change page marks such a flag as the agent's reading rather than a checked fact — a reader deciding from this page must not treat it as checked. A library editor confirms a flag in the console queue and never here, and a bank never confirms one at all: it is a library fact behind `proposals.review` (WAT-03, PRO-01). An empty list means no flag applies, not that nobody looked. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             * @description What the change is about across subject areas, each as a fact rather than a bare reference. `ref` is the row of the `flag` library vocabulary itself, as `{key, kind, label}` — `ai` and `advice_perimeter` on day one. `confidence` is how sure the agent that put the flag there was, 0 to 1, or null when a library editor set it by hand; it orders nothing on this screen and says nothing about whether the flag is right. `suggested` is true while nobody has confirmed the flag, and the change page marks such a flag as the agent's reading rather than a checked fact — a reader deciding from this page must not treat it as checked. An independent agent or a person confirms a flag through `POST /changes/{changeId}/confirmation` and never here, the first reading machine-confirmed, and a bank never confirms one at all: it is a library fact (WAT-03, PRO-01, D-74). An empty list means no flag applies, not that nobody looked. The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
              */
             flags: components["schemas"]["WatchFact"][];
             /**
@@ -13045,7 +13287,7 @@ export interface components {
             summary: string;
             /**
              * Terms
-             * @description The taxonomy terms that scope the change — regime, market, product, service — each as a fact rather than a bare reference. `ref` is the taxonomy row itself, as `{key, kind, label}` with `securities`, `banking`, `payments`, `insurance`, `aml`, `tax`, `data_protection` and `ai_ict` among the regimes seeded on day one; a term's `kind` is null because its dimension is its kind. `confidence` is the agent's own number, 0 to 1, or null when a person set the term. `suggested` is true until a library editor confirms it, and the change page shows such a term as a suggestion. This is what the footprint is matched against, and `inFootprint` is computed from every term whether or not it is still suggested; it is not this bank's footprint and it never says the bank complies (REG-01, REG-02). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
+             * @description The taxonomy terms that scope the change — regime, market, product, service — each as a fact rather than a bare reference. `ref` is the taxonomy row itself, as `{key, kind, label}` with `securities`, `banking`, `payments`, `insurance`, `aml`, `tax`, `data_protection` and `ai_ict` among the regimes seeded on day one; a term's `kind` is null because its dimension is its kind. `confidence` is the agent's own number, 0 to 1, or null when a person set the term. `suggested` is true until an independent agent or a person confirms it, and the change page shows such a term as a suggestion; `confirmedOrigin` `agent` reads machine-confirmed. This is what the footprint is matched against, and `inFootprint` is computed from every term whether or not it is still suggested; it is not this bank's footprint and it never says the bank complies (REG-01, REG-02). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label.
              */
             terms: components["schemas"]["WatchFact"][];
             /**
@@ -13435,7 +13677,7 @@ export interface components {
             model?: string | null;
             /**
              * Obligationlinks
-             * @description The obligations the change affects, at most 200 in one call, each a suggestion until a library editor confirms it.
+             * @description The obligations the change affects, at most 200 in one call, each a suggestion until an independent agent or a person confirms it.
              */
             obligationLinks?: components["schemas"]["WatchObligationLinkInput"][];
             /**
@@ -13531,23 +13773,35 @@ export interface components {
          *           },
          *           "changeType": {
          *             "confidence": 0.91,
+         *             "confirmedByAgent": null,
+         *             "confirmedOrigin": null,
          *             "ref": {
          *               "key": "adopted",
          *               "kind": "adopted",
          *               "label": "Adopted"
          *             },
-         *             "suggested": true
+         *             "suggested": true,
+         *             "suggestedByAgent": {
+         *               "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *               "key": "watch-sweeper"
+         *             }
          *           },
          *           "firstSeenAt": "2026-09-16T06:02:00Z",
          *           "flags": [
          *             {
          *               "confidence": 0.74,
+         *               "confirmedByAgent": null,
+         *               "confirmedOrigin": null,
          *               "ref": {
          *                 "key": "advice_perimeter",
          *                 "kind": null,
          *                 "label": "Advice perimeter"
          *               },
-         *               "suggested": true
+         *               "suggested": true,
+         *               "suggestedByAgent": {
+         *                 "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *                 "key": "watch-sweeper"
+         *               }
          *             }
          *           ],
          *           "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -13567,12 +13821,21 @@ export interface components {
          *           "terms": [
          *             {
          *               "confidence": null,
+         *               "confirmedByAgent": {
+         *                 "id": "2b7c9e14-5d3a-4f86-9e02-7a1c4b8d6f39",
+         *                 "key": "library-confirmer"
+         *               },
+         *               "confirmedOrigin": "agent",
          *               "ref": {
          *                 "key": "securities",
          *                 "kind": null,
          *                 "label": "Securities"
          *               },
-         *               "suggested": false
+         *               "suggested": false,
+         *               "suggestedByAgent": {
+         *                 "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *                 "key": "watch-sweeper"
+         *               }
          *             }
          *           ],
          *           "title": "FI adopts amended rules on paying for investment research"
@@ -13597,7 +13860,7 @@ export interface components {
         /**
          * WatchChangePatch
          * @description `PATCH /changes/{changeId}` (WAT-03): the library facts of a change. What a key may
-         *     move, and that a suggestion stays a suggestion until a library editor confirms it, is
+         *     move, and that a suggestion stays a suggestion until it is confirmed, is
          *     `watch/curation.py:update_change_facts`. Every field is optional; a field left out is
          *     left alone, and no field here is ever nulled by omission.
          * @example {
@@ -13810,23 +14073,35 @@ export interface components {
          *       },
          *       "changeType": {
          *         "confidence": 0.91,
+         *         "confirmedByAgent": null,
+         *         "confirmedOrigin": null,
          *         "ref": {
          *           "key": "adopted",
          *           "kind": "adopted",
          *           "label": "Adopted"
          *         },
-         *         "suggested": true
+         *         "suggested": true,
+         *         "suggestedByAgent": {
+         *           "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *           "key": "watch-sweeper"
+         *         }
          *       },
          *       "firstSeenAt": "2026-09-16T06:02:00Z",
          *       "flags": [
          *         {
          *           "confidence": 0.74,
+         *           "confirmedByAgent": null,
+         *           "confirmedOrigin": null,
          *           "ref": {
          *             "key": "advice_perimeter",
          *             "kind": null,
          *             "label": "Advice perimeter"
          *           },
-         *           "suggested": true
+         *           "suggested": true,
+         *           "suggestedByAgent": {
+         *             "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *             "key": "watch-sweeper"
+         *           }
          *         }
          *       ],
          *       "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -13846,12 +14121,21 @@ export interface components {
          *       "terms": [
          *         {
          *           "confidence": null,
+         *           "confirmedByAgent": {
+         *             "id": "2b7c9e14-5d3a-4f86-9e02-7a1c4b8d6f39",
+         *             "key": "library-confirmer"
+         *           },
+         *           "confirmedOrigin": "agent",
          *           "ref": {
          *             "key": "securities",
          *             "kind": null,
          *             "label": "Securities"
          *           },
-         *           "suggested": false
+         *           "suggested": false,
+         *           "suggestedByAgent": {
+         *             "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *             "key": "watch-sweeper"
+         *           }
          *         }
          *       ],
          *       "title": "FI adopts amended rules on paying for investment research"
@@ -13966,23 +14250,35 @@ export interface components {
          *           "authorityLabel": "Finansinspektionen",
          *           "changeType": {
          *             "confidence": 0.91,
+         *             "confirmedByAgent": null,
+         *             "confirmedOrigin": null,
          *             "ref": {
          *               "key": "adopted",
          *               "kind": "adopted",
          *               "label": "Adopted"
          *             },
-         *             "suggested": true
+         *             "suggested": true,
+         *             "suggestedByAgent": {
+         *               "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *               "key": "watch-sweeper"
+         *             }
          *           },
          *           "firstSeenAt": "2026-09-16T06:02:00Z",
          *           "flags": [
          *             {
          *               "confidence": 0.74,
+         *               "confirmedByAgent": null,
+         *               "confirmedOrigin": null,
          *               "ref": {
          *                 "key": "advice_perimeter",
          *                 "kind": null,
          *                 "label": "Advice perimeter"
          *               },
-         *               "suggested": true
+         *               "suggested": true,
+         *               "suggestedByAgent": {
+         *                 "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *                 "key": "watch-sweeper"
+         *               }
          *             }
          *           ],
          *           "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -13990,10 +14286,16 @@ export interface components {
          *             {
          *               "confidence": 0.82,
          *               "confirmed": false,
+         *               "confirmedByAgent": null,
+         *               "confirmedOrigin": null,
          *               "instrumentShortName": "FFFS 2017:2",
          *               "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
          *               "origin": "agent",
          *               "refLabel": "11 kap. 4 §",
+         *               "suggestedByAgent": {
+         *                 "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *                 "key": "watch-sweeper"
+         *               },
          *               "title": "Assess the quality of investment research paid for"
          *             }
          *           ],
@@ -14079,23 +14381,35 @@ export interface components {
          *       "authorityLabel": "Finansinspektionen",
          *       "changeType": {
          *         "confidence": 0.91,
+         *         "confirmedByAgent": null,
+         *         "confirmedOrigin": null,
          *         "ref": {
          *           "key": "adopted",
          *           "kind": "adopted",
          *           "label": "Adopted"
          *         },
-         *         "suggested": true
+         *         "suggested": true,
+         *         "suggestedByAgent": {
+         *           "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *           "key": "watch-sweeper"
+         *         }
          *       },
          *       "firstSeenAt": "2026-09-16T06:02:00Z",
          *       "flags": [
          *         {
          *           "confidence": 0.74,
+         *           "confirmedByAgent": null,
+         *           "confirmedOrigin": null,
          *           "ref": {
          *             "key": "advice_perimeter",
          *             "kind": null,
          *             "label": "Advice perimeter"
          *           },
-         *           "suggested": true
+         *           "suggested": true,
+         *           "suggestedByAgent": {
+         *             "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *             "key": "watch-sweeper"
+         *           }
          *         }
          *       ],
          *       "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -14103,10 +14417,16 @@ export interface components {
          *         {
          *           "confidence": 0.82,
          *           "confirmed": false,
+         *           "confirmedByAgent": null,
+         *           "confirmedOrigin": null,
          *           "instrumentShortName": "FFFS 2017:2",
          *           "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
          *           "origin": "agent",
          *           "refLabel": "11 kap. 4 §",
+         *           "suggestedByAgent": {
+         *             "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *             "key": "watch-sweeper"
+         *           },
          *           "title": "Assess the quality of investment research paid for"
          *         }
          *       ],
@@ -14196,10 +14516,87 @@ export interface components {
             title: string;
             /**
              * Unconfirmedcount
-             * @description How many facts on this change — its type, its flags, its scope terms and its obligation links — no library editor has confirmed yet. Computed by the server; it is the queue's own count and says nothing about whether the facts are wrong.
+             * @description How many facts on this change — its type, its flags, its scope terms and its obligation links — nobody has confirmed yet. Computed by the server; it is the queue's own count and says nothing about whether the facts are wrong.
              * @example 2
              */
             unconfirmedCount: number;
+        };
+        /**
+         * WatchCurationConfirmInput
+         * @description `POST /changes/{changeId}/confirmation` (WAT-03, WAT-04, D-74): which of a change's
+         *     curated facts to confirm for the shared library, as they stand now.
+         *
+         *     Name what you checked and nothing else: the type, flag keys, scope term ids and linked
+         *     obligation ids, each of which must already be on the change. A fact already confirmed
+         *     is left exactly as it is, so repeating a call confirms nothing twice. An agent's key
+         *     sends the model call behind its decision and the open run it was made in; a person's
+         *     session sends neither.
+         * @example {
+         *       "agentRunId": "8e3f2a61-4b7c-4d19-a05e-3c9b1f7d2e84",
+         *       "changeType": true,
+         *       "decision": {
+         *         "citations": [
+         *           {
+         *             "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+         *             "url": "https://www.fi.se/en/published/news/2026/reporting/"
+         *           }
+         *         ],
+         *         "model": "claude-opus-5",
+         *         "modelVersion": "2026-05-01",
+         *         "output": "Confirm. The decision memorandum names the change as adopted, it concerns the line between advice and non-advised services in the securities area, and it amends the rule on assessing research paid for.",
+         *         "promptTemplate": "library-confirmer/curation/v1"
+         *       },
+         *       "flags": [
+         *         "advice_perimeter"
+         *       ],
+         *       "obligationIds": [
+         *         "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
+         *       ],
+         *       "termIds": [
+         *         "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
+         *       ]
+         *     }
+         */
+        WatchCurationConfirmInput: {
+            /**
+             * Agentrunid
+             * @description The open run the decision was made in, as a UUID, opened by the confirming key itself. Required from an agent's key: naming none, or a closed run, answers 422 `run_not_open`, and another key's run answers 404. Refused from a person's session. Null by default.
+             * @example 8e3f2a61-4b7c-4d19-a05e-3c9b1f7d2e84
+             */
+            agentRunId?: string | null;
+            /**
+             * Changetype
+             * @description True confirms the change's type as it is stored now; false, the default, leaves the type as it is. To confirm a different type, correct it with `PATCH /changes/{changeId}` first: this call never changes a value.
+             * @default false
+             * @example true
+             */
+            changeType: boolean;
+            /** @description The model call behind an agent's decision to confirm: the model, its version, the prompt's name and hash, what it concluded and at least one public page it rests on (D-80). Required from an agent's key and logged in the AI output log under `agent_review`, which the platform alone reads; refused from a person's session, whose confirmation is their own. Null by default. */
+            decision?: components["schemas"]["AgentDecision"] | null;
+            /**
+             * Flags
+             * @description Keys of the flags on this change to confirm, rows of the `flag` library vocabulary, at most 50. A key the change does not carry answers 422 `validation_error`, because a confirmation is of what is there. The values are vocabulary rows an admin may extend or retire: read `GET /vocab/flag`, and match on the key, never the label.
+             * @example [
+             *       "advice_perimeter"
+             *     ]
+             */
+            flags?: string[];
+            /**
+             * Obligationids
+             * @description The linked obligations to confirm, each the obligation's UUID, at most 200. An obligation the change is not linked to answers 422 `validation_error`: a confirmation never creates a link, which is `PUT /changes/{changeId}/obligations`.
+             * @example [
+             *       "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"
+             *     ]
+             */
+            obligationIds?: string[];
+            /**
+             * Termids
+             * @description The scope terms on this change to confirm, each a taxonomy term's UUID as the change answers it, at most 100. A term the change does not carry answers 422 `validation_error`.
+             * @example [
+             *       "a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"
+             *     ]
+             */
+            termIds?: string[];
         };
         /**
          * WatchFact
@@ -14208,17 +14605,25 @@ export interface components {
          *
          *     Two things that are not the same thing, kept apart: `ref` is the library vocabulary row
          *     itself, exactly `{key, kind, label}` like every other vocabulary reference in this API,
-         *     and the two fields beside it say how the row came to be on this change. Flattening the
-         *     provenance into the reference would make this the one reference shape a client has to
-         *     read differently, which is what the presentation guard refuses (NFR-S10).
+         *     and the fields beside it say how the row came to be on this change — the agent's
+         *     confidence, whether it is still a suggestion, and who suggested and who confirmed it
+         *     (D-74). Flattening the provenance into the reference would make this the one reference
+         *     shape a client has to read differently, which is what the presentation guard refuses
+         *     (NFR-S10).
          * @example {
          *       "confidence": 0.74,
+         *       "confirmedByAgent": null,
+         *       "confirmedOrigin": null,
          *       "ref": {
          *         "key": "advice_perimeter",
          *         "kind": null,
          *         "label": "Advice perimeter"
          *       },
-         *       "suggested": true
+         *       "suggested": true,
+         *       "suggestedByAgent": {
+         *         "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *         "key": "watch-sweeper"
+         *       }
          *     }
          */
         WatchFact: {
@@ -14228,14 +14633,24 @@ export interface components {
              * @example 0.74
              */
             confidence: number | null;
+            /** @description The independent agent that confirmed it, by its definition key, when `confirmedOrigin` is `agent`. Never the agent that suggested it: the database refuses that row. Null, the default, when a person confirmed it or nobody has yet. */
+            confirmedByAgent?: components["schemas"]["AgentRef"] | null;
+            /**
+             * Confirmedorigin
+             * @description Who confirmed it, a fixed kind: `agent` when a second, independent agent confirmed it (an agent of another definition and key than the one that suggested it), which a screen labels machine-confirmed and never as a person's verification; `user` when a person holding `proposals.review` confirmed it with a passkey, who is not named here. Null, the default, while it is still a suggestion. Decide the machine-confirmed label from this field alone, never from which agent fields are present. A library fact, the same for every bank, and not four eyes: no proposal stands behind it (D-74).
+             * @example null
+             */
+            confirmedOrigin?: ("agent" | "user") | null;
             /** @description The vocabulary row or taxonomy term itself, as `{key, kind, label}`: a row of the `change_type` library vocabulary (`proposal`, `adopted`, `supervision`, `enforcement`, `recurring_date` on day one), of the `flag` vocabulary (`ai`, `advice_perimeter`) or of the taxonomy (`securities` and the other regimes). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /vocab/{listName}` for the live set and match on the key, never on the label. */
             ref: components["schemas"]["LibraryRef"];
             /**
              * Suggested
-             * @description True while this is an agent's suggestion that no library editor has confirmed. The screen marks it 'Suggested by the agent'. A reader must not treat a suggested fact as checked, and a bank never confirms it: it is a library fact and confirming one needs `proposals.review` (WAT-03, PRO-01).
+             * @description True while this is a suggestion nobody has confirmed. The screen marks it 'Suggested by the agent'. A reader must not treat a suggested fact as checked, and a bank never confirms it: it is a library fact, confirmed for every bank by an independent agent holding `proposals:review` or by a person holding `proposals.review` (WAT-03, PRO-01, D-74).
              * @example true
              */
             suggested: boolean;
+            /** @description The agent definition that suggested it, by its key (`watch-sweeper`, for example), copied from the run or the key that filed it. Null, the default, when a person filed it by hand or a key bound to no agent did. It names a platform agent, never a person or a bank. */
+            suggestedByAgent?: components["schemas"]["AgentRef"] | null;
         };
         /**
          * WatchObligationChangePage
@@ -14265,23 +14680,35 @@ export interface components {
          *           },
          *           "changeType": {
          *             "confidence": 0.91,
+         *             "confirmedByAgent": null,
+         *             "confirmedOrigin": null,
          *             "ref": {
          *               "key": "adopted",
          *               "kind": "adopted",
          *               "label": "Adopted"
          *             },
-         *             "suggested": true
+         *             "suggested": true,
+         *             "suggestedByAgent": {
+         *               "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *               "key": "watch-sweeper"
+         *             }
          *           },
          *           "firstSeenAt": "2026-09-16T06:02:00Z",
          *           "flags": [
          *             {
          *               "confidence": 0.74,
+         *               "confirmedByAgent": null,
+         *               "confirmedOrigin": null,
          *               "ref": {
          *                 "key": "advice_perimeter",
          *                 "kind": null,
          *                 "label": "Advice perimeter"
          *               },
-         *               "suggested": true
+         *               "suggested": true,
+         *               "suggestedByAgent": {
+         *                 "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *                 "key": "watch-sweeper"
+         *               }
          *             }
          *           ],
          *           "id": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -14301,12 +14728,21 @@ export interface components {
          *           "terms": [
          *             {
          *               "confidence": null,
+         *               "confirmedByAgent": {
+         *                 "id": "2b7c9e14-5d3a-4f86-9e02-7a1c4b8d6f39",
+         *                 "key": "library-confirmer"
+         *               },
+         *               "confirmedOrigin": "agent",
          *               "ref": {
          *                 "key": "securities",
          *                 "kind": null,
          *                 "label": "Securities"
          *               },
-         *               "suggested": false
+         *               "suggested": false,
+         *               "suggestedByAgent": {
+         *                 "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *                 "key": "watch-sweeper"
+         *               }
          *             }
          *           ],
          *           "title": "FI adopts amended rules on paying for investment research"
@@ -14319,7 +14755,7 @@ export interface components {
         WatchObligationChangePage: {
             /**
              * Items
-             * @description The changes linked to this obligation, with the reader's own case on each. The links a library editor has confirmed come first, because they are the ones somebody has checked; inside each group the rows are ordered by key date, newest first. An unconfirmed link is a suggestion, never a statement that the change does not affect the duty.
+             * @description The changes linked to this obligation, with the reader's own case on each. The confirmed links come first, whether an independent agent or a person confirmed them, because they are the ones somebody has checked; inside each group the rows are ordered by key date, newest first. An unconfirmed link is a suggestion, never a statement that the change does not affect the duty.
              */
             items: components["schemas"]["WatchChangeRow"][];
             /**
@@ -14337,15 +14773,22 @@ export interface components {
         };
         /**
          * WatchObligationLink
-         * @description A link the agent suggested or a person set. `confirmed` is the library editor's
-         *     decision; a bank's own decision lives on its case, never here (WAT-04, ruling C).
+         * @description A link the agent suggested or a person set. `confirmed` is the shared library's
+         *     confirmation, by an independent agent or a person, and the three fields after it say
+         *     who; a bank's own decision lives on its case, never here (WAT-04, ruling C, D-74).
          * @example {
          *       "confidence": 0.82,
          *       "confirmed": false,
+         *       "confirmedByAgent": null,
+         *       "confirmedOrigin": null,
          *       "instrumentShortName": "FFFS 2017:2",
          *       "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
          *       "origin": "agent",
          *       "refLabel": "11 kap. 4 §",
+         *       "suggestedByAgent": {
+         *         "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+         *         "key": "watch-sweeper"
+         *       },
          *       "title": "Assess the quality of investment research paid for"
          *     }
          */
@@ -14358,10 +14801,18 @@ export interface components {
             confidence: number | null;
             /**
              * Confirmed
-             * @description Whether a library editor has confirmed the link for the shared library. False is a suggestion. A reader must not read `false` as 'not related' — only a bank's own `removed` decision on its case says that, and it changes no library row.
+             * @description Whether the link has been confirmed for the shared library, by an independent agent or by a person; `confirmedOrigin` says which. False is a suggestion. A reader must not read `false` as 'not related' — only a bank's own `removed` decision on its case says that, and it changes no library row.
              * @example false
              */
             confirmed: boolean;
+            /** @description The independent agent that confirmed it, by its definition key, when `confirmedOrigin` is `agent`. Never the agent that suggested it: the database refuses that row. Null, the default, when a person confirmed it or nobody has yet. */
+            confirmedByAgent?: components["schemas"]["AgentRef"] | null;
+            /**
+             * Confirmedorigin
+             * @description Who confirmed it, a fixed kind: `agent` when a second, independent agent confirmed it (an agent of another definition and key than the one that suggested it), which a screen labels machine-confirmed and never as a person's verification; `user` when a person holding `proposals.review` confirmed it with a passkey, who is not named here. Null, the default, while it is still a suggestion. Decide the machine-confirmed label from this field alone, never from which agent fields are present. A library fact, the same for every bank, and not four eyes: no proposal stands behind it (D-74).
+             * @example null
+             */
+            confirmedOrigin?: ("agent" | "user") | null;
             /**
              * Instrumentshortname
              * @description The short name of the instrument the obligation sits in, from the library.
@@ -14377,7 +14828,7 @@ export interface components {
             obligationId: string;
             /**
              * Origin
-             * @description Who first drew this link, a fixed kind: `agent` (a run suggested it) or `user` (a library editor added it by hand). It never changes afterwards, so `agent` on a confirmed link means an agent found it and a person agreed.
+             * @description Who first drew this link, a fixed kind: `agent` (a run suggested it) or `user` (a library editor added it by hand). It never changes afterwards, so `agent` on a confirmed link means an agent found it and somebody else agreed; `confirmedOrigin` says whether that was a second agent or a person.
              * @example agent
              * @enum {string}
              */
@@ -14388,6 +14839,8 @@ export interface components {
              * @example 11 kap. 4 §
              */
             refLabel: string;
+            /** @description The agent definition that suggested it, by its key (`watch-sweeper`, for example), copied from the run or the key that filed it. Null, the default, when a person filed it by hand or a key bound to no agent did. It names a platform agent, never a person or a bank. */
+            suggestedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Title
              * @description The obligation's title in the reader's language, from the library.
@@ -16173,6 +16626,36 @@ export interface operations {
             };
         };
     };
+    confirmChangeCuration: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A value of your own that names this attempt, so a call that timed out can be repeated safely: a retry answers what the first attempt wrote instead of writing it a second time. Send one on every agent write, because a run retries. Each operation says below what its own retry answers, and repeating a value against a different body is a conflict rather than a silent overwrite. */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                /** @description The library change being corrected, as a UUID, the `id` the registration answered. It is the same change for every bank: what is written here every bank reads. A change no longer in the library answers 404, never 403, so no id can be probed for. */
+                change_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchCurationConfirmInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchConsoleChangeRow"];
+                };
+            };
+        };
+    };
     addChangeDocument: {
         parameters: {
             query?: never;
@@ -16303,10 +16786,16 @@ export interface operations {
                      *       {
                      *         "confidence": 0.82,
                      *         "confirmed": false,
+                     *         "confirmedByAgent": null,
+                     *         "confirmedOrigin": null,
                      *         "instrumentShortName": "FFFS 2017:2",
                      *         "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
                      *         "origin": "agent",
                      *         "refLabel": "11 kap. 4 §",
+                     *         "suggestedByAgent": {
+                     *           "id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05",
+                     *           "key": "watch-sweeper"
+                     *         },
                      *         "title": "Assess the quality of investment research paid for"
                      *       }
                      *     ]

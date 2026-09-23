@@ -849,3 +849,41 @@ Nothing waits for these; each has the default the build took.
       only this bank's sessions. Default if you say nothing: it stays as built, and the
       published description of `GET /me/sessions` says a person sees only this bank's
       sessions there.
+
+## watch-curation-confirm-backend: a watch fact's confirmation, and who may give it (2026-09-23, D-74, WAT-03, WAT-04)
+
+The backend half of D-74 has landed: `POST /changes/{changeId}/confirmation`, the agent and
+key columns on a change's type, flags, scope terms and obligation links (watch 0002), and the
+machine-confirmed provenance on the change and console reads. The entry above ("Who confirms
+a watch item's curation now?") is therefore out of date on the backend; the console's Confirm
+control, its seed and the WAT-S4 journey are still to come (`watch-curation-confirm-frontend`).
+Nothing blocks. Three defaults were taken; say if any is wrong.
+
+- [ ] **A person's confirmation needs a fresh passkey.** An agent of another definition is the
+      routine confirmer and never steps up (a key cannot). A person holding
+      `proposals.review` may confirm instead, and may overturn a fact somebody confirmed
+      through `PATCH /changes/{changeId}` or `PUT /changes/{changeId}/obligations`, but only
+      with a fresh passkey assertion, recorded on the audit row, because either is a person
+      intervening in the agents' curation, which is how approvals are treated. The console
+      design card (`design/screens/console-change-facts.html`) still says "No passkey:
+      confirming a fact is not an approval"; it predates D-74 and the frontend package will
+      follow the rule. Default if you say nothing: the passkey stays.
+- [ ] **A bank sees both agent names on a machine-confirmed watch fact.** Each fact names the
+      agent that suggested it and the agent that confirmed it, as a library version does under
+      D-62's default. The agent's reasoning (the `agent_review` row) stays the platform's,
+      as the D-80 entry above says. Default if you say nothing: both names stay visible.
+- [ ] **A library editor's own filing is a suggestion too.** A change a person registers by
+      hand now carries its type as a suggestion, like its flags and links always were, where
+      the reads used to show the type of such a change as settled. It matches what the route
+      already promised ("stored as a suggestion, whoever sent it") and keeps "confirmed" to
+      mean the confirm route was used. Default if you say nothing: it stays a suggestion.
+
+Built beyond the brief, for the reviewer: the suggesting **key** is stored beside the
+suggesting agent (`suggested_by_api_key`), so the confirm route can say which refusal it is:
+409 `own_suggestion` when the very key that filed a fact tries to confirm it, 409
+`same_agent` when another key of the same agent does. The check constraints refuse both on
+their own. A key bound to no agent names no suggester, and cannot confirm anything. Two notes
+for later packages, not questions: `backend/agents/library-confirmer/v1/definition.yaml`
+does not yet list the confirm route as a tool (its package owns that file this wave), and
+`backend/apps/watch/app.md`'s context still says every classification waits for "a person"
+to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WAT-04 to built.

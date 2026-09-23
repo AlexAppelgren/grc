@@ -161,13 +161,16 @@ def change(
     first_seen_at: datetime.datetime | None = None,
 ) -> RegulatoryChange:
     """One reform, as the prototype's lead change reads. `stable_key` is the merge key, so
-    two builds in one test get two keys unless a test names one on purpose (AC-WAT1)."""
+    two builds in one test get two keys unless a test names one on purpose (AC-WAT1). The
+    type is a suggestion by `run`'s agent and key, as the registration copies them (D-74)."""
     key = stable_key or f"chg-fi-2026-research-payments-{next(_counter)}"
     with watch_write(REASON):
         return RegulatoryChange.objects.create(
             stable_key=key,
             title=title,
             change_type=ChangeType.objects.get(key=change_type),
+            change_type_suggested_by_agent_id=None if run is None else run.agent_id,
+            change_type_suggested_by_api_key_id=None if run is None else run.api_key_id,
             authority=None if authority is None else Authority.objects.get(key=authority),
             authority_label=authority_label,
             published_on=PUBLISHED_ON,
@@ -246,7 +249,8 @@ def term_link(
 ) -> ChangeTerm:
     """A flag or a scope term on a change — exactly one of the two, never a `text[]`
     (INPUT_DELTAS §1). It arrives as a suggestion with the agent's confidence and stays one
-    until a library editor confirms it (WAT-03)."""
+    until it is confirmed (WAT-03), suggested by the agent and key of the change's own run,
+    as the registration copies them (D-74)."""
     if (term_ref is None) == (flag_key is None):
         raise ValueError("A change term link names exactly one of a taxonomy term or a flag.")
     with watch_write(REASON):
@@ -256,6 +260,8 @@ def term_link(
             flag=None if flag_key is None else Flag.objects.get(key=flag_key),
             confidence=confidence,
             suggested=suggested,
+            suggested_by_agent_id=row.change_type_suggested_by_agent_id,
+            suggested_by_api_key_id=row.change_type_suggested_by_api_key_id,
         )
 
 
@@ -266,11 +272,17 @@ def obligation_link(
     origin: OriginType = OriginType.AGENT,
     confidence: float | None = 0.82,
 ) -> ChangeObligation:
-    """An obligation the change affects, as the agent suggested it. A bank's own decision
-    about the link lives on its case and never here (WAT-04, ruling C)."""
+    """An obligation the change affects, as the agent of the change's own run suggested it.
+    A bank's own decision about the link lives on its case and never here (WAT-04, ruling
+    C)."""
     with watch_write(REASON):
         return ChangeObligation.objects.create(
-            change=row, obligation=obligation, origin=origin.value, confidence=confidence
+            change=row,
+            obligation=obligation,
+            origin=origin.value,
+            confidence=confidence,
+            suggested_by_agent_id=row.change_type_suggested_by_agent_id,
+            suggested_by_api_key_id=row.change_type_suggested_by_api_key_id,
         )
 
 
@@ -299,10 +311,15 @@ def change_with_timeline(
 # The two assertions every watch test repeats
 # ---------------------------------------------------------------------------------------
 def is_a_suggestion(link: ChangeTerm | ChangeObligation) -> bool:
-    """True while no library editor has confirmed the link: nobody is named and no time is
-    stamped. A `ChangeTerm` also says so on its `suggested` column, and the two must agree
-    — the database's check constraint is what makes that true (WAT-03)."""
-    unconfirmed = link.confirmed_by_id is None and link.confirmed_at is None
+    """True while nobody has confirmed the link: no person, key or agent is named and no
+    time is stamped. A `ChangeTerm` also says so on its `suggested` column, and they must
+    all agree — the database's check constraint is what makes that true (WAT-03, D-74)."""
+    unconfirmed = (
+        link.confirmed_by_id is None
+        and link.confirmed_by_api_key_id is None
+        and link.confirmed_by_agent_id is None
+        and link.confirmed_at is None
+    )
     if isinstance(link, ChangeTerm):
         return unconfirmed and link.suggested
     return unconfirmed

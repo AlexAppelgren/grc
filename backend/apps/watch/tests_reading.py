@@ -76,6 +76,16 @@ FEED_QUERIES = 2 + 6 + 2 + 2 + 2 + 1 + 1 + 4 + 1
 CONSOLE_QUERIES = 2 + 5 + 1 + 2 + 3 + 2 + 1
 
 
+# A fact nobody has confirmed, filed by a builder that names no run, so no agent (D-74).
+UNCONFIRMED: dict[str, Any] = {
+    "confidence": None,
+    "suggested": True,
+    "confirmedOrigin": None,
+    "suggestedByAgent": None,
+    "confirmedByAgent": None,
+}
+
+
 def keys(response: Any) -> list[str]:
     return [row["stableKey"] for row in response.json()["items"]]
 
@@ -252,11 +262,11 @@ class FeedTests(WatchReadFixture):
 
     def test_the_facts_are_keys_and_kinds_with_their_suggestion_marker_and_never_a_tone(self) -> None:
         row = next(item for item in self.feed().json()["items"] if item["stableKey"] == "chg-lead")
-        self.assertEqual(row["changeType"], {"ref": {"key": "adopted", "kind": "adopted", "label": "Adopted"}, "confidence": None, "suggested": True})
+        self.assertEqual(row["changeType"], {"ref": {"key": "adopted", "kind": "adopted", "label": "Adopted"}, **UNCONFIRMED})
         self.assertEqual([fact["ref"]["key"] for fact in row["flags"]], ["advice_perimeter"])
         self.assertEqual([fact["ref"]["key"] for fact in row["terms"]], ["securities"])
         for fact in row["flags"] + row["terms"]:
-            self.assertEqual(sorted(fact), ["confidence", "ref", "suggested"])
+            self.assertEqual(sorted(fact), ["confidence", "confirmedByAgent", "confirmedOrigin", "ref", "suggested", "suggestedByAgent"])
             self.assertEqual(sorted(fact["ref"]), ["key", "kind", "label"])
             self.assertTrue(fact["suggested"], "an agent's classification is a suggestion until an editor confirms it")
         # An urgency row's own `kind` column is its pill tone, and a tone is nobody's to
@@ -407,7 +417,7 @@ class ConsoleChangeQueueTests(WatchReadFixture):
 
     def test_a_row_names_the_facts_the_agent_put_forward_and_counts_them(self) -> None:
         row = next(item for item in self.console().json()["items"] if item["stableKey"] == "chg-lead")
-        self.assertEqual(row["changeType"], {"ref": {"key": "adopted", "kind": "adopted", "label": "Adopted"}, "confidence": None, "suggested": True})
+        self.assertEqual(row["changeType"], {"ref": {"key": "adopted", "kind": "adopted", "label": "Adopted"}, **UNCONFIRMED})
         self.assertEqual([fact["ref"]["key"] for fact in row["flags"]], ["advice_perimeter"])
         self.assertEqual([fact["ref"]["key"] for fact in row["terms"]], ["securities"])
         link = row["obligations"][0]
@@ -432,11 +442,14 @@ class ConsoleChangeQueueTests(WatchReadFixture):
         self.assertEqual(self.console({"confirmed": "true"}).status_code, 422)
         self.assertEqual(self.console({"q": "x" * 201}).status_code, 422)
 
-    def test_a_change_a_person_registered_and_nobody_suggested_is_not_in_the_queue(self) -> None:
-        """A change a library editor registered by hand carries no agent suggestion, so it
-        has nothing to confirm and is not work. `confirmed=all` still finds it."""
+    def test_a_change_whose_every_fact_is_confirmed_is_not_in_the_queue(self) -> None:
+        """A change whose type, flags, scope terms and links somebody has confirmed has
+        nothing left to confirm and is not work, whoever registered it: a person's filing is
+        a suggestion too (D-74). `confirmed=all` still finds it."""
         with watch_write("test fixture"):
-            RegulatoryChange.objects.filter(pk=self.undated.pk).update(origin="user")
+            RegulatoryChange.objects.filter(pk=self.undated.pk).update(
+                origin="user", change_type_suggested=False, change_type_confirmed_by=self.editor, change_type_confirmed_at=timezone.now()
+            )
             ChangeTerm.objects.filter(change=self.undated).update(
                 suggested=False, confirmed_by=self.editor, confirmed_at=timezone.now()
             )
