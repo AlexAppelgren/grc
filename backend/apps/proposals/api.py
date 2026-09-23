@@ -311,9 +311,12 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     until then. Call it when a run has read new wording for a duty at the authority's own
     page, and when a person asks for a value on a shared list. `kind` says what is asked
     for: "new_obligation_version" (a new summary of one duty in force from a date, with its
-    scope terms); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire",
-    "vocabulary_restore" or "vocabulary_merge" (a row of a shared list); or "term_create"
-    or "term_update" (a taxonomy term).
+    scope terms); "new_instrument" (a law, regulation, guideline or standard edition the
+    library does not hold yet, with its regime); "new_obligation" (a duty the library does
+    not hold yet, under an instrument it does, with its first summary and scope);
+    "vocabulary_create", "vocabulary_relabel", "vocabulary_retire", "vocabulary_restore" or
+    "vocabulary_merge" (a row of a shared list); or "term_create" or "term_update" (a
+    taxonomy term).
 
     Who may call it: a bank's member with `proposals.create`, a platform editor with
     `library_vocab.manage`, or an API key with the scope `proposals:write`. A key bound to
@@ -326,7 +329,11 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
 
     A new obligation version carries a source for every value it changes, in
     `fieldSources`: a link to the authority's page or a provision of the library, and none
-    for a value it leaves alone. The proposal is linked to the bank it was filed in, and
+    for a value it leaves alone. A new instrument or obligation names no `targetType` or
+    `targetId`, carries a source for every fact it sets, each an https link since the record
+    has no provision of its own yet, and gives `sourceUrl`, the link the new record keeps
+    as its own source. An instrument's `regime` is a term of the regime dimension, written
+    `regime:<key>`. The proposal is linked to the bank it was filed in, and
     the platform's reviewers see only that it came from a bank, never who asked. The
     proposal and its audit row are written in one transaction.
 
@@ -338,8 +345,13 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
 
     Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or
     a closed one; `not_found` (404) when the run named is not one this key opened;
-    `source_missing` (422) when a changed value carries no source; `unknown_key` (422) for a
-    kind, a list, a language, a term or a target obligation the library does not hold;
+    `source_missing` (422) when a changed value carries no source, or a new record no
+    `sourceUrl`; `unknown_key` (422) for a kind, a list, a language, a term, a target
+    obligation, an instrument, a level, a jurisdiction, an authority or a duty type the
+    library does not hold; `not_a_regime` (422) when a new instrument's regime is not a
+    term of the regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes
+    an obligation with a term of a dimension that mirrors the jurisdiction list;
+    `duplicate_key` (409) when a new record's key is already a record's;
     `validation_error` (422) for a body the schema or the kind's payload refuses;
     `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
     obligation whose instrument is not a standard; `idempotency_conflict` (409) when the
@@ -470,7 +482,9 @@ def approve_proposal(
     answers, since nothing is ever applied twice; `source_missing` when a correction
     introduces a field the proposal never sourced; `validation_error` when a correction is
     offered on a kind that cannot be corrected or does not fit its payload; `unknown_key`
-    when the payload names a row the library does not hold; `jurisdiction_term_mirrored`
+    when the payload names a row the library does not hold; `not_a_regime` when a new
+    instrument's regime is not a term of the regime dimension; `duplicate_key` when a new
+    record's key was taken while the proposal waited; `jurisdiction_term_mirrored`
     (422) when the payload adds or renames a term of a dimension that mirrors the
     jurisdiction list, or scopes an obligation with one, which a proposal filed before that
     rule may still ask for; `standard_term_only_on_standards` (422) when the payload, as
