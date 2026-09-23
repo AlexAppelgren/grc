@@ -217,3 +217,9 @@ description = "Stable key the watch registration test gives the change a person 
 condition = "AND"
 regexes = ['''^chg-fi-2026-by-hand$''']
 paths = ['''^backend/apps/watch/tests_registration\.py$''']
+
+[[allowlists]]
+description = "A package key in the R1 build plan's wave 3 briefs (docs/plans/r1-waves/wave3.json on the claude/r1-plan branch, 2026-09-23). CI scans every branch on origin, so this plan file is scanned too. A package name, not a secret: the generic-api-key rule reads a JSON \"key\" field with a digit in it as a key. Exact literal, this one file only."
+condition = "AND"
+regexes = ['''^aud-s4-integration$''']
+paths = ['''^docs/plans/r1-waves/wave3\.json$''']
