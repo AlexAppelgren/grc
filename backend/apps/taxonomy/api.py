@@ -106,6 +106,16 @@ _SUGGESTION_ID = (
 
 ListName = Annotated[str, Path(description=_LIST)]
 RowKey = Annotated[str, Path(description=_KEY)]
+_FootprintRequestId = Annotated[
+    str,
+    Path(
+        description=(
+            "The `id` of the regulatory scope change request, a UUID as `GET /tenant/footprint/requests` "
+            "returns it. One of another organisation, one that does not exist, or anything that is not a "
+            "UUID answers 404 `not_found`."
+        )
+    ),
+]
 
 
 def _accepted(proposal: Any) -> tuple[int, ProposalAccepted]:
@@ -670,18 +680,63 @@ def merge_vocabulary_row(
 # ---------------------------------------------------------------------------------------
 # Taxonomy dimensions and terms (library; writes are proposals, VOC-07)
 # ---------------------------------------------------------------------------------------
-@router.get("/taxonomy/dimensions", response=TaxonomyDimensionPage, auth=SESSION_OR_KEY, operation_id="listTaxonomyDimensions", by_alias=True)
+@router.get(
+    "/taxonomy/dimensions",
+    response=TaxonomyDimensionPage,
+    auth=SESSION_OR_KEY,
+    operation_id="listTaxonomyDimensions",
+    by_alias=True,
+    summary="See the groups a regulatory scope and a record's tags are organised in",
+)
 @answers_problems
 def list_taxonomy_dimensions(request: HttpRequest) -> TaxonomyDimensionPage:
+    """Every active dimension of the shared library's taxonomy, such as the regime, the
+    service or the client category, in picker order, with its kind and whether its terms
+    narrow what a bank sees. Call it to build a scope editor or a filter, then
+    `GET /taxonomy/terms?dimension=<key>` for the terms of one. Dimensions are library facts:
+    new ones arrive through an approved proposal, never through this route.
+
+    A short reference list that never paginates: `total` is the length of `items`, and an
+    empty taxonomy is a 200 with an empty list. Labels read in the caller's language.
+
+    A read: it changes nothing and writes no audit event. Open to any person's session and
+    to an agent's API key with the `library:read` scope.
+
+    Errors to branch on: `unauthenticated` (401) without a session or a valid key;
+    `permission_denied` (403) for an API key without `library:read`.
+    """
     # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
     require_library_reader(request)
     items = lists.rows_of("term_dimension", None, reading.language_order(request))
     return TaxonomyDimensionPage(items=items, total=len(items))
 
 
-@router.get("/taxonomy/terms", response=TaxonomyTermPage, auth=SESSION_OR_KEY, operation_id="listTerms", by_alias=True)
+@router.get(
+    "/taxonomy/terms",
+    response=TaxonomyTermPage,
+    auth=SESSION_OR_KEY,
+    operation_id="listTerms",
+    by_alias=True,
+    summary="See the terms we can choose in our regulatory scope and tag records with",
+)
 @answers_problems
 def list_terms(request: HttpRequest, query: Query[TaxonomyTermQuery]) -> TaxonomyTermPage:
+    """The terms of the shared library's taxonomy, of one dimension or of all, in picker
+    order: what a regulatory scope is built from and what a record is tagged with. Retired
+    terms are left out unless `includeRetired=true`. Each term carries every label it has,
+    and `mirrored` marks the jurisdiction terms that follow the jurisdiction list and are
+    never proposed or renamed. New terms arrive through `POST /taxonomy/terms`, a proposal.
+
+    A short reference list that never paginates: `total` is the length of `items`, and a
+    dimension with no terms is a 200 with an empty list.
+
+    A read: it changes nothing and writes no audit event. Open to any person's session and
+    to an agent's API key with the `library:read` scope.
+
+    Errors to branch on: `unknown_key` (422) for a `dimension` that is not an active
+    dimension, with the valid keys in `detail`; `unauthenticated` (401) without a session or
+    a valid key; `permission_denied` (403) for an API key without `library:read`.
+    """
     # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
     require_library_reader(request)
     terms = terms_logic.terms_of(query.dimension, include_retired=query.include_retired)
@@ -689,7 +744,14 @@ def list_terms(request: HttpRequest, query: Query[TaxonomyTermQuery]) -> Taxonom
     return TaxonomyTermPage(items=items, total=len(items))
 
 
-@router.post("/taxonomy/terms", response={202: ProposalAccepted}, auth=SESSION, operation_id="createTerm", by_alias=True)
+@router.post(
+    "/taxonomy/terms",
+    response={202: ProposalAccepted},
+    auth=SESSION,
+    operation_id="createTerm",
+    by_alias=True,
+    summary="Propose a new taxonomy term for the shared library",
+)
 @answers_problems
 def create_term(request: HttpRequest, body: TaxonomyTermCreateBody) -> Any:
     """Ask for a new taxonomy term in the shared library (VOC-07). Nothing is written to the
@@ -724,9 +786,40 @@ def create_term(request: HttpRequest, body: TaxonomyTermCreateBody) -> Any:
     )
 
 
-@router.patch("/taxonomy/terms/{term_id}", response={202: ProposalAccepted}, auth=SESSION, operation_id="updateTerm", by_alias=True)
+@router.patch(
+    "/taxonomy/terms/{term_id}",
+    response={202: ProposalAccepted},
+    auth=SESSION,
+    operation_id="updateTerm",
+    by_alias=True,
+    summary="Propose a change to a taxonomy term's labels, note or order",
+    openapi_extra={
+        "requestBody": {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "labels": {"en": "Investment advice", "sv": "Investeringsrådgivning"},
+                        "usageNote": "Personal recommendations on financial instruments.",
+                    }
+                }
+            }
+        }
+    },
+)
 @answers_problems
-def update_term(request: HttpRequest, term_id: str, body: VocabularyPatchBody) -> Any:
+def update_term(
+    request: HttpRequest,
+    term_id: Annotated[
+        str,
+        Path(
+            description=(
+                "The `id` of the term to change, a UUID as `GET /taxonomy/terms` returns it. An id no "
+                "term has, or anything that is not a UUID, answers 404 `not_found`."
+            )
+        ),
+    ],
+    body: VocabularyPatchBody,
+) -> Any:
     """Ask for a change to a taxonomy term's labels, usage note or place in the list
     (VOC-07). Nothing is written to the library here: the answer is 202 with the proposal
     this call put in the queue, and the term changes only once a second person approves it
@@ -763,9 +856,33 @@ def update_term(request: HttpRequest, term_id: str, body: VocabularyPatchBody) -
 # ---------------------------------------------------------------------------------------
 # Footprint (FP-01, FP-02, FP-03)
 # ---------------------------------------------------------------------------------------
-@router.get("/tenant/footprint", response=FootprintView, auth=SESSION, operation_id="getFootprint", by_alias=True)
+@router.get(
+    "/tenant/footprint",
+    response=FootprintView,
+    auth=SESSION,
+    operation_id="getFootprint",
+    by_alias=True,
+    summary="See our regulatory scope and the markets we operate in and watch",
+)
 @answers_problems
 def get_footprint(request: HttpRequest) -> FootprintView:
+    """The organisation's regulatory scope as it stands: for every taxonomy dimension, the
+    terms it has chosen, which decide what every list, the watch feed and search show it.
+    Also the change waiting for a second person, if one waits, and every active country
+    with whether the organisation operates there, watches it or does neither. Call it for
+    the Regulatory scope screen; `GET /tenant/footprint/requests` carries the history.
+
+    An organisation that has chosen nothing still gets a 200 with every dimension and empty
+    term lists, which means no restriction, or none followed in an opt-in dimension.
+
+    A read: it changes nothing and writes no audit event. Any member may call it, because
+    every member sees what the scope hides; it needs a person's session and no permission
+    beyond membership, and an API key is refused. The path says `footprint`, the code's name
+    for what the screens call the regulatory scope.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
+    principal in no organisation.
+    """
     # Ungated by design: capability (any member reads the footprint every surface is filtered by, FP-03).
     tenant = caller_tenant(request)
     return footprint_logic.view(tenant.id, reading.language_order(request, tenant=tenant))
@@ -821,10 +938,31 @@ def list_footprint_requests(request: HttpRequest, page: Query[PageQuery]) -> Foo
     auth=SESSION,
     operation_id="createFootprintRequest",
     by_alias=True,
+    summary="Preview a change to our regulatory scope, or send it for approval",
 )
 @requires_permission(perms.FOOTPRINT_REQUEST)
 @answers_problems
 def create_footprint_request(request: HttpRequest, body: FootprintRequestBody, query: Query[FootprintRequestQuery]) -> Any:
+    """Ask for terms to be put into or taken out of the organisation's regulatory scope.
+    Nothing in the scope changes here: the change waits for a second person, who approves it
+    with a passkey (`POST /tenant/footprint/requests/{requestId}/approve`) or rejects it.
+
+    With `dryRun=true` it only previews: a 200 with what the change would hide and reveal
+    among the obligations and the open cases, with nothing stored, no audit event and no
+    approval started. Without it, a 201 with the new pending request, its preview counted
+    now, and one `footprint.change_requested` audit event naming every term added and
+    removed. An organisation has one pending request at a time; withdraw or decide it first.
+
+    Needs `footprint.request` in the caller's organisation and a person's session; an API
+    key is refused. No passkey step-up: the approval carries it.
+
+    Errors to branch on: `request_pending` (409) when a change already waits for a decision;
+    `unknown_key` (422) for a dimension or term that is not an active one, with the valid
+    keys in `detail`; `validation_error` (422) for a change with no term, a term both added
+    and removed, or a body the schema refuses; `permission_denied` (403) without
+    `footprint.request`; `unauthenticated` (401) without a session; `not_found` (404) for a
+    principal in no organisation.
+    """
     tenant = caller_tenant(request)
     order = reading.language_order(request, tenant=tenant)
     adds = terms_logic.terms_by_selectors(body.adds)
@@ -857,11 +995,34 @@ def _footprint_request(tenant: Any, request_id: str) -> FootprintChangeRequest:
     auth=SESSION,
     operation_id="approveFootprintRequest",
     by_alias=True,
+    summary="Approve a change to our regulatory scope as the second person",
 )
 @requires_permission(perms.FOOTPRINT_APPROVE)
 @requires_step_up
 @answers_problems
-def approve_footprint_request(request: HttpRequest, request_id: str, body: FootprintDecisionBody) -> FootprintRequestRow:
+def approve_footprint_request(request: HttpRequest, request_id: _FootprintRequestId, body: FootprintDecisionBody) -> FootprintRequestRow:
+    """Approve a pending change: its terms enter and leave the regulatory scope at once, and
+    every list, the watch feed and search follow from the next read. The approver must be
+    someone other than the requester, which the database enforces too. The answer is the
+    request, now `approved`, with the counts it was approved against.
+
+    Needs `footprint.approve` in the caller's organisation and a passkey step-up younger
+    than the configured freshness window (`POST /auth/step-up/options`, then
+    `POST /auth/step-up/verify`); an API key is refused. Send `If-Match` with the version
+    last read to be told when the request moved on.
+
+    Writes one `footprint.change_approved` audit event with the note and the counts, and one
+    `footprint.term_added` or `footprint.term_removed` event per term that changed, each
+    carrying the step-up that authorised it.
+
+    Errors to branch on: `four_eyes_violation` (409) when the requester approves their own
+    change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
+    `stale_write` (409) when `If-Match` names an old version; `step_up_required` (403)
+    without a fresh passkey step-up; `permission_denied` (403) without `footprint.approve`;
+    `not_found` (404) for a request that is not here; `validation_error` (422) for an
+    `If-Match` that is not a version or a body the schema refuses; `unauthenticated` (401)
+    without a session.
+    """
     tenant = caller_tenant(request)
     user = caller_user(request)
     decided = footprint_logic.approve(
@@ -882,10 +1043,28 @@ def approve_footprint_request(request: HttpRequest, request_id: str, body: Footp
     auth=SESSION,
     operation_id="rejectFootprintRequest",
     by_alias=True,
+    summary="Turn down a change to our regulatory scope",
 )
 @requires_permission(perms.FOOTPRINT_APPROVE)
 @answers_problems
-def reject_footprint_request(request: HttpRequest, request_id: str, body: FootprintDecisionBody) -> FootprintRequestRow:
+def reject_footprint_request(request: HttpRequest, request_id: _FootprintRequestId, body: FootprintDecisionBody) -> FootprintRequestRow:
+    """Reject a pending change: the regulatory scope stays as it is and the request is
+    final. The note says why, for the requester and the history. The person rejecting must
+    be someone other than the requester, who withdraws their own change instead. The answer
+    is the request, now `rejected`, with the counts it was rejected against.
+
+    Needs `footprint.approve` in the caller's organisation and a person's session; an API
+    key is refused. No passkey step-up, because nothing in the scope changes. Send
+    `If-Match` with the version last read to be told when the request moved on. Writes one
+    `footprint.change_rejected` audit event with the note and the counts.
+
+    Errors to branch on: `four_eyes_violation` (409) when the requester rejects their own
+    change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
+    `stale_write` (409) when `If-Match` names an old version; `permission_denied` (403)
+    without `footprint.approve`; `not_found` (404) for a request that is not here;
+    `validation_error` (422) for an `If-Match` that is not a version or a body the schema
+    refuses; `unauthenticated` (401) without a session.
+    """
     tenant = caller_tenant(request)
     user = caller_user(request)
     decided = footprint_logic.reject(
@@ -905,10 +1084,26 @@ def reject_footprint_request(request: HttpRequest, request_id: str, body: Footpr
     auth=SESSION,
     operation_id="withdrawFootprintRequest",
     by_alias=True,
+    summary="Take back our own change to the regulatory scope before it is decided",
 )
 @requires_permission(perms.FOOTPRINT_REQUEST)
 @answers_problems
-def withdraw_footprint_request(request: HttpRequest, request_id: str) -> FootprintRequestRow:
+def withdraw_footprint_request(request: HttpRequest, request_id: _FootprintRequestId) -> FootprintRequestRow:
+    """Withdraw a pending change you asked for: the regulatory scope stays as it is, the
+    request is final, and a new change can be sent. Only the requester may withdraw, since
+    withdrawing is not a decision and never a way around the second person. The answer is
+    the request, now `withdrawn`, with no decider. No body.
+
+    Needs `footprint.request` in the caller's organisation and a person's session; an API
+    key is refused. Send `If-Match` with the version last read to be told when the request
+    moved on. Writes one `footprint.change_withdrawn` audit event.
+
+    Errors to branch on: `permission_denied` (403) without `footprint.request`, and for a
+    request someone else sent; `invalid_transition` (409) when it was already approved,
+    rejected or withdrawn; `stale_write` (409) when `If-Match` names an old version;
+    `not_found` (404) for a request that is not here; `validation_error` (422) for an
+    `If-Match` that is not a version; `unauthenticated` (401) without a session.
+    """
     tenant = caller_tenant(request)
     user = caller_user(request)
     found = _footprint_request(tenant, request_id)
@@ -987,9 +1182,44 @@ def unwatch_market(request: HttpRequest, body: MarketWatchBody) -> MarketRow:
 # ---------------------------------------------------------------------------------------
 # Reference reads (I18N-01)
 # ---------------------------------------------------------------------------------------
-@router.get("/reference/jurisdictions", response=list[JurisdictionRow], auth=SESSION, operation_id="listJurisdictions", by_alias=True)
+@router.get(
+    "/reference/jurisdictions",
+    response=list[JurisdictionRow],
+    auth=SESSION,
+    operation_id="listJurisdictions",
+    by_alias=True,
+    summary="See the jurisdictions the library covers",
+    openapi_extra={
+        "responses": {
+            200: {
+                "content": {
+                    "application/json": {
+                        "example": [
+                            {"key": "eu", "kind": "supranational", "label": "European Union", "parentKey": None, "defaultLanguage": {"key": "en", "kind": None, "label": "English"}},
+                            {"key": "se", "kind": "country", "label": "Sweden", "parentKey": "eu", "defaultLanguage": {"key": "sv", "kind": None, "label": "Svenska"}},
+                            {"key": "no", "kind": "country", "label": "Norway", "parentKey": "eu", "defaultLanguage": {"key": "nb", "kind": None, "label": "Norsk bokmål"}},
+                        ]
+                    }
+                }
+            }
+        }
+    },
+)
 @answers_problems
 def list_jurisdictions(request: HttpRequest) -> list[JurisdictionRow]:
+    """Every active jurisdiction, in the library's order: the European Union, the Nordic
+    countries and the international standards bodies, each with its kind, the jurisdiction
+    whose rules also reach it and the language its legal texts are written in. Call it to
+    fill a jurisdiction picker or to label a record's jurisdiction key.
+
+    A reference read: a plain array, not a page, because the list is short and fixed; it
+    never paginates. Labels read in the caller's language.
+
+    A read: it changes nothing and writes no audit event. Open to any person's session with
+    no permission beyond it; an API key is refused.
+
+    Errors to branch on: `unauthenticated` (401) without a session.
+    """
     # Ungated by design: capability (any session; a reference read for pickers, I18N-01).
     from apps.library.models import Jurisdiction, JurisdictionLabel
     from apps.taxonomy.reading import Labels, label_of
