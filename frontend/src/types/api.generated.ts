@@ -132,6 +132,12 @@ export interface paths {
          *     definition, and records where the working output was kept. A run that is never closed
          *     stays open for ever and reads as stuck, so close it from the failure path too.
          *
+         *     Among the counters is `outOfScope`: the documents the run read and set aside because
+         *     they fall outside regulated financial services. Such a document is counted on its
+         *     source's check and here, and nothing else — no change, no proposal — so this count is
+         *     the only trace of it and the way a reader tells a quiet night from a night of documents
+         *     that were not ours to watch.
+         *
          *     Authenticated by the API key that opened the run, carrying the `agent-runs:write`
          *     scope; no session can close a run. A run closes once and into a terminal status. Sending
          *     the same close again answers the run it already closed, so a lost answer costs nothing;
@@ -3477,6 +3483,7 @@ export interface components {
          *         "changesRegistered": 2,
          *         "fetches": 118,
          *         "modelCalls": 42,
+         *         "outOfScope": 3,
          *         "proposalsSubmitted": 5,
          *         "sourcesChecked": 31
          *       },
@@ -3547,6 +3554,7 @@ export interface components {
          *         "changesRegistered": 2,
          *         "fetches": 118,
          *         "modelCalls": 42,
+         *         "outOfScope": 3,
          *         "proposalsSubmitted": 5,
          *         "sourcesChecked": 31
          *       },
@@ -3623,6 +3631,7 @@ export interface components {
          *             "changesRegistered": 2,
          *             "fetches": 118,
          *             "modelCalls": 42,
+         *             "outOfScope": 3,
          *             "proposalsSubmitted": 5,
          *             "sourcesChecked": 31
          *           },
@@ -3652,6 +3661,7 @@ export interface components {
          *       "changesRegistered": 2,
          *       "fetches": 118,
          *       "modelCalls": 42,
+         *       "outOfScope": 3,
          *       "proposalsSubmitted": 5,
          *       "sourcesChecked": 31
          *     }
@@ -3675,6 +3685,12 @@ export interface components {
              * @default 0
              */
             modelCalls: number;
+            /**
+             * Outofscope
+             * @description How many documents the run read and set aside because they fall outside the sector scope, a whole number with a minimum of 0 and no maximum. bleqq watches regulated financial services only, so a medical-device rule or an environmental permit that a source also publishes is counted on that source's check and here, and nothing is registered or proposed from it: it never reaches the watch feed or the proposal queue. Read it beside `sourcesChecked`, because a source that offered only such documents was still watched that night. Defaults to 0; a negative number is refused with `validation_error`.
+             * @default 0
+             */
+            outOfScope: number;
             /**
              * Proposalssubmitted
              * @description How many proposals the run put in the queue for the shared library, counted against the proposal budget in the agent's definition. A proposal is the only door an agent has into the library and it changes nothing until it is approved, so read this as a count of requests and never of library edits. Defaults to 0.

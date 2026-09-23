@@ -45,6 +45,7 @@ _EXAMPLE_STATS: dict[str, JsonValue] = {
     "sourcesChecked": 31,
     "changesRegistered": 2,
     "proposalsSubmitted": 5,
+    "outOfScope": 3,
 }
 _EXAMPLE_FINISHED_RUN: dict[str, JsonValue] = {
     "id": _EXAMPLE_RUN_ID,
@@ -110,6 +111,20 @@ class AgentRunStats(CamelSchema):
             "against the proposal budget in the agent's definition. A proposal is the only "
             "door an agent has into the library and it changes nothing until it is approved, "
             "so read this as a count of requests and never of library edits. Defaults to 0."
+        ),
+    )
+    out_of_scope: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "How many documents the run read and set aside because they fall outside the "
+            "sector scope, a whole number with a minimum of 0 and no maximum. bleqq watches "
+            "regulated financial services only, so a medical-device rule or an environmental "
+            "permit that a source also publishes is counted on that source's check and here, "
+            "and nothing is registered or proposed from it: it never reaches the watch feed or "
+            "the proposal queue. Read it beside `sourcesChecked`, because a source that offered "
+            "only such documents was still watched that night. Defaults to 0; a negative "
+            "number is refused with `validation_error`."
         ),
     )
 

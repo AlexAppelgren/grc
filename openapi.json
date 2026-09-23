@@ -272,6 +272,7 @@
               "changesRegistered": 2,
               "fetches": 118,
               "modelCalls": 42,
+              "outOfScope": 3,
               "proposalsSubmitted": 5,
               "sourcesChecked": 31
             },
@@ -389,6 +390,7 @@
               "changesRegistered": 2,
               "fetches": 118,
               "modelCalls": 42,
+              "outOfScope": 3,
               "proposalsSubmitted": 5,
               "sourcesChecked": 31
             },
@@ -508,6 +510,7 @@
                   "changesRegistered": 2,
                   "fetches": 118,
                   "modelCalls": 42,
+                  "outOfScope": 3,
                   "proposalsSubmitted": 5,
                   "sourcesChecked": 31
                 },
@@ -546,6 +549,7 @@
             "changesRegistered": 2,
             "fetches": 118,
             "modelCalls": 42,
+            "outOfScope": 3,
             "proposalsSubmitted": 5,
             "sourcesChecked": 31
           }
@@ -567,6 +571,13 @@
             "default": 0,
             "description": "How many times the run called a language model, counted against the model-call budget in the agent's versioned definition. The agent reports it as it closes the run; it defaults to 0, so 0 on a finished run means the agent did no model work rather than that the number is missing.",
             "title": "Modelcalls",
+            "type": "integer"
+          },
+          "outOfScope": {
+            "default": 0,
+            "description": "How many documents the run read and set aside because they fall outside the sector scope, a whole number with a minimum of 0 and no maximum. bleqq watches regulated financial services only, so a medical-device rule or an environmental permit that a source also publishes is counted on that source's check and here, and nothing is registered or proposed from it: it never reaches the watch feed or the proposal queue. Read it beside `sourcesChecked`, because a source that offered only such documents was still watched that night. Defaults to 0; a negative number is refused with `validation_error`.",
+            "minimum": 0,
+            "title": "Outofscope",
             "type": "integer"
           },
           "proposalsSubmitted": {
@@ -16178,7 +16189,7 @@
     },
     "/api/v1/agent-runs/{run_id}": {
       "patch": {
-        "description": "The last call of every execution, made whether the run worked or not. It closes the\nrun into `succeeded` or `failed`, files the counters for the budgets in the agent's\ndefinition, and records where the working output was kept. A run that is never closed\nstays open for ever and reads as stuck, so close it from the failure path too.\n\nAuthenticated by the API key that opened the run, carrying the `agent-runs:write`\nscope; no session can close a run. A run closes once and into a terminal status. Sending\nthe same close again answers the run it already closed, so a lost answer costs nothing;\nclosing it into anything else is refused rather than quietly reopening or rewriting it.\nThat is what makes the close idempotent, so `Idempotency-Key` is accepted on this call\nbut nothing depends on it. What the agent filed while the run was open stands whichever\nstatus it ends in, and none of it has changed the shared library: a proposal waits for a\nperson, or for a second and independent agent, to approve it. The close is recorded in\nthe audit log against the agent behind the key.\n\nAnswers 200 with the closed run. Errors: `not_found` when no such run exists or it\nbelongs to another key, which are deliberately the same answer so that a run id cannot\nbe probed for; `invalid_transition` when the run is already closed and the values sent\ndiffer from the ones it closed with; `permission_denied` when the key lacks\n`agent-runs:write`; `unauthenticated` when the key is missing, revoked or expired; and\n`validation_error` for a field the caller can fix, such as an error message over its\nlength.",
+        "description": "The last call of every execution, made whether the run worked or not. It closes the\nrun into `succeeded` or `failed`, files the counters for the budgets in the agent's\ndefinition, and records where the working output was kept. A run that is never closed\nstays open for ever and reads as stuck, so close it from the failure path too.\n\nAmong the counters is `outOfScope`: the documents the run read and set aside because\nthey fall outside regulated financial services. Such a document is counted on its\nsource's check and here, and nothing else \u2014 no change, no proposal \u2014 so this count is\nthe only trace of it and the way a reader tells a quiet night from a night of documents\nthat were not ours to watch.\n\nAuthenticated by the API key that opened the run, carrying the `agent-runs:write`\nscope; no session can close a run. A run closes once and into a terminal status. Sending\nthe same close again answers the run it already closed, so a lost answer costs nothing;\nclosing it into anything else is refused rather than quietly reopening or rewriting it.\nThat is what makes the close idempotent, so `Idempotency-Key` is accepted on this call\nbut nothing depends on it. What the agent filed while the run was open stands whichever\nstatus it ends in, and none of it has changed the shared library: a proposal waits for a\nperson, or for a second and independent agent, to approve it. The close is recorded in\nthe audit log against the agent behind the key.\n\nAnswers 200 with the closed run. Errors: `not_found` when no such run exists or it\nbelongs to another key, which are deliberately the same answer so that a run id cannot\nbe probed for; `invalid_transition` when the run is already closed and the values sent\ndiffer from the ones it closed with; `permission_denied` when the key lacks\n`agent-runs:write`; `unauthenticated` when the key is missing, revoked or expired; and\n`validation_error` for a field the caller can fix, such as an error message over its\nlength.",
         "operationId": "finishAgentRun",
         "parameters": [
           {

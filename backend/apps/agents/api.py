@@ -123,6 +123,12 @@ def finish_agent_run(
     definition, and records where the working output was kept. A run that is never closed
     stays open for ever and reads as stuck, so close it from the failure path too.
 
+    Among the counters is `outOfScope`: the documents the run read and set aside because
+    they fall outside regulated financial services. Such a document is counted on its
+    source's check and here, and nothing else — no change, no proposal — so this count is
+    the only trace of it and the way a reader tells a quiet night from a night of documents
+    that were not ours to watch.
+
     Authenticated by the API key that opened the run, carrying the `agent-runs:write`
     scope; no session can close a run. A run closes once and into a terminal status. Sending
     the same close again answers the run it already closed, so a lost answer costs nothing;

@@ -46,7 +46,7 @@ from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, 
 RUNS = "/api/v1/agent-runs"
 JSON = "application/json"
 
-STATS = {"modelCalls": 42, "fetches": 118, "sourcesChecked": 31, "changesRegistered": 2, "proposalsSubmitted": 5}
+STATS = {"modelCalls": 42, "fetches": 118, "sourcesChecked": 31, "changesRegistered": 2, "proposalsSubmitted": 5, "outOfScope": 3}
 # Two fixed nights rather than "now", so a fixture cannot drift as the clock moves.
 FIRST_SWEEP = datetime.datetime(2026, 9, 19, 2, 0, tzinfo=datetime.UTC)
 SECOND_SWEEP = datetime.datetime(2026, 9, 20, 2, 0, tzinfo=datetime.UTC)
