@@ -526,7 +526,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         tenancy.clear_tenant()  # the create request re-activated the tenant; see above (H15)
         rejected = self._post(
             f"/proposals/{second.json()['id']}/reject",
-            {"rejectionCode": "duplicate", "note": "Already exists.", **sent},
+            {"rejectionCode": "duplicate", "note": "Already exists.", **sent, "decision": agents_testing.REJECTION_DECISION},
             {"HTTP_X_API_KEY": reviewer_key.plain_key},
         )
         self.assertEqual(rejected.status_code, 200, rejected.content)
@@ -537,7 +537,10 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertIsNone(reject_event.step_up_assertion_id)
         self.assertIn(reviewer_key.agent.key, reject_event.actor_label)
         rejection_logged = AiGeneration.objects.get(subject_id=second.json()["id"])
-        self.assertEqual((rejection_logged.purpose, str(rejection_logged.agent_run_id)), ("agent_review", sent["agentRunId"]))
+        self.assertEqual(
+            (rejection_logged.purpose, str(rejection_logged.agent_run_id), rejection_logged.output),
+            ("agent_review", sent["agentRunId"], agents_testing.REJECTION_DECISION["output"]),
+        )
 
         # Append-only: the decision cannot be edited afterwards, through the model or past it
         # in raw SQL, which the table's trigger refuses.

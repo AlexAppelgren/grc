@@ -1089,7 +1089,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(
             sorted(obligation.versions.values_list("version_number", flat=True)), [1, 2], "the change reached the library only through apply"
         )
-        rejected = self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists.", **sent}, **reviewer)
+        rejected = self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists.", **sent, "decision": agents_testing.REJECTION_DECISION}, **reviewer)
         self.assertEqual(rejected.status_code, 200, rejected.content)
         self.assertFalse(Flag.objects.filter(key="sanctioned").exists())
 

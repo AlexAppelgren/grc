@@ -660,10 +660,14 @@ def _reviewer_facts(reviewer: Reviewer, run: AgentRun | None) -> dict[str, Any]:
     """What a decision's audit row names beside the actor label (AUD-01, AUD-02, AUD-S9):
     the key an agent used, by its public prefix and never its internal id alone, and the
     run the decision was made in, which its logged model call names too (D-80). Empty for a
-    person, whose audit row carries no key and no run at all."""
-    if reviewer.api_key_id is None or run is None:
+    person, whose audit row carries no key and no run at all. The key is named whether or not
+    a run came with it, so no decision by a key ever loses the prefix AUD-S9 reads."""
+    if reviewer.api_key_id is None:
         return {}
-    return {"reviewingApiKeyPrefix": reviewer.api_key_prefix, "agentRunId": str(run.id)}
+    facts: dict[str, Any] = {"reviewingApiKeyPrefix": reviewer.api_key_prefix}
+    if run is not None:
+        facts["agentRunId"] = str(run.id)
+    return facts
 
 
 def _decision_run(reviewer: Reviewer, decision: AgentDecision | None, agent_run_id: uuid.UUID | None) -> AgentRun | None:

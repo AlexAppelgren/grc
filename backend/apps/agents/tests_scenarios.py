@@ -625,11 +625,10 @@ class AgentsScenarioTests(TestCase):
 
         # And it may correct and approve one, and reject the other, each with the model call
         # behind its decision, in the run it opened.
-        decided = {"decision": agent_build.DECISION, "agentRunId": review_id}
         corrected = "The institution pays for third-party research from its own resources or a research payment account."
         approved = self.client.post(
             f"/api/v1/proposals/{to_approve}/approve",
-            data={"payloadOverrides": {"summaries": {"en": corrected}}, **decided},
+            data={"payloadOverrides": {"summaries": {"en": corrected}}, "decision": agent_build.DECISION, "agentRunId": review_id},
             content_type="application/json",
             **as_confirmer,
         )
@@ -637,7 +636,12 @@ class AgentsScenarioTests(TestCase):
         self.assertEqual(approved.json()["correctedByAgent"]["key"], "library-confirmer")
         rejected = self.client.post(
             f"/api/v1/proposals/{to_reject}/reject",
-            data={"rejectionCode": "duplicate", "note": "The same wording was approved in this run.", **decided},
+            data={
+                "rejectionCode": "duplicate",
+                "note": "The same wording was approved in this run.",
+                "decision": agent_build.REJECTION_DECISION,
+                "agentRunId": review_id,
+            },
             content_type="application/json",
             **as_confirmer,
         )

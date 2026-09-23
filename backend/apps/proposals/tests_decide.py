@@ -272,7 +272,9 @@ class DecidingOutsideARequest(TransactionTestCase):
             "proposal": logic.by_id(self.proposal.id),
             "reviewer": self.reviewer,
             "actor": self.reviewer.actor,
-            "decision": AgentDecision.model_validate(agents_testing.DECISION),
+            "decision": AgentDecision.model_validate(
+                agents_testing.DECISION if verb == "approve" else agents_testing.REJECTION_DECISION
+            ),
             "agent_run_id": self.review_run.id,
         }
         if verb == "approve":
@@ -315,6 +317,27 @@ class DecidingOutsideARequest(TransactionTestCase):
         self.assertFalse(connection.in_atomic_block, "a worker or a shell calls with no transaction open")
         self._decide("reject")
         self.assertEqual(self._written(), ([1], ProposalStatus.REJECTED.value, 1, 1))
+
+    def test_a_decision_whose_audit_row_fails_keeps_no_logged_model_call(self) -> None:
+        """AUD-02, D-80: the model call is logged inside the decision's transaction, not
+        beside it. The audit row is the decision's last write, so a failure there comes after
+        the call was logged; the log row goes with the rest, and the retry logs one. Proven
+        to fail 2026-09-23 with the call logged and committed on a connection of its own: both
+        failed decisions kept their log rows."""
+        logged_before_the_failure: list[int] = []
+
+        def audit_row_fails(**fields: Any) -> None:
+            logged_before_the_failure.append(AiGeneration.objects.filter(subject_id=self.proposal.id).count())
+            raise RuntimeError("the audit write failed")
+
+        with mock.patch("apps.proposals.logic.record", side_effect=audit_row_fails):
+            for verb in ("approve", "reject"):
+                with self.subTest(verb=verb), self.assertRaises(RuntimeError):
+                    self._decide(verb)
+        self.assertEqual(logged_before_the_failure, [1, 1], "each decision had logged its model call when its audit row failed")
+        self.assertEqual(self._written(), ([1], ProposalStatus.OPEN.value, 0, 0), "and neither kept it")
+        self._decide("approve")
+        self.assertEqual(self._written(), ([1, 2], ProposalStatus.APPROVED.value, 1, 1), "the retry logged one")
 
 
 class DecidingAProposal(ScenarioTestCase):
@@ -379,7 +402,7 @@ class DecidingAProposal(ScenarioTestCase):
         self.assertFalse(TaxonomyTerm.objects.filter(dimension__key=TERM["dimension"], key=TERM["key"]).exists())
         # An agent may still reject one: a rejection writes no library row.
         rejected = self._post(
-            f"/proposals/{term}/reject", {"rejectionCode": "duplicate", "note": "Covered by an existing regime.", **decided}, reviewer
+            f"/proposals/{term}/reject", {"rejectionCode": "duplicate", "note": "Covered by an existing regime.", **decided, "decision": agents_testing.REJECTION_DECISION}, reviewer
         )
         self.assertEqual(rejected.status_code, 200, rejected.content)
         # A person approves the other, as before.

@@ -160,16 +160,16 @@ class AgentDecisionsThroughTheQueue(ScenarioTestCase):
     def _logged(self, proposal_id: str) -> list[AiGeneration]:
         return list(AiGeneration.objects.filter(purpose=AiPurpose.AGENT_REVIEW.value, subject_id=proposal_id))
 
-    def _assert_logged_in(self, proposal_id: str, run_id: str, action: str) -> None:
-        """One `agent_review` row, the agent's own report of the call behind the decision,
-        in the run it named; and the decision's audit row names the same run."""
+    def _assert_logged_in(self, proposal_id: str, sent: dict[str, Any], action: str) -> None:
+        """One `agent_review` row, the agent's own report of the call behind the decision it
+        sent, in the run it named; and the decision's audit row names the same run."""
+        run_id, decision = sent["agentRunId"], sent["decision"]
         rows = self._logged(proposal_id)
         self.assertEqual(len(rows), 1, "one decision is one model call")
         row = rows[0]
         self.assertEqual((row.subject_type, str(row.subject_id), str(row.agent_run_id)), ("proposal", proposal_id, run_id))
         self.assertTrue(row.model_metadata_reported_by_agent, "the agent's own account of itself, never bleqq's measurement")
         self.assertIsNone(row.tenant_id, "the queue is the platform's, so no bank reads it")
-        decision = agent_build.DECISION
         self.assertEqual(
             (row.model, row.model_version, row.prompt_template, row.prompt_hash, row.output),
             (decision["model"], decision["modelVersion"], decision["promptTemplate"], decision["promptHash"], decision["output"]),
@@ -194,15 +194,15 @@ class AgentDecisionsThroughTheQueue(ScenarioTestCase):
         approved = self._as_confirmer(f"/proposals/{proposal_id}/approve", {"note": "Confirmed against the source.", **sent})
         self.assertEqual(approved.status_code, 200, approved.content)
         self.assertEqual(sorted(self.obligation.versions.values_list("version_number", flat=True)), [1, 2])
-        self._assert_logged_in(proposal_id, sent["agentRunId"], "proposal.approved")
+        self._assert_logged_in(proposal_id, sent, "proposal.approved")
 
     def test_an_agents_rejection_logs_the_model_call_behind_it_in_its_run(self) -> None:
         proposal_id = self._proposed()
-        sent = agent_build.decision(self.confirmer)
+        sent = {**agent_build.decision(self.confirmer), "decision": agent_build.REJECTION_DECISION}
         rejected = self._as_confirmer(f"/proposals/{proposal_id}/reject", {**REJECTION, **sent})
         self.assertEqual(rejected.status_code, 200, rejected.content)
         self.assertEqual(rejected.json()["status"], "rejected")
-        self._assert_logged_in(proposal_id, sent["agentRunId"], "proposal.rejected")
+        self._assert_logged_in(proposal_id, sent, "proposal.rejected")
 
     def test_an_agent_decides_only_with_its_decision_inside_an_open_run_of_its_own(self) -> None:
         proposal_id = self._proposed()
