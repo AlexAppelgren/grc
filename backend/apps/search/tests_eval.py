@@ -10,12 +10,13 @@ for real without making a database inside a database's test run.
 
 from __future__ import annotations
 
+import os
 from unittest import mock
 
 from django.db import connection
 from django.test import SimpleTestCase
 
-from apps.search.eval import _throwaway_database
+from apps.search.eval import _drop, _throwaway_database
 
 
 class ThrowawayDatabaseTests(SimpleTestCase):
@@ -25,22 +26,35 @@ class ThrowawayDatabaseTests(SimpleTestCase):
     def test_inside_the_test_runner_the_runners_database_is_used(self) -> None:
         with (
             mock.patch.dict(connection.settings_dict, {"NAME": "test_compliance_watch_wt3"}),
-            mock.patch.object(connection.creation, "create_test_db") as create,
+            mock.patch("apps.search.eval.setup_databases") as setup,
         ):
             _throwaway_database()
 
-        create.assert_not_called()
+        setup.assert_not_called()
 
     def test_from_the_command_line_a_database_of_its_own_is_made_and_dropped(self) -> None:
         development = {"NAME": "compliance_watch_wt3", "TEST": dict(connection.settings_dict["TEST"], NAME=None)}
         with (
             mock.patch.dict(connection.settings_dict, development),
-            mock.patch.object(connection.creation, "create_test_db") as create,
+            mock.patch("apps.search.eval.setup_databases", return_value=["created"]) as setup,
             mock.patch("atexit.register") as at_exit,
         ):
             _throwaway_database()
             scratch = connection.settings_dict["TEST"]["NAME"]
 
-        self.assertEqual(scratch, "test_compliance_watch_wt3_search_eval")
-        create.assert_called_once_with(verbosity=0, autoclobber=True)
-        at_exit.assert_called_once_with(connection.creation.destroy_test_db, "compliance_watch_wt3", verbosity=0)
+        self.assertEqual(scratch, f"test_compliance_watch_wt3_search_eval_{os.getpid()}", "a second run beside it is not dropped")
+        # The runner's own setup: `default` is created and every mirror of it (the `app`
+        # alias, the production role) points at the scratch database, not the named one.
+        setup.assert_called_once_with(verbosity=0, interactive=False, aliases={"default": False}, serialized_aliases=set())
+        at_exit.assert_called_once_with(_drop, ["created"])
+
+    def test_the_drop_closes_every_session_first(self) -> None:
+        calls = mock.Mock()
+        with (
+            mock.patch("apps.search.eval.connections", calls.connections),
+            mock.patch("apps.search.eval.teardown_databases", calls.teardown),
+        ):
+            _drop([])
+
+        self.assertEqual(calls.mock_calls, [mock.call.connections.close_all(), mock.call.teardown([], verbosity=0)])
+

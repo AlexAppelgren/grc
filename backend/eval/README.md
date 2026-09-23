@@ -72,11 +72,19 @@ carries a `predictions` field (tests and dry runs; the committed sets carry none
 embedded by the sweep, for a bank whose scope holds the whole library. It answers with the
 stable keys of the hits, best first, from the widest page the API serves.
 
+- **It asks on the corpus's day, not the calendar's.** A question without `as_of` is asked
+  on the fixture's `_meta.anchor_date` (2026-09-16), the day its data is dated around. On
+  today's date a version that comes into force later (a provision and an obligation of the
+  corpus each take a second version on 2026-10-01) would change the text searched, and the
+  score, with nothing in the code or the corpus changed.
 - **Its database is never the development one.** Inside the test runner (SRC-S8) it uses
   the runner's throwaway database. From the command line it sets up Django on
-  `config.test_settings` (unless `DJANGO_SETTINGS_MODULE` names another), creates
-  `test_<database>_search_eval` with Django's own test machinery, migrates it from zero,
-  seeds it, and drops it when the process ends. It takes about half a minute.
+  `config.test_settings` (unless `DJANGO_SETTINGS_MODULE` names another) and does what the
+  runner does, with Django's own `setup_databases`: it creates
+  `test_<database>_search_eval_<process id>`, migrates it from zero, points every alias
+  that mirrors `default` at it (`app`, the production role, included), seeds it, and drops
+  it when the process ends. The process id keeps a second evaluation in the same worktree
+  slot from dropping the first one's database. A run takes about half a minute.
 - **`is_mock` is true when any adapter in the chain is a mock**, the embedder or the
   reranker, and `name` names both (`... (embedder mock, reranker none)`), so the report
   says which chain ran. `none` is not a mock: it is the keyword leg and the fused order,
