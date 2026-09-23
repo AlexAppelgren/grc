@@ -1,6 +1,7 @@
 {
   "roadmap.title": "Färdplan",
   "roadmap.lede": "Varje daterad ändring och varje egen deadline, per kvartal.",
+  "roadmap.subscribe": "Prenumerera på kalenderflöde",
   "roadmap.chip.all": "Allt",
   "roadmap.chip.regulatory": "Regulatoriska datum",
   "roadmap.chip.internal": "Våra deadlines",
@@ -11,5 +12,5 @@
   "roadmap.empty.title": "Inget daterat framöver",
   "roadmap.empty.body": "Datum visas när en ändring har ett datum eller en egen deadline är satt.",
   "roadmap.empty.internal.title": "Inga egna deadlines ännu",
-  "roadmap.empty.internal.body": "Granskningsdatum, gapmål, bedömningsdeadlines och åtgärdsdatum visas här när registret och ärendeflödet är byggda."
+  "roadmap.empty.internal.body": "Granskningsdatum, gapmål, bedömningsdeadlines och åtgärdsdatum visas här när de är satta."
 }

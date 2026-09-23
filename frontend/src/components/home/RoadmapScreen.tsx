@@ -25,6 +25,8 @@ import { formatDate, type FormatContext } from '@/shared/utils/format';
 // change the bank has open work on, by quarter, filtered by `kind` in the
 // URL so a filtered view is linkable. A card expands in place — the detail
 // panel below the roster — and never navigates; the link inside it does.
+// The head links to the person's calendar feeds (HOM-04), which need the
+// same grant as this page.
 
 type Kind = RoadmapQuery['kind'] & string;
 const KINDS: readonly Exclude<Kind, undefined>[] = ['all', 'regulatory', 'internal'];
@@ -167,7 +169,18 @@ export function RoadmapScreen() {
 
   return (
     <>
-      <PageHead title={t('roadmap.title')} lede={t('roadmap.lede')} />
+      <PageHead
+        title={t('roadmap.title')}
+        lede={t('roadmap.lede')}
+        actions={
+          <Link
+            href="/me/calendar-feeds"
+            className="inline-flex h-9 items-center rounded-control border border-line-control bg-surface px-4 font-medium no-underline hover:hover-fill"
+          >
+            {t('roadmap.subscribe')}
+          </Link>
+        }
+      />
       <div data-roadmap-filters="">
         <ChipRow className="mb-4">
           {KINDS.map((option) => (

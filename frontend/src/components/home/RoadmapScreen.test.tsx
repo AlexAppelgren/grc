@@ -100,6 +100,16 @@ describe('RoadmapScreen', () => {
     render(shell(<RoadmapScreen />));
 
     expect(await screen.findByText('No deadlines of our own yet')).toBeInTheDocument();
+    // When they appear, never which part of the product is still to be built.
+    expect(screen.getByText('Review dates, gap targets, assessment deadlines and action due dates appear here once they are set.')).toBeInTheDocument();
+  });
+
+  it('links from its head to the calendar feeds of the person reading it', async () => {
+    serve(roadmap);
+    render(shell(<RoadmapScreen />));
+    await screen.findByText('Q4 2026');
+
+    expect(screen.getByRole('link', { name: 'Subscribe to calendar feed' })).toHaveAttribute('href', '/me/calendar-feeds');
   });
 
   it('renders error and denied states', async () => {
