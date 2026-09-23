@@ -250,6 +250,8 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
             )
         if isinstance(payload, ProposalVocabularyCreatePayload):
             lists.validated_kind(entry, payload.kind)
+        if isinstance(payload, ProposalVocabularyMergePayload):
+            merge_pair(entry, payload.key, payload.into)
         if isinstance(payload, ProposalVocabularyCreatePayload | ProposalVocabularyRelabelPayload) and payload.extra:
             columns = {to_camel(column) for column in entry.extra_fields} | set(entry.extra_fields)
             unknown = sorted(set(payload.extra) - columns)
@@ -281,6 +283,33 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
         raise ValidationError(
             f"{payload.key!r} is not a key: use lowercase letters, digits and underscores.", code="validation_error"
         )
+
+
+def merge_pair(entry: Any, key: str, into: str) -> tuple[Any, Any]:
+    """The two rows a merge joins, checked against the list as it is now, when the merge is
+    proposed and again when it is applied (VOC-02, INV-08, D-36). A value merges only into
+    another active value of the same kind: a row's kind is what the rules read (a level of
+    the kind `standard` holds licensed text and one conformance obligation, D-35), so a
+    merge across kinds would move records from under one rule to another with no check of
+    either. Returns the source and the target."""
+
+    def row(value: str) -> Any:
+        found = entry.model._default_manager.filter(key=value).order_by("sort_order", "key").first()
+        if found is None:
+            raise ValidationError(f"{value!r} is not a row of {entry.name!r}.", code="not_found")
+        return found
+
+    source, target = row(key), row(into)
+    if source.pk == target.pk:
+        raise ValidationError("Choose a different value to merge into.", code="validation_error")
+    if not target.active:
+        raise ValidationError(f"{into} is retired: restore it before merging into it.", code="invalid_transition")
+    if (getattr(source, "kind", None) or "") != (getattr(target, "kind", None) or ""):
+        raise ValidationError(
+            f"{key} and {into} are values of different kinds, so the records carrying {key} cannot take {into}.",
+            code="invalid_transition",
+        )
+    return source, target
 
 
 def _validate_obligation_payload(payload: ProposalObligationVersionPayload | ProposalObligationPayload) -> list[Any]:

@@ -51,6 +51,7 @@ from apps.proposals import standards
 from apps.proposals.logic import (
     Reviewer,
     as_reviewer,
+    merge_pair,
     parsed_payload,
     validated_instrument,
     validated_obligation,
@@ -748,8 +749,7 @@ def _vocabulary_active(payload: ProposalVocabularyRetirePayload, proposal: Propo
 
 def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
     entry = _entry(payload.list)
-    source = _row(entry, payload.key)
-    target = _row(entry, payload.into)
+    source, target = merge_pair(entry, payload.key, payload.into)
     if source.is_system:
         raise ValidationError(f"{payload.key} is a system value: it can be relabelled but not merged away.", code="system_row")
     # Every current row holding the source moves to the target in this transaction; the

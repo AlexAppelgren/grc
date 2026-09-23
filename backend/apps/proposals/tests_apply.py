@@ -725,23 +725,66 @@ class LibraryMergeRepoints(ScenarioTestCase):
         self.assertEqual(sorted(relations.values_list("from_instrument__stable_key", "relation_type__key")), [("fffs-2026-11", "amends"), ("fffs-2026-12", "amends")])
         self.assertEqual(self._merged_audit(in_part).after["moved"], {InstrumentRelation._meta.db_table: 1, ObligationRelation._meta.db_table: 1})
 
-    def test_a_merge_the_database_refuses_leaves_nothing_changed(self) -> None:
+    def test_a_merge_across_kinds_of_level_is_refused_when_proposed_and_when_approved(self) -> None:
+        """A level's kind is what the standards rules read (INV-08, D-35, D-36), so merging a
+        law's level into `standard`, or a standard's level into a law's, would move records
+        from under one rule to another with no check of either. Refused when proposed, and
+        at approval for a proposal filed before the rule, with nothing moved."""
         self._new("instrument_level", "national_act", "National act", {"bindingDefault": True, "rank": 41})
         national = InstrumentLevel.objects.get(key="national_act")
         bare = library_build.instrument(key="sfs-2026-1", regime="regime:securities", level="national_act")
         with_text = library_build.instrument(key="sfs-2026-2", regime="regime:securities", level="national_act")
         library_build.provision(with_text, key="sfs-2026-2-1-kap")
-        proposal = self._post("/vocab/instrument_level/national_act/merge", {"into": "standard"}, sign_in(self.editor))
-        self.assertEqual(proposal.status_code, 202, proposal.content)
+        edition = self._approved(self._post("/vocab/instrument_level", {"key": "iso_edition", "labels": {"en": "ISO edition"}, "kind": "standard"}, sign_in(self.editor)))
+        self.assertEqual(edition.status_code, 200, edition.content)
 
-        # A standard's text is never held here, so the instrument with provisions refuses
-        # the level, and the approval stops after the merge began.
-        refused = self._post(f"/proposals/{proposal.json()['proposal']['id']}/approve", {}, sign_in(self.reviewer, step_up=True))
+        for key, into in (("national_act", "standard"), ("iso_edition", "eu_guidance")):
+            with self.subTest(key=key, into=into):
+                proposed = self._post(f"/vocab/instrument_level/{key}/merge", {"into": into}, sign_in(self.editor))
+                self.assertEqual(proposed.status_code, 409, proposed.content)
+                self.assertEqual(proposed.json()["code"], "invalid_transition")
+        self.assertFalse(Proposal.objects.filter(kind="vocabulary_merge").exists())
+
+        stored = Proposal.objects.create(
+            kind="vocabulary_merge",
+            title="Filed before the rule",
+            payload={"list": "instrument_level", "key": "national_act", "into": "standard"},
+            origin="user",
+            proposed_by_user=self.editor,
+            target_type="instrument_level",
+            target_id=national.id,
+        )
+        refused = self._post(f"/proposals/{stored.id}/approve", {}, sign_in(self.reviewer, step_up=True))
         self.assertEqual(refused.status_code, 409, refused.content)
         self.assertEqual(refused.json()["code"], "invalid_transition")
 
         self.assertEqual(sorted(Instrument.objects.filter(pk__in=(bare.pk, with_text.pk)).values_list("level__key", flat=True)), ["national_act", "national_act"])
         self.assertTrue(InstrumentLevel.objects.get(pk=national.pk).active)
-        self.assertEqual(Proposal.objects.get(pk=proposal.json()["proposal"]["id"]).status, ProposalStatus.OPEN.value)
+        self.assertEqual(Proposal.objects.get(pk=stored.pk).status, ProposalStatus.OPEN.value)
         self.assertFalse(AuditEvent.objects.filter(action="vocabulary.merged").exists())
-        self.assertFalse(AuditEvent.objects.filter(action="proposal.approved", subject_id=proposal.json()["proposal"]["id"]).exists())
+        self.assertFalse(AuditEvent.objects.filter(action="proposal.approved", subject_id=stored.id).exists())
+
+    def test_a_merge_into_itself_or_into_a_retired_value_is_refused_through_every_door(self) -> None:
+        """`POST /proposals` takes a merge payload without the vocabulary route, so the rows it
+        names are checked there too, and again at approval for the list as it is then."""
+        self._new("flag", "client_money", "Client money")
+        self._new("flag", "client_assets", "Client assets")
+        itself = self._post(
+            "/proposals",
+            {"kind": "vocabulary_merge", "title": "Merge into itself", "payload": {"list": "flag", "key": "client_money", "into": "client_money"}},
+            sign_in(self.editor),
+        )
+        self.assertEqual(itself.status_code, 422, itself.content)
+        self.assertEqual(itself.json()["code"], "validation_error")
+
+        proposed = self._post("/vocab/flag/client_money/merge", {"into": "client_assets"}, sign_in(self.editor))
+        self.assertEqual(proposed.status_code, 202, proposed.content)
+        with library_write("test"):
+            Flag.objects.filter(key="client_assets").update(active=False)
+        refused = self._post(f"/proposals/{proposed.json()['proposal']['id']}/approve", {}, sign_in(self.reviewer, step_up=True))
+        self.assertEqual(refused.status_code, 409, refused.content)
+        self.assertEqual(refused.json()["code"], "invalid_transition")
+        self.assertTrue(Flag.objects.get(key="client_money").active)
+        retired = self._post("/vocab/flag/client_money/merge", {"into": "client_assets"}, sign_in(self.editor))
+        self.assertEqual(retired.status_code, 409, retired.content)
+        self.assertEqual(retired.json()["code"], "invalid_transition")
