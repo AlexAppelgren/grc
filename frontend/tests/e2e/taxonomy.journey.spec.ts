@@ -404,9 +404,10 @@ test.describe('taxonomy journeys', () => {
   });
 
   test.describe('footprint', () => {
-    // Both journeys change the one footprint of tenant A, so they run in
-    // order in one worker. Each settles on whether a request is already
-    // waiting (the seed leaves one for J-6) before it branches.
+    // FP-S2 files and rejects a request against tenant A's one scope, FP-S4
+    // reads that scope and FP-S5 changes it, so they run in order in one
+    // worker. FP-S2 and FP-S5 settle on whether a request is already waiting
+    // (the seed leaves one for J-6) before they branch.
     test.describe.configure({ mode: 'default' });
 
     /** Opens the footprint as the officer, withdrawing a request of theirs that is still waiting. */
@@ -508,12 +509,13 @@ test.describe('taxonomy journeys', () => {
     // obligation and this change fall outside it through that term alone.
     const OUTSIDE_SCOPE_OBLIGATION = 'obl-pension-transfer-right';
     const OUTSIDE_SCOPE_CHANGE = 'chg-e2e-outside-scope';
-    // Carries no scope term, so it is inside any scope (EXPECTED_HOME.lead_change).
+    // Carries no scope term, so it is inside any scope (EXPECTED_HOME.lead_change). It
+    // stays in the week's briefing while its case is open, whoever triages it.
     const IN_SCOPE_CHANGE = 'chg-e2e-research-payments';
 
-    test("FP-S4: Every surface respects the footprint and offers a way to look outside it", async ({ page, apiGuard }) => {
+    test("FP-S4: Every surface respects the regulatory scope and offers a way to look outside it", async ({ page, apiGuard }) => {
       // FP-03 on the four surfaces R1 has, walked on tenant A's scope as seeded and never
-      // changed here: FP-S2 and FP-S5 change it in this worker, and the home and watch
+      // changed here: FP-S5 changes it later in this worker, and the home and watch
       // journeys read it in parallel. Changing the scope and seeing records hide is FP-S5's
       // (J-6) and the integration half of FP-S4's. The fifth surface, the reports, stays
       // with chunk 12: every report reads the obligation register, which R1 does not have
@@ -521,17 +523,22 @@ test.describe('taxonomy journeys', () => {
       allowFreshContext(apiGuard);
       await signInAs(page, LOGINS.reader);
 
-      // The feed shows what is in our scope by default; "Show outside our scope" adds the
-      // change, marked, and leaves the in-scope one unmarked.
+      // The feed opens on the cases that need triage, in our scope by default. It has no
+      // tab for every case and other journeys triage cases in parallel (J-2 the lead), so
+      // no in-scope change is named here: no row shown is marked outside, and the outside
+      // change, whose case nobody works, is absent. "Show outside our scope" adds it,
+      // marked, and leaves a row that was shown before unmarked.
       await page.goto('/watch');
-      const inScopeChange = page.locator(`[data-change="${IN_SCOPE_CHANGE}"]`);
+      const rows = page.locator('[data-change-rows] [data-change]');
       const outsideChange = page.locator(`[data-change="${OUTSIDE_SCOPE_CHANGE}"]`);
-      await expect(inScopeChange).toBeVisible();
+      await expect(page.locator('[data-change-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
       await expect(outsideChange).toHaveCount(0);
+      await expect(page.locator('[data-change][data-outside-footprint]')).toHaveCount(0);
+      const shownInScope = (await rows.count()) > 0 ? await rows.first().getAttribute('data-change') : null;
       await page.getByRole('group', { name: 'Scope' }).getByRole('button', { name: 'Show outside our scope' }).click();
       await expect(page).toHaveURL(/scope=all/);
       await expect(outsideChange).toHaveAttribute('data-outside-footprint', '');
-      await expect(inScopeChange).not.toHaveAttribute('data-outside-footprint');
+      if (shownInScope !== null) await expect(page.locator(`[data-change="${shownInScope}"]`)).not.toHaveAttribute('data-outside-footprint');
       // Library titles are rows, not catalog copy: the roadmap and the briefing are
       // checked for the title this row shows.
       const title = (await outsideChange.locator('h3').textContent())?.trim() ?? '';
