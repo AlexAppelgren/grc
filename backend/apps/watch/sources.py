@@ -233,7 +233,8 @@ def update_source(
 def _on_a_publisher_host(url: str) -> bool:
     """Whether an address is on a host of `STANDARDS_PUBLISHER_HOSTS` or a subdomain of one:
     a standards publisher no run reads until a lawyer has cleared its terms (D-45)."""
-    host = urlsplit(url).hostname or ""
+    # A fully qualified name's root dot (`iso.org.`) names the same host (security-review-c5).
+    host = (urlsplit(url).hostname or "").rstrip(".")
     return any(host == listed or host.endswith(f".{listed}") for listed in settings.STANDARDS_PUBLISHER_HOSTS)
 
 
