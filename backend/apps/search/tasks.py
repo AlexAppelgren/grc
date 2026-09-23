@@ -106,8 +106,7 @@ def index_change(event: OutboxEvent) -> None:
     change_id = event.audit_event.subject_id
     if change_id is None:
         return
-    counts = indexing.reindex_change(change_id)
-    logger.info("change chunks rebuilt", extra={"kind": event.topic, **counts.as_dict()})
+    indexing.reindex_change(change_id)
 
 
 @shared_task
