@@ -21,8 +21,10 @@ names the route, the measured times, the budget and the query count, so the outp
 where to look.
 
 With --record the measurements become the baseline. A route that cannot be measured (a
-wrong status, a principal the database does not hold) fails the run and nothing is written,
-so a baseline never has a hole in it. Exit 0 when every route passes, 1 otherwise.
+wrong status or a 500, a principal the database does not hold, a budget no setting holds, a
+path parameter its fixture left out) prints FAIL on its own line, the other routes are
+still measured, and the run fails with nothing written, so a baseline never has a hole in
+it. Exit 0 when every route passes, 1 otherwise.
 """
 
 from __future__ import annotations

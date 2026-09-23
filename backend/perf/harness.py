@@ -16,9 +16,16 @@ reader pays twice, then takes `PERF_SAMPLES` timed requests and reports:
 
 Everything runs inside one transaction that is rolled back, principal and fixture included:
 the session the harness mints, the audit row that session writes and whatever the route
-writes are gone when `measure` returns. A response with any status but the one its row
-expects fails the route, because a fast 401 or 429 is not a measurement. The harness reads a
-budget and never changes one, and it refuses to run where `IS_DEPLOYED_ENVIRONMENT` is true.
+writes are gone when `measure` returns. Each request also runs in a savepoint of its own
+that is rolled back, so every sample starts from the seeded state plus the fixture: a
+reject, a create or an If-Match update answers the twentieth time as it did the first.
+
+A response with any status but the one its row expects fails the route, because a fast 401
+or 429 is not a measurement; an exception that escapes the route arrives as a 500 and fails
+it the same way. So does a row that names a budget no setting holds or leaves a path
+parameter unfilled, before any request is sent. The harness reads a budget and never changes
+one, and it refuses to run where `IS_DEPLOYED_ENVIRONMENT` is true or with fewer than one
+sample.
 """
 
 from __future__ import annotations
@@ -53,12 +60,14 @@ PrincipalFactory = Callable[[], dict[str, Any]]
 
 
 class PerfRefused(RuntimeError):
-    """The harness was asked to measure on a deployed environment."""
+    """The harness was asked to measure on a deployed environment, or with fewer than one
+    sample: nothing it could report would be a measurement."""
 
 
 class RouteFailed(RuntimeError):
-    """A route could not be measured: no such operation, a principal the database does not
-    hold, or a response with another status than the one its row expects."""
+    """A route could not be measured: no such operation, a budget no setting holds, a path
+    parameter the fixture left out, a principal the database does not hold, or a response
+    with another status than the one its row expects."""
 
 
 @dataclass(frozen=True)
@@ -117,23 +126,38 @@ def anonymous() -> dict[str, Any]:
 def measure(route: PerfRoute) -> Measurement:
     if settings.IS_DEPLOYED_ENVIRONMENT:
         raise PerfRefused(f"Refusing to measure on the deployed environment {settings.ENVIRONMENT!r}: the harness is local tooling.")
+    if settings.PERF_SAMPLES < 1:
+        raise PerfRefused(f"PERF_SAMPLES is {settings.PERF_SAMPLES}: a measurement needs at least one sample.")
     method, path = _resolve(route.operation)
+    budget_ms = getattr(settings, route.budget, None)
+    if not isinstance(budget_ms, int):
+        raise RouteFailed(f"{route.operation} names {route.budget} as its budget, which is not a setting in milliseconds")
     timings: list[float] = []
     counts: list[int] = []
     with transaction.atomic():
         try:
             headers = route.principal()
             call = route.fixture()
-            url = API_PREFIX + path.format_map({name: quote(str(value), safe="") for name, value in call.params.items()})
+            try:
+                filled = path.format_map({name: quote(str(value), safe="") for name, value in call.params.items()})
+            except KeyError as missing:
+                raise RouteFailed(f"{route.operation} needs the path parameter {missing} in its fixture's Call.params") from None
+            url = API_PREFIX + filled
             if call.query:
                 url += "?" + urlencode(call.query)
             data = "" if call.body is None else json.dumps(call.body)
-            send = partial(Client().generic, method, url, data=data, content_type="application/json", **headers)
-            _elapsed(send(), route)  # the warm-up, dropped
-            for _ in range(settings.PERF_SAMPLES):
-                with CaptureQueriesContext(connection) as queries:
-                    timings.append(_elapsed(send(), route))
-                counts.append(len(queries.captured_queries))
+            # An exception that escapes the route becomes the 500 a caller would get, which
+            # fails this row instead of ending the whole report with a traceback.
+            client = Client(raise_request_exception=False)
+            send = partial(client.generic, method, url, data=data, content_type="application/json", **headers)
+            for sample in range(settings.PERF_SAMPLES + 1):  # sample 0 is the warm-up, dropped
+                with transaction.atomic():  # rolled back: the next request finds what this one found
+                    with CaptureQueriesContext(connection) as queries:
+                        elapsed = _elapsed(send(), route)
+                    transaction.set_rollback(True)
+                if sample:
+                    timings.append(elapsed)
+                    counts.append(len(queries.captured_queries))
         finally:
             transaction.set_rollback(True)
     ordered = sorted(timings)
@@ -143,7 +167,7 @@ def measure(route: PerfRoute) -> Measurement:
         p95_ms=ordered[math.ceil(0.95 * len(ordered)) - 1],
         queries=max(counts),
         budget=route.budget,
-        budget_ms=getattr(settings, route.budget),
+        budget_ms=budget_ms,
     )
 
 

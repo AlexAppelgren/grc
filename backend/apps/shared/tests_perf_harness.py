@@ -11,6 +11,12 @@ Proven to fail 2026-09-23 by timing the warm-up with the samples (the warm-up te
 300 ms request as the 95th percentile), by timing a stream to its headers alone (the
 first-chunk test measured 2.4 ms) and by committing the harness's transaction instead of
 rolling it back (the rollback tests found the session, its audit row and the planted banks).
+Proven to fail again after review by running every sample in the one transaction without a
+savepoint of its own (the state-changing write answered 409 from its second request).
+
+A timed test only ever asserts in the direction load cannot move: a sleep makes a request
+at least that slow, never at most. Where a verdict needs a route to be fast enough, the
+test hands the report its numbers instead of timing a route beside other test runs.
 """
 
 from __future__ import annotations
@@ -37,7 +43,7 @@ from apps.identity.models import UserSession
 from apps.shared import factories, tenancy
 from apps.shared.models import AuditEvent, Tenant
 from perf import harness
-from perf.harness import Call, PerfRefused, PerfRoute, RouteFailed, anonymous, measure, person
+from perf.harness import Call, Measurement, PerfRefused, PerfRoute, RouteFailed, anonymous, measure, person
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "backend" / "scripts" / "perf_report.py"
@@ -81,10 +87,20 @@ def planted_banks(request: HttpRequest, prefix: str) -> dict[str, list[str]]:
     return {"names": [Tenant.objects.get(id=bank_id).name for bank_id in ids]}
 
 
-@PLANTED.post("/planted/banks/{slug}", operation_id="plantedWrite", response={201: dict[str, bool]})
+@PLANTED.post("/planted/banks/{slug}", operation_id="plantedWrite", response={201: dict[str, bool], 409: dict[str, bool]})
 def planted_write(request: HttpRequest, slug: str) -> tuple[int, dict[str, bool]]:
-    Tenant.objects.get_or_create(slug=slug, defaults={"name": "Planted"})
+    """A write that changes what it reads next time, as a reject, a create or an If-Match
+    update does: the first call creates the bank, and any call after it answers 409."""
+    Planted.calls += 1
+    if Tenant.objects.filter(slug=slug).exists():
+        return 409, {"ok": False}
+    Tenant.objects.create(slug=slug, name="Planted")
     return 201, {"ok": True}
+
+
+@PLANTED.get("/planted/broken", operation_id="plantedBroken")
+def planted_broken(request: HttpRequest) -> dict[str, bool]:
+    raise RuntimeError("a bug in the route")
 
 
 urlpatterns = [path("api/v1/", PLANTED.urls)]
@@ -119,7 +135,7 @@ class PlantedRoutes(TestCase):
 class HarnessMeasures(PlantedRoutes):
     @override_settings(API_BUDGET_MS=250)
     def test_the_warm_up_is_dropped_and_the_median_and_p95_come_from_server_timing(self) -> None:
-        Planted.delays_ms = [300, 10, 10, 10, 10, 60]
+        Planted.delays_ms = [300, 10, 10, 10, 10, 120]
 
         # The warm-up is a real request: the middleware logs it over the 250 ms budget.
         with self.assertLogs("apps.shared.middleware", "WARNING"):
@@ -128,8 +144,8 @@ class HarnessMeasures(PlantedRoutes):
         self.assertEqual(Planted.calls, SAMPLES + 1, "one warm-up and the samples")
         self.assertEqual((result.operation, result.budget, result.budget_ms), ("plantedSleep", "API_BUDGET_MS", 250))
         self.assertGreaterEqual(result.median_ms, 9)
-        self.assertLess(result.median_ms, 55, "the median is the middle sample, not the slow one")
-        self.assertGreaterEqual(result.p95_ms, 55, "the 95th percentile of five is the slowest of them")
+        self.assertLess(result.median_ms, 100, "the median is the middle sample, not the slow one")
+        self.assertGreaterEqual(result.p95_ms, 120, "the 95th percentile of five is the slowest of them")
         self.assertLess(result.p95_ms, 300, "and the 300 ms warm-up is none of them")
 
     def test_a_stream_is_timed_to_its_first_chunk(self) -> None:
@@ -153,6 +169,13 @@ class HarnessMeasures(PlantedRoutes):
         self.assertFalse(Tenant.objects.filter(slug__startswith="perf-kept").exists(), "the fixture's rows")
         self.assertFalse(Tenant.objects.filter(slug="perf-written").exists(), "the route's own write")
 
+    def test_a_route_that_changes_state_is_measured_from_the_same_state_every_time(self) -> None:
+        result = measure(PerfRoute("plantedWrite", anonymous, fixture=lambda: Call(params={"slug": "perf-again"}), status=201))
+
+        self.assertEqual(Planted.calls, SAMPLES + 1, "every request created the bank: none found the last one's")
+        self.assertGreater(result.queries, 0)
+        self.assertFalse(Tenant.objects.filter(slug="perf-again").exists())
+
     def test_a_route_answering_another_status_fails_instead_of_being_timed(self) -> None:
         with self.assertRaisesMessage(RouteFailed, "plantedWrite answered 201, not 200"):
             measure(PerfRoute("plantedWrite", anonymous, fixture=lambda: Call(params={"slug": "perf-status"})))
@@ -160,6 +183,29 @@ class HarnessMeasures(PlantedRoutes):
     def test_an_operation_the_api_does_not_have_fails(self) -> None:
         with self.assertRaisesMessage(RouteFailed, "getNothing is not an operation of the API"):
             measure(PerfRoute("getNothing", anonymous))
+
+    def test_a_budget_that_is_not_a_setting_fails_before_any_request(self) -> None:
+        with self.assertRaisesMessage(RouteFailed, "plantedSleep names API_BUGDET_MS as its budget, which is not a setting"):
+            measure(PerfRoute("plantedSleep", anonymous, budget="API_BUGDET_MS"))
+
+        self.assertEqual(Planted.calls, 0)
+
+    def test_a_path_parameter_the_fixture_leaves_out_fails_the_route(self) -> None:
+        with self.assertRaisesMessage(RouteFailed, "plantedWrite needs the path parameter 'slug' in its fixture's Call.params"):
+            measure(PerfRoute("plantedWrite", anonymous, status=201))
+
+        self.assertEqual(Planted.calls, 0)
+
+    def test_a_route_that_raises_fails_as_a_500_instead_of_stopping_the_run(self) -> None:
+        with self.assertRaisesMessage(RouteFailed, "plantedBroken answered 500, not 200"), self.assertLogs("django.request", "ERROR"):
+            measure(PerfRoute("plantedBroken", anonymous))
+
+    @override_settings(PERF_SAMPLES=0)
+    def test_fewer_than_one_sample_is_refused_before_doing_anything(self) -> None:
+        with self.assertRaisesMessage(PerfRefused, "PERF_SAMPLES is 0"):
+            measure(PerfRoute("plantedSleep", anonymous))
+
+        self.assertEqual(Planted.calls, 0)
 
     @override_settings(IS_DEPLOYED_ENVIRONMENT=True, ENVIRONMENT="prod")
     def test_it_refuses_a_deployed_environment_before_doing_anything(self) -> None:
@@ -252,6 +298,11 @@ class ReportJudges(PlantedRoutes):
     def recorded(self, median_ms: float) -> None:
         self.baseline.write_text(json.dumps({"plantedSleep": {"medianMs": median_ms, "p95Ms": median_ms, "queries": 0}}), encoding="utf-8")
 
+    def measured(self, median_ms: float, p95_ms: float) -> Any:
+        """Hands the report these numbers for plantedSleep instead of timing it."""
+        numbers = Measurement("plantedSleep", median_ms, p95_ms, 3, "API_BUDGET_MS", settings.API_BUDGET_MS)
+        return mock.patch("perf.harness.measure", return_value=numbers)
+
     def test_record_writes_the_baseline_and_exits_zero(self) -> None:
         Planted.steady_ms = 20
 
@@ -264,13 +315,17 @@ class ReportJudges(PlantedRoutes):
         self.assertIn("plantedSleep: median", output)
 
     def test_an_unchanged_route_passes_and_the_line_names_what_to_fix(self) -> None:
-        Planted.steady_ms = 40
+        # Only the passing verdict is under test, and a timed route cannot promise to stay
+        # within 20 % of its own median beside other test runs, so the numbers are handed in:
+        # 10 % above the baseline and under the budget. The other report tests time the route.
         self.recorded(40)
 
-        code, output = self.run_report([self.route])
+        with self.measured(44, 60):
+            code, output = self.run_report([self.route])
 
         self.assertEqual(code, 0, output)
-        self.assertRegex(output, r"plantedSleep: median \d+\.\d ms, p95 \d+\.\d ms, budget 250 ms \(API_BUDGET_MS\), \d+ queries: ok")
+        self.assertEqual(output, "plantedSleep: median 44.0 ms, p95 60.0 ms, budget 250 ms (API_BUDGET_MS), 3 queries: ok\n")
+        self.assertEqual(Planted.calls, 0)
 
     def test_a_route_25_percent_slower_than_its_baseline_fails(self) -> None:
         Planted.steady_ms = 50
@@ -284,7 +339,7 @@ class ReportJudges(PlantedRoutes):
     @override_settings(API_BUDGET_MS=20)
     def test_a_route_over_its_budget_fails(self) -> None:
         Planted.steady_ms = 40
-        self.recorded(40)
+        self.recorded(1000)  # far above anything a 40 ms route takes, so only the budget can fail
 
         with self.assertLogs("apps.shared.middleware", "WARNING"):
             code, output = self.run_report([self.route])
@@ -307,6 +362,24 @@ class ReportJudges(PlantedRoutes):
         self.assertEqual(code, 1, output)
         self.assertIn("plantedWrite: FAIL plantedWrite answered 201, not 200", output)
         self.assertFalse(self.baseline.exists(), "a baseline never has a hole in it")
+
+    def test_a_mistake_in_one_row_fails_that_row_and_the_rest_are_still_measured(self) -> None:
+        rows = [
+            PerfRoute("plantedSleep", anonymous, budget="API_BUGDET_MS"),
+            PerfRoute("plantedWrite", anonymous, status=201),
+            PerfRoute("plantedBroken", anonymous),
+            self.route,
+        ]
+
+        with self.assertLogs("django.request", "ERROR"):
+            code, output = self.run_report(rows, record=True)
+
+        self.assertEqual(code, 1, output)
+        self.assertIn("plantedSleep: FAIL plantedSleep names API_BUGDET_MS as its budget", output)
+        self.assertIn("plantedWrite: FAIL plantedWrite needs the path parameter 'slug'", output)
+        self.assertIn("plantedBroken: FAIL plantedBroken answered 500, not 200", output)
+        self.assertIn("plantedSleep: median", output, "the last row was still measured")
+        self.assertFalse(self.baseline.exists())
 
     @override_settings(IS_DEPLOYED_ENVIRONMENT=True)
     def test_the_report_refuses_a_deployed_environment(self) -> None:

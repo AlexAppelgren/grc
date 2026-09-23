@@ -3,10 +3,16 @@ calls it, the fixture that fills its request and the setting that holds its budg
 (`API_BUDGET_MS` unless the row names its own, as hybrid search and Ask do).
 
 An append ledger: each performance pass adds its own rows under a comment naming the pass,
-and records them with `python scripts/perf_report.py --record`. A route behind a per-person
-rate limit answers 429 once one run's requests pass the limit (Ask allows ten a minute), so
-a pass raises that limit for its run through the limit's own env override; the harness
-fails a 429 rather than timing it.
+and records them with `python scripts/perf_report.py --record`.
+
+A route behind a per-caller rate limit answers 429 once the requests in its window pass the
+limit, and the harness fails a 429 rather than timing it. Every row makes PERF_SAMPLES + 1
+requests (21 by default). The window is a fixed minute counted in Redis per caller, so it
+spans runs: a --record followed at once by a check counts both. It also spans the routes
+that share a bucket: POST /search and POST /search/similar spend one allowance of
+SEARCH_RATE_PER_USER_PER_MINUTE (60), and Ask allows ASK_RATE_PER_USER_PER_MINUTE (10). A
+pass that measures a limited route raises that limit through its env override for both the
+record and the check, or waits out the minute between them.
 """
 
 from __future__ import annotations
