@@ -32,7 +32,7 @@ from django.utils import timezone
 from pgvector.django import HnswIndex, VectorField
 
 from apps.search.indexing import SearchChunkQuerySet, assert_index_write
-from apps.search.schemas import SearchMatchKind
+from apps.search.schemas import EvalVia, SearchMatchKind
 
 # The content language's own PostgreSQL text search configuration, so a Swedish chunk is
 # stemmed as Swedish and a Finnish one as Finnish (INPUT_DELTAS §3). This departs from
@@ -172,6 +172,8 @@ class EvalQuestion(models.Model):
     expected = ArrayField(models.CharField(max_length=200), default=list, blank=True)
     match_kind = models.CharField(max_length=10, choices=[(kind.value, kind.value) for kind in SearchMatchKind])
     as_of = models.DateField(null=True, blank=True)
+    # Which read the gate scores the question on: the search page's hits or Ask's passages.
+    via = models.CharField(max_length=6, choices=[(via.value, via.value) for via in EvalVia], default=EvalVia.SEARCH.value)
     notes = models.TextField(blank=True, default="")
     active = models.BooleanField(default=True)
 

@@ -68,7 +68,7 @@ class EvalRouteTests(ScenarioTestCase):
         first = body["items"][0]
         self.assertEqual(
             set(first),
-            {"id", "key", "lang", "question", "expected", "matchKind", "asOf", "notes", "active", "inGate"},
+            {"id", "key", "lang", "question", "expected", "matchKind", "asOf", "via", "notes", "active", "inGate"},
         )
         self.assertTrue(first["inGate"], "a question of the gate's file is in the gate")
 

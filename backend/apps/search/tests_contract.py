@@ -315,6 +315,7 @@ class ContractDocumentationTests(TestCase):
                 "EvalRunConfig",
                 "EvalRunMetrics",
                 "EvalQuestionResult",
+                "EvalVia",
                 "EvalQuestionInput",
                 "EvalQuestionOut",
                 "EvalQuestionPage",

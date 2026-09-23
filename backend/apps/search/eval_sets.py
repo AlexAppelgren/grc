@@ -30,7 +30,6 @@ from typing import Any, Protocol
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import transaction
 
 from apps.library.models import Language
 from apps.search.models import EvalQuestion, EvalRun
@@ -43,8 +42,10 @@ from apps.search.schemas import (
     EvalRunMetrics,
     EvalRunOut,
     EvalScores,
+    EvalVia,
     SearchMatchKind,
 )
+from apps.shared import tenancy
 from apps.shared.audit import Actor, record
 
 RETRIEVAL_SET = Path(settings.BASE_DIR) / "eval" / "retrieval.jsonl"
@@ -65,6 +66,8 @@ class Retriever(Protocol):
     is_mock: bool
 
     def search(self, query: str, lang: str, as_of: Any) -> list[str]: ...
+
+    def ask(self, query: str, lang: str, as_of: Any) -> list[str]: ...
 
 
 # ---------------------------------------------------------------------------------------
@@ -87,8 +90,8 @@ def _keys_in_gate() -> frozenset[str]:
 
 
 def _as_row(question: EvalQuestion) -> dict[str, Any]:
-    """A question as a line of the gate's file, with the file's key order: `as_of` and
-    `note` only when set, as the file writes them."""
+    """A question as a line of the gate's file, with the file's key order: `as_of`, `via`
+    and `note` only when set, as the file writes them."""
     row: dict[str, Any] = {
         "id": question.key,
         "language": question.language_id,
@@ -98,6 +101,8 @@ def _as_row(question: EvalQuestion) -> dict[str, Any]:
     }
     if question.as_of is not None:
         row["as_of"] = question.as_of.isoformat()
+    if question.via != EvalVia.SEARCH.value:
+        row["via"] = question.via
     if question.notes:
         row["note"] = question.notes
     return row
@@ -126,6 +131,7 @@ def seed_questions(*, actor: Actor, path: Path = RETRIEVAL_SET) -> int:
             expected=row["expected"],
             match_kind=row["match_kind"],
             as_of=row.get("as_of"),
+            via=row.get("via", EvalVia.SEARCH.value),
             notes=row.get("note", ""),
         )
         create_question(actor=actor, body=body)
@@ -163,6 +169,7 @@ def _question_out(question: EvalQuestion) -> EvalQuestionOut:
         expected=list(question.expected),
         match_kind=SearchMatchKind(question.match_kind),
         as_of=question.as_of,
+        via=EvalVia(question.via),
         notes=question.notes,
         active=question.active,
         in_gate=question.key in _keys_in_gate(),
@@ -190,7 +197,9 @@ def create_question(*, actor: Actor, body: EvalQuestionInput) -> EvalQuestionOut
             "for good; choose another.",
             code="duplicate_key",
         )
-    with transaction.atomic():
+    # The evaluation door (search 0003, H16) opens these two tables and nothing else, in a
+    # transaction of its own or a savepoint.
+    with tenancy.library_door("eval"):
         question = EvalQuestion.objects.create(
             key=body.key,
             language_id=body.lang,
@@ -198,6 +207,7 @@ def create_question(*, actor: Actor, body: EvalQuestionInput) -> EvalQuestionOut
             expected=body.expected,
             match_kind=body.match_kind.value,
             as_of=body.as_of,
+            via=body.via.value,
             notes=body.notes,
         )
         record(
@@ -271,6 +281,11 @@ def score(retriever: Retriever, rows: list[dict[str, Any]]) -> dict[str, Any]:
             returned.append(keys)
             return keys
 
+        def ask(self, query: str, lang: str, as_of: Any) -> list[str]:
+            keys = retriever.ask(query, lang, as_of)
+            returned.append(keys)
+            return keys
+
     result = gate.evaluate_retrieval(rows, Recording())
 
     def scores(metrics: dict[str, float]) -> dict[str, float]:
@@ -299,7 +314,7 @@ def score(retriever: Retriever, rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 def record_run(*, actor: Actor, scored: dict[str, Any]) -> EvalRun:
     """File a scored run and its audit row in one transaction."""
-    with transaction.atomic():
+    with tenancy.library_door("eval"):
         run = EvalRun.objects.create(config=scored["config"], metrics=scored["metrics"], results=scored["results"])
         record(
             action=RUN_RECORDED,

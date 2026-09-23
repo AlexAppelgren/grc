@@ -28,7 +28,8 @@ Rules (each has a suppression id for the inline form `# compliance: <id> <reason
   library-door    The door the library-zone trigger reads (`cw.library_door`, the constant
                   LIBRARY_DOOR_SETTING that holds it, and `library_door()` that sets it; one
                   token names all three) is named only in apps/shared/tenancy.py, the index
-                  door apps/search/indexing.py, apps/shared/migration_helpers.py, under
+                  door apps/search/indexing.py, the watch door apps/watch/write.py, the
+                  evaluation door apps/search/eval_sets.py, apps/shared/migration_helpers.py, under
                   migrations/ and in tests_*.py (H16, ADR 0058). The app role can set the
                   setting itself, so a write that names a door is a write the database lets
                   through; this keeps opening one to the doors. Case-insensitive, through
@@ -84,6 +85,8 @@ LIBRARY_DOOR_HOMES = frozenset(
     {
         "apps/shared/tenancy.py",  # the setting, library_door() and library_write()
         "apps/search/indexing.py",  # index_write(), the index door
+        "apps/watch/write.py",  # the watch door's re-point inside a merge approval
+        "apps/search/eval_sets.py",  # the evaluation door (search 0003)
         "apps/shared/migration_helpers.py",  # the trigger that reads it
     }
 )

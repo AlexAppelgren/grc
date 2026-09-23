@@ -48,12 +48,18 @@ class ExpectedRetriever:
     def search(self, query: str, lang: str, as_of: date | None) -> list[str]:
         return list(self._answers[(query, lang)])
 
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]:
+        return list(self._answers[(query, lang)])
+
 
 class SilentRetriever:
     name = "returns nothing (test)"
     is_mock = True
 
     def search(self, query: str, lang: str, as_of: date | None) -> list[str]:
+        return []
+
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]:
         return []
 
 
@@ -75,7 +81,8 @@ class TenantSessionSeesAndWritesNothing(TransactionTestCase):
     def setUp(self) -> None:
         seed_languages()
         self.bank = factories.tenant(slug="eval-bank")
-        with transaction.atomic(using="app"):
+        # Through the evaluation door (search 0003), so what these tests prove is the policy.
+        with tenancy.library_door("eval", using="app"):
             question = EvalQuestion.objects.using("app").create(
                 key="r-en-98", language_id="en", question="FFFS 2017:2", expected=["obl-costs-charges"], match_kind="keyword"
             )
@@ -89,13 +96,16 @@ class TenantSessionSeesAndWritesNothing(TransactionTestCase):
             self.assertEqual(EvalRun.objects.using("app").count(), 0, "eval_run: a bank read the runs")
 
     def test_a_tenant_session_can_insert_change_or_delete_nothing(self) -> None:
+        # Inside the evaluation door, so the refusal is the policy's and not the trigger's.
         with self.assertRaises(ProgrammingError), transaction.atomic(using="app"):
             tenancy.activate(self.bank.id, using="app")
-            EvalQuestion.objects.using("app").create(key="r-en-97", language_id="en", question="x", match_kind="both")
+            with tenancy.library_door("eval", using="app"):
+                EvalQuestion.objects.using("app").create(key="r-en-97", language_id="en", question="x", match_kind="both")
         with self.assertRaises(ProgrammingError), transaction.atomic(using="app"):
             tenancy.activate(self.bank.id, using="app")
-            EvalRun.objects.using("app").create(config={}, metrics={}, results=[])
-        with connections["app"].cursor() as cursor, transaction.atomic(using="app"):
+            with tenancy.library_door("eval", using="app"):
+                EvalRun.objects.using("app").create(config={}, metrics={}, results=[])
+        with connections["app"].cursor() as cursor, transaction.atomic(using="app"), tenancy.library_door("eval", using="app"):
             tenancy.activate(self.bank.id, using="app")
             cursor.execute("UPDATE eval_question SET question = 'rewritten'")
             self.assertEqual(cursor.rowcount, 0)

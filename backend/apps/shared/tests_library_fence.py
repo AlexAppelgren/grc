@@ -310,7 +310,7 @@ class LibraryFenceGuard(SimpleTestCase):
 # word a writer hands the database is what decides which tables it reaches there. `seed` is
 # library_write()'s default and the widest door (every inventory table, the stamped tables
 # and the reference rows), so only the reference seeds' own directories may open it, whether
-# a call names it or takes it by default; every other door is named by exactly one function,
+# a call names it or takes it by default; every other door is named by the functions below,
 # and by no other. A watch step that named `proposal` would reach the inventory in the database,
 # and a stamp, or a watch door, that lost its door would fall back to `seed` and reach every
 # inventory table: each fails here. `library_door()` itself is kept to its homes by the
@@ -318,8 +318,11 @@ class LibraryFenceGuard(SimpleTestCase):
 DOOR_NAMERS: dict[str, frozenset[str]] = {
     "proposal": frozenset({"proposals/apply.py::apply"}),
     "reverification": frozenset({"proposals/apply.py::apply_reverification"}),
-    "watch": frozenset({"watch/write.py::watch_write"}),
+    # The watch door, and the re-point a merge approval makes of a watch row inside the
+    # proposal door (VOC-02), which reaches the watch tables through this door alone.
+    "watch": frozenset({"watch/write.py::watch_write", "watch/write.py::repoint"}),
     "index": frozenset({"search/indexing.py::index_write"}),
+    "eval": frozenset({"search/eval_sets.py::create_question", "search/eval_sets.py::record_run"}),
 }
 # The one call that passes a door it was handed rather than one it names.
 DOOR_PASSED_ON = "shared/tenancy.py::library_write"

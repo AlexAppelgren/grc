@@ -57,7 +57,7 @@ IDENTITY_LOOKUP_SETTING = "app.identity_lookup"
 # `seed` alone the library app's reference rows (languages, jurisdictions). The compliance
 # lint's `library-door` rule keeps this name in this module, the index door, the migration
 # helpers, migrations and tests.
-LibraryDoor = Literal["proposal", "reverification", "seed", "watch", "index"]
+LibraryDoor = Literal["proposal", "reverification", "seed", "watch", "index", "eval"]
 
 _active_tenant: ContextVar[uuid.UUID | None] = ContextVar("active_tenant", default=None)
 _library_write_reason: ContextVar[str | None] = ContextVar("library_write_reason", default=None)

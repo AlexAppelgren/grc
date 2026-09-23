@@ -136,6 +136,19 @@ class SearchMatchKind(enum.StrEnum):
     BOTH = "both"
 
 
+class EvalVia(enum.StrEnum):
+    """Tier-one kind: which read of the library a question of the evaluation set is scored
+    on (SRC-05, SRC-S12, D-81), as the release gate's file says in `via`.
+
+    - `search`: the hits the search page returns, the default.
+    - `ask`: the passages Ask would give a model; a question Ask must not answer expects
+      none, and is scored right only when nothing comes back.
+    """
+
+    SEARCH = "search"
+    ASK = "ask"
+
+
 # ---------------------------------------------------------------------------------------
 # POST /search, POST /search/similar
 # ---------------------------------------------------------------------------------------
@@ -1116,6 +1129,7 @@ _EXAMPLE_EVAL_QUESTION: dict[str, Any] = {
     "expected": ["obl-costs-charges", "obl-research-payments", "obl-product-governance", "obl-client-assets"],
     "matchKind": "keyword",
     "asOf": None,
+    "via": "search",
     "notes": "An identifier is won by keyword. Every obligation under the instrument is relevant.",
     "active": True,
     "inGate": True,
@@ -1342,6 +1356,15 @@ class EvalQuestionInput(WriteBody):
             "Source: platform staff. Do not read it as the day the question was written."
         ),
     )
+    via: EvalVia = Field(
+        default=EvalVia.SEARCH,
+        description=(
+            "Which read of the library the question is scored on: `search`, the default, "
+            "scores the hits the search page returns; `ask` scores the passages Ask would give "
+            "a model, so a question Ask must not answer expects none. Source: platform staff. "
+            "Do not read `ask` as a question to a model: no model is called when scoring."
+        ),
+    )
     notes: str = Field(
         default="",
         max_length=settings.SEARCH_FEEDBACK_NOTE_MAX_CHARS,
@@ -1394,6 +1417,14 @@ class EvalQuestionOut(CamelSchema):
             "The legal date the question is asked on, or null for the sample corpus's own "
             "anchor day. Source: platform staff. Do not read it as the day the question was "
             "written."
+        )
+    )
+    via: EvalVia = Field(
+        description=(
+            "Which read of the library the question is scored on: `search` scores the hits the "
+            "search page returns; `ask` scores the passages Ask would give a model. Source: "
+            "platform staff. Do not read `ask` as a question to a model: no model is called "
+            "when scoring."
         )
     )
     notes: str = Field(

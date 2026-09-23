@@ -1224,7 +1224,7 @@ The shapes depart from the design on purpose:
 - `GET /eval/questions` (`listEvalQuestions`) and `GET /eval/runs` (`listEvalRuns`) answer
   `{items, total}` paged with `limit` and `offset`, like every other list (playbook 10),
   rather than bare arrays. `POST /eval/questions` (`createEvalQuestion`) takes
-  `{key, lang, question, expected?, matchKind, asOf?, notes?}` and answers 201 with the
+  `{key, lang, question, expected?, matchKind, asOf?, via?, notes?}` and answers 201 with the
   question, `inGate` false: the release gate reads only the file, so a question added in the
   console reaches it through `dump_eval_questions` and a reviewed commit.
 - A run's `config` is `{retriever, isMock, questions}`, its `metrics`
@@ -1232,6 +1232,10 @@ The shapes depart from the design on purpose:
   one `{questionKey, returned, recallAt10, mrr}` per question asked, where the design left
   all three as open objects. The design's `run_by` is not built: runs are recorded by the
   `record_eval_run` command, which is no person, and its audit row names the actor.
+- A question also carries `via` (`search`, the default, or `ask`; search 0004), the field
+  ask-standard-no-answer gave the gate's file, so a question scored on the passages Ask would
+  give a model survives a seed and a dump. Both tables carry the library door trigger with a
+  door of their own, `eval` (search 0003, D-87), on top of the `platform_only` policy.
 - `POST /eval/runs` (`startEvalRun`) waits for chunk 14's job runner
   (`backend/scripts/contract_drift_pending.txt`): a run builds the sample corpus in a
   database of its own and takes minutes, which no request should hold open.

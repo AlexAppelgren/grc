@@ -9,6 +9,7 @@ record. Shared 0008 adds a second layer in the database itself. Every library-zo
 carries one statement-level trigger that refuses INSERT, UPDATE, DELETE and TRUNCATE unless
 the transaction-local setting the doors set names a door that table accepts: the watch door
 the seven watch tables only (D-64), the index door `search_chunk` only (D-65), the
+evaluation door the search evaluation set's two platform tables only (search 0003), the
 re-verification stamp `obligation` and `verification` only, a reference seed alone the
 library app's reference rows (`language`, `jurisdiction`, `jurisdiction_label`), and an
 approved proposal or a reference seed every other library table. The schema owner passes by
@@ -17,8 +18,8 @@ let through.
 
 What is proven here:
 
-- **The census.** Every concrete `LibraryModel`'s table, plus `search_chunk` and the three
-  reference tables, read from the app registry and not from the migration's list, carries
+- **The census.** Every concrete `LibraryModel`'s table, plus `search_chunk`, the two
+  evaluation tables and the three reference tables, read from the app registry and not from the migration's list, carries
   the trigger with exactly the doors above, and no other table carries it. A new library
   table without it fails here, and so does a new shared row (one with no tenant) in a
   library-zone app that is neither a `LibraryModel` nor named here.
@@ -29,7 +30,8 @@ What is proven here:
   write that would change nothing is still a write the database refuses.
 - **The doors still write.** With the runner's `default` alias pointed at the cw_app
   connection, the same writes through `library_write()`, `watch_write()`, `index_write()`
-  (by way of a real rebuild), the reference seeds and the re-verification stamp succeed,
+  (by way of a real rebuild), the reference seeds, the re-verification stamp and the
+  evaluation set's two writers succeed,
   while an ORM write that slips past the Python fence is refused by the database.
 - **Every real writer, as the app role.** The rest of the suite runs as the schema owner,
   whom the trigger lets through, so a writer that names the wrong door — a vocabulary merge
@@ -89,8 +91,18 @@ from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
 from apps.proposals import apply, logic as proposals
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
-from apps.search import indexing
-from apps.search.models import SearchChunk
+from apps.proposals.tests_kinds import (
+    INSTRUMENT_KEY,
+    OBLIGATION_KEY,
+    PROVISION_KEY,
+    instrument_body,
+    obligation_body,
+    provision_body,
+    provision_version_body,
+)
+from apps.search import eval_sets, indexing
+from apps.search.models import EvalQuestion, EvalRun, SearchChunk
+from apps.search.schemas import EvalQuestionInput, SearchMatchKind
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.migration_helpers import LIBRARY_DOOR_FUNCTION, LIBRARY_DOOR_SETTING
 from apps.shared.tenancy import LibraryDoor, LibraryModel, library_door, library_write
@@ -104,21 +116,26 @@ from apps.watch.schemas import WatchChangeEventInput, WatchChangeInput, WatchCha
 from apps.watch.write import WATCH_TABLES, watch_write
 
 APP = "app"
-EVERY_DOOR: tuple[str, ...] = ("proposal", "reverification", "seed", "watch", "index")
+EVERY_DOOR: tuple[str, ...] = ("proposal", "reverification", "seed", "watch", "index", "eval")
 # Stated here and not imported from the migration helpers, so a helper that quietly widens
 # a door fails this guard instead of moving it.
 INVENTORY_DOORS = ("proposal", "seed")
 STAMPED_DOORS = ("proposal", "reverification", "seed")
 WATCH_DOORS = ("watch",)
 INDEX_DOORS = ("index",)
+EVAL_DOORS = ("eval",)
 REFERENCE_DOORS = ("seed",)
 STAMPED_TABLES = frozenset({Obligation._meta.db_table, Verification._meta.db_table})
 # The library app's reference rows: shared by every bank, written by no proposal (the
 # jurisdiction list is not proposable), and not `LibraryModel`s, so the Python fence never
 # sees them and the database is the only thing holding them.
 REFERENCE_TABLES = frozenset(model._meta.db_table for model in (Language, Jurisdiction, JurisdictionLabel))
+# The search evaluation set and its runs: platform rows no proposal carries and no bank reads
+# (search 0002's platform_only policy), written by eval_sets.py alone through their own door.
+EVAL_TABLES = frozenset(model._meta.db_table for model in (EvalQuestion, EvalRun))
 # The apps whose shared rows are library-zone rows. A model of theirs with no `tenant`
-# column is either a `LibraryModel`, `search_chunk` or a reference table above.
+# column is either a `LibraryModel`, `search_chunk`, an evaluation table or a reference table
+# above.
 LIBRARY_ZONE_APPS = frozenset({"library", "taxonomy", "watch", "search", "agents"})
 
 # What a console request passes as the reader's language order.
@@ -159,6 +176,7 @@ def library_zone_tables() -> dict[str, tuple[str, ...]]:
         else:
             tables[table] = INVENTORY_DOORS
     tables[SearchChunk._meta.db_table] = INDEX_DOORS
+    tables.update(dict.fromkeys(EVAL_TABLES, EVAL_DOORS))
     tables.update(dict.fromkeys(REFERENCE_TABLES, REFERENCE_DOORS))
     return tables
 
@@ -232,6 +250,8 @@ class EveryLibraryTableCarriesTheDoorTrigger(TestCase):
         self.assertLessEqual({"authority", "instrument", "obligation", "obligation_version", "taxonomy_term", "agent"}, set(tables))
         self.assertLessEqual(WATCH_TABLES, set(tables))
         self.assertEqual(tables["search_chunk"], INDEX_DOORS)
+        self.assertEqual(EVAL_TABLES, {"eval_question", "eval_run"})
+        self.assertEqual(tables["eval_question"], EVAL_DOORS)
         self.assertEqual(tables["verification"], STAMPED_DOORS)
         self.assertEqual(tables["regulatory_change"], WATCH_DOORS)
         self.assertEqual(tables["authority"], INVENTORY_DOORS)
@@ -438,6 +458,34 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
         self.assertTrue(Verification.objects.filter(pk=verification.pk).exists())
         self.assertEqual(Obligation.objects.get(pk=self.obligation.pk).verified_by_id, self.checker.id)
 
+    def test_the_evaluation_set_is_written_through_its_own_door_and_opens_nothing_else(self) -> None:
+        actor = factories.user_actor(user_id=self.checker.id)
+        with as_the_app_role():
+            with transaction.atomic():
+                tenancy.clear_tenant()  # the console's session and the commands: no bank's zone
+                question = eval_sets.create_question(
+                    actor=actor,
+                    body=EvalQuestionInput(
+                        key="r-en-door", lang="en", question="Who keeps the door?", expected=[], match_kind=SearchMatchKind.CONCEPT
+                    ),
+                )
+                run = eval_sets.record_run(
+                    actor=actor,
+                    scored={"config": {"retriever": "door", "is_mock": True, "questions": 1}, "metrics": {}, "results": []},
+                )
+                # A table the evaluation door does not name is refused inside it.
+                with self.assertRaises(DatabaseError) as refused, transaction.atomic(), tenancy.library_door("eval"):
+                    models.QuerySet.update(Obligation.objects.filter(pk=self.obligation.pk), product_scope="an evaluation's rewrite")
+                self.assertIn("the door open is eval", str(refused.exception))
+                # And outside it the evaluation table is refused like any other.
+                with self.assertRaises(DatabaseError) as refused, transaction.atomic():
+                    models.QuerySet.update(EvalQuestion.objects.filter(key=question.key), active=False)
+                self.assertIn("UPDATE on eval_question refused: the door open is none", str(refused.exception))
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.assertTrue(EvalQuestion.objects.filter(key="r-en-door", active=True).exists())
+            self.assertTrue(EvalRun.objects.filter(pk=run.pk).exists())
+
     # --- every real writer, as the app role --------------------------------------------------
     def _approved(self, kind: str, payload: dict[str, Any], *, target: Obligation | None = None) -> Proposal:
         """File `kind` as a library editor's console request does, then approve it as a second
@@ -453,6 +501,32 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
                 target_type="" if target is None else "obligation",
                 target_id=None if target is None else target.id,
                 field_sources=None if target is None else dict.fromkeys(("summaries.en", "summaries.sv", "effectiveFrom", "terms"), SOURCE_URL),
+            )
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            return proposals.approve(
+                proposal=proposals.by_id(proposal.id),
+                reviewer=self.reviewer,
+                actor=factories.user_actor(user_id=self.reviewer.id),
+                note="",
+                step_up_assertion_id=uuid.uuid4(),
+            )
+
+    def _approved_body(self, body: dict[str, Any]) -> Proposal:
+        """`_approved()` for a body as apps/proposals/tests_kinds.py builds one: a new record
+        with its own source link, or a version of a record named by type and id."""
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            proposal, _ = proposals.create(
+                kind=body["kind"],
+                title=body["title"],
+                payload=body["payload"],
+                proposer=proposals.Proposer(actor=factories.user_actor(user_id=self.proposer.id), user=self.proposer),
+                target_type=body.get("targetType", ""),
+                target_id=uuid.UUID(body["targetId"]) if "targetId" in body else None,
+                field_sources=body["fieldSources"],
+                source_label=body["sourceLabel"],
+                source_url=body["sourceUrl"],
             )
         with transaction.atomic():
             tenancy.clear_tenant()
@@ -497,6 +571,15 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
                     target=self.obligation,
                 )
             )
+            # The new-record kinds, each built on the one before: an instrument, a duty and a
+            # provision under it, and a second text of that provision.
+            decided.append(self._approved_body(instrument_body()))
+            decided.append(self._approved_body(obligation_body(instrument=INSTRUMENT_KEY)))
+            decided.append(self._approved_body(provision_body(instrument=INSTRUMENT_KEY)))
+            with transaction.atomic():
+                tenancy.clear_tenant()
+                provision = Provision.objects.get(stable_key=PROVISION_KEY)
+            decided.append(self._approved_body(provision_version_body(provision)))
         # The census: a kind added to ProposalKind fails here until it is approved above.
         self.assertEqual(
             {proposal.kind for proposal in decided},
@@ -511,9 +594,11 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
         self.assertTrue(ChangeTerm.objects.filter(pk=carried.pk).exists())
         term = TaxonomyTerm.objects.get(dimension__key="client_category", key="door_client")
         self.assertEqual(term.labels.get(language="sv").text, "Dörrklient")
-        version = ObligationVersion.objects.get(applied_by_proposal=decided[-1])
+        version = ObligationVersion.objects.get(applied_by_proposal=next(p for p in decided if p.kind == "new_obligation_version"))
         self.assertEqual((version.obligation_id, version.effective_from), (self.obligation.id, effective_from))
         self.assertTrue(SearchChunk.objects.filter(source_id=version.id).exists())
+        self.assertEqual(Obligation.objects.get(stable_key=OBLIGATION_KEY).instrument.stable_key, INSTRUMENT_KEY)
+        self.assertEqual(Provision.objects.get(stable_key=PROVISION_KEY).versions.count(), 2)
 
     def test_every_watch_step_writes_through_its_own_entry_point_as_the_app_role(self) -> None:
         editor = factories.platform_user(roles=("library_editor",), email="door-editor@bleqq.test")
