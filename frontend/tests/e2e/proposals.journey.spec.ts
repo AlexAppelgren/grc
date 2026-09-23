@@ -89,7 +89,7 @@ async function proposeFlag(page: Page, label: string): Promise<void> {
   const dialog = page.getByRole('dialog', { name: 'Add a value' });
   await dialog.getByLabel('Label', { exact: true }).fill(label);
   await dialog.getByRole('button', { name: 'Send for review' }).click();
-  await expect(dialog.getByText(/is waiting for a library editor\.$/)).toBeVisible();
+  await expect(dialog.getByText(/is waiting for review\.$/)).toBeVisible();
   await dialog.getByRole('button', { name: 'Done' }).click();
 }
 

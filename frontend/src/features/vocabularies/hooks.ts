@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
+import { proposalKeys } from '@/features/proposals/hooks';
+
 import * as vocab from './api';
 import type {
   ProposalRef,
@@ -38,6 +40,8 @@ function useInvalidateList(list: string): () => Promise<void> {
   return async () => {
     await queryClient.invalidateQueries({ queryKey: vocabularyKeys.list(list) });
     await queryClient.invalidateQueries({ queryKey: vocabularyKeys.lists });
+    // A write to a library list is a proposal: what this bank has waiting changes too.
+    await queryClient.invalidateQueries({ queryKey: proposalKeys.all });
   };
 }
 
