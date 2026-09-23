@@ -18,7 +18,7 @@ prototype_data.json holds no standard at all: seed_demo loads it, and until Alex
 docs/TODO_FOR_alex.md "Legal, before any standard is seeded" a standard lives only in
 e2e_standard.json. That file is checked merged into the prototype's rows, whose
 vocabularies and terms it references, plus the held terms its `_meta.held_terms` names
-(seeded inactive by apps/taxonomy/seeds, never listed in the prototype). With `--eval` it
+(authored in apps/taxonomy/seeds, never listed in the prototype). With `--eval` it
 also checks that backend/eval/retrieval.jsonl and classification.jsonl only name keys that
 exist here, so the evaluation sets cannot drift from the corpus.
 

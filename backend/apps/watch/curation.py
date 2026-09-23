@@ -98,6 +98,7 @@ def update_change_facts(
     terms = keys.resolve_terms(sent["term_ids"]) if "term_ids" in sent else None
     if terms is not None:
         keys.require_regime(terms)
+        keys.require_standards_body(terms, change.authority_id)
     superseded_by = _superseding(change, sent) if "superseded_by" in sent else None
     if flags is not None:
         _refuse_dropping_confirmed(who, change, "flag", {row.id for row in flags}, "a flag")

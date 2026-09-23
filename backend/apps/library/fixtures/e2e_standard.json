@@ -4,7 +4,7 @@
     "anchor_date": "2026-09-19",
     "in_force_from_source": "Published 25 October 2022, edition 3.0: docs/plans/Verification_Log.md, 'PRD 0.3 standards facts', 'The standard itself', checked 2026-09-19 against webstore.iec.ch/en/publication/79694. Day precision.",
     "held_terms": ["standard:iso_iec_27001"],
-    "held_terms_note": "Terms apps/taxonomy/seeds seeds inactive (_EXTRA_TERMS) and the prototype fixture does not list. The loader links to a term whatever its state; nothing here switches one on."
+    "held_terms_note": "Terms apps/taxonomy/seeds authors (_EXTRA_TERMS) and the prototype fixture does not list. The loader links to a term whatever its state; nothing here switches one on or off."
   },
   "authorities": [
     {"key": "iso-iec", "code": "ISO/IEC", "name": "International Organization for Standardization and International Electrotechnical Commission", "jurisdiction": "INTL", "url": "https://webstore.iec.ch/"}

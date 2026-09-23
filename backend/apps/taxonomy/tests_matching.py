@@ -14,7 +14,6 @@ import itertools
 import uuid
 from collections.abc import Iterable
 
-from django.core.exceptions import ValidationError
 from django.db import connection
 from django.test import TestCase
 
@@ -204,7 +203,6 @@ class OptInMirror(TestCase):
         self.terms = {
             "service_type:custody": tenant_lists_logic.term_by_ref("service_type", "custody"),
             "service_type:advice": tenant_lists_logic.term_by_ref("service_type", "advice"),
-            # Seeded inactive (HeldStandard below); the rule ignores a term's state.
             "standard:iso_iec_27001": TaxonomyTerm.objects.get(dimension=self.standard, key="iso_iec_27001"),
             "standard:second_standard": second,
         }
@@ -263,33 +261,28 @@ class OptInMirror(TestCase):
         self.assertEqual(restricting.opt_in, {"standard"})
 
 
-class HeldStandard(TestCase):
-    """The seeded standard ISO/IEC 27001 is inactive (D-36). A change carrying it would vanish
-    from every bank that follows no standard, and an agent's key registers a change with no
-    second person (D-64), yet the watch door does not refuse a standard's term on a national
-    supervisor's change until WAT-S11 lands (`standard_term_only_on_standards`). The regulatory
-    scope page does not read an empty opt-in group as "none followed" until the standards
-    journeys land. Until both have, no door may name the term. The scope request, an
-    obligation's scope and a change's terms all resolve active terms only, and the rule
-    ignores a term's state, so switching it on later is one seed flag."""
+class SeededStandard(TestCase):
+    """The seeded standard ISO/IEC 27001 is active (D-36), now that the watch door refuses
+    its term on a change whose authority is not a standards body (WAT-S11,
+    `standard_term_only_on_standards`, apps/watch/tests_scenarios.py). Every door that
+    resolves active terms names it: a scope request, an obligation's scope and a change's
+    terms."""
 
     def setUp(self) -> None:
         _seed()
         self.iso = TaxonomyTerm.objects.get(dimension__key="standard", key="iso_iec_27001")
 
-    def test_the_seeded_standard_is_inactive(self) -> None:
-        self.assertFalse(self.iso.active)
+    def test_the_seeded_standard_is_active(self) -> None:
+        self.assertTrue(self.iso.active)
         self.assertTrue(self.iso.dimension.active)
         self.assertEqual(matching.opt_in_dimensions(), {"standard"})
 
-    def test_no_door_names_it(self) -> None:
+    def test_every_door_names_it(self) -> None:
         doors = {
-            "a regulatory scope request": lambda: term_by_ref("standard", "iso_iec_27001"),
+            "a regulatory scope request": lambda: [term_by_ref("standard", "iso_iec_27001")],
             "an obligation's scope": lambda: terms_of(["standard:iso_iec_27001"]),
             "a change's terms": lambda: resolve_terms([self.iso.id]),
         }
         for door, resolve in doors.items():
             with self.subTest(door=door):
-                with self.assertRaises(ValidationError) as refused:
-                    resolve()
-                self.assertEqual(refused.exception.code, "unknown_key")
+                self.assertEqual([term.id for term in resolve()], [self.iso.id])
