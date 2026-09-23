@@ -66,7 +66,7 @@ export function useObligationDiff(obligationId: string, lang: string, enabled: b
 /**
  * Filing a problem report changes no library record and no list this screen
  * reads, so it invalidates nothing: the report lives in the reader's own bank
- * and the console answers it later.
+ * and colleagues there take it up (D-50).
  */
 export function useReportObligationProblem(obligationId: string): UseMutationResult<ProblemReportCreated, unknown, ProblemReportBody> {
   return useMutation({ mutationFn: (body) => library.reportObligationProblem(obligationId, body) });

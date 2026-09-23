@@ -22,7 +22,13 @@ const ME = {
   enrolmentPending: false,
 };
 
+// Who stood behind each change: a person approved these, and no agent proposed or
+// confirmed them. Spread in, so the rows hold these fields whether or not the
+// contract they are typed by names them yet.
+const APPROVED_BY_A_PERSON = { verifiedOrigin: 'user', proposedByAgent: null, confirmedByAgent: null };
+
 const newVersion: LibraryUpdateRow = {
+  ...APPROVED_BY_A_PERSON,
   id: '8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21',
   kind: 'new_obligation_version',
   appliedAt: '2026-09-18T09:20:00Z',
@@ -49,6 +55,7 @@ const outside: LibraryUpdateRow = {
 };
 
 const flagRenamed: LibraryUpdateRow = {
+  ...APPROVED_BY_A_PERSON,
   id: '0e9d8c7b-6a5f-4e3d-2c1b-0a9f8e7d6c5b',
   kind: 'vocabulary_relabel',
   appliedAt: '2026-09-17T08:00:00Z',

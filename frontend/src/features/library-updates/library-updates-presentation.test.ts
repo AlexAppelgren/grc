@@ -18,8 +18,14 @@ const TARGET = {
   instrumentShortName: 'FFFS 2017:2',
 };
 
+// Who stood behind the change: a person approved it, and no agent proposed or confirmed
+// it. Spread in, so the row holds these fields whether or not the contract it is typed
+// by names them yet.
+const APPROVED_BY_A_PERSON = { verifiedOrigin: 'user', proposedByAgent: null, confirmedByAgent: null };
+
 function row(overrides: Partial<LibraryUpdateRow> = {}): LibraryUpdateRow {
   return {
+    ...APPROVED_BY_A_PERSON,
     id: '8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21',
     kind: 'new_obligation_version',
     appliedAt: '2026-09-18T09:20:00Z',
