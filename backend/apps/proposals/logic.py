@@ -47,6 +47,7 @@ from apps.library.reading import active_obligation, terms_of, unknown_provision_
 from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus, ProposalTenant
 from apps.proposals.schemas import (
     ProposalActorRef,
+    ProposalAgentRef,
     ProposalObligationVersionPayload,
     ProposalRow,
     ProposalTermCreatePayload,
@@ -485,24 +486,40 @@ def validated_origin(origin: str | None) -> str | None:
     return origin
 
 
+def filed_by(reviewer: Reviewer) -> Q:
+    """The proposals `reviewer` filed, which are the ones four eyes will not let them decide
+    (AC-PRO2, D-62): a person's own, or for an agent's key the key's own and those of any
+    other key of the same agent definition. A proposal made inside a bank is never a platform
+    reviewer's. `apps.proposals.reading._is_mine` asks the same question of one row."""
+    if reviewer.user is not None:
+        mine = Q(proposed_by_user_id=reviewer.user.id)
+    else:
+        mine = Q(proposed_by_api_key_id=reviewer.api_key_id)
+        if reviewer.agent_id is not None:
+            mine |= Q(proposed_by_agent_id=reviewer.agent_id)
+    return mine & Q(proposed_in_tenant=False)
+
+
 def queue(
     *,
+    reviewer: Reviewer,
     status: str | None = None,
     kind: str | None = None,
     target_list: str | None = None,
     origin: str | None = None,
     not_mine: bool = False,
-    reviewer_id: uuid.UUID | None = None,
 ) -> Any:
-    """The console review queue. `origin` keeps an agent's proposals or a person's;
-    `not_mine` drops the ones this reviewer filed, which are the ones four eyes will not let
-    them decide."""
+    """The console review queue, read by a person or by an agent's key alike (PRO-S13, D-62),
+    with the people and agents each row names joined in, so a page costs the same whatever
+    it holds. `origin` keeps an agent's proposals or a person's; `not_mine` drops the ones
+    `reviewer` filed (`filed_by`)."""
     queryset = filtered(Proposal.objects.all(), status=status, kind=kind, target_list=target_list)
+    queryset = queryset.select_related("proposed_by_agent", "reviewed_by_agent", "corrected_by")
     origin = validated_origin(origin)
     if origin is not None:
         queryset = queryset.filter(origin=origin)
-    if not_mine and reviewer_id is not None:
-        queryset = queryset.exclude(proposed_by_user_id=reviewer_id)
+    if not_mine:
+        queryset = queryset.exclude(filed_by(reviewer))
     return queryset
 
 
@@ -516,13 +533,30 @@ def by_id(proposal_id: uuid.UUID) -> Proposal:
 
 
 def _actor_ref(user: Any) -> ProposalActorRef | None:
+    """A platform person named on a proposal, by id and name."""
     return None if user is None else ProposalActorRef(id=user.id, name=user.name)
+
+
+def _agent_ref(agent: Any) -> ProposalAgentRef | None:
+    """A platform agent named on a proposal, by its definition key and the version the
+    platform runs now. The version it ran when it decided is the decision's audit row's to
+    keep; nothing on the proposal holds it, so nothing here claims it."""
+    if agent is None:
+        return None
+    return ProposalAgentRef(key=agent.key, version=agent.current_version)
 
 
 def row(proposal: Proposal) -> ProposalRow:
     """One proposal as every answer carrying one returns it. A proposal made inside a bank
     names no proposer (PRO-03): the console is told `from_organisation` and nothing more, so
-    a bank member's name and id reach no platform reader, whichever route answers."""
+    a bank member's name and id reach no platform reader, whichever route answers.
+
+    Who decided is a person or an agent, never both: a `Reviewer` carries exactly one of a
+    user and a key. A correction is only ever made on the way to approving it (`approve`),
+    so its author is the approver: `corrected_by` names a person, and a correction with no
+    person on it was the approving agent's, which is named from `reviewed_by_agent` rather
+    than a column of its own."""
+    agent_corrected = proposal.corrected_payload is not None and proposal.corrected_by_id is None
     return ProposalRow(
         id=proposal.id,
         kind=proposal.kind,
@@ -540,14 +574,28 @@ def row(proposal: Proposal) -> ProposalRow:
         agent_run_id=proposal.agent_run_id,
         model=proposal.model,
         proposed_by=None if proposal.proposed_in_tenant else _actor_ref(proposal.proposed_by_user),
+        proposed_by_agent=None if proposal.proposed_in_tenant else _agent_ref(proposal.proposed_by_agent),
         from_organisation=proposal.proposed_in_tenant,
         reviewed_by=_actor_ref(proposal.reviewed_by),
+        reviewed_by_agent=_agent_ref(proposal.reviewed_by_agent),
+        corrected_by=_actor_ref(proposal.corrected_by),
+        corrected_by_agent=_agent_ref(proposal.reviewed_by_agent) if agent_corrected else None,
         reviewed_at=proposal.reviewed_at,
         rejection_code=proposal.rejection_code,
         review_note=proposal.review_note,
         applied_at=proposal.applied_at,
         created_at=proposal.created_at,
     )
+
+
+def proposer_row(proposal: Proposal) -> ProposalRow:
+    """The row a proposer's own create call answers, a retry after the decision included. A
+    bank's proposer is told how far its request got and never which platform person or
+    agent decided or corrected it, as its own list never is (`TenantProposalRow`, PRO-03)."""
+    answer = row(proposal)
+    if not proposal.proposed_in_tenant:
+        return answer
+    return answer.model_copy(update={"reviewed_by": None, "reviewed_by_agent": None, "corrected_by": None, "corrected_by_agent": None})
 
 
 # ---------------------------------------------------------------------------------------

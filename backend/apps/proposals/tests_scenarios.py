@@ -51,11 +51,12 @@ V1 = "/api/v1"
 # roles, latest step-up: 5), `require_reviewer`'s own fetch of the caller's `User` row for
 # the audit actor's label (1, new: the dual-principal gate needs the real row, not just the
 # session's already-joined columns), the reader's own locale for the language the rows are
-# titled in (1) and the page with its proposer and reviewer (1). The library records the
-# rows name cost two more, for the whole page at once rather than per row, and this queue
-# holds a vocabulary proposal, which names none (apps/proposals/tests_reading.py pins that
-# the cost does not grow with the row count).
-PROPOSAL_QUEUE_QUERIES = 1 + 2 + 5 + 1 + 1 + 1
+# titled in (1), how many proposals match (1, since listProposals pages like every list)
+# and the page with the people and agents who filed, corrected and decided it (1). The
+# library records the rows name cost two more, for the whole page at once rather than per
+# row, and this queue holds a vocabulary proposal, which names none
+# (apps/proposals/tests_reading.py pins that the cost does not grow with the row count).
+PROPOSAL_QUEUE_QUERIES = 1 + 2 + 5 + 1 + 1 + 1 + 1
 # The change an agent's watch run linked the proposal to (chunk 5 makes these rows; the
 # column is a plain id until then), and the summary version 1 carries, so a scenario can
 # prove that applying version 2 leaves version 1 exactly as it was written.
@@ -644,7 +645,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         row = next(item for item in listed.json()["items"] if item["id"] == proposal["id"])
         self.assertEqual(row["fieldSources"], proposal["fieldSources"])
         self.assertEqual(row["payload"], proposal["payload"])
-        self.assertFalse(row["isMine"], "isMine is always false for an agent, whatever it filed")
+        self.assertFalse(row["isMine"], "another agent filed it, so it is not this one's own")
         # It opens the proposal as a person does: what the library says today, the diff
         # against it and the source behind every changed field.
         opened = self.client.get(f"{V1}/proposals/{proposal['id']}", **reviewer_headers)
@@ -797,6 +798,17 @@ class ProposalsScenarioTests(ScenarioTestCase):
         # A third, unrelated agent, used below only to give an isolating proof its own
         # distinct id: never the reviewer that actually decides this proposal.
         third_reviewer = agents_testing.reviewer_api_key()
+
+        # The queue says so before a different agent approves it: under every key of the
+        # proposing definition the proposal is the reader's own and `notMine` drops it; under
+        # another agent's key it is neither.
+        for reader, own in ((proposer_key, True), (second_key_same_agent, True), (third_reviewer, False)):
+            key_headers = {"HTTP_X_API_KEY": reader.plain_key}
+            row = next(item for item in self.client.get(f"{V1}/proposals", **key_headers).json()["items"] if item["id"] == proposal["id"])
+            self.assertEqual(row["isMine"], own)
+            left = [item["id"] for item in self.client.get(f"{V1}/proposals?notMine=true", **key_headers).json()["items"]]
+            self.assertEqual(proposal["id"] in left, not own)
+            tenancy.clear_tenant()
 
         # The row is written directly, bypassing the logic: the check constraint refuses it
         # for a repeated user, key or agent alike, and it refuses a reviewing key that names

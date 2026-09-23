@@ -21,10 +21,11 @@ import { formatDateTime } from '@/shared/utils/format';
 // /console/queue (design/screens/console-queue.html; PRO-01, PRO-02, PRO-03,
 // AC-PRO2). Waiting, Approved and Rejected tabs read GET /proposals with its
 // own `status`, so each tab's count is the API's own total, never a
-// client-side count of one page (there is no paging: the route answers every
-// matching row in one call). Kind, "proposed by" and "Not mine" narrow the
-// tab's own rows in the browser, because the route filters only by status,
-// kind and targetList (backend/apps/proposals/schemas.py `ProposalQuery`).
+// client-side count of one page. Kind, "proposed by" and "Not mine" are the
+// route's own filters (backend/apps/proposals/schemas.py `ProposalQuery`), so
+// they reach every row and not only the page read. The route pages; until the
+// queue gets paging controls it reads the largest page, oldest first, and says
+// how many of the total it shows when there are more.
 //
 // GET /proposals does not yet carry a target title, reference or instrument
 // short name, a server-computed `isMine`, or `fromOrganisation`
@@ -35,6 +36,9 @@ import { formatDateTime } from '@/shared/utils/format';
 const TAB_STATUS = { waiting: 'open', approved: 'approved', rejected: 'rejected' } as const;
 type TabKey = keyof typeof TAB_STATUS;
 const TAB_KEYS: readonly TabKey[] = ['waiting', 'approved', 'rejected'];
+
+// The route's largest page (API_PAGE_SIZE_MAX).
+const QUEUE_PAGE = 100;
 
 const OBLIGATION_KIND: ProposalKind = 'new_obligation_version';
 const VOCABULARY_KINDS: readonly ProposalKind[] = [
@@ -97,15 +101,6 @@ export function kindQueryOf(kind: KindFilter): string | undefined {
   return undefined;
 }
 
-/** "Proposed by" and "Not mine" narrow the tab's own rows client-side (the route has no filter for either). */
-export function visibleRows(rows: readonly ProposalRow[], filters: QueueFilters, meId: string | null): ProposalRow[] {
-  return rows.filter((row) => {
-    if (filters.origin !== '' && row.origin !== filters.origin) return false;
-    if (filters.notMine && isMineOf(row, meId)) return false;
-    return true;
-  });
-}
-
 function QueueRow({ row, meId }: { row: ProposalRow; meId: string | null }) {
   const t = useT();
   const ctx = useFormatContext();
@@ -140,7 +135,7 @@ export function QueueScreen() {
 
   const tab = tabFrom(params);
   const filters = filtersFrom(params);
-  const query = useProposals({ status: TAB_STATUS[tab], kind: kindQueryOf(filters.kind) });
+  const query = useProposals({ status: TAB_STATUS[tab], kind: kindQueryOf(filters.kind), origin: filters.origin, notMine: filters.notMine, limit: QUEUE_PAGE });
   const forbidden = forbiddenFrom(query.error);
 
   const go = (nextTab: TabKey, patch: Partial<QueueFilters> = {}) => {
@@ -149,7 +144,7 @@ export function QueueScreen() {
     router.replace(search === '' ? pathname : `${pathname}?${search}`);
   };
 
-  const rows = query.data === undefined ? [] : visibleRows(query.data.items, filters, meId);
+  const rows = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
 
   const tabs: TabDef[] = [
@@ -203,11 +198,14 @@ export function QueueScreen() {
             <EmptyState title={t('console.queue.empty.rejected.title')} body={t('console.queue.empty.rejected.body')} />
           )
         ) : (
-          <div className="grid gap-2" data-proposal-rows="">
-            {rows.map((row) => (
-              <QueueRow key={row.id} row={row} meId={meId} />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-2" data-proposal-rows="">
+              {rows.map((row) => (
+                <QueueRow key={row.id} row={row} meId={meId} />
+              ))}
+            </div>
+            {total > rows.length ? <p className="mt-3 text-meta text-muted">{t('console.queue.more', { shown: rows.length, total })}</p> : null}
+          </>
         )}
       </TabPanel>
     </>

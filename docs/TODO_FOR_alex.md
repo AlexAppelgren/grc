@@ -542,3 +542,19 @@ section. Copied here as chunk3-rest-T20 requires.
       the console queue for you or someone you name. Default if you say nothing: it stays
       this way. The alternative is machine-confirmed provenance columns on every library
       list and on terms, so an agent can confirm those too: say if you want that planned.
+
+## proposals-reads-agent-visible: which version a reviewer decides a proposal against (2026-09-23, PRO-02)
+
+- [ ] **An open proposal is compared with the version in force today; once approved, it is
+      compared with the version just before the one it wrote.** The two differ when an
+      approved version is still waiting for its date. Example: version 1 is in force, version
+      2 is approved to take effect next month, and a new proposal is opened. The reviewer
+      sees version 1 against the new text, so the diff also shows version 2's changes as if
+      the new proposal made them. Once approved, the new proposal becomes version 3 and reads
+      against version 2. A rejected proposal also stays compared with today's version and
+      moves with the calendar. The API descriptions now say exactly this (`ProposalDetail`,
+      `currentSummary`, `scopeBefore`). The alternative: compare an open proposal with the
+      latest version, the one its approval will follow, so the open and approved views match,
+      and pin a rejected one to the version in force on the day it was rejected. Default if
+      you say nothing: it stays as built, which is what the brief asked for ("open proposals
+      keep today's in-force version").

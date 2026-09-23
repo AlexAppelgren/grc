@@ -1,28 +1,38 @@
-"""Reading the queue (chunk 4, PRO-01, PRO-03, VOC-07, INV-04).
+"""Reading the queue (chunk 4, PRO-01, PRO-02, PRO-03, VOC-07, INV-04, NFR-02, D-62).
 
 What a reviewer is given to decide on: the row that names the library record a proposal
-would change, the page that holds what the library says today against what the proposal
-would make it say, and the sources behind every changed value. What a reviewer is not
-given: the name of a bank member who proposed something, which never reaches the console.
+would change and who filed, corrected and decided it, a person or an agent; the page that
+holds the wording the proposal replaces against what it would make it say; and the sources
+behind every changed value. What a reviewer is not given: the name of a bank member who
+proposed something, which never reaches the console.
+
+An approved proposal is read against what it replaced, never against today: the version
+before the one its approval wrote, and the scope its approval found. No test here compares
+the real clock with a literal date: every effective date is today plus or minus an offset,
+so nothing flips the day a seeded date passes.
 
 And the other side of the same table: a bank's own list of what it has asked for, cut by
 row-level security on `proposal_tenant` rather than by a filter in Python, so tenant B
 cannot read tenant A's requests even if this module forgets to ask it not to.
 
 The query counts are pinned (playbook 10): the queue costs the same whether it holds one
-row or three, and a bank's list costs the same at two page sizes, so an N+1 shows up here
+row or three, and at two page sizes, and so does a bank's list, so an N+1 shows up here
 as a number rather than in production as a slow screen.
 """
 
 from __future__ import annotations
 
+import sys
+import time
 import uuid
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Any
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
 
 from apps.library.models import (
     Instrument,
@@ -34,10 +44,12 @@ from apps.library.models import (
     ObligationVersion,
     Provision,
 )
+from apps.agents import testing as agents_testing
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import logic
 from apps.proposals.models import Proposal, ProposalStatus
 from apps.shared import factories, tenancy
+from apps.shared import permissions as perms
 from apps.shared.audit import Actor, ActorType
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.shared.tenancy import library_write
@@ -57,6 +69,15 @@ PROVISION_SOURCE = "fffs-2017-2-9-6"
 TENANT_LIST_QUERIES = 1 + 2 + 6 + 2
 VERSION_ONE_SV = "Institutet bedömer kunden innan rådgivning. Bedömningen dokumenteras."
 PROPOSED_SV = "Institutet bedömer kunden innan rådgivning. Bedömningen dokumenteras varje år."
+LATER_SV = "Institutet bedömer kunden innan rådgivning. Bedömningen dokumenteras varje kvartal."
+SCOPE_ONE = ["legal_entity:bank"]
+SCOPE_TWO = ["legal_entity:bank", "client_category:retail"]
+
+
+def in_days(days: int) -> date:
+    """A legal date anchored to today rather than written out, so no assertion here turns
+    the day a literal date passes (CLAUDE.md section 11)."""
+    return timezone.localdate() + timedelta(days=days)
 
 
 class QueueReads(ScenarioTestCase):
@@ -125,28 +146,38 @@ class QueueReads(ScenarioTestCase):
     def _term(self, dimension: str, key: str) -> TaxonomyTerm:
         return TaxonomyTerm.objects.get(dimension__key=dimension, key=key)
 
-    def _version_proposal(self, obligation: Obligation, *, proposer: Any = None) -> Proposal:
-        """An agent's proposal of a new version, sourced field by field, waiting in the queue."""
+    def _version_proposal(
+        self,
+        obligation: Obligation,
+        *,
+        proposer: Any = None,
+        summary: str = PROPOSED_SV,
+        effective_from: date | None = None,
+        terms: list[str] | None = SCOPE_TWO,
+    ) -> Proposal:
+        """An agent's proposal of a new version, sourced field by field, waiting in the queue.
+        It comes into force a month from today unless the caller says otherwise, and `terms`
+        None leaves the scope alone."""
         tenancy.clear_tenant()
+        payload: dict[str, Any] = {
+            "summaries": {"sv": summary},
+            "originalLanguage": "sv",
+            "isMachine": True,
+            "effectiveFrom": (effective_from or in_days(30)).isoformat(),
+            "effectiveFromPrecision": "day",
+        }
+        sources = {"summaries.sv": SOURCE, "effectiveFrom": SOURCE}
+        if terms is not None:
+            payload["terms"] = terms
+            sources["terms"] = PROVISION_SOURCE
         proposal, _ = logic.create(
             kind="new_obligation_version",
             title=f"Version 2 of {obligation.stable_key}",
-            payload={
-                "summaries": {"sv": PROPOSED_SV},
-                "originalLanguage": "sv",
-                "isMachine": True,
-                "effectiveFrom": "2026-10-01",
-                "effectiveFromPrecision": "day",
-                "terms": ["legal_entity:bank", "client_category:retail"],
-            },
+            payload=payload,
             proposer=proposer or logic.Proposer(actor=factories.user_actor(), agent_run_id=uuid.uuid4()),
             target_type="obligation",
             target_id=obligation.id,
-            field_sources={
-                "summaries.sv": SOURCE,
-                "effectiveFrom": SOURCE,
-                "terms": PROVISION_SOURCE,
-            },
+            field_sources=sources,
             source_label="Finansinspektionen, board decision 15 September 2026",
             source_url=SOURCE,
         )
@@ -164,6 +195,39 @@ class QueueReads(ScenarioTestCase):
 
     def _editor_proposer(self, user: Any) -> logic.Proposer:
         return logic.Proposer(actor=Actor(kind=ActorType.USER, id=user.id, label=user.name), user=user)
+
+    def _agent_proposer(self, key: Any) -> logic.Proposer:
+        """An agent filing through a platform key bound to its definition, as the create
+        route builds it: the key and the agent copied from the key (D-62)."""
+        return logic.Proposer(
+            actor=Actor(kind=ActorType.AGENT, id=key.agent.id, label=key.agent.key),
+            api_key_id=key.id,
+            agent_id=key.agent.id,
+            agent_run_id=uuid.uuid4(),
+        )
+
+    def _agent_key(self, *, agent_row: Any = None, scopes: tuple[str, ...] = (perms.SCOPE_PROPOSALS_REVIEW,)) -> Any:
+        """A platform key bound to an agent definition, written with no tenant activated as
+        a platform row must be (H15)."""
+        tenancy.clear_tenant()
+        return agents_testing.agent_key(agent_row=agent_row, scopes=scopes)
+
+    def _approve(self, proposal: Proposal, caller: dict[str, Any], overrides: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Approve through the route every reviewer uses, a person stepped up or an agent's key."""
+        body: dict[str, Any] = {"note": "Checked against the board decision."}
+        if overrides is not None:
+            body["payloadOverrides"] = overrides
+        approved = self.client.post(f"{V1}/proposals/{proposal.id}/approve", data=body, content_type="application/json", **caller)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        tenancy.clear_tenant()
+        answer: dict[str, Any] = approved.json()
+        return answer
+
+    def _rows(self, caller: dict[str, Any], query: str = "") -> dict[str, Any]:
+        listed = self.client.get(f"{V1}/proposals{query}", **caller)
+        self.assertEqual(listed.status_code, 200, listed.content)
+        tenancy.clear_tenant()
+        return {item["id"]: item for item in listed.json()["items"]}
 
     # --- rows --------------------------------------------------------------------------
     def test_a_row_names_the_record_it_would_change(self) -> None:
@@ -215,6 +279,77 @@ class QueueReads(ScenarioTestCase):
         self.assertIsNone(detail.json()["proposedBy"])
         self.assertTrue(detail.json()["fromOrganisation"])
 
+    def test_a_row_names_the_agents_that_filed_corrected_and_decided_it(self) -> None:
+        """D-62: an agent's decision is named on the row and the detail by its definition
+        key, never left as an empty `reviewedBy`. A correction is the approver's, so an
+        agent that corrected on the way through is named in `correctedByAgent`."""
+        filer = self._agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        confirmer = self._agent_key(agent_row=agents_testing.agent(key="library-confirmer-reading", version=3))
+        corrected = self._version_proposal(self.obligation, proposer=self._agent_proposer(filer))
+        confirmed = self._version_proposal(self._obligation("obl-another-duty"), proposer=self._agent_proposer(filer))
+        self._approve(corrected, {"HTTP_X_API_KEY": confirmer.plain_key}, {"summaries": {"sv": LATER_SV}})
+        self._approve(confirmed, {"HTTP_X_API_KEY": confirmer.plain_key})
+
+        filed_by = {"key": filer.agent.key, "version": 1}
+        decided_by = {"key": "library-confirmer-reading", "version": 3}
+        rows = self._rows(sign_in(self.editor))
+        for proposal in (corrected, confirmed):
+            row = rows[str(proposal.id)]
+            self.assertEqual((row["proposedBy"], row["proposedByAgent"]), (None, filed_by))
+            self.assertEqual((row["reviewedBy"], row["reviewedByAgent"]), (None, decided_by), "an agent decided it")
+            self.assertIsNone(row["correctedBy"], "no person touched it")
+        self.assertEqual(rows[str(corrected.id)]["correctedByAgent"], decided_by, "the approving agent corrected it")
+        self.assertIsNone(rows[str(confirmed.id)]["correctedByAgent"], "approved as proposed")
+
+        body = self.client.get(f"{V1}/proposals/{corrected.id}", **sign_in(self.editor)).json()
+        self.assertEqual((body["proposedByAgent"], body["reviewedByAgent"], body["correctedByAgent"]), (filed_by, decided_by, decided_by))
+        self.assertEqual(body["proposedText"], LATER_SV)
+
+    def test_an_agents_own_proposals_are_its_own_under_every_key_of_its_definition(self) -> None:
+        """PRO-S14, AC-PRO2: for an agent's key, `isMine` and `notMine` follow four eyes, so
+        a proposal filed by one key of a definition is the reader's own under every key of
+        that definition, and no other agent's. `notMine` drops exactly the rows `isMine`
+        marks, for a person and for an agent alike."""
+        definition = agents_testing.agent(key="watch-sweeper-reading")
+        filing_key = self._agent_key(agent_row=definition, scopes=(perms.SCOPE_PROPOSALS_WRITE, perms.SCOPE_PROPOSALS_REVIEW))
+        sibling_key = self._agent_key(agent_row=definition)
+        other_agent = self._agent_key()
+        by_agent = self._version_proposal(self.obligation, proposer=self._agent_proposer(filing_key))
+        by_editor = self._flag_proposal(self._editor_proposer(self.editor))
+        own = {str(by_agent.id): True, str(by_editor.id): False}
+
+        for reader, mine in (
+            ({"HTTP_X_API_KEY": filing_key.plain_key}, own),
+            ({"HTTP_X_API_KEY": sibling_key.plain_key}, own),
+            ({"HTTP_X_API_KEY": other_agent.plain_key}, {str(by_agent.id): False, str(by_editor.id): False}),
+            (sign_in(self.editor), {str(by_agent.id): False, str(by_editor.id): True}),
+        ):
+            rows = self._rows(reader)
+            self.assertEqual({proposal_id: rows[proposal_id]["isMine"] for proposal_id in mine}, mine)
+            left = self._rows(reader, "?notMine=true")
+            self.assertEqual(set(left), {proposal_id for proposal_id, is_mine in mine.items() if not is_mine}, "notMine drops what isMine marks")
+
+    def test_a_banks_retry_after_the_decision_names_nobody_who_decided_it(self) -> None:
+        """PRO-03: a bank member's own create call, retried after a platform reviewer decided
+        it, answers how far the request got and never who decided or corrected it, as the
+        bank's own list never does. The console still reads who decided it."""
+        officer = {**sign_in(self.officer, tenant=self.tenant), "HTTP_IDEMPOTENCY_KEY": "bank-flag-client-money"}
+        body = {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}}
+        made = self.client.post(f"{V1}/proposals", data=body, content_type="application/json", **officer)
+        self.assertEqual(made.status_code, 201, made.content)
+        tenancy.clear_tenant()
+        proposal = Proposal.objects.get(pk=made.json()["id"])
+        self._approve(proposal, sign_in(self.editor, step_up=True))
+
+        replayed = self.client.post(f"{V1}/proposals", data=body, content_type="application/json", **officer)
+        self.assertEqual(replayed.status_code, 200, replayed.content)
+        row = replayed.json()
+        self.assertEqual(row["status"], "approved")
+        self.assertEqual([row[field] for field in ("reviewedBy", "reviewedByAgent", "correctedBy", "correctedByAgent")], [None, None, None, None])
+        self.assertNotIn(str(self.editor.id), repr(row))
+        tenancy.clear_tenant()
+        self.assertEqual(self._rows(sign_in(self.second_editor))[str(proposal.id)]["reviewedBy"]["id"], str(self.editor.id), "the console still reads who decided it")
+
     def _post_from_tenant(self) -> Proposal:
         """A proposal a bank's own member filed, through the door their screen uses."""
         made = self.client.post(
@@ -246,6 +381,38 @@ class QueueReads(ScenarioTestCase):
         unknown = self.client.get(f"{V1}/proposals?origin=nobody", **editor)
         self.assertEqual(unknown.status_code, 422, unknown.content)
         self.assertEqual(unknown.json()["code"], "unknown_key")
+
+    def test_the_queue_pages_and_counts_every_match(self) -> None:
+        """NFR-S6, playbook 10: the queue is a list like every other, 20 rows by default and
+        100 at most, oldest first, with a total that counts every match across the pages.
+        Each page is checked against the server's own order, read whole at the largest page
+        size, so two proposals filed within one tick of a coarse clock cannot reorder it."""
+        filed = {str(self._flag_proposal_keyed(number).id) for number in range(settings.API_PAGE_SIZE_DEFAULT + 1)}
+        editor = sign_in(self.editor)
+        whole = self.client.get(f"{V1}/proposals?limit={settings.API_PAGE_SIZE_MAX}", **editor).json()
+        order = [item["id"] for item in whole["items"]]
+        self.assertEqual((set(order), whole["total"]), (filed, len(filed)))
+        filed_at = [datetime.fromisoformat(item["createdAt"]) for item in whole["items"]]
+        self.assertEqual(filed_at, sorted(filed_at), "oldest first")
+        first = self.client.get(f"{V1}/proposals", **editor).json()
+        self.assertEqual(([item["id"] for item in first["items"]], first["total"]), (order[: settings.API_PAGE_SIZE_DEFAULT], len(filed)))
+        rest = self.client.get(f"{V1}/proposals?offset={settings.API_PAGE_SIZE_DEFAULT}", **editor).json()
+        self.assertEqual(([item["id"] for item in rest["items"]], rest["total"]), (order[settings.API_PAGE_SIZE_DEFAULT :], len(filed)))
+        one = self.client.get(f"{V1}/proposals?limit=1&offset=1", **editor).json()
+        self.assertEqual([item["id"] for item in one["items"]], order[1:2])
+        refused = self.client.get(f"{V1}/proposals?limit={settings.API_PAGE_SIZE_MAX + 1}", **editor)
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "validation_error")
+
+    def _flag_proposal_keyed(self, number: int) -> Proposal:
+        tenancy.clear_tenant()
+        proposal, _ = logic.create(
+            kind="vocabulary_create",
+            title=f"Add the flag number {number}",
+            payload={"list": "flag", "key": f"flag_{number}", "labels": {"en": f"Flag {number}"}},
+            proposer=logic.Proposer(actor=factories.user_actor(), agent_run_id=uuid.uuid4()),
+        )
+        return proposal
 
     # --- detail ------------------------------------------------------------------------
     def test_the_detail_compares_the_proposed_text_with_what_the_library_says(self) -> None:
@@ -280,20 +447,59 @@ class QueueReads(ScenarioTestCase):
         self.assertIsNone(body["scopeAfter"], "a vocabulary proposal leaves no record's scope alone or otherwise")
 
     def test_the_detail_shows_the_correction_and_then_the_version_it_wrote(self) -> None:
-        proposal = self._version_proposal(self.obligation)
-        corrected = "Institutet bedömer kunden innan rådgivning. Bedömningen dokumenteras varje kvartal."
-        approved = self.client.post(
-            f"{V1}/proposals/{proposal.id}/approve",
-            data={"payloadOverrides": {"summaries": {"sv": corrected}}},
-            content_type="application/json",
-            **sign_in(self.editor, step_up=True),
-        )
-        self.assertEqual(approved.status_code, 200, approved.content)
+        """Pinned to explicit versions, not to today: the approved proposal is read against
+        version 1 whether or not the version it wrote is in force yet."""
+        effective = in_days(30)
+        proposal = self._version_proposal(self.obligation, effective_from=effective)
+        approved = self._approve(proposal, sign_in(self.editor, step_up=True), {"summaries": {"sv": LATER_SV}})
+        self.assertEqual(approved["correctedBy"], {"id": str(self.editor.id), "name": self.editor.name})
+        self.assertIsNone(approved["correctedByAgent"], "a person corrected it")
         body = self.client.get(f"{V1}/proposals/{proposal.id}", **sign_in(self.second_editor)).json()
-        self.assertEqual(body["proposedText"], corrected, "the reviewer's own wording is what the diff shows")
+        self.assertEqual(body["proposedText"], LATER_SV, "the reviewer's own wording is what the diff shows")
+        self.assertEqual(body["currentSummary"]["text"], VERSION_ONE_SV, "read against version 1, the version before the one it wrote")
         self.assertIn(("insert", "Bedömningen dokumenteras varje kvartal."), [(segment["op"], segment["text"]) for segment in body["diff"]])
         version = ObligationVersion.objects.get(obligation=self.obligation, version_number=2)
-        self.assertEqual(body["appliedVersion"], {"id": str(version.id), "versionNumber": 2, "effectiveFrom": "2026-10-01"})
+        self.assertEqual(body["appliedVersion"], {"id": str(version.id), "versionNumber": 2, "effectiveFrom": effective.isoformat()})
+        self.assertEqual((body["reviewedBy"]["id"], body["correctedBy"]["id"]), (str(self.editor.id), str(self.editor.id)))
+
+    def test_a_decided_proposal_is_read_against_the_version_before_the_one_it_wrote(self) -> None:
+        """Two approvals in a row, both already in force: each proposal still reads against
+        the version before its own and the scope its own approval found, never against
+        today's version, which is the one it wrote or a later one. A proposal still waiting
+        reads against today's version and today's scope."""
+        first = self._version_proposal(self.obligation, effective_from=in_days(-30), terms=SCOPE_TWO)
+        self._approve(first, sign_in(self.editor, step_up=True))
+        second = self._version_proposal(self.obligation, summary=LATER_SV, effective_from=in_days(-10), terms=SCOPE_ONE)
+        self._approve(second, sign_in(self.editor, step_up=True))
+        waiting = self._version_proposal(self.obligation, summary=PROPOSED_SV, effective_from=in_days(30), terms=SCOPE_TWO)
+        editor = sign_in(self.second_editor)
+
+        body = self.client.get(f"{V1}/proposals/{first.id}", **editor).json()
+        self.assertEqual((body["appliedVersion"]["versionNumber"], body["currentSummary"]["text"]), (2, VERSION_ONE_SV))
+        self.assertIn(("insert", "Bedömningen dokumenteras varje år."), [(segment["op"], segment["text"]) for segment in body["diff"]])
+        self.assertEqual((body["scopeBefore"], body["scopeAfter"]), (SCOPE_ONE, SCOPE_TWO), "the scope the first approval found")
+
+        body = self.client.get(f"{V1}/proposals/{second.id}", **editor).json()
+        self.assertEqual((body["appliedVersion"]["versionNumber"], body["currentSummary"]["text"]), (3, PROPOSED_SV))
+        self.assertIn(("insert", "Bedömningen dokumenteras varje kvartal."), [(segment["op"], segment["text"]) for segment in body["diff"]])
+        self.assertEqual((body["scopeBefore"], body["scopeAfter"]), (SCOPE_TWO, SCOPE_ONE), "the scope the second approval found")
+
+        body = self.client.get(f"{V1}/proposals/{waiting.id}", **editor).json()
+        self.assertIsNone(body["appliedVersion"])
+        self.assertEqual(body["currentSummary"]["text"], LATER_SV, "version 3 is in force today")
+        self.assertEqual((body["scopeBefore"], body["scopeAfter"]), (SCOPE_ONE, SCOPE_TWO))
+
+    def test_an_approval_that_left_the_scope_alone_shows_the_scope_the_record_carries_now(self) -> None:
+        """A payload without `terms` leaves the scope alone, so its approval's audit row
+        records no scope before it: the detail then shows the scope the record carries now,
+        which a later approval may have changed, and no scope after."""
+        untouched = self._version_proposal(self.obligation, effective_from=in_days(-30), terms=None)
+        self._approve(untouched, sign_in(self.editor, step_up=True))
+        later = self._version_proposal(self.obligation, summary=LATER_SV, effective_from=in_days(-10), terms=SCOPE_TWO)
+        self._approve(later, sign_in(self.editor, step_up=True))
+        body = self.client.get(f"{V1}/proposals/{untouched.id}", **sign_in(self.second_editor)).json()
+        self.assertEqual(body["appliedVersion"]["versionNumber"], 2)
+        self.assertEqual((sorted(body["scopeBefore"]), body["scopeAfter"]), (sorted(SCOPE_TWO), None))
 
     def test_a_rejection_names_the_reason_row_it_was_refused_under(self) -> None:
         proposal = self._version_proposal(self.obligation)
@@ -381,18 +587,53 @@ class QueueReads(ScenarioTestCase):
 
     # --- costs -------------------------------------------------------------------------
     def test_the_queue_costs_the_same_whatever_it_holds(self) -> None:
-        """Playbook 10: the record each row names is looked up for the whole page at once, so
-        a queue of three costs what a queue of one costs."""
-        self._version_proposal(self.obligation)
+        """Playbook 10: the record each row names, and the people and agents who filed,
+        corrected and decided it, are looked up for the whole page at once, so a queue of
+        three costs what a queue of one costs, and a page of one what a page of twenty
+        costs, for a person reading and for an agent's key alike."""
+        filer = self._agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        confirmer = self._agent_key()
+        first = self._version_proposal(self.obligation, proposer=self._agent_proposer(filer))
+        self._approve(first, {"HTTP_X_API_KEY": confirmer.plain_key}, {"summaries": {"sv": LATER_SV}})
+        readers = (sign_in(self.editor), {"HTTP_X_API_KEY": confirmer.plain_key})
+        one = [self._queries(reader, "") for reader in readers]
+        second = self._version_proposal(self._obligation("obl-another-2"), proposer=self._agent_proposer(filer))
+        self._approve(second, sign_in(self.editor, step_up=True), {"summaries": {"sv": LATER_SV}})
+        self._version_proposal(self._obligation("obl-another-3"))
+        self.assertEqual([self._queries(reader, "") for reader in readers], one)
+        self.assertEqual([self._queries(reader, "?limit=1") for reader in readers], one)
+        self.assertEqual(self.client.get(f"{V1}/proposals", **sign_in(self.editor)).json()["total"], 3)
+
+    def _queries(self, caller: dict[str, Any], query: str) -> int:
+        with CaptureQueriesContext(connection) as captured:
+            answer = self.client.get(f"{V1}/proposals{query}", **caller)
+        self.assertEqual(answer.status_code, 200, answer.content)
+        tenancy.clear_tenant()
+        return len(captured.captured_queries)
+
+    def test_the_queue_answers_inside_the_budget(self) -> None:
+        """NFR-S6, NFR-02: the read reports its own server time in `Server-Timing: app`, and a
+        full default page stays under API_BUDGET_MS. CPU time on the request thread, the best
+        of five, as the other budget tests measure it; coverage's tracer is paused for the
+        timed requests only."""
+        filer = self._agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        for number in range(settings.API_PAGE_SIZE_DEFAULT):
+            self._version_proposal(self._obligation(f"obl-budget-{number}"), proposer=self._agent_proposer(filer))
         editor = sign_in(self.editor)
-        with CaptureQueriesContext(connection) as one:
-            self.client.get(f"{V1}/proposals", **editor)
-        for number in (2, 3):
-            self._version_proposal(self._obligation(f"obl-another-{number}"))
-        with CaptureQueriesContext(connection) as three:
-            answer = self.client.get(f"{V1}/proposals", **editor)
-        self.assertEqual(answer.json()["total"], 3)
-        self.assertEqual(len(three.captured_queries), len(one.captured_queries))
+        response = self.client.get(f"{V1}/proposals", **editor)
+        self.assertEqual(len(response.json()["items"]), settings.API_PAGE_SIZE_DEFAULT)
+        self.assertRegex(response["Server-Timing"], r"^app;dur=\d+\.\d$")
+        spent = []
+        tracer = sys.gettrace()
+        sys.settrace(None)
+        try:
+            for _ in range(5):
+                started = time.thread_time()
+                self.client.get(f"{V1}/proposals", **editor)
+                spent.append((time.thread_time() - started) * 1000)
+        finally:
+            sys.settrace(tracer)
+        self.assertLess(min(spent), settings.API_BUDGET_MS)
 
     def test_a_banks_own_list_costs_the_same_at_two_page_sizes(self) -> None:
         self.activate(self.tenant)

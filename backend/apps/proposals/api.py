@@ -14,7 +14,6 @@ reads this function back as the door's gate). Creating is open to a tenant membe
 row: approval does, through apps/proposals/apply.py.
 """
 
-import uuid
 from dataclasses import replace
 from typing import Any
 
@@ -121,17 +120,27 @@ def require_reviewer(request: HttpRequest) -> Reviewer:
     summary="Read the queue of changes waiting to enter the shared library",
 )
 @answers_problems
-def list_proposals(request: HttpRequest, query: Query[ProposalQuery]) -> ProposalPage:
+def list_proposals(request: HttpRequest, query: Query[ProposalQuery], page: Query[PageQuery]) -> ProposalPage:
     """Every change an agent or a person has asked for, with the library record each one
     would change named by its own title and reference, so a reviewer can work the queue
     without opening each proposal. Call it for the console's Waiting, Approved and Rejected
-    tabs, each of which is this call with its own `status`.
+    tabs, each of which is this call with its own `status`, and call it from a confirming
+    agent's key to read the same queue a person reads.
 
-    The answer is every proposal matching the filters in one page, oldest first. Nothing is
-    hidden by them: `total` counts the same rows the list carries. A proposal filed inside a
-    bank arrives without its proposer and says `fromOrganisation` instead, and `isMine` says
-    whether the reader filed it, which four eyes will not let them decide; it is always
-    false for the platform key of an independent agent reading the same queue (PRO-S13).
+    Each row names who filed it and who decided it: a platform person in `proposedBy` and
+    `reviewedBy`, or an agent by its definition key in `proposedByAgent` and
+    `reviewedByAgent`, and whoever corrected the payload on the way to approving it. A
+    proposal filed inside a bank arrives without its proposer and says `fromOrganisation`
+    instead. `isMine` says whether the reader filed it, which four eyes will not let them
+    decide: for a person their own, for an agent's key the key's own and those of every
+    other key of the same agent definition. `notMine` drops exactly those rows.
+
+    Nothing here changes a record and nothing is written to the audit trail: it is a read.
+
+    Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
+    quietly trimmed, oldest first so paging is repeatable, and `total` counting every
+    proposal matching the filters across every page. Nothing matching is a 200 with an empty
+    items list and a total of 0, never a 404.
 
     Needs the platform permission `proposals.review` from a person, or the platform-only
     scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054). No
@@ -139,24 +148,21 @@ def list_proposals(request: HttpRequest, query: Query[ProposalQuery]) -> Proposa
 
     Errors to branch on: `unauthenticated` (401) without a session or a key;
     `permission_denied` (403) without `proposals.review` or `proposals:review`;
-    `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`.
+    `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`;
+    `validation_error` (422) when the page size or offset is out of range.
     """
     reviewer = require_reviewer(request)
-    # `queue_rows()` and `logic.queue()` take a real reviewer id to test "is this mine" and
-    # to filter it out under `notMine` (apps/proposals/reading.py); an agent's key is never
-    # the proposer of a session's proposal, so a fresh id it can never equal reads the same
-    # as "nobody", without widening that function's signature for this app alone.
-    me_id = reviewer.user.id if reviewer.user is not None else uuid.uuid4()
     queryset = logic.queue(
+        reviewer=reviewer,
         status=query.status,
         kind=query.kind,
         target_list=query.target_list,
         origin=query.origin,
         not_mine=query.not_mine,
-        reviewer_id=me_id,
     )
-    rows = reading.queue_rows(list(queryset), language_order(request), me_id=me_id)
-    return ProposalPage(items=rows, total=len(rows))
+    total = queryset.count()
+    rows = reading.queue_rows(list(queryset[page.offset : page.offset + page.limit]), language_order(request), reviewer=reviewer)
+    return ProposalPage(items=rows, total=total)
 
 
 @router.get(
@@ -283,7 +289,7 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
         source_url=body.source_url,
         effective_from=body.effective_from,
     )
-    return (201 if created else 200), logic.row(proposal)
+    return (201 if created else 200), logic.proposer_row(proposal)
 
 
 @router.get(
@@ -326,10 +332,7 @@ def get_proposal(
     is not a UUID.
     """
     reviewer = require_reviewer(request)
-    # A fresh id for an agent, as the list does: `is_mine` compares a person's user id, and a
-    # key never filed a person's proposal.
-    me_id = reviewer.user.id if reviewer.user is not None else uuid.uuid4()
-    return reading.detail(logic.by_id(uuid_or_404(proposal_id)), language_order(request), me_id=me_id)
+    return reading.detail(logic.by_id(uuid_or_404(proposal_id)), language_order(request), reviewer=reviewer)
 
 
 @router.post(
