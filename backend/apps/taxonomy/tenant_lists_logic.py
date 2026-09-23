@@ -180,6 +180,18 @@ def row_by_key(list_name: str, key: str, tenant_id: uuid.UUID | None) -> Any:
     return row
 
 
+def row_for_write(list_name: str, keys: list[str], tenant_id: uuid.UUID) -> list[Any]:
+    """The rows a write changes, locked before they are read, so two writers queue: the
+    second reads the version and state the first committed, and `If-Match` or the state
+    check refuses it rather than letting it overwrite. The usage count groups rows, which
+    `FOR UPDATE` cannot, so the lock is taken on the bare rows first, in key order so two
+    merges never deadlock."""
+    entry = entry_for(list_name)
+    lock = entry.model._default_manager.select_for_update().filter(tenant_id=tenant_id, key__in=keys)
+    list(lock.order_by("key").values_list("pk", flat=True))
+    return [row_by_key(list_name, key, tenant_id) for key in keys]
+
+
 def row_detail(list_name: str, key: str, tenant_id: uuid.UUID | None, order: list[str]) -> VocabularyRowDetail:
     entry = entry_for(list_name)
     row = row_by_key(list_name, key, tenant_id)
@@ -466,7 +478,7 @@ def patch_row(
     """Relabel, re-note, reorder. The key never changes (playbook 4.3); `If-Match` carries
     the version and a stale write answers 409 `stale_write`."""
     entry = entry_for(list_name)
-    row = row_by_key(list_name, key, tenant.id)
+    [row] = row_for_write(list_name, [key], tenant.id)
     if expected_version is not None and expected_version != getattr(row, "version", 1):
         raise ValidationError("Someone changed this first. Reload and try again.", code="stale_write")
     before = {"labels": Labels.for_rows(entry.label_model, [row]).texts(row.id), "usageNote": row.usage_note}
@@ -546,7 +558,7 @@ def retire(
 ) -> VocabularyRetired:
     """Retire, never delete (playbook 15, AC-VOC2). The records that carry the value keep
     it and still render its label; the picker stops offering it."""
-    row = row_by_key(list_name, key, tenant.id)
+    [row] = row_for_write(list_name, [key], tenant.id)
     _refuse_system_row(row, "retired")
     count = int(getattr(row, "usage_count", 0))
     if count and not confirm:
@@ -577,7 +589,7 @@ def retire(
 def restore(*, list_name: str, tenant: Tenant, actor: Actor, key: str) -> VocabularyRestored:
     """The inverse of retire (playbook 15: retire, never delete, so there is always
     something to bring back). Audited like every other write."""
-    row = row_by_key(list_name, key, tenant.id)
+    [row] = row_for_write(list_name, [key], tenant.id)
     if row.active:
         raise ValidationError(f"{key} is not retired.", code="invalid_transition")
     row.active = True
@@ -604,8 +616,7 @@ def merge(
     `repointed` is what will actually move: a record that already carries the target keeps
     one link, so the count is never inflated by duplicates the unique constraint drops."""
     entry = entry_for(list_name)
-    source = row_by_key(list_name, key, tenant.id)
-    target = row_by_key(list_name, into, tenant.id)
+    source, target = row_for_write(list_name, [key, into], tenant.id)
     if source.pk == target.pk:
         raise ValidationError("Choose a different value to merge into.", code="validation_error")
     _refuse_system_row(source, "merged away")
