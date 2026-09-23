@@ -31,6 +31,7 @@ from unittest import mock
 from django.conf import settings
 from django.test import TestCase
 
+from apps.agents import testing as agent_build
 from apps.cases import testing as cases_build
 from apps.cases.models import ChangeCase
 from apps.home import roadmap
@@ -222,6 +223,22 @@ class RoadmapObligations(TestCase):
             ("Assess the research paid for", "FFFS 2017:2", "11 kap. 4 §"),
         )
         self.assertEqual((link.origin, link.confidence, link.confirmed), ("agent", 0.82, True))
+        self.assertEqual((link.confirmed_origin, link.confirmed_by_agent), ("user", None))
+
+    def test_a_link_an_agent_confirmed_reads_machine_confirmed_naming_the_agent(self) -> None:
+        """D-74: the roadmap says who confirmed a link as the change page does, so a
+        machine's confirmation never reaches a bank's plan as a person's verification."""
+        tenancy.clear_tenant()
+        confirmer = agent_build.agent_key(agent_row=agent_build.agent(key="library-confirmer"))
+        with watch_write("test setup"):
+            ChangeObligation.objects.filter(obligation=self.confirmed).update(
+                confirmed_by=None, confirmed_by_api_key_id=confirmer.id, confirmed_by_agent_id=confirmer.agent.id
+            )
+        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+            tenancy.activate(self.tenant.id)
+            link = roadmap.roadmap_items(self.tenant, ["en"], HomeRoadmapQuery()).items[0].obligations[0]
+        self.assertEqual((link.confirmed, link.confirmed_origin), (True, "agent"))
+        self.assertEqual(link.confirmed_by_agent.key if link.confirmed_by_agent else None, "library-confirmer")
 
 
 class RoadmapQuartersAreTheBanksOwn(TestCase):

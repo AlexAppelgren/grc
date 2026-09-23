@@ -35,24 +35,25 @@ Limits, in words as well as in the keywords: every list here pages at 20 by defa
 write here takes `If-Match`; the case's own concurrency arrives with the rest of CAS-08 in
 chunk 9. The agent writes (`POST /changes`, its documents, its events, its obligation
 links and the source check) take an `Idempotency-Key` header because an agent retries;
-`POST /changes` is additionally idempotent on `stableKey` (AC-WAT1). Nothing in this app
-takes a passkey step-up: no route here approves, signs off, exports or creates a key.
+`POST /changes` is additionally idempotent on `stableKey` (AC-WAT1). One thing here takes
+a passkey step-up: a person's intervention in the curation agents do — confirming a fact,
+or overturning one somebody confirmed (D-74). An agent's key never steps up.
 """
 
 from __future__ import annotations
 
 import datetime
 import uuid
-from typing import Literal
+from typing import Literal, Self
 
 from django.conf import settings
 from ninja import Field
-from pydantic import ConfigDict, HttpUrl
+from pydantic import ConfigDict, HttpUrl, model_validator
 from pydantic.json_schema import JsonDict
 
 from apps.governance.schemas import AiCitation
-from apps.library.schemas import LibraryRef, LibraryResponse
-from apps.shared.schemas import CamelSchema, PageQuery, WriteBody
+from apps.library.schemas import AgentRef, LibraryRef, LibraryResponse
+from apps.shared.schemas import AgentDecision, CamelSchema, PageQuery, WriteBody
 
 __all__ = ["CamelSchema"]
 
@@ -93,20 +94,33 @@ SOURCE_EXAMPLE: JsonDict = {
     "checkFrequency": "weekly",
     "active": True,
 }
+# The platform's two agent definitions as a read names them: the sweeper that suggests a
+# change's facts and the independent confirmer of another definition (D-74).
+SWEEPER_REF: JsonDict = {"id": "6d1e4f8a-9c3b-4a7e-8f21-1b6d4c8a2e05", "key": "watch-sweeper"}
+CONFIRMER_REF: JsonDict = {"id": "2b7c9e14-5d3a-4f86-9e02-7a1c4b8d6f39", "key": "library-confirmer"}
 FACT_EXAMPLE: JsonDict = {
     "ref": {"key": "advice_perimeter", "kind": None, "label": "Advice perimeter"},
     "confidence": 0.74,
     "suggested": True,
+    "confirmedOrigin": None,
+    "suggestedByAgent": SWEEPER_REF,
+    "confirmedByAgent": None,
 }
 CHANGE_TYPE_FACT_EXAMPLE: JsonDict = {
     "ref": {"key": "adopted", "kind": "adopted", "label": "Adopted"},
     "confidence": 0.91,
     "suggested": True,
+    "confirmedOrigin": None,
+    "suggestedByAgent": SWEEPER_REF,
+    "confirmedByAgent": None,
 }
 TERM_FACT_EXAMPLE: JsonDict = {
     "ref": {"key": "securities", "kind": None, "label": "Securities"},
     "confidence": None,
     "suggested": False,
+    "confirmedOrigin": "agent",
+    "suggestedByAgent": SWEEPER_REF,
+    "confirmedByAgent": CONFIRMER_REF,
 }
 EVENT_EXAMPLE: JsonDict = {
     "id": "1c8d5e02-7a94-4b61-83f2-6e0a4d9b3c15",
@@ -135,6 +149,9 @@ OBLIGATION_LINK_EXAMPLE: JsonDict = {
     "origin": "agent",
     "confidence": 0.82,
     "confirmed": False,
+    "confirmedOrigin": None,
+    "suggestedByAgent": SWEEPER_REF,
+    "confirmedByAgent": None,
 }
 LINK_DECISION_EXAMPLE: JsonDict = {
     "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
@@ -228,8 +245,34 @@ CHANGE_DETAIL_EXAMPLE: JsonDict = CHANGE_EXAMPLE | {
     # a person judges a change here, so an agent's suggestion has to be visible as one.
     "flags": [FACT_EXAMPLE],
     "terms": [TERM_FACT_EXAMPLE],
+    "changeTypeFact": CHANGE_TYPE_FACT_EXAMPLE,
     "inFootprint": True,
     "case": CASE_EXAMPLE,
+}
+# What a confirming agent sends: the facts it checked against the pages the change cites,
+# and the model call behind that decision (D-74, D-80).
+CURATION_CONFIRM_EXAMPLE: JsonDict = {
+    "changeType": "adopted",
+    "flags": ["advice_perimeter"],
+    "termIds": ["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"],
+    "obligationIds": ["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"],
+    "agentRunId": "8e3f2a61-4b7c-4d19-a05e-3c9b1f7d2e84",
+    "decision": {
+        "model": "claude-opus-5",
+        "modelVersion": "2026-05-01",
+        "promptTemplate": "library-confirmer/curation/v1",
+        "output": (
+            "Confirm. The decision memorandum names the change as adopted, it concerns the "
+            "line between advice and non-advised services in the securities area, and it "
+            "amends the rule on assessing research paid for."
+        ),
+        "citations": [
+            {
+                "label": "Finansinspektionen, decision memorandum FI Dnr 25-12345",
+                "url": "https://www.fi.se/en/published/news/2026/reporting/",
+            }
+        ],
+    },
 }
 
 
@@ -248,10 +291,45 @@ _PRECISION = (
     "never prints a day the source did not state. Library fact."
 )
 _SUGGESTED = (
-    "True while this is an agent's suggestion that no library editor has confirmed. The "
-    "screen marks it 'Suggested by the agent'. A reader must not treat a suggested fact as "
-    "checked, and a bank never confirms it: it is a library fact and confirming one needs "
-    "`proposals.review` (WAT-03, PRO-01)."
+    "True while this is a suggestion nobody has confirmed. The screen marks it 'Suggested "
+    "by the agent'. A reader must not treat a suggested fact as checked, and a bank never "
+    "confirms it: it is a library fact, confirmed for every bank by an independent agent "
+    "holding `proposals:review` or by a person holding `proposals.review` (WAT-03, PRO-01, "
+    "D-74)."
+)
+# D-74: who suggested a curated fact and who confirmed it, said on the fact itself exactly
+# as a library version says who confirmed its approval (`VersionConfirmation`, D-62).
+_CONFIRMED_ORIGIN = (
+    "Who confirmed it, a fixed kind: `agent` when a second, independent agent confirmed it "
+    "(an agent of another definition and key than the one that suggested it), which a "
+    "screen labels machine-confirmed and never as a person's verification; `user` when a "
+    "person holding `proposals.review` confirmed it with a passkey, who is not named here. "
+    "Null, the default, while it is still a suggestion. Decide the machine-confirmed label "
+    "from this field alone, never from which agent fields are present. A library fact, the "
+    "same for every bank, and not four eyes: no proposal stands behind it (D-74)."
+)
+_SUGGESTED_BY_AGENT = (
+    "The agent definition that suggested it, by its key (`watch-sweeper`, for example), "
+    "copied from the run or the key that filed it. Null, the default, when a person filed "
+    "it by hand or a key bound to no agent did. It names a platform agent, never a person "
+    "or a bank."
+)
+
+def _names_its_confirmer(*, confirmed: bool, origin: str | None, agent: AgentRef | None) -> None:
+    """A confirmed fact always says who confirmed it, so a read that forgets the provenance
+    fails loudly instead of answering `confirmedOrigin: null`, which the contract defines
+    as a suggestion: a machine's confirmation would then carry no machine label (D-74). The
+    fields default to null only so a client written before them keeps working."""
+    if confirmed and origin is None:
+        raise ValueError("A confirmed fact names who confirmed it: build it with keys.provenance().")
+    if origin == "agent" and agent is None:
+        raise ValueError("A fact an agent confirmed names that agent.")
+
+
+_CONFIRMED_BY_AGENT = (
+    "The independent agent that confirmed it, by its definition key, when `confirmedOrigin` "
+    "is `agent`. Never the agent that suggested it: the database refuses that row. Null, "
+    "the default, when a person confirmed it or nobody has yet."
 )
 _CONFIDENCE = (
     "How sure the agent was, 0 to 1, or null when a person set this rather than an agent. "
@@ -953,8 +1031,9 @@ class WatchObligationLinkInput(WriteBody):
 
 
 class WatchObligationLink(LibraryResponse):
-    """A link the agent suggested or a person set. `confirmed` is the library editor's
-    decision; a bank's own decision lives on its case, never here (WAT-04, ruling C)."""
+    """A link the agent suggested or a person set. `confirmed` is the shared library's
+    confirmation, by an independent agent or a person, and the three fields after it say
+    who; a bank's own decision lives on its case, never here (WAT-04, ruling C, D-74)."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [OBLIGATION_LINK_EXAMPLE]})
 
@@ -976,19 +1055,29 @@ class WatchObligationLink(LibraryResponse):
         description=(
             "Who first drew this link, a fixed kind: `agent` (a run suggested it) or `user` (a "
             "library editor added it by hand). It never changes afterwards, so `agent` on a "
-            "confirmed link means an agent found it and a person agreed."
+            "confirmed link means an agent found it and somebody else agreed; "
+            "`confirmedOrigin` says whether that was a second agent or a person."
         ),
         examples=["agent"],
     )
     confidence: float | None = Field(description=_CONFIDENCE, examples=[0.82])
     confirmed: bool = Field(
         description=(
-            "Whether a library editor has confirmed the link for the shared library. False is "
-            "a suggestion. A reader must not read `false` as 'not related' — only a bank's own "
-            "`removed` decision on its case says that, and it changes no library row."
+            "Whether the link has been confirmed for the shared library, by an independent "
+            "agent or by a person; `confirmedOrigin` says which. False is a suggestion. A "
+            "reader must not read `false` as 'not related' — only a bank's own `removed` "
+            "decision on its case says that, and it changes no library row."
         ),
         examples=[False],
     )
+    confirmed_origin: Origin | None = Field(default=None, description=_CONFIRMED_ORIGIN, examples=[None])
+    suggested_by_agent: AgentRef | None = Field(default=None, description=_SUGGESTED_BY_AGENT)
+    confirmed_by_agent: AgentRef | None = Field(default=None, description=_CONFIRMED_BY_AGENT)
+
+    @model_validator(mode="after")
+    def _says_who_confirmed(self) -> Self:
+        _names_its_confirmer(confirmed=self.confirmed, origin=self.confirmed_origin, agent=self.confirmed_by_agent)
+        return self
 
 
 # ---------------------------------------------------------------------------------------
@@ -1007,6 +1096,7 @@ class WatchChangeInput(WriteBody):
                     "stableKey": "chg-fi-2026-research-payments",
                     "title": "FI adopts amended rules on paying for investment research",
                     "changeType": "adopted",
+                    "changeTypeConfidence": 0.91,
                     "authorityLabel": "Finansinspektionen",
                     "authorityCode": "fi",
                     "publishedOn": "2026-09-15",
@@ -1081,6 +1171,19 @@ class WatchChangeInput(WriteBody):
             f"`unknown_key` with the valid keys (AC-WAT2). {_VOCABULARY}"
         ),
         examples=["adopted"],
+    )
+    change_type_confidence: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+        description=(
+            "How sure the agent was of `changeType`, 0 to 1, its own number; null, the default, "
+            "when it recorded none or a person files the change. Stored with the type as a "
+            "suggestion and shown beside it until the type is confirmed; it orders nothing and "
+            "says nothing about whether the type is right. A later sighting of the same "
+            "`stableKey` leaves it as it was."
+        ),
+        examples=[0.91],
     )
     authority_label: str = Field(
         min_length=1,
@@ -1229,7 +1332,7 @@ class WatchChangeInput(WriteBody):
     obligation_links: list[WatchObligationLinkInput] = Field(
         default_factory=list,
         max_length=LINKS_MAX,
-        description=f"The obligations the change affects, at most {LINKS_MAX} in one call, each a suggestion until a library editor confirms it.",
+        description=f"The obligations the change affects, at most {LINKS_MAX} in one call, each a suggestion until an independent agent or a person confirms it.",
     )
     agent_run_id: uuid.UUID | None = Field(
         default=None,
@@ -1254,7 +1357,7 @@ class WatchChangeInput(WriteBody):
 
 class WatchChangePatch(WriteBody):
     """`PATCH /changes/{changeId}` (WAT-03): the library facts of a change. What a key may
-    move, and that a suggestion stays a suggestion until a library editor confirms it, is
+    move, and that a suggestion stays a suggestion until it is confirmed, is
     `watch/curation.py:update_change_facts`. Every field is optional; a field left out is
     left alone, and no field here is ever nulled by omission."""
 
@@ -1341,6 +1444,88 @@ class WatchChangePatch(WriteBody):
             "a bank's words are its own. Words with no model, no version or no citation "
             "answer 422."
         ),
+    )
+
+
+class WatchCurationConfirmInput(WriteBody):
+    """`POST /changes/{changeId}/confirmation` (WAT-03, WAT-04, D-74): which of a change's
+    curated facts to confirm for the shared library, as they stand now.
+
+    Name what you checked and nothing else: the type's key, flag keys, scope term ids and
+    linked obligation ids, each of which must be on the change as it stands. A fact already
+    confirmed is left exactly as it is, so repeating a call confirms nothing twice. An
+    agent's key sends the model call behind its decision and the open run it was made in; a
+    person's session sends neither."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [CURATION_CONFIRM_EXAMPLE]})
+
+    change_type: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=KEY_MAX,
+        description=(
+            f"The key of the type you checked, a row of the `change_type` library vocabulary, "
+            f"at most {KEY_MAX} characters, which confirms the change's type. It must be the "
+            "type the change has now: a key the change does not carry answers 422 "
+            "`validation_error`, because the type moved after you read it or you checked "
+            "another, and nothing is confirmed unread. Null, the default, leaves the type as it "
+            "is. To confirm a different type, correct it with `PATCH /changes/{changeId}` "
+            f"first: this call never changes a value. {_VOCABULARY}"
+        ),
+        examples=["adopted"],
+    )
+    flags: list[str] = Field(
+        default_factory=list,
+        max_length=50,
+        description=(
+            "Keys of the flags on this change to confirm, rows of the `flag` library "
+            "vocabulary, at most 50. A key the change does not carry answers 422 "
+            "`validation_error`, because a confirmation is of what is there. The values are "
+            "vocabulary rows an admin may extend or retire: read `GET /vocab/flag`, and match "
+            "on the key, never the label."
+        ),
+        examples=[["advice_perimeter"]],
+    )
+    term_ids: list[uuid.UUID] = Field(
+        default_factory=list,
+        max_length=100,
+        description=(
+            "The scope terms on this change to confirm, each a taxonomy term's UUID as the "
+            "change answers it, at most 100. A term the change does not carry answers 422 "
+            "`validation_error`."
+        ),
+        examples=[["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"]],
+    )
+    obligation_ids: list[uuid.UUID] = Field(
+        default_factory=list,
+        max_length=LINKS_MAX,
+        description=(
+            f"The linked obligations to confirm, each the obligation's UUID, at most "
+            f"{LINKS_MAX}. An obligation the change is not linked to answers 422 "
+            "`validation_error`: a confirmation never creates a link, which is "
+            "`PUT /changes/{changeId}/obligations`."
+        ),
+        examples=[["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"]],
+    )
+    decision: AgentDecision | None = Field(
+        default=None,
+        description=(
+            "The model call behind an agent's decision to confirm: the model, its version, "
+            "the prompt's name and hash, what it concluded and at least one public page it "
+            "rests on (D-80). Required from an agent's key and logged in the AI output log "
+            "under `agent_review`, which the platform alone reads; refused from a person's "
+            "session, whose confirmation is their own. Null by default."
+        ),
+    )
+    agent_run_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            f"The open run the decision was made in, as {_UUID}, opened by the confirming key "
+            "itself. Required from an agent's key: naming none, or a closed run, answers 422 "
+            "`run_not_open`, and another key's run answers 404. Refused from a person's "
+            "session. Null by default."
+        ),
+        examples=["8e3f2a61-4b7c-4d19-a05e-3c9b1f7d2e84"],
     )
 
 
@@ -1477,9 +1662,11 @@ class WatchFact(LibraryResponse):
 
     Two things that are not the same thing, kept apart: `ref` is the library vocabulary row
     itself, exactly `{key, kind, label}` like every other vocabulary reference in this API,
-    and the two fields beside it say how the row came to be on this change. Flattening the
-    provenance into the reference would make this the one reference shape a client has to
-    read differently, which is what the presentation guard refuses (NFR-S10)."""
+    and the fields beside it say how the row came to be on this change — the agent's
+    confidence, whether it is still a suggestion, and who suggested and who confirmed it
+    (D-74). Flattening the provenance into the reference would make this the one reference
+    shape a client has to read differently, which is what the presentation guard refuses
+    (NFR-S10)."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [FACT_EXAMPLE]})
 
@@ -1494,6 +1681,14 @@ class WatchFact(LibraryResponse):
     )
     confidence: float | None = Field(description=_CONFIDENCE, examples=[0.74])
     suggested: bool = Field(description=_SUGGESTED, examples=[True])
+    confirmed_origin: Origin | None = Field(default=None, description=_CONFIRMED_ORIGIN, examples=[None])
+    suggested_by_agent: AgentRef | None = Field(default=None, description=_SUGGESTED_BY_AGENT)
+    confirmed_by_agent: AgentRef | None = Field(default=None, description=_CONFIRMED_BY_AGENT)
+
+    @model_validator(mode="after")
+    def _says_who_confirmed(self) -> Self:
+        _names_its_confirmer(confirmed=not self.suggested, origin=self.confirmed_origin, agent=self.confirmed_by_agent)
+        return self
 
 
 class WatchCaseObligationDecision(LibraryResponse):
@@ -1714,12 +1909,9 @@ class WatchChangeDetail(WatchChange):
     (WAT-03). The change page used to flatten each fact to its `ref` and lose the
     provenance the feed row carries (2026-09-21).
 
-    `changeType` stays a `LibraryRef` here, where a feed row answers a fact. It is not the
-    same gap: the library stores no confidence and no confirmation for the type itself, so
-    the row's fact derives `suggested` from the change's own `origin` — and this response
-    already carries `origin`, `model` and `agentRunId` at the top level. An individual flag
-    or scope term has no such field to be read off, which is why those two had to carry
-    their own.
+    `changeType` stays a `LibraryRef` here, where a feed row answers a fact, so a client
+    that reads it keeps working; since the type carries its own suggestion and confirmation
+    (D-74, watch 0002) the same fact a feed row answers is `changeTypeFact` beside it.
     """
 
     model_config = ConfigDict(json_schema_extra={"examples": [CHANGE_DETAIL_EXAMPLE]})
@@ -1731,12 +1923,13 @@ class WatchChangeDetail(WatchChange):
             "`{key, kind, label}` — `ai` and `advice_perimeter` on day one. `confidence` is how "
             "sure the agent that put the flag there was, 0 to 1, or null when a library editor "
             "set it by hand; it orders nothing on this screen and says nothing about whether "
-            "the flag is right. `suggested` is true while no library editor has confirmed the "
-            "flag, and the change page marks such a flag as the agent's reading rather than a "
-            "checked fact — a reader deciding from this page must not treat it as checked. A "
-            "library editor confirms a flag in the console queue and never here, and a bank "
-            "never confirms one at all: it is a library fact behind `proposals.review` "
-            f"(WAT-03, PRO-01). An empty list means no flag applies, not that nobody looked. {_VOCABULARY}"
+            "the flag is right. `suggested` is true while nobody has confirmed the flag, and "
+            "the change page marks such a flag as the agent's reading rather than a checked "
+            "fact — a reader deciding from this page must not treat it as checked. An "
+            "independent agent or a person confirms a flag through "
+            "`POST /changes/{changeId}/confirmation` and never here, the first reading "
+            "machine-confirmed, and a bank never confirms one at all: it is a library fact "
+            f"(WAT-03, PRO-01, D-74). An empty list means no flag applies, not that nobody looked. {_VOCABULARY}"
         )
     )
     terms: list[WatchFact] = Field(  # type: ignore[assignment]  # narrower than WatchChange's: see the docstring
@@ -1746,12 +1939,25 @@ class WatchChangeDetail(WatchChange):
             "`{key, kind, label}` with `securities`, `banking`, `payments`, `insurance`, `aml`, "
             "`tax`, `data_protection` and `ai_ict` among the regimes seeded on day one; a term's "
             "`kind` is null because its dimension is its kind. `confidence` is the agent's own "
-            "number, 0 to 1, or null when a person set the term. `suggested` is true until a "
-            "library editor confirms it, and the change page shows such a term as a suggestion. "
+            "number, 0 to 1, or null when a person set the term. `suggested` is true until an "
+            "independent agent or a person confirms it, and the change page shows such a term "
+            "as a suggestion; `confirmedOrigin` `agent` reads machine-confirmed. "
             "This is what the footprint is matched against, and `inFootprint` is computed from "
             "every term whether or not it is still suggested; it is not this bank's footprint "
             f"and it never says the bank complies (REG-01, REG-02). {_VOCABULARY}"
         )
+    )
+    change_type_fact: WatchFact | None = Field(
+        default=None,
+        description=(
+            "The change's type as a fact, exactly as a feed row answers its `changeType`: "
+            "`ref` is the same row as `changeType`, beside the agent's confidence, whether it "
+            "is still a suggestion and who suggested and who confirmed it. This read always "
+            "sends it; the default of null exists only because the property was added after "
+            "`changeType`, which stays a bare reference so a client reading it keeps working. "
+            "A type an independent agent confirmed reads machine-confirmed, never as a "
+            "person's verification (WAT-03, D-74)."
+        ),
     )
     in_footprint: bool = Field(
         description="Whether the change's scope matches the reader's footprint, computed by the server (FP-03).", examples=[True]
@@ -1935,7 +2141,7 @@ class WatchConsoleChangeRow(LibraryResponse):
     unconfirmed_count: int = Field(
         description=(
             "How many facts on this change — its type, its flags, its scope terms and its "
-            "obligation links — no library editor has confirmed yet. Computed by the server; it "
+            "obligation links — nobody has confirmed yet. Computed by the server; it "
             "is the queue's own count and says nothing about whether the facts are wrong."
         ),
         examples=[2],
@@ -2008,8 +2214,9 @@ class WatchObligationChangePage(CamelSchema):
     items: list[WatchChangeRow] = Field(
         description=(
             "The changes linked to this obligation, with the reader's own case on each. The "
-            "links a library editor has confirmed come first, because they are the ones "
-            "somebody has checked; inside each group the rows are ordered by key date, newest "
+            "confirmed links come first, whether an independent agent or a person confirmed "
+            "them, because they are the ones somebody has checked; inside each group the rows "
+            "are ordered by key date, newest "
             "first. An unconfirmed link is a suggestion, never a statement that the change "
             "does not affect the duty."
         )

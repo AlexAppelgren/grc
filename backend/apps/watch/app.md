@@ -105,15 +105,23 @@ And no second change row exists
 
 ### WAT-S4 — Types, flags and scope come from vocabularies and stay suggestions until confirmed `@integration` `@e2e` (WAT-03)
 ```gherkin
-Given an agent classifies a change as type "amendment" with the flag "client_money" and the scope "custody"
-Then each is stored as a key with confidence and suggested true
+Given an agent classifies a change as type "adopted" with confidence 0.91, with the flag "advice_perimeter" and the scope "securities"
+Then each is stored as a key, marked suggested and naming the agent that suggested it, the type with the agent's confidence
 And the change row shows the type as a notice pill, the flag as a brand pill, each marked as a suggestion
-When a library editor confirms them
-Then suggested becomes false and the audit event records who confirmed
-And a bank's own compliance officer cannot confirm them, because a change's type, flag and scope are library facts behind proposals.review
+When an agent of another definition confirms them, with the model call behind its decision, inside its own open run
+Then suggested becomes false and each reads machine-confirmed, naming the suggesting and the confirming agent, never as a person's verification
+And the audit event records which agent confirmed, and its decision is in the AI output log under agent_review
+And the agent that suggested them cannot confirm them through any key of its own, the very key that filed them included
+And a bank's own compliance officer cannot confirm them, because a change's type, flag and scope are library facts
+And a person holding proposals.review may confirm one instead only with a fresh passkey, and it then reads confirmed by a person
 ```
-`@e2e` stays `test.fixme()`, owned and named by `c5-e2e-watch-journeys-b`: the confirming
-half needs the held `c5-watch-curation-confirm` (`q-editor-confirm`, `docs/TODO_FOR_alex.md`).
+A curation confirmation is D-74's: an agent-bound key of another definition with
+`proposals:review`, or a person with `proposals.review` who steps up. It is not four eyes
+(no proposal stands behind it) and is labelled machine-confirmed when an agent gave it.
+Nobody confirms what they filed themselves, a person included, and the confirmer names the
+type it checked by its key, so a type corrected meanwhile is not confirmed unread
+(`tests_curation.py`, `tests_curation_races.py`). `@e2e` stays `test.fixme()`: the screen,
+its seed and the journey are `watch-curation-confirm-frontend`'s.
 
 ### WAT-S5 — An unknown key answers unknown_key with the valid keys `@integration` (WAT-03, AC-WAT2)
 ```gherkin
@@ -127,8 +135,8 @@ And nothing is stored
 ```gherkin
 Given an agent linked a change to two obligations with confidence 0.9 and 0.4
 Then the change screen's "Obligations affected" shows both with the confidence as a suggestion
-When a library editor confirms the first for the shared library
-Then that link reads confirmed for every bank and the audit event records who confirmed
+When an agent of another definition confirms the first for the shared library
+Then that link reads machine-confirmed for every bank, naming both agents, and the audit event records which agent confirmed
 When a compliance officer accepts the first and removes the second on their own bank's case
 Then both decisions are stored on that bank's case and audited, the second is hidden from that bank's change page, and the obligation shows "1 open change"
 And no library row changed: the second link is still there, still a suggestion, and another bank still sees both
@@ -136,10 +144,12 @@ And no library row changed: the second link is still there, still a suggestion, 
 `@e2e` built for the bank's half: the compliance officer confirms one link and says the
 other is not related on their own bank's case ("Confirm link", "Not related"), the removed
 link is hidden from that bank's change page and still stored, and another bank still sees
-both links, neither decided. The library editor's half joins the same journey with the
-curation confirmation; until then the seed stands in for it with one link a library editor
-already confirmed (`c5-seed-watch`). That both decisions are audited is asserted by the
-`@integration` half, because the audit log's record-kind filter offers no case kind yet.
+both links, neither decided. The library's half is asserted by the `@integration` half; it
+joins the journey with `watch-curation-confirm-frontend`, and until then the seed stands in
+for it with one link a person already confirmed (`c5-seed-watch`). That both decisions are
+audited is asserted by the `@integration` half, because the audit log's record-kind filter
+offers no case kind yet. PRD WAT-04's "confirmed by a person" stays true per bank, on each
+bank's own case; the library's confirmation is D-74's and never reads as a person's.
 
 Still pending in this scenario:
 - **"The obligation shows 1 open change" on screen.** No screen mounts the obligation's
@@ -154,17 +164,6 @@ Still pending in this scenario:
 - **Reversal.** `POST /changes/{changeId}/case/obligation-links` accepts a link the bank
   removed, but no screen offers it in R1: a removed link is hidden, and when every link is
   removed the panel says so rather than that nothing is linked.
-
-> **Note — the library editor's confirmation.** The step "a library editor confirms the
-> first for the shared library" is the held half of this feature and is asserted in WAT-S4,
-> not here: whether one person may settle a library fact with no proposal at all is
-> `q-editor-confirm`, which CLAUDE.md section 5 reserves to the owner, and
-> `c5-watch-curation-confirm` builds it the moment he answers. Until then no route moves
-> `change_obligation.confirmed_by` — `PUT /changes/{changeId}/obligations` answers 501
-> `not_built` to a library editor whose call would unmake a confirmation, and refuses a key
-> outright — so the scenario above covers what a bank does on its own case, which needs no
-> answer. The confirm control that would attach to the Change facts card
-> (`c5-fe-console-change-facts-detail`) is unbuilt for the same reason.
 
 ### WAT-S7 — The "So what?" is AI-drafted until a person confirms or rewrites it per tenant `@integration` `@e2e` (WAT-05)
 ```gherkin

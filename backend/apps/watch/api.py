@@ -13,6 +13,10 @@ Two gates here serve more than one principal, so they are logic gates listed in
 - **The change facts** are written by an agent's key with `changes:write` and corrected by
   a library editor's session with `proposals.review` (PRO-01: a change's type, flags and
   scope are library facts, and no tenant role holds that permission).
+- **Their confirmation** is given by an agent-bound platform key with `proposals:review`,
+  an agent of another definition than the one that suggested the fact, or by a person with
+  `proposals.review` and a fresh passkey assertion (D-74). No bank's session or key
+  reaches it.
 
 Registering a source is a library editor's alone, and attaching a fetched page is a key's
 alone: a page arrives from the agent that screened it (AGT-07), never from a screen.
@@ -36,7 +40,8 @@ from ninja import Body, Header, Path, Query, Router
 from apps.agents import runs
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, PrincipalKind, SessionAuth
-from apps.shared.permissions import requires_permission, requires_scope
+from apps.shared.errors import ProblemError
+from apps.shared.permissions import enforce_step_up, requires_permission, requires_scope
 from apps.shared.schemas import PageQuery
 from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, deny, principal, require_any
 from apps.taxonomy.reading import language_order
@@ -58,6 +63,8 @@ from apps.watch.schemas import (
     WatchChangeQuery,
     WatchConsoleChangePage,
     WatchConsoleChangeQuery,
+    WatchConsoleChangeRow,
+    WatchCurationConfirmInput,
     WatchObligationChangePage,
     WatchObligationLink,
     WatchObligationLinkInput,
@@ -161,6 +168,43 @@ def require_change_writer(request: HttpRequest) -> None:
             raise deny(perms.SCOPE_CHANGES_WRITE)
         return
     require_any(request, perms.PROPOSALS_REVIEW)
+
+
+def require_curation_confirmer(request: HttpRequest) -> uuid.UUID | None:
+    """Who may confirm a change's curated facts for the shared library (WAT-03, WAT-04,
+    D-74): a platform key bound to an agent definition and holding the scope
+    `proposals:review`, or a person holding `proposals.review` with a fresh passkey
+    assertion, whose id this returns for the audit row. A key never steps up.
+
+    A key carrying a tenant, or lacking the scope, is refused with the scope named: the
+    scope is platform-only, so no bank's key reaches here whatever its list says. A key
+    bound to no agent is refused with `agent_not_bound`, because the one write path compares
+    agents and a key with none would be compared on a null. A bank's session holds no
+    `proposals.review` and is refused with it named. Whether the confirming agent is the
+    suggesting one is the write's to refuse, fact by fact (`curation.confirm_curation`)."""
+    who = principal(request)
+    if who.kind is PrincipalKind.AGENT:
+        if who.tenant_id is not None or not who.has_scope(perms.SCOPE_PROPOSALS_REVIEW):
+            raise deny(perms.SCOPE_PROPOSALS_REVIEW)
+        if who.agent_id is None:
+            raise ProblemError(
+                status=403,
+                code="agent_not_bound",
+                detail="This key is bound to no agent definition, so its confirmation could not be told apart from the suggestion.",
+            )
+        return None
+    require_any(request, perms.PROPOSALS_REVIEW)
+    return enforce_step_up(request)
+
+
+def fresh_step_up(request: HttpRequest) -> uuid.UUID | None:
+    """A person's fresh passkey assertion, or None for a stale one or a key. Correcting a
+    change's facts needs none, so the two curation routes ask for it here and leave it to
+    the write to demand it when the call would overturn a confirmation (D-74)."""
+    try:
+        return enforce_step_up(request)
+    except ProblemError:
+        return None
 
 
 # ---------------------------------------------------------------------------------------
@@ -461,13 +505,17 @@ def get_change(request: HttpRequest, change_id: uuid.UUID = Path(..., descriptio
     `watch.read` in their own bank. Everything outside `case` is a library fact shared by
     every bank and changed only by a library editor or through a proposal; everything inside
     `case` is this bank's own and is invisible to bleqq, to every other bank and to every
-    model endpoint. An obligation link says on itself whether a library editor confirmed it;
+    model endpoint. An obligation link says on itself whether it was confirmed;
     `confirmed: false` is a suggestion an agent made and must not be read as checked, nor as
     a statement that the change does not touch that duty. Each flag and each scope term says
-    the same on itself, as `{ref, confidence, suggested}` exactly as a feed row answers it:
-    `suggested: true` is the agent's reading and not a checked fact, `confidence` is the
-    agent's own number and orders nothing here. A library editor confirms them in the console
-    queue rather than here, and a bank never confirms one at all.
+    the same on itself exactly as a feed row answers it, and so does the type, in
+    `changeTypeFact`: `suggested: true` is the agent's reading and not a checked fact,
+    `confidence` is the agent's own number and orders nothing here. Each also names the agent
+    that suggested it and, once confirmed, whether an independent agent confirmed it
+    (`confirmedOrigin` `agent`, which reads machine-confirmed and never as a person's
+    verification, naming that agent) or a person did (D-74). Confirming is
+    `POST /changes/{changeId}/confirmation`, never this read, and a bank never confirms a
+    library fact at all.
 
     Errors: `not_found` when no change has that id, when the caller may not see it, or when
     the session belongs to no bank — all answered the same way on purpose, so no id can be
@@ -682,13 +730,15 @@ def update_change(
     may set: `status` and `supersededBy`, because deciding that a reform has been replaced
     or withdrawn is a reading of the law and not a sighting of it.
 
-    Everything written here is a suggestion. A flag or a term arrives with `suggested` true
-    and nobody named as having confirmed it, whoever sent it, and a reader must not treat it
-    as checked. Confirming one is a library editor's act on a library row and is not built
-    yet, so a call that would drop or overwrite something already confirmed answers
-    `not_built` to that editor and is refused outright to a key. The whole call is one
-    transaction that writes an audit row naming who changed which facts, and the keys are
-    resolved before anything is stored, so a refusal stores nothing.
+    Everything written here is a suggestion. A new type, a flag or a term arrives with
+    `suggested` true, nobody named as having confirmed it and the calling key's agent named
+    as its suggester, whoever sent it, and a reader must not treat it as checked. Confirming
+    one is `POST /changes/{changeId}/confirmation`. A call that would drop a flag or a term,
+    or replace a type, that somebody has confirmed is refused outright to a key, and needs
+    a fresh passkey assertion from a person, because overturning a confirmation is the same
+    intervention as giving one; the assertion is recorded on the audit row. The whole call
+    is one transaction that writes an audit row naming who changed which facts, and the keys
+    are resolved before anything is stored, so a refusal stores nothing.
 
     **A drafted “So what?” may be filed here too** (D-66, WAT-05): send `soWhat`
     with the words, the model and the model version that wrote them and the public pages
@@ -710,9 +760,9 @@ def update_change(
     listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a term id is a term
     that mirrors the jurisdiction list, since a change's market comes from its authority and
     never from a tag; `editor_only_field` (422) when a key sends `status` or
-    `supersededBy`; `confirmed_fact` (422) when a key's new set would drop a flag or a term
-    a library editor confirmed; `not_built` (501) when an editor's call would do the same,
-    which is the confirmation half of this feature; `validation_error` (422) for a field the
+    `supersededBy`; `confirmed_fact` (422) when a key's call would drop a flag or a term, or
+    replace a type, that somebody confirmed; `step_up_required` (403) when a person's call
+    would do the same without a fresh passkey assertion; `validation_error` (422) for a field the
     schema refuses, for a change asked to supersede itself, and for a `soWhat` whose words
     carry no model, no model version or no citation; `not_found` (404) when no
     change has that id; `tenant_agents_not_available` (403) from a key that belongs to a
@@ -727,6 +777,7 @@ def update_change(
         order=language_order(request),
         change_id=change_id,
         body=body,
+        step_up_assertion_id=fresh_step_up(request),
     )
 
 
@@ -857,12 +908,14 @@ def replace_change_obligations(
     changes afterwards; `confidence` is the model's own number, is null when a person set
     the link, and orders the list and nothing else.
 
-    Two decisions that look alike and are not. `confirmed` here is a library editor's, and a
-    confirmed link reads the same for every bank; confirming one is not built yet, so a call
-    that would drop a link somebody has confirmed answers `not_built` to an editor and is
-    refused outright to a key. A bank accepting or removing a suggested link is a different
-    act entirely, lives on that bank's own case, is invisible to everyone else and changes
-    no row here — so `false` never means "not related", only "nobody has confirmed it".
+    Two decisions that look alike and are not. `confirmed` here is the shared library's,
+    given by an independent agent or a person through `POST /changes/{changeId}/confirmation`,
+    and a confirmed link reads the same for every bank. A call that would drop a link
+    somebody has confirmed is refused outright to a key and needs a fresh passkey assertion
+    from a person, which is recorded on the audit row. A bank accepting or removing a
+    suggested link is a different act entirely, lives on that bank's own case, is invisible
+    to everyone else and changes no row here — so `false` never means "not related", only
+    "nobody has confirmed it".
 
     The set and its audit row are written in one transaction, and sending the same set again
     leaves it exactly as it was, so a retry costs nothing.
@@ -870,9 +923,9 @@ def replace_change_obligations(
     Errors to branch on: `unknown_key` (422) when an `obligationId` names no active
     obligation of the library; `validation_error` (422) when the same obligation is named
     twice, or for a body the schema refuses, including more than 200 links;
-    `confirmed_fact` (422) when a key's new set would drop a link a library editor
-    confirmed; `not_built` (501) when an editor's call would do the same, which is the
-    confirmation half of this feature; `not_found` (404) when no change has that id;
+    `confirmed_fact` (422) when a key's new set would drop a link somebody confirmed;
+    `step_up_required` (403) when a person's set would do the same without a fresh passkey
+    assertion; `not_found` (404) when no change has that id;
     `tenant_agents_not_available` (403) from a key that belongs to a bank;
     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
     without a credential.
@@ -885,4 +938,83 @@ def replace_change_obligations(
         order=language_order(request),
         change_id=change_id,
         body=body,
+        step_up_assertion_id=fresh_step_up(request),
+    )
+
+
+@router.post(
+    "/changes/{change_id}/confirmation",
+    response=WatchConsoleChangeRow,
+    auth=SESSION_OR_KEY,
+    operation_id="confirmChangeCuration",
+    by_alias=True,
+    summary="Confirm a change's type, flags, scope terms and obligation links for every bank",
+)
+@answers_problems
+def confirm_change_curation(
+    request: HttpRequest,
+    body: WatchCurationConfirmInput,
+    change_id: uuid.UUID = Path(..., description=_CHANGE_ID_WRITE),
+    idempotency_key: str | None = IdempotencyKey,
+) -> Any:
+    """Stand behind the facts an agent suggested for a registered reform: its type, its
+    flags, its scope terms and the obligations it affects, each named in the body. Call it
+    from a confirming agent's run once it has checked the named facts against the pages the
+    change cites, and from the console's Change facts detail when a person intervenes. The
+    answer is the change as the console's queue shows it, with who suggested and who
+    confirmed each fact.
+
+    Two callers, never a bank. A platform key bound to an agent definition and holding the
+    scope `proposals:review`: it sends `decision`, the model call behind its decision, and
+    `agentRunId`, an open run of its own, and the decision is logged in the AI output log
+    under the purpose agent_review, which the platform alone reads (D-80). A key never steps up. Or a
+    person holding `proposals.review`, with a fresh passkey assertion, who sends neither:
+    confirming a library fact is an intervention in the agents' curation. No bank's role
+    holds that permission and no bank's key the scope.
+
+    A confirmation is not four eyes, because no proposal stands behind it, and it is
+    labelled for what it is (D-74): a fact an agent confirmed reads machine-confirmed,
+    naming the agent that suggested it and the agent that confirmed it, and never as a
+    person's verification. The confirmer is never the suggester: a key cannot confirm what
+    it suggested itself, nor what another key of its own agent suggested, a person cannot
+    confirm what they filed themselves, and the database refuses each of those rows on its
+    own if this check is ever bypassed. Every bank reads the confirmation; each bank still
+    decides on its own case what a link means to it.
+
+    Only facts the change carries now can be confirmed, as they stand, and the type is
+    named by the key you checked, so a type corrected after you read it is refused rather
+    than confirmed unread. This call changes no value, and a fact already confirmed is left
+    exactly as it is. A call that finds nothing left to confirm writes nothing — no log
+    row, no audit row — once its run has logged a decision on this change, so a retry,
+    with or without an `Idempotency-Key`, answers the change as it now stands; the first
+    `decision` a run sends on a change is always logged, because it is a model call. The
+    facts, the log row and an audit row naming who confirmed what are written in one
+    transaction, under a lock on the change that the curation routes take as well, and
+    every refusal comes first, so a refused call stores nothing. Undoing a confirmation is
+    a person's, with a passkey, through `PATCH /changes/{changeId}` or
+    `PUT /changes/{changeId}/obligations`.
+
+    Errors to branch on: `own_suggestion` (409) when a named fact was suggested by this very
+    key, or filed by this very person; `same_agent` (409) when it was suggested by another
+    key of the same agent; `validation_error` (422) when the body names nothing, names a
+    type, a flag, a term or an obligation the change does not carry now, when a key sends
+    no `decision` or a person sends one or an `agentRunId`, and for a body the schema
+    refuses, including a decision with no model, version or citation; `run_not_open` (422)
+    when a key names no run or a closed one; `not_found` (404) when no change has that id,
+    or the run belongs to another key; `agent_not_bound` (403) for a key holding the scope
+    but bound to no agent definition;
+    `step_up_required` (403) when a person calls without a fresh passkey assertion;
+    `permission_denied` (403) without `proposals.review` or `proposals:review`, which is
+    what every bank's session and key receives; `unauthenticated` (401) without a
+    credential.
+    """
+    # Ungated by design: logic-gate (an agent-bound platform key with proposals:review, or a person with proposals.review and a fresh passkey).
+    step_up_assertion_id = require_curation_confirmer(request)
+    return curation.confirm_curation(
+        who=principal(request),
+        actor=actor_for(request),
+        order=language_order(request),
+        change_id=change_id,
+        body=body,
+        step_up_assertion_id=step_up_assertion_id,
     )

@@ -70,8 +70,9 @@ RELATED_QUERIES = 2 + 6 + 2 + 2 + 1 + 2 + 1 + 3 + 2 + 1 + 1
 
 
 def confirm_link(change: RegulatoryChange, obligation: Obligation, editor: User) -> None:
-    """A library editor confirms the link for the shared library. Through the watch door,
-    because `change_obligation` is a library row."""
+    """A person confirms the link for the shared library, as a library editor still may
+    with a passkey (D-74). Through the watch door, because `change_obligation` is a library
+    row."""
     with watch_write("test fixture"):
         ChangeObligation.objects.filter(change=change, obligation=obligation).update(
             confirmed_by=editor, confirmed_at=build.ANCHOR
@@ -79,9 +80,9 @@ def confirm_link(change: RegulatoryChange, obligation: Obligation, editor: User)
 
 
 def confirm_flag(change: RegulatoryChange, flag_key: str, editor: User) -> None:
-    """A library editor confirms one flag of a change for the shared library. `suggested`
-    and the two confirmation columns move together because `change_term`'s check constraint
-    refuses any other combination (WAT-03)."""
+    """A person confirms one flag of a change for the shared library, as a library editor
+    still may with a passkey (D-74). `suggested` and the confirmation columns move together
+    because `change_term`'s check constraint refuses any other combination (WAT-03)."""
     with watch_write("test fixture"):
         ChangeTerm.objects.filter(
             change=change,
@@ -194,11 +195,26 @@ class ChangeDetailTests(ChangeReadFixture):
         self.assertEqual(facts, {fact["ref"]["key"]: fact for fact in row["flags"] + row["terms"]})
         self.assertEqual(
             facts["advice_perimeter"],
-            {"ref": {"key": "advice_perimeter", "kind": None, "label": "Advice perimeter"}, "confidence": 0.74, "suggested": False},
+            {
+                "ref": {"key": "advice_perimeter", "kind": None, "label": "Advice perimeter"},
+                "confidence": 0.74,
+                "suggested": False,
+                # A person confirmed it, so it reads as a person's and names no agent (D-74).
+                "confirmedOrigin": "user",
+                "suggestedByAgent": None,
+                "confirmedByAgent": None,
+            },
         )
         self.assertEqual(
             facts["securities"],
-            {"ref": {"key": "securities", "kind": None, "label": "Securities"}, "confidence": 0.74, "suggested": True},
+            {
+                "ref": {"key": "securities", "kind": None, "label": "Securities"},
+                "confidence": 0.74,
+                "suggested": True,
+                "confirmedOrigin": None,
+                "suggestedByAgent": None,
+                "confirmedByAgent": None,
+            },
         )
 
     def test_the_timeline_is_in_sort_order_with_each_date_precision(self) -> None:

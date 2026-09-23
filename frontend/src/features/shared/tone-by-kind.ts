@@ -123,6 +123,9 @@ export const slotTone = {
   // about the source, not a failure.
   suggested: 'information',
   confirmed: 'positive',
+  // D-74: a fact an independent agent confirmed. No person has settled it,
+  // so it keeps the suggestion's neutral tone and never a confirmation's.
+  machineConfirmed: 'information',
   factsToConfirm: 'warning',
   duplicate: 'information',
   agentVersion: 'brand',
