@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { CheckGroup, CheckRow, Field, TextInput } from '@/components/ui/Field';
+import { CheckGroup, CheckRow, Field, Select, TextInput } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
@@ -14,6 +14,7 @@ import {
   AGENT_KEY_SCOPES,
   isLive,
   presentAgentKey,
+  useAgentDefinitions,
   useAgentKeys,
   useCreateAgentKey,
   useRevokeAgentKey,
@@ -71,6 +72,7 @@ type FormProblem = 'name' | 'agent' | 'scopes';
 function CreateKeyModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (key: AgentKeyCreated) => void }) {
   const t = useT();
   const create = useCreateAgentKey();
+  const definitions = useAgentDefinitions();
   const [name, setName] = useState('');
   const [agentId, setAgentId] = useState('');
   const [expires, setExpires] = useState('');
@@ -80,11 +82,11 @@ function CreateKeyModal({ open, onClose, onCreated }: { open: boolean; onClose: 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (name.trim() === '') return setProblem('name');
-    if (agentId.trim() === '') return setProblem('agent');
+    if (agentId === '') return setProblem('agent');
     if (scopes.length === 0) return setProblem('scopes');
     setProblem(null);
     create.mutate(
-      { name: name.trim(), agentId: agentId.trim(), scopes, ...(expires === '' ? {} : { expiresAt: `${expires}T23:59:59Z` }) },
+      { name: name.trim(), agentId, scopes, ...(expires === '' ? {} : { expiresAt: `${expires}T23:59:59Z` }) },
       {
         onSuccess: (key) => {
           onCreated(key);
@@ -105,10 +107,15 @@ function CreateKeyModal({ open, onClose, onCreated }: { open: boolean; onClose: 
           <TextInput id="agent-key-name" value={name} placeholder={t('console.agentKeys.namePlaceholder')} onChange={(e) => setName(e.target.value)} />
         </Field>
         <div className="grid gap-x-4 md:grid-cols-2">
-          {/* The agent is named by its id: the platform's agent definitions
-              have no read of their own yet, so there is no list to pick from. */}
           <Field id="agent-key-agent" label={t('console.agentKeys.agent')} hint={t('console.agentKeys.agentHint')} error={problem === 'agent' ? t('console.agentKeys.agentRequired') : undefined}>
-            <TextInput id="agent-key-agent" value={agentId} placeholder={t('console.agentKeys.agentIdPlaceholder')} onChange={(e) => setAgentId(e.target.value)} />
+            <Select id="agent-key-agent" value={agentId} disabled={!definitions.isSuccess} onChange={(e) => setAgentId(e.target.value)}>
+              <option value="">{t('console.agentKeys.agentChoose')}</option>
+              {definitions.data?.items.map((definition) => (
+                <option key={definition.id} value={definition.id}>
+                  {t('console.agentKeys.agentOption', { key: definition.key, version: definition.currentVersion })}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field id="agent-key-expires" label={t('console.agentKeys.expiresLabel')} hint={t('console.agentKeys.expiresHint')}>
             <TextInput id="agent-key-expires" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
@@ -125,6 +132,7 @@ function CreateKeyModal({ open, onClose, onCreated }: { open: boolean; onClose: 
             />
           ))}
         </CheckGroup>
+        {definitions.isError ? <ProblemAlert error={definitions.error} /> : null}
         {create.isError ? <ProblemAlert error={create.error} codes={{ step_up_required: t('problem.stepUpCancelled') }} /> : null}
         <ButtonBar>
           <Button variant="outline" onClick={onClose} disabled={create.isPending}>

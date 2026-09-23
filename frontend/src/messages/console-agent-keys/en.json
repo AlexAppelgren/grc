@@ -22,7 +22,7 @@
   "console.agentKeys.nameRequired": "Give the key a name.",
   "console.agentKeys.expiresLabel": "Expires",
   "console.agentKeys.expiresHint": "Optional. Leave it empty and the key works until someone revokes it.",
-  "console.agentKeys.scopesHint": "Give the key the least it needs. None of these writes to the library: an agent proposes, and a library editor approves.",
+  "console.agentKeys.scopesHint": "Give the key the least it needs. None of these writes to the library: an agent proposes, and a different person or agent approves.",
   "console.agentKeys.scopesRequired": "Pick at least one scope.",
   "console.agentKeys.createAction": "Create the key",
   "console.agentKeys.stepUpNote": "Creating a key asks for your passkey.",
@@ -40,9 +40,10 @@
   "console.agentKeys.emptyTitle": "No agent keys",
   "console.agentKeys.emptyBody": "Create one when an agent needs to reach the API.",
   "console.agentKeys.errorTitle": "Could not load the agent keys",
-  "console.agentKeys.agentIdPlaceholder": "The agent's id",
   "console.agentKeys.agentRequired": "Name the agent this key runs as.",
   "console.agentKeys.namePlaceholder": "e.g. Watch sweeper, nightly",
   "console.agentKeys.secretOnce": "Shown once. We keep only a hash of it, so we cannot show it to you again.",
-  "console.agentKeys.revokeConfirm": "Revoke this key? The agent stops working at once."
+  "console.agentKeys.revokeConfirm": "Revoke this key? The agent stops working at once.",
+  "console.agentKeys.agentChoose": "Choose an agent",
+  "console.agentKeys.agentOption": "{key} v{version}"
 }
