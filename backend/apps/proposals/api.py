@@ -353,8 +353,17 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     answers `run_not_open` (422) like any other filing against that run. A new proposal
     answers **201**.
 
+    Every text the proposal arrives with — its title, the texts of its payload, its field
+    sources, its source and its model — is read by the injection screen and stored exactly as it
+    arrived. What the screen finds is returned in `riskFlags` and shown in the queue, and
+    while a flag stands no agent may approve the proposal: a person decides it. A run files
+    at most `WATCH_RUN_MAX_PROPOSALS` proposals (50 unless the platform sets another
+    number); a retry of one it filed is not a new proposal and still answers.
+
     Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or
-    a closed one; `not_found` (404) when the run named is not one this key opened;
+    a closed one; `run_budget_exhausted` (422) when the run has already filed as many
+    proposals as one run may, so close it and open another; `not_found` (404) when the run
+    named is not one this key opened;
     `source_missing` (422) when a changed value carries no source, or a new record no
     `sourceUrl`; `unknown_key` (422) for a kind, a list, a language, a term, a target
     obligation or provision, an instrument, a parent provision, a provision kind, a level, a jurisdiction, an authority or a duty type the
@@ -507,7 +516,9 @@ def approve_proposal(
     `not_found` (404) when that run is one another key opened, or when there is no such
     proposal; `four_eyes_violation` when the reviewer is the person, key or agent who made
     the proposal; `person_review_required` when an agent approves a vocabulary or term
-    proposal, which waits for a person; `invalid_transition` when the proposal was already
+    proposal, which waits for a person; `risk_flagged` (409) when an agent approves a
+    proposal whose `riskFlags` is not empty, or corrects it with text the injection screen
+    flags, which waits for a person who reads the flag; `invalid_transition` when the proposal was already
     approved or rejected, which is also what a repeated or simultaneous second call
     answers, since nothing is ever applied twice; `source_missing` when a correction
     introduces a field the proposal never sourced; `validation_error` when a key sends no

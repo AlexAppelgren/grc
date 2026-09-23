@@ -578,7 +578,9 @@ def confirm_curation(
     assertion, who sends neither. The route's gate has checked which. Nobody confirms what
     they suggested themselves (409 `own_suggestion`, for a person as for a key), and an agent
     never confirms what another key of its own agent suggested (409 `same_agent`); the check
-    constraints say the same if this is ever bypassed.
+    constraints say the same if this is ever bypassed. An agent never confirms a change any
+    of whose pages carries a risk flag (409 `risk_flagged`, H23): a person decides that
+    one, seeing the flag.
 
     Everything runs under the lock on the change, so the facts are read as they stand when
     they are confirmed: the type is named by the key the confirmer checked, and a type that
@@ -590,6 +592,12 @@ def confirm_curation(
     with watch_write("a confirmation of a change's curated facts"), transaction.atomic():
         change = keys.change_for_update(change_id)
         run = _decision_run(who, body)
+        if run is not None and change.documents.exclude(risk_flags=[]).exists():
+            raise ValidationError(
+                "A page of this change carries a flag from the injection screen, so an agent "
+                "cannot confirm its facts: a person reads the flag and decides.",
+                code="risk_flagged",
+            )
         type_named, term_links, obligation_links = _named_facts(change, body)
         suggesters = [(link.suggested_by_id, link.suggested_by_api_key_id, link.suggested_by_agent_id) for link in term_links + obligation_links]
         if type_named:

@@ -64,6 +64,7 @@ const change = {
   obligations: [link('o1', 'Pay for third-party research only under the permitted models', 0.86, false)],
   unconfirmedCount: 4,
   firstSeenAt: '2026-09-16T06:02:00Z',
+  riskFlagged: false,
 };
 
 const editor = {
@@ -125,6 +126,19 @@ describe('console change facts detail', () => {
 
     const obligation = document.querySelector('[data-obligation-id="o1"]') as HTMLElement;
     expect(within(obligation).getByText('Suggested by the agent, confidence 0.86')).toBeInTheDocument();
+  });
+
+  it('warns the person confirming when a page of the change was flagged by the screen', async () => {
+    server(page([{ ...change, riskFlagged: true }]));
+    renderIn(<ChangeFactsDetail changeId="c1" />);
+    expect(await screen.findByText(/A page of this change reads like an instruction to an AI/)).toBeInTheDocument();
+  });
+
+  it('shows no such warning when no page of the change was flagged', async () => {
+    server(page([change]));
+    renderIn(<ChangeFactsDetail changeId="c1" />);
+    await screen.findByRole('heading', { level: 1, name: change.title });
+    expect(screen.queryByText(/A page of this change reads like an instruction to an AI/)).toBeNull();
   });
 
   it('confirms a suggested type by its key, after a passkey, and the fact then reads confirmed by a person', async () => {

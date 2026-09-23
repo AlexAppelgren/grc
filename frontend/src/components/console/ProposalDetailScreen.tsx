@@ -241,6 +241,11 @@ export function ProposalDetailScreen({ proposalId }: { proposalId: string }) {
       <PillRow pills={pills} />
       <h1 className="mt-1.5 mb-1.5">{proposal.title}</h1>
       <p className="mb-4 text-meta text-muted">{t('console.queue.detail.proposedBy', { proposer: proposerLine(proposal, t), date: formatDateTime(proposal.createdAt, ctx) })}</p>
+      {(proposal.riskFlags ?? []).length > 0 ? (
+        <Notice tone="warn" data-proposal-flagged="">
+          {t('console.queue.detail.flagged')}
+        </Notice>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <SourcePanel proposal={proposal} />

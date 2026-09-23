@@ -172,4 +172,7 @@ export const slotTone = {
   stale: 'warning',
   // AUD-02: what a model call was for, a kind of call, as a change type is a kind of change.
   aiPurpose: 'notice',
+  // AGT-07: a proposal carrying text the injection screen flagged waits for a person,
+  // so it needs attention; it is not itself bad.
+  riskFlagged: 'warning',
 } as const satisfies Record<string, PillTone>;

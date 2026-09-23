@@ -404,7 +404,10 @@ def record_source_check(
     `Idempotency-Key` and retry a call that timed out rather than leaving a gap.
 
     Errors to branch on: `run_not_open` (422) when the run named is closed, so nothing can
-    be filed against it any more; `unknown_source` (422) when `sourceName` names no
+    be filed against it any more; `run_budget_exhausted` (422) when the line is a `recheck`
+    and the run has already logged as many re-checks as one run may
+    (`WATCH_RUN_MAX_RECHECKS`, 100 unless the platform sets another number), so close it
+    and open another, while a sweep line is never counted; `unknown_source` (422) when `sourceName` names no
     registered source — read `GET /sources` at run start and report against those names;
     `source_inactive` (422) when the source is registered with its automated checks off,
     as a standards publisher's is until its terms allow an automated check (WAT-07, D-45),
@@ -648,7 +651,10 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     a refusal stores nothing at all.
 
     Errors to branch on: `run_not_open` (422) when a key names no run in `agentRunId`, or
-    one that is closed;
+    one that is closed; `run_budget_exhausted` (422) when the run has already registered
+    as many new changes as one run may (`WATCH_RUN_MAX_CHANGES`, 50 unless the platform
+    sets another number), so close it and open another, while a second sighting of a
+    change the library holds is never counted;
     `unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an
     `obligationId` or `authorityCode` names a row the library does not hold or has retired,
     with the valid keys listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a
@@ -1023,7 +1029,9 @@ def confirm_change_curation(
     a person's, with a passkey, through `PATCH /changes/{changeId}` or
     `PUT /changes/{changeId}/obligations`.
 
-    Errors to branch on: `own_suggestion` (409) when a named fact was suggested by this very
+    Errors to branch on: `risk_flagged` (409) when a key confirms a change any of whose
+    pages carries a flag from the injection screen, which waits for a person who reads the
+    flag; `own_suggestion` (409) when a named fact was suggested by this very
     key, or filed by this very person; `same_agent` (409) when it was suggested by another
     key of the same agent; `validation_error` (422) when the body names nothing, names a
     type, a flag, a term or an obligation the change does not carry now, when a key sends

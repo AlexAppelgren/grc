@@ -2204,6 +2204,16 @@ class WatchConsoleChangeRow(LibraryResponse):
         ),
         examples=["2026-09-16T06:02:00Z"],
     )
+    risk_flagged: bool = Field(
+        default=False,
+        description=(
+            "Whether any page the change was found on carries a flag from the injection "
+            "screen: text that reads as an instruction to an AI. While it is true no agent "
+            "may confirm the change's facts, which answers 409 `risk_flagged`; a person reads "
+            "the pages and decides. False when no page carries a flag."
+        ),
+        examples=[False],
+    )
 
 
 class WatchConsoleChangePage(LibraryResponse):

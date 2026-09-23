@@ -91,7 +91,7 @@ from apps.taxonomy.models import (
 )
 from apps.taxonomy.reading import Labels, label_of
 from apps.watch import keys
-from apps.watch.models import ChangeObligation, ChangeTerm, RegulatoryChange
+from apps.watch.models import ChangeDocument, ChangeObligation, ChangeTerm, RegulatoryChange
 from apps.watch.schemas import (
     CaseCategory,
     CaseLinkDecision,
@@ -559,6 +559,7 @@ def _console_rows(page: Sequence[RegulatoryChange], order: list[str]) -> list[Wa
     classification = _Classification(ids, order)
     links = _SuggestedLinks(ids, order)
     type_refs = vocabulary_refs(ChangeTypeLabel, (change.change_type for change in page), order)
+    flagged = set(ChangeDocument.objects.filter(change_id__in=ids).exclude(risk_flags=[]).values_list("change_id", flat=True))
     return [
         WatchConsoleChangeRow(
             id=change.id,
@@ -579,6 +580,7 @@ def _console_rows(page: Sequence[RegulatoryChange], order: list[str]) -> list[Wa
                 + links.unconfirmed.get(change.id, 0)
             ),
             first_seen_at=change.first_seen_at,
+            risk_flagged=change.id in flagged,
         )
         for change in page
     ]

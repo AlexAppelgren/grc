@@ -1,6 +1,7 @@
 {
   "console.changeFacts.title": "Fakta om ändringar",
   "console.changeFacts.lede": "Vad agenterna föreslagit om en ändring, i väntan på en biblioteksredaktör",
+  "console.changeFacts.flagged": "En sida i den här ändringen läses som en instruktion till en AI. Öppna sidorna och jämför fakta med dem innan du bekräftar. En agent kan inte bekräfta dem.",
   "console.changeFacts.explain": "Det du bekräftar här är det gemensamma biblioteket. Alla organisationer läser det, och var och en avgör ändå i sin egen triage vad den ska göra åt saken.",
   "console.changeFacts.backToList": "Fakta om ändringar",
   "console.changeFacts.filter.authority": "Myndighet",

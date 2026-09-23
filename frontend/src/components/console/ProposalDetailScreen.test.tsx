@@ -43,6 +43,7 @@ function detail(overrides: Partial<ProposalDetail>): ProposalDetail {
     scopeSuggestion: [],
     sourceLabel: '',
     sourceUrl: '',
+    riskFlags: [],
     effectiveFrom: null,
     origin: 'agent',
     agentRunId: 'run-1',
@@ -145,5 +146,18 @@ describe('the decision panel', () => {
     renderWith(detail({ isMine: true }));
     expect(await screen.findByText('Someone else has to approve it.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Approve and apply' })).toBeNull();
+  });
+
+  it('warns a person when the screen flagged a text, and still lets them decide', async () => {
+    renderWith(detail({ riskFlags: ['embedded_instructions'] }));
+    expect(await screen.findByText(/reads like an instruction to an AI/)).toBeInTheDocument();
+    expect(screen.getByText('Flagged')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Approve and apply' })).toBeInTheDocument();
+  });
+
+  it('shows no warning for a proposal the screen found nothing in', async () => {
+    renderWith(detail({ riskFlags: [] }));
+    await screen.findByText('Add version 2 of the research payment obligation');
+    expect(screen.queryByText(/reads like an instruction to an AI/)).toBeNull();
   });
 });

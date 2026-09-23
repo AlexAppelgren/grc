@@ -40,6 +40,7 @@ function row(overrides: Partial<ProposalQueueRow> = {}): ProposalQueueRow {
     scopeSuggestion: [],
     sourceLabel: 'Finansinspektionen, board decision',
     sourceUrl: 'https://example.test/',
+    riskFlags: [],
     effectiveFrom: '2026-10-01',
     origin: 'agent',
     agentRunId: 'run-1',
@@ -96,6 +97,13 @@ describe('presentProposal', () => {
     const pills = presentProposal(row(), t);
     expect(pills.map((p) => p.key)).toEqual(['kind', 'status']);
     expect(pills[0]?.tone).toBe('notice');
+  });
+
+  it('adds a warning "Flagged" pill after the status when the screen flagged a text, and none otherwise', () => {
+    const flagged = presentProposal(row({ riskFlags: ['embedded_instructions'], isMine: true }), t);
+    expect(flagged.map((p) => p.key)).toEqual(['kind', 'status', 'flagged', 'yours']);
+    expect(flagged[2]).toMatchObject({ label: 'Flagged', tone: 'warning' });
+    expect(presentProposal(row({ riskFlags: [] }), t).some((p) => p.key === 'flagged')).toBe(false);
   });
 
   it('adds a positive "Yours" pill last, only when the server says the reader filed it', () => {
