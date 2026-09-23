@@ -89,6 +89,16 @@ inside the bank, are built and proven by PRO-S7 at the integration level; the PR
 journey is written in full and runs with the merged wave (D-67). A bank's private records
 (PRO-S12, INV-07) wait for chunk 13.
 
+PRO-S13's journey (pro-s13-journey) runs end to end: the console mints a `library-confirmer`
+key with `agent-runs:write` and `proposals:review`, which opens a run, reads the queue and
+the detail of the proposal `watch-sweeper` filed through its own key (seeded on
+`obl-product-governance`, no other journey's), approves it with the model call behind the
+decision and that run, and closes the run. A library editor then finds it under Approved,
+applied by the agent and machine-confirmed, and a bank's reader finds version 2 on the card
+labelled as proposed by one agent and confirmed by the other. A key of the same agent
+without `proposals:review` answers 403 at the queue. The 422 and 404 refusals, the logged
+call and the audit row stay proven at the integration level (`test_pro_s13`).
+
 ## 3. Acceptance criteria (from PRD, condensed)
 
 - **AC-PRO1** No API key scope and no tenant role can change a library record
