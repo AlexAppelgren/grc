@@ -391,8 +391,8 @@ def list_changes(request: HttpRequest, query: Query[WatchChangeQuery]) -> Any:
     A read: it changes nothing and writes no audit row. A person's session holding
     `watch.read` in their own bank; no API key reaches it, because every row joins that
     bank's own case. What the reader sees is filtered by the bank's footprint by default,
-    which `footprint=all` lifts and `footprint=watched` widens to the markets the bank
-    watches; the library half of every row is the same for every bank and the `case` half
+    which `footprint=all` lifts and `footprint=watched` turns to what the markets the bank
+    watches add, each such row naming its `market`; the library half of every row is the same for every bank and the `case` half
     never leaves this one.
 
     Pages with `limit` and `offset`, 20 rows by default and 100 at most. An empty feed is a
@@ -402,9 +402,9 @@ def list_changes(request: HttpRequest, query: Query[WatchChangeQuery]) -> Any:
     value the schema refuses — including the designed `inFootprint`, which this build
     replaced with the single `footprint` value.
 
-    `footprint=watched` is answered and empty for now: a change's jurisdiction is derived
-    from its authority, which the market view is still waiting for, and an empty answer is
-    the honest one until it lands.
+    A change's jurisdiction comes from its authority at match time and is never stored; a
+    change with no authority is not restricted by jurisdiction. Watching a market sets no
+    urgency and opens no triage: `footprint=watched` only reads.
     """
     tenant = caller_tenant(request)
     return reading.list_changes(tenant, language_order(request, tenant=tenant), query)

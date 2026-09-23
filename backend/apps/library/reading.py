@@ -335,14 +335,41 @@ def _instrument_scope(path: str) -> ArraySubquery:
     read from the same two links, as one uuid[]. `path` leads from the outer row to the
     instrument: nothing from an instrument, `instrument__` from an obligation."""
     return ArraySubquery(
-        TaxonomyTerm.objects.filter(
-            Q(id=OuterRef(f"{path}regime_id"))
-            | Q(jurisdiction=OuterRef(f"{path}jurisdiction_id"))
-            | Q(jurisdiction__parent=OuterRef(f"{path}jurisdiction_id"))
-        )
+        TaxonomyTerm.objects.filter(Q(id=OuterRef(f"{path}regime_id")) | reaching(OuterRef(f"{path}jurisdiction_id")))
         .order_by()
         .values("id")
     )
+
+
+def reaching(jurisdiction: Any) -> Q:
+    """The terms a record filed under `jurisdiction` derives (D-28, D-29): the term that
+    mirrors it and the terms that mirror every jurisdiction whose parent it is, read from
+    the mirror link and the parent link alone. `jurisdiction` is whatever names the
+    jurisdiction's id in the query: an `OuterRef`, a subquery or an id. A null derives
+    nothing, so a record without a jurisdiction is not restricted by it.
+
+    The instruments' SQL half above and a change's, which comes from its authority
+    (`apps/watch/reading.py`, `apps/cases/reading.py`), are built from this one condition;
+    `jurisdiction_scopes()` is its Python twin."""
+    return Q(jurisdiction=jurisdiction) | Q(jurisdiction__parent=jurisdiction)
+
+
+def jurisdiction_scopes(jurisdiction_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, list[TaxonomyTerm]]:
+    """The Python twin of `reaching()`: the terms each of these jurisdictions derives, with
+    their dimension, in the terms' order. One query, none for no jurisdiction."""
+    if not jurisdiction_ids:
+        return {}
+    terms = (
+        TaxonomyTerm.objects.select_related("dimension")
+        .annotate(parent_jurisdiction_id=F("jurisdiction__parent"))
+        .filter(Q(jurisdiction__in=jurisdiction_ids) | Q(jurisdiction__parent__in=jurisdiction_ids))
+        .order_by("sort_order", "key")
+    )
+    derived: dict[uuid.UUID, list[TaxonomyTerm]] = {}
+    for term in terms:
+        for jurisdiction_id in {term.jurisdiction_id, term.parent_jurisdiction_id} & set(jurisdiction_ids):
+            derived.setdefault(jurisdiction_id, []).append(term)
+    return derived
 
 
 def instrument_scope_term_ids() -> ArraySubquery:

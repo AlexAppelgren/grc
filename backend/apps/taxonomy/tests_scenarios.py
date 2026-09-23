@@ -1176,7 +1176,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
                     found.add(node.arg)
             return found
 
-        derivation = (reading.instrument_scopes, reading.obligation_scopes, reading._instrument_scope, reading.instrument_scope_term_ids, reading.scope_term_ids)
+        derivation = (reading.instrument_scopes, reading.obligation_scopes, reading._instrument_scope, reading.instrument_scope_term_ids, reading.scope_term_ids, reading.reaching, reading.jurisdiction_scopes)
         self.assertEqual({function.__name__: named_in(inspect.getsource(function)) for function in derivation}, {function.__name__: set() for function in derivation})
         # The guard bites: a derivation that picked Norway's term by its dimension is named.
         self.assertEqual(named_in('def pick():\n    return TaxonomyTerm.objects.filter(dimension__key="jurisdiction", key="no")\n'), {"dimension__key", "jurisdiction", "no"})
@@ -1620,12 +1620,155 @@ class TaxonomyScenarioTests(ScenarioTestCase):
                 for word in (str(denmark.id), *(label.text for label in denmark.labels.all())):
                     self.assertNotIn(word, text, channel)
 
-    @skip("pending: FP-S15 (FP-04, chunk 5)")
     def test_fp_s15(self) -> None:
         """FP-S15
 
         A change's jurisdiction comes from its authority, and the feed has the watched-market view (FP-04).
+
+        The derivation is the instruments' own (`library.reading.reaching()`, D-28, D-29),
+        read from the change's authority at match time and never stored. It reaches all four
+        places a change is matched: the feed's SQL scope, the feed row's verdict, the case
+        a registration opens and the cached verdict the recomputation keeps, and the scope
+        change preview's reading of the open cases.
         """
+        from apps.cases import creation, reading as case_reading
+        from apps.shared.audit import record
+        from apps.shared.models import OutboxEvent
+        from apps.taxonomy import markets_logic, matching
+        from apps.watch import reading as watch_reading
+        from apps.watch.models import ChangeTerm, RegulatoryChange
+        from apps.watch.write import watch_write
+
+        seed_authorities()
+        creation.register()
+        case_matching.register()
+
+        def drain() -> None:
+            with transaction.atomic():
+                tenancy.clear_tenant()
+            while outbox.deliver_batch().delivered:
+                pass
+
+        def announce(change: Any, action: str) -> None:
+            with transaction.atomic():
+                tenancy.clear_tenant()
+                record(
+                    action=action,
+                    actor=Actor.system("watch"),
+                    subject_type="regulatory_change",
+                    subject_id=change.id,
+                    subject_title=change.title,
+                    summary="A change was registered or corrected.",
+                    tenant_id=None,
+                )
+            drain()
+
+        def feed(footprint: str) -> dict[str, dict[str, Any]]:
+            response = self._get(f"/changes?footprint={footprint}&limit=100", reader)
+            self.assertEqual(response.status_code, 200, response.content)
+            return {row["stableKey"]: row for row in response.json()["items"]}
+
+        def cases() -> dict[str, tuple[bool, str, bool, str]]:
+            self.activate(self.tenant)
+            return {
+                row.change.stable_key: (row.footprint_match, row.urgency.key, row.urgency_confirmed, row.status)
+                for row in ChangeCase.objects.select_related("change", "urgency")
+            }
+
+        # Given a footprint whose only jurisdiction is Sweden, and the service "Custody".
+        self._set_footprint(["jurisdiction:se", "service_type:custody"])
+        reader = sign_in(self.reader, tenant=self.tenant)
+        # And changes from a Danish authority, from an EU authority and with no authority,
+        # all about custody, beside a Swedish one and a Danish one about advice.
+        built = {}
+        for key, authority, service in (
+            ("fp-s15-dk", "finanstilsynet-dk", "custody"),
+            ("fp-s15-eu", "esma", "custody"),
+            ("fp-s15-none", None, "custody"),
+            ("fp-s15-se", "fi", "custody"),
+            ("fp-s15-dk-advice", "finanstilsynet-dk", "advice"),
+        ):
+            with transaction.atomic():
+                tenancy.clear_tenant()
+                built[key] = watch_build.change(stable_key=key, title=f"Change {key}", authority=authority, urgency="monitor")
+                watch_build.term_link(built[key], term_ref=f"service_type:{service}")
+            announce(built[key], creation.CHANGE_REGISTERED)
+
+        # Then the Danish change does not match, the EU change matches, and the change with no
+        # authority matches, because a missing jurisdiction never hides a record.
+        expected = {"fp-s15-dk": False, "fp-s15-eu": True, "fp-s15-none": True, "fp-s15-se": True, "fp-s15-dk-advice": False}
+        self.assertEqual(set(feed("in")), {key for key, inside in expected.items() if inside})
+        self.assertEqual({key: row["inFootprint"] for key, row in feed("all").items() if key in expected}, expected)
+        # The case each registration opened carries the same verdict, from the same derivation.
+        self.assertEqual({key: verdict[0] for key, verdict in cases().items()}, expected)
+        # And the rule and the SQL function, called unchanged, agree on the same derived terms.
+        self.activate(self.tenant)
+        footprint, restricting = matching.footprint_of(self.tenant.id), matching.restricting_dimensions()
+        handed = dict(
+            RegulatoryChange.objects.filter(stable_key__in=expected)
+            .annotate(term_ids=watch_reading._scope_term_ids())
+            .values_list("stable_key", "term_ids")
+        )
+        for key, change in built.items():
+            facts = case_reading.change_facts(change.id)
+            assert facts is not None
+            with self.subTest(key):
+                self.assertIs(matching.in_footprint(facts.scope, footprint, restricting=restricting), expected[key])
+                self.assertIs(matching.in_footprint_sql(self.tenant.id, handed[key]), expected[key])
+                self.assertEqual(
+                    set(TaxonomyTerm.objects.filter(id__in=handed[key]).values_list("key", flat=True)),
+                    {key for keys in facts.scope.values() for key in keys},
+                )
+        self.assertEqual(case_reading.change_facts(built["fp-s15-eu"].id).scope["jurisdiction"], {"eu", "se", "dk", "no", "fi"})  # type: ignore[union-attr]
+        self.assertNotIn("jurisdiction", case_reading.change_facts(built["fp-s15-none"].id).scope)  # type: ignore[union-attr]
+        # And nothing is stored: a change's jurisdiction is never one of its own terms.
+        self.assertFalse(ChangeTerm.objects.filter(change__in=list(built.values()), term__jurisdiction__isnull=False).exists())
+        # The scope change preview reads the open cases through the same derivation.
+        self.assertIn({"service_type": {"custody"}, "jurisdiction": {"dk"}}, case_reading.open_case_scopes(self.tenant.id))
+
+        # Watching nothing, the watched view is empty rather than the default feed renamed.
+        self.assertEqual(feed("watched"), {})
+
+        # Given the tenant watches Denmark.
+        before = cases()
+        self.activate(self.tenant)
+        audit_before = set(AuditEvent.objects.values_list("id", flat=True))
+        outbox_before = set(OutboxEvent.objects.values_list("id", flat=True))
+        markets_logic.watch(tenant=self.tenant, actor=Actor.system("test"), key="dk")
+        drain()
+        # Then its cases get no urgency from the market and nobody is notified: the one row
+        # the write leaves is its own audit event and its outbox twin, and no case moved.
+        self.activate(self.tenant)
+        self.assertEqual(
+            list(AuditEvent.objects.exclude(id__in=audit_before).values_list("action", flat=True)), ["markets.watch_added"]
+        )
+        self.assertEqual(
+            list(OutboxEvent.objects.exclude(id__in=outbox_before).values_list("topic", flat=True)), ["markets.watch_added"]
+        )
+        self.assertEqual(cases(), before)
+
+        # When a user chooses "Markets we watch" in the watch feed, the Danish "Custody"
+        # change is listed with the market named; the Danish "Advice" one is absent because
+        # the other dimensions still apply, and nothing already in scope is repeated.
+        watched = feed("watched")
+        self.assertEqual(list(watched), ["fp-s15-dk"])
+        self.assertEqual(watched["fp-s15-dk"]["market"], {"key": "dk", "kind": None, "label": "Denmark"})
+        self.assertFalse(watched["fp-s15-dk"]["inFootprint"])
+        # The market says where a row comes from on every view, and only where watching added it.
+        everything = feed("all")
+        self.assertEqual({key: (row["market"] or {}).get("key") for key, row in everything.items() if key in expected}, {
+            "fp-s15-dk": "dk", "fp-s15-eu": None, "fp-s15-none": None, "fp-s15-se": None, "fp-s15-dk-advice": None,
+        })
+
+        # When the change with no authority turns out to be the Danish authority's, the cached
+        # verdict is re-decided from the correction's event, and the market view now lists it.
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            with watch_write("test"):
+                RegulatoryChange.objects.filter(pk=built["fp-s15-none"].pk).update(authority=Authority.objects.get(key="finanstilsynet-dk"))
+        announce(built["fp-s15-none"], case_matching.CHANGE_FACTS_UPDATED)
+        self.assertFalse(cases()["fp-s15-none"][0])
+        self.assertEqual(set(feed("watched")), {"fp-s15-dk", "fp-s15-none"})
 
     @skip("pending: FP-S16 (FP-01, INV-08, chunk 3)")
     def test_fp_s16(self) -> None:
