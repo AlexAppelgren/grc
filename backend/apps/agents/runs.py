@@ -31,11 +31,14 @@ run, with the agent behind the key as the actor rather than the key's id (ID-10)
 
 from __future__ import annotations
 
+import functools
 import uuid
-from typing import Any, Literal, cast
+from collections.abc import Callable
+from typing import Any, Literal, TypeVar, cast
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.http import HttpRequest
 from django.utils import timezone
 
 from apps.agents.models import AgentRun, RunStatus
@@ -129,6 +132,25 @@ def refuse_tenant_key(who: Principal) -> None:
                 "arrive later."
             ),
         )
+
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def refuses_tenant_keys(view: F) -> F:
+    """Route decorator for every run and watch write, placed above its scope gate: a bank's
+    key is refused with its reason named before its scopes are read. A bank's key has its
+    watch scopes withheld when it is resolved (D-61, D-78), so the scope gate alone would
+    answer a bare `permission_denied` and never say why (item 14)."""
+
+    @functools.wraps(view)
+    def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> Any:
+        who = getattr(request, "auth", None)
+        if isinstance(who, Principal):
+            refuse_tenant_key(who)
+        return view(request, *args, **kwargs)
+
+    return wrapper  # type: ignore[return-value]
 
 
 def open_run(*, who: Principal, body: AgentRunInput, idempotency_key: str | None) -> AgentRunOut:

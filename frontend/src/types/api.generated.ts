@@ -188,9 +188,10 @@ export interface paths {
          *     named, not the key's identifier.
          *
          *     Answers 201 with the open run, its status `running` and its counters at zero. A replay
-         *     answers 201 with the run that key already opened. Errors: `permission_denied` when the
-         *     key lacks `agent-runs:write`, which is how a bank's key is refused, or when `agent`
-         *     is not the definition this key is bound to — a key runs exactly one definition, so a
+         *     answers 201 with the run that key already opened. Errors: `tenant_agents_not_available`
+         *     when the key belongs to a bank, whatever scopes it was once given, since a bank opens no
+         *     run in this release; `permission_denied` when the key lacks `agent-runs:write`, or when
+         *     `agent` is not the definition this key is bound to — a key runs exactly one definition, so a
          *     name this build does not ship and a name that belongs to another key are the same
          *     refusal, and trying names tells a caller nothing about which definitions exist;
          *     `unauthenticated` when the key is missing, revoked or expired; `idempotency_conflict`

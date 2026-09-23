@@ -149,14 +149,12 @@ class BankKeyScopes(ScenarioTestCase):
     def test_a_bank_key_holding_a_watch_write_is_refused_at_the_route(self) -> None:
         legacy = factories.api_key(self.bank, scopes=sorted(perms.PLATFORM_ONLY_SCOPES))
         agent = {"HTTP_X_API_KEY": legacy.plain_key}
-        for path, body, scope in (
-            ("/agent-runs", RUN_BODY, perms.SCOPE_AGENT_RUNS_WRITE),
-            (f"/agent-runs/{RUN}/source-checks", CHECK_BODY, perms.SCOPE_SOURCES_WRITE),
-        ):
+        # The route names the reason before it reads the scopes, which were withheld (item 14).
+        for path, body in (("/agent-runs", RUN_BODY), (f"/agent-runs/{RUN}/source-checks", CHECK_BODY)):
             with self.subTest(path=path):
                 refused = self.client.post(f"{V1}{path}", data=body, content_type="application/json", **agent)
                 self.assertEqual(refused.status_code, 403, refused.content)
-                self.assertEqual((refused.json()["code"], refused.json()["requiredPermission"]), ("permission_denied", scope))
+                self.assertEqual(refused.json()["code"], "tenant_agents_not_available")
         self.activate(self.bank)
         withheld = LoginEvent.objects.filter(api_key=legacy.row, event=LoginEventKind.KEY_SCOPES_WITHHELD.value)
         self.assertEqual(withheld.count(), 1, "throttled with key_used: two calls, one row")

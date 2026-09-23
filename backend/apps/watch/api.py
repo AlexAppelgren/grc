@@ -154,9 +154,11 @@ def require_change_writer(request: HttpRequest) -> None:
     platform's (item 14)."""
     who = principal(request)
     if who.kind is PrincipalKind.AGENT:
+        # The reason first: a bank's key has its watch scopes withheld when it is resolved
+        # (D-78), so the scope test alone would never name it.
+        runs.refuse_tenant_key(who)
         if not who.has_scope(perms.SCOPE_CHANGES_WRITE):
             raise deny(perms.SCOPE_CHANGES_WRITE)
-        runs.refuse_tenant_key(who)
         return
     require_any(request, perms.PROPOSALS_REVIEW)
 
@@ -323,6 +325,7 @@ def update_source(
     by_alias=True,
     summary="Log that a run checked a source, and how it went",
 )
+@runs.refuses_tenant_keys
 @requires_scope(perms.SCOPE_SOURCES_WRITE)
 @answers_problems
 def record_source_check(
@@ -603,6 +606,7 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     by_alias=True,
     summary="Attach a page a reform was found on",
 )
+@runs.refuses_tenant_keys
 @requires_scope(perms.SCOPE_CHANGES_WRITE)
 @answers_problems
 def add_change_document(

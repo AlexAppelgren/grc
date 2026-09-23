@@ -134,15 +134,16 @@ class OpeningARun(AgentRunCase):
 
     def test_a_tenant_bound_key_is_refused_with_the_reason_named(self) -> None:
         """Item 14: bleqq's agents are platform-owned, so a bank's key opens no run in R1.
-        A bank's key never holds `agent-runs:write` (D-61, PLATFORM_ONLY_SCOPES), so one that
-        was given it before that rule meets the scope gate first; the logic's own refusal
-        stands behind it for a principal that somehow carries the scope."""
+        A bank's key never holds `agent-runs:write` (D-61, PLATFORM_ONLY_SCOPES): one that
+        was given it before that rule has it withheld, and the route names the reason before
+        it reads the scopes. The logic refuses on its own too, for a principal that somehow
+        carries the scope."""
         tenant = factories.tenant(slug="opens-nothing")
         tenancy.clear_tenant()
         bank = agent_build.tenant_key(tenant, scopes=(perms.SCOPE_AGENT_RUNS_WRITE,))
         response = self.post(open_body(self.agent.key), plain=bank.plain_key)
         self.assertEqual(response.status_code, 403, response.content)
-        self.assertEqual(response.json()["requiredPermission"], perms.SCOPE_AGENT_RUNS_WRITE)
+        self.assertEqual(response.json()["code"], "tenant_agents_not_available")
         carrying = Principal(
             kind=PrincipalKind.AGENT, subject_id=bank.id, tenant_id=tenant.id, scopes=frozenset({perms.SCOPE_AGENT_RUNS_WRITE})
         )
