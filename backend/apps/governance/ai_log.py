@@ -58,6 +58,7 @@ def log_generation(
     cost_minor: int = 0,
     metadata_reported_by_agent: bool = False,
     generation_id: uuid.UUID | None = None,
+    stop_reason: str = "",
 ) -> AiGeneration:
     """Write one row for one model call, in the caller's transaction.
 
@@ -72,6 +73,9 @@ def log_generation(
     `generation_id` is for a caller that named its output before the model finished: an
     Ask answer carries its id from the stream's first event, so a reader's verdict on it
     can find this row (`rateAnswer`).
+
+    `stop_reason` is how the call ended, for a call bleqq made and watched end
+    (`apps/shared/ai.py`); an agent's filing leaves it empty.
     """
     if not connection.in_atomic_block:
         raise NotInTransaction(
@@ -102,6 +106,7 @@ def log_generation(
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         cost_minor=cost_minor,
+        stop_reason=stop_reason,
     )
 
 
@@ -158,6 +163,7 @@ def generation_row(row: AiGeneration, tenant_id: uuid.UUID | None) -> AiGenerati
         reviewed_at=row.reviewed_at,
         input_tokens=row.input_tokens,
         output_tokens=row.output_tokens,
+        stop_reason=row.stop_reason,
         tenant_scoped=row.tenant_id is not None and row.tenant_id == tenant_id,
         created_at=row.created_at,
     )

@@ -12,8 +12,9 @@ What these tests hold in place, in the order a reviewer would ask about it:
 4. **A pending change is flagged** on the statement whose obligation it will move, and only
    a change the library confirmed will move it on its date.
 5. **Every model call leaves one AI log row and no audit row.** The row carries the
-   answer's own id, so a reader's verdict finds it, and a reader who leaves before the
-   answer is finished still leaves the call logged.
+   answer's own id, so a reader's verdict finds it, and says how the call ended: a reader
+   who leaves before the answer is finished, or a model that fails part way, still leaves
+   the call logged with the words written by then.
 6. **It is a stream.** The first event leaves before the model is asked anything, and
    everything the answer rests on was read before it left.
 7. **The question stays the bank's own.** It reaches no log line, no audit row and no
@@ -193,14 +194,19 @@ class AskGroundingTests(AskTestCase):
         self.assertEqual((after["asOf"], after["citations"][0]["versionNo"]), ("2026-09-15", 2))
         self.assertEqual(after["statements"][0]["text"], REPORTING_SUMMARY_V2)
 
-    def test_a_model_that_fails_ends_the_stream_with_a_problem_and_logs_nothing(self) -> None:
+    def test_a_model_that_fails_ends_the_stream_with_a_problem_and_the_call_logged(self) -> None:
+        """AUD-02: the model was asked, so the call leaves its row even though it wrote
+        nothing, and the row says it failed."""
         with mock.patch.object(llm.MockLlm, "stream", autospec=True, side_effect=llm.LlmError("down")):
             events = self.ask(COSTS_QUESTION)
 
         self.assertEqual([event["event"] for event in events], ["start", "problem"])
         self.assertEqual(events[1]["code"], "model_unavailable")
         self.assertNotIn("down", events[1]["detail"], "nothing of the server's internals reaches the reader")
-        self.assertFalse(AiGeneration.objects.exists())
+        row = AiGeneration.objects.get()
+        self.assertEqual(str(row.id), events[0]["id"])
+        self.assertEqual((row.output, row.citations, row.stop_reason), ("", [], "failed"))
+        self.assertEqual((row.model, row.model_version, row.input_tokens, row.output_tokens), ("mock", "0", 0, 0))
 
     def test_a_bracket_that_is_not_a_citation_holds_nothing_back(self) -> None:
         """Only a citation still arriving at the end of the words so far holds its sentence
@@ -382,7 +388,44 @@ class AskLogTests(AskTestCase):
         self.assertIn(row.output, {f"{text} [1]" for text in (COSTS_SUMMARY_SV, COSTS_SUMMARY_FI)})
         self.assertEqual(row.citations, [{"label": f"{FFFS}, 9 kap. 6 §", "url": "https://www.example.test/source"}])
         self.assertEqual(row.status, AiStatus.DRAFT.value)
+        self.assertEqual(row.stop_reason, "end_turn", "the provider's own word for how the model finished")
         self.assertFalse(row.model_metadata_reported_by_agent)
+
+    def test_a_model_that_fails_mid_answer_leaves_what_the_reader_saw_logged(self) -> None:
+        """AUD-02: two statements reached the reader before the model failed, so the row
+        holds the words written by then, what they cite, and that the call failed."""
+
+        def failing(self: llm.MockLlm, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | llm.Completion]:
+            yield "Costs are disclosed in advance. [1] "
+            yield "They are itemised. [1] "
+            yield "Both"
+            raise llm.LlmError("the model API failed mid-stream (overloaded_error)")
+
+        with mock.patch.object(llm.MockLlm, "stream", autospec=True, side_effect=failing):
+            events = self.ask(COSTS_QUESTION)
+
+        self.assertEqual([event["event"] for event in events], ["start", "statement", "statement", "problem"])
+        self.assertEqual(events[-1]["code"], "model_unavailable")
+        row = AiGeneration.objects.get()
+        self.assertEqual(str(row.id), events[0]["id"])
+        self.assertEqual(row.output, "Costs are disclosed in advance. [1] They are itemised. [1] Both")
+        self.assertEqual(row.citations, [{"label": f"{FFFS}, 9 kap. 6 §", "url": "https://www.example.test/source"}])
+        self.assertEqual((row.model, row.model_version), ("mock", "0"))
+        self.assertEqual((row.input_tokens, row.output_tokens, row.stop_reason), (0, 0, "failed"))
+        self.assertEqual(row.status, AiStatus.DRAFT.value, "what the reader saw is still labelled")
+
+    def test_a_reader_of_the_ai_log_sees_how_the_answer_ended(self) -> None:
+        """A vendor review or a cost roll-up reads the log, not the stream: an answer cut
+        short must not read there as a finished one."""
+        with replying("Costs are disclosed in advance. [1]"):
+            finished = answer_of(self.ask(COSTS_QUESTION))
+        officer = factories.member_user(self.tenant, roles=("compliance_officer",))
+
+        response = Client().get("/api/v1/ai-generations", **sign_in(officer, tenant=self.tenant))
+
+        self.assertEqual(response.status_code, 200, response.content)
+        rows = {row["id"]: row for row in response.json()["items"]}
+        self.assertEqual(rows[finished["id"]]["stopReason"], "end_turn")
 
     def test_the_log_holds_no_question_text(self) -> None:
         self.ask(COSTS_QUESTION)
@@ -410,6 +453,7 @@ class AskLogTests(AskTestCase):
         self.assertEqual(row.citations, [{"label": f"{FFFS}, 9 kap. 6 §", "url": "https://www.example.test/source"}])
         self.assertEqual((row.model, row.model_version), ("mock", "0"))
         self.assertEqual((row.input_tokens, row.output_tokens), (0, 0))
+        self.assertEqual(row.stop_reason, "aborted", "the row says in its own words that the answer was cut short")
         self.assertEqual(row.status, AiStatus.DRAFT.value, "unfinished output is still labelled until a person confirms it")
 
     def test_a_reader_who_leaves_before_the_model_is_asked_leaves_no_row(self) -> None:

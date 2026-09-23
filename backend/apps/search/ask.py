@@ -38,10 +38,11 @@ confirmed a change will move: a confirmed link, on an active change whose type's
 lifecycle kind moves the law on its key date, dated after the answer's "as of". The
 earliest such change is the one named.
 
-**Every model call leaves one AI log row** (AUD-02) carrying the answer's own id, even
-when the reader leaves before the answer is finished. A model that fails ends the stream
-with `model_unavailable` and, having produced nothing to label, logs nothing. No audit
-row is written: an answer changes no record.
+**Every model call leaves one AI log row** (AUD-02, D-82) carrying the answer's own id
+and how the call ended, even when the reader leaves before the answer is finished
+(`aborted`) or the model fails part way (`failed`), with whatever it had written by then.
+A model that fails ends the stream with `model_unavailable`. No audit row is written: an
+answer changes no record.
 
 `rate_answer` stays `not_built` until the reader's verdict is built.
 """

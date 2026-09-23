@@ -1045,3 +1045,10 @@ that may never exist.
 
 `Answer.model` is empty when no model was asked: a question no library passage supports is
 answered `noAnswer` at once, with no model call and so no `ai_generation` row.
+
+`ai_generation` gains `stop_reason` (`governance/0003_ai_generation_stop_reason.py`) and
+`AiGenerationRow` gains `stopReason`, neither of which the designed table or contract has:
+how a call bleqq made ended, the provider's own stop reason when the model finished,
+`aborted` when the caller stopped reading first and `failed` when the model failed once
+asked (D-82). A streamed Ask answer is logged however it ends, and without the column a
+call cut short read in the log exactly as a finished one. Empty on a row an agent filed.

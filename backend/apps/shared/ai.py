@@ -1,8 +1,10 @@
 """The one door to a model (AUD-02, playbook 16).
 
 `apps/shared/adapters/llm.py` moves prompts and knows nothing about logging. This module is
-the only code allowed to call it, and every call it makes leaves an `ai_generation` row in
-the caller's own transaction. `apps/shared/tests_ai_wrapper.py` walks the production tree
+the only code allowed to call it, and every call it makes leaves an `ai_generation` row:
+`generate` in the caller's own transaction once the model has answered, and `stream`, whose
+words reach somebody as they arrive, in a transaction of its own however the call ends.
+`apps/shared/tests_ai_wrapper.py` walks the production tree
 and fails on any other module that imports or calls the adapter, so "every model call is
 logged" is a fact a test keeps true rather than a habit a new caller can forget.
 
@@ -47,6 +49,12 @@ from apps.shared.adapters.llm import LlmError as LlmError
 from apps.shared.adapters.llm import format_context as format_context
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
+
+# How a streamed call ended when the model did not say, on its log row (`stop_reason`,
+# D-82): the caller stopped reading first, or the model failed once asked. A call the model
+# finished carries the provider's own stop reason instead.
+ABORTED = "aborted"
+FAILED = "failed"
 
 
 @dataclass(frozen=True)
@@ -95,9 +103,10 @@ def generate(
 ) -> Generation:
     """Ask the model, then write the row, in the caller's transaction.
 
-    The adapter raises `LlmError` when the model cannot answer; nothing is logged then,
-    because no output exists to label, and the caller decides whether that failure blocks
-    its own work. The model and the version on the row are the provider's own, read off the
+    The adapter raises `LlmError` when the model cannot answer; nothing is logged then:
+    no word of the output reached anybody, and the row would share the caller's
+    transaction, which the caller keeps or rolls back as that failure decides for its own
+    work. The model and the version on the row are the provider's own, read off the
     response, which is what `modelMetadataReportedByAgent = False` means to a reader.
     """
     ensure_enabled()
@@ -120,6 +129,7 @@ def generate(
         input_tokens=completion.input_tokens,
         output_tokens=completion.output_tokens,
         metadata_reported_by_agent=False,
+        stop_reason=completion.stop_reason,
     )
     return Generation(text=completion.text, generation=row)
 
@@ -147,18 +157,23 @@ def stream(
     `cite` turns the finished text into what it rests on, because which passages an answer
     cites is only known once it is written; the row records those and nothing else. The
     row carries `generation_id`, the id the caller already gave the answer, so a reader's
-    verdict on it finds its row. A model that fails raises `LlmError` and logs nothing.
+    verdict on it finds its row, and the provider's own stop reason.
 
-    A caller that stops reading before the answer is finished, a reader closing the tab,
-    closes what this returns, and the call is logged all the same (AUD-02): the model was
-    asked and had begun to answer. The row then holds the words written so far, what they
-    cite and the model the call was addressed to, as a draft like any other; usage is left
-    at nothing, because the provider reports it only with the last word.
+    Once the model has been asked, the call leaves its row however it ends (AUD-02, D-82),
+    because the caller may already have shown its words to somebody. A model that fails
+    raises `LlmError` after the row is written with `stop_reason = failed`; a caller that
+    stops reading before the answer is finished, a reader closing the tab, closes what this
+    returns, and the row is written with `stop_reason = aborted`. Either row holds the words
+    written so far, what they cite and the model the call was addressed to, as a draft like
+    any other; usage is left at nothing, because the provider reports it only with the last
+    word. Closing this before it is first read asks no model and logs nothing.
     """
     ensure_enabled()
     engine = get_llm()
 
-    def log(text: str, model: str, model_version: str, input_tokens: int, output_tokens: int) -> AiGeneration:
+    def log(
+        text: str, model: str, model_version: str, input_tokens: int, output_tokens: int, stop_reason: str
+    ) -> AiGeneration:
         with transaction.atomic():
             if tenant_id is not None:
                 tenancy.activate(tenant_id)
@@ -175,24 +190,38 @@ def stream(
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
                 generation_id=generation_id,
+                stop_reason=stop_reason,
             )
 
     def streamed() -> Generator[str | Generation]:
         written: list[str] = []
         logged = False
+
+        def cut_short(stop_reason: str) -> None:
+            if not logged:
+                log("".join(written), *engine.asked_model(), 0, 0, stop_reason)
+
         try:
             for event in engine.stream(system=system, prompt=prompt, max_tokens=max_tokens):
                 if isinstance(event, Completion):
-                    row = log(event.text, event.model, event.model_version, event.input_tokens, event.output_tokens)
+                    row = log(
+                        event.text,
+                        event.model,
+                        event.model_version,
+                        event.input_tokens,
+                        event.output_tokens,
+                        event.stop_reason,
+                    )
                     logged = True
                     yield Generation(text=event.text, generation=row)
                 else:
                     written.append(event)
                     yield event
+        except LlmError:
+            cut_short(FAILED)
+            raise
         except GeneratorExit:
-            if not logged:
-                model, model_version = engine.asked_model()
-                log("".join(written), model, model_version, 0, 0)
+            cut_short(ABORTED)
             raise
 
     return streamed()

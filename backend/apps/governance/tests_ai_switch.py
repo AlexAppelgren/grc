@@ -72,6 +72,7 @@ class AiSwitchTests(TestCase):
 
         self.assertTrue(result.text)
         self.assertEqual(result.generation.tenant_id, self.on.id)
+        self.assertEqual(result.generation.stop_reason, "end_turn", "the row says how the model finished")
 
     def test_a_bank_that_switched_its_ai_off_reaches_no_model(self) -> None:
         with (

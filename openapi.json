@@ -717,6 +717,7 @@
             "purpose": "so_what",
             "reviewedAt": null,
             "status": "draft",
+            "stopReason": "",
             "subjectId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
             "subjectType": "regulatory_change",
             "tenantScoped": false
@@ -845,6 +846,14 @@
             "title": "Status",
             "type": "string"
           },
+          "stopReason": {
+            "description": "How a call bleqq made ended, at most 64 characters: `end_turn` (the model finished), `max_tokens` or `model_context_window_exceeded` (the model stopped at a limit, so `output` is cut short), `aborted` (the caller stopped reading before the model finished, such as a reader closing an Ask answer; `output` holds what was written by then), `failed` (the model failed once asked; `output` holds what arrived first, possibly nothing), or another stop reason the provider names in its own snake_case word. Token counts are 0 on an `aborted` or `failed` row, because the provider reports usage only with its last word. Empty on a row an agent filed (`modelMetadataReportedByAgent`), whose call bleqq did not watch end, and on a row written before this was recorded. Source: the server.",
+            "examples": [
+              "end_turn"
+            ],
+            "title": "Stopreason",
+            "type": "string"
+          },
           "subjectId": {
             "anyOf": [
               {
@@ -894,6 +903,7 @@
           "reviewedAt",
           "inputTokens",
           "outputTokens",
+          "stopReason",
           "tenantScoped",
           "createdAt"
         ],
@@ -1454,7 +1464,7 @@
         ],
         "properties": {
           "code": {
-            "description": "The machine-readable reason the answer stopped, the same `code` an RFC 9457 problem body would carry. The one code a stream ends on is `model_unavailable`: the model could not be reached, declined, or did not finish before its deadline, nothing was logged and asking again may succeed. Everything that can refuse a question before it is answered (no session, no permission, the rate limit, the bank's AI switch) is a status with a problem body instead, and no stream opens. Branch on this, never on `detail`. Source: the server. Do not read a code as a verdict on the question: it says why this stream stopped, not that the library holds no answer, which is `noAnswer` on a stream that finished.",
+            "description": "The machine-readable reason the answer stopped, the same `code` an RFC 9457 problem body would carry. The one code a stream ends on is `model_unavailable`: the model could not be reached, declined, or did not finish before its deadline. The call is still in the AI log, with whatever it had written and `stopReason` `failed`, and asking again may succeed. Everything that can refuse a question before it is answered (no session, no permission, the rate limit, the bank's AI switch) is a status with a problem body instead, and no stream opens. Branch on this, never on `detail`. Source: the server. Do not read a code as a verdict on the question: it says why this stream stopped, not that the library holds no answer, which is `noAnswer` on a stream that finished.",
             "title": "Code",
             "type": "string"
           },
