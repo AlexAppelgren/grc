@@ -86,6 +86,13 @@ the compliance officer, added to TENANT_PERMISSIONS and added as a `proposals:re
 scope; the role editor validating against every permission; and a key's principal passing
 a permission gate.
 
+The door each writer names to the database (H16, ADR 0058) is `EachWriterNamesItsOwnDoor`:
+the word a writer hands the trigger of shared 0008 decides which tables it reaches there, so
+`proposal`, `reverification`, `watch` and `index` are each named by one function and no
+other, and `seed` is what everything else takes. Proven to fail 2026-09-23, each breach then
+reverted: `door="proposal"` in `watch_write()` (the watch door named by the wrong function),
+and the stamp's `door="reverification"` removed (the door named by nobody).
+
 The step-up edge proven to fail 2026-09-23, then reverted: approveProposal with its
 `enforce_step_up` call and import removed (red here, naming the missing edge, and red in
 apps/proposals/tests_decide.py, where a person's approval without an assertion and one
@@ -283,6 +290,60 @@ class LibraryFenceGuard(SimpleTestCase):
             set(),
             "no API key scope names an inventory table, so no watch path reaches one (AC-PRO1)",
         )
+
+
+# ---------------------------------------------------------------------------------------
+# The door each writer names to the database (H16, ADR 0058)
+# ---------------------------------------------------------------------------------------
+# The trigger of shared 0008 opens each library-zone table to the doors it names, so the
+# word a writer hands the database is what decides which tables it reaches there. `seed` is
+# library_write()'s default and is what a reference seed and a test builder take; every
+# other door is named by exactly one function, and by no other. A watch step that named
+# `proposal` would reach the inventory in the database, and a stamp that lost its door would
+# fall back to `seed` and reach every inventory table: each fails here. `library_door()`
+# itself is kept to its homes by the compliance lint's `library-door` rule.
+DOOR_NAMERS: dict[str, frozenset[str]] = {
+    "proposal": frozenset({"proposals/apply.py::apply"}),
+    "reverification": frozenset({"proposals/apply.py::apply_reverification"}),
+    "watch": frozenset({"watch/write.py::watch_write"}),
+    "index": frozenset({"search/indexing.py::index_write"}),
+}
+# The one call that passes a door it was handed rather than one it names.
+DOOR_PASSED_ON = "shared/tenancy.py::library_write"
+
+
+def named_doors() -> dict[str, set[str]]:
+    """Every door a production call names, by `library_write(..., door=...)` or
+    `library_door(...)`, and the top-level function (or `<module>`) that names it. A door
+    that is not a string literal is listed as `<passed on>`."""
+    found: dict[str, set[str]] = {}
+    for path in production_modules():
+        rel = path.relative_to(APPS_DIR).as_posix()
+        for top in ast.parse(path.read_text(encoding="utf-8")).body:
+            scope = top.name if isinstance(top, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) else "<module>"
+            for node in ast.walk(top):
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                called = func.attr if isinstance(func, ast.Attribute) else func.id if isinstance(func, ast.Name) else None
+                door = next((keyword.value for keyword in node.keywords if keyword.arg == "door"), None)
+                if called == "library_door" and door is None and node.args:
+                    door = node.args[0]
+                if called not in {"library_write", "library_door"} or door is None:
+                    continue
+                name = door.value if isinstance(door, ast.Constant) and isinstance(door.value, str) else "<passed on>"
+                found.setdefault(name, set()).add(f"{rel}::{scope}")
+    return found
+
+
+class EachWriterNamesItsOwnDoor(SimpleTestCase):
+    def test_each_door_is_named_by_its_one_writer_and_by_no_other(self) -> None:
+        found = named_doors()
+        for door, namers in DOOR_NAMERS.items():
+            with self.subTest(door=door):
+                self.assertEqual(found.get(door, set()), set(namers), f"the {door} door is named by the wrong functions")
+        self.assertEqual(found.get("<passed on>", set()), {DOOR_PASSED_ON}, "a door passed on from a variable outside library_write()")
+        self.assertEqual(set(found) - set(DOOR_NAMERS) - {"seed", "<passed on>"}, set(), "a door the database does not know")
 
 
 # ---------------------------------------------------------------------------------------

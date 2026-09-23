@@ -61,12 +61,17 @@ class IndexWriteRefused(RuntimeError):
 def index_write(reason: str) -> Iterator[None]:
     """The only context in which a SearchChunk may be saved, updated or deleted. `reason`
     names the rebuild that is running: the approval that reindexed one obligation, the
-    change that arrived through the outbox, or the full rebuild a command asked for."""
+    change that arrived through the outbox, or the full rebuild a command asked for.
+
+    It also opens the index door in the database (H16, ADR 0058), which reaches
+    `search_chunk` and no library table, and puts back the door it found — the approval's
+    own, when a rebuild runs inside one."""
     if not reason.strip():
         raise ValueError("index_write() needs a reason naming the rebuild that is running")
     token = _index_write_reason.set(reason)
     try:
-        yield
+        with tenancy.library_door("index"):
+            yield
     finally:
         _index_write_reason.reset(token)
 

@@ -17,6 +17,10 @@
 - `LibraryModel`: abstract, no tenant. Writes are refused outside `library_write()`, and
   the library-fence guard restricts `library_write()` to the modules that apply approved
   proposals, the watch pipeline and reference seeds (PRO-01, playbook 5).
+- `library_door()` is the database's half of that fence (H16, ADR 0058): it names the door
+  a write comes through in a transaction-local setting, and a trigger on every library-zone
+  table (shared 0008) refuses a write from the app role whose door that table does not
+  accept. `library_write()` and the index door open it; nothing else may.
 """
 
 from __future__ import annotations
@@ -26,7 +30,7 @@ import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
 
 from django.db import DEFAULT_DB_ALIAS, connections, models, transaction
 
@@ -42,6 +46,15 @@ TENANT_SETTING = "app.tenant_id"
 # (apps/shared/tests_rls.py, IDENTITY_LOOKUP_TABLES) and an AST guard restricts callers
 # to apps/shared/authentication.py and the identity app's logic modules.
 IDENTITY_LOOKUP_SETTING = "app.identity_lookup"
+# The door a library-zone write comes through (H16, ADR 0058). The trigger shared 0008
+# puts on every library-zone table reads it and refuses a write from the app role unless it
+# names a door that table accepts: `proposal` and `seed` the inventory and the library
+# vocabularies, `reverification` the obligation and its verification rows only, `watch` the
+# seven watch tables only (D-64) and `index` the search index only (D-65). The compliance
+# lint's `library-door` rule keeps this name in this module, the index door, the migration
+# helpers, migrations and tests.
+LIBRARY_DOOR_SETTING = "cw.library_door"
+LibraryDoor = Literal["proposal", "reverification", "seed", "watch", "index"]
 
 _active_tenant: ContextVar[uuid.UUID | None] = ContextVar("active_tenant", default=None)
 _library_write_reason: ContextVar[str | None] = ContextVar("library_write_reason", default=None)
@@ -173,16 +186,42 @@ def is_tenant_task(fn: Callable[..., Any]) -> bool:
 # Library fence
 # ---------------------------------------------------------------------------------------
 @contextmanager
-def library_write(reason: str) -> Iterator[None]:
+def library_write(reason: str, *, door: LibraryDoor = "seed") -> Iterator[None]:
     """The only context in which a LibraryModel may be saved or deleted. `reason` names the
-    proposal, the watch step or the seed; it is recorded by record() callers."""
+    proposal, the watch step or the seed; it is recorded by record() callers.
+
+    `door` is what the database is told (H16, ADR 0058): the proposal applier names
+    `proposal` or `reverification` and the watch door `watch`; a reference seed and a test
+    builder take the default. Which module may name which door is pinned by the library
+    fence (apps/shared/tests_library_fence.py)."""
     if not reason.strip():
         raise ValueError("library_write() needs a reason naming the proposal, step or seed")
     token = _library_write_reason.set(reason)
     try:
-        yield
+        with library_door(door):
+            yield
     finally:
         _library_write_reason.reset(token)
+
+
+@contextmanager
+def library_door(door: LibraryDoor, *, using: str = DEFAULT_DB_ALIAS) -> Iterator[None]:
+    """Tell the database which door the writes in this block come through (H16, ADR 0058).
+
+    The setting is transaction-local, so the block runs in a transaction: its own when none
+    is open, a savepoint inside one. A door set in autocommit would be gone by the next
+    statement and the write after it refused. On the way out the door it found is put back,
+    so doors nest (a proposal's approval opens the index door for its rebuild); a block that
+    raises rolls its savepoint back, and PostgreSQL undoes the setting with it. `using`
+    exists for the guard, which proves the trigger on the cw_app alias."""
+    with transaction.atomic(using=using):
+        with connections[using].cursor() as cursor:
+            cursor.execute("SELECT coalesce(current_setting(%s, true), '')", [LIBRARY_DOOR_SETTING])
+            row = cursor.fetchone()
+            cursor.execute("SELECT set_config(%s, %s, true)", [LIBRARY_DOOR_SETTING, door])
+        yield
+        with connections[using].cursor() as cursor:
+            cursor.execute("SELECT set_config(%s, %s, true)", [LIBRARY_DOOR_SETTING, row[0] if row else ""])
 
 
 def library_write_reason() -> str | None:
@@ -193,7 +232,7 @@ def _assert_library_write(model_name: str) -> None:
     if _library_write_reason.get() is None:
         raise LibraryWriteRefused(
             f"{model_name} is a library record. Writes happen only inside library_write() "
-            "from proposals/apply.py, watch/logic.py or a reference seed (PRO-01)."
+            "from proposals/apply.py, watch/write.py or a reference seed (PRO-01)."
         )
 
 

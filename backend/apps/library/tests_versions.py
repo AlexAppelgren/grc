@@ -33,7 +33,7 @@ from apps.library.models import (
 )
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import load_library, seed_authorities
-from apps.shared.tenancy import LibraryModel, library_write
+from apps.shared.tenancy import LibraryModel, library_door, library_write
 from apps.taxonomy.models import DutyType, InstrumentLevel, ProvisionKind, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 
@@ -76,7 +76,7 @@ class VersionTablesAreAppendOnly(TransactionTestCase):
 
     def _insert_one_row_each(self) -> dict[str, uuid.UUID]:
         app = "app"
-        with transaction.atomic(using=app), library_write("test"):
+        with transaction.atomic(using=app), library_write("test"), library_door("seed", using=app):
             instrument = Instrument.objects.using(app).create(
                 stable_key="fffs-2017-2",
                 short_name="FFFS 2017:2",
@@ -133,7 +133,13 @@ class VersionTablesAreAppendOnly(TransactionTestCase):
                 for statement in REFUSED[table]:
                     for hatch in HATCHES:
                         with self.subTest(statement=statement, hatch=hatch):
-                            with self.assertRaisesMessage(DatabaseError, f"{table} is append-only"), transaction.atomic(using="app"):
+                            # Inside an approved proposal's door, so the database's door
+                            # check (H16) lets the statement reach the append-only trigger.
+                            with (
+                                self.assertRaisesMessage(DatabaseError, f"{table} is append-only"),
+                                transaction.atomic(using="app"),
+                                library_door("proposal", using="app"),
+                            ):
                                 if hatch:
                                     cursor.execute(hatch)
                                 cursor.execute(statement, [row_id])

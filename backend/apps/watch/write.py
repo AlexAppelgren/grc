@@ -95,13 +95,15 @@ def watch_write(reason: str) -> Iterator[None]:
 
     The wrapper sits on the default connection, the one the application writes through;
     the `app` alias exists for the guards, which read. A refusal aborts the transaction it
-    happened in, which is what a fence breach should do.
+    happened in, which is what a fence breach should do. The database holds the same line
+    a second time: the door named below opens the seven watch tables and no other (H16,
+    shared 0008, ADR 0058).
 
     A shared source is written with no tenant active. `source` is the one watch table with
     a zone column (WAT-06), and its write rule is the session's own zone alone, so a
     session with a tenant activated writes that bank's private source and only a session
     with none writes the shared row a sweep reads (`c5-seed-watch`, `seed_e2e`)."""
-    with library_write(f"watch: {reason}"), connections[DEFAULT_DB_ALIAS].execute_wrapper(
+    with library_write(f"watch: {reason}", door="watch"), connections[DEFAULT_DB_ALIAS].execute_wrapper(
         _refuse_writes_outside_the_watch_zone
     ):
         yield
