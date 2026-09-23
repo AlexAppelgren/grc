@@ -649,7 +649,7 @@ def withdraw_footprint_request(request: HttpRequest, request_id: str) -> Footpri
 
 _MARKET_WATCH_EXAMPLE = {
     "requestBody": {"content": {"application/json": {"example": {"jurisdiction": "no"}}}},
-    "responses": {200: {"content": {"application/json": {"example": {"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "operating": False, "watching": True}}}}},
+    "responses": {200: {"content": {"application/json": {"example": {"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "level": "watching"}}}}},
 }
 
 
