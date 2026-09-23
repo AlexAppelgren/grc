@@ -39,10 +39,14 @@ import pydantic
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
 from apps.agents import runs
+from apps.agents.models import AgentRun
+from apps.governance import ai_log
+from apps.governance.models import AiPurpose
 from apps.library.models import DatePrecision
 from apps.library.reading import active_obligation, terms_of, unknown_provision_keys
 from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus, ProposalTenant
@@ -60,6 +64,7 @@ from apps.proposals.schemas import (
 )
 from apps.shared import tenancy
 from apps.shared.audit import Actor, record
+from apps.shared.schemas import AgentDecision
 
 SUBJECT_TYPE = "proposal"
 # What an obligation proposal points at (schema v0.3 `subject_type`).
@@ -651,13 +656,65 @@ def as_reviewer(reviewer: "Reviewer | Any", actor: Actor) -> Reviewer:
     return Reviewer(actor=actor, user=reviewer)
 
 
-def _reviewer_facts(reviewer: Reviewer) -> dict[str, Any]:
+def _reviewer_facts(reviewer: Reviewer, run: AgentRun | None) -> dict[str, Any]:
     """What a decision's audit row names beside the actor label (AUD-01, AUD-02, AUD-S9):
-    the key an agent used, by its public prefix and never its internal id alone. Empty for
-    a person, whose audit row already carries no key at all."""
+    the key an agent used, by its public prefix and never its internal id alone, and the
+    run the decision was made in, which its logged model call names too (D-80). Empty for a
+    person, whose audit row carries no key and no run at all. The key is named whether or not
+    a run came with it, so no decision by a key ever loses the prefix AUD-S9 reads."""
     if reviewer.api_key_id is None:
         return {}
-    return {"reviewingApiKeyPrefix": reviewer.api_key_prefix}
+    facts: dict[str, Any] = {"reviewingApiKeyPrefix": reviewer.api_key_prefix}
+    if run is not None:
+        facts["agentRunId"] = str(run.id)
+    return facts
+
+
+def _decision_run(reviewer: Reviewer, decision: AgentDecision | None, agent_run_id: uuid.UUID | None) -> AgentRun | None:
+    """The open run an agent's decision is made in, once the decision says what model call
+    is behind it (AUD-02, AGT-01, D-80); None for a person, who sends neither.
+
+    An agent's approval or rejection is a model call, and every model call is logged, so a
+    key's decision without its `AgentDecision` is refused rather than recorded as one nobody
+    can attribute or check. The run must be an open run of the deciding key itself
+    (`runs.require_open_run_of_key`): none, or a closed one, is `run_not_open`, and another
+    key's, another agent's included, is `not_found` as a run that never existed is, so no
+    agent counts its decisions in somebody else's run. A person's decision is not a model
+    call, so a body that says it was one is refused rather than logged as a machine's."""
+    if reviewer.user is not None:
+        if decision is not None or agent_run_id is not None:
+            raise ValidationError(
+                "A person's decision names no model call and no run: leave out decision and agentRunId.",
+                code="validation_error",
+            )
+        return None
+    if decision is None:
+        raise ValidationError(
+            "Send the model call behind this decision in decision: the model, its version, the output and at least one citation.",
+            code="validation_error",
+        )
+    return runs.require_open_run_of_key(reviewer.api_key_id, agent_run_id)
+
+
+def _log_decision(proposal: Proposal, decision: AgentDecision | None, run: AgentRun | None) -> None:
+    """The model call behind an agent's decision, as one `agent_review` row of the AI output
+    log in the decision's own transaction: the agent's report of itself, about this proposal,
+    counted in its run (AUD-02, D-80). Nothing for a person's decision."""
+    if decision is None or run is None:
+        return
+    ai_log.log_generation(
+        purpose=AiPurpose.AGENT_REVIEW,
+        model=decision.model,
+        model_version=decision.model_version,
+        output=decision.output,
+        citations=decision.citations,
+        agent_run_id=run.id,
+        subject_type=SUBJECT_TYPE,
+        subject_id=proposal.id,
+        prompt_template=decision.prompt_template or "",
+        prompt_hash=decision.prompt_hash or "",
+        metadata_reported_by_agent=True,
+    )
 
 
 def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any]) -> dict[str, Any]:
@@ -712,14 +769,24 @@ def approve(
     note: str,
     payload_overrides: dict[str, Any] | None = None,
     step_up_assertion_id: uuid.UUID | None,
+    decision: AgentDecision | None = None,
+    agent_run_id: uuid.UUID | None = None,
 ) -> Proposal:
-    """Apply the payload and approve, in one transaction (PRO-02): the library row, its
-    audit row and the proposal's own audit row commit together or not at all.
+    """Apply the payload and approve, in one transaction of its own (PRO-02): the library
+    row, its audit row, the proposal's own audit row and an agent's logged model call commit
+    together or not at all, whether or not a request opened a transaction around the call. A
+    worker or a shell caller that fails part way writes nothing, so its retry writes the
+    version once (apps/proposals/tests_decide.py, DecidingOutsideARequest).
 
     A reviewer may correct the payload on the way through (`payload_overrides`). What they
     approved is stored beside what was proposed, as their own correction, so the queue and
     the audit trail keep both. `step_up_assertion_id` is null for an agent's decision: a key
     holds no passkey assertion (PRO-S13, D-62, ADR 0054).
+
+    An agent's approval carries the model call behind it (`decision`) and the open run of
+    its own key it was made in (`agent_run_id`), checked before anything else is read; the
+    call is logged as one `agent_review` row and the audit row names the run (`_decision_run`,
+    AUD-02, D-80). A person sends neither.
 
     An agent approves an obligation version only (INV-05, D-79). A vocabulary row and a
     taxonomy term record who confirmed them too since taxonomy 0007, and `apply` marks
@@ -734,99 +801,118 @@ def approve(
     from apps.proposals import apply
 
     reviewer = as_reviewer(reviewer, actor)
-    _decidable(proposal, reviewer)
-    if reviewer.user is None and proposal.kind not in OBLIGATION_KINDS:
-        raise ValidationError(
-            "An agent cannot approve this kind of change yet: a person has to approve it.",
-            code="person_review_required",
+    with transaction.atomic():
+        run = _decision_run(reviewer, decision, agent_run_id)
+        _decidable(proposal, reviewer)
+        if reviewer.user is None and proposal.kind not in OBLIGATION_KINDS:
+            raise ValidationError(
+                "An agent cannot approve this kind of change yet: a person has to approve it.",
+                code="person_review_required",
+            )
+        decided = ["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "applied_at", "review_note"]
+        if payload_overrides:
+            corrected(proposal, reviewer, payload_overrides)
+            decided += ["corrected_payload", "corrected_by", "corrected_at", "effective_from"]
+        apply.apply(proposal, actor=actor, reviewer=reviewer, step_up=step_up_assertion_id)
+        now = timezone.now()
+        proposal.status = ProposalStatus.APPROVED.value
+        proposal.reviewed_by = reviewer.user
+        proposal.reviewed_by_api_key_id = reviewer.api_key_id
+        proposal.reviewed_by_agent_id = reviewer.agent_id
+        proposal.reviewed_at = now
+        proposal.applied_at = now
+        proposal.review_note = note.strip()
+        proposal.save(update_fields=decided)
+        _log_decision(proposal, decision, run)
+        record(
+            action="proposal.approved",
+            actor=actor,
+            subject_type=SUBJECT_TYPE,
+            subject_id=proposal.id,
+            subject_title=proposal.title,
+            summary=f"Approved: {proposal.title}",
+            tenant_id=None,
+            before={"status": ProposalStatus.OPEN.value},
+            after={
+                "status": proposal.status,
+                "note": proposal.review_note,
+                "corrected": proposal.corrected_payload is not None,
+                **_reviewer_facts(reviewer, run),
+            },
+            step_up_assertion_id=step_up_assertion_id,
         )
-    decided = ["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "applied_at", "review_note"]
-    if payload_overrides:
-        corrected(proposal, reviewer, payload_overrides)
-        decided += ["corrected_payload", "corrected_by", "corrected_at", "effective_from"]
-    apply.apply(proposal, actor=actor, reviewer=reviewer, step_up=step_up_assertion_id)
-    now = timezone.now()
-    proposal.status = ProposalStatus.APPROVED.value
-    proposal.reviewed_by = reviewer.user
-    proposal.reviewed_by_api_key_id = reviewer.api_key_id
-    proposal.reviewed_by_agent_id = reviewer.agent_id
-    proposal.reviewed_at = now
-    proposal.applied_at = now
-    proposal.review_note = note.strip()
-    proposal.save(update_fields=decided)
-    record(
-        action="proposal.approved",
-        actor=actor,
-        subject_type=SUBJECT_TYPE,
-        subject_id=proposal.id,
-        subject_title=proposal.title,
-        summary=f"Approved: {proposal.title}",
-        tenant_id=None,
-        before={"status": ProposalStatus.OPEN.value},
-        after={
-            "status": proposal.status,
-            "note": proposal.review_note,
-            "corrected": proposal.corrected_payload is not None,
-            **_reviewer_facts(reviewer),
-        },
-        step_up_assertion_id=step_up_assertion_id,
-    )
     return proposal
 
 
-def reject(*, proposal: Proposal, reviewer: "Reviewer | Any", actor: Actor, rejection_code: str, note: str) -> Proposal:
+def reject(
+    *,
+    proposal: Proposal,
+    reviewer: "Reviewer | Any",
+    actor: Actor,
+    rejection_code: str,
+    note: str,
+    decision: AgentDecision | None = None,
+    agent_run_id: uuid.UUID | None = None,
+) -> Proposal:
     """A rejection needs a reason (PRO-01): a code the proposer's screen can branch on and a
     sentence they can read. The code is a live row of the `rejection_reason` library list, an
     admin's to extend and retire, so a code from an older screen or a retired row is refused
     rather than stored as a reason nobody can look up. The outbox event is what tells them.
+
+    It runs in one transaction of its own, as `approve` does, and an agent's rejection carries
+    the model call behind it and the open run it was made in, logged and named the same way
+    (`_decision_run`, AUD-02, D-80).
 
     `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
     older caller; `as_reviewer` normalizes either into the same shape below."""
     from apps.taxonomy.registry import REGISTRY
 
     reviewer = as_reviewer(reviewer, actor)
-    code = rejection_code.strip()
-    text = note.strip()
-    if not code or not text:
-        raise ValidationError(
-            "Say why: choose a reason and write a note the proposer will read.", code="reason_required"
+    with transaction.atomic():
+        run = _decision_run(reviewer, decision, agent_run_id)
+        code = rejection_code.strip()
+        text = note.strip()
+        if not code or not text:
+            raise ValidationError(
+                "Say why: choose a reason and write a note the proposer will read.", code="reason_required"
+            )
+        # Through the registry rather than by naming the model: this module writes (it creates
+        # proposals), and the library fence's static guard fails closed on any module that both
+        # writes and names a concrete LibraryModel, whether or not the two are related
+        # (apps/shared/tests_library_fence.py). The reason list is a library vocabulary and this
+        # is a read of it.
+        reasons = REGISTRY[REJECTION_REASON_LIST].model
+        known = reasons.objects.filter(
+            key=code,
+            active=True,
+        ).exists()
+        if not known:
+            raise ValidationError(
+                f"{code!r} is not a reason the rejection reason list offers. Choose one of its live rows.",
+                code="reason_required",
+            )
+        _decidable(proposal, reviewer)
+        proposal.status = ProposalStatus.REJECTED.value
+        proposal.reviewed_by = reviewer.user
+        proposal.reviewed_by_api_key_id = reviewer.api_key_id
+        proposal.reviewed_by_agent_id = reviewer.agent_id
+        proposal.reviewed_at = timezone.now()
+        proposal.rejection_code = code
+        proposal.review_note = text
+        proposal.save(
+            update_fields=["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "rejection_code", "review_note"]
         )
-    # Through the registry rather than by naming the model: this module writes (it creates
-    # proposals), and the library fence's static guard fails closed on any module that both
-    # writes and names a concrete LibraryModel, whether or not the two are related
-    # (apps/shared/tests_library_fence.py). The reason list is a library vocabulary and this
-    # is a read of it.
-    reasons = REGISTRY[REJECTION_REASON_LIST].model
-    known = reasons.objects.filter(
-        key=code,
-        active=True,
-    ).exists()
-    if not known:
-        raise ValidationError(
-            f"{code!r} is not a reason the rejection reason list offers. Choose one of its live rows.",
-            code="reason_required",
+        _log_decision(proposal, decision, run)
+        record(
+            action="proposal.rejected",
+            actor=actor,
+            subject_type=SUBJECT_TYPE,
+            subject_id=proposal.id,
+            subject_title=proposal.title,
+            summary=f"Rejected: {proposal.title}",
+            tenant_id=None,
+            before={"status": ProposalStatus.OPEN.value},
+            after={"status": proposal.status, "rejectionCode": code, "note": text, **_reviewer_facts(reviewer, run)},
+            topic="proposal.rejected",
         )
-    _decidable(proposal, reviewer)
-    proposal.status = ProposalStatus.REJECTED.value
-    proposal.reviewed_by = reviewer.user
-    proposal.reviewed_by_api_key_id = reviewer.api_key_id
-    proposal.reviewed_by_agent_id = reviewer.agent_id
-    proposal.reviewed_at = timezone.now()
-    proposal.rejection_code = code
-    proposal.review_note = text
-    proposal.save(
-        update_fields=["status", "reviewed_by", "reviewed_by_api_key", "reviewed_by_agent", "reviewed_at", "rejection_code", "review_note"]
-    )
-    record(
-        action="proposal.rejected",
-        actor=actor,
-        subject_type=SUBJECT_TYPE,
-        subject_id=proposal.id,
-        subject_title=proposal.title,
-        summary=f"Rejected: {proposal.title}",
-        tenant_id=None,
-        before={"status": ProposalStatus.OPEN.value},
-        after={"status": proposal.status, "rejectionCode": code, "note": text, **_reviewer_facts(reviewer)},
-        topic="proposal.rejected",
-    )
     return proposal

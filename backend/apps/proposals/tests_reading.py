@@ -218,11 +218,16 @@ class QueueReads(ScenarioTestCase):
         tenancy.clear_tenant()
         return agents_testing.agent_key(agent_row=agent_row, scopes=scopes)
 
-    def _approve(self, proposal: Proposal, caller: dict[str, Any], overrides: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Approve through the route every reviewer uses, a person stepped up or an agent's key."""
+    def _approve(self, proposal: Proposal, caller: Any, overrides: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Approve through the route every reviewer uses: a person stepped up, whose headers
+        are `caller`, or an agent's key, which is `caller` itself and sends the model call
+        behind its decision in an open run of its own (D-80)."""
         body: dict[str, Any] = {"note": "Checked against the board decision."}
         if overrides is not None:
             body["payloadOverrides"] = overrides
+        if not isinstance(caller, dict):
+            body.update(agents_testing.decision(caller))
+            caller = {"HTTP_X_API_KEY": caller.plain_key}
         approved = self.client.post(f"{V1}/proposals/{proposal.id}/approve", data=body, content_type="application/json", **caller)
         self.assertEqual(approved.status_code, 200, approved.content)
         tenancy.clear_tenant()
@@ -293,8 +298,8 @@ class QueueReads(ScenarioTestCase):
         confirmer = self._agent_key(agent_row=agents_testing.agent(key="library-confirmer-reading", version=3))
         corrected = self._version_proposal(self.obligation, proposer=self._agent_proposer(filer))
         confirmed = self._version_proposal(self._obligation("obl-another-duty"), proposer=self._agent_proposer(filer))
-        self._approve(corrected, {"HTTP_X_API_KEY": confirmer.plain_key}, {"summaries": {"sv": LATER_SV}})
-        self._approve(confirmed, {"HTTP_X_API_KEY": confirmer.plain_key})
+        self._approve(corrected, confirmer, {"summaries": {"sv": LATER_SV}})
+        self._approve(confirmed, confirmer)
 
         filed_by = {"key": filer.agent.key, "version": 1}
         decided_by = {"key": "library-confirmer-reading", "version": 3}
@@ -600,7 +605,7 @@ class QueueReads(ScenarioTestCase):
         filer = self._agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
         confirmer = self._agent_key()
         first = self._version_proposal(self.obligation, proposer=self._agent_proposer(filer))
-        self._approve(first, {"HTTP_X_API_KEY": confirmer.plain_key}, {"summaries": {"sv": LATER_SV}})
+        self._approve(first, confirmer, {"summaries": {"sv": LATER_SV}})
         readers = (sign_in(self.editor), {"HTTP_X_API_KEY": confirmer.plain_key})
         one = [self._queries(reader, "") for reader in readers]
         second = self._version_proposal(self._obligation("obl-another-2"), proposer=self._agent_proposer(filer))

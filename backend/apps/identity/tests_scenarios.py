@@ -603,14 +603,14 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(failed.status_code, 400)
         self.assertEqual(failed.json()["code"], "step_up_failed")
 
-    @skip("pending: ID-S16 (ID-07, R2)")
+    @skip("pending: ID-S16 (ID-07, chunk 11)")
     def test_id_s16(self) -> None:
         """ID-S16
 
         A tenant can require attested device-bound authenticators (ID-07).
         """
 
-    @skip("pending: ID-S17 (ID-08, R2)")
+    @skip("pending: ID-S17 (ID-08, chunk 11)")
     def test_id_s17(self) -> None:
         """ID-S17
 
@@ -911,14 +911,14 @@ class IdentityScenarioTests(ScenarioTestCase):
                 with transaction.atomic():
                     cursor.execute("DELETE FROM login_event WHERE id = %s", [row.id])
 
-    @skip("pending: ID-S23 (ID-12, R3)")
+    @skip("pending: ID-S23 (ID-12, chunk 13)")
     def test_id_s23(self) -> None:
         """ID-S23
 
         SSO and SCIM never introduce a password (ID-12).
         """
 
-    @skip("pending: ID-S24 (ID-13, R3)")
+    @skip("pending: ID-S24 (ID-13, chunk 13)")
     def test_id_s24(self) -> None:
         """ID-S24
 
@@ -943,21 +943,21 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertTrue(body["detail"])
         self.assertTrue(body["title"])
 
-    @skip("pending: ID-S27 (ID-12, R3)")
+    @skip("pending: ID-S27 (ID-12, chunk 13)")
     def test_id_s27(self) -> None:
         """ID-S27
 
         SSO proves who a person is and never opens a session on its own (ID-12).
         """
 
-    @skip("pending: ID-S28 (ID-12, R3)")
+    @skip("pending: ID-S28 (ID-12, chunk 13)")
     def test_id_s28(self) -> None:
         """ID-S28
 
         A SCIM key carries one scope and its default role holds no admin permission (ID-12).
         """
 
-    @skip("pending: ID-S29 (ID-07, R2)")
+    @skip("pending: ID-S29 (ID-07, chunk 11)")
     def test_id_s29(self) -> None:
         """ID-S29
 
@@ -1009,6 +1009,8 @@ class IdentityScenarioTests(ScenarioTestCase):
 
         The review scope reaches the queue and never a library row (ID-10, AC-PRO1, AC-ID3).
         """
+        import uuid
+
         from apps.agents import testing as agents_testing
         from apps.library import testing as build
         from apps.library.seeds import seed_jurisdictions
@@ -1055,11 +1057,14 @@ class IdentityScenarioTests(ScenarioTestCase):
         # A bank's key holding proposals:review, written straight to the table as no route
         # would write it, is refused on the list, approve and reject alike, and the proposals
         # it tried to decide are untouched: the scope is platform-only at the gate too.
+        # It is refused whatever it sends: a bank's key opens no run (item 14), so the run it
+        # names is one it never opened, and the gate answers before the run is looked at.
         rogue = {"HTTP_X_API_KEY": factories.api_key(self.tenant, scopes=(perms.SCOPE_PROPOSALS_REVIEW,)).plain_key}
+        claimed = {"decision": agents_testing.DECISION, "agentRunId": str(uuid.uuid4())}
         for refused in (
             self.client.get("/api/v1/proposals", **rogue),
-            self._post(f"/proposals/{made.json()['id']}/approve", {"note": "Agreed."}, **rogue),
-            self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists."}, **rogue),
+            self._post(f"/proposals/{made.json()['id']}/approve", {"note": "Agreed.", **claimed}, **rogue),
+            self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists.", **claimed}, **rogue),
         ):
             self.assertEqual(refused.status_code, 403, refused.content)
             self.assertEqual(refused.json()["requiredPermission"], perms.SCOPE_PROPOSALS_REVIEW)
@@ -1071,18 +1076,20 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(list(obligation.versions.values_list("version_number", flat=True)), [1])
 
         # A platform key bound to an agent definition, holding proposals:review, reads the
-        # queue and approves, corrects or rejects a proposal it did not file.
+        # queue and approves, corrects or rejects a proposal it did not file, each decision
+        # carrying the model call behind it in an open run of its own (D-80).
         reviewer_key = agents_testing.reviewer_api_key()
         reviewer = {"HTTP_X_API_KEY": reviewer_key.plain_key}
+        sent = agents_testing.decision(reviewer_key)
         listed = self.client.get("/api/v1/proposals?status=open", **reviewer)
         self.assertEqual(listed.status_code, 200, listed.content)
         self.assertIn(made.json()["id"], [row["id"] for row in listed.json()["items"]])
-        approved = self._post(f"/proposals/{made.json()['id']}/approve", {"note": "Agreed."}, **reviewer)
+        approved = self._post(f"/proposals/{made.json()['id']}/approve", {"note": "Agreed.", **sent}, **reviewer)
         self.assertEqual(approved.status_code, 200, approved.content)
         self.assertEqual(
             sorted(obligation.versions.values_list("version_number", flat=True)), [1, 2], "the change reached the library only through apply"
         )
-        rejected = self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists."}, **reviewer)
+        rejected = self._post(f"/proposals/{second.json()['id']}/reject", {"rejectionCode": "duplicate", "note": "Already exists.", **sent, "decision": agents_testing.REJECTION_DECISION}, **reviewer)
         self.assertEqual(rejected.status_code, 200, rejected.content)
         self.assertFalse(Flag.objects.filter(key="sanctioned").exists())
 

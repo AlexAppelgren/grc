@@ -848,8 +848,12 @@ class MachineConfirmedVersionTests(TestCase):
         }
         created = self.client.post("/api/v1/proposals", body, content_type="application/json", HTTP_X_API_KEY=proposer.plain_key)
         self.assertEqual(created.status_code, 201, created.content)
+        # The confirming agent sends the model call behind its decision, in a run of its own (D-80).
         approved = self.client.post(
-            f"/api/v1/proposals/{created.json()['id']}/approve", {}, content_type="application/json", HTTP_X_API_KEY=confirmer.plain_key
+            f"/api/v1/proposals/{created.json()['id']}/approve",
+            agents_testing.decision(confirmer),
+            content_type="application/json",
+            HTTP_X_API_KEY=confirmer.plain_key,
         )
         self.assertEqual(approved.status_code, 200, approved.content)
         return {
