@@ -1200,12 +1200,193 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         The watched-market view of the inventory shows only what watching adds (FP-04).
         """
 
-    @skip("pending: FP-S14 (FP-04, R1)")
     def test_fp_s14(self) -> None:
         """FP-S14
 
         Markets stay inside the tenant and out of logs and error reports (FP-04, NFR-01).
+
+        The watch list is a bank's own judgement, so it lives under row-level security and
+        its keys travel in the body, never in a path or a query. The second half drives a
+        watch and an unwatch through the WSGI entry point gunicorn calls, with the Sentry
+        SDK initialised as settings.py initialises it and the loggers at their deployed
+        levels, and reads what each channel would have carried off the machine.
         """
+        import logging
+        import os
+        import re
+        from pathlib import Path
+
+        import sentry_sdk
+        from django.conf import settings
+        from django.core.handlers.wsgi import WSGIHandler
+        from django.core.signals import request_finished, request_started
+        from django.db import close_old_connections
+        from django.test import RequestFactory, override_settings
+        from sentry_sdk.integrations.django import DjangoIntegration
+        from sentry_sdk.integrations.logging import LoggingIntegration
+        from sentry_sdk.transport import Transport
+
+        from apps.shared import sentry_scrub
+        from apps.shared.logging import JsonFormatter
+        from apps.shared.middleware import RequestIdLogFilter
+
+        # Given tenant A watches Norway, with a regulatory scope and a request waiting, and
+        # tenant B watches nothing.
+        self._set_footprint(["regime:securities", "jurisdiction:se"])
+        a = sign_in(self.admin, tenant=self.tenant)
+        self.assertEqual(self._post("/tenant/footprint/watching", {"jurisdiction": "no"}, a).status_code, 200)
+        waiting = self._post(
+            "/tenant/footprint/requests",
+            {"adds": [{"dimension": "jurisdiction", "key": "no"}], "removes": []},
+            sign_in(self.officer, tenant=self.tenant),
+        )
+        self.assertEqual(waiting.status_code, 201, waiting.content)
+        self.activate(self.tenant)
+        watched = WatchedMarket.objects.get(tenant=self.tenant, jurisdiction__key="no")
+        a_rows = {
+            str(self.tenant.id),
+            str(watched.id),
+            waiting.json()["id"],
+            *(str(pk) for pk in FootprintTerm.objects.filter(tenant=self.tenant).values_list("id", flat=True)),
+        }
+        other = factories.tenant(slug="other-bank")
+        b = sign_in(factories.member(other, roles=("admin",), user_row=factories.user(name="Lena Berg")).user, tenant=other)
+
+        # When tenant B reads its footprint, Norway is not watched and nothing of A's is there.
+        seen = self._get("/tenant/footprint", b)
+        self.assertEqual(seen.status_code, 200, seen.content)
+        norway = next(market for market in seen.json()["markets"] if market["jurisdiction"]["key"] == "no")
+        self.assertEqual((norway["operating"], norway["watching"]), (False, False))
+        self.assertIsNone(seen.json()["pendingRequest"])
+        for row_id in a_rows:
+            self.assertNotIn(row_id, seen.content.decode())
+
+        # When tenant B asks to stop watching Norway, the answer is 404 and A's row stands.
+        refused = self._post("/tenant/footprint/watching/remove", {"jurisdiction": "no"}, b)
+        self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"))
+        self.activate(self.tenant)
+        self.assertEqual(
+            WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction__key="no").values_list("id", "added_by_id").get(),
+            (watched.id, self.admin.id),
+        )
+
+        # When tenant A watches and stops watching a market, what leaves the machine holds
+        # no jurisdiction key: the access line, the application log and the Sentry events.
+        entrypoint = (Path(settings.BASE_DIR) / "docker-entrypoint.sh").read_text(encoding="utf-8")
+        access_format = re.search(r"--access-logformat '([^']*)'", entrypoint)
+        assert access_format is not None, "the entrypoint names gunicorn's access format"
+
+        def access_line(environ: dict[str, Any], status: str, headers: list[tuple[str, str]], sent: int) -> str:
+            """The line gunicorn 26.2.0 prints for this request: its `Logger.atoms()`
+            restated, every atom it offers and not only the safe ones, because gunicorn
+            itself cannot be imported on every machine the suite runs on (`import grp`)."""
+            atoms = {
+                "h": environ.get("REMOTE_ADDR", "-"), "l": "-", "u": "-", "t": "[23/Sep/2026:09:00:00 +0000]",
+                "r": f"{environ['REQUEST_METHOD']} {environ['RAW_URI']} {environ['SERVER_PROTOCOL']}",
+                "s": status.split(None, 1)[0], "m": environ["REQUEST_METHOD"], "U": environ["PATH_INFO"],
+                "q": environ.get("QUERY_STRING"), "H": environ["SERVER_PROTOCOL"], "b": str(sent), "B": sent,
+                "f": environ.get("HTTP_REFERER", "-"), "a": environ.get("HTTP_USER_AGENT", "-"),
+                "T": 0, "D": 12000, "M": 12, "L": "0.012000", "p": f"<{os.getpid()}>",
+                **{f"{{{name[5:].replace('_', '-').lower()}}}i": value for name, value in environ.items() if name.startswith("HTTP_")},
+                **{f"{{{name.lower()}}}o": value for name, value in headers},
+                **{f"{{{name.lower()}}}e": value for name, value in environ.items()},
+            }
+            return access_format.group(1) % {name: atoms.get(name, "-") for name in re.findall(r"%\((.*?)\)s", access_format.group(1))}
+
+        def served(path: str, key: str) -> tuple[int, str]:
+            """One request through the WSGI application, as gunicorn hands it over, and its
+            access line. The test client's own handler would bypass the WSGI entry point
+            Sentry wraps; database connections stay open as the test client keeps them."""
+            request = RequestFactory().post(f"{V1}{path}", data={"jurisdiction": key}, content_type="application/json", **a)
+            environ = {**request.environ, "RAW_URI": request.environ["PATH_INFO"]}
+            started: list[Any] = []
+
+            def start_response(status: str, headers: list[tuple[str, str]], exc_info: Any = None) -> Any:
+                started.extend([status, headers])
+                return lambda chunk: None
+
+            request_started.disconnect(close_old_connections)
+            request_finished.disconnect(close_old_connections)
+            try:
+                response = WSGIHandler()(environ, start_response)
+                sent = len(b"".join(response))
+                response.close()
+            finally:
+                request_started.connect(close_old_connections)
+                request_finished.connect(close_old_connections)
+            return int(started[0].split()[0]), access_line(environ, started[0], started[1], sent)
+
+        class Captured(Transport):
+            def __init__(self) -> None:
+                super().__init__()
+                self.events: list[dict[str, Any]] = []
+
+            def capture_envelope(self, envelope: Any) -> None:
+                self.events.extend(item.payload.json for item in envelope.items if item.payload.json)
+
+        class Lines(logging.Handler):
+            def __init__(self) -> None:
+                super().__init__()
+                self.lines: list[str] = []
+                self.setFormatter(JsonFormatter())
+                self.addFilter(RequestIdLogFilter())
+
+            def emit(self, record: logging.LogRecord) -> None:
+                self.lines.append(self.format(record))
+
+        transport, app_log, access = Captured(), Lines(), []
+        # The deployed levels (settings.LOGGING before test_settings quietens it), and an
+        # over-budget line per request, so the log is known to hold something.
+        deployed = {logging.getLogger(): "INFO", logging.getLogger("apps"): "INFO", logging.getLogger("django"): "INFO", logging.getLogger("django.request"): "WARNING"}
+        quiet = {logger: logger.level for logger in deployed}
+        for logger, level in deployed.items():
+            logger.addHandler(app_log)
+            logger.setLevel(level)
+        # settings.py's flags, which apps/shared/tests_middleware.py pins; every trace kept.
+        # The host's name and the build's release are named here only because they differ
+        # from machine to machine and are nobody's content.
+        sentry_sdk.init(
+            dsn="https://public@sentry.example.invalid/1",
+            transport=transport,
+            server_name="api",
+            release="fp-s14",
+            integrations=[DjangoIntegration(), LoggingIntegration()],
+            default_integrations=False,
+            auto_enabling_integrations=False,
+            send_default_pii=False,
+            max_request_body_size="never",
+            include_local_variables=False,
+            traces_sample_rate=1.0,
+            before_send=sentry_scrub.before_send,
+            before_send_transaction=sentry_scrub.before_send_transaction,
+        )
+        try:
+            with override_settings(API_BUDGET_MS=0):
+                for path in ("/tenant/footprint/watching", "/tenant/footprint/watching/remove"):
+                    status, line = served(path, "dk")
+                    self.assertEqual(status, 200, line)
+                    access.append(line)
+            sentry_sdk.flush()
+        finally:
+            sentry_sdk.get_client().close()
+            sentry_sdk.get_global_scope().set_client(None)
+            for logger, previous in quiet.items():
+                logger.removeHandler(app_log)
+                logger.setLevel(previous)
+
+        self.activate(self.tenant)
+        self.assertEqual(AuditEvent.objects.filter(action__in=("markets.watch_added", "markets.watch_removed"), subject_title="dk").count(), 2)
+        transactions = [event for event in transport.events if event.get("type") == "transaction"]
+        self.assertEqual(len(transactions), 2, "one transaction per request reached the transport")
+        self.assertTrue(app_log.lines, "each request logged over budget")
+        denmark = Jurisdiction.objects.prefetch_related("labels").get(key="dk")
+        keys = set(Jurisdiction.objects.values_list("key", flat=True))
+        for channel, text in (("access log", "\n".join(access)), ("application log", "\n".join(app_log.lines)), ("Sentry", json.dumps(transport.events, default=str))):
+            with self.subTest(channel):
+                for key in keys:
+                    self.assertIsNone(re.search(rf"(?<![A-Za-z0-9]){key}(?![A-Za-z0-9])", text), f"{channel} holds the key {key!r}")
+                for word in (str(denmark.id), *(label.text for label in denmark.labels.all())):
+                    self.assertNotIn(word, text, channel)
 
     @skip("pending: FP-S15 (FP-04, chunk 5)")
     def test_fp_s15(self) -> None:
