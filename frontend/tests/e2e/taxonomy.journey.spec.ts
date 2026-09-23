@@ -452,10 +452,13 @@ test.describe('taxonomy journeys', () => {
       // alone. Counts only: the preview never names the records.
       await expect(hides.getByText(/^[1-9]\d* obligations?$/)).toBeVisible();
       await expect(hides.getByText('Nothing.')).toHaveCount(0);
-      // FP-S2: any that would appear are counted too, and cases are not counted yet, on either side.
+      // FP-S2: any that would appear are counted too, and so are this bank's open cases, on
+      // either side. Other journeys triage this bank's cases in parallel, so the shape is
+      // asserted here and test_fp_s2 proves the numbers.
       await expect(reveals.getByText(/^(\d+ obligations?|Nothing\.)$/)).toBeVisible();
-      await expect(hides.getByText('Open cases: not counted yet')).toBeVisible();
-      await expect(reveals.getByText('Open cases: not counted yet')).toBeVisible();
+      await expect(hides.getByText(/^\d+ open cases?$/)).toBeVisible();
+      await expect(reveals.getByText(/^(\d+ open cases?|Nothing\.)$/)).toBeVisible();
+      await expect(draft.getByText(/not counted yet/)).toHaveCount(0);
       // It hides something, so the panel says once what that means for every member.
       await expect(draft.getByText('What this hides leaves the feed, the inventory, the roadmap and the briefing for every member.')).toBeVisible();
       await expect(page.getByRole('button', { name: 'Cancel' })).toHaveCount(1);
