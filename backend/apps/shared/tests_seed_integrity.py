@@ -21,18 +21,23 @@ the test named the tenant and the property.
 from __future__ import annotations
 
 import datetime
+from collections import Counter
 from io import StringIO
+from zoneinfo import ZoneInfo
 
+from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 
 from apps.agents.models import AgentRun
 from apps.cases.models import ChangeCase
+from apps.governance.models import AiGeneration
 from apps.home.models import Briefing, BriefingItem
 from apps.home.roadmap import quarter_of
 from apps.identity import tokens
 from apps.identity.models import ApiKey, Invitation, Membership, PlatformRoleAssignment, User, UserStatus, WebAuthnCredential
 from apps.shared import tenancy
+from apps.shared.adapters.mailer import MockMailer, OutgoingMail
 from apps.shared.e2e_logins import (
     E2E_INVITATION_TOKEN_ANNA,
     LIBRARY_EDITOR_ROLE,
@@ -42,22 +47,35 @@ from apps.shared.e2e_logins import (
     TENANT_B_SLUG,
 )
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
-from apps.library.models import Instrument, Obligation, ObligationVersion, ProblemReport, ReportStatus, Verification
+from apps.library.models import Authority, DatePrecision, Instrument, Obligation, ObligationVersion, ProblemReport, ReportStatus, Verification
 from apps.proposals.logic import parsed_payload, sourced_fields
 from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
-from apps.search.models import SearchChunk, SearchSource
+from apps.search import ask, hybrid
+from apps.search.models import TEXT_SEARCH_CONFIGS, SearchChunk, SearchSource
+from apps.search.schemas import Answer, AskAnswerEvent, AskRequest
 from apps.shared.e2e_seed import (
     CONFIRMED_LINK_OBLIGATION,
+    E2E_STANDARD_INSTRUMENT,
+    E2E_STANDARD_OBLIGATION,
+    EXPECTED_ASK,
     EXPECTED_CHUNK5_WATCH,
     EXPECTED_FOOTPRINTS,
     EXPECTED_HOME,
     EXPECTED_LIBRARY,
+    EXPECTED_MACHINE_CONFIRMED,
     EXPECTED_OUTSIDE_SCOPE,
     EXPECTED_PENDING_REQUEST,
     EXPECTED_PROBLEM_REPORT,
     EXPECTED_PROPOSALS,
+    EXPECTED_STANDARD_CHANGE,
+    EXPECTED_TENANT_A_ONLY,
     EXPECTED_TENANTS,
+    EXPECTED_WATCHED_MARKETS,
+    WATCHED_MARKET_OBLIGATION,
+    J4_OBLIGATION,
     PRO_S7_OBLIGATION,
+    PRO_S13_OBLIGATION,
+    PRO_S13_RUN,
     RECHECK_OBLIGATION,
     SUGGESTED_LINK_OBLIGATION,
     SeedProposal,
@@ -67,10 +85,14 @@ from apps.shared.e2e_seed import (
 )
 from apps.shared.models import AuditEvent, Tenant
 from apps.watch.models import ChangeDocument, ChangeEvent, ChangeObligation, ChangeTerm, CheckStatus, RegulatoryChange, Source, SourceCheck, SourceCheckKind
+from apps.watch.models import ChangeStatus
 from apps.taxonomy.matching import footprint_of, in_footprint, in_footprint_sql, opt_in_dimensions, restricting_dimensions
-from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm
+from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
+
+# The login search.journey.spec.ts asks as (LOGINS.reader), tenant A's reader.
+READER_EMAIL = "reader@example-bank.test"
 
 
 def _scope(obligation: Obligation) -> dict[str, set[str]]:
@@ -100,6 +122,13 @@ def _waiting_for(expected: SeedProposal) -> list[Proposal]:
     return list(open_of_kind.filter(
         target_id=Obligation.objects.get(stable_key=expected.target).id,
     ))
+
+
+# The sweeper key's runs per status: chunk 5's closed run and its open run, plus the open
+# run each of the five agent proposals the seed leaves waiting is attached to (PRO-S13's
+# among them), and the open run of each of INV-S14's two proposals the confirming agent
+# already approved (MACHINE_CONFIRMED_RUNS).
+EXPECTED_SWEEPER_RUNS = Counter({"succeeded": 1, "running": 8})
 
 
 @override_settings(E2E_MODE=True)
@@ -217,7 +246,9 @@ class SeedIntegrityGuard(TestCase):
         for tenant in Tenant.objects.all():
             tenancy.activate(tenant.id)
             created = AuditEvent.objects.filter(tenant=tenant, action="vocabulary.created")
-            self.assertEqual(created.count(), sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values()))
+            # TEN-S7's one tenant-A tag is the seed's work too, but not a system row.
+            system = created.exclude(subject_title=f"{EXPECTED_TENANT_A_ONLY.tag_list}:{EXPECTED_TENANT_A_ONLY.tag_key}")
+            self.assertEqual(system.count(), sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values()))
             self.assertEqual(set(created.values_list("actor_label", flat=True)), {"seed_e2e"})
 
     def test_each_tenant_has_exactly_its_seeded_footprint_and_the_pending_request(self) -> None:
@@ -280,13 +311,19 @@ class SeedIntegrityGuard(TestCase):
         arrived: SRC-S1's concept leg ("nudging in onboarding") only ever hits because every
         seeded chunk already carries its mock vector. FFFS 2017:2's provision tree (T8) now
         carries its own text versions, so both the obligation and the provision source types
-        are indexed; every chunk is shared library data (D-10, H7): `owner_tenant_id` is
-        NULL, never a bank's."""
+        are indexed, and so is every active registered change, once per content language
+        (search-index-changes); every chunk is shared library data (D-10, H7):
+        `owner_tenant_id` is NULL, never a bank's."""
         counts = seed_e2e()
         self.assertGreater(counts["search_chunks"], 0)
         self.assertEqual(SearchChunk.objects.count(), counts["search_chunks"])
         self.assertGreater(SearchChunk.objects.filter(source_type=SearchSource.OBLIGATION_VERSION.value).count(), 0)
         self.assertGreater(SearchChunk.objects.filter(source_type=SearchSource.PROVISION_VERSION.value).count(), 0)
+        change_chunks = SearchChunk.objects.filter(source_type=SearchSource.CHANGE.value)
+        active = set(RegulatoryChange.objects.filter(status=ChangeStatus.ACTIVE.value).values_list("id", flat=True))
+        self.assertTrue(active, "the seed registers changes a reader can search for")
+        self.assertEqual(set(change_chunks.values_list("source_id", flat=True)), active)
+        self.assertEqual(change_chunks.count(), len(active) * len(TEXT_SEARCH_CONFIGS))
         self.assertFalse(
             SearchChunk.objects.filter(embedding__isnull=True).exists(),
             "a journey must never race an embedding that has not arrived yet",
@@ -301,9 +338,10 @@ class SeedIntegrityGuard(TestCase):
 
     def test_switching_off_advice_hides_an_obligation_of_tenant_a(self) -> None:
         """J-6, FP-01, FP-03, AC-FP1: the pending request switches Advice off. With Advice in
-        tenant A's footprint the only obligation hidden is FP-S4's own outside one
-        (`EXPECTED_OUTSIDE_SCOPE`); without it at least one more is, the advice-only sample
-        obligation among them."""
+        tenant A's footprint the only obligation its own terms and regime hide is FP-S4's
+        outside one (`EXPECTED_OUTSIDE_SCOPE`); without it at least one more is, the
+        advice-only sample obligation among them. `_scope()` derives no jurisdiction, so the
+        Danish and Norwegian rules tenant A's Swedish scope hides are FP-S13's, not these."""
         seed_e2e()
         tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
         tenancy.activate(tenant_a.id)
@@ -316,7 +354,11 @@ class SeedIntegrityGuard(TestCase):
         scopes = {
             o.stable_key: _scope(o) for o in Obligation.objects.select_related("instrument__regime__dimension").prefetch_related("terms__dimension")
         }
-        self.assertEqual([key for key, scope in scopes.items() if not in_footprint(scope, footprint, restricting=restricting)], [EXPECTED_OUTSIDE_SCOPE.obligation])
+        # The E2E standard's duty is hidden too: tenant A follows no standard.
+        self.assertEqual(
+            sorted(key for key, scope in scopes.items() if not in_footprint(scope, footprint, restricting=restricting)),
+            sorted([EXPECTED_OUTSIDE_SCOPE.obligation, E2E_STANDARD_OBLIGATION]),
+        )
         hidden = [key for key, scope in scopes.items() if not in_footprint(scope, without, restricting=restricting)]
         self.assertIn(EXPECTED_LIBRARY.advice_only_obligation, hidden)
 
@@ -566,19 +608,23 @@ class SeedIntegrityGuard(TestCase):
         suggested = ChangeObligation.objects.get(change=change, obligation__stable_key=SUGGESTED_LINK_OBLIGATION)
         self.assertIsNone(suggested.confirmed_by_id)
 
-    def test_chunk5_seeds_two_platform_agent_runs_and_a_recheck(self) -> None:
-        """c5-seed-watch (AGT-01, item 3): a closed and an open platform run with no tenant,
-        and a `recheck` line beside the sweep lines so the coverage log can tell the two
-        apart."""
+    def test_the_watch_sweeper_key_holds_platform_runs_by_status_and_a_recheck(self) -> None:
+        """c5-seed-watch (AGT-01, item 3): the sweeper's platform key carries chunk 5's closed
+        run, its open run and the open run each agent proposal it files is attached to,
+        counted per status so an extra or a missing run cannot hide behind another of the
+        same status; none of them belongs to a bank. A `recheck` line sits beside the sweep
+        lines so the coverage log can tell the two apart."""
         seed_e2e()
         key = ApiKey.objects.get(name="Watch sweeper (E2E)")
         self.assertIsNone(key.tenant_id)
         assert key.agent is not None
         self.assertEqual(key.agent.key, "watch-sweeper")
-        runs = {run.status: run for run in AgentRun.objects.filter(api_key=key)}
-        self.assertEqual(set(runs), {"succeeded", "running"})
-        self.assertIsNone(runs["succeeded"].tenant_id)
-        self.assertIsNone(runs["running"].tenant_id)
+        runs = AgentRun.objects.filter(api_key=key)
+        self.assertEqual(Counter(runs.values_list("status", flat=True)), EXPECTED_SWEEPER_RUNS)
+        self.assertFalse(runs.filter(tenant_id__isnull=False).exists())
+        proposal_runs = {expected.agent_run for expected in EXPECTED_PROPOSALS if expected.agent_run is not None}
+        self.assertEqual(len(proposal_runs), 5)
+        self.assertLessEqual(proposal_runs, set(runs.filter(status="running").values_list("id", flat=True)))
 
         recheck = SourceCheck.objects.get(kind=SourceCheckKind.RECHECK.value, source__name=EXPECTED_CHUNK5_WATCH.healthy_source)
         self.assertEqual(recheck.subject_id, Obligation.objects.get(stable_key=RECHECK_OBLIGATION).id)
@@ -652,6 +698,56 @@ class SeedIntegrityGuard(TestCase):
                 tenancy.activate(tenant.id)
                 self.assertFalse(FootprintTerm.objects.filter(tenant=tenant, term__dimension__key__in=opt_in).exists())
 
+    # --- lib-standard-e2e-seed (INV-S11, FP-S16) -------------------------------------------
+    def test_the_e2e_standard_is_public_facts_and_one_duty_on_the_standards_term(self) -> None:
+        """INV-08, D-35, D-36: seed_e2e files ISO/IEC 27001:2022 under International and
+        ISO/IEC with no provision and exactly one duty, whose one term is the standard's.
+        No seeded bank follows the term, so none sees the duty in its inventory. That the
+        prototype seed_demo loads holds no standard is check_prototype_data's to refuse."""
+        seed_e2e()
+        standard = Instrument.objects.select_related("level", "jurisdiction", "authority", "regime").get(stable_key=E2E_STANDARD_INSTRUMENT)
+        self.assertEqual(
+            (standard.level.kind, standard.jurisdiction.key, standard.authority.key if standard.authority else None, standard.regime.key),
+            ("standard", "intl", "iso-iec", "ai_ict"),
+        )
+        self.assertEqual((standard.official_ref, standard.binding, standard.provisions.count()), ("ISO/IEC 27001:2022", False, 0))
+        # No official title anywhere: the edition is titled by its reference alone.
+        self.assertEqual(list(standard.titles.values_list("text", flat=True)), ["ISO/IEC 27001:2022"])
+        duty = Obligation.objects.get(instrument=standard)
+        self.assertEqual((duty.stable_key, duty.ref_label), (E2E_STANDARD_OBLIGATION, standard.official_ref))
+        self.assertEqual([(t.dimension.key, t.key, t.active) for t in duty.terms.select_related("dimension")], [("standard", "iso_iec_27001", True)])
+        self.assertFalse(Instrument.objects.filter(level__kind="standard").exclude(pk=standard.pk).exists())
+        restricting = restricting_dimensions()
+        for tenant in Tenant.objects.order_by("slug"):
+            with self.subTest(tenant=tenant.slug):
+                tenancy.activate(tenant.id)
+                self.assertFalse(in_footprint(_scope(duty), footprint_of(tenant.id), restricting=restricting))
+    # --- end lib-standard-e2e-seed ---------------------------------------------------------
+
+    # --- std-journeys (FP-S16) ------------------------------------------------------------
+    def test_e2e_switches_the_standard_on_and_logs_it_once(self) -> None:
+        """FP-S16 (FP-01, INV-08, D-85): a scope request names active terms only, so
+        ISO/IEC 27001 is on after seed_e2e. A new database files it active (watch-standards,
+        apps/taxonomy/tests_matching.SeededStandard); one seeded while it was held keeps it off,
+        because the reference seed never updates a term, so seed_e2e switches it on with one
+        version bump and one audit row, and a second run changes nothing."""
+        seed_e2e()
+        term = TaxonomyTerm.objects.get(dimension__key="standard", key="iso_iec_27001")
+        self.assertTrue(term.active)
+        # A database seeded while the term was held.
+        with tenancy.library_write("a database seeded while the standard was held"):
+            TaxonomyTerm.objects.filter(pk=term.pk).update(active=False)
+        seed_e2e()
+        term.refresh_from_db()
+        self.assertTrue(term.active)
+        events = AuditEvent.objects.filter(action="taxonomy.term_updated", subject_id=term.id)
+        self.assertEqual([(e.before, e.after, e.actor_label) for e in events], [({"active": False}, {"active": True}, "seed_reference")])
+        version = term.version
+        seed_e2e()
+        term.refresh_from_db()
+        self.assertEqual((term.active, term.version, events.count()), (True, version, 1))
+    # --- end std-journeys -------------------------------------------------------------------
+
     # --- library-updates-frontend (PRO-S7) ---------------------------------------------
     def test_the_obligation_pro_s7_approves_reaches_tenant_a_with_or_without_advice(self) -> None:
         """PRO-S7 (PRO-03): the officer finds the approved change on "Library updates", which
@@ -678,6 +774,34 @@ class SeedIntegrityGuard(TestCase):
         self.assertEqual(list(ObligationVersion.objects.filter(obligation=obligation).values_list("version_number", flat=True)), [1])
     # --- end library-updates-frontend ------------------------------------------------------
 
+    # --- agent-j4-smoke (AGT-S10, J-4) -----------------------------------------------------
+    def test_the_obligation_j4_versions_is_its_own_and_reaches_tenant_a_with_or_without_advice(self) -> None:
+        """AGT-S10: the officer finds the version J-4's agent filed on the obligation card and
+        on "Library updates", which lists only what reaches the bank's footprint, so the duty
+        reaches tenant A with or without Advice. Nothing else the seed files names it, and no
+        proposal waits on it, so the only version beyond 1 is one the journey produced."""
+        seed_e2e()
+        self.assertNotIn(J4_OBLIGATION, {expected.target for expected in EXPECTED_PROPOSALS})
+        self.assertNotIn(J4_OBLIGATION, {PRO_S7_OBLIGATION, RECHECK_OBLIGATION, CONFIRMED_LINK_OBLIGATION, SUGGESTED_LINK_OBLIGATION})
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        footprint = footprint_of(tenant_a.id)
+        without = {dimension: set(keys) for dimension, keys in footprint.items()}
+        for ref in EXPECTED_PENDING_REQUEST.removes:
+            dimension, key = ref.split(":")
+            without[dimension].discard(key)
+        obligation = (
+            Obligation.objects.select_related("instrument__regime__dimension")
+            .prefetch_related("terms__dimension")
+            .get(stable_key=J4_OBLIGATION)
+        )
+        restricting = restricting_dimensions()
+        self.assertTrue(in_footprint(_scope(obligation), footprint, restricting=restricting))
+        self.assertTrue(in_footprint(_scope(obligation), without, restricting=restricting))
+        self.assertEqual(list(ObligationVersion.objects.filter(obligation=obligation).values_list("version_number", flat=True)), [1])
+        self.assertFalse(Proposal.objects.filter(target_id=obligation.id, status=ProposalStatus.OPEN.value).exists())
+    # --- end agent-j4-smoke ----------------------------------------------------------------
+
     # --- FP-S4 (FP-03, tax-fp-s4-journey) ----------------------------------------------------
     def test_every_seeded_case_carries_the_verdict_the_scope_rule_gives(self) -> None:
         """FP-S4, FP-03: the roadmap and the briefing read the verdict cached on a case, while
@@ -689,14 +813,17 @@ class SeedIntegrityGuard(TestCase):
 
         Proven to fail 2026-09-23 with the outside-scope change seeded without its scope
         term: that change matches every bank by the rule, while its case says false."""
+        from apps.cases.reading import scope_term_ids_of_each_case
+
         seed_e2e()
         verdicts: dict[tuple[str, str], bool] = {}
         for tenant in Tenant.objects.order_by("slug"):
             tenancy.activate(tenant.id)
-            for case in ChangeCase.objects.select_related("change"):
-                term_ids = list(ChangeTerm.objects.filter(change_id=case.change_id, term__isnull=False).values_list("term_id", flat=True))
+            # The change's whole scope, the jurisdictions its authority reaches included
+            # (FP-04), exactly as the recomputation hands it to the rule.
+            for case in ChangeCase.objects.select_related("change").annotate(term_ids=scope_term_ids_of_each_case()):
                 with self.subTest(tenant=tenant.slug, change=case.change.stable_key):
-                    self.assertEqual(case.footprint_match, in_footprint_sql(tenant.id, term_ids))
+                    self.assertEqual(case.footprint_match, in_footprint_sql(tenant.id, case.term_ids))
                 verdicts[(tenant.slug, case.change.stable_key)] = case.footprint_match
         self.assertIs(verdicts[(TENANT_A_SLUG, EXPECTED_HOME.outside_scope_change)], False)
         self.assertIs(verdicts[(TENANT_A_SLUG, EXPECTED_HOME.lead_change)], True)
@@ -739,3 +866,380 @@ class SeedIntegrityGuard(TestCase):
             spoken_for,
             "FP-S4 keeps this obligation outside tenant A's scope: point the proposal or record that names it at one that stays inside",
         )
+
+    # --- tax-nordic-seed (FP-04, FP-S10) ---------------------------------------------------
+    def test_tenant_a_watches_denmark_through_the_audited_write_and_tenant_b_nothing(self) -> None:
+        """FP-S10, FP-04: the seed watches a market through markets_logic.watch(), the write
+        the product makes, so each watch leaves one `markets.watch_added` audit row; a reseed
+        adds neither a row nor an audit event."""
+        seed_e2e()
+        seed_e2e()
+        for slug, keys in EXPECTED_WATCHED_MARKETS.items():
+            with self.subTest(tenant=slug):
+                tenant = Tenant.objects.get(slug=slug)
+                tenancy.activate(tenant.id)
+                watched = WatchedMarket.objects.filter(tenant=tenant)
+                self.assertEqual(sorted(watched.values_list("jurisdiction__key", flat=True)), sorted(keys))
+                audited = AuditEvent.objects.filter(tenant=tenant, action="markets.watch_added")
+                self.assertEqual(sorted(audited.values_list("subject_title", flat=True)), sorted(keys))
+        self.assertEqual(EXPECTED_WATCHED_MARKETS[TENANT_A_SLUG], ("dk",))
+        self.assertEqual(EXPECTED_WATCHED_MARKETS[TENANT_B_SLUG], ())
+
+    # --- tax-watched-feed (FP-04, FP-S15) ---------------------------------------------------
+    def test_the_danish_custody_change_is_outside_tenant_a_scope_and_from_a_market_it_watches(self) -> None:
+        """FP-S15, FP-04: tenant A operates in Sweden and watches Denmark, so the Danish
+        authority's custody change is outside its scope by jurisdiction alone, and its case,
+        opened by the real fan-out, says so. It moves neither the lead nor this week: the
+        lowest urgency, first seen last week. A reseed opens no second case."""
+        from apps.shared.e2e_seed import EXPECTED_WATCHED_CHANGE
+
+        seed_e2e()
+        seed_e2e()
+        change = RegulatoryChange.objects.select_related("authority__jurisdiction").get(stable_key=EXPECTED_WATCHED_CHANGE)
+        self.assertEqual(change.authority.jurisdiction.key if change.authority else None, "dk")
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        self.assertIn("se", footprint_of(tenant_a.id)["jurisdiction"])
+        case = ChangeCase.objects.get(change=change)
+        self.assertEqual((case.footprint_match, case.urgency.key, case.urgency_confirmed), (False, "monitor", False))
+        self.assertLess(change.first_seen_at, ChangeCase.objects.get(change__stable_key=EXPECTED_HOME.lead_change).change.first_seen_at)
+
+    def test_the_library_holds_a_danish_and_a_norwegian_supervisor_and_act(self) -> None:
+        """FP-04: the markets journeys need Danish and Norwegian rules. Each country has its
+        financial supervisory authority and one act under a regime term, with a dated
+        in-force precision, and between them obligations for Custody and for Advice that
+        match tenant A's scope in every dimension but jurisdiction (`_scope()` derives none):
+        tenant A operates in Sweden, so what reaches it from Denmark is what watching adds."""
+        seed_e2e()
+        for key, country in (("finanstilsynet-dk", "dk"), ("finanstilsynet-no", "no")):
+            with self.subTest(authority=key):
+                self.assertEqual(Authority.objects.get(key=key).jurisdiction.key, country)
+        services: set[str] = set()
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        footprint = footprint_of(tenant_a.id)
+        restricting = restricting_dimensions()
+        for country in ("dk", "no"):
+            with self.subTest(jurisdiction=country):
+                instrument = Instrument.objects.select_related("regime__dimension").get(jurisdiction__key=country)
+                self.assertEqual(instrument.regime.dimension.key, "regime")
+                self.assertIsNotNone(instrument.in_force_from)
+                self.assertEqual(instrument.in_force_from_precision, DatePrecision.DAY.value)
+                obligations = Obligation.objects.filter(instrument=instrument).select_related("instrument__regime__dimension").prefetch_related("terms__dimension")
+                self.assertTrue(obligations.exists())
+                for obligation in obligations:
+                    self.assertTrue(in_footprint(_scope(obligation), footprint, restricting=restricting), obligation.stable_key)
+                    services |= _scope(obligation).get("service_type", set())
+        self.assertLessEqual({"custody", "advice"}, services)
+
+    def test_the_seed_starts_from_an_empty_mock_outbox(self) -> None:
+        """The mock outbox is one cache entry that never expires, and an E2E run recreates the
+        database but not the cache, so a journey could read an earlier run's mail. The seed
+        empties it before anything else; a reseed sends nothing of its own, so after one the
+        outbox is empty."""
+        seed_e2e()
+        earlier = OutgoingMail(to="earlier-run@example-bank.test", subject="An earlier run", body="An earlier run")
+        MockMailer().send(earlier)
+        self.assertIn(earlier, MockMailer.sent)
+        seed_e2e()
+        self.assertEqual(MockMailer.sent, [])
+    # --- end tax-nordic-seed -----------------------------------------------------------------
+
+    def test_every_seeded_change_carries_a_regime(self) -> None:
+        """D-39, AC-AGT1: `createChange` refuses a change with no regime term, so no seeded
+        change may be one the route would never have stored (watch-regime-required)."""
+        seed_e2e()
+        without = RegulatoryChange.objects.exclude(term_links__term__dimension__key="regime").values_list("stable_key", flat=True)
+        self.assertEqual(list(without), [], "every seeded change names a term of the regime dimension")
+
+    # --- tax-watched-inventory (FP-04, FP-S13) -------------------------------------------------
+    def test_tenant_a_markets_we_watch_view_holds_the_danish_custody_rule(self) -> None:
+        """FP-S13's journey reads tenant A as seeded: operating in Sweden, providing Custody
+        and watching Denmark. So "Markets we watch" lists the Danish custody obligation and its
+        act and nothing from another market; the Norwegian rule, whose market nobody watches,
+        is not there and is outside the scope; the default view hides the Danish one."""
+        from apps.library.reading import in_view
+
+        seed_e2e()
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        self.assertIn("jurisdiction:se", EXPECTED_FOOTPRINTS[TENANT_A_SLUG])
+        self.assertEqual(EXPECTED_WATCHED_MARKETS[TENANT_A_SLUG], ("dk",))
+        watched = in_view(Obligation.objects.all(), tenant_a, "watched")
+        self.assertIn(WATCHED_MARKET_OBLIGATION, set(watched.values_list("stable_key", flat=True)))
+        self.assertEqual(set(watched.values_list("instrument__jurisdiction__key", flat=True)), {"dk"})
+        self.assertEqual(set(in_view(Instrument.objects.all(), tenant_a, "watched").values_list("jurisdiction__key", flat=True)), {"dk"})
+        norwegian = Obligation.objects.filter(instrument__jurisdiction__key="no")
+        self.assertTrue(norwegian.exists())
+        self.assertFalse(in_view(norwegian, tenant_a, "in").exists())
+        self.assertFalse(in_view(Obligation.objects.filter(stable_key=WATCHED_MARKET_OBLIGATION), tenant_a, "in").exists())
+    # --- end tax-watched-inventory -------------------------------------------------------------
+
+    # --- tax-market-journeys (FP-S8, TEN-S7) --------------------------------------------------
+    def test_fp_s8_has_two_people_in_tenant_b_and_one_obligation_per_jurisdiction(self) -> None:
+        """FP-S8: tenant B's admin requests and a second tenant-B login with a passkey approves
+        (four eyes); B's scope names no jurisdiction, so turning Denmark on is the change. As
+        seeded the journey's three obligations are in B's scope; with Denmark added the EU
+        and Danish ones still are and the Swedish one is not."""
+        from apps.library import reading
+        from apps.shared.e2e_seed import EXPECTED_MARKET_JOURNEY as spec
+        from apps.shared.permissions import FOOTPRINT_APPROVE, FOOTPRINT_REQUEST
+
+        seed_e2e()
+        tenant = Tenant.objects.get(slug=spec.tenant_slug)
+        tenancy.activate(tenant.id)
+        requester = Membership.objects.get(tenant=tenant, user__email=spec.requester_email)
+        approver = Membership.objects.get(tenant=tenant, user__email=spec.approver_email)
+        self.assertNotEqual(requester.user_id, approver.user_id)
+        self.assertIn(FOOTPRINT_REQUEST, {p for role in requester.roles.all() for p in role.permissions})
+        approver_permissions = {p for role in approver.roles.all() for p in role.permissions}
+        self.assertIn(FOOTPRINT_APPROVE, approver_permissions)
+        self.assertNotIn(FOOTPRINT_REQUEST, approver_permissions)
+        for membership in (requester, approver):
+            self.assertIn(membership.user.email, E2E_PASSKEYS)
+            self.assertTrue(WebAuthnCredential.objects.filter(user=membership.user).exists())
+
+        footprint = footprint_of(tenant.id)
+        self.assertNotIn("jurisdiction", footprint)
+        restricting = restricting_dimensions()
+        keys = {"eu": spec.union_obligation, "se": spec.home_obligation, spec.country: spec.country_obligation}
+        obligations = {o.stable_key: o for o in Obligation.objects.select_related("instrument__jurisdiction").filter(stable_key__in=keys.values())}
+        scopes = reading.obligation_scopes([o.id for o in obligations.values()])
+        with_country = {**footprint, "jurisdiction": {spec.country}}
+        for jurisdiction, key in keys.items():
+            with self.subTest(obligation=key):
+                obligation = obligations[key]
+                self.assertEqual(obligation.instrument.jurisdiction.key, jurisdiction)
+                scope = {dimension: {t.key for t in terms} for dimension, terms in scopes[obligation.id].items()}
+                self.assertTrue(in_footprint(scope, footprint, restricting=restricting))
+                self.assertEqual(in_footprint(scope, with_country, restricting=restricting), jurisdiction != "se")
+
+    def test_tenant_a_has_a_role_and_a_tag_tenant_b_does_not(self) -> None:
+        """TEN-S7 (J-8): the custom role and tenant tag the journey looks for in B are A's
+        alone, and a reseed writes neither again."""
+        from apps.identity.models import TenantRole
+
+        spec = EXPECTED_TENANT_A_ONLY
+        from apps.taxonomy.tenant_lists_logic import entry_for
+
+        seed_e2e()
+        seed_e2e()
+        tags = entry_for(spec.tag_list).model._default_manager
+        for tenant in Tenant.objects.all():
+            with self.subTest(tenant=tenant.slug):
+                tenancy.activate(tenant.id)
+                expected = 1 if tenant.slug == spec.tenant_slug else 0
+                self.assertEqual(TenantRole.objects.filter(tenant=tenant, key=spec.role_key).count(), expected)
+                self.assertEqual(tags.filter(tenant=tenant, key=spec.tag_key).count(), expected)
+    # --- end tax-market-journeys ---------------------------------------------------------------
+
+    # --- lib-machine-confirmed-journey (INV-S14) -------------------------------------------
+    def test_inv_s14_finds_a_record_agents_confirmed_and_one_a_person_re_verified_since(self) -> None:
+        """INV-S14 (INV-05, INV-06, PRO-02, D-74): two records whose version in force was filed
+        by the watch sweeper in its own run and approved by the library confirmer, a second
+        definition with a key and a run of its own, its model call logged. The second record
+        was then re-verified by a named platform person, strictly after the approval even at
+        the millisecond a screen compares, so its label gives way and the first one's never
+        does. Both sit inside tenant A's scope and no other journey names them."""
+        seed_e2e()
+        expected = EXPECTED_MACHINE_CONFIRMED
+        editor = User.objects.get(email=expected.reverifier_email)
+        for stable_key in (expected.machine_confirmed, expected.reverified):
+            with self.subTest(record=stable_key):
+                obligation = Obligation.objects.select_related("verified_by").get(stable_key=stable_key)
+                version = ObligationVersion.objects.select_related("verified_by_agent", "applied_by_proposal__proposed_by_agent").filter(obligation=obligation).order_by("-version_number").first()
+                assert version is not None and version.applied_by_proposal is not None and version.approved_at is not None
+                proposal = version.applied_by_proposal
+                self.assertEqual(version.verified_origin, "agent")
+                self.assertEqual(getattr(version.verified_by_agent, "key", None), "library-confirmer")
+                self.assertEqual(getattr(proposal.proposed_by_agent, "key", None), "watch-sweeper")
+                self.assertEqual(proposal.status, ProposalStatus.APPROVED.value)
+                self.assertIsNone(proposal.reviewed_by_id, "no person approved it")
+                self.assertEqual(getattr(proposal.reviewed_by_agent, "key", None), "library-confirmer")
+                self.assertIsNone(version.effective_from, "in force whatever date a screen reads it as of")
+                decision = AiGeneration.objects.get(purpose="agent_review", subject_id=proposal.id)
+                assert decision.agent_run is not None
+                self.assertEqual(decision.agent_run.agent.key, "library-confirmer")
+                self.assertEqual(decision.agent_run.api_key_id, proposal.reviewed_by_api_key_id, "decided in a run of the deciding key")
+                self.assertNotEqual(proposal.reviewed_by_api_key_id, proposal.proposed_by_api_key_id, "the confirmer used a key of its own")
+                if stable_key == expected.reverified:
+                    self.assertEqual(obligation.verified_by, editor)
+                    assert obligation.last_verified_at is not None
+                    stamped_ms, approved_ms = (int(moment.timestamp() * 1000) for moment in (obligation.last_verified_at, version.approved_at))
+                    self.assertGreater(stamped_ms, approved_ms)
+                else:
+                    self.assertIsNone(obligation.verified_by, "nobody has re-verified it since")
+
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        footprint = footprint_of(tenant_a.id)
+        for stable_key in (expected.machine_confirmed, expected.reverified):
+            obligation = Obligation.objects.select_related("instrument__regime__dimension").get(stable_key=stable_key)
+            self.assertTrue(in_footprint(_scope(obligation), footprint, restricting=restricting_dimensions()), stable_key)
+        spoken_for = {proposal.target for proposal in EXPECTED_PROPOSALS} | {
+            EXPECTED_LIBRARY.advice_only_obligation,
+            EXPECTED_LIBRARY.research_obligation,
+            EXPECTED_PROBLEM_REPORT.obligation,
+            EXPECTED_OUTSIDE_SCOPE.obligation,
+            RECHECK_OBLIGATION,
+            CONFIRMED_LINK_OBLIGATION,
+            SUGGESTED_LINK_OBLIGATION,
+        }
+        self.assertEqual({expected.machine_confirmed, expected.reverified} & spoken_for, set())
+
+    def test_inv_s14_reseed_changes_nothing(self) -> None:
+        seed_e2e()
+        counts = (Proposal.objects.count(), ObligationVersion.objects.count(), Verification.objects.count(), AgentRun.objects.count(), ApiKey.objects.count(), AiGeneration.objects.count())
+        seed_e2e()
+        self.assertEqual(
+            (Proposal.objects.count(), ObligationVersion.objects.count(), Verification.objects.count(), AgentRun.objects.count(), ApiKey.objects.count(), AiGeneration.objects.count()),
+            counts,
+        )
+
+    # --- pro-s13-journey (PRO-S13) -------------------------------------------------------------
+    def test_pro_s13_finds_a_sweeper_proposal_of_its_own_for_the_confirming_agent(self) -> None:
+        """PRO-S13 (PRO-01, PRO-02, AGT-01): the confirming agent decides a proposal the
+        watch-sweeper filed through its own key, as the create route files an agent's: the
+        proposal names the sweeper's agent and key, its run is that key's, and its audit row
+        names the agent as the actor, never a bare run or key. The target is on version 1
+        and reaches tenant A with or without Advice, so the reader finds a clean version 2
+        on the card whichever way J-6 has left the scope; no other seeded proposal or named
+        record sits on it."""
+        seed_e2e()
+        expected = next(row for row in EXPECTED_PROPOSALS if row.journey == "PRO-S13")
+        self.assertEqual((expected.target, expected.agent_run, expected.proposed_by_email), (PRO_S13_OBLIGATION, PRO_S13_RUN, ""))
+        others = {row.target for row in EXPECTED_PROPOSALS if row.journey != "PRO-S13"} | {
+            EXPECTED_LIBRARY.advice_only_obligation,
+            EXPECTED_LIBRARY.research_obligation,
+            EXPECTED_PROBLEM_REPORT.obligation,
+            EXPECTED_OUTSIDE_SCOPE.obligation,
+            RECHECK_OBLIGATION,
+            CONFIRMED_LINK_OBLIGATION,
+            SUGGESTED_LINK_OBLIGATION,
+        }
+        self.assertNotIn(PRO_S13_OBLIGATION, others)
+
+        tenancy.clear_tenant()
+        (proposal,) = _waiting_for(expected)
+        assert proposal.proposed_by_agent is not None and proposal.proposed_by_api_key_id is not None
+        self.assertEqual(proposal.proposed_by_agent.key, "watch-sweeper")
+        self.assertIsNone(proposal.proposed_by_user)
+        key = ApiKey.objects.get(pk=proposal.proposed_by_api_key_id)
+        self.assertEqual((key.agent_id, key.tenant_id), (proposal.proposed_by_agent_id, None))
+        run = AgentRun.objects.get(pk=PRO_S13_RUN)
+        self.assertEqual((run.api_key_id, run.agent_id), (key.id, proposal.proposed_by_agent_id))
+        created = AuditEvent.objects.get(subject_id=proposal.id, action="proposal.created")
+        self.assertEqual((created.actor_type, created.actor_id), ("agent", proposal.proposed_by_agent_id))
+
+        obligation = (
+            Obligation.objects.select_related("instrument__regime__dimension")
+            .prefetch_related("terms__dimension")
+            .get(stable_key=PRO_S13_OBLIGATION)
+        )
+        self.assertEqual(list(ObligationVersion.objects.filter(obligation=obligation).values_list("version_number", flat=True)), [1])
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        footprint = footprint_of(tenant_a.id)
+        without = {dimension: set(keys) for dimension, keys in footprint.items()}
+        for ref in EXPECTED_PENDING_REQUEST.removes:
+            dimension, term = ref.split(":")
+            without[dimension].discard(term)
+        restricting = restricting_dimensions()
+        self.assertTrue(in_footprint(_scope(obligation), footprint, restricting=restricting))
+        self.assertTrue(in_footprint(_scope(obligation), without, restricting=restricting))
+    # --- end pro-s13-journey -------------------------------------------------------------------
+
+    # --- watch-standards (WAT-S10) ---------------------------------------------------------
+    def test_the_standards_change_reaches_tenant_a_only_while_the_journey_has_it_follow(self) -> None:
+        """WAT-S10's journey data: the amendment is named by its reference alone, issued by
+        a standards body, and seen by no seeded bank until `e2e_follow_standard on`; `off`
+        puts tenant A's scope and the case's verdict back as seeded."""
+        seed_e2e()
+        spec = EXPECTED_STANDARD_CHANGE
+        change = RegulatoryChange.objects.select_related("authority__jurisdiction").get(stable_key=spec.stable_key)
+        self.assertEqual((change.title, change.key_date_label), (spec.title, spec.key_date_label))
+        assert change.authority is not None
+        self.assertEqual(change.authority.jurisdiction.kind, "international")
+        self.assertEqual(
+            sorted(
+                f"{dimension}:{key}"
+                for dimension, key in change.term_links.filter(term__isnull=False).values_list("term__dimension__key", "term__key")
+            ),
+            ["regime:ai_ict", spec.term],
+        )
+        self.assertEqual([event.label for event in change.events.order_by("sort_order")], ["Draft for comment", "Published"])
+
+        def verdicts() -> dict[str, bool]:
+            found = {}
+            for tenant in Tenant.objects.order_by("slug"):
+                tenancy.activate(tenant.id)
+                found[tenant.slug] = ChangeCase.objects.get(change=change).footprint_match
+            tenancy.clear_tenant()
+            return found
+
+        def follows() -> bool:
+            tenancy.activate(Tenant.objects.get(slug=TENANT_A_SLUG).id)
+            held = FootprintTerm.objects.filter(term__dimension__key="standard").exists()
+            tenancy.clear_tenant()
+            return held
+
+        self.assertEqual(verdicts(), {TENANT_A_SLUG: False, TENANT_B_SLUG: False})
+        call_command("e2e_follow_standard", "on", stdout=StringIO())
+        self.assertTrue(follows())
+        self.assertEqual(verdicts(), {TENANT_A_SLUG: True, TENANT_B_SLUG: False})
+        call_command("e2e_follow_standard", "off", stdout=StringIO())
+        self.assertFalse(follows())
+        self.assertEqual(verdicts(), {TENANT_A_SLUG: False, TENANT_B_SLUG: False})
+
+    @override_settings(IS_DEPLOYED_ENVIRONMENT=True, ENVIRONMENT="production")
+    def test_the_standard_toggle_refuses_a_deployed_environment(self) -> None:
+        with self.assertRaises(SeedRefused):
+            call_command("e2e_follow_standard", "on", stdout=StringIO())
+
+    # --- ask-journeys (SRC-S4, SRC-S5, SRC-S10) ----------------------------------------------
+    def test_the_answered_question_flags_the_pending_change_and_the_unsupported_one_retrieves_nothing(self) -> None:
+        """SRC-S4, SRC-S5, SRC-S10 (SRC-03, AC-SRC2): search.journey.spec.ts asks the seeded
+        reader's two questions of tenant A and expects one answer citing the research payment
+        duty with its pending change flagged, and one "no answer". Both are asked here the way
+        the route asks them, with no "as of" and with one ten days ahead (SRC-S10 sets it),
+        so a seed or library change that moves either answer fails here first."""
+        seed_e2e()
+        link = ChangeObligation.objects.select_related("change").get(
+            change__stable_key=EXPECTED_ASK.pending_change, obligation__stable_key=EXPECTED_ASK.pending_obligation
+        )
+        self.assertIsNotNone(link.confirmed_at, "Ask flags only a link the library confirmed")
+        self.assertEqual(EXPECTED_ASK.pending_obligation, EXPECTED_LIBRARY.research_obligation)
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        self.assertTrue(tenant_a.ai_enabled, "Ask answers only a bank whose AI features are on")
+        reader = User.objects.get(email=READER_EMAIL)
+        today = datetime.datetime.now(ZoneInfo(tenant_a.timezone)).date()
+        research = Obligation.objects.get(stable_key=EXPECTED_ASK.pending_obligation)
+
+        tenancy.activate(tenant_a.id)
+        for as_of in (None, today + datetime.timedelta(days=10)):
+            with self.subTest(as_of=as_of):
+                self.assertEqual(
+                    hybrid.passages(EXPECTED_ASK.unsupported_question, tenant=tenant_a, lang=None, as_of=as_of or today, depth=settings.ASK_RETRIEVAL_DEPTH),
+                    [],
+                    "the unsupported question retrieves nothing, so no model is asked",
+                )
+                self.assertTrue(self._answer(EXPECTED_ASK.unsupported_question, as_of, tenant_a, reader).no_answer)
+
+                answer = self._answer(EXPECTED_ASK.answered_question, as_of, tenant_a, reader)
+                self.assertFalse(answer.no_answer)
+                cited = {citation.index: citation.obligation_id for citation in answer.citations}
+                flagged = [
+                    statement for statement in answer.statements
+                    if research.id in {cited[index] for index in statement.citation_indexes}
+                ]
+                self.assertTrue(flagged, "a statement cites the research payment duty")
+                self.assertEqual({statement.pending_change_id for statement in flagged}, {link.change_id})
+
+    @staticmethod
+    def _answer(question: str, as_of: datetime.date | None, tenant: Tenant, reader: User) -> Answer:
+        body = AskRequest.model_validate({"question": question, "asOf": as_of})
+        events = list(ask.answer_events(body, tenant_id=tenant.id, user_id=reader.id))
+        closing = events[-1]
+        assert isinstance(closing, AskAnswerEvent), closing
+        return closing.answer
+    # --- end ask-journeys ------------------------------------------------------------------

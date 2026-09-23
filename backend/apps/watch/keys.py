@@ -29,7 +29,7 @@ from typing import Any, cast
 from django.core.exceptions import ValidationError
 from django.db.models import OuterRef, Subquery
 
-from apps.library.models import Authority, Obligation, RecordStatus
+from apps.library.models import Authority, JurisdictionKind, Obligation, RecordStatus
 from apps.library.reading import agent_ref, localized, vocabulary_refs
 from apps.shared.errors import ProblemError
 from apps.taxonomy.models import (
@@ -38,6 +38,7 @@ from apps.taxonomy.models import (
     SourceKindLabel,
     TaxonomyTerm,
     TaxonomyTermLabel,
+    TermDimensionKind,
     UrgencyLabel,
 )
 from apps.taxonomy.registry import REGISTRY
@@ -70,6 +71,12 @@ CHANGE_TYPE_LIST = "change_type"
 FLAG_LIST = "flag"
 SOURCE_KIND_LIST = "source_kind"
 URGENCY_LIST = "urgency"
+
+# The taxonomy dimension whose terms say which body of law a record belongs to. Every change
+# carries at least one of its terms (D-39, AC-AGT1): the regime is the sector boundary, and a
+# change with none would reach every bank whatever its scope. A dimension's key is stable
+# and never changes, which is what makes it safe to name here.
+REGIME_DIMENSION = "regime"
 
 # The names `apps/watch/curation.py`, `registration.py` and `sources.py` annotate their own
 # helpers with. Those modules write, so the fence's AST rule refuses them the model's own
@@ -150,6 +157,49 @@ def resolve_terms(term_ids: Sequence[uuid.UUID]) -> list[TaxonomyTerm]:
         )
     refuse_mirrored(term.dimension_id for term in found.values())
     return [found[term_id] for term_id in term_ids]
+
+
+def require_regime(terms: Sequence[TaxonomyTerm]) -> None:
+    """422 `regime_required` when none of these resolved terms is a regime (D-39, AC-AGT1),
+    listing the regime dimension's active keys in `validKeys` so the caller learns what it
+    may choose from; their ids are on `GET /taxonomy/terms`. Called by registration for a
+    new change and by curation for a set that replaces a change's terms."""
+    if any(term.dimension.key == REGIME_DIMENSION for term in terms):
+        return
+    valid = list(
+        TaxonomyTerm.objects.filter(dimension__key=REGIME_DIMENSION, dimension__active=True, active=True)
+        .order_by("sort_order", "key")
+        .values_list("key", flat=True)
+    )
+    raise VocabularyProblem(
+        f"A change needs at least one regime term. Valid regimes: {', '.join(valid)}. "
+        "GET /taxonomy/terms gives their ids.",
+        code="regime_required",
+        extra={"dimension": REGIME_DIMENSION, "validKeys": valid},
+    )
+
+
+def require_standards_body(terms: Sequence[TaxonomyTerm], authority_id: uuid.UUID | None) -> None:
+    """422 `standard_term_only_on_standards` when an opt-in term — a standard a bank chooses
+    to follow — sits on a change whose authority is not a standards body, that is, names no
+    jurisdiction of the `international` kind (D-36, D-38, WAT-07). A law that cites a
+    standard is the supervisor's change and reaches every bank in its scope; tagged with the
+    standard, it would vanish from every bank that follows none. Kinds are read, never keys,
+    so a new standard or a new standards body needs no code. Called by registration for a
+    new change and by curation for a set that replaces a change's terms."""
+    if not any(term.dimension.kind == TermDimensionKind.OPT_IN.value for term in terms):
+        return
+    if (
+        authority_id is not None
+        and Authority.objects.filter(id=authority_id, jurisdiction__kind=JurisdictionKind.INTERNATIONAL.value).exists()
+    ):
+        return
+    raise ValidationError(
+        "A standard's term belongs only on a change a standards body issued, named in "
+        "`authorityCode` with an international jurisdiction. A law or a supervisor's rule "
+        "that cites a standard carries its regime, never the standard.",
+        code="standard_term_only_on_standards",
+    )
 
 
 def obligations_for(obligation_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, Obligation]:

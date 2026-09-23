@@ -6,9 +6,11 @@ only as good as what refreshes it, and two things move underneath it:
 
 - **The bank's own footprint.** A second person approves a footprint change and the bank
   now watches custody, or has stopped advising. Every open case of that bank is re-decided.
-- **A change's scope terms.** A run corrects the terms on a change, or a library editor
-  does. Every bank's case for that change is re-decided, and two banks with different
-  footprints land on different answers from the same edit.
+- **A change's scope terms or its authority.** A run corrects the terms on a change, or a
+  library editor does, or the change turns out to be another authority's, which moves the
+  jurisdictions it reaches (FP-04). Every bank's case for that change is re-decided from
+  the correction's event, and two banks with different footprints land on different
+  answers from the same edit.
 
 Both run on the one ordered cursor over `outbox_event`, from the audit row the write
 already had to leave, so nothing has to be remembered to call them and nothing can happen

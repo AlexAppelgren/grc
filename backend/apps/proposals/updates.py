@@ -28,7 +28,7 @@ from typing import Any, cast
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
-from django.db.models import BooleanField, Func, Q, QuerySet, UUIDField, Value
+from django.db.models import BooleanField, Exists, Func, OuterRef, Q, QuerySet, UUIDField, Value
 from django.utils import timezone
 
 from apps.library.models import Obligation, ObligationVersion
@@ -44,7 +44,7 @@ from apps.library.reading import (
 )
 from apps.library.schemas import LibraryRef, OutsideReason
 from apps.proposals import logic
-from apps.proposals.models import OriginType, Proposal, ProposalStatus
+from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus
 from apps.proposals.schemas import LibraryUpdateDay, LibraryUpdateRow, LibraryUpdatesPage, LibraryUpdateTarget
 from apps.taxonomy import matching
 from apps.taxonomy.models import TaxonomyTerm, TaxonomyTermLabel
@@ -62,7 +62,10 @@ def since_for(tenant: Any, membership: Any) -> datetime.datetime:
 def _applied(*, since: datetime.datetime, kind: str | None, outside_footprint: bool, tenant_id: uuid.UUID) -> QuerySet[Proposal]:
     """The changes applied since `since`, newest first, cut to the footprint in the database
     rather than in Python: a duty the footprint hides is not counted, not only unprinted. A
-    change to a shared list carries no target and is never cut."""
+    change to a shared list carries no target and is never cut, and neither is a new
+    instrument or a provision, a record of the library rather than a duty. A new obligation has
+    no target either, since it did not exist when it was proposed: it is cut through the
+    first version its approval wrote."""
     from apps.library.reading import scope_term_ids
 
     queryset = logic.filtered(Proposal.objects.all(), status=ProposalStatus.APPROVED.value, kind=kind).filter(applied_at__gte=since)
@@ -70,8 +73,12 @@ def _applied(*, since: datetime.datetime, kind: str | None, outside_footprint: b
         inside = Obligation.objects.filter(
             Func(Value(tenant_id, output_field=UUIDField()), scope_term_ids(), function=matching.SQL_FUNCTION, output_field=BooleanField())
         )
+        created_inside = Exists(ObligationVersion.objects.filter(applied_by_proposal=OuterRef("pk"), obligation__in=inside))
+        new_obligation = Q(kind=ProposalKind.NEW_OBLIGATION.value)
         queryset = queryset.filter(
-            Q(target_id__isnull=True) | Q(target_id__in=inside.values("id")),
+            (~Q(target_type=logic.OBLIGATION_TARGET) & ~new_obligation)
+            | Q(target_id__in=inside.values("id"))
+            | (new_obligation & created_inside),
         )
     return queryset.order_by("-applied_at", "-id")
 
@@ -118,12 +125,25 @@ def _vocabulary_refs(proposals: list[Proposal], order: list[str]) -> dict[uuid.U
     return refs
 
 
+def _duties(proposals: list[Proposal], versions: dict[uuid.UUID, ObligationVersion]) -> dict[uuid.UUID, uuid.UUID]:
+    """The duty each change touched, by proposal: its target, or for a new obligation the
+    record its approval created, read through the first version it wrote."""
+    duties = {
+        proposal.id: proposal.target_id
+        for proposal in proposals
+        if proposal.target_id is not None and proposal.target_type == logic.OBLIGATION_TARGET
+    }
+    for proposal in proposals:
+        if proposal.kind == ProposalKind.NEW_OBLIGATION.value and proposal.id in versions:
+            duties[proposal.id] = versions[proposal.id].obligation_id
+    return duties
+
+
 def _verdicts(
-    proposals: list[Proposal], order: list[str], tenant_id: uuid.UUID
+    targets: list[uuid.UUID], order: list[str], tenant_id: uuid.UUID
 ) -> dict[uuid.UUID, tuple[bool, list[OutsideReason]]]:
     """Whether each changed duty reaches this bank, and the facets that would hide it. The
     same rule and the same wording as the inventory list, for the whole page at once."""
-    targets = [proposal.target_id for proposal in proposals if proposal.target_id is not None]
     if not targets:
         return {}
     scopes = obligation_scopes(targets)
@@ -147,6 +167,7 @@ def _verdicts(
 def _row(
     proposal: Proposal,
     *,
+    duty: uuid.UUID | None,
     heading: RecordHeading | None,
     version: ObligationVersion | None,
     vocabulary: LibraryRef | None,
@@ -154,9 +175,9 @@ def _row(
 ) -> LibraryUpdateRow:
     in_footprint, outside = verdict
     target = None
-    if proposal.target_id is not None and heading is not None:
+    if duty is not None and heading is not None:
         target = LibraryUpdateTarget(
-            id=proposal.target_id,
+            id=duty,
             title=heading.title,
             reference_label=heading.reference_label,
             instrument_short_name=heading.instrument_short_name,
@@ -171,7 +192,7 @@ def _row(
         version_number=None if version is None else version.version_number,
         target=target,
         # Which list changed, and the row itself as that list labels it today.
-        vocabulary_list=(applied.get("list") or applied.get("dimension")) if proposal.target_id is None else None,
+        vocabulary_list=(applied.get("list") or applied.get("dimension")) if duty is None else None,
         vocabulary=vocabulary,
         in_footprint=in_footprint,
         outside_reason=outside,
@@ -197,19 +218,22 @@ def page(
     queryset = _applied(since=since, kind=kind, outside_footprint=outside_footprint, tenant_id=tenant.id)
     total = queryset.count()
     applied = list(queryset.select_related("proposed_by_agent", "reviewed_by_agent")[offset : offset + limit])
-    headings = obligation_headings([proposal.target_id for proposal in applied if proposal.target_id is not None], order)
     versions = _versions(applied)
+    duties = _duties(applied, versions)
+    headings = obligation_headings(list(duties.values()), order)
     vocabularies = _vocabulary_refs(applied, order)
-    verdicts = _verdicts(applied, order, tenant.id)
+    verdicts = _verdicts(list(duties.values()), order, tenant.id)
     zone = ZoneInfo(tenant.timezone)
     days: list[LibraryUpdateDay] = []
     for proposal in applied:
+        duty = duties.get(proposal.id)
         row = _row(
             proposal,
-            heading=headings.get(proposal.target_id) if proposal.target_id is not None else None,
+            duty=duty,
+            heading=None if duty is None else headings.get(duty),
             version=versions.get(proposal.id),
             vocabulary=vocabularies.get(proposal.id),
-            verdict=verdicts.get(proposal.target_id, (True, [])) if proposal.target_id is not None else (True, []),
+            verdict=(True, []) if duty is None else verdicts.get(duty, (True, [])),
         )
         day = timezone.localdate(cast(datetime.datetime, proposal.applied_at), timezone=zone)
         if not days or days[-1].date != day:

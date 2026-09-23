@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import { Button } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Field';
@@ -10,10 +11,10 @@ import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { Tabs, TabPanel, type TabDef } from '@/components/ui/Tabs';
-import { useFormatContext, useSession } from '@/features/identity/hooks';
-import { isMineOf, presentProposal, proposerLine, sourceLine } from '@/features/proposals/proposal-presentation';
+import { useFormatContext } from '@/features/identity/hooks';
+import { presentProposal, proposerLine, sourceLine, targetLine } from '@/features/proposals/proposal-presentation';
 import { useProposals } from '@/features/proposals/hooks';
-import type { ProposalKind, ProposalRow } from '@/features/proposals/types';
+import { TERM_KINDS, VOCABULARY_KINDS, type ProposalKind, type ProposalOrder, type ProposalQueueRow } from '@/features/proposals/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
 import { formatDateTime } from '@/shared/utils/format';
@@ -23,33 +24,21 @@ import { formatDateTime } from '@/shared/utils/format';
 // own `status`, so each tab's count is the API's own total, never a
 // client-side count of one page. Kind, "proposed by" and "Not mine" are the
 // route's own filters (backend/apps/proposals/schemas.py `ProposalQuery`), so
-// they reach every row and not only the page read. The route pages; until the
-// queue gets paging controls it reads the largest page, oldest first, and says
-// how many of the total it shows when there are more.
-//
-// GET /proposals does not yet carry a target title, reference or instrument
-// short name, a server-computed `isMine`, or `fromOrganisation`
-// (chunk4-T10's enrichment; not on `main`). `isMine` is computed from the
-// row's own `proposedBy.id` against the signed-in reader; see
-// proposal-presentation.ts for what that does and does not disclose.
+// they reach every row and not only the page read. Each row carries the
+// server's own `isMine`, `fromOrganisation` and `target`. The queue pages by
+// the route's `limit`, `offset` and `total`, the offset held in the address so
+// a reviewer comes back to the page they left; Waiting reads oldest first, the
+// order the work arrived in, and the decided tabs newest first.
 
 const TAB_STATUS = { waiting: 'open', approved: 'approved', rejected: 'rejected' } as const;
 type TabKey = keyof typeof TAB_STATUS;
 const TAB_KEYS: readonly TabKey[] = ['waiting', 'approved', 'rejected'];
+export const TAB_ORDER: Readonly<Record<TabKey, ProposalOrder>> = { waiting: 'oldest', approved: 'newest', rejected: 'newest' };
 
 // The route's largest page (API_PAGE_SIZE_MAX).
-const QUEUE_PAGE = 100;
+export const QUEUE_PAGE = 100;
 
 const OBLIGATION_KIND: ProposalKind = 'new_obligation_version';
-const VOCABULARY_KINDS: readonly ProposalKind[] = [
-  'vocabulary_create',
-  'vocabulary_relabel',
-  'vocabulary_retire',
-  'vocabulary_restore',
-  'vocabulary_merge',
-  'term_create',
-  'term_update',
-];
 
 type KindFilter = '' | 'obligation' | 'vocabulary';
 type OriginFilter = '' | 'agent' | 'user';
@@ -85,26 +74,33 @@ export function filtersFrom(params: { get(name: string): string | null }): Queue
   return { kind: isKindFilter(kind) ? kind : '', origin: isOriginFilter(origin) ? origin : '', notMine: params.get('notMine') === 'true' };
 }
 
-export function searchOf(filters: QueueFilters, tab: TabKey): string {
+/** The page's first row, counting from 0: a whole multiple of the page, never negative. */
+export function offsetFrom(params: { get(name: string): string | null }): number {
+  const offset = Number(params.get('offset'));
+  return Number.isInteger(offset) && offset > 0 ? offset - (offset % QUEUE_PAGE) : 0;
+}
+
+export function searchOf(filters: QueueFilters, tab: TabKey, offset = 0): string {
   const search = new URLSearchParams();
   if (tab !== 'waiting') search.set('tab', tab);
   if (filters.kind !== '') search.set('kind', filters.kind);
   if (filters.origin !== '') search.set('origin', filters.origin);
   if (filters.notMine) search.set('notMine', 'true');
+  if (offset > 0) search.set('offset', String(offset));
   return search.toString();
 }
 
 /** The `kind` query the route reads: a comma list for the vocabulary group, one value for the obligation kind, none for "any kind". */
 export function kindQueryOf(kind: KindFilter): string | undefined {
   if (kind === 'obligation') return OBLIGATION_KIND;
-  if (kind === 'vocabulary') return VOCABULARY_KINDS.join(',');
+  if (kind === 'vocabulary') return [...VOCABULARY_KINDS, ...TERM_KINDS].join(',');
   return undefined;
 }
 
-function QueueRow({ row, meId }: { row: ProposalRow; meId: string | null }) {
+function QueueRow({ row }: { row: ProposalQueueRow }) {
   const t = useT();
   const ctx = useFormatContext();
-  const mine = isMineOf(row, meId);
+  const target = targetLine(row, t);
   const source = sourceLine(row, t);
   return (
     <Link
@@ -115,12 +111,17 @@ function QueueRow({ row, meId }: { row: ProposalRow; meId: string | null }) {
       data-proposal-status={row.status}
       className="block rounded-card border border-line bg-surface px-4 py-3.5 hover:border-fg"
     >
-      <PillRow pills={presentProposal(row, mine, t)}>
+      <PillRow pills={presentProposal(row, t)}>
         <span className="text-meta text-muted">{proposerLine(row, t)}</span>
         <span className="text-meta text-muted">{formatDateTime(row.createdAt, ctx)}</span>
       </PillRow>
       <h3 className="my-1.5 font-semibold">{row.title}</h3>
-      {source !== null ? <p className="text-meta text-muted">{source}</p> : null}
+      {target !== null || source !== null ? (
+        <p className="flex flex-wrap gap-x-3 text-meta text-muted">
+          {target !== null ? <span data-proposal-target="">{target}</span> : null}
+          {source !== null ? <span>{source}</span> : null}
+        </p>
+      ) : null}
     </Link>
   );
 }
@@ -130,17 +131,18 @@ export function QueueScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const { me } = useSession();
-  const meId = me?.user.id ?? null;
 
   const tab = tabFrom(params);
   const filters = filtersFrom(params);
-  const query = useProposals({ status: TAB_STATUS[tab], kind: kindQueryOf(filters.kind), origin: filters.origin, notMine: filters.notMine, limit: QUEUE_PAGE });
+  const offset = offsetFrom(params);
+  const order = TAB_ORDER[tab];
+  const query = useProposals({ status: TAB_STATUS[tab], kind: kindQueryOf(filters.kind), origin: filters.origin, notMine: filters.notMine, order, limit: QUEUE_PAGE, offset });
   const forbidden = forbiddenFrom(query.error);
 
-  const go = (nextTab: TabKey, patch: Partial<QueueFilters> = {}) => {
+  // A changed tab or filter starts again at the first page: the old offset means nothing in the new result.
+  const go = (nextTab: TabKey, patch: Partial<QueueFilters> = {}, nextOffset = 0) => {
     const next = { ...filters, ...patch };
-    const search = searchOf(next, nextTab);
+    const search = searchOf(next, nextTab, nextOffset);
     router.replace(search === '' ? pathname : `${pathname}?${search}`);
   };
 
@@ -201,10 +203,22 @@ export function QueueScreen() {
           <>
             <div className="grid gap-2" data-proposal-rows="">
               {rows.map((row) => (
-                <QueueRow key={row.id} row={row} meId={meId} />
+                <QueueRow key={row.id} row={row} />
               ))}
             </div>
-            {total > rows.length ? <p className="mt-3 text-meta text-muted">{t('console.queue.more', { shown: rows.length, total })}</p> : null}
+            {offset > 0 || total > offset + rows.length ? (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-meta text-muted" data-queue-paging="">
+                <span>{t(order === 'newest' ? 'console.queue.more.newest' : 'console.queue.more.oldest', { from: offset + 1, to: offset + rows.length, total })}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="small" disabled={offset === 0} onClick={() => go(tab, {}, Math.max(0, offset - QUEUE_PAGE))}>
+                    {t('console.queue.previous')}
+                  </Button>
+                  <Button variant="outline" size="small" disabled={offset + QUEUE_PAGE >= total} onClick={() => go(tab, {}, offset + QUEUE_PAGE)}>
+                    {t('console.queue.next')}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </>
         )}
       </TabPanel>

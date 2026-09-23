@@ -18,7 +18,7 @@ from pydantic import ConfigDict, Field
 # `AiCitation` lives beside `AgentDecision` in apps/shared/schemas.py, which cites with it
 # and which a governance import would turn into a cycle; it is re-exported here for the
 # modules that already read it from this app.
-from apps.shared.schemas import AiCitation, AuditSnapshot, CamelSchema
+from apps.shared.schemas import AiCitation, AuditSnapshot, CamelSchema, WriteBody
 
 
 class AuditEventQuery(CamelSchema):
@@ -337,8 +337,8 @@ _STATUSES = (
 
 
 class AiGenerationQuery(CamelSchema):
-    """Filters of the AI output log, each optional and combined with AND. Leaving both out
-    lists everything the reader may see."""
+    """Filters of the AI output log, each optional and combined with AND. Leaving all three
+    out lists everything the reader may see."""
 
     purpose: str | None = Field(
         default=None,
@@ -356,10 +356,40 @@ class AiGenerationQuery(CamelSchema):
         max_length=16,
         description=(
             f"Show only rows in one review state, a fixed kind: {_STATUSES}. At most 16 "
-            "characters. A value that is not one of them matches nothing and answers 200 "
-            "with an empty page."
+            "characters. It reads the state as this bank sees it (see `status` on a row), so "
+            "`confirmed` lists a shared “So what?” this bank stood behind and not "
+            "one only another bank did. A value that is not one of them matches nothing and "
+            "answers 200 with an empty page."
         ),
         examples=["draft"],
+    )
+    subject_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Show only the calls about one record, by the UUID a row carries in `subjectId`: "
+            "for a “So what?” the regulatory change's id, so a change's screen can "
+            "list every draft of what it means. A value that is not a UUID is refused with "
+            "`validation_error` (422); an id no row names answers 200 with an empty page."
+        ),
+        examples=["c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19"],
+    )
+
+
+class AiGenerationReviewer(CamelSchema):
+    """The person who stood behind a model's output: id and name, the only personal data
+    the log carries about them (playbook 4.7)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30", "name": "Anna Lindqvist"}]}
+    )
+
+    id: uuid.UUID = Field(
+        description="The person's user id, as a UUID.",
+        examples=["8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30"],
+    )
+    name: str = Field(
+        description="The person's name as it stands now, at most 200 characters, for display.",
+        examples=["Anna Lindqvist"],
     )
 
 
@@ -387,7 +417,10 @@ class AiGenerationRow(CamelSchema):
                         }
                     ],
                     "status": "draft",
+                    "reviewedBy": None,
                     "reviewedAt": None,
+                    "feedback": "",
+                    "feedbackNote": "",
                     "inputTokens": 1840,
                     "outputTokens": 96,
                     "stopReason": "",
@@ -479,15 +512,54 @@ class AiGenerationRow(CamelSchema):
         )
     )
     status: str = Field(
-        description=f"How far a person has got with it, a fixed kind: {_STATUSES}.",
+        description=(
+            f"How far a person has got with it, a fixed kind: {_STATUSES}. Computed for the "
+            "reading bank. On a bank's own row it is that row's state. A shared “So "
+            "what?” (`tenantScoped` false) is one row every bank reads and no bank may "
+            "move, so its state here is this bank's own, taken from this bank's case for the "
+            "change and never written to the shared row: `confirmed` when someone here "
+            "confirmed the draft as it stands, `edited` when they rewrote it, and `draft` "
+            "otherwise. A case settles the newest draft of the change logged by the time it "
+            "was confirmed, so an earlier draft, or one logged after the confirmation, reads "
+            "`draft` because nobody here stood behind those words. Another bank's decision "
+            "never shows."
+        ),
         examples=["draft"],
+    )
+    reviewed_by: AiGenerationReviewer | None = Field(
+        description=(
+            "Who moved the row out of `draft`, computed for the reading bank as `status` is: "
+            "on a shared “So what?” the person at this bank who confirmed or rewrote "
+            "it on the case. Null while `status` is `draft`."
+        ),
+        examples=[None],
     )
     reviewed_at: datetime | None = Field(
         description=(
             "When a person moved the row out of `draft`, as an RFC 3339 timestamp in UTC "
-            "(`2026-09-17T09:12:00Z`). Null while nobody has."
+            "(`2026-09-17T09:12:00Z`), computed for the reading bank as `status` is. Null "
+            "while nobody has."
         ),
         examples=[None],
+    )
+    feedback: str = Field(
+        description=(
+            "A reader's verdict on an Ask answer, at most 16 characters: `helpful` or "
+            "`wrong`, as `POST /answers/{answerId}/feedback` stored it, and the latest verdict "
+            "when it was given more than once. Empty when nobody gave one, and always empty "
+            "on a row that is not an Ask answer. Source: a person in this bank."
+        ),
+        examples=[""],
+    )
+    feedback_note: str = Field(
+        description=(
+            "What the reader wrote with the verdict, as they wrote it, at most "
+            f"{settings.SEARCH_FEEDBACK_NOTE_MAX_CHARS} characters, the limit "
+            "`POST /answers/{answerId}/feedback` accepts. Empty when they wrote nothing or "
+            "gave no verdict. It is this bank's own text and appears only on this bank's own "
+            "row."
+        ),
+        examples=[""],
     )
     input_tokens: int = Field(
         description="How many tokens went into the call, as the provider counted them. 0 when unknown.",
@@ -545,4 +617,228 @@ class AiGenerationPage(CamelSchema):
             "not only on this page, so a screen can say “n of m”."
         ),
         examples=[0],
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# Problem reports (AUD-03, D-50): a bank reads and closes its own "this looks wrong"
+# ---------------------------------------------------------------------------------------
+# The kinds of apps.library.models.SubjectType and ReportStatus, closed in the contract.
+ProblemReportSubjectKind = Literal["instrument", "provision", "obligation"]
+ProblemReportStatusKind = Literal["open", "answered", "fixed", "rejected"]
+ProblemReportClosingKind = Literal["answered", "fixed", "rejected"]
+
+_REPORT_STATUSES = (
+    "`open` (filed and not yet looked at, which is how every report starts), `answered` "
+    "(a colleague explained what the reader saw, and the record needs no correction), "
+    "`fixed` (the record was wrong and has been or is being corrected; the correction itself "
+    "reaches the library through the watch agents' re-check and a proposal, never through "
+    "the report) and `rejected` (the record is right as it stands). Fixed in code: an admin "
+    "adds no fifth state"
+)
+_REPORT_SUBJECTS = (
+    "`obligation` (a duty), `instrument` (a law, regulation or guideline; a provision is "
+    "reported through the instrument whose card shows it) and `provision` (reserved for a "
+    "provision reported on its own, which no route files today)"
+)
+
+
+class ProblemReportQuery(CamelSchema):
+    """Filters of the bank's problem reports, each optional and combined with AND. Leaving
+    them all out lists every report the caller may see."""
+
+    status: str | None = Field(
+        default=None,
+        max_length=16,
+        description=(
+            f"Show only reports in one state, a fixed kind: {_REPORT_STATUSES}. At most 16 "
+            "characters. A value that is not one of them matches nothing and answers 200 with "
+            "an empty page, because a filter that finds nothing is an empty answer and not an error."
+        ),
+        examples=["open"],
+    )
+    subject_type: str | None = Field(
+        default=None,
+        max_length=32,
+        description=(
+            f"Show only reports on one kind of library record, a fixed kind: {_REPORT_SUBJECTS}. "
+            "Pair it with `subjectId` to list the reports on one record, which is what the "
+            "record's own screen does. At most 32 characters; a value that is not one of them "
+            "matches nothing and answers 200 with an empty page."
+        ),
+        examples=["obligation"],
+    )
+    subject_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Show only reports on one library record, by its UUID as the library routes return "
+            "it (an obligation's or an instrument's `id`). A value that is not a UUID is refused "
+            "with `validation_error` (422); an id no report names answers 200 with an empty page."
+        ),
+        examples=["3f1d6a52-8c47-4b0e-9e21-6a4f0c8d2b17"],
+    )
+
+
+class ProblemReportPerson(CamelSchema):
+    """A member of this bank on a report: id and name, the only personal data a report
+    carries about them (playbook 4.7)."""
+
+    id: uuid.UUID = Field(
+        description="The person's user id, as a UUID. Match on this, never on the name.",
+        examples=["8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30"],
+    )
+    name: str = Field(
+        description="The person's display name as it stands now, for display only.",
+        examples=["Erik Holm"],
+    )
+
+
+class ProblemReportRow(CamelSchema):
+    """One problem report of this bank: what a member said looks wrong with a library
+    record, and, once closed, who closed it, when and why. Everything here is the bank's
+    own content and never leaves the bank: bleqq does not read it, and nothing here reaches
+    the audit log, an outbox event, a log line or a model."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "6f4c1f3e-9a21-4c8e-9a2f-2b0d5c7a1e44",
+                    "subjectType": "obligation",
+                    "subjectId": "3f1d6a52-8c47-4b0e-9e21-6a4f0c8d2b17",
+                    "subjectTitle": "Keep records of client orders for ten years",
+                    "subjectReference": "FFFS 2017:2, 9 kap. 6 §",
+                    "description": "The retention line says five years, but FFFS 2017:2 9 kap. 6 § says ten.",
+                    "versionNumber": 2,
+                    "language": "sv",
+                    "reporter": {"id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30", "name": "Johan Berg"},
+                    "status": "answered",
+                    "createdAt": "2026-09-20T09:14:22Z",
+                    "closedBy": {"id": "b2c4e6f8-0a1c-4e3a-9b5d-7f9e1d3c5a70", "name": "Erik Holm"},
+                    "closedAt": "2026-09-21T13:02:10Z",
+                    "resolutionNote": "Version 2 says ten years; the screen showed version 1, which said five.",
+                }
+            ]
+        }
+    )
+
+    id: uuid.UUID = Field(
+        description="The report's identifier, as a UUID. Pass it to `PATCH /problem-reports/{report_id}` to close it.",
+        examples=["6f4c1f3e-9a21-4c8e-9a2f-2b0d5c7a1e44"],
+    )
+    subject_type: ProblemReportSubjectKind = Field(
+        description=f"What kind of library record the report is about, a fixed kind: {_REPORT_SUBJECTS}.",
+        examples=["obligation"],
+    )
+    subject_id: uuid.UUID = Field(
+        description="The UUID of the library record the report is about, as the library routes return it.",
+        examples=["3f1d6a52-8c47-4b0e-9e21-6a4f0c8d2b17"],
+    )
+    subject_title: str = Field(
+        description=(
+            "The record's own title in the caller's content language order: an obligation's "
+            "title, or an instrument's short name. A library fact, read now and not when the "
+            "report was filed. Empty when the record is no longer visible to this bank."
+        ),
+        examples=["Keep records of client orders for ten years"],
+    )
+    subject_reference: str = Field(
+        description=(
+            "The record's public reference, for display beside the title: for an obligation, "
+            "its instrument's short name and its place in it (`FFFS 2017:2, 9 kap. 6 §`); for an "
+            "instrument, its official reference. Empty when the record is no longer visible."
+        ),
+        examples=["FFFS 2017:2, 9 kap. 6 §"],
+    )
+    description: str = Field(
+        description=(
+            "What the reporter believes is wrong, in their own words, as they filed it; never "
+            "edited afterwards. The bank's own content: it reaches nobody outside the bank."
+        ),
+        examples=["The retention line says five years, but FFFS 2017:2 9 kap. 6 § says ten."],
+    )
+    version_number: int | None = Field(
+        description=(
+            "Which version of the record's summary the reporter had on screen, numbered from 1, "
+            "so a colleague opens the same words. Null when the screen showed no particular version."
+        ),
+        examples=[2],
+    )
+    language: str | None = Field(
+        description=(
+            "Which content language the reporter was reading, as a language key such as `sv` or "
+            "`en` (a row of the library's language vocabulary). Null when none was recorded."
+        ),
+        examples=["sv"],
+    )
+    reporter: ProblemReportPerson = Field(description="The member who filed the report.")
+    status: ProblemReportStatusKind = Field(
+        description=f"Where the report stands, a fixed kind: {_REPORT_STATUSES}.",
+        examples=["answered"],
+    )
+    created_at: datetime = Field(
+        description="When the report was filed, as an RFC 3339 timestamp in UTC.",
+        examples=["2026-09-20T09:14:22Z"],
+    )
+    closed_by: ProblemReportPerson | None = Field(
+        description="The member who closed the report: the reporter, or a colleague holding `proposals.create`. Null while it is open."
+    )
+    closed_at: datetime | None = Field(
+        description="When the report was closed, as an RFC 3339 timestamp in UTC. Null while it is open.",
+        examples=["2026-09-21T13:02:10Z"],
+    )
+    resolution_note: str | None = Field(
+        description=(
+            "Why it was closed, in the closer's words; the bank's own content, like the report. "
+            "Null while it is open, and never empty once it is closed."
+        ),
+        examples=["Version 2 says ten years; the screen showed version 1, which said five."],
+    )
+
+
+class ProblemReportPage(CamelSchema):
+    """One page of the bank's problem reports, newest report first."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [], "total": 0}]})
+
+    items: list[ProblemReportRow] = Field(
+        description="The reports of this page, newest first. Empty when nothing matches, which is a 200 and never an error."
+    )
+    total: int = Field(
+        description="How many reports match the filters in total, not only on this page, so a screen can say “n of m”.",
+        examples=[0],
+    )
+
+
+class ProblemReportClose(WriteBody):
+    """Closing a problem report: the state it ends in and why. A report closes once, and
+    only the reporter or a colleague holding `proposals.create` closes it."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"status": "answered", "resolutionNote": "Version 2 says ten years; the screen showed version 1, which said five."}
+            ]
+        }
+    )
+
+    status: ProblemReportClosingKind = Field(
+        description=(
+            "The state the report ends in, a fixed kind: `answered` (explained, the record needs "
+            "no correction), `fixed` (the record was wrong; its correction reaches the library "
+            "through the watch agents' re-check and a proposal) or `rejected` (the record is "
+            "right as it stands). `open` and any other value are refused with `validation_error` (422)."
+        ),
+        examples=["answered"],
+    )
+    resolution_note: str = Field(
+        min_length=1,
+        max_length=settings.LIBRARY_REPORT_TEXT_MAX_CHARS,
+        description=(
+            "Why it is closed, for the reporter to read. Required: a note that is missing, empty "
+            "or only whitespace is refused. At most 4000 characters (`LIBRARY_REPORT_TEXT_MAX_CHARS`); "
+            "a longer one is refused. Surrounding whitespace is trimmed. The bank's own content: "
+            "it stays in the report and reaches no audit row, outbox event, log line or model."
+        ),
+        examples=["Version 2 says ten years; the screen showed version 1, which said five."],
     )

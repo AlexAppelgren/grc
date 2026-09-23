@@ -4,6 +4,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Select, TextInput } from '@/components/ui/Field';
 import { useTerms } from '@/features/footprint/hooks';
 import { INSTRUMENT_OPTIONS, useInstruments } from '@/features/library/hooks';
+import type { ScopeFilter } from '@/features/library/types';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
@@ -24,7 +25,28 @@ export interface InventoryFilters {
   dutyType: string;
   /** A plain date, YYYY-MM-DD; empty means today where the tenant is. */
   asOf: string;
-  outsideFootprint: boolean;
+  scope: ScopeFilter;
+}
+
+export const SCOPE_VALUES: readonly ScopeFilter[] = ['in', 'watched', 'all'];
+
+/**
+ * The regulatory scope filter (FP-03, FP-04): one value of three, so exactly
+ * one chip is pressed and no contradictory pair can be sent. The inventory's
+ * two tabs and the instrument card's obligations use it alike.
+ */
+export function ScopeChips({ value, onChange }: { value: ScopeFilter; onChange: (next: ScopeFilter) => void }) {
+  const t = useT();
+  const label: Record<ScopeFilter, string> = { in: t('library.scope.in'), watched: t('library.scope.watched'), all: t('library.scope.all') };
+  return (
+    <div role="group" aria-label={t('library.scope.label')} className="flex flex-wrap items-center gap-2">
+      {SCOPE_VALUES.map((scope) => (
+        <Chip key={scope} pressed={value === scope} onClick={() => onChange(scope)}>
+          {label[scope]}
+        </Chip>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -35,12 +57,12 @@ export interface InventoryFilters {
  * our scope is named from the options outside it, read only then; the key shows only
  * while that read loads, or for an instrument past the hundredth or unknown.
  */
-function InstrumentSelect({ value, outsideFootprint, onChange }: { value: string; outsideFootprint: boolean; onChange: (next: string) => void }) {
+function InstrumentSelect({ value, scope, onChange }: { value: string; scope: ScopeFilter; onChange: (next: string) => void }) {
   const t = useT();
-  const instruments = useInstruments({ outsideFootprint }, INSTRUMENT_OPTIONS);
+  const instruments = useInstruments(scope === 'in' ? {} : { footprint: scope }, INSTRUMENT_OPTIONS);
   const options = instruments.data?.items ?? [];
   const unlisted = value !== '' && !options.some((instrument) => instrument.stableKey === value);
-  const outside = useInstruments({ outsideFootprint: true }, INSTRUMENT_OPTIONS, unlisted && instruments.isSuccess && !outsideFootprint);
+  const outside = useInstruments({ footprint: 'all' }, INSTRUMENT_OPTIONS, unlisted && instruments.isSuccess && scope !== 'all');
   const unlistedName = outside.data?.items.find((instrument) => instrument.stableKey === value)?.shortName ?? value;
   return (
     <Select className="w-auto" aria-label={t('inventory.filter.instrument')} value={value} onChange={(event) => onChange(event.target.value)}>
@@ -63,7 +85,7 @@ export function InventoryFilterBar({ filters, onChange }: { filters: InventoryFi
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2" data-inventory-filters="">
-      <InstrumentSelect value={filters.instrument} outsideFootprint={filters.outsideFootprint} onChange={(instrument) => onChange({ instrument })} />
+      <InstrumentSelect value={filters.instrument} scope={filters.scope} onChange={(instrument) => onChange({ instrument })} />
       <Select className="w-auto" aria-label={t('inventory.filter.regime')} value={filters.regime} onChange={(event) => onChange({ regime: event.target.value })}>
         <option value="">{t('inventory.filter.allRegimes')}</option>
         {(regimes.data ?? []).map((term) => (
@@ -92,17 +114,15 @@ export function InventoryFilterBar({ filters, onChange }: { filters: InventoryFi
         {t('inventory.asOf')}
       </label>
       <TextInput id="inventory-as-of" type="date" className="w-auto" value={filters.asOf} onChange={(event) => onChange({ asOf: event.target.value })} />
-      <Chip pressed={filters.outsideFootprint} onClick={() => onChange({ outsideFootprint: !filters.outsideFootprint })}>
-        {t('inventory.showOutside')}
-      </Chip>
+      <ScopeChips value={filters.scope} onChange={(scope) => onChange({ scope })} />
     </div>
   );
 }
 
-/** The Instruments tab's own filters: GET /instruments takes only regime, q and outsideFootprint (chunk3-rest default). */
+/** The Instruments tab's own filters: GET /instruments takes only regime, q and footprint (chunk3-rest default). */
 export interface InstrumentFilters {
   regime: string;
-  outsideFootprint: boolean;
+  scope: ScopeFilter;
 }
 
 export function InstrumentFilterBar({ filters, onChange }: { filters: InstrumentFilters; onChange: (next: Partial<InstrumentFilters>) => void }) {
@@ -119,9 +139,7 @@ export function InstrumentFilterBar({ filters, onChange }: { filters: Instrument
           </option>
         ))}
       </Select>
-      <Chip pressed={filters.outsideFootprint} onClick={() => onChange({ outsideFootprint: !filters.outsideFootprint })}>
-        {t('inventory.showOutside')}
-      </Chip>
+      <ScopeChips value={filters.scope} onChange={(scope) => onChange({ scope })} />
     </div>
   );
 }

@@ -73,6 +73,18 @@ owns. E2E scenarios in `frontend/tests/e2e/shared.journey.spec.ts`, except NFR-S
 sits beside its screenshot baselines in `pills.gallery.spec.ts`. Each test carries its
 scenario ID.
 
+> **Note — NFR-01 and NFR-02 scenarios (`nfr-integration-scenarios`).** NFR-S1 to S6, S13
+> and S16 assert their own Gherkin in `tests_scenarios.py`, through the entry points the
+> guards use (`TENANT_SCOPED_ROUTES`, `check_role`, `pg_class` and `pg_policies`,
+> `tenancy.activate` on cw_app, `@tenant_task` and the beat schedule, the middleware,
+> `gate_of` and `UNGATED_BY_DESIGN`, the problem shape). Where the Gherkin says a new route,
+> table, task or entry fails, the scenario plants one and reads the failure. NFR-S1 also
+> demands that every GET, PATCH and DELETE under `/tenant/` addressing one record is in the
+> registry. NFR-S6 walks every list GET in the exported contract: each takes `PageQuery` (limit
+> 20 by default, 100 at most, 422 above, proven per route) or has a reason in
+> `BOUNDED_BY_DESIGN`. NFR-S11, S12, S14 and S15 are NFR-04 and wait for chunk 14. The
+> requirement status cells are set by `r1-close-and-readiness`.
+
 ### NFR-S1 — A record of tenant A requested by tenant B answers 404 on every tenant route `@integration` (NFR-01, AC-NFR1)
 ```gherkin
 Given every tenant-scoped GET, PATCH and DELETE route Ninja registered
@@ -132,6 +144,13 @@ When each registered destination is opened
 Then real data, not a skeleton, is visible within 500 ms of navigation
 And the measurement is recorded beside the screen in the UI plan
 ```
+
+The journey (`shared.journey.spec.ts`) measures every tenant and console destination of the
+navigation registry: the median of `E2E_SCREEN_SAMPLES` client-side navigations (5 by default)
+to the destination's own real-data locator in `frontend/tests/e2e/support/screen-budgets.ts`,
+500 ms unless its row says otherwise. A destination with no row, a locator that never shows, a
+skeleton that lingers or a `next dev` build fails it. The medians go in the Measured column of
+`docs/plans/UI_Implementation_Plan.md`.
 
 ### NFR-S8 — The pill gallery matches the design card in both themes `@e2e` (NFR-03, AC-NFR3)
 ```gherkin

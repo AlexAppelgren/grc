@@ -69,6 +69,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import (
     BooleanField,
     Case,
+    Exists,
     F,
     FloatField,
     Func,
@@ -104,7 +105,9 @@ from apps.shared.adapters import embedder, reranker
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy import matching
+from apps.taxonomy.models import InstrumentLevelKind
 from apps.watch.models import RegulatoryChange
+from apps.watch.reading import _scope_term_ids as change_scope_term_ids  # the feed's own rule, never a copy
 
 # Which chunk a caller means by a hit kind, and which kind a chunk answers as. One mapping,
 # read both ways, so a `types` filter and a hit can never disagree about what a chunk is.
@@ -200,6 +203,12 @@ def passages(
     an obligation version. A row carries the chunk's whole `body` rather than a snippet,
     since that is the text the model is given. It spends no search bucket: `POST /ask`
     spends its own (`limits.ask_bucket`).
+
+    Never an obligation under a standard (INV-08, D-81). The library holds a standard's
+    conformance duty and never its clauses, so a model given that duty for a question about
+    a control would answer from what it remembers of licensed text and cite the duty for
+    it. Leaving those rows out before anything is ranked is what makes such a question "no
+    answer" with no model asked, while `POST /search` still finds the duty.
     """
     found = _candidates(
         question,
@@ -209,6 +218,7 @@ def passages(
         tenant=tenant,
         as_of=as_of,
         limit=depth,
+        standards=False,
     )
     return _best_per_record(_reranked(question, found))[:depth]
 
@@ -225,10 +235,11 @@ def _candidates(
     tenant: Tenant | None,
     as_of: datetime.date,
     limit: int,
+    standards: bool = True,
 ) -> list[dict[str, Any]]:
     """The rows either leg found, best fused first. One query, however many hits."""
     asked = _asked(text, configurations)
-    rows = _filtered(types=types, filters=filters, tenant=tenant, as_of=as_of)
+    rows = _filtered(types=types, filters=filters, tenant=tenant, as_of=as_of, standards=standards)
     rows = rows.annotate(
         keyword_score=SearchRank(F("tsv"), asked),
         similarity=_similarity(text),
@@ -282,10 +293,17 @@ def _asked(text: str, configurations: tuple[str, ...]) -> SearchQuery:
 
 
 def _filtered(
-    *, types: list[SearchHitType], filters: SearchFilters, tenant: Tenant | None, as_of: datetime.date
+    *,
+    types: list[SearchHitType],
+    filters: SearchFilters,
+    tenant: Tenant | None,
+    as_of: datetime.date,
+    standards: bool = True,
 ) -> QuerySet[SearchChunk]:
     """Everything the caller may see and asked for, before a single row is ranked. A filter
-    applied after ranking would answer a short page of a long list and call it the answer."""
+    applied after ranking would answer a short page of a long list and call it the answer.
+    `standards=False` leaves out every chunk whose instrument sits at a level of the kind
+    `standard`: the kind decides, never the level's key (D-81)."""
     rows = SearchChunk.objects.filter(owner_tenant__isnull=True)
     rows = rows.filter(Q(valid_from__isnull=True) | Q(valid_from__lte=as_of))
     rows = rows.filter(Q(valid_to__isnull=True) | Q(valid_to__gte=as_of))
@@ -301,6 +319,14 @@ def _filtered(
         rows = rows.filter(metadata__binding=filters.binding)
     if filters.term_ids:
         rows = rows.filter(metadata__term_ids__contains=[str(term_id) for term_id in filters.term_ids])
+    if not standards:
+        rows = rows.exclude(
+            Exists(
+                Instrument.objects.filter(
+                    id=_outer_metadata_uuid("instrument_id"), level__kind=InstrumentLevelKind.STANDARD.value
+                )
+            )
+        )
     if tenant is None:
         # The agents' read. An API key belongs to no bank, so there is no regulatory scope
         # to apply — not a wider read, because `owner_tenant_id IS NULL` above has already
@@ -317,15 +343,18 @@ def _in_footprint(tenant: Tenant) -> Func:
     use, over the scope the inventory hands it: `library.reading`'s SQL twins, read for the
     chunk's own record and never copied here. An obligation's chunk is judged by the
     obligation's own terms plus its instrument's scope; a provision's, which has no terms of
-    its own, by its instrument's scope alone; a chunk that names neither carries no scope
-    and matches every bank, as it did before. So the regime and the jurisdictions an
+    its own, by its instrument's scope alone; a registered change's by the scope the watch
+    feed judges it by (`watch.reading`); a chunk that names none of them carries no scope
+    and matches every bank. So the regime and the jurisdictions an
     instrument's rules reach (D-28, D-29) narrow a search exactly as they narrow the
     inventory."""
     obligation = Obligation.objects.filter(id=_outer_metadata_uuid("obligation_id")).values(scope=scope_term_ids())
     instrument = Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id")).values(scope=instrument_scope_term_ids())
+    change = RegulatoryChange.objects.filter(id=OuterRef("source_id")).values(scope=change_scope_term_ids())
     scope = Coalesce(
         Subquery(obligation[:1]),
         Subquery(instrument[:1]),
+        Subquery(change[:1]),
         Value([], output_field=ArrayField(UUIDField())),
         output_field=ArrayField(UUIDField()),
     )
@@ -486,9 +515,9 @@ def _hit(row: dict[str, Any], query: str) -> SearchHit:
         valid_from=row["valid_from"],
         valid_to=row["valid_to"],
         # The library's own view of how soon a record deserves attention lives on a
-        # registered change (`watch.RegulatoryChange.suggested_urgency`), and a change is
-        # not an indexed source until `c7-index-changes` lands. An obligation and a
-        # provision carry none, so saying so is the whole truth here.
+        # registered change (`watch.RegulatoryChange.suggested_urgency`). An obligation
+        # and a provision carry none; a change hit does not carry its label yet, which
+        # needs the reader's language here, so the change it opens is where it is shown.
         urgency=None,
     )
 

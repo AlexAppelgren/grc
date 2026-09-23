@@ -87,10 +87,13 @@ test.describe('library journeys', () => {
     await expect(page.locator('[data-lineage-group="implements:outgoing"] [data-lineage-instrument="celex-32017l0593"]')).toBeVisible();
 
     // The obligations from this instrument read inside our scope first, the
-    // same list the inventory answers when filtered by it (FP-03), with the
-    // total and a way into that list.
+    // same list the inventory answers when filtered by it (FP-03, FP-04), with
+    // the scope as one filter of three values, the total and a way into that list.
     const obligations = page.locator('[data-obligations-panel]');
-    await expect(obligations.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
+    const scope = obligations.getByRole('group', { name: 'Scope' });
+    await expect(scope.getByRole('button', { name: 'In our scope' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(scope.getByRole('button', { name: 'Markets we watch' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(scope.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
     await expect(obligations.locator(`[data-obligation="${RESEARCH}"]`)).toBeVisible();
     await expect(obligations.locator('[data-obligations-total]')).toHaveText(/^\d+ obligations?$/);
     const inventory = obligations.getByRole('link', { name: 'Open in the inventory' });
@@ -287,19 +290,113 @@ test.describe('library journeys', () => {
 });
 
 // PRD 0.3: a standard is an instrument of public facts with no provision tree
-// (INV-08). It stays test.fixme until the task in
-// docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
+// (INV-08). The one standard is seeded for E2E only (backend/apps/shared/e2e_seed.py,
+// E2E_STANDARD_INSTRUMENT and E2E_STANDARD_OBLIGATION) and no seeded bank follows it,
+// so its conformance duty is reached through "Show outside our scope". Its instrument
+// carries only its regime, which tenant A holds, so the Instruments tab lists it.
+const STANDARD_INSTRUMENT = 'iso-iec-27001-2022';
+const STANDARD_OBLIGATION = 'iso-iec-27001-2022-conformance';
+
 test.describe('standards in the library', () => {
-  test.fixme("INV-S11: An edition of a standard is an instrument with public facts and no text", async () => {
-    // pending: INV-S11 (INV-01, INV-02, INV-08)
+  test("INV-S11: An edition of a standard is an instrument with public facts and no text", async ({ page, apiGuard }) => {
+    // INV-S11 (INV-01, INV-02, INV-08). The API's bindingLevel and the single obligation
+    // with no provision are proved by the backend's INV-S11 test; here, the screens.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openInstrument(page, STANDARD_INSTRUMENT);
+
+    // "Standard" in the binding slot, as information, never "Guidance, comply or explain".
+    // The level's label and the binding slot both read "Standard"; the third pill is the slot.
+    const pills = headerPills(page);
+    await expect(pills).toHaveText(['ISO/IEC 27001:2022', 'Standard', 'Standard', 'International', 'AI and ICT']);
+    await expect(pills.nth(0)).toHaveAttribute('data-pill', 'brand');
+    await expect(pills.nth(2)).toHaveAttribute('data-pill', 'information');
+
+    // Public facts: the official reference, the publication date with its day precision
+    // and "Standard" as the binding force. Library facts assert through a locator.
+    const identity = page.locator('[data-identity-panel]');
+    await expect(identity).toContainText('ISO/IEC 27001:2022');
+    await expect(identity.getByText('In force from 25 Oct 2022')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Source' })).toHaveAttribute('href', /^https:\/\//);
+
+    // No provision tree: the text is licensed, and the catalogue is one link away.
+    const licensed = page.locator('[data-provision-tree] [data-provisions-licensed]');
+    await expect(licensed.getByText('The text of this standard is licensed and not held here.')).toBeVisible();
+    const catalogue = licensed.getByRole('link', { name: "See it in the publisher's catalogue" });
+    await expect(catalogue).toHaveAttribute('href', /^https:\/\//);
+    await expect(catalogue).toHaveAttribute('rel', /noopener/);
+
+    // The one conformance duty, through the inventory's outside view: no seeded bank
+    // follows the standard, so it is absent until "Show outside our scope", where its
+    // row reads "Standard" and never "Guidance".
+    await page.goto(`/inventory?regime=ai_ict&asOf=${AS_OF}`);
+    const duty = page.locator(`[data-obligation="${STANDARD_OBLIGATION}"]`);
+    await expect(page.locator('[data-obligation-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+    await expect(duty).toHaveCount(0);
+    await page.getByRole('button', { name: 'Show outside our scope' }).click();
+    await expect(duty).toHaveAttribute('data-outside-footprint', '');
+    await expect(duty.locator('[data-pill]').filter({ hasText: /^Standard$/ })).toHaveCount(1);
+    await expect(duty.locator('[data-pill]').filter({ hasText: /^Guidance$/ })).toHaveCount(0);
+
+    await duty.click();
+    const header = page.locator(`[data-obligation="${STANDARD_OBLIGATION}"] [data-header-pills] [data-pill]`);
+    await expect(header.filter({ hasText: /^Standard$/ })).toHaveCount(1);
+    await expect(header.filter({ hasText: /^Guidance, comply or explain$/ })).toHaveCount(0);
   });
 });
 
 // PRD 0.4: a library record confirmed by agents is labelled machine-confirmed
-// (INV-05, D-62). It stays test.fixme until the task in
-// docs/plans/briefs/CHUNK4_TASKS.md that builds it lands.
+// (INV-05, D-62, D-74). The seed (EXPECTED_MACHINE_CONFIRMED in e2e_seed.py) has
+// the watch sweeper propose a new wording of two records and the library
+// confirmer, an independent agent, approve both; a library editor then
+// re-verified the second against its source. No other journey names either.
+const AGENT_CONFIRMED = 'obl-switch-documentation';
+const REVERIFIED = 'obl-isk-approved-assets';
+const REVERIFIER = 'Ida Holm';
+const BOTH_AGENTS = 'proposed by watch-sweeper, confirmed by library-confirmer';
+
 test.describe('machine-confirmed provenance', () => {
-  test.fixme("INV-S14: A record an agent confirmed reads as machine-confirmed", async () => {
-    // pending: INV-S14 (INV-05, INV-06, PRO-02)
+  test("INV-S14: A record an agent confirmed reads as machine-confirmed", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+
+    // The inventory row reads machine-confirmed where the verified date would,
+    // and the record a person re-verified since reads as that person's check.
+    await openInventory(page);
+    const agentRow = page.locator(`[data-obligation="${AGENT_CONFIRMED}"]`);
+    await expect(agentRow).toContainText('Machine-confirmed');
+    await expect(agentRow).toContainText(BOTH_AGENTS);
+    const reverifiedRow = page.locator(`[data-obligation="${REVERIFIED}"]`);
+    await expect(reverifiedRow).toContainText(/Verified \d{1,2} \w+ \d{4}/);
+    await expect(reverifiedRow).not.toContainText('Machine-confirmed');
+
+    // The card names both agents in the "Last verified" slot and no person;
+    // the version row says the same, and so does "Show what changed".
+    await openObligation(page, AGENT_CONFIRMED);
+    const agentCard = page.url();
+    const verified = page.locator('[data-provenance-panel] [data-last-verified]');
+    await expect(verified).toHaveAttribute('data-machine-confirmed', '');
+    await expect(verified).toHaveText(new RegExp(`^Machine-confirmed \\d{1,2} \\w+ \\d{4}: ${BOTH_AGENTS}$`));
+    await expect(page.locator('[data-provenance-panel]')).not.toContainText(REVERIFIER);
+    await expect(page.locator('[data-versions-panel] [data-version-row="2"] [data-machine-confirmed]')).toContainText(BOTH_AGENTS);
+    await page.getByRole('button', { name: 'Show what changed' }).click();
+    await expect(page.locator('[data-diff-banner] [data-machine-confirmed]')).toContainText(BOTH_AGENTS);
+
+    // Re-verified by a person after the agents confirmed it: the stamp names
+    // that person and the label gives way, while who approved the version stays.
+    await openObligation(page, REVERIFIED);
+    const reverifiedCard = page.url();
+    await expect(verified).toHaveText(new RegExp(`\\d{4} by ${REVERIFIER}$`));
+    await expect(verified).not.toHaveAttribute('data-machine-confirmed');
+    await expect(page.locator('[data-versions-panel] [data-version-row="2"] [data-machine-confirmed]')).toContainText(BOTH_AGENTS);
+
+    // Library updates: each change says an agent confirmed it, never a person.
+    await page.goto('/inventory/updates');
+    await expect(page.locator('[data-update-days]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+    for (const card of [agentCard, reverifiedCard]) {
+      const href = new URL(card).pathname;
+      const update = page.locator('[data-update-id]').filter({ has: page.locator(`h3 a[href="${href}"]`) }).first();
+      await expect(update.locator('[data-machine-confirmed]')).toHaveText(`Machine-confirmed: ${BOTH_AGENTS}`);
+    }
   });
 });

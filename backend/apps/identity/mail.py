@@ -34,7 +34,7 @@ def send_code(to: str, code: str) -> None:
     minutes = settings.ENROLMENT_CODE_TTL_MINUTES
     _deliver(
         to,
-        f"Your {settings.PRODUCT_NAME} sign-in code",
+        f"Your {settings.PRODUCT_NAME} enrolment code",
         f"Your code is {code}. It works once and expires in {minutes} minutes.",
     )
 

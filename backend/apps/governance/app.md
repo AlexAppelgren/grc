@@ -69,10 +69,10 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | AUD-01 | Append-only audit log written with every change: actor (user, agent, system), action, subject with its title at the time, summary, before and after | M | R1 | built |
-| AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 | in_progress |
-| AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it; the loop to the library is closed by the watch agents' re-check, which proposes the correction (D-50) | S | R1 | pending |
+| AUD-02 | AI output log with model, version, purpose, citations, review state and feedback | M | R1 | built |
+| AUD-03 | A problem report stays inside the bank that filed it and nobody outside reads it; the loop to the library is closed by the watch agents' re-check, which proposes the correction (D-50) | S | R1 | in_progress |
 | AUD-04 | Retention: a record is deleted ten years after its last use. The purge never updates an append-only row, deletes one only past that age, and runs through one database-guarded path (D-53) | S | R3 | pending |
-| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only). No problem-report surface (D-50, D-59) | M | R1 to R3 | in_progress |
+| ADM-02 | Platform console: library vocabularies, sources, languages and jurisdictions, agent definitions, proposal queue, evaluation sets, tenants and plans, support access, system health (coverage, runs, outbox lag, failed jobs with retry, and each bank's usage figures through one audited read of numbers only). No problem-report surface (D-50, D-59). R1 built the proposal queue, library vocabularies, Change facts, sources, evaluation sets, tenants and agent keys; agent definitions come in chunk 11 and support access in chunk 8 (R2), languages and jurisdictions in R2 (jurisdictions read-only on the vocabularies screen until then), plans and system health in chunk 14 (R3) | M | R1 to R3 | in_progress |
 | ACC-08 | Tenant reach is requested and approved by two different people holding `security.manage`, each with a passkey; a tenant admin then enables it per entry. Off means off for every entry. Every call is logged with its credential, entry, tool, filters, record count, scope and timing, never content | M | R2 | pending |
 
 ## 3. Acceptance criteria (from PRD, condensed)
@@ -138,12 +138,22 @@ And an event completed with step-up shows that a passkey was used
 ```gherkin
 Given a So what draft, an Ask answer and an agent classification
 Then each has an ai_generation row with purpose, model, version, input reference, output, citations and review state pending
-When a person confirms the So what
-Then its row's review state is confirmed with the person and time
+When a person in bank A confirms the So what on their case
+Then bank A reads the row's review state as confirmed with the person and time
+And bank B, which has not confirmed its own copy, reads the same row as a draft
+And nothing on the shared row is written
 When a person marks an answer as wrong
 Then feedback is stored on the row
-And a holder of ai_log.read can list the rows for their tenant
+And a holder of ai_log.read can list the rows for their tenant, narrowed to one record
 ```
+
+A library "So what?" is one row every bank reads and none may move (ruling I), so its
+review state is computed for the reading bank from that bank's own `change_case`
+(`so_what_confirmed_by`, `so_what_confirmed_at`), and nothing shared is written (D-62).
+
+`test_aud_s4` proves the integration half over the three producers as they ship: the
+"So what?" and the `scope_suggestion` a run files with `createChange`, and a bank's Ask
+answer. AUD-02 stays `in_progress` until the AI log screen's AUD-S4 journey is green.
 
 ### AUD-S5 — A problem report stays inside the bank that filed it `@integration` `@e2e` (AUD-03)
 ```gherkin
@@ -182,13 +192,15 @@ Given a library editor and a platform admin
 When each of them calls every console destination and endpoint that exists
 Then the proposal queue, its detail, approve and reject answer to the library editor and 403 the platform admin with requiredPermission "proposals.review"
 And the tenants list, creating a tenant and re-issuing an administrator's enrolment answer to the platform admin and 403 the library editor with the permission each wanted
+And the search evaluation set's questions, adding one, its runs and its baseline answer to the library editor and 403 the platform admin with requiredPermission "eval.manage"
+And the library editor filters the evaluation set by language, reads each baseline metric as "Unrecorded" until one is recorded, and adds a question the page marks as not yet in the release gate
 And creating a proposal, whose caller a logic gate decides, 403s the platform admin with requiredPermission named
 And each console destination the other role holds is absent from that role's navigation
 ```
 
 The console the two platform roles now divide between them: a library editor reaches
-the proposal queue, the library vocabularies, Change facts and Sources; a platform
-admin reaches tenants and Agent keys. Each of the five is walked by both roles, so a
+the proposal queue, the library vocabularies, Change facts, Sources and Evaluation; a
+platform admin reaches tenants and Agent keys. Each of the seven is walked by both roles, so a
 destination one role holds is proved absent from the other's navigation and its
 endpoints are proved to answer 403 with `requiredPermission` named.
 
@@ -201,10 +213,10 @@ against those sources and files a correction through the proposal door, which is
 AUD-03's chunk 5 answer. AUD-03's own status cell and AUD-S5 are chunk 4's replan and
 are untouched here.
 
-The surfaces this scenario does not yet reach, each with what builds it: evaluation
-sets (chunk 7), agent definitions and platform runs (chunk 11), system health
-(chunk 14), support access (TEN-S6), plans (NFR-S17 to S19), and languages and
-jurisdictions (R2; jurisdictions are read-only on the vocabularies screen).
+The surfaces this scenario does not yet reach, each with what builds it: agent
+definitions and platform runs (chunk 11), system health (chunk 14), support access
+(TEN-S6), plans (NFR-S17 to S19), and languages and jurisdictions (R2; jurisdictions
+are read-only on the vocabularies screen).
 
 ### ADM-S5 — System health names what is wrong `@integration` `@e2e` (ADM-02)
 ```gherkin

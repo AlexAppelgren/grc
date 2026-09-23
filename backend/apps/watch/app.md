@@ -178,14 +178,15 @@ then rewrites it and saves; the page reads back the bank's own words, confirmed,
 time and no AI label, and tenant B's administrator still reads the draft with its label and
 is offered no control.
 
-Still pending in this scenario: **the person on screen.** "Confirmed with the person and
-time" needs the person's name on the change read, which carries `soWhatConfirmedAt` and no
-name (nor does an accepted link's `decidedAt`). The person is stored
-(`change_case.so_what_confirmed_by`, `case_obligation_link.decided_by`), audited, and named
-in the write's own answer, but a reload cannot show it. When the read carries
-`soWhatConfirmedByName` and `decidedByName`, the screen renders the design's "Confirmed by
+The person on screen: the change read and the feed now carry `case.soWhatConfirmedByName`
+and each decision's `decidedByName`, read from `change_case.so_what_confirmed_by` and
+`case_obligation_link.decided_by` in the same queries as the case (null while nobody has
+decided), pinned in `tests_case_reads.py`. The screen renders the design's "Confirmed by
 {name}, {date}" (`watch.soWhat.confirmedBy`, `watch.change.confirmedBy`) in place of
-"Confirmed {date}" and "Confirmed for us, {date}", and WAT-S6 and WAT-S7 assert the name.
+"Confirmed {date}" and "Confirmed for us, {date}", and WAT-S6 and WAT-S7 assert the name,
+in wave 3 (`watch-curation-confirm-frontend`). A link this bank removed leaves the
+obligation's related-changes panel for this bank: that change is out of its items, its
+total and its open count.
 
 ### WAT-S8 — A tenant requests a source and private sources stay private `@integration` `@e2e` (WAT-06)
 ```gherkin
@@ -228,10 +229,16 @@ When it registers a change carrying a standard's term whose authority is a natio
 Then the API answers 422 with code "standard_term_only_on_standards"
 Given the open web sweep fetches a page on a host listed in the standards publisher setting
 Then the stored source document holds the URL, the date and a content hash and no snapshot
-When a change carrying an opt-in term links a document that has a snapshot
-Then the API answers 422 with code "licensed_text"
+When a change carrying an opt-in term sends a document with a snapshot
+Then the API answers 422 with code "validation_error", because no document has a snapshot field
 And a source of kind "Standards body" registered inactive gets no automated check
 ```
+
+No document stores a snapshot, so no document can carry one and D-45's `licensed_text`
+refusal has nothing to refuse: the schema refuses any field it does not name, a snapshot
+included, with `validation_error`. A source of the `standards_body` kind, or on a host in
+`STANDARDS_PUBLISHER_HOSTS`, is registered with its checks off, and a run's check of a
+source whose checks are off answers 422 `source_inactive`.
 
 ### WAT-S12 — A run re-checks the library records of the sources it checked and proposes the correction `@integration` (WAT-01, AUD-03)
 ```gherkin

@@ -123,6 +123,21 @@ describe('LibraryUpdatesScreen', () => {
     expect(screen.getByRole('heading', { level: 2, name: /^Friday,? 18 September 2026$/ })).toBeInTheDocument();
   });
 
+  it('says a change an independent agent confirmed was machine-confirmed, and a person\'s approval says nothing', async () => {
+    const byAgents: LibraryUpdateRow = {
+      ...newVersion,
+      id: '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d',
+      verifiedOrigin: 'agent',
+      proposedByAgent: { id: 'ag-1', key: 'watch-sweeper' },
+      confirmedByAgent: { id: 'ag-2', key: 'library-confirmer' },
+    };
+    installAdapter((sent) => (sent.path === '/api/v1/me' ? { status: 200, data: ME } : { status: 200, data: page([byAgents, newVersion]) }));
+    renderIn();
+    await waitFor(() => expect(rowOf(byAgents.id)).not.toBeNull());
+    expect(rowOf(byAgents.id).querySelector('[data-machine-confirmed]')?.textContent).toBe('Machine-confirmed: proposed by watch-sweeper, confirmed by library-confirmer');
+    expect(rowOf(newVersion.id).querySelector('[data-machine-confirmed]')).toBeNull();
+  });
+
   it('names a changed list row by its label and offers no report on a change that names no record', async () => {
     serve();
     renderIn();

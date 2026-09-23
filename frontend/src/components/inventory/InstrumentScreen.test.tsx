@@ -63,11 +63,13 @@ const researchObligation: Obligation = {
   dutyType: { key: 'governance', kind: null, label: 'Governance' },
   tags: [],
   scope: [],
-  version: { versionNumber: 1, effectiveFrom: null },
+  version: { versionNumber: 1, effectiveFrom: null, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
   upcomingVersion: null,
+  jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' },
   inFootprint: true,
   outsideReason: [],
   lastVerifiedAt: null,
+  verifiedBy: null,
   openChangeCount: 0,
   pendingApplicability: null,
   complianceStatus: null,
@@ -100,6 +102,8 @@ function serve(answer: InstrumentDetail | number, obligations: Obligation[] = [r
     if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path === '/api/v1/obligations') return { status: 200, data: { items: obligations, total } };
     if (sent.path.endsWith('/provisions')) return { status: 200, data: [] };
+    // The record's "Reported problems" (AUD-03): the bank has filed none on it.
+    if (sent.path === '/api/v1/problem-reports') return { status: 200, data: { items: [], total: 0 } };
     if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
     return { status: 200, data: answer };
@@ -110,6 +114,55 @@ describe('InstrumentScreen', () => {
   beforeEach(() => {
     resetApiForTests();
     tokenStore.set('tok');
+  });
+
+  it('a standard reads "Standard" in its binding slots and says its text is licensed, with the catalogue link', async () => {
+    const iso: InstrumentDetail = {
+      ...fffs,
+      stableKey: 'iso-27001-2022',
+      shortName: 'ISO/IEC 27001:2022',
+      name: { text: 'Information security management systems', language: 'en', isOriginal: true, isMachine: false },
+      level: { key: 'standard', kind: 'standard', label: 'Standard edition' },
+      binding: false,
+      jurisdiction: { key: 'int', kind: 'international', label: 'International' },
+      authority: null,
+      regime: { key: 'ai_ict', kind: null, label: 'AI and ICT' },
+      sourceUrl: 'https://www.iso.org/standard/27001',
+      lineage: [],
+    };
+    const control: Obligation = {
+      ...researchObligation,
+      instrument: { key: iso.stableKey, shortName: iso.shortName },
+      bindingLevel: iso.level,
+      binding: false,
+    };
+    const sent = serve(iso, [control]);
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Information security management systems' });
+
+    const header = document.querySelectorAll('[data-header-pills] [data-pill]');
+    expect([...header].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
+      ['ISO/IEC 27001:2022', 'brand'],
+      ['Standard edition', 'information'],
+      ['Standard', 'information'],
+      ['International', 'brand'],
+      ['AI and ICT', 'information'],
+    ]);
+    expect(screen.queryByText('Guidance, comply or explain')).toBeNull();
+    const identity = document.querySelector('[data-identity-panel]') as HTMLElement;
+    expect(within(identity).getByText('Standard')).toBeInTheDocument();
+
+    const licensed = document.querySelector('[data-provision-tree] [data-provisions-licensed]') as HTMLElement;
+    expect(within(licensed).getByRole('link', { name: "See it in the publisher's catalogue" })).toHaveAttribute('href', iso.sourceUrl);
+    expect(sent.some((request) => request.path.endsWith('/provisions'))).toBe(false);
+
+    // The row of an obligation under it reads "Standard" in its guidance slot, never "Guidance".
+    await waitFor(() => expect(document.querySelector('[data-obligations-panel] [data-obligation]')).not.toBeNull());
+    const row = document.querySelector('[data-obligations-panel] [data-obligation]') as HTMLElement;
+    expect([...row.querySelectorAll('[data-pill]')].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
+      ['ISO/IEC 27001:2022', 'brand'],
+      ['Standard', 'information'],
+    ]);
   });
 
   it('shows the header pills, the identity panel, the source link and the obligations from this instrument', async () => {
@@ -190,8 +243,9 @@ describe('InstrumentScreen', () => {
     await screen.findByText('Pay for third-party research only under the permitted models');
     const read = sent.filter((s) => s.path === '/api/v1/obligations');
     expect(read[0]?.params).toMatchObject({ instrument: 'fffs-2017-2' });
-    expect(read[0]?.params).not.toHaveProperty('outsideFootprint');
+    expect(read[0]?.params).not.toHaveProperty('footprint');
     const panel = document.querySelector('[data-obligations-panel]') as HTMLElement;
+    expect(within(panel).getByRole('button', { name: 'In our scope' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(panel).getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
     expect(panel.querySelector('[data-obligations-total]')).toHaveTextContent('34 obligations');
     expect(within(panel).getByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2');
@@ -203,9 +257,21 @@ describe('InstrumentScreen', () => {
     await screen.findByText('Pay for third-party research only under the permitted models');
     const panel = document.querySelector('[data-obligations-panel]') as HTMLElement;
     fireEvent.click(within(panel).getByRole('button', { name: 'Show outside our scope' }));
-    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/obligations').at(-1)?.params).toMatchObject({ instrument: 'fffs-2017-2', outsideFootprint: true }));
+    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/obligations').at(-1)?.params).toMatchObject({ instrument: 'fffs-2017-2', footprint: 'all' }));
     expect(within(panel).getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'true');
-    expect(await within(panel).findByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2&outside=true');
+    expect(await within(panel).findByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2&scope=all');
+  });
+
+  it('asks for what the watched markets add, names each row\'s market, and the link follows', async () => {
+    const sent = serve(fffs, [{ ...researchObligation, inFootprint: false, jurisdiction: { key: 'dk', kind: 'country', label: 'Denmark' } }]);
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    await screen.findByText('Pay for third-party research only under the permitted models');
+    const panel = document.querySelector('[data-obligations-panel]') as HTMLElement;
+    fireEvent.click(within(panel).getByRole('button', { name: 'Markets we watch' }));
+    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/obligations').at(-1)?.params).toMatchObject({ instrument: 'fffs-2017-2', footprint: 'watched' }));
+    expect(await within(panel).findByText('Market we watch: Denmark')).toBeVisible();
+    expect(panel.querySelector('[data-outside-footprint]')).toBeNull();
+    expect(within(panel).getByRole('link', { name: 'Open in the inventory' })).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2&scope=watched');
   });
 
   it('shows the ELI when the instrument carries one, and "by <name>" when someone verified it', async () => {
@@ -251,5 +317,20 @@ describe('InstrumentScreen', () => {
     renderIn(<InstrumentScreen instrumentId="in-1" />, ['library.read']);
     await screen.findByRole('heading', { level: 1 });
     expect(screen.queryByRole('button', { name: 'This looks wrong' })).toBeNull();
+  });
+
+  it("shows the instrument's reported problems, and none of it without the permission", async () => {
+    const sent = serve(fffs);
+    const withReport = renderIn(<InstrumentScreen instrumentId="in-1" />);
+    expect(await screen.findByText('No problems reported on this record.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Reported problems' })).toBeInTheDocument();
+    expect(sent.filter((call) => call.path === '/api/v1/problem-reports').map((call) => call.params)).toEqual([
+      { subjectType: 'instrument', subjectId: fffs.id, limit: 20, offset: 0 },
+    ]);
+    withReport.unmount();
+
+    renderIn(<InstrumentScreen instrumentId="in-1" />, ['library.read']);
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.queryByRole('heading', { name: 'Reported problems' })).toBeNull();
   });
 });

@@ -69,9 +69,10 @@ ALL_SERVICES = (
 # instruments' regime terms, the terms: 5, chunk3-rest-T13 — obligation_scopes() now
 # inherits through instrument_scopes() so the two verdicts share one rule, at the cost of
 # two more queries than the union it replaced); the tags of the page and their rows (2); one
-# label query each for terms, tags, duty types and levels (4); the dimensions with their term
-# counts and labels (2).
-LIST_QUERIES = 2 + 6 + 2 + 2 + 2 + 2 + 5 + 2 + 4 + 2
+# label query each for terms, tags, duty types, levels and, since tax-watched-inventory
+# (2026-09-23, FP-04), the instruments' jurisdictions a row now names (5); the dimensions
+# with their term counts and labels (2).
+LIST_QUERIES = 2 + 6 + 2 + 2 + 2 + 2 + 5 + 2 + 5 + 2
 # Queries per card read, measured 2026-09-19 and pinned the same way: the savepoint pair (2);
 # the session (6) and the caller's tenant and locale (2), as above; the obligation with its
 # instrument, level, duty type and verifier (1); its titles, its instrument's titles, its
@@ -170,7 +171,7 @@ class ObligationListTests(TestCase):
         return self.client.get(URL, params, **(headers if headers is not None else sign_in(self.reader, tenant=self.tenant)))
 
     def row(self, key: str, params: dict[str, Any]) -> dict[str, Any]:
-        response = self.get({"outsideFootprint": "true", **params})
+        response = self.get({"footprint": "all", **params})
         self.assertEqual(response.status_code, 200, response.content)
         return next(row for row in response.json()["items"] if row["stableKey"] == key)
 
@@ -190,7 +191,7 @@ class ObligationListTests(TestCase):
         self.assertEqual(
             [term["key"] for term in scope["jurisdiction"]["terms"]], ["se"], "the instrument's jurisdiction is derived, never stored"
         )
-        self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": None, **SEEDED})
+        self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": None, "approvedAt": None, **SEEDED})
         self.assertIsNone(row["upcomingVersion"])
         self.assertEqual((row["inFootprint"], row["outsideReason"]), (True, []))
         self.assertEqual(row["lastVerifiedAt"], "2026-06-30T08:00:00Z")
@@ -208,7 +209,7 @@ class ObligationListTests(TestCase):
 
     def test_rows_outside_the_footprint_are_hidden_until_asked_for_with_their_reason(self) -> None:
         self.assertEqual(keys(self.get({})), ["obl-a-appropriateness", "obl-d-research", "obl-e-guidance", "obl-f-unscoped"])
-        everything = self.get({"outsideFootprint": "true"}).json()
+        everything = self.get({"footprint": "all"}).json()
         self.assertEqual(everything["total"], 6)
         rows = {row["stableKey"]: row for row in everything["items"]}
         # The SQL filter and the Python verdict are one rule: what the default hides is what
@@ -285,8 +286,8 @@ class ObligationListTests(TestCase):
 
     def test_as_of_returns_the_version_in_force_and_the_one_to_come(self) -> None:
         before = self.row("obl-d-research", {"asOf": EARLY.isoformat()})
-        self.assertEqual(before["version"], {"versionNumber": 1, "effectiveFrom": {"date": "2025-01-01", "precision": "day"}, **SEEDED})
-        self.assertEqual(before["upcomingVersion"], {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}, **SEEDED})
+        self.assertEqual(before["version"], {"versionNumber": 1, "effectiveFrom": {"date": "2025-01-01", "precision": "day"}, "approvedAt": None, **SEEDED})
+        self.assertEqual(before["upcomingVersion"], {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}, "approvedAt": None, **SEEDED})
         on = self.row("obl-d-research", {"asOf": CHANGE_DAY.isoformat()})
         self.assertEqual(on["version"]["versionNumber"], 2)
         self.assertIsNone(on["upcomingVersion"])
@@ -301,7 +302,7 @@ class ObligationListTests(TestCase):
         reader = user_principal(permissions={perms.LIBRARY_READ}, tenant_id=self.tenant.id, subject_id=self.reader.id)
         for instant, expected in ((datetime.datetime(2026, 9, 30, 21, 59, tzinfo=datetime.UTC), 1), (datetime.datetime(2026, 9, 30, 22, 0, tzinfo=datetime.UTC), 2)):
             with self.subTest(instant=instant), stub_session(reader), mock.patch("django.utils.timezone.now", return_value=instant):
-                response = self.get({"outsideFootprint": "true"}, headers)
+                response = self.get({"footprint": "all"}, headers)
                 research = next(row for row in response.json()["items"] if row["stableKey"] == "obl-d-research")
                 self.assertEqual(research["version"]["versionNumber"], expected)
 
@@ -316,7 +317,7 @@ class ObligationListTests(TestCase):
             "the regime is inherited",
         )
         self.assertEqual(keys(self.get({"term": ["service_type:execution_only", "account_type:isk"]})), ["obl-a-appropriateness"], "every term must match")
-        self.assertEqual(keys(self.get({"term": "regime:insurance", "outsideFootprint": "true"})), ["obl-c-insurance"])
+        self.assertEqual(keys(self.get({"term": "regime:insurance", "footprint": "all"})), ["obl-c-insurance"])
         self.assertEqual(keys(self.get({"q": "PASSAR"})), ["obl-a-appropriateness"], "a title in any language, any case")
         self.assertEqual(keys(self.get({"q": "third-party"})), ["obl-d-research"], "the reference label")
         self.assertEqual(keys(self.get({"q": "nothing like this"})), [])
@@ -380,7 +381,7 @@ class ObligationListPerformance(TestCase):
 
     def test_a_full_page_stays_inside_the_budget(self) -> None:
         headers = sign_in(self.reader, tenant=self.tenant)
-        params: dict[str, Any] = {"outsideFootprint": "true", "limit": settings.API_PAGE_SIZE_MAX, "asOf": EARLY.isoformat()}
+        params: dict[str, Any] = {"footprint": "all", "limit": settings.API_PAGE_SIZE_MAX, "asOf": EARLY.isoformat()}
         with self.assertNumQueries(LIST_QUERIES):
             response = self.client.get(URL, params, **headers)
         self.assertEqual(len(response.json()["items"]), settings.API_PAGE_SIZE_MAX)
@@ -463,7 +464,7 @@ class JurisdictionDerivationTests(TestCase):
         """The reading D-28 and D-29 give: the derived terms are the record's scope as the
         rule sees it, so the card lists them and names them when they hide the record."""
         set_footprint(self.tenant, ("jurisdiction:dk",))
-        response = self.client.get(URL, {"outsideFootprint": "true"}, **sign_in(self.reader, tenant=self.tenant))
+        response = self.client.get(URL, {"footprint": "all"}, **sign_in(self.reader, tenant=self.tenant))
         rows = {row["stableKey"]: row for row in response.json()["items"]}
         union = {entry["dimension"]["key"]: entry for entry in rows["obl-derived-eu"]["scope"]}["jurisdiction"]
         self.assertEqual(([term["key"] for term in union["terms"]], union["allSelected"]), (["eu", "se", "dk", "no", "fi"], True))
@@ -900,8 +901,10 @@ class MachineConfirmedVersionTests(TestCase):
 
         rows = self.read(URL, {"asOf": EARLY.isoformat()})["items"]
         row = next(row for row in rows if row["stableKey"] == self.obligation.stable_key)
-        self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": {"date": "2025-01-01", "precision": "day"}, **SEEDED})
-        self.assertEqual(row["upcomingVersion"], {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}, **agents})
+        self.assertEqual(row["version"], {"versionNumber": 1, "effectiveFrom": {"date": "2025-01-01", "precision": "day"}, "approvedAt": None, **SEEDED})
+        upcoming = row["upcomingVersion"]
+        self.assertEqual({key: upcoming[key] for key in upcoming if key != "approvedAt"}, {"versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}, **agents})
+        self.assertIsNotNone(upcoming["approvedAt"], "an approved version says when")
 
         card = self.read(f"{URL}/{self.obligation.id}", {"asOf": EARLY.isoformat()})
         self.assertEqual({key: card["provenance"][key] for key in agents}, SEEDED, "the version in force was seeded")
@@ -914,6 +917,29 @@ class MachineConfirmedVersionTests(TestCase):
 
         on = self.read(f"{URL}/{self.obligation.id}", {"asOf": CHANGE_DAY.isoformat()})
         self.assertEqual({key: on["provenance"][key] for key in agents}, agents, "in force, the provenance names the agents too")
+
+    def test_the_list_row_carries_the_approval_time_and_who_re_verified(self) -> None:
+        """The list row gets the same two facts the card uses to decide its "Last verified"
+        slot (INV-05, INV-06, D-74): when the version in force was approved, and which person,
+        if any, stamped the record. Without them, a row could only show a person's date
+        under wording that only agents have seen."""
+        agents = self.agents_apply(D(2026, 1, 1))
+
+        row = next(row for row in self.read(URL, {"asOf": EARLY.isoformat()})["items"] if row["stableKey"] == self.obligation.stable_key)
+        self.assertEqual({key: row["version"][key] for key in agents}, agents)
+        self.assertIsNotNone(row["version"]["approvedAt"])
+        self.assertIsNone(row["verifiedBy"], "nobody has re-verified it since the agents confirmed it")
+
+        stamped = self.client.post(
+            f"{URL}/{self.obligation.id}/verifications", {"outcome": "no_change"}, content_type="application/json", **sign_in(self.editor, step_up=True)
+        )
+        self.assertEqual(stamped.status_code, 201, stamped.content)
+        after = next(row for row in self.read(URL, {"asOf": EARLY.isoformat()})["items"] if row["stableKey"] == self.obligation.stable_key)
+        self.assertEqual(after["verifiedBy"], {"id": str(self.editor.id), "name": self.editor.name})
+        self.assertGreater(
+            datetime.datetime.fromisoformat(after["lastVerifiedAt"]), datetime.datetime.fromisoformat(after["version"]["approvedAt"])
+        )
+        self.assertEqual({key: after["version"][key] for key in agents}, agents, "who confirmed the version never changes")
 
     def test_naming_the_agents_costs_no_query_per_version(self) -> None:
         card, page = f"{URL}/{self.obligation.id}", URL
@@ -990,32 +1016,34 @@ class PrivateObligationIsolation(TransactionTestCase):
         with as_app_role():
             for params in (
                 {},
-                {"outsideFootprint": "true"},
-                {"q": "private duty", "outsideFootprint": "true"},
-                {"instrument": "bank-b-policy", "outsideFootprint": "true"},
-                {"term": "service_type:non_advised", "outsideFootprint": "true"},
-                {"dutyType": "conduct", "outsideFootprint": "true"},
+                {"footprint": "all"},
+                {"q": "private duty", "footprint": "all"},
+                {"instrument": "bank-b-policy", "footprint": "all"},
+                {"term": "service_type:non_advised", "footprint": "all"},
+                {"dutyType": "conduct", "footprint": "all"},
             ):
                 with self.subTest(params=params):
                     page = self.get(self.key_a, params)
                     self.assertNotIn("obl-b-private", [row["stableKey"] for row in page["items"]])
                     self.assertEqual(page["total"], len(page["items"]), "the total counts only what the tenant may see")
-            self.assertEqual(self.get(self.key_a, {"outsideFootprint": "true"})["total"], 6)
+            self.assertEqual(self.get(self.key_a, {"footprint": "all"})["total"], 6)
             # The owner sees it beside the shared library, so the proof above is not vacuous.
-            own = self.get(self.key_b, {"q": "private duty", "outsideFootprint": "true"})
+            own = self.get(self.key_b, {"q": "private duty", "footprint": "all"})
             self.assertEqual([row["stableKey"] for row in own["items"]], ["obl-b-private"])
 
     def test_another_tenants_private_obligation_has_no_address_either(self) -> None:
         # A record the reader cannot see is not there: the same 404 as an id that never
         # existed, so no address can be probed for what a bank holds privately (INV-07).
         with as_app_role():
-            for path in (f"{URL}/{self.private.id}", f"{URL}/{self.private.id}/diff"):
+            for path in (f"{URL}/{self.private.id}", f"{URL}/{self.private.id}/diff", f"{URL}/{self.private.id}/sources"):
                 with self.subTest(path=path):
                     refused = self.client.get(path, HTTP_X_API_KEY=self.key_a.plain_key)
                     self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"))
                     self.assertEqual(refused.json()["detail"], reading.NOT_FOUND)
             own = self.client.get(f"{URL}/{self.private.id}", HTTP_X_API_KEY=self.key_b.plain_key)
             self.assertEqual((own.status_code, own.json()["stableKey"]), (200, "obl-b-private"))
+            own_sources = self.client.get(f"{URL}/{self.private.id}/sources", HTTP_X_API_KEY=self.key_b.plain_key)
+            self.assertEqual((own_sources.status_code, own_sources.json()["obligationId"]), (200, str(self.private.id)))
 
 
 # Queries per instrument list read, measured 2026-09-22 the same way as LIST_QUERIES: the
@@ -1084,7 +1112,7 @@ class InstrumentListTests(TestCase):
         return self.client.get("/api/v1/instruments", params, **(headers if headers is not None else sign_in(self.reader, tenant=self.tenant)))
 
     def row(self, key: str, params: dict[str, Any]) -> dict[str, Any]:
-        response = self.get({"outsideFootprint": "true", **params})
+        response = self.get({"footprint": "all", **params})
         self.assertEqual(response.status_code, 200, response.content)
         return next(row for row in response.json()["items"] if row["stableKey"] == key)
 
@@ -1117,12 +1145,12 @@ class InstrumentListTests(TestCase):
     def test_obligation_count_follows_the_footprint(self) -> None:
         inside = self.default_row("fffs-instruments")
         self.assertEqual(inside["obligationCount"], 1)
-        everything = self.row("fffs-instruments", {"outsideFootprint": "true"})
+        everything = self.row("fffs-instruments", {"footprint": "all"})
         self.assertEqual(everything["obligationCount"], 2)
 
     def test_rows_outside_the_footprint_are_hidden_until_asked_for(self) -> None:
         self.assertEqual({row["stableKey"] for row in self.get({}).json()["items"]}, {"fffs-instruments", "fffs-amendment-instruments"})
-        everything = self.get({"outsideFootprint": "true"}).json()
+        everything = self.get({"footprint": "all"}).json()
         self.assertEqual({row["stableKey"] for row in everything["items"]}, {"fffs-instruments", "fffs-amendment-instruments", "lfd-instruments"})
         insurance_row = next(row for row in everything["items"] if row["stableKey"] == "lfd-instruments")
         self.assertFalse(insurance_row["inFootprint"])
@@ -1137,10 +1165,10 @@ class InstrumentListTests(TestCase):
         # the footprint hides hides every obligation under it, even one whose own service is
         # inside, and every obligation the footprint shows sits under an instrument it shows,
         # which counts exactly the obligations the list filtered by it answers.
-        instruments = {row["stableKey"]: row for row in self.get({"outsideFootprint": "true"}).json()["items"]}
+        instruments = {row["stableKey"]: row for row in self.get({"footprint": "all"}).json()["items"]}
         shown_instruments = {row["stableKey"]: row for row in self.get({}).json()["items"]}
 
-        hidden = self.obligations({"instrument": "lfd-instruments", "outsideFootprint": "true"})
+        hidden = self.obligations({"instrument": "lfd-instruments", "footprint": "all"})
         self.assertFalse(instruments["lfd-instruments"]["inFootprint"])
         self.assertEqual([row["stableKey"] for row in hidden], ["obl-instruments-insurance"], "an empty list would prove nothing")
         self.assertEqual([row["inFootprint"] for row in hidden], [False])
@@ -1171,13 +1199,13 @@ class InstrumentListTests(TestCase):
                 self.assertEqual((refused.status_code, refused.json()["requiredPermission"]), (403, perms.SCOPE_LIBRARY_READ))
 
     def test_every_filter(self) -> None:
-        self.assertEqual({row["stableKey"] for row in self.get({"regime": "securities", "outsideFootprint": "true"}).json()["items"]}, {"fffs-instruments", "fffs-amendment-instruments"})
+        self.assertEqual({row["stableKey"] for row in self.get({"regime": "securities", "footprint": "all"}).json()["items"]}, {"fffs-instruments", "fffs-amendment-instruments"})
         self.assertEqual(self.get({"regime": "no-such-regime"}).json()["items"], [], "an unknown key matches nothing")
         self.assertEqual({row["stableKey"] for row in self.get({"q": "FFFS 2017"}).json()["items"]}, {"fffs-instruments"})
         self.assertEqual(self.get({"q": "x" * 201}).status_code, 422)
 
     def test_pagination(self) -> None:
-        first = self.get({"outsideFootprint": "true", "limit": 2}).json()
+        first = self.get({"footprint": "all", "limit": 2}).json()
         self.assertEqual(len(first["items"]), 2)
         self.assertEqual(first["total"], 3)
         self.assertEqual(self.get({"limit": 101}).status_code, 422)
@@ -1193,7 +1221,7 @@ class InstrumentListTests(TestCase):
         for limit in (1, 3):
             headers = sign_in(self.reader, tenant=self.tenant)
             with self.subTest(limit=limit), self.assertNumQueries(INSTRUMENT_LIST_QUERIES):
-                response = self.get({"outsideFootprint": "true", "limit": limit}, headers)
+                response = self.get({"footprint": "all", "limit": limit}, headers)
             self.assertEqual(len(response.json()["items"]), limit)
 
     def test_a_person_needs_library_read_and_a_key_needs_library_read_scope(self) -> None:
@@ -1316,7 +1344,7 @@ class PrivateInstrumentIsolation(TransactionTestCase):
 
     def test_another_tenants_private_instrument_is_never_read_or_addressed(self) -> None:
         with as_app_role():
-            for params in ({}, {"outsideFootprint": "true"}, {"q": "bank-b", "outsideFootprint": "true"}, {"regime": "securities", "outsideFootprint": "true"}):
+            for params in ({}, {"footprint": "all"}, {"q": "bank-b", "footprint": "all"}, {"regime": "securities", "footprint": "all"}):
                 with self.subTest(params=params):
                     response = self.client.get("/api/v1/instruments", params, HTTP_X_API_KEY=self.key_a.plain_key)
                     self.assertEqual(response.status_code, 200, response.content)
@@ -1552,3 +1580,122 @@ class AuthorityListTests(TestCase):
         self.assertEqual(self.get({"HTTP_X_API_KEY": no_scope.plain_key}).status_code, 403)
         key = factories.api_key(self.tenant, scopes=(perms.SCOPE_LIBRARY_READ,))
         self.assertEqual(self.get({"HTTP_X_API_KEY": key.plain_key}).status_code, 200)
+
+
+# ---------------------------------------------------------------------------------------
+# GET /obligations/{id}/sources (INV-06, AGT-01 item 3, `library-recheck-loop`)
+# ---------------------------------------------------------------------------------------
+class RecordSourcesTests(TestCase):
+    """What a live record cites, which is what a watch run re-checks it against: the field
+    sources of the approved proposal that wrote the version in force, or, for a version no
+    proposal wrote, the record's own source as one `summary` citation (INV-06). Reading
+    them needs `library:read` and nothing more (AGT-01, item 3)."""
+
+    tenant: Tenant
+    reader: User
+    research: Obligation
+    corrected: Obligation
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        seed_reference()
+        cls.tenant = factories.tenant(slug="sources-a")
+        cls.reader = factories.member_user(cls.tenant, roles=("reader",))
+        seed_obligations()
+        cls.research = Obligation.objects.get(stable_key="obl-d-research")
+        cls.corrected = build.obligation(
+            build.instrument(key="fffs-sources", short_name="FFFS 2017:2", regime="regime:securities"),
+            key="obl-sources-corrected",
+            versions=((D(2025, 1, 1), {"en": "Report within ten days."}),),
+        )
+
+    def propose_and_confirm(self, obligation: Obligation) -> None:
+        """One agent proposes a corrected version citing a page per field, and an independent
+        agent confirms it, through the queue as production does (PRO-01, PRO-S13)."""
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        proposer = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        body = {
+            "kind": "new_obligation_version",
+            "title": "The reporting deadline moved",
+            "targetType": "obligation",
+            "targetId": str(obligation.id),
+            "payload": {
+                "summaries": {"en": "Report within five days."},
+                "originalLanguage": "en",
+                "isMachine": True,
+                "effectiveFrom": "2026-01-01",
+                "effectiveFromPrecision": "day",
+            },
+            "fieldSources": {"summaries.en": "https://www.fi.se/en/fffs-2017-2/", "effectiveFrom": "https://www.fi.se/en/news/deadline/"},
+            "sourceLabel": "FFFS 2017:2 as amended",
+            "sourceUrl": "https://www.fi.se/en/fffs-2017-2/",
+            "agentRunId": str(agents_testing.platform_run(key=proposer).id),
+        }
+        created = self.client.post("/api/v1/proposals", body, content_type="application/json", HTTP_X_API_KEY=proposer.plain_key)
+        self.assertEqual(created.status_code, 201, created.content)
+        confirmer = agents_testing.reviewer_api_key()
+        approved = self.client.post(
+            f"/api/v1/proposals/{created.json()['id']}/approve",
+            agents_testing.decision(confirmer),  # the model call behind the decision, and its run (D-80)
+            content_type="application/json",
+            HTTP_X_API_KEY=confirmer.plain_key,
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+    def test_a_version_no_proposal_wrote_cites_the_records_own_source(self) -> None:
+        # Before its first version takes effect, a record is read by that first version.
+        for on, number in ((D(2024, 12, 31), 1), (EARLY, 1), (CHANGE_DAY, 2)):
+            with self.subTest(on=on):
+                sources = reading.get_record_sources(self.research.id, on)
+                self.assertEqual((sources.obligation_id, sources.version_number), (self.research.id, number))
+                self.assertEqual(
+                    [item.model_dump() for item in sources.items],
+                    [
+                        {
+                            "field": "summary",
+                            "url": build.SOURCE_URL,
+                            "label": self.research.source_label,
+                            "content_hash": None,
+                            "fetched_at": None,
+                            "document_id": None,
+                        }
+                    ],
+                )
+
+    def test_an_approved_proposal_gives_one_citation_per_field_it_sourced(self) -> None:
+        self.propose_and_confirm(self.corrected)
+        before = reading.get_record_sources(self.corrected.id, D(2025, 12, 31))
+        self.assertEqual((before.version_number, [item.field for item in before.items]), (1, ["summary"]))
+
+        after = reading.get_record_sources(self.corrected.id, EARLY)
+        self.assertEqual(after.version_number, 2)
+        self.assertEqual(
+            sorted((item.field, item.url, item.label) for item in after.items),
+            [
+                ("effectiveFrom", "https://www.fi.se/en/news/deadline/", "FFFS 2017:2 as amended"),
+                ("summaries.en", "https://www.fi.se/en/fffs-2017-2/", "FFFS 2017:2 as amended"),
+            ],
+        )
+
+    def test_a_person_and_a_key_with_library_read_alone_read_them(self) -> None:
+        # Every version here took effect before today, so the real clock picks the last one.
+        self.propose_and_confirm(self.corrected)
+        platform_key = agents_testing.agent_key(scopes=(perms.SCOPE_LIBRARY_READ,))
+        bank_key = factories.api_key(self.tenant, scopes=(perms.SCOPE_LIBRARY_READ,))
+        for headers in (
+            sign_in(self.reader, tenant=self.tenant),
+            {"HTTP_X_API_KEY": platform_key.plain_key},
+            {"HTTP_X_API_KEY": bank_key.plain_key},
+        ):
+            with self.subTest(headers=sorted(headers)):
+                response = self.client.get(f"{URL}/{self.corrected.id}/sources", **headers)
+                self.assertEqual(response.status_code, 200, response.content)
+                body = response.json()
+                self.assertEqual((body["obligationId"], body["versionNumber"]), (str(self.corrected.id), 2))
+                self.assertEqual(sorted(item["field"] for item in body["items"]), ["effectiveFrom", "summaries.en"])
+                self.assertEqual(sorted(body["items"][0]), ["contentHash", "documentId", "fetchedAt", "field", "label", "url"])
+
+    def test_an_id_that_never_existed_is_404(self) -> None:
+        response = self.client.get(f"{URL}/{uuid.uuid4()}/sources", **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"))
+        self.assertEqual(response.json()["detail"], reading.NOT_FOUND)

@@ -28,3 +28,15 @@ export interface AuditFilters {
 }
 
 export type AuditQuery = AuditFilters & PageQuery;
+
+/** One model call and what it produced (AUD-02). */
+export type AiGeneration = Schemas['AiGenerationRow'];
+
+/** The filters of GET /ai-generations: a purpose, a review state and one record. */
+export interface AiLogFilters {
+  purpose?: string;
+  status?: string;
+  subjectId?: string;
+}
+
+export type AiLogQuery = AiLogFilters & PageQuery;

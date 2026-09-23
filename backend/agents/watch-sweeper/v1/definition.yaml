@@ -49,8 +49,13 @@ tools:
   - name: recordSourceCheck
     operation: POST /agent-runs/{runId}/source-checks
     scopes: [sources:write]
-    purpose: Log that a source was checked, ok or failed, with items found. One per source per run, also when nothing was found.
+    purpose: Log that a source was checked, ok or failed, with items found. One sweep per source per run, also when nothing was found, and one recheck per library record re-checked, naming it.
     input: SourceCheckInput
+  - name: getRecordSources
+    operation: GET /obligations/{obligationId}/sources
+    scopes: [library:read]
+    purpose: The re-check. The pages a library obligation cites, per field, for the version in force; compare each with the page as fetched now. Drift becomes a new_obligation_version proposal, never an edit.
+    output: LibraryRecordSources
   - name: findSimilar
     operation: POST /search/similar
     scopes: [search:read]
@@ -73,7 +78,7 @@ tools:
   - name: finishAgentRun
     operation: PATCH /agent-runs/{runId}
     scopes: [agent-runs:write]
-    purpose: Close the run with status and stats, outOfScope among them (documents outside the sector scope, counted on their source's check and never registered or proposed, AGT-08). Last call, also after a failure.
+    purpose: Close the run with status and stats, outOfScope among them (documents outside the sector scope, counted on their source's check and never registered or proposed, AGT-08), and recordsRechecked and correctionsProposed for the re-check. Last call, also after a failure.
     input: AgentRunFinish
     output: AgentRun
 
@@ -93,6 +98,17 @@ vocabularies_read_at_run_start:
   - relation_type
   - duty_type
   - provision_kind
+
+# The re-check (WAT-01, AGT-01 item 3). For each source the run checked, the library
+# obligations citing a page of it are re-read with getRecordSources and compared with the
+# page as fetched now. Each one is logged as a recheck source check naming it. A drifted
+# field becomes one new_obligation_version proposal carrying fieldSources per changed field;
+# an unchanged record gets its recheck line and no proposal. Counted in the run's stats as
+# recordsRechecked and correctionsProposed; the corrections also count as proposals.
+recheck:
+  subject: obligation
+  drift_becomes: new_obligation_version
+  unchanged_becomes: nothing
 
 # What the run must emit for every classification (WAT-03, WAT-04).
 classification_contract:
@@ -116,6 +132,7 @@ budget_defaults:
   max_fetches_per_run: 500
   max_changes_per_run: 50
   max_proposals_per_run: 50
+  max_rechecks_per_run: 100
 
 evals:
   cases: evals/cases.jsonl

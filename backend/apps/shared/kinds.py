@@ -139,6 +139,11 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "search_match_kind",
         "SRC-02: keyword, concept or both; every hit says how it was won and the pill's tone follows it",
     ),
+    "EvalVia": (
+        "eval_via",
+        "SRC-05, SRC-S12: an evaluation question is scored on search's hits or on Ask's passages; "
+        "the gate's scorer branches on it, and the file names it in `via`",
+    ),
     "AnswerFeedbackKind": (
         "answer_feedback",
         "SRC-03, SRC-05: helpful or wrong; the evaluation set reads the verdict back",

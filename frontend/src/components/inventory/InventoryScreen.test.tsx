@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
+import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
@@ -41,11 +42,13 @@ const research: Obligation = {
     { dimension: { key: 'service_type', kind: null, label: 'Service' }, terms: [{ key: 'advice', kind: null, label: 'Advice' }, { key: 'portfolio_management', kind: null, label: 'Portfolio management' }], allSelected: false },
     { dimension: { key: 'channel', kind: null, label: 'Channel' }, terms: [], allSelected: false },
   ],
-  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' } },
-  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' } },
+  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
+  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
+  jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' },
   inFootprint: true,
   outsideReason: [],
   lastVerifiedAt: '2026-06-30',
+  verifiedBy: null,
   openChangeCount: 1,
   pendingApplicability: null,
   complianceStatus: null,
@@ -70,10 +73,16 @@ const adviceOnly: Obligation = {
   complianceStatus: { key: 'gap', kind: 'gap', label: 'Gap' },
 };
 
-function renderIn(node: ReactNode) {
+function renderIn(node: ReactNode, permissions: readonly string[] = ['library.read']) {
   const { wrapper } = queryWrapper();
   const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(<Wrapper>{<LocaleProvider locale="en">{node}</LocaleProvider>}</Wrapper>);
+  return render(
+    <Wrapper>
+      <PermissionsProvider permissions={permissions}>
+        <LocaleProvider locale="en">{node}</LocaleProvider>
+      </PermissionsProvider>
+    </Wrapper>,
+  );
 }
 
 const fffs: Instrument = {
@@ -108,7 +117,7 @@ function serve(
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/obligations') return page === 'error' ? { status: 500 } : { status: 200, data: page };
     if (sent.path === '/api/v1/instruments') {
-      const outside = (sent.params as { outsideFootprint?: boolean } | null)?.outsideFootprint === true;
+      const outside = (sent.params as { footprint?: string } | null)?.footprint === 'all';
       return { status: 200, data: outside ? outsidePage : instrumentPage };
     }
     if (sent.path === '/api/v1/me') return { status: 200, data: { user: { id: 'u1', name: 'Sara', locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: [], enrolmentPending: false } };
@@ -119,41 +128,42 @@ function serve(
 
 describe('inventory filters in the URL', () => {
   it('reads keys and a plain date, and writes them back without the ones that are not set', () => {
-    expect(filtersFrom(new URLSearchParams('instrument=fffs-2017-2&regime=securities&service=advice&dutyType=conduct&asOf=2026-09-16&outside=true'))).toEqual({
+    expect(filtersFrom(new URLSearchParams('instrument=fffs-2017-2&regime=securities&service=advice&dutyType=conduct&asOf=2026-09-16&scope=all'))).toEqual({
       instrument: 'fffs-2017-2',
       regime: 'securities',
       service: 'advice',
       dutyType: 'conduct',
       asOf: '2026-09-16',
-      outsideFootprint: true,
+      scope: 'all',
     });
-    expect(filtersFrom(new URLSearchParams(''))).toEqual({ instrument: '', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false });
-    // Anything but the exact "true" leaves the footprint filter on.
-    expect(filtersFrom(new URLSearchParams('outside=1')).outsideFootprint).toBe(false);
+    expect(filtersFrom(new URLSearchParams(''))).toEqual({ instrument: '', regime: '', service: '', dutyType: '', asOf: '', scope: 'in' });
+    // Anything but one of the three values leaves the footprint filter on.
+    expect(filtersFrom(new URLSearchParams('scope=outside')).scope).toBe('in');
+    expect(filtersFrom(new URLSearchParams('scope=watched')).scope).toBe('watched');
     expect(
-      searchOf('obligations', { instrument: 'fffs-2017-2', regime: 'securities', service: 'advice', dutyType: 'conduct', asOf: '2026-09-16', outsideFootprint: true }),
-    ).toBe('instrument=fffs-2017-2&regime=securities&service=advice&dutyType=conduct&asOf=2026-09-16&outside=true');
-    expect(searchOf('obligations', { instrument: '', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toBe('');
+      searchOf('obligations', { instrument: 'fffs-2017-2', regime: 'securities', service: 'advice', dutyType: 'conduct', asOf: '2026-09-16', scope: 'all' }),
+    ).toBe('instrument=fffs-2017-2&regime=securities&service=advice&dutyType=conduct&asOf=2026-09-16&scope=all');
+    expect(searchOf('obligations', { instrument: '', regime: '', service: '', dutyType: '', asOf: '', scope: 'in' })).toBe('');
     // The Instruments tab rides in the same URL, as its own key.
-    expect(searchOf('instruments', { instrument: '', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toBe('tab=instruments');
+    expect(searchOf('instruments', { instrument: '', regime: '', service: '', dutyType: '', asOf: '', scope: 'in' })).toBe('tab=instruments');
   });
 
   it('turns a scope filter into a dimension:key term and leaves the rest of the query out', () => {
-    expect(queryOf({ instrument: '', regime: 'securities', service: 'advice', dutyType: 'conduct', asOf: '2026-09-16', outsideFootprint: true })).toEqual({
+    expect(queryOf({ instrument: '', regime: 'securities', service: 'advice', dutyType: 'conduct', asOf: '2026-09-16', scope: 'all' })).toEqual({
       term: ['regime:securities', 'service_type:advice'],
       dutyType: 'conduct',
       asOf: '2026-09-16',
-      outsideFootprint: true,
+      footprint: 'all',
     });
-    expect(queryOf({ instrument: 'fffs-2017-2', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toEqual({ instrument: 'fffs-2017-2' });
-    expect(queryOf({ instrument: '', regime: '', service: 'advice', dutyType: '', asOf: '', outsideFootprint: false })).toEqual({ term: ['service_type:advice'] });
-    expect(queryOf({ instrument: '', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toEqual({});
-    expect(isNarrowed({ instrument: '', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: true })).toBe(false);
-    expect(isNarrowed({ instrument: '', regime: '', service: '', dutyType: '', asOf: '2026-09-16', outsideFootprint: false })).toBe(true);
-    expect(isNarrowed({ instrument: '', regime: '', service: '', dutyType: 'conduct', asOf: '', outsideFootprint: false })).toBe(true);
-    expect(isNarrowed({ instrument: '', regime: 'securities', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toBe(true);
-    expect(isNarrowed({ instrument: '', regime: '', service: 'advice', dutyType: '', asOf: '', outsideFootprint: false })).toBe(true);
-    expect(isNarrowed({ instrument: 'fffs-2017-2', regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: false })).toBe(true);
+    expect(queryOf({ instrument: 'fffs-2017-2', regime: '', service: '', dutyType: '', asOf: '', scope: 'in' })).toEqual({ instrument: 'fffs-2017-2' });
+    expect(queryOf({ instrument: '', regime: '', service: 'advice', dutyType: '', asOf: '', scope: 'in' })).toEqual({ term: ['service_type:advice'] });
+    expect(queryOf({ instrument: '', regime: '', service: '', dutyType: '', asOf: '', scope: 'in' })).toEqual({});
+    expect(isNarrowed({ instrument: '', regime: '', service: '', dutyType: '', asOf: '', scope: 'all' })).toBe(false);
+    expect(isNarrowed({ instrument: '', regime: '', service: '', dutyType: '', asOf: '2026-09-16', scope: 'in' })).toBe(true);
+    expect(isNarrowed({ instrument: '', regime: '', service: '', dutyType: 'conduct', asOf: '', scope: 'in' })).toBe(true);
+    expect(isNarrowed({ instrument: '', regime: 'securities', service: '', dutyType: '', asOf: '', scope: 'in' })).toBe(true);
+    expect(isNarrowed({ instrument: '', regime: '', service: 'advice', dutyType: '', asOf: '', scope: 'in' })).toBe(true);
+    expect(isNarrowed({ instrument: 'fffs-2017-2', regime: '', service: '', dutyType: '', asOf: '', scope: 'in' })).toBe(true);
   });
 });
 
@@ -165,10 +175,11 @@ describe('ObligationRow', () => {
     nav.replace.mockReset();
   });
 
-  it('reads the row into the pill contract: the instrument, the tags, and the counted open changes', () => {
+  it('reads the row into the pill contract: the instrument, the level kind, the tags, and the counted open changes', () => {
     expect(factsOf(research)).toEqual({
       instrument: { key: 'fffs-2017-2', label: 'FFFS 2017:2' },
       binding: true,
+      levelKind: null,
       complianceStatus: undefined,
       changeWaitingForApproval: false,
       openChangeCount: 1,
@@ -181,8 +192,49 @@ describe('ObligationRow', () => {
     expect(metaOf(research, t, defaultFormatContext)).toEqual(['Advice, Portfolio management', 'Version 2, from 1 Oct 2026', 'Verified 30 Jun 2026']);
   });
 
+  it('labels a row whose wording in force agents confirmed, where the verified date would read, until a named person re-verifies it later', () => {
+    const byAgents: Obligation = {
+      ...research,
+      upcomingVersion: null,
+      version: {
+        versionNumber: 2,
+        effectiveFrom: null,
+        approvedAt: '2026-08-17T14:02:11Z',
+        verifiedOrigin: 'agent',
+        confirmedByAgent: { id: 'a2', key: 'library-confirmer' },
+        proposedByAgent: { id: 'a1', key: 'watch-sweeper' },
+      },
+    };
+    const machine = 'Machine-confirmed 17 Aug 2026: proposed by watch-sweeper, confirmed by library-confirmer';
+    expect(metaOf(byAgents, t, defaultFormatContext)).toEqual(['Advice, Portfolio management', machine]);
+    // A later stamp nobody signed never vouches for wording no person has seen.
+    expect(metaOf({ ...byAgents, lastVerifiedAt: '2026-08-20T09:00:00Z', verifiedBy: null }, t, defaultFormatContext)).toEqual(['Advice, Portfolio management', machine]);
+    expect(metaOf({ ...byAgents, lastVerifiedAt: '2026-08-20T09:00:00Z', verifiedBy: { id: 'u1', name: 'Ida Holm' } }, t, defaultFormatContext)).toEqual([
+      'Advice, Portfolio management',
+      'Verified 20 Aug 2026',
+    ]);
+  });
+
   it('names the terms that put a row outside the footprint, and leaves out what the row does not carry', () => {
     expect(metaOf(adviceOnly, t, defaultFormatContext)).toEqual(['Advice, Portfolio management', 'Outside our scope: Advice']);
+  });
+
+  it('names the market a row comes from under "Markets we watch", in place of the outside reason', () => {
+    const danish: Obligation = { ...adviceOnly, jurisdiction: { key: 'dk', kind: 'country', label: 'Denmark' } };
+    expect(metaOf(danish, t, defaultFormatContext, true)).toEqual(['Advice, Portfolio management', 'Market we watch: Denmark']);
+  });
+
+  it('renders a watched-market row undashed, with its market as meta text and no new pill', async () => {
+    serve({ items: [], total: 0 });
+    const danish: Obligation = { ...adviceOnly, jurisdiction: { key: 'dk', kind: 'country', label: 'Denmark' } };
+    renderIn(<ObligationRow obligation={danish} watched />);
+    const row = await screen.findByRole('link');
+    expect(row).not.toHaveAttribute('data-outside-footprint');
+    expect(row).toHaveAttribute('data-watched-market', 'dk');
+    expect(row.className).not.toContain('border-dashed');
+    expect(within(row).getByText('Market we watch: Denmark')).toBeVisible();
+    expect(within(row).queryByText(/Outside our scope/)).toBeNull();
+    expect([...row.querySelectorAll('[data-pill]')].map((pill) => pill.getAttribute('data-pill'))).toEqual(['brand', 'information', 'negative', 'warning']);
   });
 
   it('renders the pills of the row slot order and links to the obligation', async () => {
@@ -252,22 +304,29 @@ describe('InventoryScreen', () => {
     serve({ items: [], total: 0 });
     renderIn(<InventoryScreen />);
     expect(await screen.findByText('No obligations match')).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Show outside our scope' })).toHaveAttribute('href', '/inventory?service=advice&outside=true');
+    expect(screen.getByRole('link', { name: 'Show outside our scope' })).toHaveAttribute('href', '/inventory?service=advice&scope=all');
   });
 
   it('drops the offer once the reader is already looking outside the footprint', async () => {
-    nav.search = 'service=advice&outside=true';
+    nav.search = 'service=advice&scope=all';
     serve({ items: [], total: 0 });
     renderIn(<InventoryScreen />);
     expect(await screen.findByText('No obligations match')).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Show outside our scope' })).toBeNull();
   });
 
-  it('points at the regulatory scope when nothing is in it yet', async () => {
+  it.each([['footprint.request'], ['footprint.approve']])('points a holder of %s at the regulatory scope when nothing is in it yet', async (permission) => {
     serve({ items: [], total: 0 });
-    renderIn(<InventoryScreen />);
+    renderIn(<InventoryScreen />, ['library.read', permission]);
     expect(await screen.findByText('The library has nothing in our scope yet')).toBeVisible();
     expect(screen.getByRole('link', { name: 'Check the regulatory scope under Admin' })).toHaveAttribute('href', '/admin/footprint');
+  });
+
+  it('shows the empty state without the link to a reader who cannot open the regulatory scope', async () => {
+    serve({ items: [], total: 0 });
+    renderIn(<InventoryScreen />, ['library.read']);
+    expect(await screen.findByText('The library has nothing in our scope yet')).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'Check the regulatory scope under Admin' })).toBeNull();
   });
 
   it('reads as of a date, banners it and goes back to today', async () => {
@@ -293,15 +352,48 @@ describe('InventoryScreen', () => {
     fireEvent.change(screen.getByLabelText('As of'), { target: { value: '2026-09-16' } });
     expect(nav.replace).toHaveBeenCalledWith('/inventory?asOf=2026-09-16');
     fireEvent.click(screen.getByRole('button', { name: 'Show outside our scope' }));
-    expect(nav.replace).toHaveBeenCalledWith('/inventory?outside=true');
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?scope=all');
+  });
+
+  it('offers the scope as one filter of three values, exactly one pressed', async () => {
+    serve({ items: [research], total: 1 });
+    renderIn(<InventoryScreen />);
+    const scope = await screen.findByRole('group', { name: 'Scope' });
+    expect(within(scope).getAllByRole('button').map((chip) => [chip.textContent, chip.getAttribute('aria-pressed')])).toEqual([
+      ['In our scope', 'true'],
+      ['Markets we watch', 'false'],
+      ['Show outside our scope', 'false'],
+    ]);
+    fireEvent.click(within(scope).getByRole('button', { name: 'Markets we watch' }));
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?scope=watched');
+  });
+
+  it('asks for what the watched markets add and names each row\'s market under "Markets we watch"', async () => {
+    nav.search = 'scope=watched';
+    const danish: Obligation = { ...research, id: 'ob-dk', inFootprint: false, jurisdiction: { key: 'dk', kind: 'country', label: 'Denmark' } };
+    const sent = serve({ items: [danish], total: 1 });
+    renderIn(<InventoryScreen />);
+    expect(await screen.findByText('Market we watch: Denmark')).toBeVisible();
+    expect(sent.find((s) => s.path === '/api/v1/obligations')?.params).toMatchObject({ footprint: 'watched' });
+    expect(screen.getByRole('button', { name: 'Markets we watch' })).toHaveAttribute('aria-pressed', 'true');
+    expect(document.querySelector('[data-obligation-rows] [data-outside-footprint]')).toBeNull();
+  });
+
+  it('says the watched markets add nothing, with no offer to look outside, when that view is empty', async () => {
+    nav.search = 'service=advice&scope=watched';
+    serve({ items: [], total: 0 });
+    renderIn(<InventoryScreen />);
+    expect(await screen.findByText('The markets we watch add nothing here')).toBeVisible();
+    expect(screen.queryByText('No obligations match')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Show outside our scope' })).toBeNull();
   });
 
   it('asks for everything with the reason once "Show outside our scope" is on', async () => {
-    nav.search = 'outside=true';
+    nav.search = 'scope=all';
     const sent = serve({ items: [adviceOnly], total: 1 });
     renderIn(<InventoryScreen />);
     await screen.findByRole('link');
-    expect(sent.find((s) => s.path === '/api/v1/obligations')?.params).toMatchObject({ outsideFootprint: true });
+    expect(sent.find((s) => s.path === '/api/v1/obligations')?.params).toMatchObject({ footprint: 'all' });
     expect(screen.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -329,7 +421,7 @@ describe('InventoryScreen', () => {
     expect(instrument.value).toBe('lfd-2005-405');
     expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined();
     expect(within(instrument).queryByRole('option', { name: 'lfd-2005-405' })).toBeNull();
-    expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ outsideFootprint: true, limit: 100 }));
+    expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ footprint: 'all', limit: 100 }));
     expect(sent.find((s) => s.path === '/api/v1/obligations')?.params).toMatchObject({ instrument: 'lfd-2005-405' });
     // Choosing "All instruments" clears it like any other filter.
     fireEvent.change(instrument, { target: { value: '' } });
@@ -342,7 +434,7 @@ describe('InventoryScreen', () => {
     renderIn(<InventoryScreen />);
     const instrument = (await screen.findByLabelText('Instrument')) as HTMLSelectElement;
     // Neither the options in our scope nor the ones outside it name this key.
-    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ outsideFootprint: true })));
+    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ footprint: 'all' })));
     await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined());
     expect(instrument.value).toBe('sfs-1999-999');
     expect(within(instrument).getByRole('option', { name: 'sfs-1999-999' })).toHaveProperty('selected', true);
@@ -355,16 +447,16 @@ describe('InventoryScreen', () => {
     const instrument = (await screen.findByLabelText('Instrument')) as HTMLSelectElement;
     await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toHaveProperty('selected', true));
     await screen.findByText('1 obligation');
-    expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).not.toContainEqual(expect.objectContaining({ outsideFootprint: true }));
+    expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).not.toContainEqual(expect.objectContaining({ footprint: 'all' }));
   });
 
   it('switches to the Instruments tab, carrying the tab and the filters in the URL', async () => {
-    nav.search = 'regime=securities&outside=true';
+    nav.search = 'regime=securities&scope=all';
     serve({ items: [research], total: 1 });
     renderIn(<InventoryScreen />);
     await screen.findByText('1 obligation');
     fireEvent.click(screen.getByRole('tab', { name: 'Instruments' }));
-    expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&regime=securities&outside=true');
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&regime=securities&scope=all');
   });
 
   it('reads the Instruments tab from the URL directly and shows its own rows and count', async () => {
@@ -382,19 +474,28 @@ describe('InventoryScreen', () => {
     const sent = serve({ items: [], total: 0 }, { items: [], total: 0 });
     renderIn(<InventoryScreen />);
     await screen.findByText('No instruments match');
-    expect(sent.find((s) => s.path === '/api/v1/instruments')?.params).not.toHaveProperty('outsideFootprint');
+    expect(sent.find((s) => s.path === '/api/v1/instruments')?.params).not.toHaveProperty('footprint');
     fireEvent.change(screen.getByLabelText('Regime'), { target: { value: 'securities' } });
     expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&regime=securities');
     fireEvent.click(screen.getByRole('button', { name: 'Show outside our scope' }));
-    expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&outside=true');
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&scope=all');
+  });
+
+  it('asks the Instruments tab for what the watched markets add, and says so when they add nothing', async () => {
+    nav.search = 'tab=instruments&scope=watched';
+    const sent = serve({ items: [], total: 0 }, { items: [], total: 0 });
+    renderIn(<InventoryScreen />);
+    expect(await screen.findByText('The markets we watch add nothing here')).toBeVisible();
+    expect(sent.find((s) => s.path === '/api/v1/instruments')?.params).toMatchObject({ footprint: 'watched' });
+    expect(screen.queryByRole('link', { name: 'Show outside our scope' })).toBeNull();
   });
 
   it('asks the Instruments tab for everything once "Show outside our scope" is on', async () => {
-    nav.search = 'tab=instruments&outside=true';
+    nav.search = 'tab=instruments&scope=all';
     const sent = serve({ items: [], total: 0 }, { items: [{ ...fffs, inFootprint: false }], total: 1 });
     renderIn(<InventoryScreen />);
     await waitFor(() => expect(document.querySelector('[data-instrument-rows]')).not.toBeNull());
-    expect(sent.find((s) => s.path === '/api/v1/instruments')?.params).toMatchObject({ outsideFootprint: true });
+    expect(sent.find((s) => s.path === '/api/v1/instruments')?.params).toMatchObject({ footprint: 'all' });
     expect(screen.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'true');
     expect(document.querySelector('[data-instrument-rows] [data-outside-footprint]')).not.toBeNull();
   });

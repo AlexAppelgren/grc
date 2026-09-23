@@ -138,6 +138,120 @@ class ProposalObligationVersionPayload(WriteBody):
     terms: TermRefs | None = Field(default=None, max_length=settings.PROPOSAL_SCOPE_MAX_TERMS)
 
 
+# A new record's stable key: lowercase words joined by hyphens, as the seeded library writes
+# them (`fffs-2017-2`, `obl-research-payments`). It is the record's name for ever.
+STABLE_KEY_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+
+
+class ProposalInstrumentPayload(WriteBody):
+    """`new_instrument` (PRO-01, INV-01, INV-08): a law, regulation, guideline or standard
+    edition the library does not hold yet.
+
+    `key` is the stable key the instrument keeps for ever. `titles` is its official name
+    per content language, `originalLanguage` the one it was issued in, and `isMachine`
+    says the others are machine translations until a person confirms them (INV-05).
+    `level`, `jurisdiction` and `authority` are keys of their library lists; `binding`
+    left out takes the level's default. `regime` is a term of the regime dimension written
+    `regime:<key>` (D-39): any other term is refused with 422 `not_a_regime`. In-force
+    dates are plain legal dates, each with a precision (INV-S10).
+
+    Every fact here needs its source, an https link, in `fieldSources` (`sourced_fields()`
+    in apps/proposals/logic.py names them); the key and the language flags do not.
+    """
+
+    key: str = Field(max_length=120, pattern=STABLE_KEY_PATTERN)
+    titles: dict[str, str]
+    original_language: str
+    is_machine: bool = False
+    short_name: str = Field(min_length=1, max_length=120)
+    official_ref: str = Field(min_length=1, max_length=200)
+    eli_uri: str = Field(default="", max_length=2000)
+    level: str
+    binding: bool | None = None
+    jurisdiction: str
+    authority: str | None = None
+    regime: str
+    in_force_from: date | None = None
+    in_force_from_precision: str = "day"
+    in_force_to: date | None = None
+    in_force_to_precision: str = "day"
+    implements_note: str = ""
+
+
+class ProposalObligationPayload(WriteBody):
+    """`new_obligation` (PRO-01, INV-03, INV-04): a duty the library does not hold yet,
+    under an instrument it does, with its first version.
+
+    `key` is the stable key the obligation keeps for ever and `instrument` the stable key
+    of the shared instrument it is broken out of. `titles` and `summaries` are per content
+    language, with `originalLanguage` the one both were written in and `isMachine` saying
+    the others are machine-made (INV-05). `dutyType` is a key of the duty type list.
+    `effectiveFrom` is when the first version is in force, a plain legal date with a
+    precision; left out, since the duty began. `terms` are the scope facets as
+    `dimension:key`, never a mirrored jurisdiction term (FP-S12).
+
+    Every fact here needs its source, an https link, in `fieldSources`.
+    """
+
+    key: str = Field(max_length=120, pattern=STABLE_KEY_PATTERN)
+    instrument: str
+    titles: dict[str, str]
+    summaries: dict[str, str]
+    original_language: str
+    is_machine: bool = False
+    ref_label: str = Field(min_length=1, max_length=200)
+    duty_type: str
+    effective_from: date | None = None
+    effective_from_precision: str = "day"
+    terms: TermRefs | None = Field(default=None, max_length=settings.PROPOSAL_SCOPE_MAX_TERMS)
+
+
+class ProposalProvisionPayload(WriteBody):
+    """`new_provision` (PRO-01, INV-02): a node of a law's structure the library does not
+    hold yet, with its first verbatim text.
+
+    `key` is the stable key the provision keeps for ever, `instrument` the stable key of the
+    shared instrument it belongs to and `parent` the stable key of the provision of that
+    instrument it sits under, left out at the top of the tree. `provisionKind` is a key of
+    the provision kind list; `refLabel` and `heading` are how the text cites and names it.
+    `texts` is the verbatim text per content language, `originalLanguage` the one the
+    authority published and `isMachine` saying the others are machine-made (INV-05). The
+    date is a plain legal date with a precision.
+
+    Never under a standard, whose text is licensed: 422 `licensed_text` (INV-08, D-35).
+    Every fact here needs its source, an https link, in `fieldSources`.
+    """
+
+    key: str = Field(max_length=200, pattern=STABLE_KEY_PATTERN)
+    instrument: str
+    parent: str | None = None
+    provision_kind: str
+    ref_label: str = Field(min_length=1, max_length=200)
+    heading: str = ""
+    sort_order: int = 0
+    texts: dict[str, str]
+    original_language: str
+    is_machine: bool = False
+    effective_from: date | None = None
+    effective_from_precision: str = "day"
+
+
+class ProposalProvisionVersionPayload(WriteBody):
+    """`new_provision_version` (PRO-01, INV-02): the verbatim text of a provision that
+    exists, in force from a date. Nothing is overwritten; the earlier text stays.
+
+    `texts`, `originalLanguage`, `isMachine` and the date read as on `new_provision`. Never
+    on a standard's provision: 422 `licensed_text` (INV-08, D-35). Every field needs its
+    source in `fieldSources`.
+    """
+
+    texts: dict[str, str]
+    original_language: str
+    is_machine: bool = False
+    effective_from: date | None = None
+    effective_from_precision: str = "day"
+
+
 class ProposalPayload(CamelSchema):
     """The union as the contract states it: every field of every kind's payload, optional,
     with the kind saying which ones are read. Ninja flattens components, so one named
@@ -185,7 +299,10 @@ class ProposalRow(CamelSchema):
         description=(
             "What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, "
             "not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, "
-            "`vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, "
+            "`new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a "
+            "duty under an instrument it holds, with its first version, `new_provision` adds a node of a "
+            "law's text with its first verbatim text, `new_provision_version` adds a text to a provision "
+            "that exists, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, "
             "`vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` "
             "points a row's users at another row and retires it, and `term_create` and `term_update` do "
             "the same for a taxonomy term. The other kinds of the data model are not built yet, so a "
@@ -626,7 +743,9 @@ class TenantProposalRow(CamelSchema):
             "adds a row to a shared list, `vocabulary_relabel` rewords one, `vocabulary_retire` and "
             "`vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users "
             "at another row and retires it, and `term_create` and `term_update` do the same for a "
-            "taxonomy term. `new_obligation_version` adds a version to a duty."
+            "taxonomy term. `new_obligation_version` adds a version to a duty, and `new_instrument`, "
+            "`new_obligation`, `new_provision` and `new_provision_version` bring a record or a text "
+            "the library does not hold yet."
         )
     )
     status: str = Field(
@@ -760,8 +879,8 @@ class ProposalPage(CamelSchema):
 
     items: list[ProposalQueueRow] = Field(
         description=(
-            f"This page of proposals, oldest first, so the queue reads in the order they arrived and "
-            f"paging is repeatable: {settings.API_PAGE_SIZE_DEFAULT} rows by default and "
+            f"This page of proposals, oldest first unless `order` asks for the newest first, by when "
+            f"each was filed with the id breaking a tie, so paging is repeatable: {settings.API_PAGE_SIZE_DEFAULT} rows by default and "
             f"{settings.API_PAGE_SIZE_MAX} at most. Nothing matching the filters is an empty list, never a 404."
         )
     )
@@ -844,7 +963,10 @@ class LibraryUpdateRow(CamelSchema):
     kind: str = Field(
         description=(
             "What kind of change it was, and therefore which of the fields below are filled. A "
-            "fixed kind: `new_obligation_version` is a new wording of a duty, and "
+            "fixed kind: `new_obligation_version` is a new wording of a duty, `new_obligation` is a "
+            "duty new to the library with its first wording, `new_instrument` is an instrument new to "
+            "the library, which names no duty and no list, `new_provision` and `new_provision_version` "
+            "are a law's verbatim text, new or amended, which name no duty and no list either, and "
             "`vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore`, "
             "`vocabulary_merge`, `term_create` and `term_update` are changes to a shared list or "
             "to the taxonomy every bank reads."
@@ -869,14 +991,14 @@ class LibraryUpdateRow(CamelSchema):
     )
     target: LibraryUpdateTarget | None = Field(
         default=None,
-        description="The duty that changed, named by the library's own wording. Null on a change to a shared list, which names no single record; `vocabularyList` then says which list it was.",
+        description="The duty that changed, or the duty that arrived, named by the library's own wording. Null on a change to a shared list, which names no single record, when `vocabularyList` says which list it was, and null on a new instrument.",
     )
     vocabulary_list: str | None = Field(
         default=None,
         description=(
             "Which shared list or taxonomy dimension changed, by its key, for example `flag`. The "
             "lists are themselves rows an admin may extend or retire, and `GET /vocabularies` "
-            "returns the live set. Null on a change to a duty."
+            "returns the live set. Null on a change to a duty and on a new instrument."
         ),
         examples=["flag"],
     )
@@ -1017,18 +1139,160 @@ class LibraryUpdatesQuery(CamelSchema):
 
 
 class ProposalAccepted(CamelSchema):
-    """202 from a library-list write (VOC-07): nothing changed, a proposal is waiting."""
+    """The 202 a write to a shared library list or taxonomy term answers (VOC-07): nothing in the library
+    changed, and a proposal now waits for a second person or agent to decide it."""
 
-    proposal: ProposalRow
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "proposal": {
+                        "id": "2c7a5e91-4d3b-4f08-a6e2-9b1c0d8f7e35",
+                        "kind": "vocabulary_create",
+                        "status": "open",
+                        "title": "Add Supervisory statement to change_type",
+                        "targetType": "change_type",
+                        "targetId": None,
+                        "changeId": None,
+                        "payload": {
+                            "list": "change_type",
+                            "key": "supervisory_statement",
+                            "labels": {"en": "Supervisory statement", "sv": "Tillsynsuttalande"},
+                            "usageNote": "An authority's published view on how a rule is applied.",
+                            "kind": "supervisory",
+                            "extra": {},
+                        },
+                        "fieldSources": {},
+                        "scopeSuggestion": [],
+                        "sourceLabel": "",
+                        "sourceUrl": "",
+                        "effectiveFrom": None,
+                        "origin": "user",
+                        "agentRunId": None,
+                        "model": "",
+                        "proposedBy": None,
+                        "proposedByAgent": None,
+                        "fromOrganisation": True,
+                        "reviewedBy": None,
+                        "reviewedByAgent": None,
+                        "correctedBy": None,
+                        "correctedByAgent": None,
+                        "reviewedAt": None,
+                        "rejectionCode": "",
+                        "reviewNote": "",
+                        "appliedAt": None,
+                        "createdAt": "2026-09-18T09:40:00Z",
+                    }
+                }
+            ]
+        }
+    )
+
+    proposal: ProposalRow = Field(
+        description=(
+            "The proposal the write became, waiting in the platform's review queue with `status` `open`. "
+            "Nothing has changed yet: the shared list or taxonomy still says what it said, and it changes only when a "
+            "second, independent person or agent approves the proposal in the console, never the one who "
+            "made it. A proposal made inside a bank names no proposer (`fromOrganisation` is true); the bank "
+            "follows it in `GET /tenant/proposals`."
+        )
+    )
 
 
 class ProposalCreateBody(WriteBody):
-    kind: str
-    title: str
-    payload: dict[str, Any] = Field(default_factory=dict)  # schema: ProposalPayload
-    target_type: str = ""
-    target_id: UUID | None = None
-    change_id: UUID | None = None
+    """The body of `POST /proposals`: one change somebody wants made to the shared library,
+    with the source behind every value it would write. Nothing in the library changes when
+    this is accepted; the proposal waits for a second, independent reviewer.
+
+    Fields the schema does not name are refused with 422 `validation_error` rather than
+    dropped, so nothing rides along unseen. The whole body is library data that every bank
+    will read once approved: it must never carry a bank's own judgement, its people's names
+    or its internal documents.
+    """
+
+    kind: str = Field(
+        description=(
+            "What is asked for, which decides the shape of `payload`. A fixed kind, not a vocabulary: "
+            "`new_obligation_version` is a new summary of one duty in force from a date, with its scope "
+            "terms; `new_instrument` is a law, regulation, guideline or standard edition the library "
+            "does not hold yet; `new_obligation` is a duty the library does not hold yet, under an "
+            "instrument it does, with its first summary; `new_provision` is a node of a law's text with "
+            "its first verbatim text, and `new_provision_version` a provision's text in force from a "
+            "date, neither ever under a standard (422 `licensed_text`); `vocabulary_create`, `vocabulary_relabel`, "
+            "`vocabulary_retire`, `vocabulary_restore` and `vocabulary_merge` add, reword, turn off, "
+            "turn on again or fold together a row of a shared list; `term_create` and `term_update` add "
+            "or reword a taxonomy term. Any other value answers 422 `unknown_key` naming the valid ones."
+        ),
+        examples=["new_obligation_version"],
+    )
+    title: str = Field(
+        max_length=500,
+        description=(
+            "The request in one line, as the reviewer reads it in the queue, at most 500 characters and "
+            "never blank. It describes the request and is never the library record's own title, which "
+            "comes from the payload."
+        ),
+        examples=["Version 2 of the research assessment duty, in force 1 October 2026"],
+    )
+    payload: dict[str, Any] = Field(  # schema: ProposalPayload
+        default_factory=dict,
+        description=(
+            "What the library should hold, in the shape `kind` names, with camelCase field names. A "
+            "field the kind does not name, or a value it does not accept, answers 422 "
+            "`validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text "
+            "per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, "
+            "`effectiveFromPrecision` (`day`, `month`, `quarter` or `year`) and `terms` (scope as "
+            f"`dimension:key`, at most {settings.PROPOSAL_SCOPE_MAX_TERMS}). `new_instrument`: `key` "
+            "(a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), "
+            "`titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, "
+            "`eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, "
+            "`regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), "
+            "`inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: "
+            "`key`, `instrument` (the stable key of a shared instrument in force), `titles` and "
+            "`summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, "
+            "`effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one "
+            "conformance obligation, carrying exactly one standard term (else 422 "
+            "`one_conformance_obligation` or `standard_term_required`), and a law's obligation carries "
+            "none (422 `standard_term_only_on_standards`). `new_provision`: `key`, `instrument`, "
+            "`parent` (the stable key of a provision of the same instrument, left out at the top), "
+            "`provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, "
+            "`originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. "
+            "`new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and "
+            "`effectiveFromPrecision`. The vocabulary and term kinds name a "
+            "`list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and "
+            "term keys are library rows that change only through proposals; `GET /vocabularies` and "
+            "`GET /taxonomy/terms` return the live sets."
+        ),
+    )
+    target_type: str = Field(
+        default="",
+        max_length=64,
+        description=(
+            "What the proposal changes, when it changes a record that exists: `obligation` for "
+            "`new_obligation_version` and `provision` for `new_provision_version`, at most 64 "
+            "characters. Empty for every other kind; a new instrument, obligation or provision that "
+            "names a target answers 422 `validation_error`, since the "
+            "record does not exist until the proposal is approved."
+        ),
+        examples=["obligation"],
+    )
+    target_id: UUID | None = Field(
+        default=None,
+        description=(
+            "The record changed, as a UUID, with `targetType`. For `new_obligation_version` it must be "
+            "an obligation, and for `new_provision_version` a provision, the library holds and has not "
+            "retired, else 422 `unknown_key`. Null for every other kind."
+        ),
+        examples=["7b1f2c4e-8d3a-4c61-9f0b-2e5a7c9d1a44"],
+    )
+    change_id: UUID | None = Field(
+        default=None,
+        description=(
+            "The regulatory change that prompted this, as a UUID, when a watch run found one. Optional; "
+            "leaving it out says nobody linked one, not that no change exists."
+        ),
+        examples=["b7e1c0a4-9f3d-4f6a-9c21-5d8e2f0a1b33"],
+    )
     agent_run_id: UUID | None = Field(
         default=None,
         description=(
@@ -1039,11 +1303,63 @@ class ProposalCreateBody(WriteBody):
         ),
         examples=["5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21"],
     )
-    model: str = ""  # the model that drafted it (AUD-02; labelled until a person confirms)
-    field_sources: dict[str, str] = Field(default_factory=dict)  # schema: ProposalFieldSources
-    source_label: str = ""
-    source_url: str = ""
-    effective_from: date | None = None
+    model: str = Field(
+        default="",
+        max_length=200,
+        description=(
+            "The model or pipeline that drafted the proposal, as the agent names it, at most 200 "
+            "characters (AUD-02). Empty for a proposal a person wrote. What it drafted stays labelled "
+            "machine-made until a person confirms it."
+        ),
+        examples=["agent pipeline 0.4"],
+    )
+    field_sources: dict[str, str] = Field(  # schema: ProposalFieldSources
+        default_factory=dict,
+        description=(
+            "Per field the payload sets, where its value came from, keyed as the queue names the field "
+            "(`summaries.sv`, `texts.sv`, `effectiveFrom`, `terms`, `regime`). Each source is at most "
+            f"{settings.PROPOSAL_SOURCE_MAX_CHARS} characters and is an https link, or for an obligation "
+            "or provision version also the stable key of a provision the library holds. A new "
+            "instrument, obligation or provision takes https links only, since it has no provision of "
+            "its own yet, and so does every obligation of a standard: anything else there answers 422 "
+            "`licensed_text`. A field "
+            "without a source answers 422 `source_missing`; a source that is neither, or one given for a "
+            "field the proposal does not set, answers 422 `validation_error`. The vocabulary kinds need "
+            "none, since a person writes their wording."
+        ),
+        examples=[{"summaries.sv": "https://www.fi.se/en/published/news/2026/research-payments/"}],
+    )
+    source_label: str = Field(
+        default="",
+        max_length=500,
+        description=(
+            "The source in words, as a reviewer and a reader see it beside a link, at most 500 "
+            "characters, for example the authority and the decision. A new obligation keeps it as its "
+            "own source label; left empty, it reads the instrument's reference and the duty's."
+        ),
+        examples=["Finansinspektionen, board decision 15 September 2026"],
+    )
+    source_url: str = Field(
+        default="",
+        max_length=2000,
+        description=(
+            "The authority's page the proposal was read from, at most 2000 characters. Required for a "
+            "new instrument, obligation or provision, as an https link (a new instrument or obligation "
+            "keeps it as its own source): "
+            "without one it answers 422 `source_missing`. Optional on the other kinds."
+        ),
+        examples=["https://www.fi.se/en/published/news/2026/research-payments/"],
+    )
+    effective_from: date | None = Field(
+        default=None,
+        description=(
+            "The legal date the change starts binding, as a plain date without a time. For an obligation "
+            "version or a new obligation it must equal the payload's `effectiveFrom`, else 422 "
+            "`validation_error`; left out, it takes the payload's. Optional, and null means the "
+            "proposal names no date."
+        ),
+        examples=["2026-10-01"],
+    )
 
 
 # What a confirming agent's approve and reject bodies carry beside its verdict (D-80,
@@ -1122,8 +1438,11 @@ class ProposalApproveBody(WriteBody):
         description=(
             "The reviewer's corrections, merged field by field over the proposal's own payload before it "
             "is applied; the fields left out keep what was proposed. Accepted only for the "
-            "`new_obligation_version` kind, since the vocabulary kinds carry a label a person wrote "
-            "rather than a sourced fact; on any other kind the call answers 422 `validation_error`. The "
+            "`new_obligation_version`, `new_instrument` and `new_obligation` kinds, since the vocabulary "
+            "kinds carry a label a person wrote rather than a sourced fact; on any other kind the call "
+            "answers 422 `validation_error`. A new record's corrections are checked exactly as the "
+            "proposal was, so a regime that is not a term of the regime dimension answers 422 "
+            "`not_a_regime`. For an obligation version the "
             "fields a reviewer may correct are the ones that kind's payload names: `summaries` (the "
             "whole set of texts per language, which replaces the proposed set), `originalLanguage`, "
             "`isMachine`, `effectiveFrom`, `effectiveFromPrecision` (one of `day`, `month`, `quarter` "
@@ -1268,4 +1587,16 @@ class ProposalQuery(CamelSchema):
             "False, the default, returns theirs alongside the rest."
         ),
         examples=[True],
+    )
+    order: str | None = Field(
+        default=None,
+        description=(
+            "Which end of the queue comes first, by when each proposal was filed, with the id "
+            "breaking a tie so paging is repeatable. The values are `oldest` (the default: the "
+            "order proposals arrived in, which is how the Waiting tab is worked) and `newest` (the "
+            "latest filed first, which is how the Approved and Rejected tabs read). Those are the "
+            "only two values; anything else is refused with 422 `unknown_key`. Left out, the "
+            "queue reads oldest first."
+        ),
+        examples=["newest"],
     )

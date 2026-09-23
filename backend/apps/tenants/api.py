@@ -28,6 +28,7 @@ from apps.tenants.schemas import (
     ConsoleTenantCreateBody,
     ConsoleTenantPage,
     ConsoleTenantRow,
+    TenantAiBody,
     TenantOut,
     TenantPatch,
 )
@@ -101,6 +102,49 @@ def update_tenant(request: HttpRequest, body: TenantPatch) -> TenantOut:
         timezone_name=body.timezone,
         default_language=body.default_language,
         content_language_keys=body.content_languages,
+    )
+    return TenantOut.model_validate(logic.tenant_out(tenant))
+
+
+@router.put(
+    "/tenant/ai",
+    response=TenantOut,
+    auth=SessionAuth(),
+    operation_id="setTenantAi",
+    by_alias=True,
+    summary="Switch your bank's AI features on or off",
+)
+@requires_permission(perms.SECURITY_MANAGE)
+@requires_step_up
+def set_tenant_ai(request: HttpRequest, body: TenantAiBody) -> TenantOut:
+    """Switches the bank's own AI features off or back on and returns the profile as it now
+    stands, with `aiEnabled` showing the new state. Call it from the bank's Organisation
+    screen when an administrator decides that no question or text of the bank's should go
+    to a model, or that it may again.
+
+    Off means Ask and the drafts a model writes for the bank's members answer
+    `feature_off` (403) before any model is reached. It does not stop the research agents
+    that keep the shared library and the watch feed current: they run for every bank, read
+    only public sources and never see this bank's own words. The profile edit,
+    `PATCH /tenant`, never changes this switch.
+
+    Needs the `security.manage` permission and a fresh passkey step-up, because deciding
+    whether the bank's words may leave it for a model is a security change. The change is
+    recorded in the audit log as `tenant.ai_switched` with the state before and after and
+    the step-up assertion, in the same transaction as the switch. Sending the state the
+    bank already has leaves it as it is and is still recorded.
+
+    Errors: `validation_error` (422) for a body without a boolean `enabled` or with any
+    other field; `step_up_required` (403) without a fresh passkey assertion;
+    `permission_denied` (403) without `security.manage`, naming it in
+    `requiredPermission`; `unauthenticated` (401) without a session.
+    """
+    principal = _principal(request)
+    tenant = logic.set_ai_enabled(
+        tenant=logic.get_tenant(principal.tenant_id),
+        actor=actor_of(User.objects.get(pk=principal.subject_id)),
+        enabled=body.enabled,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
     return TenantOut.model_validate(logic.tenant_out(tenant))
 

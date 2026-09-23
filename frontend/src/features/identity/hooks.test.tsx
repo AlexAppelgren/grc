@@ -6,6 +6,7 @@ import { REFRESH_PATH, tokenStore } from '@/shared/utils/api-client';
 
 import {
   sessionStatusOf,
+  signOutKey,
   useAddPasskey,
   useFormatContext,
   useOpenInvitation,
@@ -188,16 +189,31 @@ describe('identity hooks', () => {
     expect(sent.map((s) => s.path)).toEqual(['/api/v1/auth/step-up/options', '/api/v1/auth/step-up/verify']);
   });
 
-  it('useSignOut posts sign-out, clears the token and the cache', async () => {
+  it('useSignOut posts sign-out under its key, clears the token and the cache, then hands on', async () => {
     tokenStore.set('tok');
     const sent = installAdapter(() => ({ status: 204 }));
     const { wrapper, queryClient } = queryWrapper();
     queryClient.setQueryData(['me'], me);
-    const { result } = renderHook(() => useSignOut(), { wrapper });
-    await result.current.mutateAsync();
+    const then = vi.fn(() => expect(queryClient.getQueryData(['me'])).toBeUndefined());
+    const { result } = renderHook(() => useSignOut(then), { wrapper });
+    const settled = result.current.mutateAsync();
+    expect(queryClient.isMutating({ mutationKey: signOutKey })).toBe(1);
+    await settled;
     expect(sent.map((s) => s.path)).toEqual(['/api/v1/auth/sign-out']);
     expect(tokenStore.get()).toBeNull();
     await waitFor(() => expect(queryClient.getQueryData(['me'])).toBeUndefined());
+    expect(then).toHaveBeenCalledOnce();
+  });
+
+  it('useSignOut hands on when the server refused the sign-out too', async () => {
+    tokenStore.set('tok');
+    installAdapter(() => ({ status: 500 }));
+    const { wrapper } = queryWrapper();
+    const then = vi.fn();
+    const { result } = renderHook(() => useSignOut(then), { wrapper });
+    await expect(result.current.mutateAsync()).rejects.toBeDefined();
+    expect(tokenStore.get()).toBeNull();
+    expect(then).toHaveBeenCalledOnce();
   });
 
   it('passkeys and sessions: list, rename, remove, revoke, with invalidation', async () => {

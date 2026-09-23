@@ -3,10 +3,8 @@ lists the action, no business logic (playbook 4.1).
 
 Four operations, the designed contract's (`docs/inputs/openapi.yaml`). Each one hands its
 validated body to the module that answers it — `hybrid.py` for searching and for the
-agents' nearest-neighbour read, `ask.py` for the answer and its feedback — and the one
-that has not landed yet, the reader's verdict on an answer, answers `not_built` until it
-does (PARALLEL_PLAN rule 3). The gate runs first, so a caller without it is refused before
-it learns whether anything is built.
+agents' nearest-neighbour read, `ask.py` for the answer and its feedback. The gate runs
+first, so a caller without it is refused before it learns anything.
 
 Both search routes spend from a bucket of their own before anything else runs
 (`limits.py`): the reader's session or the agent's key, sixty a minute each, answered 429
@@ -20,24 +18,33 @@ call before the first byte still does: the session, the permission, the question
 the bank's AI switch, the rate limit and the language are checked before the stream
 opens, and each answers a status with a problem body.
 
+The evaluation set's four routes at the end are the platform console's (SRC-05,
+ADM-02): `eval.manage` only, and the one write, adding a question, is audited.
+
 Who may call what: a person searching, asking or rating an answer holds `search.use`
 (PRD §6, "everyone"). `POST /search/similar` is the agents' route, gated on the
 `search:read` key scope alone (AGT-02, INPUT_DELTAS §7): no permission in the matrix
 gives a person a similarity read, and a console surface that wants one comes with its own
-permission and its own review. Nothing here writes, so nothing here needs step-up or
-four eyes.
+permission and its own review. The one write, the reader's verdict on an answer, goes
+through the audit trail; playbook 4.2 lists none of these, so none needs step-up or four
+eyes.
 """
 
 from collections.abc import Iterator
 
 from django.http import HttpRequest
-from ninja import SSE, Router
+from ninja import SSE, Path, Query, Router
 
-from apps.search import ask, hybrid
+from apps.search import ask, eval_sets, hybrid
 from apps.search.schemas import (
     AnswerFeedbackBody,
     AskEvent,
     AskRequest,
+    EvalBaselineOut,
+    EvalQuestionInput,
+    EvalQuestionOut,
+    EvalQuestionPage,
+    EvalRunPage,
     SearchRequest,
     SearchResponse,
     SimilarRequest,
@@ -45,7 +52,8 @@ from apps.search.schemas import (
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_scope
-from apps.taxonomy.http import answers_problems, principal, uuid_or_404
+from apps.shared.schemas import PageQuery
+from apps.taxonomy.http import actor_for, answers_problems, principal, uuid_or_404
 
 router = Router(tags=["Search"])
 
@@ -209,7 +217,19 @@ def ask_question(request: HttpRequest, body: AskRequest) -> Iterator[AskEvent]:
 )
 @requires_permission(perms.SEARCH_USE)
 @answers_problems
-def rate_answer(request: HttpRequest, answer_id: str, body: AnswerFeedbackBody) -> tuple[int, None]:
+def rate_answer(
+    request: HttpRequest,
+    body: AnswerFeedbackBody,
+    answer_id: str = Path(
+        ...,
+        description=(
+            "The answer to rate, as a UUID: the `id` of the `start` event that `POST /ask` "
+            "streamed first, which is also the answer's row in the AI log. It must be an "
+            "answer of the caller's own bank. Another bank's answer, an id that is no answer "
+            "and a value that is not a UUID all answer `not_found`, never saying which."
+        ),
+    ),
+) -> tuple[int, None]:
     """Record a reader's verdict on one answer — helpful or wrong, with an optional note
     — so the people who tune retrieval know where it fails (AUD-02, SRC-05).
 
@@ -224,8 +244,140 @@ def rate_answer(request: HttpRequest, answer_id: str, body: AnswerFeedbackBody) 
 
     Shape of the call: the one write in this contract. It goes through the audit trail
     like any other write, and it needs no idempotency key because it is idempotent by
-    nature: the same verdict on the same answer twice leaves one row. Neither the
-    question nor the answer nor the note reaches the audit summary.
+    nature: the same verdict and note on the same answer twice leaves one row and one
+    audit row. A different verdict replaces the earlier one, and the audit trail keeps
+    both. Neither the question nor the answer nor the note reaches the audit row.
+
+    Errors: `not_found` (404) for an answer that is not one of the bank's own, or a
+    session that belongs to no bank; `validation_error` (422) for a verdict other than
+    `helpful` or `wrong`, a note over the cap or a field the contract does not name;
+    `permission_denied` (403) without `search.use`; `unauthenticated` (401) without a
+    session.
     """
-    ask.rate_answer(uuid_or_404(answer_id), body, user_id=principal(request).subject_id)
+    who = principal(request)
+    ask.rate_answer(uuid_or_404(answer_id), body, tenant_id=who.tenant_id, user_id=who.subject_id)
     return 204, None
+
+
+# ---------------------------------------------------------------------------------------
+# The evaluation set in the platform console (SRC-05, ADM-02): platform staff holding
+# `eval.manage` read the questions and the recorded runs and add a question. No bank's
+# session reaches the tables at all (search 0002). Recording a run is a command, not a
+# route: `POST /eval/runs` waits for chunk 14's job runner.
+# ---------------------------------------------------------------------------------------
+@router.get(
+    "/eval/questions",
+    response=EvalQuestionPage,
+    auth=SESSION,
+    operation_id="listEvalQuestions",
+    by_alias=True,
+    summary="See the questions the release gate scores search with",
+)
+@requires_permission(perms.EVAL_MANAGE)
+def list_eval_questions(request: HttpRequest, page: Query[PageQuery]) -> EvalQuestionPage:
+    """Returns the search evaluation set, ordered by key, one page at a time: each labelled
+    question, the language it is asked in, the library records a good answer contains by
+    stable key, what it expects to win it, and whether the release gate of this build scores
+    it (`inGate`). Retired questions stay in the list with `active` false. Call it from the
+    platform console's evaluation page.
+
+    A person's session only, holding the platform permission `eval.manage`, which a library
+    editor holds; no session inside a bank and no API key can read it. It changes nothing and
+    writes nothing to the audit log. An empty set is a 200 with `total` 0.
+
+    Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
+    depth; `permission_denied` without `eval.manage`; `unauthenticated` without a session.
+    """
+    items, total = eval_sets.list_questions(limit=page.limit, offset=page.offset)
+    return EvalQuestionPage(items=items, total=total)
+
+
+@router.post(
+    "/eval/questions",
+    response={201: EvalQuestionOut},
+    auth=SESSION,
+    operation_id="createEvalQuestion",
+    by_alias=True,
+    summary="Add a question to the search evaluation set",
+)
+@requires_permission(perms.EVAL_MANAGE)
+@answers_problems
+def create_eval_question(request: HttpRequest, body: EvalQuestionInput) -> tuple[int, EvalQuestionOut]:
+    """Adds one labelled question to the evaluation set and answers it as stored. Call it
+    when search missed something a reader needed, or to cover a language or a phrasing the
+    set does not test yet.
+
+    The question is not yet in the gate: the release gate reads
+    `backend/eval/retrieval.jsonl`, so the answer says `inGate` false until someone runs the
+    dump_eval_questions command, reviews the diff and ships it. Until then the
+    record_eval_run command scores it, but no build fails on it.
+
+    A person's session only, holding the platform permission `eval.manage`, which a library
+    editor holds. No passkey step-up and no `If-Match`: a question is a test of search, not a
+    decision about the law, and it is never edited, only added. The row and its audit row,
+    which names who added it and the key but not the question's text, are written in one
+    transaction, and every refusal comes first, so a refused call stores nothing.
+
+    Errors: `duplicate_key` (409) when the set already has a question with that `key`;
+    `unknown_key` (422) when `lang` names no language row; `validation_error` (422) for a
+    body the schema refuses, including a key that breaks its pattern, a question over the
+    cap or a field the schema does not name; `permission_denied` (403) without
+    `eval.manage`; `unauthenticated` (401) without a session.
+    """
+    return 201, eval_sets.create_question(actor=actor_for(request), body=body)
+
+
+@router.get(
+    "/eval/runs",
+    response=EvalRunPage,
+    auth=SESSION,
+    operation_id="listEvalRuns",
+    by_alias=True,
+    summary="See how search scored on the evaluation set, run by run",
+)
+@requires_permission(perms.EVAL_MANAGE)
+def list_eval_runs(request: HttpRequest, page: Query[PageQuery]) -> EvalRunPage:
+    """Returns the recorded runs of the evaluation set, newest first, one page at a time:
+    which retrieval chain each scored and whether it was a stand-in, recall at 10 and MRR
+    overall, per language and per match kind, and what every question got back. Call it
+    from the platform console to see whether search got better or worse. Runs are recorded
+    by the record_eval_run command; the release gate's own verdict is in CI, against its
+    baseline.
+
+    A person's session only, holding the platform permission `eval.manage`, which a library
+    editor holds; no session inside a bank and no API key can read it. It changes nothing and
+    writes nothing to the audit log. No run recorded yet is a 200 with `total` 0.
+
+    Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
+    depth; `permission_denied` without `eval.manage`; `unauthenticated` without a session.
+    """
+    items, total = eval_sets.list_runs(limit=page.limit, offset=page.offset)
+    return EvalRunPage(items=items, total=total)
+
+
+@router.get(
+    "/eval/baseline",
+    response=EvalBaselineOut,
+    auth=SESSION,
+    operation_id="getEvalBaseline",
+    by_alias=True,
+    summary="See the retrieval scores the release gate holds search to",
+)
+@requires_permission(perms.EVAL_MANAGE)
+def get_eval_baseline(request: HttpRequest) -> EvalBaselineOut:
+    """Returns the release gate's accepted retrieval scores in this build, recall at 10 and
+    MRR, read from `backend/eval/baseline.json`: the numbers a new build may not drop below
+    beyond its tolerance. Call it from the platform console's evaluation page to set a
+    run's scores beside them.
+
+    Until a real evaluator has scored the retrieval track, `recorded` is false and every
+    score is null, never zero: a zero would claim search found nothing. The baseline changes
+    only through a reviewed commit that re-records it, never through this API.
+
+    A person's session only, holding the platform permission `eval.manage`, which a library
+    editor holds; no session inside a bank and no API key can read it. It changes nothing and
+    writes nothing to the audit log.
+
+    Errors: `permission_denied` without `eval.manage`; `unauthenticated` without a session.
+    """
+    return eval_sets.retrieval_baseline()

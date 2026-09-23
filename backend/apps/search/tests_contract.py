@@ -1,10 +1,9 @@
 """The search and ask API contract (SRC-01 to SRC-03, chunk 7).
 
 This is the contract package's proof: the four operations exist at their designed
-paths, in their designed shape, behind their real gates. Search, similar and Ask answer
-for real (`hybrid.py`, `ask.py`); the reader's verdict on an answer still says
-`not_built` until its logic lands. The gate runs first, so an unauthenticated or
-unauthorised caller is refused before it learns whether anything is built.
+paths, in their designed shape, behind their real gates. All four answer for real
+(`hybrid.py`, `ask.py`). The gate runs first, so an unauthenticated or unauthorised
+caller is refused before it learns anything.
 
 `POST /ask` is the one that answers a stream (`text/event-stream`), so its proof is the
 content type and the events, not a JSON body; and the proof that every refusal still
@@ -64,7 +63,7 @@ class SearchApiTestCase(TestCase):
 
 
 class SearchContractTests(SearchApiTestCase):
-    """Every search operation runs behind its own gate; the one not built yet says so."""
+    """Every search operation runs behind its own gate."""
 
     # -- the reader's three routes ------------------------------------------------------
     def test_search_is_built_and_runs_behind_the_readers_gate(self) -> None:
@@ -77,11 +76,15 @@ class SearchContractTests(SearchApiTestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["code"], "not_found")
 
-    def test_answer_feedback_answers_not_built_for_a_reader(self) -> None:
+    def test_answer_feedback_is_built_and_runs_behind_the_readers_gate(self) -> None:
+        # `POST /answers/{answerId}/feedback` answers for real since
+        # `ask-feedback-and-limits`; what it writes is proved in tests_ask_limits.py. What
+        # belongs here is that the gate passed and the logic ran: this principal's company
+        # holds no answer by that id, which is a 404, never a 403.
         with stub_session(user_principal(permissions={perms.SEARCH_USE}, tenant_id=uuid.uuid4())):
             response = self.post(FEEDBACK, FEEDBACK_BODY, SESSION_HEADERS)
-        self.assertEqual(response.status_code, 501)
-        self.assertEqual(response.json()["code"], "not_built")
+        self.assertEqual(response.status_code, 404, response.content)
+        self.assertEqual(response.json()["code"], "not_found")
 
     # -- the agents' route ---------------------------------------------------------------
     def test_similar_is_built_and_runs_behind_the_agents_scope(self) -> None:
@@ -307,6 +310,18 @@ class ContractDocumentationTests(TestCase):
                 "AskProblemEvent",
                 "AnswerFeedbackKind",
                 "AnswerFeedbackBody",
+                # The evaluation set in the console (SRC-05, ADM-02).
+                "EvalScores",
+                "EvalRunConfig",
+                "EvalRunMetrics",
+                "EvalQuestionResult",
+                "EvalVia",
+                "EvalQuestionInput",
+                "EvalQuestionOut",
+                "EvalQuestionPage",
+                "EvalRunOut",
+                "EvalRunPage",
+                "EvalBaselineOut",
             },
         )
 

@@ -12,13 +12,17 @@ Prefixes hosted: SRC.
 import datetime
 import json
 import re
+import sys
 import tempfile
+import time
 import uuid
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 from unittest import mock, skip
 
+from django.conf import settings
 from django.contrib.postgres.search import SearchQuery
+from django.core.cache import cache
 from django.db import connection, transaction
 from django.test import Client, TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
@@ -27,7 +31,7 @@ from apps.governance.models import AiGeneration, AiPurpose
 from apps.identity.models import User
 from apps.library.models import ProblemReport, SubjectType
 from apps.library.seeds import seed_languages
-from apps.search import ask, hybrid
+from apps.search import ask, hybrid, indexing
 from apps.search.eval import SPEC, Retriever
 from apps.search.indexing import index_write
 from apps.search.models import SearchChunk, SearchSource
@@ -40,19 +44,22 @@ from apps.search.tests_hybrid import (
     EU_REPORTING_SUMMARY,
     EU_REPORTING_TITLE,
     FFFS,
+    FIRST_DAY,
     REPORTING_SUMMARY_V1,
     REPORTING_SUMMARY_V2,
     REPORTING_TITLE,
     WARNINGS_SUMMARY,
     WARNINGS_TITLE,
     CorpusMixin,
+    _instrument,
+    _obligation,
 )
 from apps.shared import ai, factories, tenancy
 from apps.shared.adapters import llm, reranker
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.tenancy import library_write
 from apps.shared.testing import sign_in
-from apps.taxonomy.models import DutyType
+from apps.taxonomy.models import DutyType, InstrumentLevel, InstrumentLevelKind
 from apps.watch import testing as watch
 from apps.watch.models import ChangeObligation
 from apps.watch.write import watch_write
@@ -92,8 +99,8 @@ class SearchScenarioTests(TestCase):
         takes its place (`LabelledClassifier`). A question the library cannot answer gets
         no hit at all from the real retriever, which is the one answer the gate scores right.
 
-        Operations: `rateAnswer`, the reader's verdict the evaluation set reads back.
-        It answers 501 not_built until the Ask backend lands.
+        Operations: `rateAnswer`, the reader's verdict the evaluation set reads back
+        (proved in tests_ask_limits.py).
         """
         gate = load_search_eval()
         questions = gate.load_jsonl(gate.EVAL / "retrieval.jsonl")
@@ -159,13 +166,6 @@ class SearchScenarioTests(TestCase):
         self.assertEqual(silent, [], "a question the library cannot answer gets no hit")
         self.assertEqual((gate.recall_at_k([], silent), gate.reciprocal_rank([], silent)), (1.0, 1.0))
 
-    @skip("pending: SRC-S9")
-    def test_src_s9(self) -> None:
-        """SRC-S9
-
-        Search and Ask stay within their budgets and are rate limited (SRC-01, NFR-02).
-        """
-
     def test_src_s11(self) -> None:
         """SRC-S11
 
@@ -214,13 +214,6 @@ class SearchScenarioTests(TestCase):
             ["change", "obligation_version", "provision_version"],
             "a source type outside the library would be a way in for a tenant's own words",
         )
-
-    @skip("pending: SRC-S12 (INV-08, chunk 7)")
-    def test_src_s12(self) -> None:
-        """SRC-S12
-
-        A question about a standard's control gets "no answer" (SRC-03, SRC-05, INV-08).
-        """
 
     @skip("pending: SRC-S13 (REG-08, chunk 8)")
     def test_src_s13(self) -> None:
@@ -372,6 +365,92 @@ class HybridSearchScenarioTests(CorpusMixin, TestCase):
 # ---------------------------------------------------------------------------------------
 # SRC-S8: the release gate's harness, run the way the gate runs it
 # ---------------------------------------------------------------------------------------
+class BudgetScenarioTests(CorpusMixin, TestCase):
+    """SRC-S9, through the real routes against the indexed corpus."""
+
+    reader: ClassVar[User]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.build_corpus()
+        cls.reader = factories.member_user(cls.tenant, roles=("reader",))
+
+    def setUp(self) -> None:
+        cache.clear()
+        self.addCleanup(cache.clear)
+
+    def test_src_s9(self) -> None:
+        """SRC-S9
+
+        Search and Ask stay within their budgets and are rate limited (SRC-01, NFR-02).
+
+        Given the indexed corpus and a warm cache, hybrid search answers inside
+        `SEARCH_BUDGET_MS` without the reranker and `SEARCH_RERANKED_BUDGET_MS` with it,
+        reporting its time in `Server-Timing`; Ask's first event, the answer's id, leaves
+        inside `ASK_FIRST_TOKEN_BUDGET_MS`. Measured on thread time and on the fastest of
+        five runs with the coverage tracer off, as the other budgets are, so a loaded
+        machine cannot fail a gate about the query. r1-perf records the medians against a
+        production build.
+
+        When a reader spends a bucket (`limits.py`, a setting each), the next search and
+        the next question answer 429 `rate_limited`, before anything is read.
+        """
+        headers = sign_in(self.reader, tenant=self.tenant)
+        client = Client()
+        query = {"q": "kostnader och avgifter", "lang": "sv"}
+        question = {"question": "What must we disclose about costs and charges?", "lang": "en"}
+
+        def search() -> Any:
+            return client.post(SEARCH, data=query, content_type="application/json", **headers)
+
+        def first_event() -> bytes:
+            response: Any = client.post(ASK, data=question, content_type="application/json", **headers)
+            self.assertEqual(response.status_code, 200, getattr(response, "content", b""))
+            stream = iter(response.streaming_content)
+            first = next(stream)
+            list(stream)  # the rest of the answer, which is outside the first-token budget
+            return cast(bytes, first)
+
+        warm = search()
+        self.assertEqual(warm.status_code, 200, warm.content)
+        self.assertRegex(warm["Server-Timing"], r"^app;dur=\d+\.\d$")
+        self.assertIn(b'"event": "start"', first_event())
+
+        def fastest(call: Any) -> float:
+            spent = []
+            for _ in range(5):
+                started = time.thread_time()
+                call()
+                spent.append((time.thread_time() - started) * 1000)
+            return min(spent)
+
+        tracer = sys.gettrace()
+        sys.settrace(None)
+        try:
+            reranked = fastest(search)
+            with override_settings(RERANKER_PROVIDER="none"):
+                unranked = fastest(search)
+            asked = fastest(first_event)
+        finally:
+            sys.settrace(tracer)
+        self.assertLess(reranked, settings.SEARCH_RERANKED_BUDGET_MS, "the reranker is on in this run")
+        self.assertLess(unranked, settings.SEARCH_BUDGET_MS)
+        self.assertLess(asked, settings.ASK_FIRST_TOKEN_BUDGET_MS)
+
+        cache.clear()  # the runs above spent from the reader's buckets
+        with override_settings(
+            RATE_LIMITING_ENABLED=True, SEARCH_RATE_PER_USER_PER_MINUTE=1, ASK_RATE_PER_USER_PER_MINUTE=1
+        ):
+            self.assertEqual(search().status_code, 200)
+            refused_search = search()
+            self.assertEqual(first_event()[:6], b"data: ")
+            refused_ask = client.post(ASK, data=question, content_type="application/json", **headers)
+        for refused in (refused_search, refused_ask):
+            with self.subTest(route=refused.request["PATH_INFO"]):
+                self.assertEqual(refused.status_code, 429, refused.content)
+                self.assertEqual(refused.json()["code"], "rate_limited")
+
+
 class LabelledClassifier:
     """SRC-S8's stand-in for the agents' classifier, which is not this app's: it answers every
     text of the committed set with its label. It is not a mock, so the gate holds it to a
@@ -420,11 +499,16 @@ LIBRARY_SUMMARIES = {
     REPORTING_SUMMARY_V2,
     EU_REPORTING_SUMMARY,
 }
+# SRC-S12's conformance duty: an invented standard, named by an invented title, with no
+# clause text, which is all the library ever holds of a standard (INV-08, D-35).
+STANDARD_CONFORMANCE_SUMMARY = (
+    "The institution conforms to the Example Security Standard and meets what it requires of every control it applies."
+)
 PASSAGE_LINE = re.compile(r"^\[(\d+)\] (.+) \(([^()]+)\)$")
 
 
 class AskScenarioTests(CorpusMixin, TestCase):
-    """SRC-S4, SRC-S5 and SRC-S6, through `POST /ask` against the indexed corpus, on the mock
+    """SRC-S4, SRC-S5, SRC-S6 and SRC-S12, through `POST /ask` against the indexed corpus, on the mock
     model that answers one cited sentence per passage it is given.
 
     An answer is a read that asks a model: it writes the one AI log row every model call
@@ -599,3 +683,71 @@ class AskScenarioTests(CorpusMixin, TestCase):
         model.assert_not_called()
         retrieval.assert_not_called()
         self.assertEqual(AiGeneration.objects.count(), logged)
+
+    def test_src_s12(self) -> None:
+        """SRC-S12
+
+        A question about a standard's control gets "no answer" (SRC-03, SRC-05, INV-08).
+
+        Given the library holds an invented standard's edition with its conformance duty and
+        no clause text, filed under a level whose kind is `standard` and whose key is its
+        own, when a reader searches what one of its controls requires, Search finds the
+        conformance duty; when they ask the same question, the answer is `noAnswer`, no
+        statement, no citation, no model asked and nothing logged, because Ask never gives
+        a model an obligation under a standard (D-81). The kind decides and never the key,
+        which is why the level here is not the seeded `standard` row. The evaluation set
+        holds a question about a standard's control expecting no answer, scored against
+        Ask's passages, and it gates the release with every other row.
+
+        Operations: `ask`, `search`.
+        """
+        question = "What does the Example Security Standard require of a control?"
+        with library_write("SRC-S12: an invented standard's edition and its conformance duty"):
+            tier = InstrumentLevel.objects.create(
+                key="src-s12-standards-tier", kind=InstrumentLevelKind.STANDARD.value, binding_default=False, rank=900
+            )
+            edition = _instrument(
+                key="example-security-standard-2031",
+                official_ref="EXS 9999:2031",
+                jurisdiction="intl",
+                binding=False,
+                level=tier.key,
+            )
+            conformance = _obligation(
+                edition,
+                key="obl-example-security-standard-conformance",
+                ref_label="Conformance",
+                duty_type="governance",
+                titles={"en": "Conform to the Example Security Standard"},
+                versions=((FIRST_DAY, {"en": STANDARD_CONFORMANCE_SUMMARY}),),
+            )
+        indexing.reindex_all()
+        indexing.embed_backlog()
+
+        found = Client().post(
+            SEARCH, data={"q": question, "lang": "en"}, content_type="application/json", **self.headers
+        )
+        self.assertEqual(found.status_code, 200, found.content)
+        self.assertIn(
+            str(conformance.id),
+            [hit["id"] for hit in found.json()["items"]],
+            "Search still finds the conformance duty, so the question does reach it",
+        )
+
+        with mock.patch.object(llm.MockLlm, "stream", autospec=True) as model:
+            events = self.events({"question": question, "lang": "en"})
+
+        model.assert_not_called()
+        self.assertEqual([event["event"] for event in events], ["start", "answer"])
+        answer = events[-1]["answer"]
+        self.assertTrue(answer["noAnswer"])
+        self.assertEqual((answer["statements"], answer["citations"]), ([], []))
+        self.assertFalse(AiGeneration.objects.exists(), "no model was asked, so nothing is logged as if one had been")
+
+        gate = load_search_eval()
+        rows = [row for row in gate.load_jsonl(gate.EVAL / "retrieval.jsonl") if row.get("via") == "ask"]
+        self.assertTrue(rows, "the evaluation set holds a question Ask must not answer")
+        for row in rows:
+            with self.subTest(row=row["id"]):
+                self.assertEqual(row["expected"], [], "a question about a standard's control expects no answer")
+                self.assertRegex(row["query"], "(?i)control")

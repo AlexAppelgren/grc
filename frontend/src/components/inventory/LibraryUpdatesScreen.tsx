@@ -14,7 +14,7 @@ import { ErrorState, LoadingState, StatusLine } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useReportObligationProblem } from '@/features/library/hooks';
 import { useLibraryUpdates, useMarkVisited } from '@/features/library-updates/hooks';
-import { inForceLine, KIND_FILTER, outsideScopeLine, presentLibraryUpdate, titleOf } from '@/features/library-updates/library-updates-presentation';
+import { confirmedLine, inForceLine, KIND_FILTER, outsideScopeLine, presentLibraryUpdate, titleOf } from '@/features/library-updates/library-updates-presentation';
 import type { LibraryUpdateRow, LibraryUpdateTarget } from '@/features/library-updates/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
@@ -37,6 +37,7 @@ function UpdateRow({ row, canReport, onReport }: { row: LibraryUpdateRow; canRep
   const target: LibraryUpdateTarget | null = row.target ?? null;
   const inForce = inForceLine(row, t, ctx);
   const outside = outsideScopeLine(row, t);
+  const machine = confirmedLine(row, t);
   return (
     <div
       className={row.inFootprint ? 'rounded-card border border-line bg-surface px-4 py-3.5' : 'rounded-card border border-dashed border-line-control bg-surface px-4 py-3.5'}
@@ -53,6 +54,11 @@ function UpdateRow({ row, canReport, onReport }: { row: LibraryUpdateRow; canRep
           titleOf(row, t)
         )}
       </h3>
+      {machine === null ? null : (
+        <p className="mb-1.5 text-meta text-muted" data-machine-confirmed="">
+          {machine}
+        </p>
+      )}
       {outside === null ? null : <p className="mb-1.5 text-meta text-muted">{outside}</p>}
       {target !== null ? (
         <ButtonBar className="mt-2 justify-start">

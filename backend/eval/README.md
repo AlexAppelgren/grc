@@ -5,7 +5,7 @@ sets here and compares the result with the recorded baseline within the toleranc
 
 | File | Holds | State |
 |---|---|---|
-| `retrieval.jsonl` | 53 labelled questions over the prototype corpus, en 16, sv 16, da 7, nb 7, fi 7 | Filled (chunk 3 data work) |
+| `retrieval.jsonl` | 54 labelled questions over the prototype corpus, en 17, sv 16, da 7, nb 7, fi 7 | Filled (chunk 3 data work) |
 | `classification.jsonl` | 42 labelled change texts (8 from the prototype, 34 authored Nordic variants), 10 texts with embedded instructions for the AGT-07 screen, and 8 AGT-08 texts: 4 off-sector, 1 law that cites a standard, 3 about a standard | Filled |
 | `baseline.json` | The last accepted value of every metric, per track, with who recorded it and when | `recorded: false`. The retrieval track is wired and **not yet recorded**: see below |
 | `tolerance.json` | How far a metric may fall under the baseline before the gate fails, with the rationale | Filled |
@@ -19,11 +19,14 @@ set names exists.
 ## Row shapes
 
 Retrieval: `{"id", "language", "query", "expected": [stable keys], "match_kind":
-"keyword" | "concept" | "both", "as_of"?: date, "note"?}`. Every expected key is
+"keyword" | "concept" | "both", "as_of"?: date, "via"?: "search" | "ask", "note"?}`. Every expected key is
 relevant; recall@10 is the share found in the top ten and MRR the reciprocal rank of the
 first one. An empty `expected` is a question the library has no answer to (SRC-S12): both
 metrics score it 1 when the retriever returns nothing at all and 0 when it returns any
-hit, however far down. `match_kind` records what AC-SRC1 expects to win: identifiers such as
+hit, however far down. A row with `via: "ask"` is scored on the passages Ask would give a
+model (`Retriever.ask`, `hybrid.passages`) instead of the search page: `r-en-17` asks what an
+invented standard's control requires, which Search may answer with the conformance duty and
+Ask never answers at all (D-81). `match_kind` records what AC-SRC1 expects to win: identifiers such as
 "FFFS 2017:2" by keyword, phrasing such as "nudging in onboarding" by concept. The harness
 reports the metrics per match kind so a keyword or vector regression is visible on its
 own. `as_of` means the version effective on that date is the one expected; the
@@ -31,10 +34,13 @@ retriever receives it as a `date`.
 
 Classification: `{"id", "language", "jurisdiction", "authority", "source", "text",
 "expected": {"in_scope", "change_type", "flags", "scope": {dimension: [term keys]},
-"risk_flags", "standard_terms"?}, "injection", "injection_kind"?, "cites_standard"?,
-"note"?}`. Keys are vocabulary keys from the fixture.
+"risk_flags", "standard_terms"?, "mirrored_dimensions"}, "injection", "injection_kind"?,
+"cites_standard"?, "note"?}`. Keys are vocabulary keys from the fixture.
 Scoring per field: change type exact, flags set equality, scope the mean Jaccard over the
-dimensions the expectation names (empty matches empty), screen the set equality of
+dimensions the expectation names (empty matches empty) and a miss outright when the
+prediction sends any term of a dimension the row lists in `mirrored_dimensions` (every row
+lists `jurisdiction`: a change's market comes from its authority, never from a term,
+FP-S12; `mj-01` is a national supervisor's page written for that rule), screen the set equality of
 `risk_flags`, where the ten injection rows expect `["embedded_instructions"]` and every
 other row expects `[]`. Metrics are reported per language and per kind of text: clean,
 injection, off-sector, a law that cites a standard, and a standard's own record.
@@ -71,6 +77,7 @@ class Retriever(Protocol):
     name: str          # recorded in baseline.json
     is_mock: bool      # a mock can score but never record or satisfy a recorded baseline
     def search(self, query: str, lang: str, as_of: date | None) -> list[str]: ...  # stable keys, best first
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]: ...  # Ask's passages, as stable keys
 
 class Classifier(Protocol):
     name: str

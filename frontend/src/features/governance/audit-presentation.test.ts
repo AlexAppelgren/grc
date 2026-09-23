@@ -17,6 +17,8 @@ describe('audit presentation', () => {
     expect(actionLabel('api_key.created')).toBe('api key created');
     expect(AUDIT_SUBJECT_TYPES).toContain('api_key');
     expect(AUDIT_SUBJECT_TYPES).toContain('obligation');
+    // FP-S10: watching a market is audited, so the log filters to it.
+    expect(AUDIT_SUBJECT_TYPES).toContain('watched_market');
     expect(new Set(AUDIT_SUBJECT_TYPES).size).toBe(AUDIT_SUBJECT_TYPES.length);
   });
 

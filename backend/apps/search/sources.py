@@ -25,6 +25,14 @@ later number wins), so it is not indexed at all rather than indexed for ever.
 **Shared records only, in R1** (D-10, owner items 4 and 10). A record a bank owns, or one
 whose instrument a bank owns, yields no chunk. Its version ids are still returned, so a
 rebuild removes anything an earlier run left behind.
+
+**A registered change is the third source** (WAT-01, WAT-02, AGT-02). It is one text — its
+title and its summary, in whatever language the source was written in, which the change
+does not record — so it is indexed once under every content language's configuration,
+and whichever reads the reader's query best is the hit (`hybrid._best_per_record`). It
+carries its authority, its authority's jurisdiction and its scope terms, and it is
+searchable from the day it was published. Only an active change is: a withdrawn or
+superseded one keeps its id in the rebuild's scope and loses its chunks.
 """
 
 from __future__ import annotations
@@ -44,8 +52,9 @@ from apps.library.models import (
     ProvisionText,
     ProvisionVersion,
 )
-from apps.search.models import SearchSource
+from apps.search.models import TEXT_SEARCH_CONFIGS, SearchSource
 from apps.search.schemas import SearchChunkMetadata
+from apps.watch.models import ChangeStatus, ChangeTerm, RegulatoryChange
 
 # The breadcrumb separator the prototype's data uses ("LVM > 9 kap.").
 PATH_SEPARATOR = " > "
@@ -185,6 +194,51 @@ def provision_chunks(provision_id: uuid.UUID) -> RecordChunks:
     return RecordChunks(SearchSource.PROVISION_VERSION.value, source_ids, chunks)
 
 
+def change_chunks(change_id: uuid.UUID) -> RecordChunks:
+    """The chunks registered change `change_id` should have: one per content language while
+    it is active, none once it is withdrawn or superseded. An unknown change contributes
+    nothing at all.
+
+    The scope terms are the change's own, a flag excluded (a flag says what the reform is
+    about, not who it reaches, WAT-03), and the reader's regulatory scope is applied to
+    them by `hybrid._in_footprint` through the watch feed's own rule. A change belongs to
+    no bank: it is registered by the platform's runs and its events carry no tenant, which
+    `tasks.index_change` checks before it calls this.
+    """
+    change = (
+        RegulatoryChange.objects.select_related("authority", "authority__jurisdiction")
+        .filter(id=change_id)
+        .first()  # ordering: one row, looked up by its id
+    )
+    if change is None:
+        return RecordChunks(SearchSource.CHANGE.value, [], [])
+    if change.status != ChangeStatus.ACTIVE.value:
+        return RecordChunks(SearchSource.CHANGE.value, [change.id], [])
+
+    authority = change.authority
+    metadata = SearchChunkMetadata(
+        authority=authority.key if authority else None,
+        jurisdiction=authority.jurisdiction.key if authority else None,
+        term_ids=list(
+            ChangeTerm.objects.filter(change=change, term__isnull=False).order_by("term_id").values_list("term_id", flat=True)
+        ),
+    ).model_dump(mode="json", by_alias=False)
+    chunks = [
+        ChunkSource(
+            source_id=change.id,
+            language=language,
+            title=change.title,
+            body=change.summary,
+            hierarchy_path=change.authority_label,
+            valid_from=change.published_on,
+            valid_to=None,
+            metadata=metadata,
+        )
+        for language in TEXT_SEARCH_CONFIGS
+    ]
+    return RecordChunks(SearchSource.CHANGE.value, [change.id], chunks)
+
+
 def obligation_ids() -> list[uuid.UUID]:
     """Every obligation of the library, for a full rebuild. The reads above decide which
     of them are indexable, so this asks no ownership question of its own."""
@@ -194,6 +248,12 @@ def obligation_ids() -> list[uuid.UUID]:
 def provision_ids() -> list[uuid.UUID]:
     """Every provision of the library, for a full rebuild."""
     return list(Provision.objects.values_list("id", flat=True))
+
+
+def change_ids() -> list[uuid.UUID]:
+    """Every registered change, for a full rebuild. `change_chunks` decides which are
+    indexable, so an inactive change's chunks are removed by the same pass."""
+    return list(RegulatoryChange.objects.values_list("id", flat=True))
 
 
 def _owned(*owners: uuid.UUID | None) -> bool:

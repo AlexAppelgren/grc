@@ -47,13 +47,30 @@ from apps.agents import runs
 from apps.agents.models import AgentRun
 from apps.governance import ai_log
 from apps.governance.models import AiPurpose
-from apps.library.models import DatePrecision
-from apps.library.reading import active_obligation, terms_of, unknown_provision_keys
+from apps.library.models import DatePrecision, SubjectType
+from apps.library.reading import (
+    InstrumentRefs,
+    active_obligation,
+    active_provision,
+    instrument_refs,
+    live_duty_type,
+    live_provision_kind,
+    parent_provision,
+    shared_instrument,
+    stable_key_taken,
+    terms_of,
+    unknown_provision_keys,
+)
+from apps.proposals import standards
 from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus, ProposalTenant
 from apps.proposals.schemas import (
     ProposalActorRef,
     ProposalAgentRef,
+    ProposalInstrumentPayload,
+    ProposalObligationPayload,
     ProposalObligationVersionPayload,
+    ProposalProvisionPayload,
+    ProposalProvisionVersionPayload,
     ProposalRow,
     ProposalTermCreatePayload,
     ProposalTermUpdatePayload,
@@ -69,6 +86,8 @@ from apps.shared.schemas import AgentDecision
 SUBJECT_TYPE = "proposal"
 # What an obligation proposal points at (schema v0.3 `subject_type`).
 OBLIGATION_TARGET = "obligation"
+# What a provision version proposal points at.
+PROVISION_TARGET = "provision"
 # The library list a rejection's reason is a row of (PRO-01, VOC-07).
 REJECTION_REASON_LIST = "rejection_reason"
 
@@ -82,6 +101,10 @@ PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
     ProposalKind.TERM_CREATE.value: ProposalTermCreatePayload,
     ProposalKind.TERM_UPDATE.value: ProposalTermUpdatePayload,
     ProposalKind.NEW_OBLIGATION_VERSION.value: ProposalObligationVersionPayload,
+    ProposalKind.NEW_INSTRUMENT.value: ProposalInstrumentPayload,
+    ProposalKind.NEW_OBLIGATION.value: ProposalObligationPayload,
+    ProposalKind.NEW_PROVISION.value: ProposalProvisionPayload,
+    ProposalKind.NEW_PROVISION_VERSION.value: ProposalProvisionVersionPayload,
 }
 VOCABULARY_KINDS = frozenset(
     kind.value
@@ -94,6 +117,28 @@ VOCABULARY_KINDS = frozenset(
     )
 )
 OBLIGATION_KINDS = frozenset({ProposalKind.NEW_OBLIGATION_VERSION.value})
+# The kinds that version a record which exists, by the target type each one names.
+VERSION_TARGETS = {
+    ProposalKind.NEW_OBLIGATION_VERSION.value: OBLIGATION_TARGET,
+    ProposalKind.NEW_PROVISION_VERSION.value: PROVISION_TARGET,
+}
+# The kinds that bring a new record into the library. They name no target, since the record
+# does not exist yet, and every fact they carry is sourced by an https link: a new record
+# has no provision of its own to cite (PRO-01).
+NEW_RECORD_KINDS = frozenset(
+    {ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_PROVISION.value}
+)
+NEW_RECORD_PAYLOADS = (ProposalInstrumentPayload, ProposalObligationPayload, ProposalProvisionPayload)
+# The kinds a reviewer may correct: each carries sourced facts from an authority, which a
+# reviewer checks against the same source (PRO-02).
+CORRECTABLE_KINDS = frozenset(VERSION_TARGETS) | NEW_RECORD_KINDS
+# The dimension an instrument's regime is a term of (D-39).
+REGIME_DIMENSION = "regime"
+# The fields of a new record's payload that say how it is written rather than what the
+# record says, so they need no source.
+UNSOURCED_FIELDS = frozenset(
+    {"key", "originalLanguage", "isMachine", "effectiveFromPrecision", "inForceFromPrecision", "inForceToPrecision", "sortOrder"}
+)
 # The payloads that name a row by key and carry labels: the key must be its own slug and
 # the labels real languages, as the vocabulary routes make them.
 NAMED_PAYLOADS = (
@@ -206,6 +251,14 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
             payload.extra = lists.extra_payload(entry, payload.extra)
     elif isinstance(payload, ProposalObligationVersionPayload):
         _validate_obligation_payload(payload)
+    elif isinstance(payload, ProposalInstrumentPayload):
+        validated_instrument(payload)
+    elif isinstance(payload, ProposalObligationPayload):
+        validated_obligation(payload)
+    elif isinstance(payload, ProposalProvisionPayload):
+        validated_provision(payload)
+    elif isinstance(payload, ProposalProvisionVersionPayload):
+        _validate_text_payload(payload)
     else:
         from apps.taxonomy.terms_logic import dimension_by_key, refuse_mirrored
 
@@ -220,69 +273,178 @@ def _validate_target(kind: str, payload: pydantic.BaseModel) -> None:
         )
 
 
-def _validate_obligation_payload(payload: ProposalObligationVersionPayload) -> None:
+def _validate_obligation_payload(payload: ProposalObligationVersionPayload | ProposalObligationPayload) -> list[Any]:
     """A new obligation version carries the summary in real content languages, one of them
     the original it was written in (INV-05), a legal date with a precision (INV-S10), and
     scope terms that exist, written as `dimension:key` (FP-01), none of them a mirrored
-    jurisdiction term: an obligation's market comes from its instrument (FP-S9, FP-S12)."""
+    jurisdiction term: an obligation's market comes from its instrument (FP-S9, FP-S12).
+    Returns the scope's terms, resolved."""
     from apps.taxonomy import tenant_lists_logic as lists
     from apps.taxonomy.terms_logic import refuse_mirrored
 
     payload.summaries = lists.validated_labels(payload.summaries)
-    if payload.original_language not in payload.summaries:
+    _written_in(payload.original_language, payload.summaries, "summary")
+    _validated_precision(payload.effective_from_precision)
+    if not payload.terms:
+        return []
+    # Stored once each, in the order given: the apply replaces the obligation's term
+    # links, and a repeated ref would break its uniqueness constraint after approval.
+    payload.terms = list(dict.fromkeys(payload.terms))
+    terms = terms_of(payload.terms)
+    refuse_mirrored(term.dimension_id for term in terms)
+    return terms
+
+
+def _written_in(language: str, texts: dict[str, str], what: str) -> None:
+    if language not in texts:
         raise ValidationError(
-            f"{payload.original_language!r} is not one of the languages the summary is written in: "
-            f"{', '.join(sorted(payload.summaries))}.",
+            f"{language!r} is not one of the languages the {what} is written in: {', '.join(sorted(texts))}.",
             code="validation_error",
         )
+
+
+def _validated_precision(precision: str) -> None:
     precisions = [member.value for member in DatePrecision]
-    if payload.effective_from_precision not in precisions:
+    if precision not in precisions:
         raise ValidationError(
-            f"{payload.effective_from_precision!r} is not a date precision. "
-            f"Valid values: {', '.join(precisions)}.",
-            code="unknown_key",
+            f"{precision!r} is not a date precision. Valid values: {', '.join(precisions)}.", code="unknown_key"
         )
-    if payload.terms:
-        # Stored once each, in the order given: the apply replaces the obligation's term
-        # links, and a repeated ref would break its uniqueness constraint after approval.
-        payload.terms = list(dict.fromkeys(payload.terms))
-        refuse_mirrored(term.dimension_id for term in terms_of(payload.terms))
+
+
+def regime_term(ref: str) -> Any:
+    """The term `ref` names as an instrument's regime, which must be a term of the regime
+    dimension (D-39, INV-S12): the regime is the sector boundary, and a term of another
+    dimension would file the instrument outside every bank's regulatory scope, or inside
+    all of them. 422 `not_a_regime` otherwise. The one check, run at creation, over a
+    reviewer's correction and again at apply."""
+    term = terms_of([ref])[0]
+    if term.dimension.key != REGIME_DIMENSION:
+        raise ValidationError(
+            f"{ref!r} is not a regime: an instrument's regime is a term of the {REGIME_DIMENSION!r} dimension, "
+            f"written {REGIME_DIMENSION}:<key>. GET /taxonomy/terms lists them.",
+            code="not_a_regime",
+        )
+    return term
+
+
+def validated_instrument(payload: ProposalInstrumentPayload) -> tuple[InstrumentRefs, Any]:
+    """A new instrument (INV-01): a key no record carries, an official name in real content
+    languages with the original among them (INV-05), live level, jurisdiction and authority
+    rows, a regime from the regime dimension (D-39), and in-force dates with a precision,
+    the end after the start. Returns the rows it names and its regime term, resolved, for
+    the apply."""
+    from apps.taxonomy import tenant_lists_logic as lists
+
+    payload.titles = lists.validated_labels(payload.titles)
+    _written_in(payload.original_language, payload.titles, "title")
+    _validated_precision(payload.in_force_from_precision)
+    _validated_precision(payload.in_force_to_precision)
+    if payload.in_force_from and payload.in_force_to and payload.in_force_to <= payload.in_force_from:
+        raise ValidationError("An instrument stops being in force after it starts: fix inForceTo.", code="validation_error")
+    if payload.eli_uri and not is_link(payload.eli_uri):
+        raise ValidationError("eliUri is the instrument's ELI as an https link.", code="validation_error")
+    if stable_key_taken(SubjectType.INSTRUMENT.value, payload.key):
+        raise ValidationError(f"{payload.key!r} is already an instrument's key.", code="duplicate_key")
+    refs = instrument_refs(level=payload.level, jurisdiction=payload.jurisdiction, authority=payload.authority)
+    return refs, regime_term(payload.regime)
+
+
+def validated_obligation(payload: ProposalObligationPayload) -> tuple[Any, list[Any]]:
+    """A new obligation (INV-03): a key no record carries, a shared instrument in force, a
+    live duty type, a title and a first summary in real content languages written in the
+    same original (INV-05), and a scope as a version's is checked. Returns the instrument
+    and the scope's terms, resolved, so the apply and the standards check read the same
+    rows the creation check did."""
+    from apps.taxonomy import tenant_lists_logic as lists
+
+    payload.titles = lists.validated_labels(payload.titles)
+    _written_in(payload.original_language, payload.titles, "title")
+    terms = _validate_obligation_payload(payload)
+    if stable_key_taken(SubjectType.OBLIGATION.value, payload.key):
+        raise ValidationError(f"{payload.key!r} is already an obligation's key.", code="duplicate_key")
+    instrument = shared_instrument(payload.instrument)
+    live_duty_type(payload.duty_type)
+    return instrument, terms
+
+
+def _validate_text_payload(payload: ProposalProvisionPayload | ProposalProvisionVersionPayload) -> None:
+    """A provision's verbatim text in real content languages, one of them the original the
+    authority published (INV-05), and a legal date with a precision (INV-S10)."""
+    from apps.taxonomy import tenant_lists_logic as lists
+
+    payload.texts = lists.validated_labels(payload.texts)
+    _written_in(payload.original_language, payload.texts, "text")
+    _validated_precision(payload.effective_from_precision)
+
+
+def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, Any]:
+    """A new provision (INV-02): a key no provision carries, a shared instrument in force, a
+    parent that is a provision of that same instrument, a live provision kind, and its text
+    checked as a version's is. Returns the instrument, the parent (or None) and the kind,
+    resolved, for the apply and the standards check."""
+    _validate_text_payload(payload)
+    if stable_key_taken(SubjectType.PROVISION.value, payload.key):
+        raise ValidationError(f"{payload.key!r} is already a provision's key.", code="duplicate_key")
+    instrument = shared_instrument(payload.instrument)
+    parent = parent_provision(instrument, payload.parent) if payload.parent else None
+    return instrument, parent, live_provision_kind(payload.provision_kind)
 
 
 def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUID | None) -> None:
-    """An obligation proposal says which obligation it versions, and that obligation is
-    here and in force. A proposal nobody could ever apply never enters the queue."""
-    if kind not in OBLIGATION_KINDS:
-        return
-    if target_type != OBLIGATION_TARGET or target_id is None:
+    """A version proposal says which obligation or provision it versions, and that record
+    is here and in force. A proposal nobody could ever apply never enters the queue. A new
+    record names no target: it does not exist until the proposal is approved."""
+    if kind in NEW_RECORD_KINDS and (target_type or target_id is not None):
         raise ValidationError(
-            f"Say which obligation this version belongs to: targetType {OBLIGATION_TARGET!r} and its id.",
+            "A new record names no target: leave targetType and targetId out.", code="validation_error"
+        )
+    expected = VERSION_TARGETS.get(kind)
+    if expected is None:
+        return
+    if target_type != expected or target_id is None:
+        raise ValidationError(
+            f"Say which {expected} this version belongs to: targetType {expected!r} and its id.",
             code="validation_error",
         )
-    active_obligation(target_id)
+    if expected == OBLIGATION_TARGET:
+        active_obligation(target_id)
+    else:
+        active_provision(target_id)
 
 
 def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
     """The fields of `payload` that a source has to be given for, named as the console
     names them beside the diff: the summary per language, the effective date and the scope
     terms. A vocabulary payload carries a label a person writes, not a sourced fact from an
-    authority, so it names none (its chunk 2 rules are unchanged)."""
-    if not isinstance(payload, ProposalObligationVersionPayload):
+    authority, so it names none (its chunk 2 rules are unchanged). A new record's are every
+    fact it sets, its texts one per language, and never how it is written
+    (`UNSOURCED_FIELDS`)."""
+    if isinstance(payload, NEW_RECORD_PAYLOADS):
+        fields: list[str] = []
+        for name, value in payload.model_dump(by_alias=True, exclude_none=True, exclude_defaults=True).items():
+            if name in UNSOURCED_FIELDS:
+                continue
+            fields += [f"{name}.{language}" for language in sorted(value)] if isinstance(value, dict) else [name]
+        return fields
+    if isinstance(payload, ProposalProvisionVersionPayload):
+        fields = [f"texts.{language}" for language in sorted(payload.texts)]
+    elif isinstance(payload, ProposalObligationVersionPayload):
+        fields = [f"summaries.{language}" for language in sorted(payload.summaries)]
+    else:
         return []
-    fields = [f"summaries.{language}" for language in sorted(payload.summaries)]
     if payload.effective_from is not None:
         fields.append("effectiveFrom")
-    if payload.terms is not None:
+    if isinstance(payload, ProposalObligationVersionPayload) and payload.terms is not None:
         fields.append("terms")
     return fields
 
 
 def sourceable_fields(payload: pydantic.BaseModel) -> list[str]:
-    """The fields `field_sources` may name. For an obligation version they are exactly the
-    fields that need a source; for a vocabulary payload, whose wording a person writes,
-    they are the payload's own fields and none of them is required. A key naming anything
-    else is a source for nothing, so it is refused rather than stored."""
-    if isinstance(payload, ProposalObligationVersionPayload):
+    """The fields `field_sources` may name. For an obligation version and a new record they
+    are exactly the fields that need a source; for a vocabulary payload, whose wording a
+    person writes, they are the payload's own fields and none of them is required. A key
+    naming anything else is a source for nothing, so it is refused rather than stored."""
+    if isinstance(payload, (ProposalObligationVersionPayload, ProposalProvisionVersionPayload, *NEW_RECORD_PAYLOADS)):
         return sourced_fields(payload)
     return sorted(payload.model_dump(by_alias=True, exclude_none=True))
 
@@ -325,7 +487,17 @@ def check_field_sources(payload: pydantic.BaseModel, field_sources: dict[str, st
             f"A source is at most {settings.PROPOSAL_SOURCE_MAX_CHARS} characters. Too long: {', '.join(long)}.",
             code="validation_error",
         )
-    refs = {field: source for field, source in field_sources.items() if not _is_link(source)}
+    if isinstance(payload, NEW_RECORD_PAYLOADS):
+        # A record that does not exist yet has no provision of its own to cite: its facts
+        # come from the authority's page.
+        unlinked = sorted(field for field, source in field_sources.items() if not is_link(source))
+        if unlinked:
+            raise ValidationError(
+                f"A new record's sources are https links to the authority's page. Not a link: {', '.join(unlinked)}.",
+                code="validation_error",
+            )
+        return
+    refs = {field: source for field, source in field_sources.items() if not is_link(source)}
     unknown = unknown_provision_keys(set(refs.values()))
     unfollowable = sorted(field for field, ref in refs.items() if ref in unknown)
     if unfollowable:
@@ -336,7 +508,9 @@ def check_field_sources(payload: pydantic.BaseModel, field_sources: dict[str, st
         )
 
 
-def _is_link(value: str) -> bool:
+def is_link(value: str) -> bool:
+    """Whether `value` is an https link, the one shape a source may take on a new record
+    and on every record of a standard (D-35)."""
     try:
         _LINK(value)
     except ValidationError:
@@ -348,8 +522,9 @@ def _agreed_effective_from(payload: pydantic.BaseModel, effective_from: Any) -> 
     """The date the proposal row shows the reviewer, which is the date approval will write
     (INV-04). An obligation version holds the date twice, on the row and in the payload,
     so a row saying one date while the payload carries another is refused rather than
-    shown; a row that says nothing takes the payload's."""
-    if not isinstance(payload, ProposalObligationVersionPayload):
+    shown; a row that says nothing takes the payload's. A new obligation's first version
+    holds it the same way."""
+    if not isinstance(payload, ProposalObligationVersionPayload | ProposalObligationPayload | ProposalProvisionPayload | ProposalProvisionVersionPayload):
         return effective_from
     if effective_from is not None and effective_from != payload.effective_from:
         raise ValidationError(
@@ -400,7 +575,18 @@ def create(
     parsed = validated_payload(kind, payload)
     _validate_obligation_target(kind, target_type, target_id)
     sources = {field: value.strip() for field, value in (field_sources or {}).items()}
+    # Before the source check, so a standard's clause pasted as a source answers
+    # `licensed_text`, the rule it breaks, rather than a generic refusal (D-35).
+    standards.check_payload(kind, target_id, parsed, sources)
     check_field_sources(parsed, sources)
+    source_url = source_url.strip()
+    if kind in NEW_RECORD_KINDS and not is_link(source_url):
+        # The link the new record itself carries as its source (INV-06); a proposal keeps its
+        # sources field by field, and the record keeps this one.
+        raise ValidationError(
+            "Give sourceUrl, the https link to the authority's page the new record is read from.",
+            code="source_missing",
+        )
     effective_from = _agreed_effective_from(parsed, effective_from)
     stored_payload = payload_dict(parsed)
     title = title.strip()
@@ -515,6 +701,9 @@ def filed_by(reviewer: Reviewer) -> Q:
     return mine & Q(proposed_in_tenant=False)
 
 
+QUEUE_ORDERS = {"oldest": ("created_at", "id"), "newest": ("-created_at", "-id")}
+
+
 def queue(
     *,
     reviewer: Reviewer,
@@ -523,11 +712,17 @@ def queue(
     target_list: str | None = None,
     origin: str | None = None,
     not_mine: bool = False,
+    order: str | None = None,
 ) -> Any:
     """The console review queue, read by a person or by an agent's key alike (PRO-S13, D-62),
     with the people and agents each row names joined in, so a page costs the same whatever
     it holds. `origin` keeps an agent's proposals or a person's; `not_mine` drops the ones
-    `reviewer` filed (`filed_by`)."""
+    `reviewer` filed (`filed_by`). `order` is `oldest` (the default, `filtered`'s own order)
+    or `newest`, for the decided tabs; the id breaks a tie either way. It orders this answer
+    only, so a bank's own list stays oldest first."""
+    order = order or "oldest"
+    if order not in QUEUE_ORDERS:
+        raise ValidationError(f"{order!r} is not an order. Valid values: {', '.join(QUEUE_ORDERS)}.", code="unknown_key")
     queryset = filtered(Proposal.objects.all(), status=status, kind=kind, target_list=target_list)
     queryset = queryset.select_related("proposed_by_agent", "reviewed_by_agent", "corrected_by")
     origin = validated_origin(origin)
@@ -535,7 +730,7 @@ def queue(
         queryset = queryset.filter(origin=origin)
     if not_mine:
         queryset = queryset.exclude(filed_by(reviewer))
-    return queryset
+    return queryset.order_by(*QUEUE_ORDERS[order])
 
 
 def by_id(proposal_id: uuid.UUID) -> Proposal:
@@ -728,22 +923,24 @@ def corrected(proposal: Proposal, reviewer: Reviewer, overrides: dict[str, Any])
     `source_missing`, because the rule is that no value reaches the library without a source
     a reader can follow, whoever typed it last.
 
-    Only an obligation version may be corrected. A vocabulary row's labels are wording a
-    person writes rather than a fact from an authority, so there is nothing to correct
-    against a source, and a reviewer who disagrees rejects with a reason instead.
+    Only a version of an obligation or a provision, or a new record, may be corrected
+    (`CORRECTABLE_KINDS`). A vocabulary row's labels are wording a person writes rather than
+    a fact from an authority, so there is nothing to correct against a source, and a
+    reviewer who disagrees rejects with a reason instead.
 
     An agent's correction may reword a summary but not move `originalLanguage`: the
     original is the one text stored without the machine label, so moving it would store a
     machine translation as unlabelled and label the source-language text machine-made
     (INV-05). It is compared as parsed, whichever spelling of the field arrived.
     """
-    if proposal.kind not in OBLIGATION_KINDS:
+    if proposal.kind not in CORRECTABLE_KINDS:
         raise ValidationError(
-            "Corrections belong to an obligation version. Reject this one with a reason instead.",
+            "Corrections belong to a version or a new record. Reject this one with a reason instead.",
             code="validation_error",
         )
     merged = {**proposal.payload, **overrides}
     parsed = validated_payload(proposal.kind, merged)
+    standards.check_payload(proposal.kind, proposal.target_id, parsed, proposal.field_sources)
     check_field_sources(parsed, proposal.field_sources)
     stored = payload_dict(parsed)
     if reviewer.user is None and stored.get("originalLanguage") != proposal.payload.get("originalLanguage"):

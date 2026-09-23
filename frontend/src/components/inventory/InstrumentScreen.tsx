@@ -4,13 +4,14 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
+import { ScopeChips } from '@/components/inventory/InventoryFilters';
 import { searchOf } from '@/components/inventory/InventoryScreen';
 import { Facts, type Fact } from '@/components/inventory/ObligationPanels';
 import { ObligationRow } from '@/components/inventory/ObligationRow';
 import { ProvisionTree } from '@/components/inventory/ProvisionTree';
+import { RecordProblemReports } from '@/components/inventory/RecordProblemReports';
 import { ReportProblemModal, type ReportContext } from '@/components/inventory/ReportProblemModal';
 import { Button } from '@/components/ui/Button';
-import { Chip, ChipRow } from '@/components/ui/Chip';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
@@ -18,8 +19,10 @@ import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States
 import { useFormatContext } from '@/features/identity/hooks';
 import { useInstrument, useObligations, useReportInstrumentProblem } from '@/features/library/hooks';
 import { presentInstrument } from '@/features/library/instrument-presentation';
-import type { InstrumentDetail, InstrumentLineageRef } from '@/features/library/types';
+import { presentBindingLevel } from '@/features/library/obligation-presentation';
+import type { InstrumentDetail, InstrumentLineageRef, ScopeFilter } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
+import { useRefreshProblemReports } from '@/features/problem-reports/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate } from '@/shared/utils/format';
@@ -27,7 +30,8 @@ import { problemStatus } from '@/shared/utils/problem';
 
 // The instrument card (design/screens/tenant-instrument.html; INV-01, INV-06,
 // FP-03). It reads and never writes the library: the one thing a reader can
-// send from here is a problem report, which stays inside their own bank. The
+// send from here is a problem report, which stays inside their own bank,
+// and the close of one in its Reported problems section (AUD-03). The
 // provision tree is its own panel (chunk3-rest-T18); the identity panel and
 // lineage land here.
 
@@ -100,7 +104,7 @@ function IdentityPanel({ instrument, actions }: { instrument: InstrumentDetail; 
     { key: 'ref', label: t('inventory.instrument.officialRefLabel'), value: <span className="font-mono">{instrument.officialRef}</span> },
     { key: 'eli', label: t('inventory.instrument.eliLabel'), value: instrument.eliUri === '' ? t('inventory.instrument.eliNotAvailable') : instrument.eliUri },
     { key: 'level', label: t('inventory.instrument.levelLabel'), value: instrument.level.label },
-    { key: 'binding', label: t('inventory.instrument.bindingLabel'), value: instrument.binding ? t('pill.binding') : t('pill.guidanceComplyOrExplain') },
+    { key: 'binding', label: t('inventory.instrument.bindingLabel'), value: presentBindingLevel(instrument.binding, instrument.level.kind, 0, t).label },
     { key: 'jurisdiction', label: t('inventory.instrument.jurisdictionLabel'), value: instrument.jurisdiction.label },
   ];
   if (instrument.authority !== null) {
@@ -123,35 +127,35 @@ function IdentityPanel({ instrument, actions }: { instrument: InstrumentDetail; 
 }
 
 /**
- * The obligations from this instrument, inside our scope unless the reader
- * asks for the rest (FP-03), exactly as the inventory filtered by this
- * instrument lists them: the total says how many there are beyond the first
- * page, and the link opens that same list in the inventory.
+ * The obligations from this instrument under the reader's scope filter
+ * (FP-03, FP-04), exactly as the inventory filtered by this instrument lists
+ * them: the total says how many there are beyond the first page, and the link
+ * opens that same list in the inventory.
  */
 function ObligationsPanel({ instrument }: { instrument: InstrumentDetail }) {
   const t = useT();
-  const [outside, setOutside] = useState(false);
-  const obligations = useObligations(outside ? { instrument: instrument.stableKey, outsideFootprint: true } : { instrument: instrument.stableKey });
+  const [scope, setScope] = useState<ScopeFilter>('in');
+  const obligations = useObligations(scope === 'in' ? { instrument: instrument.stableKey } : { instrument: instrument.stableKey, footprint: scope });
   const items = obligations.data?.items ?? [];
-  const inventory = `/inventory?${searchOf('obligations', { instrument: instrument.stableKey, regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: outside })}`;
+  const inventory = `/inventory?${searchOf('obligations', { instrument: instrument.stableKey, regime: '', service: '', dutyType: '', asOf: '', scope })}`;
   return (
     <Panel title={t('inventory.instrument.obligationsTitle')} data-obligations-panel="">
-      <ChipRow className="mb-3">
-        <Chip pressed={outside} onClick={() => setOutside((current) => !current)}>
-          {t('inventory.showOutside')}
-        </Chip>
-      </ChipRow>
+      <div className="mb-3">
+        <ScopeChips value={scope} onChange={setScope} />
+      </div>
       {obligations.isPending ? (
         <LoadingState rows={2} />
       ) : obligations.isError ? (
         <ErrorState title={t('inventory.instrument.obligationsErrorTitle')} onRetry={() => void obligations.refetch()} />
       ) : items.length === 0 ? (
-        <p className="text-meta text-muted">{t(outside ? 'inventory.instrument.obligationsEmpty' : 'inventory.instrument.obligationsEmptyInScope')}</p>
+        <p className="text-meta text-muted">
+          {t(scope === 'all' ? 'inventory.instrument.obligationsEmpty' : scope === 'watched' ? 'library.empty.watched.title' : 'inventory.instrument.obligationsEmptyInScope')}
+        </p>
       ) : (
         <>
           <div className="grid gap-2">
             {items.map((obligation) => (
-              <ObligationRow key={obligation.id} obligation={obligation} />
+              <ObligationRow key={obligation.id} obligation={obligation} watched={scope === 'watched'} />
             ))}
           </div>
           <Meta className="mt-3">
@@ -175,6 +179,12 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
   const instrument = useInstrument(instrumentId);
   const record = instrument.data;
   const report = useReportInstrumentProblem(instrumentId);
+  const refreshReports = useRefreshProblemReports();
+  // A report just filed joins the record's "Reported problems" when the form closes.
+  const onReporting = (open: boolean) => {
+    setReporting(open);
+    if (!open) refreshReports();
+  };
 
   if (instrument.isError) {
     if (problemStatus(instrument.error) === 404) return <NotFoundScreen backHref="/inventory" backLabel={t('inventory.instrument.back')} />;
@@ -186,9 +196,10 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
     {
       instrument: { key: record.stableKey, label: record.shortName },
       level: { key: record.level.key, label: record.level.label },
+      levelKind: record.level.kind,
       binding: record.binding,
       jurisdiction: { key: record.jurisdiction.key, label: record.jurisdiction.label },
-      ...(record.regime === null ? {} : { regime: { key: record.regime.key, label: record.regime.label } }),
+      regime: { key: record.regime.key, label: record.regime.label },
     },
     t,
   );
@@ -210,7 +221,7 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <ProvisionTree instrumentId={instrumentId} />
+          <ProvisionTree instrumentId={instrumentId} levelKind={record.level.kind} sourceUrl={record.sourceUrl} />
           <ObligationsPanel instrument={record} />
         </div>
         <div>
@@ -224,11 +235,12 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
               ) : undefined
             }
           />
+          <RecordProblemReports subjectType="instrument" subjectId={record.id} />
           <LineagePanel instrument={record} />
         </div>
       </div>
 
-      <ReportProblemModal open={reporting} onOpenChange={setReporting} context={context} report={report} />
+      <ReportProblemModal open={reporting} onOpenChange={onReporting} context={context} report={report} />
     </div>
   );
 }

@@ -11,10 +11,10 @@ arrive as rows from apps/taxonomy/terms_logic.py, and the read half of the footp
 there too. The library fence's AST guard refuses any module that both names a
 `LibraryModel` and calls a write method (apps/shared/tests_library_fence.py).
 
-The preview counts per record kind. Obligations are counted; cases answer zero with
-`available: false` until chunk 9 builds them, because "not counted" and "none" are
-different answers and a screen that cannot tell them apart would lie to the person
-deciding (playbook 4.4).
+The preview counts per record kind: the obligations this bank can see and its open cases,
+each by the one scope rule (apps/taxonomy/matching.py). A count carries `available`, because
+"not counted" and "none" are different answers and a screen that cannot tell them apart
+would lie to the person deciding (playbook 4.4); both kinds are counted, so both say true.
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, prefetch_related_objects
 from django.utils import timezone
 
+from apps.cases import reading as case_reading
 from apps.library import reading
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
@@ -162,25 +163,28 @@ def preview_of(tenant_id: uuid.UUID, adds: list[Any], removes: list[Any]) -> Foo
     matching rule twice over the scope of every obligation this company can see (the
     library's one scope rule, `reading.obligation_scopes`, under row-level security),
     because the SQL function reads the stored footprint and this asks about one that does
-    not exist yet. An obligation with no scope matches both and is not listed. Cases answer
-    `available: false` until chunk 9, and this function grows one branch per kind as they
-    land."""
+    not exist yet. An obligation with no scope matches both and is not listed. Cases are
+    counted the same way over the scope of each open case's change (`case_reading`)."""
     now = matching.footprint_of(tenant_id)
     after = _after(now, adds, removes)
     restricting = matching.restricting_dimensions()
-    hidden = revealed = 0
-    for scope in reading.obligation_scopes().values():
-        record_terms = {dimension: {term.key for term in terms} for dimension, terms in scope.items()}
-        was_in = matching.in_footprint(record_terms, now, restricting=restricting)
-        is_in = matching.in_footprint(record_terms, after, restricting=restricting)
-        if was_in and not is_in:
-            hidden += 1
-        elif is_in and not was_in:
-            revealed += 1
-    return FootprintPreview(
-        obligations=FootprintPreviewCount(hidden=hidden, revealed=revealed, available=True),
-        cases=FootprintPreviewCount(hidden=0, revealed=0, available=False),
-    )
+
+    def count(scopes: list[dict[str, set[str]]]) -> FootprintPreviewCount:
+        hidden = revealed = 0
+        for record_terms in scopes:
+            was_in = matching.in_footprint(record_terms, now, restricting=restricting)
+            is_in = matching.in_footprint(record_terms, after, restricting=restricting)
+            if was_in and not is_in:
+                hidden += 1
+            elif is_in and not was_in:
+                revealed += 1
+        return FootprintPreviewCount(hidden=hidden, revealed=revealed, available=True)
+
+    obligation_scopes = [
+        {dimension: {term.key for term in terms} for dimension, terms in scope.items()}
+        for scope in reading.obligation_scopes().values()
+    ]
+    return FootprintPreview(obligations=count(obligation_scopes), cases=count(case_reading.open_case_scopes(tenant_id)))
 
 
 def _changes_of(requests: list[FootprintChangeRequest]) -> list[tuple[list[Any], list[Any]]]:
@@ -330,6 +334,13 @@ def seed_terms(*, tenant: Tenant, actor: Actor, terms: list[Any]) -> int:
     system actor and no step-up assertion, so a seeded footprint has the same history rows
     as one a person built and the "as of" reconstruction never has a hole."""
     return _switch_on(tenant=tenant, actor=actor, terms=terms, request=None, step_up_assertion_id=None)
+
+
+def unseed_terms(*, tenant: Tenant, actor: Actor, terms: list[Any]) -> int:
+    """`seed_terms` undone, for an E2E journey that restores the seeded footprint it
+    changed (watch-standards, WAT-S10): the same writes a removal makes, history and audit
+    included."""
+    return _switch_off(tenant=tenant, actor=actor, terms=terms, request=None, step_up_assertion_id=None)
 
 
 def create_request(

@@ -6,6 +6,7 @@
   "footprint.term.in": "In our scope",
   "footprint.term.out": "Not in our scope",
   "footprint.notRestricted": "Not restricted: every option applies.",
+  "footprint.noneFollowed": "None followed.",
   "footprint.jurisdictionHint": "The markets we operate in.",
   "footprint.pending.add": "Added when approved",
   "footprint.pending.remove": "Removed when approved",
@@ -60,5 +61,17 @@
   "footprint.history.rejected": "rejected \"{title}\" requested by {requester}: \"{note}\"",
   "footprint.history.withdrawn": "withdrew \"{title}\".",
   "footprint.history.pending": "requested \"{title}\".",
-  "footprint.errorTitle": "Could not load the regulatory scope"
+  "footprint.errorTitle": "Could not load the regulatory scope",
+  "footprint.history.showMore": "Show more",
+  "footprint.markets.title": "Markets we watch",
+  "footprint.markets.intro": "The jurisdictions in our regulatory scope are the markets we operate in. Watching a market hides nothing.",
+  "footprint.markets.approverOnly": "You can see the regulatory scope. Changing it needs {permission}; ask a compliance officer or an administrator.",
+  "footprint.markets.operating": "Operating",
+  "footprint.markets.watching": "Watching",
+  "footprint.markets.notWatched": "Not watched",
+  "footprint.markets.alsoIncluded": "Also included",
+  "footprint.markets.reach": "{parent} rules reach {markets}, so they show wherever those markets do.",
+  "footprint.markets.everywhereElse": "Everywhere else",
+  "footprint.markets.sweep": "Our research sweeps every source in the library for every market, whatever you choose here.",
+  "footprint.markets.notSaved": "{market} was not saved. Try again."
 }

@@ -223,3 +223,10 @@ description = "A package key in the R1 build plan's wave 3 briefs (docs/plans/r1
 condition = "AND"
 regexes = ['''^aud-s4-integration$''']
 paths = ['''^docs/plans/r1-waves/wave3\.json$''']
+
+# --- tax-market-journeys: tenant B's second person (FP-S8) ---
+[[allowlists]]
+description = "E2E passkey private key for the seeded user approver@second-bank.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgqp4keK1CVCmUqb6cuZmxD4PZsm4iHTiQkEIDgB8CBTmhRANCAAQItrG7COh7F-vyB9XMk6g-gn4Jp6BtV6O3663YP4y-LUtTEc-4zlyk0tFyDvnF9JlXLtLIOE8vHq82uz9Z-763$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']

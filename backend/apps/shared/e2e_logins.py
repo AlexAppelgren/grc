@@ -120,6 +120,12 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
         title="Product specialist, cards",
         reserved_for=("I18N-S3",),
     ),
+    # --- tax-market-journeys (FP-S8) --------------------------------------------------------
+    # Tenant B's second person: FP-S8 turns on Denmark in tenant B, which its admin requests
+    # and someone else must approve with a passkey (four eyes). Approver holds
+    # footprint.approve and not footprint.request, so it never files the request it decides.
+    SeedLogin(_id(17), "approver@second-bank.test", "Freja Madsen", TENANT_B_SLUG, ("approver",), title="Approver, head of compliance"),
+    # --- end tax-market-journeys -------------------------------------------------------------
 )
 
 # The login ADM-S2 spends (above). Named here so the guard and the journey read one value.

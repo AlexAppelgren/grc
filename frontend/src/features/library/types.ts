@@ -27,9 +27,10 @@ export interface LocalizedText {
 }
 
 /** A summary version by number and the date it takes effect; a null date means "since it began" (INV-04). */
-export interface ObligationVersion {
+export interface ObligationVersion extends VersionConfirmation {
   versionNumber: number;
   effectiveFrom: PartialDate | null;
+  approvedAt: string | null;
 }
 
 /** The record's terms in one dimension; an empty list means no restriction in it (FP-01). */
@@ -65,9 +66,13 @@ export interface Obligation {
   /** The version in force on the read's date, and the next one after it. */
   version: ObligationVersion | null;
   upcomingVersion: ObligationVersion | null;
+  /** The instrument's jurisdiction: what "Market we watch" names in the watched view (FP-04). */
+  jurisdiction: LibraryRef;
   inFootprint: boolean;
   outsideReason: OutsideReason[];
   lastVerifiedAt: string | null;
+  /** The named person behind `lastVerifiedAt`, or null when nobody signed it. */
+  verifiedBy: PersonRef | null;
   openChangeCount: number;
   /** An applicability change waiting for approval; null until the register overlay lands (chunk 8). */
   pendingApplicability: boolean | null;
@@ -75,10 +80,16 @@ export interface Obligation {
 }
 
 /**
+ * Which records a list shows against the bank's footprint: one value, never a
+ * contradictory pair. `in` is the default and is never sent; `all` lifts the
+ * footprint and `watched` shows only what the watched markets add (FP-03, FP-04).
+ */
+export type ScopeFilter = 'in' | 'watched' | 'all';
+
+/**
  * The filters of GET /obligations. Every value is a key, never a label:
  * `term` is `dimension:key` and repeats, `asOf` is a plain date and defaults
- * to today where the tenant is, and `outsideFootprint` lifts the footprint
- * filter and reports why each row would be hidden.
+ * to today where the tenant is, and `footprint` is the scope filter's value.
  */
 export interface ObligationQuery {
   instrument?: string;
@@ -86,7 +97,7 @@ export interface ObligationQuery {
   term?: string[];
   q?: string;
   asOf?: string;
-  outsideFootprint?: boolean;
+  footprint?: ScopeFilter;
 }
 
 /** A person the library names, by id and name; never a member of a bank (INV-06). */
@@ -165,7 +176,7 @@ export interface ObligationDetail {
   refLabel: string;
   title: LocalizedText | null;
   instrument: InstrumentSummary;
-  regime: LibraryRef | null;
+  regime: LibraryRef;
   bindingLevel: LibraryRef;
   binding: boolean;
   dutyType: LibraryRef;
@@ -236,7 +247,7 @@ export interface Instrument {
   binding: boolean;
   jurisdiction: LibraryRef;
   authority: InstrumentAuthorityRef | null;
-  regime: LibraryRef | null;
+  regime: LibraryRef;
   officialRef: string;
   inForceFrom: PartialDate | null;
   inForceTo: PartialDate | null;
@@ -251,7 +262,7 @@ export interface Instrument {
 export interface InstrumentQuery {
   regime?: string;
   q?: string;
-  outsideFootprint?: boolean;
+  footprint?: ScopeFilter;
 }
 
 /** One instrument-to-instrument relation, from either side (INV-01). */
@@ -304,7 +315,7 @@ export interface InstrumentDetail {
   binding: boolean;
   jurisdiction: LibraryRef;
   authority: InstrumentAuthorityRef | null;
-  regime: LibraryRef | null;
+  regime: LibraryRef;
   officialRef: string;
   /** The European Legislation Identifier, or an empty string when none is published; never null. */
   eliUri: string;

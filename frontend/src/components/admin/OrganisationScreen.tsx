@@ -9,7 +9,7 @@ import { CheckGroup, CheckRow, Field, Select, TextInput } from '@/components/ui/
 import { PageHead } from '@/components/ui/PageHead';
 import { Panel } from '@/components/ui/Panel';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
-import { useLanguages, useTenant, useUpdateTenant } from '@/features/tenant-admin/hooks';
+import { useLanguages, useSetTenantAi, useTenant, useUpdateTenant } from '@/features/tenant-admin/hooks';
 import type { RoleRef, Tenant } from '@/features/tenant-admin/types';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -18,7 +18,9 @@ import { findDestination } from '@/shared/navigation/registry';
 // Organisation (design/screens/admin-organisation.html, TEN-01): name,
 // timezone, default language, content languages in order, and the
 // onboarding checklist the server computes. Any member may read; saving
-// needs security.manage and the server's 403 renders in place.
+// needs security.manage and the server's 403 renders in place. The switch over
+// this organisation's Ask and AI drafts (D-07) is its own security change: the
+// api client opens the passkey prompt on the server's step_up_required.
 
 const NORDIC_ZONES = ['Europe/Stockholm', 'Europe/Helsinki', 'Europe/Oslo', 'Europe/Copenhagen', 'Europe/Brussels'];
 
@@ -144,6 +146,24 @@ function ProfileForm({ tenant, languages }: { tenant: Tenant; languages: RoleRef
   );
 }
 
+function AiSwitch({ tenant }: { tenant: Tenant }) {
+  const t = useT();
+  const toggle = useSetTenantAi();
+  const on = tenant.aiEnabled;
+  return (
+    <Panel title={t('admin.organisation.ai.title')} aria-busy={toggle.isPending}>
+      <p>{on ? t('admin.organisation.ai.on', { name: tenant.name }) : t('admin.organisation.ai.off', { name: tenant.name })}</p>
+      <p className="text-meta text-muted">{t('admin.organisation.ai.hint')}</p>
+      {toggle.isError ? <ProblemAlert error={toggle.error} codes={{ step_up_required: t('admin.organisation.ai.stepUpCancelled') }} /> : null}
+      <ButtonBar>
+        <Button variant={on ? 'outline' : 'primary'} disabled={toggle.isPending} onClick={() => toggle.mutate(!on)}>
+          {toggle.isPending ? t('admin.organisation.ai.switching') : on ? t('admin.organisation.ai.switchOff') : t('admin.organisation.ai.switchOn')}
+        </Button>
+      </ButtonBar>
+    </Panel>
+  );
+}
+
 function Checklist({ tenant }: { tenant: Tenant }) {
   const t = useT();
   const total = tenant.onboarding.steps.length;
@@ -192,7 +212,10 @@ export function OrganisationScreen() {
       ) : (
         <div className="grid items-start gap-4 md:grid-cols-[1.4fr_1fr]">
           {/* Keyed on the id: the form's own state is the draft, and a reseed elsewhere remounts it. */}
-          <ProfileForm key={tenant.data.id} tenant={tenant.data} languages={languageOptions(languages.data, tenant.data)} />
+          <div>
+            <ProfileForm key={tenant.data.id} tenant={tenant.data} languages={languageOptions(languages.data, tenant.data)} />
+            <AiSwitch tenant={tenant.data} />
+          </div>
           <Checklist tenant={tenant.data} />
         </div>
       )}

@@ -20,9 +20,13 @@ from datetime import date
 from typing import Any
 from unittest import mock, skip
 
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
+
 from apps.agents import testing as agents_testing
 from apps.governance.models import AiGeneration
 from apps.identity import tokens
+from apps.library import testing as library_build
 from apps.identity.models import ApiKey
 from apps.library.models import (
     Instrument,
@@ -32,9 +36,11 @@ from apps.library.models import (
     ObligationSummary,
     ObligationTerm,
     ObligationVersion,
+    Provision,
 )
 from apps.library.seeds import seed_jurisdictions, seed_languages
-from apps.proposals import apply
+from apps.library.seeds.library import seed_authorities
+from apps.proposals import apply, logic, standards
 from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
 from apps.shared import factories, tenancy, permissions as perms
 from apps.shared.audit import Actor
@@ -42,6 +48,19 @@ from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.routes import iter_operations
 from apps.shared.tenancy import library_write
 from apps.shared.testing import ScenarioTestCase, sign_in
+from apps.proposals.tests_kinds import (
+    INSTRUMENT_KEY,
+    OBLIGATION_KEY,
+    PARENT_KEY,
+    PROVISION_KEY,
+    SOURCE,
+    STANDARD_KEY,
+    STANDARD_TERM,
+    instrument_body,
+    obligation_body,
+    provision_body,
+)
+from apps.search.models import SearchChunk
 from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
@@ -262,6 +281,24 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual([link.tenant_id for link in ProposalTenant.objects.all()], [self.tenant.id])
         self.assertEqual(AuditEvent.objects.get(action="proposal.created", subject_id=proposal["id"]).tenant_id, self.tenant.id)
 
+        # A new record carries a source for every fact it sets, an https link each, since
+        # there is no provision of its own to cite yet.
+        seed_authorities()
+        new = instrument_body()
+        for missing in ("titles.sv", "regime"):
+            without = self._post("/proposals", {**new, "fieldSources": {f: u for f, u in new["fieldSources"].items() if f != missing}}, agent)
+            self.assertEqual(without.status_code, 422, without.content)
+            self.assertEqual(without.json()["code"], "source_missing")
+            self.assertIn(missing, without.json()["detail"])
+        not_a_link = self._post("/proposals", {**new, "fieldSources": {**new["fieldSources"], "level": "n/a"}}, agent)
+        self.assertEqual(not_a_link.json()["code"], "validation_error")
+        self.assertFalse(Proposal.objects.filter(kind="new_instrument").exists())
+        filed = self._post("/proposals", new, agent)
+        self.assertEqual(filed.status_code, 201, filed.content)
+        self.assertEqual(filed.json()["fieldSources"], new["fieldSources"])
+        waiting = self.client.get(f"{V1}/proposals?status=open&kind=new_instrument", **editor)
+        self.assertEqual([row["id"] for row in waiting.json()["items"]], [filed.json()["id"]])
+
     def test_pro_s2(self) -> None:
         """PRO-S2
 
@@ -362,6 +399,27 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertTrue(OutboxEvent.objects.filter(topic="obligation.version_applied").exists())
         self.assertTrue(OutboxEvent.objects.filter(topic="proposal.approved").exists())
 
+        # A new obligation arrives the same way: the record, its first version, the audit
+        # row and the re-index in one transaction, or none of them.
+        key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        new = self._post("/proposals", obligation_body(obligation.instrument.stable_key), {"HTTP_X_API_KEY": key.plain_key})
+        self.assertEqual(new.status_code, 201, new.content)
+        with mock.patch.object(apply, "reindex", side_effect=RuntimeError("index unavailable")):
+            failed = self._post(f"/proposals/{new.json()['id']}/approve", {}, sign_in(self.second_editor, step_up=True))
+        self.assertEqual(failed.status_code, 500, failed.content)
+        self.assertFalse(Obligation.objects.filter(stable_key=OBLIGATION_KEY).exists())
+        self.assertEqual(Proposal.objects.get(pk=new.json()["id"]).status, ProposalStatus.OPEN.value)
+        approved = self._post(f"/proposals/{new.json()['id']}/approve", {}, sign_in(self.second_editor, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+        created = Obligation.objects.get(stable_key=OBLIGATION_KEY)
+        first_version = ObligationVersion.objects.get(obligation=created)
+        self.assertEqual((first_version.version_number, first_version.effective_from), (1, date(2027, 1, 1)))
+        self.assertEqual(str(first_version.applied_by_proposal_id), new.json()["id"])
+        self.assertEqual(first_version.approved_by_id, self.second_editor.id)
+        self.assertTrue(SearchChunk.objects.filter(source_id=first_version.id).exists())
+        self.assertIsNotNone(AuditEvent.objects.get(action="obligation.created", subject_id=created.id).step_up_assertion_id)
+        self.assertTrue(OutboxEvent.objects.filter(topic="obligation.created").exists())
+
     def test_pro_s4(self) -> None:
         """PRO-S4
 
@@ -461,6 +519,14 @@ class ProposalsScenarioTests(ScenarioTestCase):
         twice = self._post(f"/proposals/{proposal['id']}/approve", {}, sign_in(self.second_editor, step_up=True))
         self.assertEqual(twice.status_code, 409)
         self.assertEqual(twice.json()["code"], "invalid_transition")
+        # A new record is no different: its proposer cannot approve it, and nothing is written.
+        seed_authorities()
+        filed = self._post("/proposals", instrument_body(), editor)
+        self.assertEqual(filed.status_code, 201, filed.content)
+        own_record = self._post(f"/proposals/{filed.json()['id']}/approve", {}, editor)
+        self.assertEqual(own_record.status_code, 409, own_record.content)
+        self.assertEqual(own_record.json()["code"], "four_eyes_violation")
+        self.assertFalse(Instrument.objects.filter(stable_key=INSTRUMENT_KEY).exists())
 
     def test_pro_s6(self) -> None:
         """PRO-S6
@@ -507,6 +573,18 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(self.client.get(f"{V1}/proposals?status=approved,rejected", **editor).json()["total"], 0)
         with self.assertNumQueries(PROPOSAL_QUEUE_QUERIES):
             self.client.get(f"{V1}/proposals", **editor)
+        # A new record retried under one key is one proposal, and the key cannot carry another.
+        self._obligation()
+        retried = {"HTTP_X_API_KEY": key.plain_key, "HTTP_IDEMPOTENCY_KEY": "run-42-obl-7"}
+        new = obligation_body("fffs-2017-2")
+        once = self._post("/proposals", new, retried)
+        self.assertEqual(once.status_code, 201, once.content)
+        again = self._post("/proposals", new, retried)
+        self.assertEqual((again.status_code, again.json()["id"]), (200, once.json()["id"]))
+        self.assertEqual(Proposal.objects.filter(idempotency_key="run-42-obl-7").count(), 1)
+        other = self._post("/proposals", obligation_body("fffs-2017-2", refLabel="4 kap. 3 §"), retried)
+        self.assertEqual(other.status_code, 409, other.content)
+        self.assertEqual(other.json()["code"], "idempotency_conflict")
 
     def test_pro_s7(self) -> None:
         """PRO-S7
@@ -559,7 +637,14 @@ class ProposalsScenarioTests(ScenarioTestCase):
         # read a platform session can make, on its own or naming the reported duty, its
         # instrument or the proposal the editor just opened, answers with the report's id
         # or its words.
-        ids = {"obligation_id": str(obligation.id), "instrument_id": str(obligation.instrument_id), "proposal_id": proposal["id"]}
+        ids = {
+            "obligation_id": str(obligation.id),
+            "instrument_id": str(obligation.instrument_id),
+            "proposal_id": proposal["id"],
+            "report_id": report_id,
+        }
+        # Each route's body is one its schema accepts, so the refusal is the gate's and not a 422.
+        bodies = {"PATCH": {"status": "fixed", "resolutionNote": "A platform note."}}
         filing = [op for op in iter_operations(api) if "problem-report" in op.path]
         self.assertTrue(filing, "the report routes are what this drives")
         reads = [
@@ -572,7 +657,11 @@ class ProposalsScenarioTests(ScenarioTestCase):
             platform = sign_in(person)
             for op in filing:
                 answer = self.client.generic(
-                    op.method, V1 + op.path.format(**ids), json.dumps({"description": "A platform note."}), content_type="application/json", **platform
+                    op.method,
+                    V1 + op.path.format(**ids),
+                    json.dumps(bodies.get(op.method, {"description": "A platform note."})),
+                    content_type="application/json",
+                    **platform,
                 )
                 self.assertIn(answer.status_code, (403, 404), f"{op.method} {op.path}: {answer.content!r}")
             for path in ("/console/problem-reports", f"/console/problem-reports/{report_id}", "/console/reports"):
@@ -636,19 +725,203 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertIn("sector scope", reason["usageNote"])
         self.assertIn("regulated financial services only", reason["usageNote"])
 
-    @skip("pending: PRO-S10 (INV-08, chunks 4 and 5)")
     def test_pro_s10(self) -> None:
         """PRO-S10
 
         Licensed text and extra obligations never enter a standard (INV-08, PRO-01, PRO-02).
         """
+        seed_authorities()
+        with library_write("scenario"):
+            TaxonomyTerm.objects.filter(dimension__key="standard", key="iso_iec_27001").update(active=True)
+            second_standard = TaxonomyTerm.objects.create(dimension=self._term("standard", "iso_iec_27001").dimension, key="iso_22301", sort_order=2)
+        standard = library_build.instrument(key=STANDARD_KEY, short_name="ISO/IEC 27001:2022", regime="regime:ai_ict", level="standard", binding=False)
+        self.assertEqual(standard.level.kind, "standard")
+        conformance = library_build.obligation(standard, key="obl-iso-iec-27001-2022-conformance", ref_label="ISO/IEC 27001:2022", terms=[STANDARD_TERM])
+        law = library_build.instrument(key=PARENT_KEY, regime="regime:securities")
+        tenancy.clear_tenant()
+        agent_key = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        run = {"agentRunId": str(agents_testing.platform_run(key=agent_key).id)}
+        agent = {"HTTP_X_API_KEY": agent_key.plain_key}
+        reviewer = sign_in(self.second_editor, step_up=True)
 
-    @skip("pending: PRO-S11 (INV-08, chunk 4)")
+        # A provision of the standard is refused at creation, through POST /proposals as a
+        # person and as an agent, and nothing is stored.
+        for caller, extra in ((sign_in(self.editor), {}), (agent, run)):
+            refused = self._post("/proposals", {**provision_body(STANDARD_KEY), **extra}, caller)
+            self.assertEqual(refused.status_code, 422, refused.content)
+            self.assertEqual(refused.json()["code"], "licensed_text")
+        # A provision version is refused by the same check; the database holds no provision
+        # of a standard to version (the last step below).
+        with self.assertRaises(ValidationError) as caught:
+            standards.check("new_provision_version", standard, None, {})
+        self.assertEqual(caught.exception.code, "licensed_text")
+        self.assertFalse(Proposal.objects.exists())
+        self.assertFalse(AuditEvent.objects.filter(action="proposal.created").exists())
+
+        # A field source on its conformance obligation that is not a link: licensed text.
+        cited = library_build.provision(law, key="fffs-2017-2-9-kap")
+        version: dict[str, Any] = {
+            "kind": "new_obligation_version",
+            "title": "Version 2 of the ISO/IEC 27001 conformance duty",
+            "targetType": "obligation",
+            "targetId": str(conformance.id),
+            "payload": {"summaries": {"en": "The bank keeps its certification current."}, "originalLanguage": "en"},
+            "sourceLabel": "ISO, catalogue page",
+            "sourceUrl": "https://www.iso.org/standard/27001",
+        }
+        for source in (cited.stable_key, "Clause 5.1: top management shall demonstrate leadership"):
+            refused = self._post("/proposals", {**version, "fieldSources": {"summaries.en": source}, **run}, agent)
+            self.assertEqual(refused.status_code, 422, refused.content)
+            self.assertEqual(refused.json()["code"], "licensed_text")
+        self.assertFalse(Proposal.objects.exists())
+
+        # A reviewer's correction that moves a law's provision under the standard is refused
+        # at approval, and nothing is written.
+        filed = self._post("/proposals", provision_body(), sign_in(self.editor))
+        self.assertEqual(filed.status_code, 201, filed.content)
+        corrected = self._post(f"/proposals/{filed.json()['id']}/approve", {"payloadOverrides": {"instrument": STANDARD_KEY}}, reviewer)
+        self.assertEqual(corrected.status_code, 422, corrected.content)
+        self.assertEqual(corrected.json()["code"], "licensed_text")
+        self.assertEqual(Proposal.objects.get(pk=filed.json()["id"]).status, ProposalStatus.OPEN.value)
+        self.assertFalse(Provision.objects.filter(stable_key=PROVISION_KEY).exists())
+        self.assertFalse(AuditEvent.objects.filter(action__in=("proposal.approved", "provision.created")).exists())
+
+        # A second active obligation under the standard: refused where it is made, and where a
+        # proposal stored before the rule is applied.
+        second = obligation_body(STANDARD_KEY, key="obl-iso-iec-27001-2022-second", terms=[STANDARD_TERM])
+        refused = self._post("/proposals", {**second, **run}, agent)
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "one_conformance_obligation")
+        waiting = self._stored(second, agent_key)
+        applied = self._post(f"/proposals/{waiting.id}/approve", {}, reviewer)
+        self.assertEqual(applied.status_code, 422, applied.content)
+        self.assertEqual(applied.json()["code"], "one_conformance_obligation")
+        self.assertEqual(list(Obligation.objects.filter(instrument=standard)), [conformance])
+
+        # Its obligation with no standard term, or two, is refused at apply.
+        for terms in (["legal_entity:bank"], [STANDARD_TERM, f"standard:{second_standard.key}"]):
+            stored = self._stored({**version, "payload": {**version["payload"], "terms": terms}, "fieldSources": {"summaries.en": SOURCE, "terms": SOURCE}}, agent_key)
+            applied = self._post(f"/proposals/{stored.id}/approve", {}, reviewer)
+            self.assertEqual(applied.status_code, 422, applied.content)
+            self.assertEqual(applied.json()["code"], "standard_term_required")
+        self.assertEqual([row.version_number for row in conformance.versions.all()], [1])
+        self.assertEqual([f"{link.term.dimension.key}:{link.term.key}" for link in ObligationTerm.objects.filter(obligation=conformance)], [STANDARD_TERM])
+
+        # And a provision inserted under it directly, as a seed would, the database refuses.
+        with self.assertRaises(IntegrityError) as refused_row, transaction.atomic():
+            library_build.provision(standard, key="iso-iec-27001-2022-5-1", ref_label="5.1")
+        self.assertIn("provision_not_under_standard", str(refused_row.exception))
+        self.assertFalse(Provision.objects.filter(instrument=standard).exists())
+
+    def _stored(self, body: dict[str, Any], key: Any) -> Proposal:
+        """A proposal stored as it arrived before a rule existed, bypassing the creation
+        check, so the apply's own check is what answers."""
+        return Proposal.objects.create(
+            kind=body["kind"],
+            title=body["title"],
+            target_type=body.get("targetType", ""),
+            target_id=body.get("targetId"),
+            payload=body["payload"],
+            field_sources=body["fieldSources"],
+            source_url=body["sourceUrl"],
+            source_label=body["sourceLabel"],
+            origin="agent",
+            proposed_by_api_key_id=key.id,
+            proposed_by_agent=getattr(key, "agent", None),
+        )
+
     def test_pro_s11(self) -> None:
         """PRO-S11
 
         A standard term never sits on a law's obligation (FP-01, INV-08).
         """
+        obligation = self._obligation()
+        self._version_one(obligation)
+        # The seeds keep the one standard term switched off until its records exist (D-47);
+        # the rule is about the term's dimension being opt-in, so the scenario switches it on.
+        with library_write("scenario"):
+            TaxonomyTerm.objects.filter(dimension__key="standard", key="iso_iec_27001").update(active=True)
+        with_standard = ["legal_entity:bank", "standard:iso_iec_27001"]
+        body: dict[str, Any] = {
+            "kind": "new_obligation_version",
+            "title": "Version 2 of the advice obligation, citing ISO/IEC 27001",
+            "targetType": "obligation",
+            "targetId": str(obligation.id),
+            "payload": {
+                "summaries": {"sv": "Institutet bedömer kunden innan rådgivning."},
+                "originalLanguage": "sv",
+                "effectiveFrom": "2026-10-01",
+                "effectiveFromPrecision": "day",
+                "terms": with_standard,
+            },
+            "fieldSources": {"summaries.sv": "https://www.fi.se/", "effectiveFrom": "https://www.fi.se/", "terms": "https://www.fi.se/"},
+            "sourceLabel": "FFFS 2017:2",
+            "sourceUrl": "https://www.fi.se/",
+        }
+
+        # Refused at creation, through a bank's key and through a person's session alike, and
+        # nothing is stored.
+        key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        for caller in ({"HTTP_X_API_KEY": key.plain_key}, sign_in(self.officer, tenant=self.tenant)):
+            refused = self._post("/proposals", body, caller)
+            self.assertEqual(refused.status_code, 422, refused.content)
+            self.assertEqual(refused.json()["code"], "standard_term_only_on_standards")
+        self.activate(self.tenant)
+        self.assertFalse(Proposal.objects.filter(kind="new_obligation_version").exists())
+        self.assertFalse(AuditEvent.objects.filter(action="proposal.created").exists())
+
+        # A reviewer's correction that adds the term is refused at approval: nothing is
+        # written, the proposal stays open and uncorrected, and no decision is audited.
+        proposal = self._version_proposal(obligation)
+        reviewer = sign_in(self.second_editor, step_up=True)
+        corrected = self._post(f"/proposals/{proposal['id']}/approve", {"payloadOverrides": {"terms": with_standard}}, reviewer)
+        self.assertEqual(corrected.status_code, 422, corrected.content)
+        self.assertEqual(corrected.json()["code"], "standard_term_only_on_standards")
+        row = Proposal.objects.get(pk=proposal["id"])
+        self.assertEqual((row.status, row.corrected_payload), (ProposalStatus.OPEN.value, None))
+        self.assertEqual([version.version_number for version in obligation.versions.all()], [1])
+        self.assertFalse(AuditEvent.objects.filter(action__in=("proposal.approved", "obligation.version_applied")).exists())
+        # The correction is refused on its own, before anything reaches the apply.
+        with self.assertRaises(ValidationError) as caught:
+            logic.corrected(row, logic.as_reviewer(self.second_editor, Actor.system("test")), {"terms": with_standard})
+        self.assertEqual(caught.exception.code, "standard_term_only_on_standards")
+
+        # A proposal that asked for the term before this rule existed is refused where it is
+        # applied, with the same code and nothing written.
+        Proposal.objects.filter(pk=proposal["id"]).update(payload={**row.payload, "terms": with_standard})
+        waited = self._post(f"/proposals/{proposal['id']}/approve", {}, reviewer)
+        self.assertEqual(waited.status_code, 422, waited.content)
+        self.assertEqual(waited.json()["code"], "standard_term_only_on_standards")
+        self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
+        self.assertEqual([version.version_number for version in obligation.versions.all()], [1])
+        self.assertEqual(
+            [f"{link.term.dimension.key}:{link.term.key}" for link in ObligationTerm.objects.filter(obligation=obligation)],
+            ["legal_entity:bank"],
+        )
+
+        # A new obligation under the law that carries the standard's term is refused where it
+        # is made, and where one stored before the rule is applied (f03-T42).
+        seed_authorities()
+        library_build.instrument(key=PARENT_KEY, regime="regime:securities")
+        tenancy.clear_tenant()
+        new_duty = obligation_body(terms=with_standard)
+        editor = sign_in(self.editor)
+        refused = self._post("/proposals", new_duty, editor)
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "standard_term_only_on_standards")
+        self.assertFalse(Proposal.objects.filter(kind="new_obligation").exists())
+        waiting = self._stored(new_duty, factories.api_key(self.tenant, scopes=("proposals:write",)))
+        tenancy.clear_tenant()
+        applied = self._post(f"/proposals/{waiting.id}/approve", {}, reviewer)
+        self.assertEqual(applied.status_code, 422, applied.content)
+        self.assertEqual(applied.json()["code"], "standard_term_only_on_standards")
+        self.assertFalse(Obligation.objects.filter(stable_key=OBLIGATION_KEY).exists())
+
+        # A bank whose regulatory scope names no standard still sees the duty.
+        officer = sign_in(self.officer, tenant=self.tenant)
+        listed = self.client.get(f"{V1}/obligations", **officer)
+        self.assertEqual(listed.status_code, 200, listed.content)
+        self.assertIn(str(obligation.id), [item["id"] for item in listed.json()["items"]])
 
     @skip("pending: PRO-S12 (INV-07, PRO-03, chunk 13)")
     def test_pro_s12(self) -> None:

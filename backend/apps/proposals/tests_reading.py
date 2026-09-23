@@ -415,6 +415,26 @@ class QueueReads(ScenarioTestCase):
         self.assertEqual(refused.status_code, 422, refused.content)
         self.assertEqual(refused.json()["code"], "validation_error")
 
+    def test_the_decided_tabs_read_the_queue_newest_first(self) -> None:
+        """PRO-S13, NFR-02: `order=newest` turns the queue round, newest filed first, with the
+        id breaking a tie the same way the default order does, so the Approved and Rejected
+        tabs open on the latest decision and paging stays repeatable. The default stays oldest
+        first, and a word that is not an order is refused."""
+        filed = [str(self._flag_proposal_keyed(number).id) for number in range(3)]
+        editor = sign_in(self.editor)
+        oldest = [item["id"] for item in self.client.get(f"{V1}/proposals", **editor).json()["items"]]
+        self.assertEqual(set(oldest), set(filed))
+        self.assertEqual([item["id"] for item in self.client.get(f"{V1}/proposals?order=oldest", **editor).json()["items"]], oldest)
+        newest = self.client.get(f"{V1}/proposals?order=newest", **editor).json()
+        self.assertEqual(([item["id"] for item in newest["items"]], newest["total"]), (oldest[::-1], len(filed)))
+        filed_at = [datetime.fromisoformat(item["createdAt"]) for item in newest["items"]]
+        self.assertEqual(filed_at, sorted(filed_at, reverse=True), "newest first")
+        second = self.client.get(f"{V1}/proposals?order=newest&limit=1&offset=1", **editor).json()
+        self.assertEqual([item["id"] for item in second["items"]], oldest[::-1][1:2], "the order holds across pages")
+        unknown = self.client.get(f"{V1}/proposals?order=latest", **editor)
+        self.assertEqual(unknown.status_code, 422, unknown.content)
+        self.assertEqual(unknown.json()["code"], "unknown_key")
+
     def _flag_proposal_keyed(self, number: int) -> Proposal:
         tenancy.clear_tenant()
         proposal, _ = logic.create(

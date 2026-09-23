@@ -41,10 +41,16 @@ earliest such change is the one named.
 **Every model call leaves one AI log row** (AUD-02, D-82) carrying the answer's own id
 and how the call ended, even when the reader leaves before the answer is finished
 (`aborted`) or the model fails part way (`failed`), with whatever it had written by then.
-A model that fails ends the stream with `model_unavailable`. No audit row is written: an
-answer changes no record.
+A model that fails ends the stream with `model_unavailable`. The closing `answer` event
+carries the provider's own stop reason as that row stores it, so a reader whose answer the
+model cut off at `ASK_MAX_TOKENS` is told so (D-82). No audit row is written: an answer
+changes no record.
 
-`rate_answer` stays `not_built` until the reader's verdict is built.
+**A reader's verdict is the one write** (`rate_answer`, AUD-02, SRC-05). It lands on the
+answer's own AI log row through the log module's writer, with its audit row in the same
+transaction. The audit row names the verdict, a kind, and nothing else: the question is
+not stored at all, the answer stays in the AI log, and the reader's note stays beside it.
+The same verdict and note twice write nothing the second time.
 """
 
 from __future__ import annotations
@@ -60,8 +66,11 @@ from typing import cast
 from django.conf import settings
 from django.utils import timezone
 
+from apps.governance import ai_log
 from apps.governance.models import AiPurpose
 from apps.governance.schemas import AiCitation
+from apps.identity.models import User
+from apps.identity.session_logic import actor_of
 from apps.library.models import Obligation
 from apps.library.reading import today_for
 from apps.search import hybrid, limits
@@ -78,6 +87,7 @@ from apps.search.schemas import (
     AskStatementEvent,
 )
 from apps.shared import ai
+from apps.shared.audit import record
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ChangeLifecycleKind
@@ -94,6 +104,8 @@ SYSTEM_PROMPT = (
 )
 PROMPT_TEMPLATE = "ask/answer/v1"
 MODEL_UNAVAILABLE = "The answer could not be finished. Ask again in a moment."
+ANSWER_RATED = "answer.rated"
+ANSWER_SUBJECT = "ai_generation"
 
 # The lifecycle kinds whose key date moves the law: a rule decided with its application
 # still ahead, and one in force from a later day. A proposal, a supervisory statement and
@@ -179,10 +191,30 @@ def answer_events(body: AskRequest, *, tenant_id: uuid.UUID | None, user_id: uui
     return _events(answer, passages, model)
 
 
-def rate_answer(answer_id: uuid.UUID, body: AnswerFeedbackBody, *, user_id: object) -> None:
-    """`POST /answers/{answerId}/feedback`. A reader's verdict on an answer, which the
-    evaluation set reads back (SRC-05)."""
-    raise ProblemError(status=501, code="not_built", detail="Rating an answer is not switched on yet.")
+def rate_answer(
+    answer_id: uuid.UUID, body: AnswerFeedbackBody, *, tenant_id: uuid.UUID | None, user_id: uuid.UUID
+) -> None:
+    """`POST /answers/{answerId}/feedback`. A reader's verdict on one of the bank's own
+    answers, which the evaluation set reads back (SRC-05). Another bank's answer, and a
+    session in no bank, find nothing: 404."""
+    row = ai_log.answer_of(answer_id, tenant_id) if tenant_id is not None else None
+    if row is None:
+        raise ProblemError(status=404, code="not_found", detail="Not found.")
+    if (row.feedback, row.feedback_note) == (body.feedback.value, body.note):
+        return
+    before = row.feedback
+    ai_log.set_feedback(row, feedback=body.feedback.value, note=body.note)
+    record(
+        action=ANSWER_RATED,
+        actor=actor_of(User.objects.get(pk=user_id)),
+        subject_type=ANSWER_SUBJECT,
+        subject_id=row.id,
+        subject_title="Answer",
+        summary=f"Marked an answer {body.feedback.value}.",
+        tenant_id=tenant_id,
+        before={"feedback": before},
+        after={"feedback": body.feedback.value},
+    )
 
 
 # ---------------------------------------------------------------------------------------
@@ -250,11 +282,13 @@ def _events(
     statements: list[AnswerStatement] = []
     written = ""
     name = ""
+    stop_reason = ""
     try:
         with closing(model):
             for event in model:
                 if isinstance(event, ai.Generation):
                     name = event.generation.model
+                    stop_reason = event.generation.stop_reason
                     continue
                 sentences, written = _split(written + event)
                 for sentence in sentences:
@@ -280,7 +314,8 @@ def _events(
     yield AskAnswerEvent(
         answer=answer.model_copy(
             update={"statements": statements, "citations": citations, "no_answer": not statements, "model": name}
-        )
+        ),
+        stop_reason=stop_reason or None,
     )
 
 

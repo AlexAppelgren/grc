@@ -13,6 +13,8 @@ and the diffs between two versions. Nothing here writes.
   `scope_term_ids()` are their SQL twins, which the lists and search hand to the
   database's `taxonomy_in_footprint`, unchanged, and to the term filter; the tests pin
   them to their Python counterparts.
+- `in_view()` is the lists' one footprint filter (FP-03, FP-04): `in`, `all`, or
+  `watched`, what the watched markets add, asked of the same database function twice.
 - `outside_reasons()` is the footprint verdict and its reason, built on
   `taxonomy.matching`: a record is inside when it has no reason to be outside, and
   `scope_and_verdict()` builds both for a row of the list and for a record's own card.
@@ -20,7 +22,9 @@ and the diffs between two versions. Nothing here writes.
   an obligation proposal's scope.
 - `active_obligation()` and `unknown_provision_keys()` are what a proposal points at and
   cites; they live here because the library fence keeps library models out of the
-  proposals app (PRO-01).
+  proposals app (PRO-01). `instrument_refs()`, `shared_instrument()`, `live_duty_type()`
+  and `stable_key_taken()` are what a new instrument or obligation names, for the same
+  reason.
 - "As of" a date is `logic.in_force()` and nothing else (AC-INV1). A version's end date is
   never stored: `version_rows()` derives it from the version that follows (INV-04).
 - `confirmation_of()` is who confirmed each version's approval and which agent proposed it
@@ -48,7 +52,7 @@ from __future__ import annotations
 import datetime
 import uuid
 from collections.abc import Collection, Iterable, Mapping
-from typing import Any, NamedTuple, NoReturn, TypeVar
+from typing import Any, NamedTuple, TypeVar
 from zoneinfo import ZoneInfo
 
 from django.contrib.postgres.expressions import ArraySubquery
@@ -80,6 +84,7 @@ from apps.library.models import (
 )
 from apps.library.schemas import (
     DiffSegment,
+    FootprintFilter,
     InstrumentAuthorityRef,
     InstrumentDetail,
     InstrumentLineageRef,
@@ -87,6 +92,8 @@ from apps.library.schemas import (
     InstrumentQuery,
     InstrumentRow,
     LibraryAuthority,
+    LibraryRecordSource,
+    LibraryRecordSources,
     LibraryRef,
     LocalizedText,
     ObligationAsOfQuery,
@@ -111,7 +118,6 @@ from apps.library.schemas import (
     VersionDiffQuery,
 )
 from apps.shared.models import Tenant
-from apps.shared.errors import ProblemError
 from apps.taxonomy import matching, terms_logic
 from apps.taxonomy.models import (
     DutyTypeLabel,
@@ -122,6 +128,7 @@ from apps.taxonomy.models import (
     RelationTypeLabel,
     TaxonomyTerm,
     TaxonomyTermLabel,
+    WatchedMarket,
 )
 from apps.taxonomy.reading import Labels, agent_ref, label_of, proposing_agent
 from apps.taxonomy.schemas import PersonRef
@@ -196,6 +203,17 @@ def obligation_headings(obligation_ids: Collection[uuid.UUID], order: list[str])
     return headings
 
 
+def instrument_headings(instrument_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, RecordHeading]:
+    """How to name each of these instruments, in one query: its short name as the title and
+    its official reference. An id the caller cannot see is simply absent."""
+    if not instrument_ids:
+        return {}
+    return {
+        row.id: RecordHeading(title=row.short_name, reference_label=row.official_ref, instrument_short_name=row.short_name)
+        for row in Instrument.objects.filter(id__in=instrument_ids)
+    }
+
+
 def obligation_scope_refs(obligation_id: uuid.UUID) -> list[str]:
     """One duty's own scope facets as `dimension:key`, in the order a reader sees them and
     the spelling a proposal's payload uses. The instrument's regime is deliberately not
@@ -268,6 +286,104 @@ def unknown_provision_keys(keys: Collection[str]) -> set[str]:
 
 
 # ---------------------------------------------------------------------------------------
+# What a new instrument or obligation names (PRO-01, INV-01, INV-03)
+# ---------------------------------------------------------------------------------------
+class InstrumentRefs(NamedTuple):
+    """The library rows a new instrument's payload names, resolved once for the creation
+    check and again for the apply."""
+
+    level: Any
+    jurisdiction: Any
+    authority: Authority | None
+
+
+def _live_row(model: Any, key: str, what: str) -> Any:
+    row = model.objects.filter(key=key, active=True).first()  # ordering: a list holds one row per key
+    if row is None:
+        raise ValidationError(f"{key!r} is not {what} the library holds.", code="unknown_key")
+    return row
+
+
+def instrument_refs(*, level: str, jurisdiction: str, authority: str | None) -> InstrumentRefs:
+    """The live instrument level, jurisdiction and authority a new instrument names, or
+    422 `unknown_key` for the first one the library does not hold."""
+    from apps.library.models import Jurisdiction
+    from apps.taxonomy.models import InstrumentLevel
+
+    found = None
+    if authority:
+        found = Authority.objects.filter(key=authority).first()  # ordering: a unique key
+        if found is None:
+            raise ValidationError(f"{authority!r} is not an authority the library holds.", code="unknown_key")
+    return InstrumentRefs(
+        level=_live_row(InstrumentLevel, level, "an instrument level"),
+        jurisdiction=_live_row(Jurisdiction, jurisdiction, "a jurisdiction"),
+        authority=found,
+    )
+
+
+def shared_instrument(key: str) -> Instrument:
+    """The active shared instrument `key`, which a new obligation is broken out of, or 422
+    `unknown_key`. A bank's private instrument is never one (INV-07)."""
+    instrument = Instrument.objects.filter(stable_key=key, owner_tenant__isnull=True).first()  # ordering: a unique key
+    if instrument is None:
+        raise ValidationError(f"{key!r} is not an instrument the library holds.", code="unknown_key")
+    if instrument.status != RecordStatus.ACTIVE.value:
+        raise ValidationError(f"{key!r} is retired: propose the duty under an instrument in force.", code="unknown_key")
+    return instrument
+
+
+def live_duty_type(key: str) -> Any:
+    """The live duty type `key`, or 422 `unknown_key`."""
+    from apps.taxonomy.models import DutyType
+
+    return _live_row(DutyType, key, "a duty type")
+
+
+def stable_key_taken(subject: str, key: str) -> bool:
+    """Whether an instrument, provision or obligation (`subject`) already carries `key`,
+    whoever owns it: a stable key is unique across the library and is never reused."""
+    from apps.library.models import SubjectType
+
+    models: dict[str, Any] = {SubjectType.INSTRUMENT.value: Instrument, SubjectType.PROVISION.value: Provision}
+    return bool(models.get(subject, Obligation).objects.filter(stable_key__iexact=key).exists())
+
+
+# ---------------------------------------------------------------------------------------
+# What a provision proposal names (PRO-01, INV-02)
+# ---------------------------------------------------------------------------------------
+def active_provision(provision_id: uuid.UUID) -> Provision:
+    """The shared provision `provision_id` while it is active, with its instrument, or 422
+    `unknown_key`: a version of a provision nobody can find is never applied."""
+    provision = (
+        Provision.objects.select_related("instrument__level")
+        .filter(pk=provision_id, instrument__owner_tenant__isnull=True)
+        .first()  # ordering: pk lookup, at most one row
+    )
+    if provision is None:
+        raise ValidationError("That provision is not here.", code="unknown_key")
+    if provision.status != RecordStatus.ACTIVE.value:
+        raise ValidationError("That provision is retired: propose a change to one that is in force.", code="unknown_key")
+    return provision
+
+
+def parent_provision(instrument: Instrument, key: str) -> Provision:
+    """The active provision `key` of `instrument` a new provision sits under, or 422
+    `unknown_key`: a node never hangs under another instrument's tree."""
+    parent = Provision.objects.filter(stable_key=key, instrument=instrument, status=RecordStatus.ACTIVE.value).first()  # ordering: a unique key
+    if parent is None:
+        raise ValidationError(f"{key!r} is not a provision of {instrument.stable_key!r} in force.", code="unknown_key")
+    return parent
+
+
+def live_provision_kind(key: str) -> Any:
+    """The live provision kind `key` (chapter, section, article), or 422 `unknown_key`."""
+    from apps.taxonomy.models import ProvisionKind
+
+    return _live_row(ProvisionKind, key, "a provision kind")
+
+
+# ---------------------------------------------------------------------------------------
 # Scope and footprint (FP-01, FP-03)
 # ---------------------------------------------------------------------------------------
 def instrument_scopes(instrument_ids: Collection[uuid.UUID] | None = None) -> dict[uuid.UUID, dict[str, list[TaxonomyTerm]]]:
@@ -327,32 +443,93 @@ def obligation_scopes(obligation_ids: Collection[uuid.UUID] | None = None) -> di
     return scopes
 
 
-def _instrument_scope(path: str) -> ArraySubquery:
+def _reach(path: str) -> Q:
+    """The terms that mirror a jurisdiction the instrument's rules reach: its own, and every
+    one whose parent it is. `path` leads from the outer row to the instrument: nothing from
+    an instrument, `instrument__` from an obligation."""
+    return reaching(OuterRef(f"{path}jurisdiction_id"))
+
+
+def _instrument_scope(path: str, *, reach: bool = True) -> ArraySubquery:
     """The SQL half of `instrument_scopes()`, shared by both SQL twins below: the term that
-    is the instrument's regime and the terms that mirror a jurisdiction its rules reach,
-    read from the same two links, as one uuid[]. `path` leads from the outer row to the
-    instrument: nothing from an instrument, `instrument__` from an obligation."""
-    return ArraySubquery(
-        TaxonomyTerm.objects.filter(
-            Q(id=OuterRef(f"{path}regime_id"))
-            | Q(jurisdiction=OuterRef(f"{path}jurisdiction_id"))
-            | Q(jurisdiction__parent=OuterRef(f"{path}jurisdiction_id"))
-        )
-        .order_by()
-        .values("id")
+    is the instrument's regime and, unless `reach` is false, the terms that mirror a
+    jurisdiction its rules reach, read from the same two links, as one uuid[]."""
+    wanted = Q(id=OuterRef(f"{path}regime_id"))
+    return ArraySubquery(TaxonomyTerm.objects.filter(wanted | _reach(path) if reach else wanted).order_by().values("id"))
+
+
+def reaching(jurisdiction: Any) -> Q:
+    """The terms a record filed under `jurisdiction` derives (D-28, D-29): the term that
+    mirrors it and the terms that mirror every jurisdiction whose parent it is, read from
+    the mirror link and the parent link alone. `jurisdiction` is whatever names the
+    jurisdiction's id in the query: an `OuterRef`, a subquery or an id. A null derives
+    nothing, so a record without a jurisdiction is not restricted by it.
+
+    The instruments' SQL half above and a change's, which comes from its authority
+    (`apps/watch/reading.py`, `apps/cases/reading.py`), are built from this one condition;
+    `jurisdiction_scopes()` is its Python twin."""
+    return Q(jurisdiction=jurisdiction) | Q(jurisdiction__parent=jurisdiction)
+
+
+def jurisdiction_scopes(jurisdiction_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, list[TaxonomyTerm]]:
+    """The Python twin of `reaching()`: the terms each of these jurisdictions derives, with
+    their dimension, in the terms' order. One query, none for no jurisdiction."""
+    if not jurisdiction_ids:
+        return {}
+    terms = (
+        TaxonomyTerm.objects.select_related("dimension")
+        .annotate(parent_jurisdiction_id=F("jurisdiction__parent"))
+        .filter(Q(jurisdiction__in=jurisdiction_ids) | Q(jurisdiction__parent__in=jurisdiction_ids))
+        .order_by("sort_order", "key")
     )
+    derived: dict[uuid.UUID, list[TaxonomyTerm]] = {}
+    for term in terms:
+        for jurisdiction_id in {term.jurisdiction_id, term.parent_jurisdiction_id} & set(jurisdiction_ids):
+            derived.setdefault(jurisdiction_id, []).append(term)
+    return derived
 
 
-def instrument_scope_term_ids() -> ArraySubquery:
-    """The SQL twin of `instrument_scopes()`: an instrument's own scope, as one uuid[]."""
-    return _instrument_scope("")
+def instrument_scope_term_ids(*, reach: bool = True) -> ArraySubquery:
+    """The SQL twin of `instrument_scopes()`: an instrument's own scope, as one uuid[];
+    without the jurisdictions its rules reach when `reach` is false."""
+    return _instrument_scope("", reach=reach)
 
 
-def scope_term_ids() -> Func:
+def scope_term_ids(*, reach: bool = True) -> Func:
     """The SQL twin of `obligation_scopes()`: the obligation's own term ids plus its
-    instrument's own scope, as one uuid[]."""
-    own = ArraySubquery(ObligationTerm.objects.filter(obligation=OuterRef("pk")).order_by().values("term_id"))
-    return Func(own, _instrument_scope("instrument__"), function="array_cat", output_field=ArrayField(UUIDField()))
+    instrument's own scope, as one uuid[]; with no term that mirrors a jurisdiction when
+    `reach` is false."""
+    own_terms = ObligationTerm.objects.filter(obligation=OuterRef("pk"))
+    if not reach:
+        own_terms = own_terms.filter(term__jurisdiction__isnull=True)
+    own = ArraySubquery(own_terms.order_by().values("term_id"))
+    return Func(own, _instrument_scope("instrument__", reach=reach), function="array_cat", output_field=ArrayField(UUIDField()))
+
+
+def _matches(tenant: Tenant, term_ids: Func | ArraySubquery) -> Func:
+    """`taxonomy_in_footprint(tenant, term_ids)`, the database's rule, called unchanged."""
+    return Func(Value(tenant.id, output_field=UUIDField()), term_ids, function=matching.SQL_FUNCTION, output_field=BooleanField())
+
+
+_Listed = TypeVar("_Listed", bound=QuerySet[Any])
+
+
+def in_view(queryset: _Listed, tenant: Tenant, footprint: FootprintFilter) -> _Listed:
+    """The lists' one footprint filter (FP-03, FP-04). `in` is the working inventory and
+    `all` lifts it. `watched` is only what the watched markets add: a record the footprint
+    hides, that the footprint allows once the jurisdictions it reaches are set aside, and
+    that reaches a market the bank watches. So a Union rule, which reaches every market the
+    bank operates in, never shows there, and a Danish duty for a service the bank does not
+    provide stays out. Each half asks the same database function; nothing names a market."""
+    if footprint == "all":
+        return queryset
+    of_obligations = queryset.model is Obligation
+    scope = scope_term_ids if of_obligations else instrument_scope_term_ids
+    if footprint == "in":
+        return queryset.filter(_matches(tenant, scope()))
+    watched = WatchedMarket.objects.filter(tenant_id=tenant.id).values("jurisdiction_id")
+    reaches_watched = TaxonomyTerm.objects.filter(_reach("instrument__" if of_obligations else ""), jurisdiction__in=watched)
+    return queryset.exclude(_matches(tenant, scope())).filter(_matches(tenant, scope(reach=False)), Exists(reaches_watched))
 
 
 def outside_reasons(
@@ -435,6 +612,7 @@ def _version_ref(version: ObligationVersion | None) -> ObligationVersionRef | No
     return ObligationVersionRef(
         version_number=version.version_number,
         effective_from=partial_date(version.effective_from, version.effective_from_precision),
+        approved_at=version.approved_at,
         verified_origin=confirmed.verified_origin,
         confirmed_by_agent=confirmed.confirmed_by_agent,
         proposed_by_agent=confirmed.proposed_by_agent,
@@ -449,8 +627,8 @@ def upcoming(versions: Iterable[ObligationVersion], on: datetime.date) -> Obliga
 
 def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *, limit: int, offset: int) -> tuple[list[ObligationRow], int]:
     """The obligations the tenant sees (INV-03), filtered, as of a date (INV-04), inside
-    its footprint unless `outsideFootprint` asks for everything (FP-03). The same number of
-    queries whatever the page size (NFR-02)."""
+    its footprint unless `footprint` asks for everything or for what the watched markets
+    add (FP-03, FP-04). The same number of queries whatever the page size (NFR-02)."""
     as_of = query.as_of or today_for(tenant)
     footprint = matching.footprint_of(tenant.id)
     restricting = matching.restricting_dimensions()
@@ -466,13 +644,10 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
     if query.q:
         titled = ObligationTitle.objects.filter(obligation=OuterRef("pk"), text__icontains=query.q)
         queryset = queryset.filter(Q(ref_label__icontains=query.q) | Exists(titled))
-    if not query.outside_footprint:
-        queryset = queryset.filter(
-            Func(Value(tenant.id, output_field=UUIDField()), scope_ids, function=matching.SQL_FUNCTION, output_field=BooleanField())
-        )
+    queryset = in_view(queryset, tenant, query.footprint)
     total = queryset.count()
     page = list(
-        queryset.order_by("stable_key").select_related("instrument__level", "duty_type").prefetch_related("titles", versions_with_confirmation())[
+        queryset.order_by("stable_key").select_related("instrument__level", "instrument__jurisdiction", "duty_type", "verified_by").prefetch_related("titles", versions_with_confirmation())[
             offset : offset + limit
         ]
     )
@@ -485,6 +660,7 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
     tag_refs = vocabulary_refs(LibraryTagLabel, LibraryTag.objects.filter(id__in={tag_id for _, tag_id in tag_pairs}), order)
     duty_refs = vocabulary_refs(DutyTypeLabel, (obligation.duty_type for obligation in page), order)
     level_refs = vocabulary_refs(InstrumentLevelLabel, (obligation.instrument.level for obligation in page), order)
+    jurisdiction_refs = vocabulary_refs(JurisdictionLabel, (obligation.instrument.jurisdiction for obligation in page), order)
     tags_of: dict[uuid.UUID, list[LibraryRef]] = {}
     for obligation_id, tag_id in tag_pairs:
         tags_of.setdefault(obligation_id, []).append(tag_refs[tag_id])
@@ -509,9 +685,11 @@ def obligation_page(tenant: Tenant, order: list[str], query: ObligationQuery, *,
                 scope=carried,
                 version=_version_ref(in_force(versions, as_of)),
                 upcoming_version=_version_ref(upcoming(versions, as_of)),
+                jurisdiction=jurisdiction_refs[instrument.jurisdiction_id],
                 in_footprint=not outside,
                 outside_reason=outside,
                 last_verified_at=obligation.last_verified_at,
+                verified_by=None if obligation.verified_by is None else PersonRef(id=obligation.verified_by.id, name=obligation.verified_by.name),
                 open_change_count=0,
                 pending_applicability=None,
                 compliance_status=None,
@@ -727,22 +905,18 @@ def _authority_ref(authority: Authority | None) -> InstrumentAuthorityRef | None
 
 
 def instrument_page(tenant: Tenant, order: list[str], query: InstrumentQuery, *, limit: int, offset: int) -> tuple[list[InstrumentRow], int]:
-    """The instruments the tenant sees (INV-01), inside its footprint unless
-    `outsideFootprint` asks for everything (FP-03). The same number of queries whatever
-    the page size (NFR-02)."""
+    """The instruments the tenant sees (INV-01), inside its footprint unless `footprint`
+    asks for everything or for what the watched markets add (FP-03, FP-04). The same number
+    of queries whatever the page size (NFR-02)."""
     footprint = matching.footprint_of(tenant.id)
     restricting = matching.restricting_dimensions()
-    scope_ids = instrument_scope_term_ids()
     queryset = Instrument.objects.all()
     if query.regime:
         queryset = queryset.filter(regime__key=query.regime)
     if query.q:
         titled = InstrumentTitle.objects.filter(instrument=OuterRef("pk"), text__icontains=query.q)
         queryset = queryset.filter(Q(official_ref__icontains=query.q) | Q(short_name__icontains=query.q) | Exists(titled))
-    if not query.outside_footprint:
-        queryset = queryset.filter(
-            Func(Value(tenant.id, output_field=UUIDField()), scope_ids, function=matching.SQL_FUNCTION, output_field=BooleanField())
-        )
+    queryset = in_view(queryset, tenant, query.footprint)
     total = queryset.count()
     page = list(queryset.order_by("stable_key").select_related("level", "authority", "jurisdiction").prefetch_related("titles")[offset : offset + limit])
     ids = [instrument.id for instrument in page]
@@ -753,7 +927,7 @@ def instrument_page(tenant: Tenant, order: list[str], query: InstrumentQuery, *,
     level_refs = vocabulary_refs(InstrumentLevelLabel, (instrument.level for instrument in page), order)
     jurisdiction_refs = vocabulary_refs(JurisdictionLabel, (instrument.jurisdiction for instrument in page), order)
     dimensions = footprint_dimensions(order)
-    obligation_counts = _obligation_counts(ids, tenant, query.outside_footprint)
+    obligation_counts = _obligation_counts(ids, tenant, query.footprint)
     rows: list[InstrumentRow] = []
     for instrument in page:
         scope = scopes.get(instrument.id, {})
@@ -782,16 +956,11 @@ def instrument_page(tenant: Tenant, order: list[str], query: InstrumentQuery, *,
     return rows, total
 
 
-def _obligation_counts(instrument_ids: Collection[uuid.UUID], tenant: Tenant, outside_footprint: bool) -> dict[uuid.UUID, int]:
+def _obligation_counts(instrument_ids: Collection[uuid.UUID], tenant: Tenant, footprint: FootprintFilter) -> dict[uuid.UUID, int]:
     """How many obligations of each instrument this read would show: one query, whatever
-    the page size (INV-01). Inside the bank's footprint by default, or every obligation
-    when `outsideFootprint` lifts the filter, matching what `GET /obligations` itself
-    would list."""
-    queryset = Obligation.objects.filter(instrument_id__in=instrument_ids)
-    if not outside_footprint:
-        queryset = queryset.filter(
-            Func(Value(tenant.id, output_field=UUIDField()), scope_term_ids(), function=matching.SQL_FUNCTION, output_field=BooleanField())
-        )
+    the page size (INV-01), under the same `footprint` value, matching what
+    `GET /obligations` itself would list."""
+    queryset = in_view(Obligation.objects.filter(instrument_id__in=instrument_ids), tenant, footprint)
     counted = queryset.order_by().values("instrument_id").annotate(n=Count("id"))
     return {row["instrument_id"]: row["n"] for row in counted}
 
@@ -1017,19 +1186,44 @@ def list_authorities(order: list[str]) -> list[LibraryAuthority]:
 
 
 # ---------------------------------------------------------------------------------------
-# Declared ahead of its logic (chunk 5 plan rule 1)
+# GET /obligations/{id}/sources
 # ---------------------------------------------------------------------------------------
-def _not_built(detail: str) -> NoReturn:
-    raise ProblemError(status=501, code="not_built", detail=detail)
+def today_of(tenant_id: uuid.UUID | None) -> datetime.date:
+    """Today for the caller: where its tenant is, or the platform's day for a platform key,
+    which belongs to no tenant."""
+    tenant = None if tenant_id is None else Tenant.objects.filter(pk=tenant_id).first()  # ordering: pk lookup, at most one row
+    return timezone.localdate() if tenant is None else today_for(tenant)
 
 
-def get_record_sources() -> NoReturn:
+def get_record_sources(obligation_id: uuid.UUID, on: datetime.date) -> LibraryRecordSources:
     """`GET /obligations/{obligationId}/sources`, the citations a re-check compares against
-    (AGT-01, item 3). Built by `c5-library-recheck`.
+    (INV-06, AGT-01 item 3): one per field the approved proposal behind the version in force
+    on `on` sourced, or the record's own source as one `summary` citation for a version no
+    proposal wrote (a seeded one). A record whose versions all lie ahead is read by its
+    first.
 
     It resolves the obligation through `_visible()` above, as every other addressed read in
     this module does, and never through a lookup of its own: that one function is what makes
     a record the caller cannot see answer the same 404 as an id that never existed, so a
     second lookup would be a second chance to leak which of the two it was (INV-07).
     """
-    _not_built("A record's citations are not built yet.")
+    obligation = _visible(
+        Obligation.objects.prefetch_related(Prefetch("versions", queryset=ObligationVersion.objects.select_related("applied_by_proposal"))),
+        obligation_id,
+    )
+    versions = list(obligation.versions.all())
+    # Every obligation is created with its first version, so there is always one to read.
+    version = in_force(versions, on) or min(versions, key=lambda v: v.version_number)
+    proposal = version.applied_by_proposal
+    if proposal is None:
+        cited = [("summary", obligation.source_url, obligation.source_label)]
+    else:
+        cited = [(field, source, proposal.source_label or source) for field, source in proposal.field_sources.items()]
+    return LibraryRecordSources(
+        obligation_id=obligation.id,
+        version_number=version.version_number,
+        items=[
+            LibraryRecordSource(field=field, url=url, label=label, content_hash=None, fetched_at=None, document_id=None)
+            for field, url, label in cited
+        ],
+    )

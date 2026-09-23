@@ -2,7 +2,8 @@
 `@integration` scenario in app.md, each carrying its ID. Chunk 2 un-skips VOC-S1 to S7,
 VOC-S11, VOC-S14, FP-S1 to S4 and I18N-S1, S2 (backend halves; screens follow in chunk 3).
 FP-S6 (one decision per request, one waiting request) came with the regulatory scope work,
-FP-S17 (the opt-in rule in both twins) with the standards dimension.
+FP-S17 (the opt-in rule in both twins) with the standards dimension, FP-S16's integration
+half (its own class, which switches the held standard on) with the first standard.
 VOC-S8, S9, S10, S12, S13 stay skipped (R2, R3). Never delete a scenario without updating
 app.md.
 
@@ -34,6 +35,7 @@ import datetime
 from apps.cases import matching as case_matching, testing as cases_build
 from apps.cases.models import ChangeCase
 from apps.identity.models import TenantRole, User
+from apps.library import testing as library_build
 from apps.library.models import Authority, Instrument, Jurisdiction, Language, Obligation, ObligationTerm
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import load_library, seed_authorities
@@ -49,6 +51,7 @@ from apps.watch import testing as watch_build
 from apps.taxonomy import tenant_lists_logic
 from apps.taxonomy.models import (
     ApprovalStatus,
+    CaseStatusCategory,
     FootprintChangeRequest,
     FootprintHistory,
     FootprintTerm,
@@ -86,8 +89,9 @@ FP_S4_KEY_DATE = datetime.date(2026, 10, 15)
 URGENCY_READ_QUERIES = 10 + 1 + 2
 # - the footprint: the selected terms (1) and their labels (1), the dimensions with their
 #   term counts (1) and their labels (1), the pending request (1); the markets (FP-04),
-#   four more however many countries there are: the footprint read again for the operating
-#   check (1), the watch rows (1), the countries (1) and their labels (1).
+#   four more however many countries there are: the jurisdictions whose mirrored term is in
+#   the footprint, read through the term's link (1), the watch rows (1), the countries (1)
+#   and their labels (1).
 FOOTPRINT_READ_QUERIES = 10 + 1 + 5 + 4
 
 
@@ -590,8 +594,6 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         advice = tenant_lists_logic.term_by_ref("service_type", "advice")
         retail = tenant_lists_logic.term_by_ref("client_category", "retail")
         branch = tenant_lists_logic.term_by_ref("channel", "branch")
-        # Seeded inactive until its doors guard it (tests_matching.HeldStandard); the rule
-        # ignores a term's state.
         iso = TaxonomyTerm.objects.get(dimension__key="standard", key="iso_iec_27001")
         self.assertTrue(matching.in_footprint_sql(self.tenant.id, [custody.id, retail.id]))
         self.assertFalse(matching.in_footprint_sql(self.tenant.id, [advice.id]))
@@ -627,6 +629,20 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         seed_authorities()
         load_library()
         self._set_footprint(["service_type:advice", "service_type:custody", "regime:securities"])
+        # This bank's cases: one open on an advice-only change, which removing Advice hides;
+        # one open on a custody change, which it keeps; one closed on another advice change,
+        # which is finished work and not counted; and one open on an insurance change, which
+        # the scope hides today and widening the regimes reveals.
+        watch_build.seed_watch_reference()
+        for title, scope, status in (
+            ("Advice-only guidance on suitability", "service_type:advice", CaseStatusCategory.NEW),
+            ("Custody reconciliation rules amended", "service_type:custody", CaseStatusCategory.NEW),
+            ("Advice disclosures, withdrawn draft", "service_type:advice", CaseStatusCategory.CLOSED),
+            ("Insurance distribution guidance", "regime:insurance", CaseStatusCategory.ASSESSING),
+        ):
+            change = watch_build.change(title=title)
+            watch_build.term_link(change, term_ref=scope)
+            ChangeCase.objects.filter(pk=cases_build.case(self.tenant, change).pk).update(status=status.value)
         officer = sign_in(self.officer, tenant=self.tenant)
         body = {"adds": [{"dimension": "client_category", "key": "retail"}], "removes": [{"dimension": "service_type", "key": "advice"}]}
         # Dry run first (playbook 15: dry run, preview, commit): the same preview, nothing written.
@@ -635,13 +651,19 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(dry.status_code, 200, dry.content)
         self.assertTrue(dry.json()["dryRun"])
         self.assertEqual([t["key"] for t in dry.json()["removes"]], ["advice"])
-        # Four of the six obligations in scope are advised business the change would hide;
-        # adding retail hides none, because the client category group was empty before.
-        self.assertEqual(dry.json()["preview"]["obligations"], {"hidden": 4, "revealed": 0, "available": True})
-        # The other direction: widening the regimes reveals two insurance obligations it hid.
+        # Five of the eight obligations in scope are advised business the change would hide
+        # (the Norwegian suitability duty among them, since portfolio management is outside
+        # this footprint); adding retail hides none, because the client category group was
+        # empty before.
+        self.assertEqual(dry.json()["preview"]["obligations"], {"hidden": 5, "revealed": 0, "available": True})
+        # Of this bank's open cases, only the advice-only one would be hidden.
+        self.assertEqual(dry.json()["preview"]["cases"], {"hidden": 1, "revealed": 0, "available": True})
+        # The other direction: widening the regimes reveals two insurance obligations it hid,
+        # and the open insurance case.
         widen = {"adds": [{"dimension": "regime", "key": "insurance"}], "removes": []}
         wider = self._preview("/tenant/footprint/requests?dryRun=true", widen, officer)
         self.assertEqual(wider.json()["preview"]["obligations"], {"hidden": 0, "revealed": 2, "available": True})
+        self.assertEqual(wider.json()["preview"]["cases"], {"hidden": 0, "revealed": 1, "available": True})
         self.assertEqual((AuditEvent.objects.count(), FootprintChangeRequest.objects.count()), writes_before)
         self.assertIsNone(self._footprint(officer)["pendingRequest"])
         self.assertEqual(self._preview("/tenant/footprint/requests?dryRun=true", body, sign_in(self.reader, tenant=self.tenant)).status_code, 403)
@@ -652,10 +674,9 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(request["requestedBy"]["name"], "Sara Lindqvist")
         self.assertEqual([t["key"] for t in request["removes"]], ["advice"])
         self.assertEqual(request["removes"][0]["label"], "Advice")
-        # The preview lists what would be hidden and revealed per record kind; the kinds that
-        # have no table yet say so instead of pretending.
-        self.assertEqual(request["preview"]["obligations"], {"hidden": 4, "revealed": 0, "available": True})
-        self.assertEqual(request["preview"]["cases"], {"hidden": 0, "revealed": 0, "available": False})
+        # The preview lists what would be hidden and revealed per record kind.
+        self.assertEqual(request["preview"]["obligations"], {"hidden": 5, "revealed": 0, "available": True})
+        self.assertEqual(request["preview"]["cases"], {"hidden": 1, "revealed": 0, "available": True})
         self.assertEqual(self._footprint(officer)["pendingRequest"]["id"], request["id"])
         # The library changes while the request waits: the suitability statement now covers
         # custody too, so removing Advice no longer hides it. A waiting request is counted
@@ -665,7 +686,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
                 obligation=Obligation.objects.get(stable_key="obl-suitability-statement"),
                 term=tenant_lists_logic.term_by_ref("service_type", "custody"),
             )
-        today = {"hidden": 3, "revealed": 0, "available": True}
+        today = {"hidden": 4, "revealed": 0, "available": True}
         self.assertEqual(self._footprint(officer)["pendingRequest"]["preview"]["obligations"], today)
         # One pending request at a time; an unknown term is refused with the valid keys.
         again = self._post("/tenant/footprint/requests", body, officer)
@@ -702,6 +723,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         # request was sent: the request shows what its audit row says.
         decision = AuditEvent.objects.get(action="footprint.change_approved", tenant=self.tenant)
         self.assertEqual(decision.after["preview"]["obligations"], today)
+        self.assertEqual(decision.after["preview"]["cases"], {"hidden": 1, "revealed": 0, "available": True})
         self.assertEqual(approved.json()["preview"], decision.after["preview"])
         self.assertEqual(FootprintChangeRequest.objects.get(pk=request["id"]).preview, decision.after["preview"])
         # Nothing else can happen to a decided request.
@@ -716,11 +738,11 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(listed.json()["items"][0]["decisionNote"], "Advice was wound down in June.")
         self.assertEqual(listed.json()["items"][0]["preview"], decision.after["preview"])
         # A request can be rejected with a note, or withdrawn by its requester. Adding
-        # portfolio management would bring back three securities obligations; by the time it
+        # portfolio management would bring back four securities obligations; by the time it
         # is rejected the ESMA warnings cover it too, and the rejection keeps that count.
         widening = {"adds": [{"dimension": "service_type", "key": "portfolio_management"}], "removes": []}
         rejected_request = self._post("/tenant/footprint/requests", widening, officer).json()
-        self.assertEqual(rejected_request["preview"]["obligations"], {"hidden": 0, "revealed": 3, "available": True})
+        self.assertEqual(rejected_request["preview"]["obligations"], {"hidden": 0, "revealed": 4, "available": True})
         with library_write("test"):
             ObligationTerm.objects.create(
                 obligation=Obligation.objects.get(stable_key="obl-esma-warnings"),
@@ -731,7 +753,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(rejected.json()["status"], "rejected")
         self.activate(self.tenant)
         rejection = AuditEvent.objects.get(action="footprint.change_rejected", tenant=self.tenant)
-        self.assertEqual(rejection.after["preview"]["obligations"], {"hidden": 0, "revealed": 4, "available": True})
+        self.assertEqual(rejection.after["preview"]["obligations"], {"hidden": 0, "revealed": 5, "available": True})
         self.assertEqual(rejected.json()["preview"], rejection.after["preview"])
         withdrawn_request = self._post("/tenant/footprint/requests", {"adds": [{"dimension": "channel", "key": "digital"}], "removes": []}, officer).json()
         self.assertEqual(self._post(f"/tenant/footprint/requests/{withdrawn_request['id']}/withdraw", {}, approver, HTTP_IF_MATCH="1").status_code, 403)
@@ -1080,7 +1102,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         # Then the EU and Norwegian obligations match and the Swedish one does not, and the
         # Swedish one says it is outside by its jurisdiction.
         self.assertEqual(self._inventory(reader), {built["eu"].stable_key, built["no"].stable_key})
-        everything = self._get("/obligations?outsideFootprint=true", reader).json()["items"]
+        everything = self._get("/obligations?footprint=all", reader).json()["items"]
         swedish = next(row for row in everything if row["stableKey"] == built["se"].stable_key)
         self.assertEqual(
             [(reason["dimension"]["key"], [term["key"] for term in reason["terms"]]) for reason in swedish["outsideReason"]],
@@ -1155,7 +1177,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
                     found.add(node.arg)
             return found
 
-        derivation = (reading.instrument_scopes, reading.obligation_scopes, reading._instrument_scope, reading.instrument_scope_term_ids, reading.scope_term_ids)
+        derivation = (reading.instrument_scopes, reading.obligation_scopes, reading._instrument_scope, reading.instrument_scope_term_ids, reading.scope_term_ids, reading.reaching, reading.jurisdiction_scopes)
         self.assertEqual({function.__name__: named_in(inspect.getsource(function)) for function in derivation}, {function.__name__: set() for function in derivation})
         # The guard bites: a derivation that picked Norway's term by its dimension is named.
         self.assertEqual(named_in('def pick():\n    return TaxonomyTerm.objects.filter(dimension__key="jurisdiction", key="no")\n'), {"dimension__key", "jurisdiction", "no"})
@@ -1175,7 +1197,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         watched = self._post("/tenant/footprint/watching", {"jurisdiction": "no"}, admin)
         self.assertEqual(watched.status_code, 200, watched.content)
-        self.assertEqual(watched.json(), {"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "operating": False, "watching": True})
+        self.assertEqual(watched.json(), {"jurisdiction": {"key": "no", "kind": "country", "label": "Norway"}, "level": "watching"})
         self.activate(self.tenant)
         self.assertTrue(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction__key="no").exists())
         event = AuditEvent.objects.get(action="markets.watch_added")
@@ -1192,7 +1214,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         stopped = self._post("/tenant/footprint/watching/remove", {"jurisdiction": "no"}, admin)
         self.assertEqual(stopped.status_code, 200, stopped.content)
-        self.assertEqual(stopped.json()["watching"], False)
+        self.assertEqual(stopped.json()["level"], "not_followed")
         self.activate(self.tenant)
         self.assertFalse(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction__key="no").exists())
         self.assertTrue(AuditEvent.objects.filter(action="markets.watch_removed").exists())
@@ -1200,7 +1222,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         reader = sign_in(self.reader, tenant=self.tenant)
         seen = self._footprint(reader)
         self.assertIn("markets", seen)
-        self.assertIn("se", [m["jurisdiction"]["key"] for m in seen["markets"] if m["operating"]])
+        self.assertIn("se", [m["jurisdiction"]["key"] for m in seen["markets"] if m["level"] == "operating"])
         denied = self._post("/tenant/footprint/watching", {"jurisdiction": "no"}, reader)
         self.assertEqual(denied.status_code, 403)
         self.assertEqual(denied.json()["requiredPermission"], "footprint.request")
@@ -1215,36 +1237,34 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self._set_footprint(["regime:securities", "jurisdiction:se"])
         norway = Jurisdiction.objects.get(key="no")
         finland = Jurisdiction.objects.get(key="fi")
+        reader = sign_in(self.reader, tenant=self.tenant)
 
-        def _start_operating(key: str) -> dict[str, Any]:
+        def _level(key: str) -> str:
+            markets = self._footprint(reader)["markets"]
+            return next(market["level"] for market in markets if market["jurisdiction"]["key"] == key)
+
+        def _decide(adds: list[str], removes: list[str]) -> None:
             officer = sign_in(self.officer, tenant=self.tenant)
             request = self._post(
-                "/tenant/footprint/requests", {"adds": [{"dimension": "jurisdiction", "key": key}], "removes": []}, officer
+                "/tenant/footprint/requests",
+                {"adds": [{"dimension": "jurisdiction", "key": key} for key in adds], "removes": [{"dimension": "jurisdiction", "key": key} for key in removes]},
+                officer,
             ).json()
             approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
-            self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH=str(request["version"]))
-            return request
-
-        def _stop_operating(key: str) -> dict[str, Any]:
-            officer = sign_in(self.officer, tenant=self.tenant)
-            request = self._post(
-                "/tenant/footprint/requests", {"adds": [], "removes": [{"dimension": "jurisdiction", "key": key}]}, officer
-            ).json()
-            approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
-            self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH=str(request["version"]))
-            return request
+            approved = self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH=str(request["version"]))
+            self.assertEqual(approved.status_code, 200, approved.content)
 
         # Given a tenant operating in Sweden and watching Norway.
         self.activate(self.tenant)
         markets_logic.watch(tenant=self.tenant, actor=Actor.system("test"), key="no")
-        self.assertEqual(markets_logic.level_of(self.tenant.id, norway), markets_logic.WATCHING)
+        self.assertEqual((_level("se"), _level("no")), ("operating", "watching"))
         events_before = AuditEvent.objects.filter(action__in=["markets.watch_added", "markets.watch_removed"]).count()
 
         # When a request to operate in Norway is approved, then Norway reads as operating,
         # its watch row is untouched, and no watch event is written.
-        _start_operating("no")
+        _decide(["no"], [])
+        self.assertEqual(_level("no"), "operating")
         self.activate(self.tenant)
-        self.assertEqual(markets_logic.level_of(self.tenant.id, norway), markets_logic.OPERATING)
         self.assertTrue(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction=norway).exists())
         self.assertEqual(
             AuditEvent.objects.filter(action__in=["markets.watch_added", "markets.watch_removed"]).count(), events_before
@@ -1252,19 +1272,17 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         # When a request to stop operating in Norway is approved, then Norway reads as
         # watching again.
-        _stop_operating("no")
-        self.activate(self.tenant)
-        self.assertEqual(markets_logic.level_of(self.tenant.id, norway), markets_logic.WATCHING)
+        _decide([], ["no"])
+        self.assertEqual(_level("no"), "watching")
 
         # Given Finland was never watched, when a request to operate is approved and later
         # reversed, then Finland reads as not followed.
-        self.assertEqual(markets_logic.level_of(self.tenant.id, finland), markets_logic.NOT_FOLLOWED)
-        _start_operating("fi")
+        self.assertEqual(_level("fi"), "not_followed")
+        _decide(["fi"], [])
+        self.assertEqual(_level("fi"), "operating")
+        _decide([], ["fi"])
+        self.assertEqual(_level("fi"), "not_followed")
         self.activate(self.tenant)
-        self.assertEqual(markets_logic.level_of(self.tenant.id, finland), markets_logic.OPERATING)
-        _stop_operating("fi")
-        self.activate(self.tenant)
-        self.assertEqual(markets_logic.level_of(self.tenant.id, finland), markets_logic.NOT_FOLLOWED)
         self.assertFalse(WatchedMarket.objects.filter(tenant=self.tenant, jurisdiction=finland).exists())
 
     def test_fp_s12(self) -> None:
@@ -1400,12 +1418,76 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(mirror_state(), before)
         self.assertEqual(list(AuditEvent.objects.exclude(id__in=recorded).values_list("action", "subject_title")), [])
 
-    @skip("pending: FP-S13 (FP-04, chunk 3)")
     def test_fp_s13(self) -> None:
         """FP-S13
 
         The watched-market view of the inventory shows only what watching adds (FP-04).
+
+        `footprint=watched` on `GET /obligations` and `GET /instruments` lists a record the
+        scope hides, whose other dimensions the scope allows, and whose derived jurisdiction
+        is one the bank watches: the same database function, called unchanged, answers each
+        half. Each row names its jurisdiction, which the screen's "Market we watch" reads.
         """
+        from apps.library import testing as library_build
+
+        # Given a tenant operating in Sweden with the service "Custody" and watching Denmark,
+        # and Danish obligations scoped to "Custody" and to "Advice".
+        built = self._obligation_per_jurisdiction("fp-s13", ("eu", "se", "dk", "no"))
+        danish_act = built["dk"].instrument
+        advice = library_build.obligation(danish_act, key=f"{danish_act.stable_key}-advice", terms=("service_type:advice",))
+        self._set_footprint(["regime:securities", "service_type:custody", "jurisdiction:se"])
+        watched = self._post("/tenant/footprint/watching", {"jurisdiction": "dk"}, sign_in(self.admin, tenant=self.tenant))
+        self.assertEqual(watched.status_code, 200, watched.content)
+        reader = sign_in(self.reader, tenant=self.tenant)
+
+        # When a user chooses "Markets we watch" in the inventory.
+        response = self._get("/obligations?footprint=watched", reader)
+        self.assertEqual(response.status_code, 200, response.content)
+        rows = {row["stableKey"]: row for row in response.json()["items"]}
+
+        # Then the Danish "Custody" obligation is listed, naming Denmark as its jurisdiction,
+        # and it is outside the scope by its jurisdiction alone.
+        danish = rows[built["dk"].stable_key]
+        self.assertEqual(danish["jurisdiction"], {"key": "dk", "kind": "country", "label": "Denmark"})
+        self.assertFalse(danish["inFootprint"])
+        self.assertEqual([reason["dimension"]["key"] for reason in danish["outsideReason"]], ["jurisdiction"])
+        # And the Danish "Advice" obligation is absent, because the other dimensions still
+        # apply, and no EU, Swedish or unwatched Norwegian one is listed.
+        self.assertNotIn(advice.stable_key, rows)
+        for key in ("eu", "se", "no"):
+            self.assertNotIn(built[key].stable_key, rows, key)
+        self.assertEqual({row["jurisdiction"]["key"] for row in rows.values()}, {"dk"})
+
+        # The default view is unchanged by watching, and "all" is the whole library, each row
+        # naming its own jurisdiction.
+        self.assertNotIn(built["dk"].stable_key, self._inventory(reader))
+        self.assertIn(built["se"].stable_key, self._inventory(reader))
+        everything = {row["stableKey"]: row["jurisdiction"]["key"] for row in self._get("/obligations?footprint=all", reader).json()["items"]}
+        self.assertEqual(
+            {key: everything[obligation.stable_key] for key, obligation in built.items()},
+            {"eu": "eu", "se": "se", "dk": "dk", "no": "no"},
+        )
+        self.assertIn(advice.stable_key, everything)
+
+        # The Instruments tab answers the same way: the Danish instrument alone, counting the
+        # one obligation this view lists from it.
+        instruments = self._get("/instruments?footprint=watched", reader)
+        self.assertEqual(instruments.status_code, 200, instruments.content)
+        listed = {row["stableKey"]: row for row in instruments.json()["items"]}
+        self.assertEqual(listed[built["dk"].instrument.stable_key]["obligationCount"], 1)
+        self.assertEqual({row["jurisdiction"]["key"] for row in listed.values()}, {"dk"})
+
+        # And the list takes one footprint filter value, so no contradictory pair can be sent:
+        # the retired boolean and an unknown value answer 422, and the published parameter is
+        # one value of three, never a list.
+        for path in ("/obligations", "/instruments"):
+            for query in ("outsideFootprint=true", "outsideFootprint=false", "footprint=outside"):
+                with self.subTest(path=path, query=query):
+                    refused = self._get(f"{path}?{query}", reader)
+                    self.assertEqual((refused.status_code, refused.json()["code"]), (422, "validation_error"), refused.content)
+            parameters = {parameter["name"]: parameter for parameter in api.get_openapi_schema()["paths"][f"{V1}{path}"]["get"]["parameters"]}
+            self.assertEqual(parameters["footprint"]["schema"]["enum"], ["in", "all", "watched"])
+            self.assertTrue(parameters["outsideFootprint"]["deprecated"])
 
     def test_fp_s14(self) -> None:
         """FP-S14
@@ -1463,7 +1545,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         seen = self._get("/tenant/footprint", b)
         self.assertEqual(seen.status_code, 200, seen.content)
         norway = next(market for market in seen.json()["markets"] if market["jurisdiction"]["key"] == "no")
-        self.assertEqual((norway["operating"], norway["watching"]), (False, False))
+        self.assertEqual(norway["level"], "not_followed")
         self.assertIsNone(seen.json()["pendingRequest"])
         for row_id in a_rows:
             self.assertNotIn(row_id, seen.content.decode())
@@ -1599,19 +1681,155 @@ class TaxonomyScenarioTests(ScenarioTestCase):
                 for word in (str(denmark.id), *(label.text for label in denmark.labels.all())):
                     self.assertNotIn(word, text, channel)
 
-    @skip("pending: FP-S15 (FP-04, chunk 5)")
     def test_fp_s15(self) -> None:
         """FP-S15
 
         A change's jurisdiction comes from its authority, and the feed has the watched-market view (FP-04).
-        """
 
-    @skip("pending: FP-S16 (FP-01, INV-08, chunk 3)")
-    def test_fp_s16(self) -> None:
-        """FP-S16
-
-        A standard shows only to tenants whose regulatory scope names it (FP-01, INV-08, AC-FP3).
+        The derivation is the instruments' own (`library.reading.reaching()`, D-28, D-29),
+        read from the change's authority at match time and never stored. It reaches all four
+        places a change is matched: the feed's SQL scope, the feed row's verdict, the case
+        a registration opens and the cached verdict the recomputation keeps, and the scope
+        change preview's reading of the open cases.
         """
+        from apps.cases import creation, reading as case_reading
+        from apps.shared.audit import record
+        from apps.shared.models import OutboxEvent
+        from apps.taxonomy import markets_logic, matching
+        from apps.watch import reading as watch_reading
+        from apps.watch.models import ChangeTerm, RegulatoryChange
+        from apps.watch.write import watch_write
+
+        seed_authorities()
+        creation.register()
+        case_matching.register()
+
+        def drain() -> None:
+            with transaction.atomic():
+                tenancy.clear_tenant()
+            while outbox.deliver_batch().delivered:
+                pass
+
+        def announce(change: Any, action: str) -> None:
+            with transaction.atomic():
+                tenancy.clear_tenant()
+                record(
+                    action=action,
+                    actor=Actor.system("watch"),
+                    subject_type="regulatory_change",
+                    subject_id=change.id,
+                    subject_title=change.title,
+                    summary="A change was registered or corrected.",
+                    tenant_id=None,
+                )
+            drain()
+
+        def feed(footprint: str) -> dict[str, dict[str, Any]]:
+            response = self._get(f"/changes?footprint={footprint}&limit=100", reader)
+            self.assertEqual(response.status_code, 200, response.content)
+            return {row["stableKey"]: row for row in response.json()["items"]}
+
+        def cases() -> dict[str, tuple[bool, str, bool, str]]:
+            self.activate(self.tenant)
+            return {
+                row.change.stable_key: (row.footprint_match, row.urgency.key, row.urgency_confirmed, row.status)
+                for row in ChangeCase.objects.select_related("change", "urgency")
+            }
+
+        # Given a footprint whose only jurisdiction is Sweden, and the service "Custody".
+        self._set_footprint(["jurisdiction:se", "service_type:custody"])
+        reader = sign_in(self.reader, tenant=self.tenant)
+        # And changes from a Danish authority, from an EU authority and with no authority,
+        # all about custody, beside a Swedish one and a Danish one about advice.
+        built = {}
+        for key, authority, service in (
+            ("fp-s15-dk", "finanstilsynet-dk", "custody"),
+            ("fp-s15-eu", "esma", "custody"),
+            ("fp-s15-none", None, "custody"),
+            ("fp-s15-se", "fi", "custody"),
+            ("fp-s15-dk-advice", "finanstilsynet-dk", "advice"),
+        ):
+            with transaction.atomic():
+                tenancy.clear_tenant()
+                built[key] = watch_build.change(stable_key=key, title=f"Change {key}", authority=authority, urgency="monitor")
+                watch_build.term_link(built[key], term_ref=f"service_type:{service}")
+            announce(built[key], creation.CHANGE_REGISTERED)
+
+        # Then the Danish change does not match, the EU change matches, and the change with no
+        # authority matches, because a missing jurisdiction never hides a record.
+        expected = {"fp-s15-dk": False, "fp-s15-eu": True, "fp-s15-none": True, "fp-s15-se": True, "fp-s15-dk-advice": False}
+        self.assertEqual(set(feed("in")), {key for key, inside in expected.items() if inside})
+        self.assertEqual({key: row["inFootprint"] for key, row in feed("all").items() if key in expected}, expected)
+        # The case each registration opened carries the same verdict, from the same derivation.
+        self.assertEqual({key: verdict[0] for key, verdict in cases().items()}, expected)
+        # And the rule and the SQL function, called unchanged, agree on the same derived terms.
+        self.activate(self.tenant)
+        footprint, restricting = matching.footprint_of(self.tenant.id), matching.restricting_dimensions()
+        handed = dict(
+            RegulatoryChange.objects.filter(stable_key__in=expected)
+            .annotate(term_ids=watch_reading._scope_term_ids())
+            .values_list("stable_key", "term_ids")
+        )
+        for key, change in built.items():
+            facts = case_reading.change_facts(change.id)
+            assert facts is not None
+            with self.subTest(key):
+                self.assertIs(matching.in_footprint(facts.scope, footprint, restricting=restricting), expected[key])
+                self.assertIs(matching.in_footprint_sql(self.tenant.id, handed[key]), expected[key])
+                self.assertEqual(
+                    set(TaxonomyTerm.objects.filter(id__in=handed[key]).values_list("key", flat=True)),
+                    {key for keys in facts.scope.values() for key in keys},
+                )
+        self.assertEqual(case_reading.change_facts(built["fp-s15-eu"].id).scope["jurisdiction"], {"eu", "se", "dk", "no", "fi"})  # type: ignore[union-attr]
+        self.assertNotIn("jurisdiction", case_reading.change_facts(built["fp-s15-none"].id).scope)  # type: ignore[union-attr]
+        # And nothing is stored: a change's jurisdiction is never one of its own terms.
+        self.assertFalse(ChangeTerm.objects.filter(change__in=list(built.values()), term__jurisdiction__isnull=False).exists())
+        # The scope change preview reads the open cases through the same derivation.
+        self.assertIn({"service_type": {"custody"}, "jurisdiction": {"dk"}}, case_reading.open_case_scopes(self.tenant.id))
+
+        # Watching nothing, the watched view is empty rather than the default feed renamed.
+        self.assertEqual(feed("watched"), {})
+
+        # Given the tenant watches Denmark.
+        before = cases()
+        self.activate(self.tenant)
+        audit_before = set(AuditEvent.objects.values_list("id", flat=True))
+        outbox_before = set(OutboxEvent.objects.values_list("id", flat=True))
+        markets_logic.watch(tenant=self.tenant, actor=Actor.system("test"), key="dk")
+        drain()
+        # Then its cases get no urgency from the market and nobody is notified: the one row
+        # the write leaves is its own audit event and its outbox twin, and no case moved.
+        self.activate(self.tenant)
+        self.assertEqual(
+            list(AuditEvent.objects.exclude(id__in=audit_before).values_list("action", flat=True)), ["markets.watch_added"]
+        )
+        self.assertEqual(
+            list(OutboxEvent.objects.exclude(id__in=outbox_before).values_list("topic", flat=True)), ["markets.watch_added"]
+        )
+        self.assertEqual(cases(), before)
+
+        # When a user chooses "Markets we watch" in the watch feed, the Danish "Custody"
+        # change is listed with the market named; the Danish "Advice" one is absent because
+        # the other dimensions still apply, and nothing already in scope is repeated.
+        watched = feed("watched")
+        self.assertEqual(list(watched), ["fp-s15-dk"])
+        self.assertEqual(watched["fp-s15-dk"]["market"], {"key": "dk", "kind": None, "label": "Denmark"})
+        self.assertFalse(watched["fp-s15-dk"]["inFootprint"])
+        # The market says where a row comes from on every view, and only where watching added it.
+        everything = feed("all")
+        self.assertEqual({key: (row["market"] or {}).get("key") for key, row in everything.items() if key in expected}, {
+            "fp-s15-dk": "dk", "fp-s15-eu": None, "fp-s15-none": None, "fp-s15-se": None, "fp-s15-dk-advice": None,
+        })
+
+        # When the change with no authority turns out to be the Danish authority's, the cached
+        # verdict is re-decided from the correction's event, and the market view now lists it.
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            with watch_write("test"):
+                RegulatoryChange.objects.filter(pk=built["fp-s15-none"].pk).update(authority=Authority.objects.get(key="finanstilsynet-dk"))
+        announce(built["fp-s15-none"], case_matching.CHANGE_FACTS_UPDATED)
+        self.assertFalse(cases()["fp-s15-none"][0])
+        self.assertEqual(set(feed("watched")), {"fp-s15-dk", "fp-s15-none"})
 
     def test_fp_s17(self) -> None:
         """FP-S17
@@ -1631,7 +1849,6 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             second = TaxonomyTerm.objects.create(dimension=standard, key="second_standard")
         terms = {
             "service_type:custody": tenant_lists_logic.term_by_ref("service_type", "custody"),
-            # Seeded inactive (tests_matching.HeldStandard); the rule ignores a term's state.
             "standard:iso_iec_27001": TaxonomyTerm.objects.get(dimension=standard, key="iso_iec_27001"),
             "standard:second_standard": second,
         }
@@ -1697,3 +1914,81 @@ class TaxonomyScenarioTests(ScenarioTestCase):
 
         An entry's scope narrows the footprint and can never widen it (ACC-02, AC-ACC1).
         """
+
+
+class HeldStandardInScope(ScenarioTestCase):
+    """FP-S16's integration half. The seed files ISO/IEC 27001 active
+    (tests_matching.SeededStandard); this setUp switches it on as well, so the scenario holds
+    on a database seeded while the term was held, where the seed never updates it."""
+
+    def setUp(self) -> None:
+        _seed_library()
+        with library_write("test"):
+            TaxonomyTerm.objects.filter(dimension__key="standard", key="iso_iec_27001").update(active=True)
+        self.tenant = factories.tenant(slug="bank")
+        self.activate(self.tenant)
+        self.officer = factories.member(self.tenant, roles=("compliance_officer",), user_row=factories.user(name="Sara Lindqvist")).user
+        self.approver = factories.member(self.tenant, roles=("approver",), user_row=factories.user(name="Maria Ek")).user
+        self.duty = library_build.standard()
+        FootprintTerm.objects.create(tenant=self.tenant, term=tenant_lists_logic.term_by_ref("regime", "ai_ict"), added_by=self.officer)
+
+    def _inventory(self, headers: dict[str, Any], *, outside: bool = False) -> dict[str, dict[str, Any]]:
+        params = {"footprint": "all"} if outside else {}
+        response = self.client.get(f"{V1}/obligations", params, **headers)
+        self.assertEqual(response.status_code, 200, response.content)
+        return {row["stableKey"]: row for row in response.json()["items"]}
+
+    def _request(self, body: dict[str, Any], officer: dict[str, Any]) -> dict[str, Any]:
+        """The dry run's preview must be the one the request carries."""
+        dry = Client().post(f"{V1}/tenant/footprint/requests?dryRun=true", data=body, content_type="application/json", **officer)
+        self.assertEqual(dry.status_code, 200, dry.content)
+        created = self.client.post(f"{V1}/tenant/footprint/requests", data=body, content_type="application/json", **officer)
+        self.assertEqual(created.status_code, 201, created.content)
+        request: dict[str, Any] = created.json()
+        self.assertEqual(request["preview"]["obligations"], dry.json()["preview"]["obligations"])
+        return request
+
+    def _approve(self, request: dict[str, Any]) -> None:
+        path = f"{V1}/tenant/footprint/requests/{request['id']}/approve"
+        stale = self.client.post(path, data={}, content_type="application/json", **sign_in(self.approver, tenant=self.tenant))
+        self.assertEqual((stale.status_code, stale.json()["code"]), (403, "step_up_required"))
+        approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
+        approved = self.client.post(path, data={}, content_type="application/json", **approver, HTTP_IF_MATCH=str(request["version"]))
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+    def test_fp_s16(self) -> None:
+        """FP-S16
+
+        A standard shows only to tenants whose regulatory scope names it (FP-01, INV-08, AC-FP3).
+
+        "None followed" on the regulatory scope page and the narrowing warning are the
+        journey's; here the group is empty and the preview hides nothing.
+        """
+        officer = sign_in(self.officer, tenant=self.tenant)
+        standard = {"dimension": "standard", "key": "iso_iec_27001"}
+
+        # The scope holds the regime AI and ICT and no standard: the duty is absent from the
+        # inventory and appears with "Show outside our scope", hidden by the standards group.
+        self.assertNotIn(self.duty.stable_key, self._inventory(officer))
+        outside = self._inventory(officer, outside=True)[self.duty.stable_key]
+        self.assertFalse(outside["inFootprint"])
+        self.assertEqual([reason["dimension"]["key"] for reason in outside["outsideReason"]], ["standard"])
+        groups = {group["dimension"]["key"]: group for group in self.client.get(f"{V1}/tenant/footprint", **officer).json()["dimensions"]}
+        self.assertEqual((groups["standard"]["dimension"]["kind"], groups["standard"]["terms"]), ("opt_in", []))
+
+        # Adding the standard reveals the duty and hides nothing, so nothing narrows.
+        request = self._request({"adds": [standard], "removes": []}, officer)
+        self.assertEqual(request["preview"]["obligations"], {"hidden": 0, "revealed": 1, "available": True})
+
+        # Approval needs a fresh step-up; then the duty is in the inventory, and one audit
+        # event records the added term with the assertion and the request.
+        self._approve(request)
+        self.assertTrue(self._inventory(officer)[self.duty.stable_key]["inFootprint"])
+        self.activate(self.tenant)
+        event = AuditEvent.objects.get(action="footprint.term_added", tenant=self.tenant)
+        self.assertEqual(event.after, {"dimension": "standard", "term": "iso_iec_27001", "request": request["id"]})
+        self.assertIsNotNone(event.step_up_assertion_id)
+
+        # Removing it later counts the duty as hidden, which is what warns.
+        removal = self._request({"adds": [], "removes": [standard]}, officer)
+        self.assertEqual(removal["preview"]["obligations"], {"hidden": 1, "revealed": 0, "available": True})

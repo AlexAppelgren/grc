@@ -851,6 +851,15 @@ class MailLeavesThroughTheWorker(TestCase):
         MockMailer.reset()
         self.assertEqual(MockMailer.sent, [])
 
+    def test_the_code_mail_names_enrolment_and_never_sign_in(self) -> None:
+        """The emailed code works once, for enrolment only, and stops working once the
+        first passkey exists (CLAUDE.md section 5), so the subject never calls it a sign-in
+        code: a person who read that would expect it to let them sign in again."""
+        mail.send_code("anna@bank.example", "123456")
+        subject = MockMailer.sent[0].subject
+        self.assertIn("enrolment code", subject)
+        self.assertNotIn("sign-in", subject.lower())
+
     @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
     def test_outside_tests_the_mail_waits_for_the_commit(self) -> None:
         from apps.identity import tasks

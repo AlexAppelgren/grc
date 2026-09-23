@@ -28,6 +28,7 @@ const soon: Roadmap['items'][number] = {
   kind: 'regulatory',
   itemType: 'change_date',
   date: '2026-10-01',
+  datePrecision: 'day',
   quarter: '2026-Q4',
   label: 'In force',
   title: 'FI adopts amended rules on paying for investment research',
@@ -83,6 +84,34 @@ describe('RoadmapScreen', () => {
     screen.getByRole('button', { name: /1 Oct 2026/ }).click();
     expect(await screen.findByRole('link', { name: 'Open change' })).toHaveAttribute('href', '/watch/c-1');
     expect(nav.replace).not.toHaveBeenCalled();
+  });
+
+  it('prints a quarter-precision date as its quarter, never as the day it is stored on, and counts no days to it', async () => {
+    const quarterly: Roadmap['items'][number] = { ...later, datePrecision: 'quarter' };
+    serve({ items: [soon, quarterly], quarters: ['2026-Q4', '2027-Q1'] });
+    render(shell(<RoadmapScreen />));
+    await screen.findByRole('heading', { name: 'Q1 2027' });
+
+    expect(screen.queryByText('19 Jan 2027')).not.toBeInTheDocument();
+    const card = screen.getByRole('button', { name: /Amended reporting of securities financing transactions/ });
+    expect(card).toHaveTextContent('Q1 2027');
+    card.click();
+    const detail = await screen.findByRole('heading', { level: 2, name: 'Amended reporting of securities financing transactions' });
+    const meta = detail.previousElementSibling as HTMLElement;
+    expect(meta).toHaveTextContent('Q1 2027');
+    expect(meta).not.toHaveTextContent(/\bin \d+ days?\b/);
+  });
+
+  it('a date stated to the day keeps its day and the days left to it', async () => {
+    vi.useFakeTimers({ now: new Date('2026-09-21T09:00:00Z'), toFake: ['Date'] });
+    try {
+      serve(roadmap);
+      render(shell(<RoadmapScreen />));
+      (await screen.findByRole('button', { name: /1 Oct 2026/ })).click();
+      expect(await screen.findByText('in 10 days')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('a chip stores the kind as a key in the URL', async () => {

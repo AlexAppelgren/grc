@@ -1058,6 +1058,28 @@ the platform alone reads it (governance 0002). `AiCitation` moves from `apps/gov
 `apps/shared/schemas.py` beside it, unchanged, because the shared shape cites with it and a
 governance import from there would be a cycle.
 
+### The log's read narrows to one record and carries the review and the feedback (2026-09-23, ai-log-read)
+
+`GET /ai-generations` (`listAiGenerations`) gains the designed `subjectId` filter, and
+`AiGenerationRow` gains `feedback`, `feedbackNote` and `reviewedBy` (`{id, name}`), beside the
+`status` and `reviewedAt` it already carried. The designed table has `feedback`, the
+reviewer and the review time; the read now returns them. Two departures, both about the
+shared "So what?":
+
+- A library "So what?" row's `status`, `reviewedBy` and `reviewedAt` are **computed for the
+  reading bank** from its own `change_case` (`so_what_confirmed_by`, `so_what_confirmed_at`),
+  and nothing shared is written (D-62; resolves chunk 5 ruling I). The designed column is one
+  review state per row, but that row is every bank's, and one bank's confirmation must not
+  read as another's. A case settles the newest draft of the change logged by the time it was
+  confirmed: `confirmed` when the bank's words are the draft's, `edited` when the bank
+  rewrote them, and `draft` for every other draft of that change. The `status` filter reads
+  the same computed state. The stored columns stay the platform's.
+- `feedbackNote` is added: the reader's own words with a verdict (`POST
+  /answers/{answerId}/feedback`, SRC-05) are stored beside the answer and returned only on
+  the bank's own row. The designed table has the verdict alone.
+
+`agent_review` rows stay out of a bank's read (D-80).
+
 ## 12. Two reads that are on `main` in a shape of their own (review-fixes, 2026-09-23)
 
 `backend/scripts/contract_drift_pending.txt` still listed both as chunk 1 work to come.
@@ -1132,3 +1154,88 @@ and the decision's audit row gains `agentRunId` beside `reviewingApiKeyPrefix`.
 `ProposalRejectBody` becomes a strict write body like the approve body: a field it does
 not name answers 422 rather than being dropped. The reject route keeps
 `{rejectionCode, note}` (section 7) and is documented to the API standard.
+
+## 15. A bank reads and closes its own problem reports (2026-09-23, problem-reports-backend)
+
+- `GET /problem-reports` (`listProblemReports`) serves a bank's own session only, under
+  `problems.report`, which every member holds and no platform role does. The designed
+  `x-roles` list `library_editor` and the designed read is the console's; since D-50 a
+  report stays inside the bank that filed it, so a platform session is refused 403 naming
+  `problems.report`. Reach inside the bank is `proposals.create`: its holder lists every
+  report of the bank, every other member lists the reports they filed (the
+  docs/TODO_FOR_alex.md default of item 3; no permission is added). Paging is `limit` and
+  `offset` with `total`, as on every list here, not the designed `cursor` and
+  `nextCursor`. Filters are `status`, `subjectType` and `subjectId`. A row carries
+  `description` (the reporter's words), `subjectTitle` and `subjectReference` (the record
+  named in the caller's language), `versionNumber` and `language` (what was on screen),
+  `reporter`, `closedBy` and `closedAt` as `{id, name}` and a timestamp, and
+  `resolutionNote`; the designed `reportedBy`, `reportedAt` and `resultingProposalId` are
+  `reporter`, `createdAt` and nothing, because no proposal ever links to a bank's report.
+- `PATCH /problem-reports/{}` is `closeProblemReport`, not the designed
+  `resolveProblemReport`, and its body is `{status, resolutionNote}` with no
+  `resultingProposalId`. The status is `answered`, `fixed` or `rejected`, the kinds chunk 3
+  wrote (`ReportStatus`); the designed `accepted` and a return to `open` do not exist. The
+  note is required. The reporter closes their own report and a `proposals.create` holder
+  any of the bank's; anyone else is 403 naming `proposals.create`, and a second close is
+  409 `already_closed`. It answers the closed report as a `listProblemReports` row. The
+  close records `problem_report.closed` with the states only, never the words, and no
+  step-up or second person is asked: it changes nothing outside the report.
+- An agent's key on either route answers 401 `unauthenticated`, as every session-only
+  route does, rather than the 403 AUD-S5's wording allows: a key is not a session, so it is
+  refused before any gate runs. Nothing about the key is revealed either way.
+- `problem_report` loses `resolved_by_proposal` and gains `resolution_note`, `closed_by`
+  and `closed_at` (library 0009), with a check constraint that a report is open with none
+  of the three or closed with all three and a note. `tenant_id` stays nullable and the
+  table stays mixed until Alex decides otherwise (docs/TODO_FOR_alex.md, item 3).
+
+## 16. A bank switches its own AI features off with a passkey (2026-09-23, ask-switch-route)
+
+`PUT /tenant/ai` (`setTenantAi`) and `TenantOut.aiEnabled` are not in the designed contract,
+which has no way to reach D-07's per-bank switch: `tenant.ai_enabled` (shared 0007) was read
+before every model call and nothing set it. The route takes `{enabled}`, a strict boolean
+and nothing else, and answers the profile as it now stands. It needs `security.manage` and a
+passkey step-up, because whether a bank's own words may leave it for a model is a security
+change (CLAUDE.md section 5), and it is recorded as `tenant.ai_switched` with the state
+before and after and the step-up assertion. It is a route of its own rather than a field on
+`PATCH /tenant` (`updateTenant`), which stays as designed, so a profile edit never needs a
+passkey and never moves the switch. The switch covers the bank's own Ask and drafts only; a
+platform run is in no bank's zone and never reads it (owner item 14).
+
+## 17. The evaluation set is the platform's, not the library's (2026-09-23, search-eval-sets)
+
+`docs/inputs/schema.sql` labels `eval_question` and `eval_run` LIBRARY. They are not: a
+library row is a sourced public fact every bank reads and that changes only through a
+proposal, and an evaluation question is the platform staff's own test of search, which no
+bank reads and no proposal carries. Search 0002 builds both as platform tables: no tenant
+column, row-level security enabled and forced, and one policy, `platform_only`, FOR ALL,
+refusing any session with a tenant active (`PLATFORM_ONLY_TABLES` in
+`apps/shared/tests_rls.py`). The console reads them under `eval.manage`, the library
+editor's permission.
+
+The shapes depart from the design on purpose:
+
+- A question names what it expects by stable key in one list, `expected`, where the design
+  had `expected_obligation_ids` and `expected_provision_ids` as uuid arrays. The gate's file,
+  `backend/eval/retrieval.jsonl`, names obligations, provisions and changes by stable key,
+  and the corpus the gate builds gets new ids in every database; a key never changes. The
+  question also carries its own stable `key` (the file's `id`), its `matchKind` (`keyword`,
+  `concept`, `both`, what AC-SRC1 expects to win it) and a server-computed `inGate`, and
+  `lang` is a key of the language rows rather than the design's two-value check (§3).
+- `GET /eval/questions` (`listEvalQuestions`) and `GET /eval/runs` (`listEvalRuns`) answer
+  `{items, total}` paged with `limit` and `offset`, like every other list (playbook 10),
+  rather than bare arrays. `POST /eval/questions` (`createEvalQuestion`) takes
+  `{key, lang, question, expected?, matchKind, asOf?, via?, notes?}` and answers 201 with the
+  question, `inGate` false: the release gate reads only the file, so a question added in the
+  console reaches it through `dump_eval_questions` and a reviewed commit.
+- A run's `config` is `{retriever, isMock, questions}`, its `metrics`
+  `{overall, perLanguage, perMatchKind}` of `{recallAt10, mrr}`, and its `results` a list,
+  one `{questionKey, returned, recallAt10, mrr}` per question asked, where the design left
+  all three as open objects. The design's `run_by` is not built: runs are recorded by the
+  `record_eval_run` command, which is no person, and its audit row names the actor.
+- A question also carries `via` (`search`, the default, or `ask`; search 0004), the field
+  ask-standard-no-answer gave the gate's file, so a question scored on the passages Ask would
+  give a model survives a seed and a dump. Both tables carry the library door trigger with a
+  door of their own, `eval` (search 0003, D-87), on top of the `platform_only` policy.
+- `POST /eval/runs` (`startEvalRun`) waits for chunk 14's job runner
+  (`backend/scripts/contract_drift_pending.txt`): a run builds the sample corpus in a
+  database of its own and takes minutes, which no request should hold open.

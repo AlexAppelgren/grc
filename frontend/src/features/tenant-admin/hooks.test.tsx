@@ -25,6 +25,7 @@ import {
   useRevokeMemberSessions,
   useRoles,
   useSecurityLog,
+  useSetTenantAi,
   useTenant,
   useUpdateMember,
   useUpdateRole,
@@ -44,6 +45,15 @@ describe('tenant-admin hooks', () => {
   beforeEach(() => {
     resetApiForTests();
     tokenStore.set('tok');
+  });
+
+  it('tenant: switching AI writes the answer into the cache', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { id: 't1', aiEnabled: false } }));
+    const { wrapper, queryClient } = queryWrapper();
+    const toggle = renderHook(() => useSetTenantAi(), { wrapper });
+    await toggle.result.current.mutateAsync(false);
+    expect(queryClient.getQueryData(adminKeys.tenant)).toEqual({ id: 't1', aiEnabled: false });
+    expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([['put', '/api/v1/tenant/ai', { enabled: false }]]);
   });
 
   it('tenant: reads, and an update writes the answer into the cache and refreshes me', async () => {

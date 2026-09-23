@@ -124,6 +124,9 @@ def update_change_facts(
         change_type = keys.resolve_keys(keys.CHANGE_TYPE_LIST, [sent["change_type"]])[0] if "change_type" in sent else None
         flags = keys.resolve_keys(keys.FLAG_LIST, sent["flags"]) if "flags" in sent else None
         terms = keys.resolve_terms(sent["term_ids"]) if "term_ids" in sent else None
+        if terms is not None:
+            keys.require_regime(terms)
+            keys.require_standards_body(terms, change.authority_id)
         superseded_by = _superseding(change, sent) if "superseded_by" in sent else None
         if change_type is not None and change_type.id != change.change_type_id and not change.change_type_suggested:
             _refuse_confirmed(who, "the type", step_up_assertion_id)

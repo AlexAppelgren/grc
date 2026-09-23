@@ -18,11 +18,12 @@ from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, stub_session, user_prin
 class TheOutOfScopeCount(AgentRunCase):
     def test_a_count_that_cannot_be_a_count_is_refused_and_the_run_stays_open(self) -> None:
         run_id = self.opened()["id"]
-        for value in (-1, 2.5, "two"):
-            with self.subTest(value=value):
-                response = self.patch(run_id, {"status": "succeeded", "stats": {"outOfScope": value}})
-                self.assertEqual(response.status_code, 422, response.content)
-                self.assertEqual(response.json()["code"], "validation_error")
+        for name in ("outOfScope", "recordsRechecked", "correctionsProposed"):
+            for value in (-1, 2.5, "two"):
+                with self.subTest(name=name, value=value):
+                    response = self.patch(run_id, {"status": "succeeded", "stats": {name: value}})
+                    self.assertEqual(response.status_code, 422, response.content)
+                    self.assertEqual(response.json()["code"], "validation_error")
         self.assertEqual(AgentRun.objects.get(pk=run_id).status, RunStatus.RUNNING.value)
 
     def test_a_run_closed_before_the_count_existed_reads_zero(self) -> None:
@@ -33,6 +34,7 @@ class TheOutOfScopeCount(AgentRunCase):
         self.assertEqual(response.status_code, 200, response.content)
         stats = next(item["stats"] for item in response.json()["items"] if item["id"] == str(run.id))
         self.assertEqual((stats["sourcesChecked"], stats["outOfScope"]), (3, 0))
+        self.assertEqual((stats["recordsRechecked"], stats["correctionsProposed"]), (0, 0))
 
     def test_the_same_close_of_a_run_closed_before_the_count_existed_still_replays(self) -> None:
         """A close stored before the count existed holds five counters. The agent that lost

@@ -17,7 +17,7 @@ from django.db import DEFAULT_DB_ALIAS, IntegrityError, ProgrammingError, transa
 from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
 
 from apps.library import testing as build
-from apps.library.fixtures.check_prototype_data import FIXTURE, Checker
+from apps.library.fixtures.check_prototype_data import E2E_STANDARD, FIXTURE, Checker, check_e2e_standard, no_standard_in_prototype
 from apps.library.logic import in_force
 from apps.library.models import (
     Instrument,
@@ -92,7 +92,7 @@ def seed_library() -> dict[str, int]:
 class LibraryLoaderTests(TestCase):
     def test_the_loader_files_the_prototype_library(self) -> None:
         counts = seed_library()
-        self.assertEqual(counts, {"instruments": 16, "provisions": 9, "obligations": 16, "obligation_versions": 17})
+        self.assertEqual(counts, {"instruments": 18, "provisions": 9, "obligations": 18, "obligation_versions": 19})
         lvm = Instrument.objects.get(stable_key="sfs-2007-528")
         self.assertIsNone(lvm.owner_tenant_id, "a seeded record is shared")
         self.assertEqual((lvm.level.key, lvm.jurisdiction.key, lvm.authority and lvm.authority.key), ("act", "se", "riksdagen"))
@@ -177,10 +177,10 @@ class LibraryLoaderTests(TestCase):
         seed_library()
         filed = AuditEvent.objects.filter(action="library.seeded", subject_type__in=("authority", "instrument", "obligation"))
         audited = filed.count()
-        self.assertEqual(audited, 8 + 16 + 16, "one audit row per authority, instrument and obligation")
+        self.assertEqual(audited, 11 + 18 + 18, "one audit row per authority, instrument and obligation")
         summaries = ObligationSummary.objects.count()
-        self.assertEqual(load_library(), {"instruments": 16, "provisions": 9, "obligations": 16, "obligation_versions": 17})
-        self.assertEqual(seed_authorities(), 8)
+        self.assertEqual(load_library(), {"instruments": 18, "provisions": 9, "obligations": 18, "obligation_versions": 19})
+        self.assertEqual(seed_authorities(), 11)
         self.assertEqual(filed.count(), audited)
         self.assertEqual(ObligationSummary.objects.count(), summaries)
 
@@ -241,7 +241,7 @@ class LibraryLoaderTests(TestCase):
     def test_seed_demo_prints_counts_and_refuses_a_deployed_environment(self) -> None:
         out = StringIO()
         call_command("seed_demo", stdout=out)
-        self.assertIn("obligations: 16", out.getvalue())
+        self.assertIn("obligations: 18", out.getvalue())
         with override_settings(IS_DEPLOYED_ENVIRONMENT=True, ENVIRONMENT="prod"), self.assertRaises(SeedRefused):
             call_command("seed_demo", stdout=StringIO())
 
@@ -350,6 +350,37 @@ class SharedOrMineIsolation(TransactionTestCase):
         with transaction.atomic(using="app"):
             tenancy.activate(self.tenant_a.id, using="app")
             self.assertEqual(ProblemReport.objects.using("app").get().status, ReportStatus.OPEN.value)
+
+    def test_a_report_is_open_or_closed_with_who_when_and_a_note(self) -> None:
+        """library 0009 (AUD-03): the database refuses a closed report missing who closed it,
+        when or why, and an open one carrying any of the three."""
+        now = datetime.datetime.now(tz=datetime.UTC)
+        closed: dict[str, Any] = {"status": ReportStatus.FIXED.value, "resolution_note": "Checked against the source.", "closed_by": self.reporter, "closed_at": now}
+        broken: list[dict[str, Any]] = [
+            {**closed, "resolution_note": ""},
+            {**closed, "closed_by": None},
+            {**closed, "closed_at": None},
+            {"resolution_note": "A note on an open report."},
+            {"closed_at": now},
+        ]
+        for fields in broken:
+            with self.subTest(fields=sorted(fields)):
+                with self.assertRaisesMessage(IntegrityError, "problem_report_closed_with_note"), transaction.atomic(using="app"):
+                    tenancy.activate(self.tenant_a.id, using="app")
+                    self._report(**fields)
+        with transaction.atomic(using="app"):
+            tenancy.activate(self.tenant_a.id, using="app")
+            self.assertEqual(self._report(**closed).status, ReportStatus.FIXED.value)
+
+    def _report(self, **fields: Any) -> ProblemReport:
+        return ProblemReport.objects.using("app").create(
+            tenant=self.tenant_a,
+            reporter=self.reporter,
+            subject_type=SubjectType.OBLIGATION.value,
+            subject_id=self.tenant_a.id,
+            text="The retention period looks wrong.",
+            **fields,
+        )
 
 
 class JurisdictionReach(TestCase):
@@ -503,4 +534,42 @@ class FixtureCheck(SimpleTestCase):
         instruments["sfs-2007-528"]["level"] = "standard"
         self.assertIn(
             "provisions.sfs-2007-528/9: a standard's text is licensed, so no provision sits under one", Checker(data).run()
+        )
+
+    def standard(self) -> dict[str, Any]:
+        data: dict[str, Any] = json.loads(E2E_STANDARD.read_text(encoding="utf-8"))
+        return data
+
+    def test_the_e2e_standard_passes_and_the_prototype_holds_none(self) -> None:
+        """INV-08: seed_demo loads the prototype, so the one standard lives in the E2E file
+        until the legal question in TODO_FOR_alex.md is answered."""
+        self.assertEqual(check_e2e_standard(self.load(), self.standard()), [])
+        self.assertEqual(no_standard_in_prototype(self.load()), [])
+        data = self.load()
+        data["instruments"][0]["level"] = "standard"
+        self.assertEqual(
+            no_standard_in_prototype(data),
+            [f"instruments.{data['instruments'][0]['stable_key']}: a standard lives in e2e_standard.json until the legal question is answered, never here"],
+        )
+
+    def test_a_standard_holds_exactly_one_conformance_duty_in_either_file(self) -> None:
+        """INV-08, D-35: a second obligation under a standard is refused, whichever file holds it."""
+        standard = self.standard()
+        duty = standard["obligations"][0]
+        standard["obligations"].append({**duty, "stable_key": "iso-iec-27001-2022-second"})
+        standard["obligation_versions"].append({**standard["obligation_versions"][0], "obligation": "iso-iec-27001-2022-second"})
+        problems = check_e2e_standard(self.load(), standard)
+        self.assertIn("e2e_standard: instruments.iso-iec-27001-2022: a standard holds exactly one obligation, its conformance duty, not 2", problems)
+        self.assertIn(
+            "e2e_standard: obligations.iso-iec-27001-2022-second: a standard's conformance duty carries a term of the standard dimension", problems
+        )
+        # The same rule in the prototype's own rows: a standard there with two duties.
+        data = self.load()
+        instrument = data["instruments"][0]
+        instrument["level"] = "standard"
+        under = [o["stable_key"] for o in data["obligations"] if o["instrument"] == instrument["stable_key"]]
+        self.assertGreater(len(under), 1)
+        self.assertIn(
+            f"instruments.{instrument['stable_key']}: a standard holds exactly one obligation, its conformance duty, not {len(under)}",
+            Checker(data).run(),
         )

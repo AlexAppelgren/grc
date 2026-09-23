@@ -27,7 +27,14 @@ obligation applies to it or that it complies, which are separate facts (REG-01, 
 The footprint rule is the one in `apps/library/reading.py` and the SQL function behind it,
 used exactly as the obligations list uses them: `taxonomy_in_footprint` narrows the query
 and `outside_reasons()` gives the verdict on the rows that come back. There is no second
-rule here.
+rule here. A change's scope is its own terms plus the jurisdictions its authority reaches,
+derived at match time by the instruments' own `reaching()` and never stored (FP-04, D-28,
+D-29); a change with no authority is not restricted by jurisdiction.
+
+"Markets we watch" (`footprint=watched`) shows only what watching adds: a change outside
+the footprint whose own terms still match it and whose authority reaches a market this bank
+watches. Watching sets no urgency and opens nothing (D-30): the view reads the cases, it
+never writes one.
 """
 
 from __future__ import annotations
@@ -51,18 +58,37 @@ from django.db.models import (
     OuterRef,
     Q,
     QuerySet,
+    Subquery,
     UUIDField,
     Value,
 )
 
+from apps.cases.models import CaseLinkDecision as CaseLinkDecisionKind
 from apps.cases.models import CaseObligationLink, ChangeCase
 from apps.library.models import ObligationTitle
-from apps.library.reading import NOT_FOUND, localized, obligation_subject, outside_reasons, vocabulary_refs
+from apps.library.reading import (
+    NOT_FOUND,
+    jurisdiction_scopes,
+    localized,
+    obligation_subject,
+    outside_reasons,
+    reaching,
+    vocabulary_refs,
+)
 from apps.library.schemas import LibraryRef
 from apps.shared.models import Tenant
 from apps.shared.schemas import PageQuery
 from apps.taxonomy import matching
-from apps.taxonomy.models import CaseStatusCategory, ChangeTypeLabel, FlagLabel, TaxonomyTermLabel, Urgency, UrgencyLabel
+from apps.taxonomy.models import (
+    CaseStatusCategory,
+    ChangeTypeLabel,
+    FlagLabel,
+    TaxonomyTerm,
+    TaxonomyTermLabel,
+    Urgency,
+    UrgencyLabel,
+    WatchedMarket,
+)
 from apps.taxonomy.reading import Labels, label_of
 from apps.watch import keys
 from apps.watch.models import ChangeObligation, ChangeTerm, RegulatoryChange
@@ -88,20 +114,28 @@ from apps.watch.schemas import (
     WatchObligationLink,
 )
 
-# The columns of the reader's own case the feed answers, read off the one left join. A
-# foreign key is named without its `_id` suffix on purpose: `F("own_case__urgency")`
-# resolves to the column on `change_case` and adds no second join.
-_CASE_COLUMNS = (
-    "id",
-    "status",
-    "urgency",
-    "urgency_confirmed",
-    "owner",
-    "footprint_match",
-    "so_what_text",
-    "so_what_confirmed",
-    "so_what_confirmed_at",
-)
+# The columns of the reader's own case the feed answers, read off the one left join, by
+# the name each is read under and its path from the case. A foreign key is named without
+# its `_id` suffix on purpose: `F("own_case__urgency")` resolves to the column on
+# `change_case` and adds no second join. The confirming person's name is the one path that
+# does join, a left join to `app_user` in the same query, so naming them costs no query
+# per row (WAT-05).
+_CASE_COLUMNS = {
+    "id": "id",
+    "status": "status",
+    "urgency": "urgency",
+    "urgency_confirmed": "urgency_confirmed",
+    "owner": "owner",
+    "footprint_match": "footprint_match",
+    "so_what_text": "so_what_text",
+    "so_what_confirmed": "so_what_confirmed",
+    "so_what_confirmed_at": "so_what_confirmed_at",
+    "so_what_confirmed_by_name": "so_what_confirmed_by__name",
+}
+# Beside the case, where a change's jurisdiction comes from (its authority's) and the first
+# term it reaches that mirrors a market this bank watches (FP-04).
+_JURISDICTION = "authority_jurisdiction_id"
+_WATCHED_TERM = "watched_term_id"
 
 
 # ---------------------------------------------------------------------------------------
@@ -112,14 +146,29 @@ _CASE_COLUMNS = (
 _CHANGE_JOINS = ("change_type", *keys.CHANGE_TYPE_AGENTS)
 
 
-def _scope_term_ids() -> ArraySubquery:
-    """A change's scope term ids as one `uuid[]`, for the database's footprint function. A
-    flag is a `change_term` row too and never scopes a change: it says what the reform is
-    about, not who it reaches (WAT-03)."""
+def _own_term_ids() -> ArraySubquery:
+    """A change's own scope term ids as one `uuid[]`. A flag is a `change_term` row too and
+    never scopes a change: it says what the reform is about, not who it reaches (WAT-03)."""
     return ArraySubquery(
         ChangeTerm.objects.filter(change=OuterRef("pk"), term__isnull=False).order_by().values("term_id"),
         output_field=ArrayField(UUIDField()),
     )
+
+
+def _scope_term_ids() -> Func:
+    """A change's scope term ids as one `uuid[]`, for the database's footprint function: its
+    own terms and the jurisdiction terms its authority reaches (`reaching()`), none without
+    an authority. The SQL twin of `_Scopes`."""
+    reached = ArraySubquery(
+        TaxonomyTerm.objects.filter(reaching(OuterRef("authority__jurisdiction_id"))).order_by().values("id"),
+        output_field=ArrayField(UUIDField()),
+    )
+    return Func(_own_term_ids(), reached, function="array_cat", output_field=ArrayField(UUIDField()))
+
+
+def _in_footprint(tenant: Tenant, term_ids: Func | ArraySubquery) -> Func:
+    """The database's footprint function over one row's term ids."""
+    return Func(Value(tenant.id, output_field=UUIDField()), term_ids, function=matching.SQL_FUNCTION, output_field=BooleanField())
 
 
 def urgency_refs(ids: Collection[uuid.UUID], order: list[str]) -> dict[uuid.UUID, LibraryRef]:
@@ -181,6 +230,37 @@ class _Classification:
                 self.scope.setdefault(link.change_id, {}).setdefault(link.term.dimension.key, set()).add(link.term.key)
             if link.suggested:
                 self.unconfirmed[link.change_id] = self.unconfirmed.get(link.change_id, 0) + 1
+
+
+class _Scopes:
+    """The footprint verdict of a page of changes and, beside it, the market this bank
+    watches that each one comes from, from one query for the jurisdictions the page's
+    authorities reach (FP-04). The watched market's term came with the page itself
+    (`_with_own_case()`).
+
+    A change's scope is its own terms plus those jurisdictions, as `_scope_term_ids()` hands
+    them to the database. `market` is set only where watching adds the row: outside the
+    footprint, inside it on the change's own terms, and reaching a watched market."""
+
+    def __init__(self, tenant: Tenant, page: Sequence[RegulatoryChange], classification: _Classification) -> None:
+        footprint, restricting = matching.footprint_of(tenant.id), matching.restricting_dimensions()
+        # Read by name, because a query annotation is not a field of the model.
+        jurisdiction = {change.id: getattr(change, _JURISDICTION) for change in page}
+        reached = jurisdiction_scopes(set(jurisdiction.values()) - {None})
+        self.inside: dict[uuid.UUID, bool] = {}
+        self.market: dict[uuid.UUID, TaxonomyTerm] = {}
+        for change in page:
+            own = classification.scope.get(change.id, {})
+            scope = {dimension: set(keys) for dimension, keys in own.items()}
+            terms = reached.get(jurisdiction[change.id], [])
+            for term in terms:
+                scope.setdefault(term.dimension.key, set()).add(term.key)
+            self.inside[change.id] = not outside_reasons(scope, footprint, restricting)
+            if self.inside[change.id] or outside_reasons(own, footprint, restricting):
+                continue
+            market = next((term for term in terms if term.id == getattr(change, _WATCHED_TERM)), None)
+            if market is not None:
+                self.market[change.id] = market
 
 
 def _change_type_fact(change: RegulatoryChange, refs: Mapping[uuid.UUID, LibraryRef]) -> WatchFact:
@@ -248,10 +328,22 @@ def _with_own_case(tenant: Tenant) -> QuerySet[RegulatoryChange]:
     """Every change with this bank's own case beside it, in one left join. The condition
     sits on the JOIN, so a change the bank has no case for is still a row; the tenant is
     named as well as left to row-level security, which is the belt to the policy's
-    braces."""
+    braces.
+
+    Beside the case, where the change's jurisdiction comes from (its authority's) and the
+    first term it reaches that mirrors a market this bank watches, or null (FP-04)."""
+    watched = WatchedMarket.objects.filter(tenant=tenant).values("jurisdiction")
     queryset: QuerySet[RegulatoryChange] = RegulatoryChange.objects.annotate(
-        own_case=FilteredRelation("cases", condition=Q(cases__tenant=tenant))
-    ).annotate(**{f"case_{column}": F(f"own_case__{column}") for column in _CASE_COLUMNS})
+        own_case=FilteredRelation("cases", condition=Q(cases__tenant=tenant)),
+        **{
+            _JURISDICTION: F("authority__jurisdiction"),
+            _WATCHED_TERM: Subquery(
+                TaxonomyTerm.objects.filter(reaching(OuterRef("authority__jurisdiction_id")), jurisdiction__in=watched)
+                .order_by("sort_order", "key")
+                .values("id")[:1]
+            ),
+        },
+    ).annotate(**{f"case_{name}": F(f"own_case__{path}") for name, path in _CASE_COLUMNS.items()})
     return queryset
 
 
@@ -290,21 +382,13 @@ def _feed_queryset(tenant: Tenant, query: WatchChangeQuery) -> QuerySet[Regulato
     if query.q:
         queryset = queryset.filter(Q(title__icontains=query.q) | Q(summary__icontains=query.q))
     if query.footprint == "in":
-        queryset = queryset.filter(
-            Func(
-                Value(tenant.id, output_field=UUIDField()),
-                _scope_term_ids(),
-                function=matching.SQL_FUNCTION,
-                output_field=BooleanField(),
-            )
-        )
+        queryset = queryset.filter(_in_footprint(tenant, _scope_term_ids()))
     elif query.footprint == "watched":
-        # FP-04's "Markets we watch": a change from a market this bank watches whose other
-        # dimensions still match. A change's jurisdiction is derived from its authority
-        # inside the one scope rule, which `f03-T41` builds; until then nothing is derived,
-        # so nothing is watched and the view is honestly empty rather than quietly showing
-        # the default feed under another name.
-        queryset = queryset.none()
+        # FP-04's "Markets we watch": only what watching adds, the rule `_Scopes` gives
+        # each row its market by. Outside the footprint, inside it on the change's own terms,
+        # and from an authority whose jurisdiction reaches a market this bank watches.
+        queryset = queryset.filter(Q(**{f"{_WATCHED_TERM}__isnull": False}), _in_footprint(tenant, _own_term_ids()))
+        queryset = queryset.exclude(_in_footprint(tenant, _scope_term_ids()))
     return queryset
 
 
@@ -333,6 +417,7 @@ def _case_of(
         so_what_text=case["so_what_text"] or None,
         so_what_confirmed=case["so_what_confirmed"],
         so_what_confirmed_at=case["so_what_confirmed_at"],
+        so_what_confirmed_by_name=case["so_what_confirmed_by_name"],
         obligation_decisions=decisions.get(case["id"], []),
         # The state machine that would move a case is chunk 9, so nothing is offered yet.
         # Empty means "no move is offered here", never "the case is stuck".
@@ -342,12 +427,16 @@ def _case_of(
 
 def _decisions_by_case(case_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, list[WatchCaseObligationDecision]]:
     """What this bank decided about the suggested links, its own rows under row-level
-    security. One query for the page."""
+    security, with the deciding person's name joined in. One query for the page."""
     by_case: dict[uuid.UUID, list[WatchCaseObligationDecision]] = {}
-    for row in CaseObligationLink.objects.filter(case_id__in=case_ids):
+    rows = CaseObligationLink.objects.filter(case_id__in=case_ids).annotate(decided_by_name=F("decided_by__name"))
+    for row in rows:
         by_case.setdefault(row.case_id, []).append(
             WatchCaseObligationDecision(
-                obligation_id=row.obligation_id, decision=cast(CaseLinkDecision, row.decision), decided_at=row.decided_at
+                obligation_id=row.obligation_id,
+                decision=cast(CaseLinkDecision, row.decision),
+                decided_at=row.decided_at,
+                decided_by_name=row.decided_by_name,
             )
         )
     return by_case
@@ -367,29 +456,27 @@ def change_rows(tenant: Tenant, order: list[str], change_ids: Collection[uuid.UU
     costs (NFR-02).
     """
     page = list(_with_own_case(tenant).select_related(*_CHANGE_JOINS).filter(id__in=change_ids))
-    rows = _feed_rows(page, order, matching.footprint_of(tenant.id), matching.restricting_dimensions())
-    return {row.id: row for row in rows}
+    return {row.id: row for row in _feed_rows(tenant, page, order)}
 
 
 def list_changes(tenant: Tenant, order: list[str], query: WatchChangeQuery) -> WatchChangePage:
     """`GET /changes`: the reforms that reach this bank, with its own case beside each one
     (WAT-02, WAT-03, CAS-01, FP-03). The same number of queries whatever the page size."""
-    footprint = matching.footprint_of(tenant.id)
-    restricting = matching.restricting_dimensions()
     queryset = _feed_queryset(tenant, query)
     total = queryset.count()
     page = list(queryset.select_related(*_CHANGE_JOINS)[query.offset : query.offset + query.limit])
 
-    return WatchChangePage(items=_feed_rows(page, order, footprint, restricting), total=total)
+    return WatchChangePage(items=_feed_rows(tenant, page, order), total=total)
 
 
-def _feed_rows(
-    page: Sequence[RegulatoryChange], order: list[str], footprint: Mapping[str, Collection[str]], restricting: Collection[str]
-) -> list[WatchChangeRow]:
+def _feed_rows(tenant: Tenant, page: Sequence[RegulatoryChange], order: list[str]) -> list[WatchChangeRow]:
     """One page of feed rows, each the library's facts about a reform beside the reader's
-    own case. Seven queries for the page, whatever its size (NFR-02)."""
+    own case. The same number of queries for the page, whatever its size (NFR-02): one more
+    for the markets' labels when a row comes from a watched market."""
     ids = [change.id for change in page]
     classification = _Classification(ids, order)
+    scopes = _Scopes(tenant, page, classification)
+    markets = vocabulary_refs(TaxonomyTermLabel, scopes.market.values(), order, field="term")
     cases = [_case_columns(change) for change in page]
     case_ids = [case["id"] for case in cases if case["id"] is not None]
     urgencies = urgency_refs(
@@ -417,7 +504,8 @@ def _feed_rows(
             flags=classification.flags.get(change.id, []),
             terms=classification.terms.get(change.id, []),
             suggested_urgency=None if change.suggested_urgency_id is None else urgencies[change.suggested_urgency_id],
-            in_footprint=not outside_reasons(classification.scope.get(change.id, {}), footprint, restricting),
+            in_footprint=scopes.inside[change.id],
+            market=markets[scopes.market[change.id].id] if change.id in scopes.market else None,
             first_seen_at=change.first_seen_at,
             case=_case_of(case, urgencies, decisions),
         )
@@ -574,9 +662,7 @@ def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID) -> WatchC
         model=change.model or None,
         agent_run_id=change.agent_run_id,
         first_seen_at=change.first_seen_at,
-        in_footprint=not outside_reasons(
-            classification.scope.get(change.id, {}), matching.footprint_of(tenant.id), matching.restricting_dimensions()
-        ),
+        in_footprint=_Scopes(tenant, [change], classification).inside[change.id],
         case=_case_of(case, urgencies, _decisions_by_case([case["id"]] if case["id"] is not None else [])),
     )
 
@@ -592,12 +678,20 @@ def list_obligation_changes(tenant: Tenant, order: list[str], obligation_id: uui
     `openCount` is counted by the database over every linked change and never over the
     page, so paging cannot change it. It counts this bank's own cases that are neither
     closed nor dismissed: it says the work is open, never that the bank does not comply,
-    which is a separate fact in the register (REG-02)."""
+    which is a separate fact in the register (REG-02).
+
+    A change this bank removed the link to — "not related to us" on its own case — is left
+    out of the items, the total and the open count alike. Its removal is this bank's alone:
+    the library link stays, and another bank still sees the change (WAT-04, ruling C)."""
     obligation = obligation_subject(obligation_id)
+    removed = CaseObligationLink.objects.filter(
+        tenant=tenant, obligation=obligation, decision=CaseLinkDecisionKind.REMOVED.value
+    )
     queryset = (
         _with_own_case(tenant)
         .annotate(link=FilteredRelation("obligation_links", condition=Q(obligation_links__obligation=obligation)))
         .filter(link__obligation=obligation)
+        .exclude(Exists(removed.filter(case_id=OuterRef("case_id"))))
         # A link a library editor confirmed comes first; the rest keep the feed's order.
         .annotate(link_confirmed=ExpressionWrapper(Q(link__confirmed_at__isnull=False), output_field=BooleanField()))
         .order_by("-link_confirmed", F("key_date").desc(nulls_last=True), "-first_seen_at", "id")
@@ -606,8 +700,8 @@ def list_obligation_changes(tenant: Tenant, order: list[str], obligation_id: uui
     open_count = (
         ChangeCase.objects.filter(tenant=tenant, change__obligation_links__obligation=obligation)
         .exclude(status__in=(CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value))
+        .exclude(Exists(removed.filter(case_id=OuterRef("pk"))))
         .count()
     )
     page = list(queryset.select_related(*_CHANGE_JOINS)[page_query.offset : page_query.offset + page_query.limit])
-    rows = _feed_rows(page, order, matching.footprint_of(tenant.id), matching.restricting_dimensions())
-    return WatchObligationChangePage(items=rows, total=total, open_count=open_count)
+    return WatchObligationChangePage(items=_feed_rows(tenant, page, order), total=total, open_count=open_count)

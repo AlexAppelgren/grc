@@ -13,9 +13,11 @@ from __future__ import annotations
 import uuid
 from datetime import timedelta
 from typing import Any, get_args
+from unittest import mock
 
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
 
 from apps.governance.schemas import AuditActorKind
 from apps.library.seeds import seed_jurisdictions, seed_languages
@@ -137,7 +139,14 @@ class AuditEventsReadTests(ScenarioTestCase):
         self.assertEqual(set(get_args(AuditActorKind)), {kind.value for kind in ActorType})
 
     def test_newest_first_and_paginated_with_a_total(self) -> None:
-        events = [self._event(tenant=self.tenant_b, actor=Actor.system("seed"), subject_type="footprint") for _ in range(3)]
+        # Three events recorded in a row can share a timestamp, and the page's tiebreak is a
+        # random uuid4, so each is given its own creation time at insert. The row is never
+        # updated afterwards: `created` is auto_now_add, which reads this clock.
+        start = timezone.now()
+        events = []
+        for minutes in range(3):
+            with mock.patch("django.utils.timezone.now", return_value=start + timedelta(minutes=minutes)):
+                events.append(self._event(tenant=self.tenant_b, actor=Actor.system("seed"), subject_type="footprint"))
         headers = self._as_b()
         query = "subjectType=footprint"
         page = self._read(headers, query).json()

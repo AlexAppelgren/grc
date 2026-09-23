@@ -141,6 +141,8 @@ function serve(answer: ObligationDetail | number) {
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path.endsWith('/diff')) return { status: 200, data: versionDiff };
+    // The record's "Reported problems" (AUD-03): the bank has filed none on it.
+    if (sent.path === '/api/v1/problem-reports') return { status: 200, data: { items: [], total: 0 } };
     if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
     // "As of" a date before version 2 is the same record read again; the
@@ -248,11 +250,22 @@ describe('ObligationScreen', () => {
     await waitFor(() => expect(document.querySelector('[data-legal-text] [lang="sv"]')?.textContent).toBe(sv.text));
   });
 
-  it('reads a record with no title, no regime, no lineage and nobody named as verifier', async () => {
+  it('reads "Standard" in the binding slot of a duty under a standard, never "Guidance, comply or explain"', async () => {
+    serve({ ...research, bindingLevel: { key: 'standard', kind: 'standard', label: 'Standard edition' }, binding: false });
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1 });
+    const header = document.querySelectorAll('[data-header-pills] [data-pill]');
+    expect([...header].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
+      ['FFFS 2017:2', 'brand'],
+      ['Securities', 'information'],
+      ['Standard', 'information'],
+    ]);
+  });
+
+  it('reads a record with no title, no lineage and nobody named as verifier', async () => {
     serve({
       ...research,
       title: null,
-      regime: null,
       productScope: '',
       triggerFrequency: '',
       retention: '',
@@ -265,7 +278,6 @@ describe('ObligationScreen', () => {
     });
     renderIn(<ObligationScreen obligationId="ob-1" />);
     await screen.findByRole('heading', { level: 1, name: 'Third-party payments' });
-    expect(screen.queryByText('Securities')).not.toBeInTheDocument();
     expect(screen.getByText('Not verified yet')).toBeInTheDocument();
     expect(screen.getByText('The library files no other duty beside this one.')).toBeInTheDocument();
     expect(screen.getByText(/^12 Mar 2026.*through proposal review$/)).toBeInTheDocument();
@@ -295,6 +307,13 @@ describe('ObligationScreen', () => {
       expect(screen.queryByText(/Sara Lindqvist/)).not.toBeInTheDocument();
       expect(document.querySelector('[data-version-row="2"] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
       expect(document.querySelector('[data-version-row="1"] [data-machine-confirmed]')).toBeNull();
+    });
+
+    it('says in the "Show what changed" banner that agents confirmed the newer wording', async () => {
+      await open({ ...research, version: byAgents, versions: [seeded, byAgents], provenance: { ...research.provenance, ...confirmedByAgents } });
+      fireEvent.click(screen.getByRole('button', { name: 'Show what changed' }));
+      await waitFor(() => expect(document.querySelector('[data-diff-banner]')).toBeInTheDocument());
+      expect(document.querySelector('[data-diff-banner] [data-machine-confirmed]')?.textContent).toBe(MACHINE_CONFIRMED);
     });
 
     it('labels the version before it takes effect, beside the person\'s verification of the one in force', async () => {
@@ -408,6 +427,7 @@ describe('ObligationScreen', () => {
     expect(document.querySelector('[data-diff-banner]')).toHaveTextContent(
       'Comparing version 1 (in force since it began) with version 2 (in force from 1 Oct 2026).',
     );
+    expect(document.querySelector('[data-diff-banner] [data-machine-confirmed]')).toBeNull();
     expect(document.querySelector('[data-legal-text] ins')?.textContent).toContain('The institution sets criteria for an annual assessment.');
     // Either side machine translated labels the whole comparison (INV-05).
     expect(screen.getByText('Machine translation from Swedish. The original is authoritative.')).toBeInTheDocument();
@@ -433,9 +453,25 @@ describe('ObligationScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
     expect(await screen.findByText('Report sent. Thank you.')).toBeInTheDocument();
     // What was on screen rides along: the version and the language being read.
-    expect(sent.filter((call) => call.path.endsWith('/problem-reports')).map((call) => call.body)).toEqual([
+    expect(sent.filter((call) => call.method === 'post' && call.path.endsWith('/problem-reports')).map((call) => call.body)).toEqual([
       { description: 'The English says annually.', language: 'en', versionNumber: 1 },
     ]);
+  });
+
+  it('shows the record\'s reported problems, and reads them again once a report is filed', async () => {
+    const sent = serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    const section = await screen.findByRole('heading', { name: 'Reported problems' });
+    expect(section.closest('[data-problem-reports]')).not.toBeNull();
+    expect(await screen.findByText('No problems reported on this record.')).toBeInTheDocument();
+    const reads = () => sent.filter((call) => call.path === '/api/v1/problem-reports');
+    expect(reads().map((call) => call.params)).toEqual([{ subjectType: 'obligation', subjectId: 'ob-1', limit: 20, offset: 0 }]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'This looks wrong' }));
+    fireEvent.change(await screen.findByLabelText('What you see'), { target: { value: 'The English says annually.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(reads()).toHaveLength(2));
   });
 });
 

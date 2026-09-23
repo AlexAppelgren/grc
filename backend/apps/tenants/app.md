@@ -168,6 +168,13 @@ And B's regulatory scope screen shows no market that A watches
 And B's lists show only B's records
 ```
 
+> **Note — what R1 walks (tax-market-journeys).** The `@e2e` journey proves B cannot reach
+> A's member by URL and lists only its own members; that B's regulatory scope shows no
+> market A watches as watched, none of A's terms as held and neither A's pending request nor
+> its requester; and that B's roles and tenant tags hold none of A's own (the seed gives A a
+> custom role and a tag for this, `EXPECTED_TENANT_A_ONLY`). The case, evidence, comment and
+> participant steps join the journey with chunks 9 and 10, when those screens exist.
+
 ### ADM-S1 — Tenant admin surfaces are gated by their own permissions `@integration` `@e2e` (ADM-01, ADM-03)
 ```gherkin
 Given a member holding members.manage and nothing else

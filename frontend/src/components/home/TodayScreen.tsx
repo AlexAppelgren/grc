@@ -15,6 +15,7 @@ import type { Briefing, Home } from '@/features/home/types';
 import { authorityAndDate } from '@/features/watch/change-presentation';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { findDestination, unlocks } from '@/shared/navigation/registry';
 import { RestrictedScreen, forbiddenFrom, usePermissions } from '@/shared/navigation/require-permission';
 import { formatLongDate, type FormatContext } from '@/shared/utils/format';
 
@@ -79,12 +80,15 @@ export function TodayScreen() {
   const nothingAtAll = home.comingUp.length === 0 && home.lead === null && home.sources === null && nothingToDecide;
   const canTriage = permissions.includes('cases.triage');
   const canSeeProposals = permissions.includes('proposals.create');
+  // The way to the regulatory scope shows only to someone the scope page opens for.
+  const scope = findDestination('admin-footprint');
+  const scopeAction = scope !== undefined && unlocks(scope.anyOfPermissions, permissions) ? { label: t('today.empty.action'), href: scope.href } : undefined;
 
   return (
     <>
       <PageHead kicker={kicker} title={t('today.title')} />
       {nothingAtAll ? (
-        <EmptyState title={t('today.empty.title')} body={t('today.empty.body')} action={{ label: t('today.empty.action'), href: '/admin' }} />
+        <EmptyState title={t('today.empty.title')} body={t('today.empty.body')} action={scopeAction} />
       ) : (
         <>
           <div className="mb-4 grid gap-4 lg:grid-cols-[1fr_1.6fr] lg:items-stretch">

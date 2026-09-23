@@ -56,7 +56,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, require_library_read
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, principal, require_library_read
 from apps.taxonomy.reading import language_order
 from apps.taxonomy.schemas import PersonRef
 
@@ -288,12 +288,14 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
     quietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing
     matching the filters is a 200 with an empty items list and a total of 0, never a 404.
-    Setting outsideFootprint to true adds the duties the footprint hides and says in
-    outsideReason why each of them would have been hidden.
+    Setting footprint to all adds the duties the footprint hides and says in outsideReason
+    why each of them would have been hidden; setting it to watched lists only what the
+    markets the bank watches add, each row naming its jurisdiction.
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
     (403) without library.read or the library:read scope; `validation_error` (422) when a
-    term filter is not written dimension:key, when the phrase is longer than 200 characters
+    term filter is not written dimension:key, when footprint is not in, all or watched,
+    when the retired outsideFootprint is sent, when the phrase is longer than 200 characters
     or when the page size or offset is out of range; `unknown_key` (422) when a term filter
     names no active term, listing every one that was not found.
     """
@@ -418,8 +420,9 @@ def list_instruments(request: HttpRequest, query: Query[InstrumentQuery], page: 
     for every bank and changed only through an approved proposal.
 
     Paginated: 20 rows by default and 100 at most, ordered by stable key so paging is
-    repeatable. `obligationCount` counts the obligations this bank would see under each
-    instrument, inside its footprint by default. Jurisdiction, level, authority and
+    repeatable. `footprint` is one value: `in` by default, `all` for every instrument, or
+    `watched` for only what the markets the bank watches add. `obligationCount` counts the
+    obligations this bank would see under each instrument under the same value. Jurisdiction, level, authority and
     `asOf` filters are deferred: "as of" applies to obligations only, and the Instruments
     tab lists every visible instrument with its own in-force dates.
 
@@ -427,6 +430,7 @@ def list_instruments(request: HttpRequest, query: Query[InstrumentQuery], page: 
     (403) without library.read or the library:read scope, which is checked first, so a
     platform key without the scope gets this; `not_found` (404) when the caller is a
     platform key carrying the scope, since it belongs to no bank; `validation_error` (422)
+    when footprint is not in, all or watched, when the retired outsideFootprint is sent,
     when the phrase is longer than 200 characters or the page size or offset is out of
     range.
     """
@@ -631,13 +635,10 @@ def get_record_sources(
     from. Errors: `not_found` when no obligation has that id or the caller may not see it;
     `permission_denied` without `library.read` or `library:read`; `unauthenticated` without a
     credential.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-06, AGT-01).
     require_library_read(request)
-    return reading.get_record_sources()
+    return reading.get_record_sources(obligation_id, reading.today_of(principal(request).tenant_id))
 
 
 @router.post(

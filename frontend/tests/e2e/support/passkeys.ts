@@ -52,6 +52,8 @@ export const LOGINS = {
   auditor: 'auditor@example-bank.test',
   anna: 'anna@example-bank.test',
   secondBankAdmin: 'admin@second-bank.test',
+  /** Tenant B's second person: approves the scope change its admin requests (FP-S8). */
+  secondBankApprover: 'approver@second-bank.test',
   /** Platform staff, no tenant: the console signs in as these. */
   editor: 'editor@bleqq.test',
   /** The second library editor, so the console can keep four eyes on a proposal. */

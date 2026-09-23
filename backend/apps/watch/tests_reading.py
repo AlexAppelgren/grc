@@ -64,8 +64,9 @@ OTHER_WEEK = D(2026, 9, 7)
 # its restricting dimensions (2); the count and the page, the page carrying the reader's own
 # case in the same left join (2); the page's classification links (1); the urgency rows the
 # page and the cases name (1); one label query each for change types, urgencies, flags and
-# terms (4); the banks' own decisions about the suggested links (1).
-FEED_QUERIES = 2 + 6 + 2 + 2 + 2 + 1 + 1 + 4 + 1
+# terms (4); the banks' own decisions about the suggested links (1); the jurisdiction terms
+# the page's authorities reach (1, FP-04).
+FEED_QUERIES = 2 + 6 + 2 + 2 + 2 + 1 + 1 + 4 + 1 + 1
 
 # Queries per console read, measured the same way. The savepoint pair (2); the session of a
 # platform person (the identity flag on, the session row, the flag off, the platform roles,
@@ -253,7 +254,7 @@ class FeedTests(WatchReadFixture):
         self.assertEqual(case["allowedTransitions"], [], "the workflow that would move a case is chunk 9")
         self.assertEqual(
             case["obligationDecisions"],
-            [{"obligationId": str(self.obligation.id), "decision": "accepted", "decidedAt": case["obligationDecisions"][0]["decidedAt"]}],
+            [{"obligationId": str(self.obligation.id), "decision": "accepted", "decidedAt": case["obligationDecisions"][0]["decidedAt"], "decidedByName": None}],
         )
 
     def test_a_change_the_bank_has_no_case_for_answers_a_null_case(self) -> None:

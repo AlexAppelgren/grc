@@ -60,14 +60,42 @@ server sets the proposal's owner from the target, and a second person in the
 same bank approves under `private_records.approve` with a passkey, through the
 same apply code and the same four-eyes constraint (D-57, ADR 0050).
 
-One check function guards the standards rules (INV-08) on every door into the
+One check function guards the standards rules (INV-08, D-35, D-36) on every door into the
 library: at `POST /proposals`, at the agent's proposal creation, over a
 reviewer's corrections at approval and at apply. A payload is stored when a
 proposal is created, so a check only at apply would leave licensed text in the
-platform database.
+platform database. It reads the instrument level's kind and the term dimension's kind,
+never a key, and answers four codes: `licensed_text` for a provision or provision version
+under a standard, or a source on a standard's obligation that is not an https link;
+`one_conformance_obligation` for a new obligation under a standard that already holds an
+active one; `standard_term_required` for a standard's obligation whose scope would hold no
+standard term or two; and `standard_term_only_on_standards` for a standard's term on a law's
+obligation, a new one included. The trigger `provision_not_under_standard` (library 0008)
+refuses a standard's provision in the database whatever writes it, so PRO-S10 proves the
+provision version case on the check itself: there is no standard's provision to version.
 
 The kinds are chunk 2's vocabulary and term kinds plus `new_obligation_version`: a new
-summary in force from a date, with the scope terms that come with it. A proposal a bank's
+summary in force from a date, with the scope terms that come with it. `new_instrument` and
+`new_obligation` bring a record the library does not hold yet: they name no target, every
+fact they set carries an https link as its source, and the proposal's `sourceUrl` becomes
+the record's own source. An instrument's regime is a term of the regime dimension, or 422
+`not_a_regime` at creation, over a correction and at apply (D-39). Approval writes the
+record, a new obligation's first version (naming the proposal, so the proposing side reads
+as for any version), the audit row and the re-index in one transaction, and stamps who
+confirmed it: `verified_origin` `agent` with the confirming agent, or `user`. An agent's
+approval of either still waits for a person (D-79) until the vocabulary and term
+provenance lands; the stamp is proven through the apply itself meanwhile. The proposal
+keeps its sources field by field; there is no citation table yet. `update_obligation` and
+`retire_record` wait for a scenario that needs them, and a watch link never travels as a
+proposal (D-64). PRO-S1, PRO-S3, PRO-S5 and PRO-S6 cover the two kinds beside the kinds
+they were written for: a source per fact, one transaction with the re-index, four eyes and
+the idempotent retry. `new_provision` brings a node of a law's text with its first verbatim
+text, sourced like a new record, and `new_provision_version` a later text of a provision
+that exists, sourced like an obligation version (proposals 0005). Each writes its version,
+naming the proposal, its audit row and the provision's re-index in one transaction. Both may
+be corrected; an agent's approval of either waits for a person (D-79), since a provision
+version has no column to say an agent confirmed it. A bank's library updates list them
+uncut, as a record of the library rather than a duty. A proposal a bank's
 own person or agent makes is linked to that bank in `proposal_tenant`, a tenant table, so
 the bank can follow its own proposals while the console sees only that one came from a
 bank, never who made it.
@@ -92,6 +120,16 @@ each of its rows, filed through the same report form the obligation card uses an
 inside the bank, are built and proven by PRO-S7 at the integration level; the PRO-S7
 journey is written in full and runs with the merged wave (D-67). A bank's private records
 (PRO-S12, INV-07) wait for chunk 13.
+
+PRO-S13's journey (pro-s13-journey) runs end to end: the console mints a `library-confirmer`
+key with `agent-runs:write` and `proposals:review`, which opens a run, reads the queue and
+the detail of the proposal `watch-sweeper` filed through its own key (seeded on
+`obl-product-governance`, no other journey's), approves it with the model call behind the
+decision and that run, and closes the run. A library editor then finds it under Approved,
+applied by the agent and machine-confirmed, and a bank's reader finds version 2 on the card
+labelled as proposed by one agent and confirmed by the other. A key of the same agent
+without `proposals:review` answers 403 at the queue. The 422 and 404 refusals, the logged
+call and the audit row stay proven at the integration level (`test_pro_s13`).
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -223,6 +261,10 @@ When a new_obligation_version proposal adds a standard's term to it
 Then it is refused at creation with 422 "standard_term_only_on_standards"
 When a reviewer's correction adds that term to a pending proposal and approves it
 Then the approval answers 422 "standard_term_only_on_standards" and nothing is written
+When a proposal filed before this rule asks for that term and is approved as it stands
+Then the approval answers the same and nothing is written
+When a new_obligation proposal under that level carries a standard's term
+Then it is refused at creation, and at apply when stored before the rule, with the same code
 And a tenant whose regulatory scope names no standard still sees the obligation
 ```
 

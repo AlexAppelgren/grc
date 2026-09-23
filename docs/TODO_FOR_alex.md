@@ -665,11 +665,13 @@ your own answer in chat to the session that merges it.
       it stays as built. If you want the design's wording, relation types gain an inverse
       label (a vocabulary change, one more label per row, in every content language) and
       the card uses it for the incoming groups.
-- [ ] **The empty provision tree says "The provision tree appears here once the library holds
+- [x] **The empty provision tree says "The provision tree appears here once the library holds
       it."**, where `design/screens/tenant-instrument.html` still says "as the library editor
       approves it". bleqq staffs no library editor (D-62), so the screen names no approver.
       The design card's lineage headings and this sentence are still the old wording; whoever
       next edits `design/` should bring the card in line, or tell us to follow the card.
+      Done (lib-standard-presentation): D-62 settled it, so the card's empty line now reads
+      as the screen does, and the card draws a standard's licensed-text state too.
 
 ## proposals-decide-hardening (2026-09-23): an agent confirms obligation versions only (D-79)
 
@@ -948,3 +950,174 @@ for later packages, not questions: `backend/agents/library-confirmer/v1/definiti
 does not yet list the confirm route as a tool (its package owns that file this wave), and
 `backend/apps/watch/app.md`'s context still says every classification waits for "a person"
 to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WAT-04 to built.
+
+## tax-nordic-seed: Kapitalmarkedsloven has no issuer in the sample library (2026-09-23, FP-04)
+
+- [ ] **Folketinget as an authority.** The Danish sample act (`dk-lov-2017-650`, Lov om
+      kapitalmarkeder) is filed without an issuing authority. Retsinformation.dk states that
+      Folketinget passed it ("Folketinget har vedtaget ..."), but Folketinget's own site,
+      ft.dk, answered this build's fetches with a challenge page, so its address could not be
+      verified, and the rule is to invent nothing. The Norwegian act names Stortinget, whose
+      site answered. Default if you say nothing: the Danish act stays without an issuer until
+      someone files Folketinget (key `folketinget`, `https://www.ft.dk/`) after checking the
+      address, and then sets it on the instrument through a proposal.
+
+## lib-standard-e2e-seed: the first standard exists for tests and E2E only (2026-09-23, INV-08, FP-01)
+
+- [ ] Default taken until you answer "Legal, before any standard is seeded" above:
+      ISO/IEC 27001:2022 and its one conformance duty live in
+      `backend/apps/library/fixtures/e2e_standard.json`, which only `seed_e2e`
+      loads. `prototype_data.json`, which `seed_demo` loads, holds no standard,
+      and `check_prototype_data.py` refuses one there. The edition is titled by
+      its reference alone, never its official title, and the duty's wording is
+      ours. When you answer yes, moving the rows into the prototype fixture is
+      the whole change.
+- [ ] The instrument's national-adoptions note names no adoption reference: the
+      Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
+      note says only that each national body adopts the edition under its own
+      reference. A person verifies them before the note names any.
+## ai-log-read: a shared "So what?" reads each bank's own review state (2026-09-23, AUD-02)
+
+- [ ] **A library "So what?" in the AI log shows the reading bank's own review, not one
+      shared state.** The row is one per change and every bank reads it; no bank may move it
+      (chunk 5 ruling I), and D-62 leaves the library to agents, so nobody would ever move it
+      and the log would show "draft" forever beside a bank's confirmed case. The default
+      taken: `GET /ai-generations` computes the row's `status`, `reviewedBy` and `reviewedAt`
+      for the reading bank from its own case (`confirmed` as drafted, `edited` when the bank
+      rewrote it, `draft` otherwise), and nothing shared is written. AUD-S4 in
+      `governance/app.md` is reworded to match. Default if you say nothing: it stays this way.
+
+## proposals-kind-instrument-obligation: new instruments and obligations through the queue (2026-09-23, PRO-01, INV-01, INV-03)
+
+- [ ] **Default taken: no citation table.** A new instrument or obligation keeps its sources
+      field by field on the proposal (`field_sources`, https links only) and its own source on
+      the record (`source_url`, from the proposal's `sourceUrl`). A record's citations read
+      from the approving proposal until a citation table is planned. Say so if the re-check
+      needs a table of its own in R1.
+- [ ] **Default taken: approving a new record does not stamp "last verified".** Approval
+      stamps who confirmed it (`verified_origin`, and the confirming agent when an agent did),
+      as a new version already does, and leaves `last_verified_at` and `verified_by` to the
+      re-verification, which is the one act that says someone checked the source on a date.
+      A new record therefore reads as never re-verified until the first monthly check.
+- [ ] **Default taken: `update_obligation` and `retire_record` are not built.** No R1
+      scenario needs them; a changed duty arrives as `new_obligation_version`.
+- [ ] **Default taken: an agent's approval of a new instrument or obligation still waits for
+      a person (D-79).** The records carry machine-confirmed provenance already; the
+      refusal is lifted with the vocabulary and term provenance package, as planned.
+- [ ] **Default taken: a new instrument in the bank's library updates is never cut to the
+      footprint.** A new obligation is cut like a new version; an instrument is not a duty,
+      so it reaches every bank, as a change to a shared list does.
+## watch-regime-required: a run's classification is logged with metadata it reports itself (2026-09-23, D-66, AUD-02, D-39)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **A run's classification of a new change is now AI output on the record.** When a key
+      registers a new change, its type, flags, scope terms and urgency are written as one
+      `scope_suggestion` row in the AI output log under the run that filed it, marked
+      `model_metadata_reported_by_agent` exactly as D-66 has it for the "So what?" (AUD-S4's
+      producer). bleqq made no model call, so the model and version are the run's own
+      account: the ones in the filing's `soWhat` when it carries one, else the model and
+      pipeline version the run was opened with, because `createChange` itself has no model
+      version field. Default: accepted in R1 as a reporting boundary, as D-66 and D-80. A
+      library editor's registration is a person's classification and logs no row, and a
+      second sighting logs none because it stores no scope. Say if you want a dedicated
+      model version on `createChange` instead of the run's pipeline version.
+- [ ] **Every change must name a regime (D-39), and a merge is exempt.** `createChange` for a
+      new change and an `updateChange` that replaces `termIds` answer 422 `regime_required`
+      with the regime keys. A second sighting of a known `stableKey` adds pages and
+      milestones and never touches the stored terms, so it is not held to the rule. The six
+      E2E-seeded changes that carried no regime now carry one each, chosen inside the
+      footprint of the bank whose case they belong to, so no cached scope verdict moved; the
+      one visible difference is that tenant B's feed now shows the AI-mapping change as
+      outside its scope, since tenant B does not follow the AI and ICT regime.
+## ask-screen: what a reader is told when the model cut an answer off (2026-09-23, SRC-03, AUD-02, D-82)
+
+- [ ] **An Ask answer the model stopped at its length limit (`ASK_MAX_TOKENS`, 1024 tokens)
+      now says so on screen.** D-82 left open what the stream tells that reader. The default
+      taken: the closing `answer` event carries `stopReason`, the provider's own word exactly
+      as the AI log row stores it (`end_turn`, or `max_tokens` when it was cut off; empty when
+      no model was asked), and the Ask screen shows "This answer was cut short at its length
+      limit. Ask a narrower question for the rest." under an answer that ended at
+      `max_tokens`. Every statement sent is still cited either way. Say if you would rather
+      the stream stayed silent (only the AI log records it), or the limit were raised
+      instead. Default if you say nothing: it stays as built.
+
+## std-journeys: a standard shows only to banks that follow it (2026-09-23, FP-01, FP-02, INV-08, AC-FP3)
+
+- [ ] Default taken (D-85 in `docs/DECISIONS.md`): `seed_e2e` switches the
+      ISO/IEC 27001 term on so FP-S16 can follow it through the regulatory scope request;
+      the reference seed still files it off, so nothing deployed changes. Say if a journey
+      should instead wait until you answer "Legal, before any standard is seeded" above.
+- [x] The regulatory scope page's opt-in group with "None followed" (listed among the design
+      cards still to be drawn above) is drawn: `design/screens/admin-footprint.html`, state 20.
+      New string `footprint.noneFollowed`: "None followed." / "Ingen följs.".
+
+
+## lib-standard-e2e-seed: the first standard exists for tests and E2E only (2026-09-23, INV-08, FP-01)
+
+- [ ] Default taken until you answer "Legal, before any standard is seeded" above:
+      ISO/IEC 27001:2022 and its one conformance duty live in
+      `backend/apps/library/fixtures/e2e_standard.json`, which only `seed_e2e`
+      loads. `prototype_data.json`, which `seed_demo` loads, holds no standard,
+      and `check_prototype_data.py` refuses one there. The edition is titled by
+      its reference alone, never its official title, and the duty's wording is
+      ours. When you answer yes, moving the rows into the prototype fixture is
+      the whole change.
+- [ ] The instrument's national-adoptions note names no adoption reference: the
+      Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
+      note says only that each national body adopts the edition under its own
+      reference. A person verifies them before the note names any.
+
+## watch-standards: a standard's term needs a standards body, and publishers are not read (2026-09-23, WAT-07, D-45)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **Which publishers no run reads.** `STANDARDS_PUBLISHER_HOSTS` defaults to every
+      standards publisher whose terms were read on 2026-09-19 (iso.org, iec.ch, sis.se,
+      ds.dk, standard.no, sfs.fi, pcisecuritystandards.org; not iaf.nu, which publishes no
+      standard's text). A source registered on one of them, or of the `standards_body`
+      kind, gets its automated checks switched off, and a run's check of it answers 422
+      `source_inactive`. Default: out of the box bleqq reads no publisher. When a lawyer
+      clears a publisher, take its host off the list in that environment.
+- [ ] **ISO/IEC 27001 is now seeded active on a new database only.** The watch door refuses
+      a standard's term on a change whose authority is not a standards body
+      (`standard_term_only_on_standards`), which was the reason the term was held. The
+      seed creates terms and never updates them, so a database seeded before this keeps
+      the term inactive until a vocabulary change switches it on. Default: left to you, since
+      switching it on in a deployed library is a library decision. The regulatory scope
+      page's "None followed" wording lands with std-journeys in the same wave.
+- [ ] **`licensed_text` has nothing to refuse.** No page bleqq stores keeps a snapshot, so
+      a body that sends one is refused by the schema (`validation_error`) like any field it
+      does not name. WAT-S11's step now says that. Say if you want a dedicated code.
+
+## ask-standard-no-answer: Ask answers nothing about a standard (2026-09-23, D-81, SRC-S12)
+
+- [ ] **Ask now answers "no answer" to any question whose only support is a standard's
+      conformance duty** (D-81): the library holds no clause text, so a model given the duty
+      could only answer about a control from memory. Search still finds the duty. Nothing to
+      do unless you want Ask to answer questions about conformance itself one day. Worth
+      knowing: the evaluation row that gates this (`r-en-17`) asks about an invented
+      standard, and the sample library holds no standard until `f03-T35` adds the first one,
+      so until then the row scores right against any retriever and proves the harness path,
+      not the filter; `test_src_s12` proves the filter over an invented standard of its own.
+      Default if you say nothing: stays as built.
+
+## r1-int-w23: the wave 2 and 3 integration (2026-09-23, D-84 to D-87, H16, FP-04, AGT-01)
+
+Forty-five cloud branches are merged on `claude/r1-int-w23`. Nothing blocks; one default
+was taken, and three statuses moved because the merged code earns them.
+
+- [ ] **The evaluation set has a library door of its own (D-87).** The H16 census counts
+      every shared row of a library-zone app, and `eval_question` and `eval_run` (search
+      0002) are in the search app. They are platform rows no proposal carries, so the two
+      remedies the census names did not fit: a `LibraryModel` would put a console write
+      behind a proposal, and the seed door would let a console write open every inventory
+      table. Search 0003 gives them the trigger with a door named `eval`, opened only by
+      `create_question()` and `record_run()`. Default if you say nothing: the door stays.
+      The alternative is moving the two tables out of the search app.
+- [ ] **A merge approval opens the watch door for the watch rows it moves (D-87).**
+      `watch/write.py`'s `repoint()` now names the watch door to the database inside the
+      proposal door, as `index_write()` does for a rebuild. Default: it stays.
+- FP-04 and AGT-01 read `built`: every FP-04 scenario (FP-S8 to FP-S15) and every AGT-01
+  scenario (AGT-S1, AGT-S2, AGT-S10, AGT-S15) is un-skipped and green over the merged
+  branch.

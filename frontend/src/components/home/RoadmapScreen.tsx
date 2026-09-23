@@ -12,14 +12,14 @@ import { ErrorState, LoadingState } from '@/components/ui/States';
 import { ToneDot } from '@/components/ui/ToneDot';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useRoadmap } from '@/features/home/hooks';
-import { presentRoadmapItem } from '@/features/home/roadmap-presentation';
+import { presentRoadmapItem, roadmapWhen } from '@/features/home/roadmap-presentation';
 import type { Roadmap, RoadmapItem, RoadmapQuery } from '@/features/home/types';
-import { daysUntil, urgencyOf } from '@/features/watch/change-presentation';
+import { urgencyOf } from '@/features/watch/change-presentation';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
 import { cn } from '@/shared/utils/cn';
-import { formatDate, type FormatContext } from '@/shared/utils/format';
+import type { FormatContext } from '@/shared/utils/format';
 
 // /roadmap (design/screens/tenant-roadmap.html; HOM-03, FP-03). Every dated
 // change the bank has open work on, by quarter, filtered by `kind` in the
@@ -80,7 +80,7 @@ function RoadmapCard({
     >
       <ToneDot tone={pills[0]?.tone ?? 'information'} />
       <span className="min-w-0">
-        <span className="block font-medium tabular-nums">{formatDate(item.date, ctx)}</span>
+        <span className="block font-medium tabular-nums">{roadmapWhen(item, ctx, new Date()).date}</span>
         <span className="block text-meta">{item.title}</span>
         <span className="block text-meta text-muted">{item.kind === 'internal' ? t('pill.ourDeadline') : t('roadmap.regulatoryDate')}</span>
       </span>
@@ -89,14 +89,13 @@ function RoadmapCard({
 }
 
 function RoadmapDetail({ item, t, ctx }: { item: RoadmapItem; t: Translate; ctx: FormatContext }) {
-  const today = new Date();
-  const days = daysUntil(item.date, today);
+  const when = roadmapWhen(item, ctx, new Date());
   return (
     <div className="mt-4 rounded-card border border-line bg-surface p-4" data-roadmap-detail={item.id}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <PillRow pills={itemPills(item, t)} />
-        <span className="text-meta text-muted">{formatDate(item.date, ctx)}</span>
-        {days !== null && days > 0 ? <span className="text-meta text-muted">{t('watch.row.daysLeft', { count: days })}</span> : null}
+        <span className="text-meta text-muted">{when.date}</span>
+        {when.daysLeft !== null ? <span className="text-meta text-muted">{t('watch.row.daysLeft', { count: when.daysLeft })}</span> : null}
       </div>
       <h2 className="mb-3">{item.title}</h2>
       {item.changeId !== null ? (

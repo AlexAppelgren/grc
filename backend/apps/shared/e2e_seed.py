@@ -24,6 +24,7 @@ import datetime
 from typing import Any
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from django.apps import apps as django_apps
@@ -33,6 +34,7 @@ from django.db import transaction
 
 from apps.agents.models import AgentRun, RunStatus
 from apps.agents.seeds import seed_agent_definitions
+from apps.cases import matching as case_matching
 from apps.cases.creation import CHANGE_REGISTERED
 from apps.cases.models import ChangeCase
 from apps.home import tasks as home_tasks
@@ -46,6 +48,7 @@ from apps.identity.models import (
     PasskeyDeviceType,
     PlatformRole,
     PlatformRoleAssignment,
+    TenantRole,
     User,
     UserStatus,
     WebAuthnCredential,
@@ -54,20 +57,25 @@ from apps.library import reports
 from apps.library.models import DatePrecision, Language, ProblemReport, ReportStatus, SubjectType
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import RESEARCH_OBLIGATION, load_library, seed_authorities
-from apps.proposals.logic import Proposer
+from apps.proposals.apply import apply_reverification
+from apps.proposals.logic import Proposer, Reviewer
+from apps.proposals.logic import approve as approve_proposal
 from apps.proposals.logic import create as create_proposal
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
+from apps.search import eval_sets
 from apps.shared import outbox, tenancy
+from apps.shared.adapters.mailer import MockMailer
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
+from apps.shared.schemas import AgentDecision
 from apps.taxonomy.models import CaseStatusCategory
 from apps.watch import e2e_seed as watch_e2e_seed
 from apps.watch.models import CheckFrequency, CheckStatus
 from apps.shared.models import Tenant
-from apps.taxonomy import footprint_logic, terms_logic
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintTerm
-from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+from apps.taxonomy import footprint_logic, markets_logic, tenant_lists_logic, terms_logic
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintTerm, WatchedMarket
+from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, switch_on_term
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.tenants.logic import set_content_languages
 
@@ -102,8 +110,10 @@ SEED_ACTOR = Actor.system("seed_e2e")
 
 # Footprints as "dimension:key" (chunk 2, FP-01, J-6). Tenant A's is the prototype's
 # `footprint{regimes, accounts, entities, services, clients}` less pension accounts, the one
-# term FP-S4 needs left out (`EXPECTED_OUTSIDE_SCOPE`); tenant B's is a smaller, different
-# bank so J-8 can prove the footprint is per tenant.
+# term FP-S4 needs left out (`EXPECTED_OUTSIDE_SCOPE`), and operating in Sweden, so the
+# Danish rules are what watching Denmark adds (tax-watched-inventory, FP-S13); tenant B's is
+# a smaller, different bank that names no jurisdiction, so J-8 can prove the footprint is
+# per tenant and every rule reaches it.
 EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
     TENANT_A_SLUG: (
         "regime:securities",
@@ -129,6 +139,10 @@ EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
         "service_type:insurance_distribution",
         "client_category:retail",
         "client_category:professional",
+        # tax-watched-feed (FP-04): the bank operates in Sweden, as FP-S10, FP-S13 and FP-S15
+        # have it, so a Danish record is outside this scope and "Markets we watch" has
+        # something to add. Union rules reach Sweden, so none of them moves.
+        "jurisdiction:se",
     ),
     TENANT_B_SLUG: (
         "regime:securities",
@@ -173,13 +187,35 @@ class SeedLibrary:
 # FFFS 2017:2's own provision tree has something that amends it), the obligation whose
 # second version is still ahead, and the one sample obligation whose only service is
 # advice, which J-6's switch-off hides (the prototype's 15 obligations plus that one).
+# tax-nordic-seed (FP-04): plus Kapitalmarkedsloven and verdipapirhandelloven with one
+# obligation each, the Danish one for Custody and the Norwegian one for Advice.
+# Plus the one standard below (E2E_STANDARD): ISO/IEC 27001:2022 and its conformance duty.
 EXPECTED_LIBRARY = SeedLibrary(
-    instruments=16,
-    obligations=16,
+    instruments=18 + 1,
+    obligations=18 + 1,
     research_obligation=RESEARCH_OBLIGATION,
     advice_only_obligation="obl-suitability-statement",
     anchor_date=datetime.date(2026, 9, 16),
 )
+
+
+# --- lib-standard-e2e-seed (INV-S11, FP-S16) ------------------------------------------
+# ISO/IEC 27001:2022 with its one conformance duty, for E2E only: seed_demo never loads it
+# until Alex answers TODO_FOR_alex.md "Legal, before any standard is seeded". The duty links
+# to the standard's term, which stays inactive (apps/taxonomy/seeds), and no E2E tenant
+# follows it, so every tenant's inventory hides it until a journey adds it to a scope.
+E2E_STANDARD = Path(__file__).resolve().parents[1] / "library" / "fixtures" / "e2e_standard.json"
+E2E_STANDARD_INSTRUMENT = "iso-iec-27001-2022"
+E2E_STANDARD_OBLIGATION = "iso-iec-27001-2022-conformance"
+# --- end lib-standard-e2e-seed -----------------------------------------------------------
+
+# --- std-journeys (FP-S16) ----------------------------------------------------------------
+# A scope request names active terms only, so FP-S16 cannot follow the standard while its
+# term is off. The reference seed now files it active on a new database (watch-standards),
+# and E2E switches it on where a database was seeded while it was held (D-85). No E2E tenant
+# follows it, so the duty stays hidden until a journey adds the term and takes it out again.
+E2E_STANDARD_TERM = ("standard", "iso_iec_27001")
+# --- end std-journeys ---------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -402,6 +438,15 @@ def seed_pending_footprint_request(tenants: list[Tenant]) -> int:
 PRO_S7_OBLIGATION = "obl-gdpr-article-22"
 AUTOMATED_DECISIONS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000005")
 # --- end library-updates-frontend ---------------------------------------------------------
+# --- agent-j4-smoke (AGT-S10, J-4) -------------------------------------------------------
+# J-4's own duty: an agent minted in the console files a new version of it under a change it
+# registers, a library editor approves it, and the bank's officer reads it. Every attempt adds
+# a version, so no other spec or seed may name it, and the journey asserts the version its own
+# approval produced, never a number. Product governance under FFFS 2017:2 reaches tenant A
+# with or without Advice (J-6 switches Advice off while other journeys run). The fixture
+# loads it; this names it as J-4's.
+J4_OBLIGATION = "obl-product-governance"
+# --- end agent-j4-smoke -------------------------------------------------------------------
 AGENT_MODEL = "agent pipeline 0.4"
 # The library editor who files PRO-S5's proposal; the second editor decides everything else.
 LIBRARY_EDITOR_EMAIL = "editor@bleqq.test"
@@ -409,6 +454,16 @@ LIBRARY_EDITOR_EMAIL = "editor@bleqq.test"
 APPROPRIATENESS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000001")
 COSTS_CHARGES_RUN = uuid.UUID("00000000-0000-4000-9000-000000000002")
 CLIENT_ASSETS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000003")
+# --- pro-s13-journey (PRO-S13) ---------------------------------------------------------------
+# The sweeper's proposal the confirming agent decides through the API, end to end. Its target
+# is version 1 only, reaches tenant A with or without Advice, and is named by no other spec,
+# seed constant or seeded proposal, so its version 2 is the confirming agent's and nobody
+# else's (tests_seed_integrity.py checks all three).
+# Not product governance, which J-4 owns (J4_OBLIGATION above): each journey that adds a
+# version needs a duty of its own.
+PRO_S13_OBLIGATION = "obl-idd-demands-needs"
+PRO_S13_RUN = uuid.UUID("00000000-0000-4000-9000-000000000013")
+# --- end pro-s13-journey ---------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -432,6 +487,7 @@ EXPECTED_PROPOSALS: tuple[SeedProposal, ...] = (
     SeedProposal("PRO-S9", ProposalKind.NEW_OBLIGATION_VERSION.value, "obl-client-assets", CLIENT_ASSETS_RUN),
     SeedProposal("PRO-S7", ProposalKind.NEW_OBLIGATION_VERSION.value, PRO_S7_OBLIGATION, AUTOMATED_DECISIONS_RUN),
     SeedProposal("PRO-S5", ProposalKind.VOCABULARY_RELABEL.value, "flag:ai", proposed_by_email=LIBRARY_EDITOR_EMAIL),
+    SeedProposal("PRO-S13", ProposalKind.NEW_OBLIGATION_VERSION.value, PRO_S13_OBLIGATION, PRO_S13_RUN),
 )
 
 
@@ -685,6 +741,27 @@ def seed_proposals() -> int:
         source_label="EUR-Lex, Regulation (EU) 2016/679, Article 22, consolidated text",
         source_url="https://eur-lex.europa.eu/",
     )
+    # pro-s13-journey (PRO-S13): see PRO_S13_OBLIGATION above.
+    _propose_obligation_version(
+        obligation=PRO_S13_OBLIGATION,
+        agent_run=PRO_S13_RUN,
+        title="Add version 2 of the demands and needs obligation, with the suitability assessment kept on file",
+        summaries={
+            "sv": (
+                "Innan ett avtal om en försäkringsbaserad investeringsprodukt ingås ska distributören "
+                "klargöra kundens krav och behov och, vid rådgivning, bedöma om produkten och dess "
+                "underliggande tillgångar är lämpliga, och spara bedömningen så länge avtalet gäller."
+            ),
+            "en": (
+                "Before an insurance-based investment product is concluded, the distributor specifies "
+                "the customer's demands and needs and, when advising, assesses whether the product and "
+                "its underlying assets are suitable, and keeps the assessment for as long as the contract runs."
+            ),
+        },
+        effective_from="2027-02-01",
+        source_label="Finansinspektionen, amended insurance distribution rules",
+        source_url="https://www.fi.se/",
+    )
     _propose_flag_relabel()
     return len(EXPECTED_PROPOSALS)
 
@@ -753,7 +830,7 @@ def seed_watch_changes() -> SeedHome:
 
     today = datetime.datetime.now(ZoneInfo(TENANT_A.timezone)).date()
     near, far = _quarter_safe_offsets()
-    watch_e2e_seed.seed_change(
+    lead = watch_e2e_seed.seed_change(
         stable_key=EXPECTED_HOME.lead_change,
         title="FI adopts amended rules on paying for investment research",
         key_date=today + datetime.timedelta(days=near),
@@ -762,7 +839,7 @@ def seed_watch_changes() -> SeedHome:
         first_seen_at=timezone_now_this_week(TENANT_A.timezone),
         so_what_draft="Confirm the annual assessment criteria before the rules take effect.",
     )
-    watch_e2e_seed.seed_change(
+    later = watch_e2e_seed.seed_change(
         stable_key=EXPECTED_HOME.later_change,
         title="Amended reporting of securities financing transactions",
         key_date=today + datetime.timedelta(days=far),
@@ -770,7 +847,7 @@ def seed_watch_changes() -> SeedHome:
         urgency="six_months_plus",
         first_seen_at=timezone_now_this_week(TENANT_A.timezone),
     )
-    watch_e2e_seed.seed_change(
+    outside = watch_e2e_seed.seed_change(
         stable_key=EXPECTED_HOME.outside_scope_change,
         title="Insurance distribution guidance outside our scope",
         key_date=today + datetime.timedelta(days=near + 5),
@@ -778,7 +855,7 @@ def seed_watch_changes() -> SeedHome:
         urgency="within_3_months",
         first_seen_at=timezone_now_this_week(TENANT_A.timezone),
     )
-    watch_e2e_seed.seed_change(
+    last_week = watch_e2e_seed.seed_change(
         stable_key=EXPECTED_HOME.last_week_change,
         title="FI starts mapping how financial firms use AI",
         key_date=today + datetime.timedelta(days=far + 30),
@@ -787,6 +864,16 @@ def seed_watch_changes() -> SeedHome:
         first_seen_at=timezone_now_last_week(TENANT_A.timezone),
         so_what_draft="No obligation changes yet. Keep the AI tooling register current.",
     )
+    # Every change carries a regime (D-39, AC-AGT1), each one tenant A's scope holds, so the
+    # scope verdicts the cases below cache are the ones they had: the outside-scope change
+    # stays outside through its pension term (`seed_outside_scope_terms`).
+    for change, regime in (
+        (lead, "regime:securities"),
+        (later, "regime:securities"),
+        (outside, "regime:insurance"),
+        (last_week, "regime:ai_ict"),
+    ):
+        watch_e2e_seed.seed_scope_term_link(change, term_ref=regime)
     return EXPECTED_HOME
 
 
@@ -895,6 +982,9 @@ def seed_home_cases(tenants: list[Tenant], home: SeedHome) -> int:
         urgency="six_months_plus",
         first_seen_at=timezone_now_this_week(TENANT_B.timezone),
     )
+    # A regime each, one tenant B's scope holds, so both cases stay in scope (D-39).
+    watch_e2e_seed.seed_scope_term_link(change_b1, term_ref="regime:aml")
+    watch_e2e_seed.seed_scope_term_link(change_b2, term_ref="regime:securities")
     _seed_case(tenant_b, change_b1, urgency="within_3_months", footprint_match=True)
     _seed_case(tenant_b, change_b2, urgency="six_months_plus", footprint_match=True)
     return 6
@@ -903,10 +993,10 @@ def seed_home_cases(tenants: list[Tenant], home: SeedHome) -> int:
 def seed_search_index() -> dict[str, int]:
     """SRC-01, J-7 (c7-e2e-seed): the search index over the seeded library, rebuilt and
     embedded with the mock embedder inside the same transaction as the seed, so a journey
-    never races the outbox worker for a vector that has not arrived yet. Runs after
-    `load_library()` and `seed_watch_changes()`, once every shared row the index can read
-    exists, and before any tenant is activated (`index_write()` writes in the shared zone,
-    the same reason `seed_authorities()` and `load_library()` run there too).
+    never races the outbox worker for a vector that has not arrived yet. Runs last, once
+    every shared row the index can read exists, registered changes included, with no
+    tenant active (`index_write()` writes in the shared zone and the rebuild's audit row
+    belongs to it).
 
     The chunk count is read through `django_apps.get_model()`, never through a `SearchChunk`
     import: the index fence's guard (`apps/search/tests_index_fence.py`) flags any module
@@ -918,8 +1008,11 @@ def seed_search_index() -> dict[str, int]:
 
     reindex_all()
     embed_backlog()
-    chunk_model = django_apps.get_model("search", "SearchChunk")
-    return {"search_chunks": chunk_model.objects.count()}
+    return {"search_chunks": _search_chunk_count()}
+
+
+def _search_chunk_count() -> int:
+    return int(django_apps.get_model("search", "SearchChunk").objects.count())
 
 
 @dataclass(frozen=True)
@@ -1209,6 +1302,102 @@ class SeedOutsideScope:
     change: str
 
 
+# --- tax-nordic-seed (FP-04, FP-S10) -----------------------------------------------------
+# Tenant A watches Denmark, the design card's watched market; tenant B watches nothing.
+EXPECTED_WATCHED_MARKETS: dict[str, tuple[str, ...]] = {
+    TENANT_A_SLUG: ("dk",),
+    TENANT_B_SLUG: (),
+}
+
+
+def seed_watched_markets(tenants: list[Tenant]) -> None:
+    """Through markets_logic.watch(), so the seed makes the audited write the product makes.
+    watch() answers already_watching on a repeat, so a market already watched is skipped."""
+    for tenant in tenants:
+        tenancy.activate(tenant.id)
+        for key in EXPECTED_WATCHED_MARKETS[tenant.slug]:
+            if not WatchedMarket.objects.filter(tenant=tenant, jurisdiction__key=key).exists():
+                markets_logic.watch(tenant=tenant, actor=SEED_ACTOR, key=key)
+# --- end tax-nordic-seed -------------------------------------------------------------------
+
+# --- tax-watched-inventory (FP-04, FP-S13) -------------------------------------------------
+# The Danish custody duty: tenant A operates in Sweden and watches Denmark, so it is what
+# "Markets we watch" adds, and the default inventory hides it.
+WATCHED_MARKET_OBLIGATION = "obl-dk-csd-registration"
+# --- end tax-watched-inventory -------------------------------------------------------------
+
+
+# --- tax-market-journeys (FP-S8, TEN-S7) ---------------------------------------------------
+@dataclass(frozen=True)
+class SeedMarketJourney:
+    """FP-S8's tenant, its two people and one in-scope obligation per jurisdiction."""
+
+    tenant_slug: str
+    requester_email: str
+    approver_email: str
+    union_obligation: str
+    home_obligation: str
+    country_obligation: str
+    country: str
+
+
+# FP-S8 turns on Denmark in tenant B, whose scope names no jurisdiction, and restores it.
+# Each obligation is inside B's scope as seeded: the ESMA guidance (EU) keeps showing, the
+# Swedish duty hides, the Danish one stays. No other journey reads tenant B's inventory.
+EXPECTED_MARKET_JOURNEY = SeedMarketJourney(
+    tenant_slug=TENANT_B_SLUG,
+    requester_email="admin@second-bank.test",
+    approver_email="approver@second-bank.test",
+    union_obligation="obl-esma-warnings",
+    home_obligation="obl-appropriateness",
+    country_obligation="obl-dk-csd-registration",
+    country="dk",
+)
+
+
+@dataclass(frozen=True)
+class SeedTenantOnlyRows:
+    tenant_slug: str
+    role_key: str
+    role_labels: dict[str, str]
+    tag_list: str
+    tag_key: str
+    tag_labels: dict[str, str]
+
+
+# TEN-S7 (J-8): one custom role and one tenant tag tenant A has and tenant B must never see.
+# Labels far from every label a vocabulary journey adds, so no near-duplicate check trips.
+EXPECTED_TENANT_A_ONLY = SeedTenantOnlyRows(
+    tenant_slug=TENANT_A_SLUG,
+    role_key="sanctions_lead",
+    role_labels={"en": "Sanctions lead", "sv": "Sanktionsansvarig"},
+    tag_list="tenant_tag",
+    tag_key="whistleblowing",
+    tag_labels={"en": "Whistleblowing", "sv": "Visselblåsning"},
+)
+
+
+def seed_tenant_only_rows(tenants: list[Tenant]) -> None:
+    """Through the logic the admin screens call, so each row leaves its audit event; a
+    reseed finds them and writes nothing."""
+    spec = EXPECTED_TENANT_A_ONLY
+    tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
+    tenancy.activate(tenant.id)
+    if not TenantRole.objects.filter(tenant=tenant, key=spec.role_key).exists():
+        roles_logic.create_role(
+            tenant=tenant,
+            actor=SEED_ACTOR,
+            key=spec.role_key,
+            labels=spec.role_labels,
+            usage_note="Owns the sanctions screening duties.",
+            permissions=["register.read"],
+            step_up_assertion_id=None,
+        )
+    if not tenant_lists_logic.entry_for(spec.tag_list).model._default_manager.filter(tenant=tenant, key=spec.tag_key).exists():
+        tenant_lists_logic.create_row(list_name=spec.tag_list, tenant=tenant, actor=SEED_ACTOR, labels=spec.tag_labels, key=spec.tag_key)
+# --- end tax-market-journeys ---------------------------------------------------------------
+
+
 # The journey cannot narrow the scope itself: FP-S5 (J-6) changes tenant A's scope, and
 # every home and watch journey reads it in parallel. So tenant A holds the prototype's scope
 # less pension accounts, which leaves exactly one library obligation outside it (the
@@ -1235,9 +1424,248 @@ def seed_outside_scope_terms() -> None:
     watch_e2e_seed.seed_scope_term_link(change, term_ref=EXPECTED_OUTSIDE_SCOPE.term)
 
 
+# --- tax-watched-feed (FP-04, FP-S15) ----------------------------------------------------
+# A Danish authority's change about custody: outside tenant A's scope, which operates in
+# Sweden only, and listed under "Markets we watch" because tenant A watches Denmark. Its
+# urgency is the lowest and it was first seen last week, so it moves neither HOM-S1's lead
+# nor this week's lists, and its cases come from the real fan-out, so tenant A's verdict is
+# the rule's own.
+EXPECTED_WATCHED_CHANGE = "chg-e2e-dk-custody"
+
+
+def seed_watched_market_change() -> None:
+    """The Danish change and every bank's case for it, fanned out only when this run
+    created it, so a reseed opens no second case. The fan-out enters each bank's zone, so
+    this clears the tenant it leaves active, as `seed_chunk5_cases()` does."""
+    is_new = not _regulatory_change_exists(EXPECTED_WATCHED_CHANGE)
+    week = timezone_now_last_week(TENANT_A.timezone)
+    change = watch_e2e_seed.seed_change(
+        stable_key=EXPECTED_WATCHED_CHANGE,
+        title="Finanstilsynet tightens the safekeeping rules for client financial instruments",
+        change_type="adopted",
+        authority="finanstilsynet-dk",
+        authority_label="Finanstilsynet (DK)",
+        published_on=week.date(),
+        key_date=week.date() + datetime.timedelta(days=150),
+        key_date_label="In force",
+        urgency="monitor",
+        first_seen_at=week,
+        so_what_draft="Check whether the custody set-up for Danish clients follows the new rules.",
+        source_url="https://www.dfsa.dk/",
+        summary="The Danish supervisor amended the rules on how firms keep their clients' financial instruments apart.",
+    )
+    watch_e2e_seed.seed_scope_term_link(change, term_ref="regime:securities", confidence=0.9)
+    watch_e2e_seed.seed_scope_term_link(change, term_ref="service_type:custody", confidence=0.84)
+    if is_new:
+        _register_and_fan_out(change)
+    tenancy.clear_tenant()
+# --- end tax-watched-feed ------------------------------------------------------------------
+
+# --- lib-machine-confirmed-journey (INV-S14) ---------------------------------------------
+# Two records whose newest wording the watch sweeper filed and the library confirmer, an
+# independent definition with a key and a run of its own, approved (INV-05, PRO-02, D-62,
+# D-80), through the same proposal logic the queue's routes call. A library editor then
+# re-verified the second one against its source, so INV-S14 reads one record still labelled
+# machine-confirmed and one whose stamp names that person (D-74). Both are named by no other
+# spec or seed and sit inside tenant A's scope with or without Advice, and each new version
+# carries no effective date, so it is the one in force whatever day a screen reads.
+@dataclass(frozen=True)
+class SeedMachineConfirmed:
+    journey: str
+    machine_confirmed: str
+    reverified: str
+    reverifier_email: str
+
+
+EXPECTED_MACHINE_CONFIRMED = SeedMachineConfirmed(
+    journey="INV-S14",
+    # Not product governance, which J-4 owns, nor the demands and needs duty, PRO-S13's.
+    machine_confirmed="obl-switch-documentation",
+    reverified="obl-isk-approved-assets",
+    reverifier_email=LIBRARY_EDITOR_EMAIL,
+)
+# The runs behind each record's proposal and its decision, fixed so a reseed finds them.
+MACHINE_CONFIRMED_RUNS: dict[str, tuple[uuid.UUID, uuid.UUID]] = {
+    "obl-switch-documentation": (uuid.UUID("00000000-0000-4000-9000-000000000014"), uuid.UUID("00000000-0000-4000-9000-000000000015")),
+    "obl-isk-approved-assets": (uuid.UUID("00000000-0000-4000-9000-000000000016"), uuid.UUID("00000000-0000-4000-9000-000000000017")),
+}
+# The seed's stand-in for the passkey assertion a person's re-verification carries on its
+# audit row: the seed signs nobody in, and it refuses to run deployed (refuse_when_deployed).
+SEED_REVERIFICATION_STEP_UP = uuid.UUID("00000000-0000-4000-9000-000000000018")
+_CONFIRMER_SCOPES: tuple[str, ...] = ("agent-runs:write", "library:read", "proposals:review")
+_MACHINE_CONFIRMED_WORDING: dict[str, dict[str, str]] = {
+    "obl-switch-documentation": {
+        "sv": (
+            "När rådgivningen innebär byte av underliggande placeringar ska distributören dokumentera varför "
+            "fördelarna med bytet överväger kostnaderna, och ge kunden en skriftlig förklaring av hur rådet "
+            "motsvarar kundens önskemål och mål innan bytet genomförs."
+        ),
+        "en": (
+            "When advice involves switching underlying investments, the distributor documents why the benefits "
+            "of the switch outweigh its costs, and gives the customer a written explanation of how the advice "
+            "meets their preferences and objectives before the switch is made."
+        ),
+    },
+    "obl-isk-approved-assets": {
+        "sv": (
+            "På ett investeringssparkonto får endast godkända investeringstillgångar förvaras. Tillgångar som "
+            "upphör att vara godkända ska flyttas från kontot inom den tid lagen anger, och kunden ska "
+            "informeras om det."
+        ),
+        "en": (
+            "Only approved investment assets may be held on an investment savings account. Assets that stop "
+            "qualifying must be moved out within the period the act allows, and the customer is told."
+        ),
+    },
+}
+
+
+def _confirmer_key() -> tuple[ApiKey, Any]:
+    """The library confirmer's platform key, found by its name or made once, and the agent
+    it is bound to: a definition other than the sweeper's, holding the review scope and never
+    the scope to propose. Its plain value is dropped, as the sweeper key's is (H15)."""
+    seed_agent_definitions()
+    agent = _agent("library-confirmer")
+    _plain, prefix, key_hash = tokens.new_api_key()
+    with tenancy.platform_zone():
+        key, _created = ApiKey.objects.get_or_create(
+            name="Library confirmer (E2E)",
+            defaults={"tenant": None, "agent": agent, "key_prefix": prefix, "key_hash": key_hash, "scopes": list(_CONFIRMER_SCOPES)},
+        )
+    return key, agent
+
+
+def _agents_confirm(stable_key: str) -> None:
+    """The sweeper files a new wording of `stable_key` in its own open run and the confirmer
+    approves it in a run of its own key, with the model call behind its decision (D-80)."""
+    obligation_id = _obligation_id(stable_key)
+    sweep_run, review_run = MACHINE_CONFIRMED_RUNS[stable_key]
+    filer, sweeper = _sweeper_key()
+    confirmer_key, confirmer = _confirmer_key()
+    with tenancy.platform_zone():
+        AgentRun.objects.get_or_create(pk=sweep_run, defaults={"agent": sweeper, "api_key": filer, "model": AGENT_MODEL, "pipeline_version": "0.4"})
+        AgentRun.objects.get_or_create(
+            pk=review_run, defaults={"agent": confirmer, "api_key": confirmer_key, "model": AGENT_MODEL, "pipeline_version": "0.4"}
+        )
+    source_url = "https://www.fi.se/"
+    wording = _MACHINE_CONFIRMED_WORDING[stable_key]
+    proposal, _created = create_proposal(
+        kind=ProposalKind.NEW_OBLIGATION_VERSION.value,
+        title="Refresh the wording against the source",
+        payload={"summaries": wording, "original_language": "sv", "is_machine": True},
+        proposer=Proposer(actor=Actor(kind=ActorType.AGENT, id=sweeper.id, label=sweeper.key), api_key_id=filer.id, agent_id=sweeper.id),
+        agent_run_id=sweep_run,
+        target_type="obligation",
+        target_id=obligation_id,
+        model=AGENT_MODEL,
+        field_sources={f"summaries.{language}": source_url for language in wording},
+        source_label="Finansinspektionen, consolidated regulation",
+        source_url=source_url,
+    )
+    reviewer_actor = Actor(kind=ActorType.AGENT, id=confirmer.id, label=f"{confirmer.key} v{confirmer.current_version}")
+    approve_proposal(
+        proposal=proposal,
+        reviewer=Reviewer(actor=reviewer_actor, api_key_id=confirmer_key.id, agent_id=confirmer.id, api_key_prefix=confirmer_key.key_prefix),
+        actor=reviewer_actor,
+        note="",
+        step_up_assertion_id=None,
+        decision=AgentDecision.model_validate(
+            {
+                "model": AGENT_MODEL,
+                "modelVersion": "0.4",
+                "promptTemplate": "library-confirmer/decide/v1",
+                "promptHash": "e2e0000000000014",
+                "output": "Approve. The proposed wording matches the consolidated regulation the proposal cites.",
+                "citations": [{"label": "Finansinspektionen, consolidated regulation", "url": source_url}],
+            }
+        ),
+        agent_run_id=review_run,
+    )
+
+
+def seed_machine_confirmed() -> int:
+    """INV-S14: both records confirmed by agents, then the second re-verified by the library
+    editor. A record whose agents' approval is already applied is left as it is, so a reseed
+    changes nothing. Returns how many records agents confirmed."""
+    tenancy.clear_tenant()
+    expected = EXPECTED_MACHINE_CONFIRMED
+    for stable_key in (expected.machine_confirmed, expected.reverified):
+        applied = Proposal.objects.filter(
+            kind=ProposalKind.NEW_OBLIGATION_VERSION.value, target_id=_obligation_id(stable_key), status=ProposalStatus.APPROVED.value
+        ).exists()
+        if applied:
+            continue
+        _agents_confirm(stable_key)
+        if stable_key == expected.reverified:
+            editor = User.objects.get(email=expected.reverifier_email)
+            apply_reverification(
+                _obligation(stable_key),
+                actor=SEED_ACTOR,
+                verified_by=editor,
+                outcome="no_change",
+                note="Read against the consolidated regulation after the agents confirmed the new wording.",
+                step_up_assertion_id=SEED_REVERIFICATION_STEP_UP,
+            )
+    # Applying a version reindexes its record; embed it now, as seed_search_index() does, so
+    # no journey races the outbox worker for its vector (SRC-01).
+    from apps.search.indexing import embed_backlog
+
+    embed_backlog()
+    return 2
+# --- end lib-machine-confirmed-journey ---------------------------------------------------
+
+# ---------------------------------------------------------------------------------------
+# ask-journeys (SRC-S4, SRC-S5, SRC-S10): a pending change for Ask to flag, and a question
+# the library cannot answer
+# ---------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class SeedAsk:
+    """What search.journey.spec.ts asks and reads back. Ask flags a cited obligation that a
+    change the library confirmed will move after the answer's "as of" (SRC-S4), so the lead
+    change of the home journeys gets a confirmed link to the research payment duty: it is
+    adopted (a kind that moves the law) and dated twenty days after the tenant-local today.
+    The answered question retrieves that duty; the unsupported one retrieves nothing in the
+    seeded library, so no model is asked and the answer is "no answer" (SRC-S5). The spec
+    carries the same two questions; the seed-integrity guard proves both."""
+
+    pending_change: str
+    pending_obligation: str
+    answered_question: str
+    unsupported_question: str
+
+
+EXPECTED_ASK = SeedAsk(
+    pending_change=EXPECTED_HOME.lead_change,
+    pending_obligation=RESEARCH_OBLIGATION,
+    answered_question="What are our obligations on research payments?",
+    unsupported_question="Do we need a licence for crypto custody?",
+)
+
+
+def seed_ask_pending_link() -> None:
+    """The lead change's confirmed link to the research payment duty, confirmed by a library
+    editor this week as WAT-04 has one confirm it. A link is library-zone, so no tenant is
+    active; it adds a row to the roadmap's and the change page's obligations and changes
+    nothing a home or watch journey counts. Runs after `seed_logins()`, because the editor
+    must already exist."""
+    tenancy.clear_tenant()
+    editor = User.objects.get(email=CONFIRMING_EDITOR_EMAIL)
+    change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key=EXPECTED_ASK.pending_change)
+    watch_e2e_seed.seed_obligation_link(
+        change,
+        _obligation(EXPECTED_ASK.pending_obligation),
+        confidence=0.9,
+        confirmed_by_id=editor.id,
+        confirmed_at=timezone_now_this_week(TENANT_A.timezone),
+    )
+
+
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
+    # The mock outbox is one cache entry that never expires, and an E2E run recreates the
+    # database but not the cache: empty it first, so no journey reads an earlier run's mail.
+    MockMailer.reset()
     with transaction.atomic():
         seed_languages()
         seed_jurisdictions()
@@ -1245,19 +1673,28 @@ def seed_e2e() -> dict[str, int]:
         seed_taxonomy_terms()
         seed_authorities()
         library = load_library()
+        # lib-standard-e2e-seed: the one standard, added to the counts the command prints.
+        for name, count in load_library(E2E_STANDARD).items():
+            library[name] += count
+        # std-journeys: the standard's term on, so FP-S16 can follow it (E2E_STANDARD_TERM).
+        switch_on_term(*E2E_STANDARD_TERM)
         # Chunk 6's sources and changes: library-zone rows, written here — before any
         # tenant is activated — for the same reason `seed_authorities()` and
         # `load_library()` run here rather than after `seed_tenants()` (WAT-06).
         home = seed_watch_changes()
         seed_outside_scope_terms()
-        # SRC-01: the index reads every shared row load_library() and seed_watch_changes()
-        # just wrote, and is itself a shared-zone write, so it runs here too.
-        search_index = seed_search_index()
+        # SRC-05: the release gate's own questions, so the console's evaluation page has the
+        # set it will have on a deployed platform. Platform rows, refused to any session with a
+        # tenant active, so they are written in the platform's zone even on a re-seed.
+        with tenancy.platform_zone():
+            eval_questions = eval_sets.seed_questions(actor=SEED_ACTOR)
         roles_logic.ensure_platform_roles()
         tenants = seed_tenants()
         logins = seed_logins(tenants)
         footprint_terms = seed_footprints(tenants)
         seed_pending_footprint_request(tenants)
+        seed_watched_markets(tenants)
+        seed_tenant_only_rows(tenants)
         proposals = seed_proposals()
         problem_reports = seed_problem_report(tenants)
         home_cases = seed_home_cases(tenants, home)
@@ -1268,7 +1705,18 @@ def seed_e2e() -> dict[str, int]:
         closed_run, _open_run = seed_platform_agent_runs()
         seed_chunk5_sources(closed_run)
         seed_chunk5_changes(closed_run)
+        seed_ask_pending_link()
         chunk5_cases = seed_chunk5_cases(tenants)
+        seed_watched_market_change()
+        seed_standard_change()
+
+        # INV-S14, after the logins: the re-verification names a seeded library editor.
+        machine_confirmed = seed_machine_confirmed()
+        # SRC-01: last, once every shared row the index reads exists — chunk 5's changes
+        # included, whose registrations reach the index through the outbox without a vector
+        # (search-index-changes) — and in the shared zone, where its audit row belongs.
+        tenancy.clear_tenant()
+        search_index = seed_search_index()
     return {
         "tenants": len(tenants),
         "logins": logins,
@@ -1277,6 +1725,8 @@ def seed_e2e() -> dict[str, int]:
         "problem_reports": problem_reports,
         "home_cases": home_cases,
         "chunk5_cases": chunk5_cases,
+        "machine_confirmed": machine_confirmed,
+        "eval_questions": eval_questions,
         **library,
         **search_index,
     }
@@ -1285,3 +1735,84 @@ def seed_e2e() -> dict[str, int]:
 def anna_invitation() -> Invitation | None:
     """The open invitation of the one awaiting user, for the guard and journeys."""
     return invitation_logic.find_open_for_email("anna@example-bank.test")
+
+
+# ---------------------------------------------------------------------------------------
+# watch-standards (WAT-S10, WAT-07, CAS-01): a new edition of a standard, seen only by the
+# banks that follow it
+# ---------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class SeedStandardChange:
+    """The one change a standards body issued, and the term that decides who sees it.
+    Tenant A follows no standard as seeded (std-journeys' FP-S16 and INV-S11 start from
+    that), so WAT-S10's journey switches the term on for its own run through
+    `follow_the_standard()` and back off afterwards, on failure too."""
+
+    stable_key: str
+    title: str
+    key_date_label: str
+    term: str
+
+
+EXPECTED_STANDARD_CHANGE = SeedStandardChange(
+    stable_key="chg-e2e-iso-27001-amendment",
+    # The standard's reference and nothing of its official title (INV-08, D-35).
+    title="ISO/IEC 27001 amendment",
+    key_date_label="Transition ends",
+    term="standard:iso_iec_27001",
+)
+
+
+def seed_standard_change() -> None:
+    """The amendment as a sweep would file it: ISO/IEC as the authority, the AI and ICT
+    regime and the standard's term, a draft for comment and a publication on its timeline,
+    the end of the transition as its key date. Its cases come from the real fan-out, so
+    both banks hold one and neither is in scope as seeded. Runs last in `seed_e2e`.
+
+    The key date is 400 days after tenant A's today and the first sighting 30 days before
+    it, so while a journey has the term switched on the change sits last on tenant A's
+    roadmap and outside this and last week's briefing: HOM-S1's lead and Today's "Coming
+    up" list do not move. Urgency `monitor`, never `act_now`, for the same reason."""
+    tenancy.clear_tenant()
+    today = datetime.datetime.now(ZoneInfo(TENANT_A.timezone)).date()
+    spec = EXPECTED_STANDARD_CHANGE
+    is_new = not _regulatory_change_exists(spec.stable_key)
+    change = watch_e2e_seed.seed_change(
+        stable_key=spec.stable_key,
+        title=spec.title,
+        change_type="adopted",
+        authority="iso-iec",
+        authority_label="ISO/IEC",
+        published_on=today - datetime.timedelta(days=10),
+        key_date=today + datetime.timedelta(days=400),
+        key_date_label=spec.key_date_label,
+        urgency="monitor",
+        first_seen_at=timezone_now_this_week(TENANT_A.timezone) - datetime.timedelta(days=30),
+        so_what_draft="Plan the move to the amended edition before the transition ends.",
+        source_url="https://www.iso.org/",
+    )
+    watch_e2e_seed.seed_event(change, label="Draft for comment", event_date=today - datetime.timedelta(days=60), sort_order=1)
+    watch_e2e_seed.seed_event(change, label="Published", event_date=today - datetime.timedelta(days=10), sort_order=2)
+    watch_e2e_seed.seed_scope_term_link(change, term_ref="regime:ai_ict")
+    watch_e2e_seed.seed_scope_term_link(change, term_ref=spec.term)
+    if is_new:
+        _register_and_fan_out(change)
+    # The fan-out leaves the last bank's zone active; the seed ends in none, as it began.
+    tenancy.clear_tenant()
+
+
+def follow_the_standard(follow: bool) -> None:
+    """Tenant A starts or stops following ISO/IEC 27001, for WAT-S10's journey and its
+    restore (`manage.py e2e_follow_standard`). The same footprint writes the seed makes,
+    history and audit included, then the one recompute an approved change would trigger,
+    narrowed to the standard's change so no other case of the bank is touched. The E2E
+    stack runs no beat, so nothing else would deliver it. Refused when deployed."""
+    refuse_when_deployed("e2e_follow_standard")
+    tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
+    change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key=EXPECTED_STANDARD_CHANGE.stable_key)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        term = terms_logic.term_by_ref(*EXPECTED_STANDARD_CHANGE.term.split(":"))
+        switch = footprint_logic.seed_terms if follow else footprint_logic.unseed_terms
+        switch(tenant=tenant, actor=SEED_ACTOR, terms=[term])
+        case_matching._recompute(tenant.id, change_id=change.id)

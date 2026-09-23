@@ -22,11 +22,13 @@ const serverRow = {
     { dimension: { key: 'service_type', kind: null, label: 'Service' }, terms: [{ key: 'advice', kind: null, label: 'Advice' }], allSelected: false },
     { dimension: { key: 'channel', kind: null, label: 'Channel' }, terms: [], allSelected: false },
   ],
-  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' } },
-  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' } },
+  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
+  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
+  jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' },
   inFootprint: true,
   outsideReason: [],
   lastVerifiedAt: '2026-06-30',
+  verifiedBy: null,
   openChangeCount: 1,
   pendingApplicability: null,
   complianceStatus: null,
@@ -46,11 +48,13 @@ const screenRow = {
     { dimension: { key: 'service_type', kind: null, label: 'Service' }, terms: [{ key: 'advice', kind: null, label: 'Advice' }], allSelected: false },
     { dimension: { key: 'channel', kind: null, label: 'Channel' }, terms: [], allSelected: false },
   ],
-  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' } },
-  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' } },
+  version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
+  upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' }, approvedAt: null, verifiedOrigin: '', confirmedByAgent: null, proposedByAgent: null },
+  jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' },
   inFootprint: true,
   outsideReason: [],
   lastVerifiedAt: '2026-06-30',
+  verifiedBy: null,
   openChangeCount: 1,
   pendingApplicability: null,
   complianceStatus: null,
@@ -175,14 +179,22 @@ describe('library api', () => {
     expect(library.serializeQuery({ term: ['regime:securities', 'service_type:advice'], dutyType: 'conduct' })).toBe(
       'term=regime%3Asecurities&term=service_type%3Aadvice&dutyType=conduct',
     );
-    expect(library.serializeQuery({ asOf: undefined, instrument: null, outsideFootprint: true, offset: 0 })).toBe('outsideFootprint=true&offset=0');
+    expect(library.serializeQuery({ asOf: undefined, instrument: null, footprint: 'all', offset: 0 })).toBe('footprint=all&offset=0');
     expect(library.serializeQuery({})).toBe('');
   });
 
   it('reads a version, a legal date and a compliance status only when the server sent one it knows', () => {
     expect(library.versionOf(null)).toBeNull();
     expect(library.versionOf(undefined)).toBeNull();
-    expect(library.versionOf({ versionNumber: 3, effectiveFrom: null, ...nobody })).toEqual({ versionNumber: 3, effectiveFrom: null });
+    expect(library.versionOf({ versionNumber: 3, effectiveFrom: null, approvedAt: null, ...nobody })).toEqual({ versionNumber: 3, effectiveFrom: null, approvedAt: null, ...nobody });
+    // Who confirmed a version reaches the row, so the row can say an agent did (INV-05).
+    const agents = { verifiedOrigin: 'agent', confirmedByAgent: { id: 'a2', key: 'library-confirmer' }, proposedByAgent: { id: 'a1', key: 'watch-sweeper' } };
+    expect(library.versionOf({ versionNumber: 2, effectiveFrom: null, approvedAt: '2026-09-15T14:02:11Z', ...agents })).toEqual({
+      versionNumber: 2,
+      effectiveFrom: null,
+      approvedAt: '2026-09-15T14:02:11Z',
+      ...agents,
+    });
     expect(library.partialDateOf({ date: '2026-10-01', precision: 'quarter' })).toEqual({ date: '2026-10-01', precision: 'quarter' });
     // A precision the screen has no rule for reads as the day the string carries, never as a crash.
     expect(library.partialDateOf({ date: '2026-10-01', precision: 'decade' })).toEqual({ date: '2026-10-01', precision: 'day' });
@@ -219,7 +231,7 @@ describe('library api', () => {
       outsideReason: undefined,
     };
     installAdapter(() => ({ status: 200, data: { items: [outside, bare], total: 2 } }));
-    const page = await library.listObligations({ outsideFootprint: true });
+    const page = await library.listObligations({ footprint: 'all' });
     expect(page.items[1]).toMatchObject({
       scope: [{ dimension: { key: 'channel', kind: null, label: 'Channel' }, terms: [], allSelected: false }],
       outsideReason: [],
@@ -255,12 +267,11 @@ describe('library api', () => {
     ]);
   });
 
-  it('reads a record with no regime, no version in force, no lineage and nobody named as verifier', async () => {
+  it('reads a record with no version in force, no lineage and nobody named as verifier', async () => {
     installAdapter(() => ({
       status: 200,
       data: {
         ...serverDetail,
-        regime: null,
         summary: null,
         translations: undefined,
         version: null,
@@ -273,7 +284,6 @@ describe('library api', () => {
       },
     }));
     expect(await library.getObligation('ob-1')).toMatchObject({
-      regime: null,
       summary: null,
       translations: [],
       version: null,
@@ -373,7 +383,7 @@ describe('library instruments api', () => {
 
   it('lists instruments and reads the page into the shape the screen uses', async () => {
     const sent = installAdapter(() => ({ status: 200, data: { items: [serverInstrumentRow], total: 1 } }));
-    expect(await library.listInstruments({ regime: 'securities', outsideFootprint: true, limit: 20, offset: 0 })).toEqual({
+    expect(await library.listInstruments({ regime: 'securities', footprint: 'watched', limit: 20, offset: 0 })).toEqual({
       items: [
         {
           id: 'in-1',
@@ -397,16 +407,16 @@ describe('library instruments api', () => {
       ],
       total: 1,
     });
-    expect(sent.map((s) => [s.method, s.path, s.params])).toEqual([['get', '/api/v1/instruments', { regime: 'securities', outsideFootprint: true, limit: 20, offset: 0 }]]);
+    expect(sent.map((s) => [s.method, s.path, s.params])).toEqual([['get', '/api/v1/instruments', { regime: 'securities', footprint: 'watched', limit: 20, offset: 0 }]]);
   });
 
-  it('reads a row with no name, no authority and no regime', async () => {
+  it('reads a row with no name and no authority', async () => {
     installAdapter(() => ({
       status: 200,
-      data: { items: [{ ...serverInstrumentRow, name: null, authority: null, regime: null }], total: 1 },
+      data: { items: [{ ...serverInstrumentRow, name: null, authority: null }], total: 1 },
     }));
     const page = await library.listInstruments();
-    expect(page.items[0]).toMatchObject({ name: null, authority: null, regime: null });
+    expect(page.items[0]).toMatchObject({ name: null, authority: null });
   });
 
   it('reads one instrument with its ELI, its authority and its lineage', async () => {

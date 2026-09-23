@@ -157,6 +157,7 @@ LINK_DECISION_EXAMPLE: JsonDict = {
     "obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17",
     "decision": "accepted",
     "decidedAt": "2026-09-17T09:12:00Z",
+    "decidedByName": "Sara Lind",
 }
 CASE_EXAMPLE: JsonDict = {
     "id": "9d0b5a3c-6e14-4f27-8c93-5a1e7b0d2f46",
@@ -168,6 +169,7 @@ CASE_EXAMPLE: JsonDict = {
     "soWhatText": "Teams that pay for external research should confirm that documented criteria exist.",
     "soWhatConfirmed": False,
     "soWhatConfirmedAt": None,
+    "soWhatConfirmedByName": None,
     "obligationDecisions": [],
     "allowedTransitions": [],
 }
@@ -1112,6 +1114,7 @@ class WatchChangeInput(WriteBody):
                     "flags": ["advice_perimeter"],
                     "sourceLabel": "Finansinspektionen",
                     "sourceUrl": "https://www.fi.se/",
+                    "termIds": ["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"],
                     "events": [{"label": "Consultation closed", "eventDate": "2026-06-01", "datePrecision": "day", "occurred": True, "sortOrder": 1}],
                     "documents": [{"url": "https://www.fi.se/en/published/news/2026/reporting/", "isPrimary": True}],
                     "obligationLinks": [{"obligationId": "7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17", "confidence": 0.82}],
@@ -1314,8 +1317,10 @@ class WatchChangeInput(WriteBody):
             "Taxonomy terms that scope the change — its regime, product or service — each a "
             "UUID, at most 100 of them. Terms are library rows an admin may extend; the ids "
             "come from "
-            "`GET /taxonomy/terms`, which an agent reads at run start. Every change needs at "
-            "least one regime term or the call answers 422 `regime_required`, and a standard's "
+            "`GET /taxonomy/terms`, which an agent reads at run start. A new change needs at "
+            "least one term of the `regime` dimension or the call answers 422 "
+            "`regime_required` with the regime keys in `validKeys`; a merge adds no terms and "
+            "needs none. A standard's "
             "term is accepted only when the authority's jurisdiction is international, else 422 "
             "`standard_term_only_on_standards` (AC-AGT1). A term that list marks `mirrored` "
             "answers 422 `jurisdiction_term_mirrored`: a change's market comes from "
@@ -1426,7 +1431,10 @@ class WatchChangePatch(WriteBody):
         description=(
             "The whole set of taxonomy term ids for this change, each a UUID and at most 100 "
             "of them, replacing what is stored. The regime rule of AC-AGT1 applies to the new "
-            "set, and a term `GET /taxonomy/terms` marks `mirrored` answers 422 "
+            "set: one that names no term of the `regime` dimension answers 422 "
+            "`regime_required` with the regime keys in `validKeys`. A standard's term is "
+            "accepted only when the change's authority is a standards body, whose jurisdiction "
+            "is international, else 422 `standard_term_only_on_standards`. A term `GET /taxonomy/terms` marks `mirrored` answers 422 "
             "`jurisdiction_term_mirrored`."
         ),
         examples=[["a4e1c07b-9d52-4f83-8b10-2c7e5a9f4d68"]],
@@ -1720,6 +1728,15 @@ class WatchCaseObligationDecision(LibraryResponse):
         ),
         examples=["2026-09-17T09:12:00Z"],
     )
+    decided_by_name: str | None = Field(
+        description=(
+            "The display name of the person in this bank who decided, for the screen and the "
+            "case file, read in the same query as the decision. Null only for a decision the "
+            "system made, with no person behind it. A name is the only personal data this read "
+            "carries about the decision (playbook 4.7)."
+        ),
+        examples=["Sara Lind"],
+    )
 
 
 class WatchChangeCase(LibraryResponse):
@@ -1803,6 +1820,15 @@ class WatchChangeCase(LibraryResponse):
         ),
         examples=[None],
     )
+    so_what_confirmed_by_name: str | None = Field(
+        description=(
+            "The display name of the person in this bank who confirmed or rewrote the wording, "
+            "for the screen's 'Confirmed by' line, read in the same query as the case. Null "
+            "while it is still an AI draft, exactly when `soWhatConfirmed` is false. A name is "
+            "the only personal data this read carries about the confirmation (playbook 4.7)."
+        ),
+        examples=[None],
+    )
     obligation_decisions: list[WatchCaseObligationDecision] = Field(
         description="What this bank decided about the suggested obligation links. An empty list means it has decided nothing yet."
     )
@@ -1880,6 +1906,21 @@ class WatchChangeRow(LibraryResponse):
             "(`footprint=all`), because an address always resolves (FP-03)."
         ),
         examples=[True],
+    )
+    market: LibraryRef | None = Field(
+        description=(
+            "The market this bank watches that the change comes from, as `{key, kind, label}` "
+            "of its term in the `jurisdiction` dimension of the taxonomy vocabulary (`kind` is "
+            "always null; `GET /taxonomy/terms` lists the terms, each mirroring a row of the "
+            "jurisdiction list a platform admin may extend, so match on the key), or null. Set "
+            "only where "
+            "watching is what adds the row: the change is outside the footprint, matches it "
+            "on every dimension but jurisdiction, and its authority's jurisdiction reaches a "
+            "market the bank watches. A change takes its jurisdiction from its authority, and "
+            "one with no authority never has a market. Shown as text, never as a pill, and it "
+            "sets no urgency and opens no triage (FP-04)."
+        ),
+        examples=[{"key": "dk", "kind": None, "label": "Denmark"}],
     )
     first_seen_at: datetime.datetime = Field(
         description=(
@@ -2077,8 +2118,11 @@ class WatchChangeQuery(PageQuery, CamelSchema):
             "Which changes to show against the bank's footprint, a fixed kind and a single "
             "value (INPUT_DELTAS §7 replaces the designed `inFootprint` pair): `in` (the "
             "default — only what matches the footprint), `all` (everything the library holds) "
-            "or `watched` (everything from a market this bank watches, whether or not the rest "
-            "of the scope matches, FP-04). Sending the designed `inFootprint` answers 422."
+            "or `watched` (only what watching adds: the changes outside the footprint that "
+            "match it on every dimension but jurisdiction and whose authority reaches a market "
+            "this bank watches, each with its `market`, FP-04). A change takes its jurisdiction "
+            "from its authority; one with no authority is never restricted by jurisdiction. "
+            "Sending the designed `inFootprint` answers 422."
         ),
         examples=["in"],
     )

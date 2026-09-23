@@ -60,8 +60,6 @@ from apps.shared.adapters import embedder, reranker
 if TYPE_CHECKING:
     from django.db.backends.base.base import BaseDatabaseWrapper
 
-    from apps.search.schemas import SearchHit
-
 SPEC = "apps.search.eval:Retriever"
 SCRATCH_SUFFIX = "_search_eval"
 TENANT_SLUG = "search-evaluation"
@@ -100,7 +98,26 @@ class Retriever:
             tenancy.activate(self._tenant_id)
             # A fresh caller per question: the rate limit is per person (NFR-02).
             hits = hybrid.run_search(body, tenant_id=self._tenant_id, user_id=uuid.uuid4()).items
-            return _stable_keys(hits)
+            return _stable_keys([hit.id for hit in hits])
+
+    def ask(self, query: str, lang: str, as_of: date | None) -> list[str]:
+        """What Ask would give a model for the question: `hybrid.passages`, the read
+        `POST /ask` makes, at the depth it makes it. A question about a standard's control
+        expects nothing here although Search finds the conformance duty (SRC-S12, D-81)."""
+        from apps.search import hybrid
+        from apps.shared import tenancy
+        from apps.shared.models import Tenant
+
+        with transaction.atomic():
+            tenancy.activate(self._tenant_id)
+            rows = hybrid.passages(
+                query,
+                tenant=Tenant.objects.get(pk=self._tenant_id),
+                lang=lang,
+                as_of=as_of or self._anchor,
+                depth=settings.ASK_RETRIEVAL_DEPTH,
+            )
+            return _stable_keys([row["record_id"] for row in rows])
 
 
 def _throwaway_database() -> None:
@@ -139,15 +156,14 @@ def _corpus() -> uuid.UUID:
         return found.id if found else factories.tenant(name="Search evaluation", slug=TENANT_SLUG).id
 
 
-def _stable_keys(hits: list[SearchHit]) -> list[str]:
-    """What the evaluation set names: a hit's record by its stable key, in the hit order."""
+def _stable_keys(ids: list[uuid.UUID]) -> list[str]:
+    """What the evaluation set names: each record by its stable key, in the order given."""
     from apps.library.models import Obligation, Provision
     from apps.watch.models import RegulatoryChange
 
-    ids = [hit.id for hit in hits]
     keys = {
         row_id: key
         for model in (Obligation, Provision, RegulatoryChange)
         for row_id, key in model.objects.filter(id__in=ids).values_list("id", "stable_key")
     }
-    return [keys[hit.id] for hit in hits]
+    return [keys[row_id] for row_id in ids]

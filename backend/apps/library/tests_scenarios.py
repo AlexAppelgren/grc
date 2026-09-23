@@ -8,7 +8,7 @@ when a scenario here and a heading in app.md drift apart.
 
 Chunk 3 un-skips INV-S3 to INV-S6, the record reads, INV-S7 and INV-S8, the two scenarios
 the write routes prove, and, with the instrument read (chunk3-rest-T13), INV-S1 and
-INV-S10. INV-S2 waits for the provision tree read (chunk3-rest-T16); INV-S9 is R3.
+INV-S10; INV-S11 with the first standard, built by `testing.standard()`. INV-S2 waits for the provision tree read (chunk3-rest-T16); INV-S9 is R3.
 
 Operations exercised (the audit-on-write guard reads these names):
 reportObligationProblem, reportInstrumentProblem, reverifyObligation.
@@ -40,6 +40,7 @@ from collections.abc import Iterator
 from typing import Any
 from unittest import skip
 
+from django.conf import settings
 from django.db import DatabaseError, connection, transaction
 
 from apps.identity.models import User
@@ -537,19 +538,91 @@ class LibraryScenarioTests(ScenarioTestCase):
         card = self.read(f"/api/v1/instruments/{quarter.id}")
         self.assertEqual(card["inForceFrom"], {"date": "2026-10-01", "precision": "quarter"})
 
-    @skip("pending: INV-S11 (INV-08, chunk 3)")
     def test_inv_s11(self) -> None:
         """INV-S11
 
         An edition of a standard is an instrument with public facts and no text (INV-01, INV-02, INV-08).
-        """
 
-    @skip("pending: INV-S12 (INV-08, chunk 3)")
+        The screens' half ("Standard" in the binding slot, "licensed" in the tree) is the
+        journey's. The standard's term stays as seeded, inactive: the reads show a record
+        whatever its term's state, and nothing here asks a door to resolve it.
+        """
+        self.activate(self.tenant)
+        duty = build.standard()
+        edition = duty.instrument
+
+        # Given the instrument at the level "Standard" under "International" and "ISO/IEC",
+        # it holds its official reference, publication date with precision, catalogue link
+        # and regime.
+        card = self.read(f"{V1}/instruments/{edition.id}")
+        self.assertEqual(
+            (card["officialRef"], card["inForceFrom"], card["sourceUrl"], card["regime"]["key"]),
+            ("ISO/IEC 27001:2022", {"date": "2022-10-25", "precision": "day"}, build.ISO_27001_CATALOGUE, "ai_ict"),
+        )
+        self.assertEqual((card["level"]["key"], card["level"]["kind"], card["binding"]), ("standard", "standard", False))
+        self.assertEqual((card["jurisdiction"]["key"], card["authority"]["key"]), ("intl", "iso-iec"))
+
+        # bindingLevel carries the kind "standard" on the standard's duty and a null kind on
+        # every other level, in the list and on the card.
+        rows = self.read(URL, {"footprint": "all", "limit": settings.API_PAGE_SIZE_MAX})
+        self.assertEqual(rows["total"], len(rows["items"]))
+        kinds = {row["stableKey"]: row["bindingLevel"]["kind"] for row in rows["items"]}
+        self.assertEqual(kinds.pop(duty.stable_key), "standard")
+        self.assertTrue(kinds)
+        self.assertEqual(set(kinds.values()), {None})
+        self.assertEqual(self.card(duty.stable_key)["bindingLevel"]["kind"], "standard")
+
+        # The instrument has exactly one obligation and no provision.
+        mine = self.read(URL, {"footprint": "all", "instrument": edition.stable_key})
+        self.assertEqual([row["stableKey"] for row in mine["items"]], [duty.stable_key])
+        response = self.client.get(f"{V1}/instruments/{edition.id}/provisions", **sign_in(self.reader, tenant=self.tenant))
+        self.assertEqual((response.status_code, response.json()), (200, []))
+
     def test_inv_s12(self) -> None:
         """INV-S12
 
         Every instrument carries a regime from the regime dimension (INV-01, INV-08).
         """
+        from django.db import IntegrityError
+
+        from apps.proposals.models import Proposal, ProposalStatus
+        from apps.proposals.tests_kinds import instrument_body
+        from apps.taxonomy.models import InstrumentLevel
+
+        # An instrument row written without a regime: the database refuses it.
+        with self.assertRaises(IntegrityError), transaction.atomic(), tenancy.library_write("scenario"):
+            Instrument.objects.create(
+                stable_key="inv-s12-no-regime",
+                short_name="No regime",
+                official_ref="No regime",
+                source_url="https://www.fi.se/",
+                level=InstrumentLevel.objects.get(key="act"),
+                binding=True,
+                jurisdiction=self.instrument.jurisdiction,
+                created_origin="user",
+            )
+        # Every seeded instrument's regime is a term of the regime dimension.
+        seeded = Instrument.objects.select_related("regime__dimension")
+        self.assertTrue(seeded.exists())
+        self.assertEqual({instrument.regime.dimension.key for instrument in seeded}, {"regime"})
+        # A proposal naming a term of the Service dimension as its regime, stored as it
+        # arrived before the rule, is refused when a reviewer approves it: the apply
+        # answers 422 not_a_regime and nothing is written.
+        body = instrument_body(key="inv-s12-service-regime", regime="service_type:advice")
+        proposal = Proposal.objects.create(
+            kind=body["kind"],
+            title=body["title"],
+            payload=body["payload"],
+            field_sources=body["fieldSources"],
+            source_url=body["sourceUrl"],
+            origin="agent",
+        )
+        refused = self.client.post(f"{V1}/proposals/{proposal.id}/approve", data={}, content_type="application/json", **sign_in(self.editor, step_up=True))
+        self.assertEqual(refused.status_code, 422, refused.content)
+        self.assertEqual(refused.json()["code"], "not_a_regime")
+        self.assertFalse(Instrument.objects.filter(stable_key="inv-s12-service-regime").exists())
+        self.assertEqual(Proposal.objects.get(pk=proposal.pk).status, ProposalStatus.OPEN.value)
+        self.assertFalse(AuditEvent.objects.filter(action="instrument.created").exists())
 
     @skip("pending: INV-S13 (INV-07, chunk 13)")
     def test_inv_s13(self) -> None:

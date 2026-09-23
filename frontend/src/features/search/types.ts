@@ -17,3 +17,17 @@ export type ApiSearchFilters = Schemas['SearchFilters'];
 
 /** The body `POST /search` takes, exactly as the route declares it. */
 export type SearchRequestBody = operations['search']['requestBody']['content']['application/json'];
+
+/** The body `POST /ask` takes. The question is the bank's own words: it is sent, never kept. */
+export type AskRequestBody = operations['ask']['requestBody']['content']['application/json'];
+export type AskStartEvent = Schemas['AskStartEvent'];
+export type AskStatementEvent = Schemas['AskStatementEvent'];
+export type AskAnswerEvent = Schemas['AskAnswerEvent'];
+export type AskProblemEvent = Schemas['AskProblemEvent'];
+/** What `POST /ask` streams, one `data:` frame each; `event` names the kind. */
+export type AskEvent = AskStartEvent | AskStatementEvent | AskAnswerEvent | AskProblemEvent;
+export type Answer = Schemas['Answer'];
+export type AnswerStatement = Schemas['AnswerStatement'];
+export type AnswerCitation = Schemas['AnswerCitation'];
+/** A reader's verdict on one answer, as `POST /answers/{answerId}/feedback` takes it. */
+export type AnswerFeedbackBody = Schemas['AnswerFeedbackBody'];

@@ -8,7 +8,7 @@ facts such as `binding`, `inFootprint` and `openChangeCount` into its own words.
 from __future__ import annotations
 
 import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from django.conf import settings
@@ -22,6 +22,9 @@ MAX_QUERY_LENGTH = 200
 # A language key is a BCP 47 primary tag (`Language.key`, a slug of at most 8 characters);
 # `?lang=` is looked up among the languages a version has, so a longer one is a 422.
 MAX_LANGUAGE_LENGTH = 8
+# Which records a list shows against the bank's footprint (FP-03, FP-04): one value, so no
+# contradictory pair can be sent. A fixed kind, like the watch feed's filter of the same name.
+FootprintFilter = Literal["in", "all", "watched"]
 
 # The one sentence a reader of this app needs on every value it returns
 # (docs/plans/briefs/API_DOCUMENTATION.md §1.2). Written once so the list, the card and
@@ -213,6 +216,16 @@ class ObligationVersionRef(VersionConfirmation):
             f"{LIBRARY_FACT}"
         ),
     )
+    approved_at: datetime.datetime | None = Field(
+        description=(
+            "When the proposal that wrote this version was approved, as a UTC timestamp, by a "
+            "person or by an independent agent: `verifiedOrigin` says which. Null on a version "
+            "the library was seeded with rather than proposed. A row compares it with "
+            "`lastVerifiedAt`: wording an agent confirmed reads machine-confirmed until a named "
+            "person re-verifies the record after this moment."
+        ),
+        examples=["2026-09-15T14:02:11Z"],
+    )
 
 
 class ScopeDimension(LibraryResponse):
@@ -384,8 +397,35 @@ _IN_FOOTPRINT = (
 _OUTSIDE_REASON = (
     "Why the default list would have hidden this record: one entry per dimension in which "
     "the duty's terms and the bank's footprint have nothing in common. Empty on a record "
-    "inside the footprint, and so filled only on the records `outsideFootprint=true` "
-    "reveals."
+    "inside the footprint, and so filled only on the records `footprint=all` or "
+    "`footprint=watched` reveals."
+)
+_ROW_JURISDICTION = (
+    "The jurisdiction of the instrument this duty was broken out of, as `{key, kind, label}` "
+    "from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the "
+    "rows seeded on day one). The values are rows an admin manages, not a closed set: a "
+    "platform admin may extend, relabel or retire one without a deploy, so read "
+    "`GET /reference/jurisdictions` for the live set and match on the key, never on the "
+    "label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or "
+    "`international`. It is what `footprint=watched` names as the market a row comes "
+    "from; the jurisdictions the duty reaches are in `scope`, derived from this one."
+)
+_FOOTPRINT_FILTER = (
+    "Which records to show against the bank's footprint, a fixed kind and a single value, "
+    "so no contradictory pair can be sent: `in` (the default, the working inventory: only "
+    "what matches the footprint), `all` (everything the library holds, each record the "
+    "footprint would hide saying why in `outsideReason`) or `watched` (only what the markets "
+    "the bank watches add: a record the footprint hides, that matches every dimension but "
+    "jurisdiction, and whose instrument's rules reach a watched market, FP-04). A Union "
+    "rule never appears under `watched` once the bank operates anywhere it reaches. A "
+    "record shown under `all` or `watched` is not one the bank has decided applies to it."
+)
+_OUTSIDE_FOOTPRINT_RETIRED = (
+    "Not accepted: send `footprint` instead. This boolean was replaced by the single "
+    "`footprint` value, which adds the watched markets. Any value answers 422 "
+    "`validation_error`, because ignoring it would hand a client that asked for everything "
+    "the working inventory without a word. Declared only so that refusal happens, and named "
+    "in the published contract so a client sees what to send."
 )
 
 
@@ -426,8 +466,16 @@ class ObligationRow(LibraryResponse):
             "the case, never to the library record."
         )
     )
+    jurisdiction: LibraryRef = Field(description=_ROW_JURISDICTION)
     in_footprint: bool = Field(description=_IN_FOOTPRINT, examples=[True])
     outside_reason: list[OutsideReason] = Field(description=_OUTSIDE_REASON)
+    verified_by: PersonRef | None = Field(
+        description=(
+            "The bleqq platform person who made the `lastVerifiedAt` check, by id and name, or "
+            "null when no named person has. Never a member of a bank: re-verifying a shared fact "
+            "is bleqq's own check."
+        )
+    )
     last_verified_at: datetime.datetime | None = Field(
         description=(
             "When a bleqq library editor last read this record against its public source "
@@ -564,11 +612,18 @@ _SAMPLE_ROW: dict[str, Any] = {
     "dutyType": {"key": "governance", "kind": None, "label": "Governance"},
     "tags": _SAMPLE_TAGS,
     "scope": _SAMPLE_SCOPE,
-    "version": {**_SAMPLE_SEEDED, "versionNumber": 1, "effectiveFrom": None},
-    "upcomingVersion": {**_SAMPLE_BY_AGENTS, "versionNumber": 2, "effectiveFrom": {"date": "2026-10-01", "precision": "day"}},
+    "version": {**_SAMPLE_SEEDED, "versionNumber": 1, "effectiveFrom": None, "approvedAt": None},
+    "upcomingVersion": {
+        **_SAMPLE_BY_AGENTS,
+        "versionNumber": 2,
+        "effectiveFrom": {"date": "2026-10-01", "precision": "day"},
+        "approvedAt": "2026-09-15T14:02:11Z",
+    },
+    "jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"},
     "inFootprint": True,
     "outsideReason": [],
     "lastVerifiedAt": "2026-06-30T07:12:44Z",
+    "verifiedBy": None,
     "openChangeCount": 0,
     "pendingApplicability": None,
     "complianceStatus": None,
@@ -1285,8 +1340,9 @@ class VersionDiffQuery(CamelSchema):
 class ObligationQuery(CamelSchema):
     """The filters of `GET /obligations`. `instrument` and `dutyType` are keys; `term` is
     `dimension:key` and repeats, every term must be in the obligation's scope. `asOf`
-    defaults to today in the tenant's time zone. `outsideFootprint=true` lifts the
-    footprint filter and reports why each hidden row would be hidden."""
+    defaults to today in the tenant's time zone. `footprint` is one value: `in`, `all`, which
+    lifts the footprint filter and reports why each hidden row would be hidden, or
+    `watched`, which lists only what the watched markets add (FP-03, FP-04)."""
 
     instrument: str | None = Field(
         default=None,
@@ -1344,17 +1400,8 @@ class ObligationQuery(CamelSchema):
         ),
         examples=["2026-06-30"],
     )
-    outside_footprint: bool = Field(
-        default=False,
-        description=(
-            "Whether to include the duties the bank's footprint would otherwise hide, each "
-            "saying in `outsideReason` why it would be hidden. It is false by default, which "
-            "is the working inventory: only the duties whose scope overlaps the footprint. "
-            "Set it to true to review the boundary itself — a duty that appears only this "
-            "way is not one the bank has decided applies to it."
-        ),
-        examples=[False],
-    )
+    footprint: FootprintFilter = Field(default="in", description=_FOOTPRINT_FILTER, examples=["in"])
+    outside_footprint: None = Field(default=None, deprecated=True, description=_OUTSIDE_FOOTPRINT_RETIRED, examples=[None])
 
 
 # ---------------------------------------------------------------------------------------
@@ -1643,8 +1690,7 @@ _INSTRUMENT_SOURCE_URL = (
 
 class InstrumentRow(LibraryResponse):
     """One row of `GET /instruments` (INV-01). `obligationCount` counts the obligations
-    this row's reader would see: inside the footprint, or every one when
-    `outsideFootprint` is set."""
+    this row's reader would see under the same `footprint` value."""
 
     # A row is validated again when the page takes it, so a row built any other way than
     # through this constructor still never reaches the wire unchecked. One config: a second
@@ -1702,10 +1748,11 @@ class InstrumentRow(LibraryResponse):
     implements_note: str = Field(description=_INSTRUMENT_IMPLEMENTS_NOTE, examples=["MiFID II delegated directive (EU) 2017/593"])
     obligation_count: int = Field(
         description=(
-            "How many duties this instrument carries that this read would show: inside "
-            "the bank's footprint by default, or every one when `outsideFootprint=true` "
-            "is set. It is not the instrument's whole duty count when the footprint hides "
-            "some of them."
+            "How many duties this instrument carries that `GET /obligations` would list "
+            "under the same `footprint` value: inside the bank's footprint by default, "
+            "every one under `all`, and only what the watched markets add under `watched`. "
+            "It is not the instrument's whole duty count when the footprint hides some of "
+            "them."
         ),
         examples=[2],
     )
@@ -1803,16 +1850,12 @@ class InstrumentQuery(CamelSchema):
         ),
         examples=["FFFS"],
     )
-    outside_footprint: bool = Field(
-        default=False,
-        description=(
-            "Whether to include the instruments the bank's footprint would otherwise "
-            "hide. False by default, which is the working inventory: only the "
-            "instruments whose own scope overlaps the footprint. It also lifts the "
-            "footprint filter `obligationCount` counts obligations against."
-        ),
-        examples=[False],
+    footprint: FootprintFilter = Field(
+        default="in",
+        description=_FOOTPRINT_FILTER + " An instrument is judged by its own scope, and `obligationCount` counts under the same value.",
+        examples=["in"],
     )
+    outside_footprint: None = Field(default=None, deprecated=True, description=_OUTSIDE_FOOTPRINT_RETIRED, examples=[None])
 
 
 class InstrumentLineageRef(LibraryResponse):
@@ -2252,17 +2295,29 @@ class LibraryRecordSource(LibraryResponse):
 
     field: str = Field(
         description=(
-            "Which field of the record this citation backs — `summary`, `key_date`, "
-            "`duty_type` and so on, the record's own column names. Free text rather than a "
-            "vocabulary because the set is the schema's, not an admin's."
+            "Which field of the record this citation backs, as the approved proposal that "
+            "wrote the version named it: `summaries.en` for the summary in one language, "
+            "`effectiveFrom` for the date it applies from, `terms` for its scope. A version no "
+            "proposal wrote carries one `summary` citation, the record's own source. Free text "
+            "rather than a vocabulary because the set is the proposal schema's, not an admin's."
         ),
         examples=["summary"],
     )
     url: str = Field(
-        description="The public page the fact came from, so a re-check can fetch it again and a reviewer can open it.",
+        description=(
+            "The public page the fact came from, as an https link, so a re-check can fetch it "
+            "again and a reviewer can open it; or, where the fact came from a provision the "
+            "library already holds, that provision's stable key."
+        ),
         examples=["https://www.fi.se/en/published/regulations/2017/fffs-20172/"],
     )
-    label: str = Field(description="What that page is called, in words a reader recognises.", examples=["FFFS 2017:2"])
+    label: str = Field(
+        description=(
+            "What that page is called, in words a reader recognises: the source label the "
+            "proposal gave, or the link itself when it gave none."
+        ),
+        examples=["FFFS 2017:2"],
+    )
     content_hash: str | None = Field(
         description=(
             "A hash of the page as we last read it, so a re-check can tell whether it moved "

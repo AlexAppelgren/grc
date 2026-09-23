@@ -13,7 +13,7 @@ row here.
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from typing import Any, Final
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -21,17 +21,15 @@ from django.db import IntegrityError, transaction
 from apps.library.models import Jurisdiction, JurisdictionKind, JurisdictionLabel
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
-from apps.taxonomy import matching
-from apps.taxonomy.models import WatchedMarket
+from apps.taxonomy.models import FootprintTerm, WatchedMarket
 from apps.taxonomy.reading import Labels, label_of
-from apps.taxonomy.schemas import MarketRow, TermRef
+from apps.taxonomy.schemas import MarketLevel, MarketRow, TermRef
 
-JURISDICTION_DIMENSION = "jurisdiction"
 SUBJECT_TYPE = "watched_market"
 
-OPERATING = "operating"
-WATCHING = "watching"
-NOT_FOLLOWED = "not_followed"
+OPERATING: Final = "operating"
+WATCHING: Final = "watching"
+NOT_FOLLOWED: Final = "not_followed"
 
 
 def _country(key: str) -> Jurisdiction:
@@ -45,30 +43,31 @@ def _country(key: str) -> Jurisdiction:
     return jurisdiction
 
 
-def _operating(jurisdiction: Jurisdiction, footprint: dict[str, set[str]]) -> bool:
-    # The mirrored jurisdiction term's key is always the jurisdiction's own key (FP-S12),
-    # so this needs no query of its own: one footprint read already carries the answer for
-    # every country, which is what keeps a market list from costing a query per row.
-    return jurisdiction.key in footprint.get(JURISDICTION_DIMENSION, set())
+def _operating(tenant_id: uuid.UUID) -> set[uuid.UUID]:
+    """The jurisdictions the tenant operates in: those whose mirrored term sits in its
+    footprint, read through the term's own link to its jurisdiction (FP-S12, D-28), never
+    through a dimension key or a term key that happens to match. One query for every
+    country, so a market list never costs a query per row."""
+    return set(
+        FootprintTerm.objects.filter(tenant_id=tenant_id, term__jurisdiction__isnull=False).values_list("term__jurisdiction_id", flat=True)
+    )
 
 
-def level_of(tenant_id: uuid.UUID, jurisdiction: Jurisdiction, footprint: dict[str, set[str]] | None = None) -> str:
-    """Operating first (FP-S11): the jurisdiction's mirrored term sits in the tenant's
-    footprint. Otherwise watching if a row here names it, otherwise not followed. `footprint`
-    lets a caller listing many markets pass one read of `matching.footprint_of` in."""
-    footprint = matching.footprint_of(tenant_id) if footprint is None else footprint
-    if _operating(jurisdiction, footprint):
+def level_of(jurisdiction_id: uuid.UUID, operating: set[uuid.UUID], watched: set[uuid.UUID]) -> MarketLevel:
+    """Operating first (FP-S11, D-27, D-31): the jurisdiction's mirrored term sits in the
+    tenant's footprint. Otherwise watching if a watch row names it, otherwise not followed."""
+    if jurisdiction_id in operating:
         return OPERATING
-    if WatchedMarket.objects.filter(tenant_id=tenant_id, jurisdiction=jurisdiction).exists():
+    if jurisdiction_id in watched:
         return WATCHING
     return NOT_FOLLOWED
 
 
 def markets_of(tenant_id: uuid.UUID, order: list[str]) -> list[MarketRow]:
     """Every active country's level for the footprint read (FP-04): one row per country, in
-    jurisdiction sort order. Four queries however many countries there are: the footprint,
-    the watch rows, the countries and their labels, never one more per row."""
-    footprint = matching.footprint_of(tenant_id)
+    jurisdiction sort order. Four queries however many countries there are: the operating
+    jurisdictions, the watch rows, the countries and their labels, never one more per row."""
+    operating = _operating(tenant_id)
     watched = set(WatchedMarket.objects.filter(tenant_id=tenant_id).values_list("jurisdiction_id", flat=True))
     countries = list(Jurisdiction.objects.filter(active=True, kind=JurisdictionKind.COUNTRY.value).order_by("sort_order", "key"))
     labels = Labels.for_rows(JurisdictionLabel, countries)
@@ -79,8 +78,7 @@ def markets_of(tenant_id: uuid.UUID, order: list[str]) -> list[MarketRow]:
                 kind=jurisdiction.kind,
                 label=label_of(labels.texts(jurisdiction.id), order, original=labels.original(jurisdiction.id), key=jurisdiction.key),
             ),
-            operating=_operating(jurisdiction, footprint),
-            watching=jurisdiction.id in watched,
+            level=level_of(jurisdiction.id, operating, watched),
         )
         for jurisdiction in countries
     ]
@@ -88,18 +86,9 @@ def markets_of(tenant_id: uuid.UUID, order: list[str]) -> list[MarketRow]:
 
 def row_for(tenant_id: uuid.UUID, jurisdiction: Jurisdiction, order: list[str]) -> MarketRow:
     """One country's row, for a watch or unwatch route's response: read fresh so it always
-    reflects the write that just happened."""
-    labels = Labels.for_rows(JurisdictionLabel, [jurisdiction])
-    footprint = matching.footprint_of(tenant_id)
-    return MarketRow(
-        jurisdiction=TermRef(
-            key=jurisdiction.key,
-            kind=jurisdiction.kind,
-            label=label_of(labels.texts(jurisdiction.id), order, original=labels.original(jurisdiction.id), key=jurisdiction.key),
-        ),
-        operating=_operating(jurisdiction, footprint),
-        watching=WatchedMarket.objects.filter(tenant_id=tenant_id, jurisdiction=jurisdiction).exists(),
-    )
+    reflects the write that just happened. `_country` has already refused anything that is
+    not an active country, so the country is always in the list."""
+    return next(row for row in markets_of(tenant_id, order) if row.jurisdiction.key == jurisdiction.key)
 
 
 def watch(*, tenant: Tenant, actor: Actor, key: str, added_by: Any = None) -> Jurisdiction:

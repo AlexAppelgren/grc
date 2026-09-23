@@ -146,8 +146,9 @@ test.describe('home journeys', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: 'Roadmap' })).toBeVisible();
     const roster = page.locator('[data-roadmap-roster]');
-    await expect(roster.getByText(seededQuarterText(NEAR_OFFSET))).toBeVisible();
-    await expect(roster.getByText(seededQuarterText(FAR_OFFSET))).toBeVisible();
+    // By heading: a card whose date was stated as a quarter prints the same words.
+    await expect(roster.getByRole('heading', { name: seededQuarterText(NEAR_OFFSET), exact: true })).toBeVisible();
+    await expect(roster.getByRole('heading', { name: seededQuarterText(FAR_OFFSET), exact: true })).toBeVisible();
     await expect(roster.getByText('FI adopts amended rules on paying for investment research')).toBeVisible();
     await expect(roster.getByText('Amended reporting of securities financing transactions')).toBeVisible();
     // Outside the regulatory scope: absent from the roadmap entirely.

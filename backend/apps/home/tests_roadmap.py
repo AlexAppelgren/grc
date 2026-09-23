@@ -38,7 +38,7 @@ from apps.home import roadmap
 from apps.home.schemas import HomeRoadmapQuery
 from apps.identity.models import User
 from apps.library import testing as library_build
-from apps.library.models import Obligation
+from apps.library.models import DatePrecision, Obligation
 from apps.shared import factories, tenancy
 from apps.shared.models import Tenant
 from apps.shared.testing import sign_in
@@ -152,6 +152,17 @@ class RoadmapContents(TestCase):
         # every roadmap item until 2026-09-21, against this module's own documented example.
         self.assertIsNone(item.urgency.kind)
         self.assertEqual((item.label, item.source_label), ("In force", "Finansinspektionen"))
+
+    def test_a_row_carries_its_dates_precision_so_a_quarter_never_reads_as_a_day(self) -> None:
+        """HOM-03, INV-S10: a legal date is a plain date with a precision. A date the source
+        stated as a quarter is stored on a day, and without its precision beside it the
+        roadmap printed that day and counted the days left to it (calendar-feed-hardening
+        ND1). The precision is the change's own library column, served as it stands."""
+        self.assertEqual(self.read().items[0].date_precision, "day")
+        with watch_write("test: a key date stated as a quarter"):
+            RegulatoryChange.objects.filter(pk=self.soon.change_id).update(key_date_precision=DatePrecision.QUARTER.value)
+        item = self.read().items[0]
+        self.assertEqual((item.title, item.date, item.date_precision), ("Research payments", THIS_QUARTER, "quarter"))
 
     def test_the_quarter_roster_holds_each_quarter_once_in_date_order(self) -> None:
         answer = self.read()
@@ -385,6 +396,7 @@ class RoadmapRoute(TestCase):
         self.assertEqual(item["sourceLabel"], "Finansinspektionen")
         self.assertEqual(item["changeId"], str(self.case.change_id))
         self.assertEqual(item["urgency"]["key"], "act_now")
+        self.assertEqual(item["datePrecision"], "day")
 
     def test_an_empty_roadmap_is_a_200_and_never_a_404(self) -> None:
         self.assertEqual(self.get("?kind=internal").json(), {"items": [], "quarters": []})

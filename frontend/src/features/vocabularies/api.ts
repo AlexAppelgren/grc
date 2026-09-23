@@ -111,8 +111,3 @@ export async function mergeValue(list: string, key: string, into: string): Promi
 export async function suggestValue(list: string, body: VocabularySuggest): Promise<ProposalRef> {
   return proposalOf((await api.post<unknown>(`${VOCAB}/${id(list)}/suggest`, body)).data);
 }
-
-// What this tenant has proposed on a library list is not read in chunk 2:
-// GET /proposals is the platform review queue. Chunk 4 adds a read scoped to
-// the proposer's tenant. Deciding a proposal is the console's, never a tenant
-// screen's; the tenant-list suggestion queue is VOC-03, R2.

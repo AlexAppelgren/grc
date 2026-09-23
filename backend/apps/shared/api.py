@@ -34,7 +34,7 @@ _MAIL_OUTBOX_EXAMPLE = {
                         },
                         {
                             "to": "new.member@example-bank.test",
-                            "subject": "Your Compliance Watch sign-in code",
+                            "subject": "Your Compliance Watch enrolment code",
                             "body": "Your code is 123456. It works once and expires in 10 minutes.",
                         },
                     ]
