@@ -97,6 +97,12 @@ class LlmAdapter(ABC):
                 return event
         raise LlmError("the model stream ended before the answer was complete")
 
+    def asked_model(self) -> tuple[str, str]:
+        """The model and version a call is addressed to. A finished call is logged with
+        what its `Completion` reports instead; this names the model on the log row of a
+        call that never reached one, a stream the reader left early (AUD-02)."""
+        raise NotImplementedError(f"the {self.name} provider does not name the model it asks")
+
 
 # ---------------------------------------------------------------------------------------
 # The prompt's context chunks. Ask retrieves chunks and renders them with `format_context`;
@@ -124,6 +130,9 @@ class MockLlm(LlmAdapter):
     model call, and a deployed environment refuses this provider at boot."""
 
     name = "mock"
+
+    def asked_model(self) -> tuple[str, str]:
+        return "mock", "0"
 
     def stream(self, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | Completion]:
         statements = [f"{_first_sentence(text)} [{number}]" for number, text in CONTEXT_LINE.findall(prompt)]
@@ -288,6 +297,9 @@ class AnthropicLlm(LlmAdapter):
         if not api_key:
             raise ImproperlyConfigured("ANTHROPIC_API_KEY is not set; it is read from the environment only")
         self._api_key = api_key
+
+    def asked_model(self) -> tuple[str, str]:
+        return settings.LLM_MODEL, ANTHROPIC_API_VERSION
 
     def stream(self, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | Completion]:
         deadline = time.monotonic() + settings.LLM_DEADLINE_S
