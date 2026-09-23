@@ -1007,7 +1007,6 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
 - [ ] **Default taken: a new instrument in the bank's library updates is never cut to the
       footprint.** A new obligation is cut like a new version; an instrument is not a duty,
       so it reaches every bank, as a change to a shared list does.
-
 ## watch-regime-required: a run's classification is logged with metadata it reports itself (2026-09-23, D-66, AUD-02, D-39)
 
 Nothing waits for these; each has the default the build took.

@@ -11,10 +11,10 @@ run those guard proofs, so one source proves each rule. AUD-S7 reads through
 GET /audit-events (chunk 4).
 
 Operations exercised (the audit-on-write guard reads these names): createProposal,
-approveProposal, createConsoleTenant, updateTenant, createFootprintRequest, closeProblemReport. ADM-S4 also drives the
-console routes other apps register — the source registry, the platform agent keys and the
-agent definitions they bind to — by their gate alone; what each one then does is its own
-app's scenario.
+approveProposal, createConsoleTenant, updateTenant, createFootprintRequest, closeProblemReport,
+createChange, confirmSoWhat, rateAnswer. ADM-S4 also drives the console routes other apps
+register — the source registry, the platform agent keys and the agent definitions they bind
+to — by their gate alone; what each one then does is its own app's scenario.
 
 Prefixes hosted: ACC, ADM, AUD.
 """
@@ -23,16 +23,22 @@ from __future__ import annotations
 
 import unittest
 import uuid
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 from unittest import skip
 
 from django.db import DatabaseError, connection, transaction
-from django.test import override_settings
+from django.test import Client, override_settings
+from django.utils.dateparse import parse_datetime
 
+from apps.agents import testing as agent_build
+from apps.cases import creation, testing as case_build
+from apps.governance.models import AiGeneration
 from apps.identity.models import Invitation, TenantRole
 from apps.identity.session_logic import actor_of
 from apps.library.seeds import seed_jurisdictions, seed_languages
-from apps.shared import factories, permissions as perms, tenancy
+from apps.search.tests_ask import answer_of, events_of
+from apps.search.tests_hybrid import CorpusMixin
+from apps.shared import factories, outbox, permissions as perms, tenancy
 from apps.shared.audit import AppendOnlyRefused
 # Modules, not classes: a TestCase imported by name would be collected and run here twice.
 from apps.shared import tests_append_only as append_only_guards
@@ -47,6 +53,7 @@ from apps.taxonomy.models import ComplianceStatus, Flag
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
 from apps.tenants import logic as tenants_logic
+from apps.watch import testing as watch_build
 from config.api import api
 
 V1 = "/api/v1"
@@ -60,6 +67,14 @@ LIBRARY_READ_RULES = dict.fromkeys(MIXED_TABLES, "(tenant_id IS NULL)") | {
 
 PLATFORM_ROLES = ("library_editor", "platform_admin")
 _ANY_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
+
+# AUD-S4: the "So what?" a run files with a change, and the library an Ask answer rests on.
+_SO_WHAT = "Teams that pay for external research should confirm that documented criteria exist."
+
+
+class _AskCorpus(CorpusMixin):
+    """The search tests' indexed library, so an Ask answer here cites a real obligation."""
+
 
 # ADM-S4 drives every console endpoint that a platform permission gates. Ninja parses the
 # body before the gate runs, so each entry carries a request the schema accepts; the id in
@@ -157,6 +172,11 @@ class GovernanceScenarioTests(ScenarioTestCase):
     def _one(self, action: str, subject_id: Any) -> AuditEvent:
         return AuditEvent.objects.get(action=action, subject_id=subject_id)
 
+    def _ai_log(self, headers: dict[str, Any], query: str) -> dict[str, Any]:
+        response = self.client.get(f"{V1}/ai-generations?{query}", **headers)
+        self.assertEqual(response.status_code, 200, response.content)
+        return cast(dict[str, Any], response.json())
+
     def test_aud_s1(self) -> None:
         """AUD-S1
 
@@ -181,12 +201,143 @@ class GovernanceScenarioTests(ScenarioTestCase):
         """
         self._prove(audit_guards.AppendOnlyHolds, append_only_guards.EveryAppendOnlyTableRunsAGuard)
 
-    @skip("pending: AUD-S4 (AUD-02, chunk 7)")
     def test_aud_s4(self) -> None:
         """AUD-S4
 
         Every model output is logged with its review state (AUD-02).
+        Operations: `createChange`, `ask`, `confirmSoWhat`, `rateAnswer`, `listAiGenerations`.
         """
+        # Given the library a question is answered from, two banks whose footprints differ,
+        # and a watch run with a platform key open.
+        _AskCorpus.build_corpus()
+        watch_build.seed_watch_reference()
+        creation.register()
+        banks = case_build.two_tenants_with_different_footprints(inside="regime:securities", outside="regime:aml")
+        officer_a = factories.member(
+            banks.inside, roles=("compliance_officer",), user_row=factories.user(name="Sara Lind")
+        ).user
+        officer_b = factories.member(banks.outside, roles=("compliance_officer",)).user
+        reader_a = factories.member(banks.inside, roles=("reader",)).user
+        tenancy.clear_tenant()
+        key = agent_build.agent_key()
+        run = agent_build.platform_run(key=key)
+
+        # And a So what draft and an agent classification: the run files a change with both.
+        tenancy.clear_tenant()
+        filed = self._post(
+            "/changes",
+            {
+                "stableKey": "chg-fi-2026-research-payments",
+                "title": "FI adopts amended rules on paying for investment research",
+                "changeType": "adopted",
+                "authorityLabel": "Finansinspektionen",
+                "summary": "FI's board decided to amend three regulations in the securities area.",
+                "sourceLabel": "Finansinspektionen",
+                "sourceUrl": "https://www.fi.se/",
+                "documents": [{"url": "https://www.fi.se/en/published/news/2026/research-payments/", "isPrimary": True}],
+                "termIds": [str(watch_build.term("regime:securities").id)],
+                "agentRunId": str(run.id),
+                "soWhat": {
+                    "text": _SO_WHAT,
+                    "model": "claude-opus-5",
+                    "modelVersion": "2026-05-01",
+                    "citations": [{"label": "Finansinspektionen", "url": "https://www.fi.se/"}],
+                },
+            },
+            {"HTTP_X_API_KEY": key.plain_key},
+        )
+        self.assertEqual(filed.status_code, 201, filed.content)
+        change_id = filed.json()["id"]
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            while outbox.deliver_batch().delivered:  # the cases the registration opens
+                pass
+
+        # And an Ask answer in bank A. Ask changes no record and so writes no audit row by
+        # design (SRC-05), which is why it goes through a plain client.
+        asked = Client().post(
+            f"{V1}/ask",
+            data={"question": "What must we disclose about costs and charges?", "lang": "en"},
+            content_type="application/json",
+            **sign_in(reader_a, tenant=banks.inside),
+        )
+        self.assertEqual(asked.status_code, 200, getattr(asked, "content", b""))
+        events = events_of(asked)
+        answer_of(events)
+        answer_id = events[0]["id"]
+
+        # Then each has an ai_generation row with purpose, model, version, input reference,
+        # output, citations and review state pending
+        officer_a_headers = sign_in(officer_a, tenant=banks.inside)
+        about_change = self._ai_log(officer_a_headers, f"subjectId={change_id}")
+        by_purpose = {row["purpose"]: row for row in about_change["items"]}
+        self.assertEqual(sorted(by_purpose), ["scope_suggestion", "so_what"], "narrowed to the one change")
+        answers = [row for row in self._ai_log(officer_a_headers, "purpose=answer")["items"] if row["id"] == answer_id]
+        self.assertEqual(len(answers), 1, "the answer's id is its row in the log")
+        so_what, scope, answer = by_purpose["so_what"], by_purpose["scope_suggestion"], answers[0]
+        for row in (so_what, scope, answer):
+            with self.subTest(purpose=row["purpose"]):
+                self.assertTrue(row["model"] and row["modelVersion"], row)
+                self.assertTrue(row["output"], row)
+                self.assertTrue(row["citations"], row)
+                self.assertTrue(all(citation["label"] and citation["url"] for citation in row["citations"]), row)
+                self.assertEqual((row["status"], row["reviewedBy"], row["reviewedAt"]), ("draft", None, None))
+        # The input a draft and a classification were made from is the change they are about;
+        # an answer's is the prompt it was given, kept as a template and a hash, never as text.
+        for row in (so_what, scope):
+            self.assertEqual((row["subjectType"], row["subjectId"]), ("regulatory_change", change_id))
+            self.assertTrue(row["modelMetadataReportedByAgent"], "the run's own account of its model (D-66)")
+        self.assertEqual((so_what["model"], so_what["modelVersion"], so_what["output"]), ("claude-opus-5", "2026-05-01", _SO_WHAT))
+        self.assertIn("regime:securities", scope["output"])
+        self.assertTrue(answer["promptTemplate"] and answer["promptHash"], answer)
+        self.assertFalse(answer["modelMetadataReportedByAgent"], "bleqq made this call and measured it")
+        self.assertTrue(answer["tenantScoped"])
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            shared_before = list(AiGeneration.objects.filter(subject_id=change_id).order_by("id").values())
+
+        # When a person in bank A confirms the So what on their case
+        confirmed = self._post(f"/changes/{change_id}/so-what/confirm", {}, officer_a_headers)
+        self.assertEqual(confirmed.status_code, 200, confirmed.content)
+
+        # Then bank A reads the row's review state as confirmed with the person and the time
+        mine = {row["purpose"]: row for row in self._ai_log(officer_a_headers, f"subjectId={change_id}")["items"]}
+        self.assertEqual(mine["so_what"]["status"], "confirmed")
+        self.assertEqual(mine["so_what"]["reviewedBy"], {"id": str(officer_a.id), "name": "Sara Lind"})
+        self.assertEqual(
+            parse_datetime(mine["so_what"]["reviewedAt"]), parse_datetime(confirmed.json()["confirmedAt"])
+        )
+        # And bank B, which has not confirmed its own copy, reads the same row as a draft
+        theirs = {
+            row["purpose"]: row
+            for row in self._ai_log(sign_in(officer_b, tenant=banks.outside), f"subjectId={change_id}")["items"]
+        }
+        self.assertEqual(theirs["so_what"]["id"], mine["so_what"]["id"])
+        self.assertEqual((theirs["so_what"]["status"], theirs["so_what"]["reviewedBy"]), ("draft", None))
+        # And nothing on the shared row is written
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.assertEqual(
+                list(AiGeneration.objects.filter(subject_id=change_id).order_by("id").values()), shared_before
+            )
+
+        # When a person marks an answer as wrong
+        note = "The itemised disclosure is due before the service, not only afterwards."
+        rated = self._post(
+            f"/answers/{answer_id}/feedback", {"feedback": "wrong", "note": note}, sign_in(reader_a, tenant=banks.inside)
+        )
+        self.assertEqual(rated.status_code, 204, rated.content)
+
+        # Then feedback is stored on the row
+        [answer] = [row for row in self._ai_log(officer_a_headers, "purpose=answer")["items"] if row["id"] == answer_id]
+        self.assertEqual((answer["feedback"], answer["feedbackNote"]), ("wrong", note))
+
+        # And a holder of ai_log.read lists the rows for their tenant only: bank B never sees
+        # bank A's answer, and a reader without the permission is refused.
+        theirs_all = self._ai_log(sign_in(officer_b, tenant=banks.outside), "purpose=answer")
+        self.assertNotIn(answer_id, {row["id"] for row in theirs_all["items"]})
+        refused = self.client.get(f"{V1}/ai-generations", **sign_in(reader_a, tenant=banks.inside))
+        self.assertEqual((refused.status_code, refused.json()["requiredPermission"]), (403, "ai_log.read"))
 
     def test_aud_s5(self) -> None:
         """AUD-S5

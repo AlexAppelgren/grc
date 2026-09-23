@@ -151,6 +151,10 @@ A library "So what?" is one row every bank reads and none may move (ruling I), s
 review state is computed for the reading bank from that bank's own `change_case`
 (`so_what_confirmed_by`, `so_what_confirmed_at`), and nothing shared is written (D-62).
 
+`test_aud_s4` proves the integration half over the three producers as they ship: the
+"So what?" and the `scope_suggestion` a run files with `createChange`, and a bank's Ask
+answer. AUD-02 stays `in_progress` until the AI log screen's AUD-S4 journey is green.
+
 ### AUD-S5 — A problem report stays inside the bank that filed it `@integration` `@e2e` (AUD-03)
 ```gherkin
 Given a reader in tenant A reported "This looks wrong" on an obligation
