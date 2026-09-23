@@ -95,7 +95,7 @@ def platform_run(
 DECISION: dict[str, Any] = {
     "model": "claude-opus-5",
     "modelVersion": "2026-05-01",
-    "promptTemplate": "library-confirmer/decide/v1",
+    "promptTemplate": "library-confirmer/decide/v2",
     "promptHash": "9f2a1c7d4b8e05f3",
     "output": "Approve. The proposed wording matches the amended regulation as the decision memorandum publishes it.",
     "citations": [
