@@ -6,6 +6,7 @@ import { BackLink } from '@/components/admin/AdminGate';
 import { DiffText } from '@/components/inventory/DiffText';
 import { LegalText } from '@/components/inventory/LegalText';
 import { DutyPanel, PendingPanels, ProvenancePanel, RelatedPanel, ScopePanel, VersionsPanel } from '@/components/inventory/ObligationPanels';
+import { ObligationRelatedChanges } from '@/components/library/ObligationRelatedChanges';
 import { ReportProblemModal, type ReportContext } from '@/components/inventory/ReportProblemModal';
 import { VersionBar } from '@/components/inventory/VersionBar';
 import { Button } from '@/components/ui/Button';
@@ -213,6 +214,7 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
               ) : undefined
             }
           />
+          <ObligationRelatedChanges obligationId={obligationId} />
           <PendingPanels />
         </div>
       </div>

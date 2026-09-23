@@ -56,8 +56,6 @@
   "inventory.obligation.createdByPerson": "{date}, through proposal review",
   "inventory.obligation.registerTitle": "Does it apply to us, where we stand, gaps",
   "inventory.obligation.registerBody": "Whether this duty reaches us, and how we stand on it, arrive in a later release. Being listed here says neither.",
-  "inventory.obligation.changesTitle": "Related changes",
-  "inventory.obligation.changesBody": "The regulatory changes filed against this duty arrive in a later release.",
   "inventory.obligation.versionsLabel": "Versions",
   "inventory.obligation.asOfBanner": "Showing version {number}, in force on {date}.",
   "inventory.obligation.asOfNoVersion": "No version of this obligation was in force on {date}.",

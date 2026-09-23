@@ -141,6 +141,7 @@ function serve(answer: ObligationDetail | number) {
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path.endsWith('/diff')) return { status: 200, data: versionDiff };
+    if (sent.path === '/api/v1/obligations/ob-1/changes') return { status: 200, data: { items: [], total: 0, openCount: 0 } };
     if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
     // "As of" a date before version 2 is the same record read again; the
@@ -218,8 +219,12 @@ describe('ObligationScreen', () => {
     expect(document.querySelectorAll('[data-version-row]')).toHaveLength(2);
     expect(screen.getByRole('link', { name: 'Disclose all costs and charges' })).toHaveAttribute('href', '/inventory/obligations/ob-2');
 
+    // The reforms filed against this duty, read for this bank (WAT-04); none here.
+    expect(within(document.querySelector('[data-related-changes]') as HTMLElement).getByRole('heading', { level: 2, name: 'Related changes' })).toBeInTheDocument();
+
     // Nothing on the card claims the duty applies here, or that the bank complies.
-    expect(document.querySelectorAll('[data-pending-panel]')).toHaveLength(2);
+    expect(document.querySelectorAll('[data-pending-panel]')).toHaveLength(1);
+    expect(document.querySelector('[data-pending-panel="register"]')).not.toBeNull();
   });
 
   it('labels the machine translation and puts the original back behind a chip', async () => {

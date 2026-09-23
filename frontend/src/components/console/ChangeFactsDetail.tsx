@@ -30,6 +30,7 @@ import {
   type ConfirmPart,
 } from '@/features/console-watch/change-facts-detail';
 import { useFormatContext } from '@/features/identity/hooks';
+import { machineConfirmedBy } from '@/features/watch/change-presentation';
 import { slotTone } from '@/features/shared/tone-by-kind';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import type { Translate } from '@/shared/i18n';
@@ -200,10 +201,16 @@ function Detail({ change }: { change: ConsoleChangeRow }) {
   );
   const pillsOf = (facts: readonly ChangeFact[], tone: (typeof slotTone)[keyof typeof slotTone]) =>
     facts.map((fact, i) => ({ key: fact.ref.key, label: fact.ref.label, tone, order: i }));
-  // One sentence for a set: the least confident member is what a reader needs
-  // to know about the set as a whole.
-  const setProvenance = (facts: readonly ChangeFact[], empty: string) =>
-    facts.length === 0 ? empty : factProvenance([...facts].sort((a, b) => (a.confidence ?? 1) - (b.confidence ?? 1))[0]!, t);
+  // One sentence for a set: the least confident suggestion is what a reader
+  // needs to know about the set as a whole. Once none is left, any machine's
+  // confirmation in it is named, so a set a person only partly confirmed never
+  // reads as a person's (D-74).
+  const setProvenance = (facts: readonly ChangeFact[], empty: string) => {
+    const suggested = facts.filter((fact) => fact.suggested).sort((a, b) => (a.confidence ?? 1) - (b.confidence ?? 1));
+    if (suggested[0] !== undefined) return factProvenance(suggested[0], t);
+    return facts[0] === undefined ? empty : (machineConfirmedBy(facts, t) ?? factProvenance(facts[0], t));
+  };
+  const rest = confirmButton('rest');
 
   return (
     <>
@@ -237,8 +244,12 @@ function Detail({ change }: { change: ConsoleChangeRow }) {
           action={actions(null, 'scope')}
         />
         {confirm.isError ? <ProblemAlert error={confirm.error} codes={confirmCodes(t)} /> : null}
-        <p className="mt-3 text-meta text-muted">{t('console.changeFacts.confirmHint')}</p>
-        <ButtonBar>{confirmButton('rest')}</ButtonBar>
+        {rest === null ? null : (
+          <>
+            <p className="mt-3 text-meta text-muted">{t('console.changeFacts.confirmHint')}</p>
+            <ButtonBar>{rest}</ButtonBar>
+          </>
+        )}
       </Panel>
       {correcting === 'type' ? <CorrectType change={change} onDone={() => setCorrecting(null)} /> : null}
       {correcting === 'flags' ? <CorrectFlags change={change} onDone={() => setCorrecting(null)} /> : null}

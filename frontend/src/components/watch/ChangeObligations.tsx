@@ -82,6 +82,7 @@ export function ChangeObligations({ change }: { change: ChangeDetail }) {
     <Rows data-change-obligations="">
       {links.map((link) => {
         const decision = decisions.get(link.obligationId);
+        const machineConfirmed = machineConfirmedBy([link], t);
         return (
           <Row key={link.obligationId} data-obligation={link.obligationId} data-case-decision={decision?.decision}>
             <PillRow pills={presentObligationLink(link, decision, t, ctx)} />
@@ -92,7 +93,7 @@ export function ChangeObligations({ change }: { change: ChangeDetail }) {
             </h3>
             <p className="flex flex-wrap gap-x-3 gap-y-1 text-meta text-muted">
               <code className="font-mono">{link.refLabel}</code>
-              {machineConfirmedBy([link], t)}
+              {machineConfirmed === null ? null : <span>{machineConfirmed}</span>}
             </p>
             {canWork && decision === undefined ? <LinkDecision changeId={change.id} obligationId={link.obligationId} /> : null}
           </Row>

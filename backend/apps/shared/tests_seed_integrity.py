@@ -541,13 +541,13 @@ class SeedIntegrityGuard(TestCase):
         self.assertEqual(events["In force"].event_date, datetime.date(2027, 1, 1))
         self.assertEqual(events["In force"].date_precision, "quarter")
 
-        # The one confirmed classification, so both suggested and confirmed states render
-        # (WAT-S4's confirming half is the held `c5-watch-curation-confirm`, but a seed may
-        # write the confirmation columns directly, exactly as `_seed_case`'s So what does).
+        # The one confirmed classification, so both suggested and confirmed states render. A
+        # confirming agent's key gave it (D-74), so it reads machine-confirmed naming both
+        # agents; a seed writes the confirmation columns directly, exactly as `_seed_case`'s
+        # So what does.
         term_link = ChangeTerm.objects.get(change=change, term__isnull=False)
         self.assertFalse(term_link.suggested)
-        self.assertIsNotNone(term_link.confirmed_by_id)
-        self.assertIsNotNone(term_link.confirmed_at)
+        self.assert_machine_confirmed(term_link)
         flag_link = ChangeTerm.objects.get(change=change, flag__isnull=False)
         self.assertTrue(flag_link.suggested, "the flag is left a suggestion so a suggested pill has something to render too")
 
@@ -561,10 +561,45 @@ class SeedIntegrityGuard(TestCase):
         self.assertEqual(documents.count(), 2)
         self.assertTrue(documents.filter(is_duplicate=True, risk_flags__len__gt=0).exists())
 
+        # WAT-S6's library half: the first link an independent agent confirmed, the second
+        # still the sweeper's suggestion. The classification is machine-confirmed whole, so
+        # the feed row carries the machine-confirmed pill rather than the suggestion marker.
         confirmed = ChangeObligation.objects.get(change=change, obligation__stable_key=CONFIRMED_LINK_OBLIGATION)
-        self.assertIsNotNone(confirmed.confirmed_by_id)
+        self.assert_machine_confirmed(confirmed)
         suggested = ChangeObligation.objects.get(change=change, obligation__stable_key=SUGGESTED_LINK_OBLIGATION)
-        self.assertIsNone(suggested.confirmed_by_id)
+        self.assertIsNone(suggested.confirmed_at)
+        self.assertEqual(suggested.suggested_by_agent.key, "watch-sweeper")
+        for term in ChangeTerm.objects.filter(change=change):
+            self.assert_machine_confirmed(term)
+        self.assert_machine_confirmed(change, "change_type_")
+
+    def test_chunk5_leaves_the_curation_change_for_a_person_to_confirm(self) -> None:
+        """WAT-S4's journey confirms the curation change's type, flag and scope as a person
+        in the console, so each stays the sweeper's suggestion here and nothing names a
+        person (D-74): a person may confirm only what they did not file themselves."""
+        seed_e2e()
+        change = RegulatoryChange.objects.get(stable_key=EXPECTED_CHUNK5_WATCH.curation_change)
+        self.assertTrue(change.change_type_suggested)
+        self.assertIsNotNone(change.change_type_confidence)
+        self.assertEqual(change.change_type_suggested_by_agent.key, "watch-sweeper")
+        self.assertIsNone(change.change_type_suggested_by_id)
+        terms = list(ChangeTerm.objects.filter(change=change))
+        self.assertEqual({term.flag is not None for term in terms}, {True, False}, "a flag and a scope term to confirm")
+        for term in terms:
+            self.assertTrue(term.suggested)
+            self.assertEqual(term.suggested_by_agent.key, "watch-sweeper")
+            self.assertIsNone(term.suggested_by_id)
+
+    def assert_machine_confirmed(self, row: object, prefix: str = "") -> None:
+        """Confirmed by the library confirmer's own platform key, suggested by the sweeper's,
+        and naming no person: the seed's confirmed state is an agent's (D-74)."""
+        self.assertIsNotNone(getattr(row, f"{prefix}confirmed_at"))
+        self.assertIsNone(getattr(row, f"{prefix}confirmed_by_id"), "a machine's confirmation names no person")
+        self.assertEqual(getattr(row, f"{prefix}confirmed_by_agent").key, "library-confirmer")
+        confirmer_key = getattr(row, f"{prefix}confirmed_by_api_key")
+        self.assertIsNone(confirmer_key.tenant_id)
+        self.assertIn("proposals:review", confirmer_key.scopes)
+        self.assertEqual(getattr(row, f"{prefix}suggested_by_agent").key, "watch-sweeper")
 
     def test_chunk5_seeds_two_platform_agent_runs_and_a_recheck(self) -> None:
         """c5-seed-watch (AGT-01, item 3): a closed and an open platform run with no tenant,
@@ -595,6 +630,7 @@ class SeedIntegrityGuard(TestCase):
             EXPECTED_CHUNK5_WATCH.timeline_change,
             EXPECTED_CHUNK5_WATCH.obligations_change,
             EXPECTED_CHUNK5_WATCH.payments_change,
+            EXPECTED_CHUNK5_WATCH.curation_change,
         ):
             with self.subTest(change=stable_key):
                 tenancy.activate(tenant_a.id)

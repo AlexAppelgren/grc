@@ -120,8 +120,14 @@ A curation confirmation is D-74's: an agent-bound key of another definition with
 (no proposal stands behind it) and is labelled machine-confirmed when an agent gave it.
 Nobody confirms what they filed themselves, a person included, and the confirmer names the
 type it checked by its key, so a type corrected meanwhile is not confirmed unread
-(`tests_curation.py`, `tests_curation_races.py`). `@e2e` stays `test.fixme()`: the screen,
-its seed and the journey are `watch-curation-confirm-frontend`'s.
+(`tests_curation.py`, `tests_curation_races.py`). `@e2e` built: a bank's change page marks
+the seeded type as suggested and offers no confirm control; a library editor confirms the
+type on the console's Change facts detail with a passkey, then the rest in one call, each
+fact reading "Confirmed by a person for the library"; another bank's feed row and change
+page then carry no suggestion marker. The change is the seed's own (`chg-e2e-c5-curation`),
+every fact the sweeper's suggestion through its key. What an agent's confirmation reads —
+machine-confirmed, naming both agents — is walked in WAT-S6, whose seeded link the library
+confirmer's own key confirmed.
 
 ### WAT-S5 — An unknown key answers unknown_key with the valid keys `@integration` (WAT-03, AC-WAT2)
 ```gherkin
@@ -141,22 +147,20 @@ When a compliance officer accepts the first and removes the second on their own 
 Then both decisions are stored on that bank's case and audited, the second is hidden from that bank's change page, and the obligation shows "1 open change"
 And no library row changed: the second link is still there, still a suggestion, and another bank still sees both
 ```
-`@e2e` built for the bank's half: the compliance officer confirms one link and says the
-other is not related on their own bank's case ("Confirm link", "Not related"), the removed
-link is hidden from that bank's change page and still stored, and another bank still sees
-both links, neither decided. The library's half is asserted by the `@integration` half; it
-joins the journey with `watch-curation-confirm-frontend`, and until then the seed stands in
-for it with one link a person already confirmed (`c5-seed-watch`). That both decisions are
-audited is asserted by the `@integration` half, because the audit log's record-kind filter
-offers no case kind yet. PRD WAT-04's "confirmed by a person" stays true per bank, on each
-bank's own case; the library's confirmation is D-74's and never reads as a person's.
+`@e2e` built: the console and the bank's change page read the first link as machine-confirmed,
+naming the sweeper and the library confirmer, never as a person's; the compliance officer
+confirms it and says the other is not related on their own bank's case ("Confirm link",
+"Not related"); the removed link is hidden from that bank's change page and still stored;
+the first obligation's card lists the change with "1 open change"; and another bank still
+sees both links, the first machine-confirmed, neither decided. No screen drives an agent's
+key, so the seed gives the library's confirmation through the library confirmer's own
+platform key (`c5-seed-watch`), and the `@integration` half proves the route that gives it.
+That both decisions are audited is asserted by the `@integration` half, because the audit
+log's record-kind filter offers no case kind yet. PRD WAT-04's "confirmed by a person"
+stays true per bank, on each bank's own case; the library's confirmation is D-74's and
+never reads as a person's.
 
 Still pending in this scenario:
-- **"The obligation shows 1 open change" on screen.** No screen mounts the obligation's
-  related-changes panel (`ObligationRelatedChanges`): the obligation page shows its "later
-  release" placeholder in that place. The `@integration` half reads `openCount` from
-  `GET /obligations/{obligationId}/changes`; the journey gains the step when the panel is
-  mounted.
 - **A removed link on the obligation's side.** That route lists and counts every change
   the library links to the obligation, so the obligation a bank marked "Not related" still
   lists the change and counts it as open for that bank. Until the read leaves out a change

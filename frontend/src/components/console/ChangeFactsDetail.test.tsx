@@ -218,7 +218,8 @@ describe('console change facts detail', () => {
     const settled = {
       ...change,
       changeType: { ...fact('adopted', 'Adopted', 0.91, false), ...machine },
-      flags: [],
+      // A set a person confirmed only in part still names the machine that confirmed the rest.
+      flags: [{ ...fact('inducements', 'Inducements', 0.4, false), confirmedOrigin: 'user' }, { ...fact('advice_perimeter', 'Advice perimeter', 0.9, false), ...machine }],
       terms: [{ ...fact('securities', 'Securities', 0.81, false), ...machine }],
       obligations: [{ ...link('o1', 'Pay for third-party research only under the permitted models', 0.86, true), ...machine }],
       unconfirmedCount: 0,
@@ -230,11 +231,13 @@ describe('console change facts detail', () => {
     const machineLine = 'Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer';
     expect(within(typeRow()).getByText(machineLine)).toBeInTheDocument();
     expect(within(scopeRow()).getByText(machineLine)).toBeInTheDocument();
+    expect(within(document.querySelector('[data-fact="Flags"]') as HTMLElement).getByText(machineLine)).toBeInTheDocument();
     const obligation = document.querySelector('[data-obligation-id="o1"]') as HTMLElement;
     expect(within(obligation).getByText(machineLine)).toBeInTheDocument();
     expect(within(obligation).getByText('Machine-confirmed')).toHaveAttribute('data-pill', 'information');
     expect(screen.queryByText(/Confirmed by a person/)).toBeNull();
     expect(screen.queryByRole('button', { name: /^Confirm/ })).toBeNull();
+    expect(screen.queryByText(/asks for your passkey/)).toBeNull();
   });
 
   it('names the agent that suggested a fact', async () => {

@@ -1,9 +1,20 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, LOGINS, signInAs, signOut } from './support/passkeys';
 import { CHUNK5_WATCH, consoleSourceRow, openChangeByStableKey, openWatchFeed, signInAsSv } from './support/watch-coverage';
 import { openChangeFromFeed } from './support/watch-facts';
+
+/**
+ * Answers the passkey prompt a person's first confirmation opens (playbook 4.2), or none
+ * when their step-up is still fresh, and settles once `done` is on screen.
+ */
+async function confirmWithPasskey(page: Page, done: Locator): Promise<void> {
+  const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
+  await expect(prompt.or(done).first()).toBeVisible();
+  if (await prompt.isVisible()) await prompt.getByRole('button', { name: 'Use passkey' }).click();
+  await expect(done).toBeVisible();
+}
 
 // watch: the @e2e scenarios from backend/apps/watch/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -66,13 +77,72 @@ test.describe('watch journeys', () => {
     await expect(timelineSv.getByText('kv. 1 2027', { exact: true })).toBeVisible();
   });
 
-  test.fixme("WAT-S4: Types, flags and scope come from vocabularies and stay suggestions until confirmed", async () => {
-    // pending: WAT-S4 (WAT-03). The library-editor confirmation this scenario needs is
-    // `c5-watch-curation-confirm`, held for Alex's answer to `q-editor-confirm`
-    // (docs/plans/briefs/CHUNK5_TASKS.md, "The one question left for Alex"): until then a
-    // library editor's session gets `not_built` from `PATCH /changes/{changeId}`, so there
-    // is no confirm control on Change facts to drive. c5-e2e-watch-journeys-b owns this
-    // scenario and leaves it fixme, naming the held task.
+  // WAT-S4 spends the seeded state it drives: a confirmation is undone only by a person's
+  // correction, never put back, so a retry would meet facts the first attempt confirmed and
+  // fail for that rather than for the real cause. Like WAT-S6 and WAT-S7 below, it never
+  // retries. It confirms the curation change alone (`chg-e2e-c5-curation`), which no other
+  // journey reads or corrects.
+  test.describe('what a person confirms for the library', () => {
+    test.describe.configure({ retries: 0 });
+
+    test("WAT-S4: Types, flags and scope come from vocabularies and stay suggestions until confirmed", async ({ page, apiGuard }) => {
+      allowFreshContext(apiGuard);
+      // The first confirmation answers 403 step_up_required, which is what opens the
+      // passkey prompt (playbook 4.2); confirmWithPasskey() answers it.
+      apiGuard.allow(/\/changes\/[^/]+\/confirmation$/, 403, 'confirming asks a person for a fresh passkey assertion first, which opens the step-up prompt');
+
+      // Given an agent classified a change: a bank reads the type as the agent's suggestion,
+      // the flag and the scope as brand pills, and has no control that would confirm one,
+      // because they are library facts.
+      await signInAs(page, LOGINS.complianceOfficer);
+      const changeId = await openChangeFromFeed(page, CHUNK5_WATCH.curationChange);
+      const classification = page.locator('[data-change-classification]');
+      await expect(classification.getByText('suggested', { exact: true }).first()).toBeVisible();
+      await expect(classification.locator('[data-pill="notice"]')).toHaveCount(1);
+      await expect(classification.locator('[data-pill="brand"]')).toHaveCount(2);
+      await expect(classification.getByRole('button')).toHaveCount(0);
+      await signOut(page);
+
+      // Each fact names the agent that suggested it, the type with the agent's confidence.
+      await signInAs(page, LOGINS.editor);
+      await page.goto(`/console/change-facts/${changeId}`);
+      const typeFact = page.locator('[data-fact="Change type"]');
+      const flagsFact = page.locator('[data-fact="Flags"]');
+      const scopeFact = page.locator('[data-fact="Scope"]');
+      await expect(typeFact.getByText(/^Suggested by watch-sweeper, confidence 0\.\d{2}$/)).toBeVisible();
+      await expect(flagsFact.getByText(/^Suggested by watch-sweeper, confidence 0\.\d{2}$/)).toBeVisible();
+
+      // When a person holding proposals.review confirms the type, with a fresh passkey
+      const byAPerson = 'Confirmed by a person for the library';
+      await typeFact.getByRole('button', { name: 'Confirm' }).click();
+      await confirmWithPasskey(page, typeFact.getByText(byAPerson, { exact: true }));
+      // Then it reads confirmed by a person, never machine-confirmed, and offers nothing more.
+      await expect(typeFact.getByRole('button', { name: 'Confirm' })).toHaveCount(0);
+      await expect(typeFact.getByText(/Machine-confirmed/)).toHaveCount(0);
+
+      // And the rest in one go: the flag and the scope term, the term named by its id.
+      await expect(scopeFact.getByRole('button', { name: 'Confirm' })).toBeVisible();
+      await page.getByRole('button', { name: 'Confirm the rest' }).click();
+      await confirmWithPasskey(page, scopeFact.getByText(byAPerson, { exact: true }));
+      await expect(flagsFact.getByText(byAPerson, { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: /^Confirm/ })).toHaveCount(0);
+      await expect(page.locator('[data-pill="positive"]').filter({ hasText: 'Confirmed' })).toBeVisible();
+      await signOut(page);
+
+      // Then every bank reads the classification without the agent's marker: another bank's
+      // feed row carries neither the suggestion nor a machine's label, and its change page
+      // no longer marks the type as suggested (the urgency stays that bank's own call).
+      await signInAs(page, LOGINS.secondBankAdmin);
+      await page.goto('/watch?scope=all');
+      const row = page.locator(`a[data-change="${CHUNK5_WATCH.curationChange}"]`);
+      await expect(row).toBeVisible();
+      await expect(row.locator('[data-pill]').filter({ hasText: 'Suggested by the agent' })).toHaveCount(0);
+      await expect(row.locator('[data-pill]').filter({ hasText: 'Machine-confirmed' })).toHaveCount(0);
+      await page.goto(`/watch/${changeId}`);
+      const theirs = page.locator('[data-change-classification]');
+      await expect(theirs.getByText('suggested', { exact: true })).toHaveCount(1);
+      await expect(theirs.locator('[data-machine-confirmed]')).toHaveCount(0);
+    });
   });
 
   // Both journeys below spend the seeded state they drive: a confirmed "So what?" and a
@@ -85,23 +155,40 @@ test.describe('watch journeys', () => {
     test.describe.configure({ retries: 0 });
 
     test("WAT-S6: Links to affected obligations carry a confidence, and the library and the bank decide separately", async ({ page, apiGuard }) => {
-      // The bank's half. The library editor's half (confirming the first link for every
-      // bank) is the curation confirmation, which a later task adds to this journey; the
-      // seed stands in for it with one link a library editor already confirmed and one still
-      // an agent's suggestion (`c5-seed-watch`, backend/apps/shared/e2e_seed.py). That both
-      // decisions are audited is asserted by the @integration half
+      // The library's half: an agent of another definition confirmed the first link for
+      // every bank. No screen drives an agent's key, so the seed made that confirmation
+      // through the library confirmer's own platform key (`c5-seed-watch`,
+      // backend/apps/shared/e2e_seed.py), and this journey reads it as each reader sees it.
+      // That both of the bank's decisions are audited is asserted by the @integration half
       // (apps/watch/tests_scenarios.py::test_wat_s6): the audit log's record-kind filter
       // offers no case kind yet, and an unfiltered log is shared with every parallel journey.
       allowFreshContext(apiGuard);
+      const machineConfirmed = 'Machine-confirmed';
+      const bothAgents = /^Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer$/;
+
+      // The console reads the library's link as a machine's confirmation, naming both
+      // agents, and never as a person's.
+      await signInAs(page, LOGINS.editor);
+      await page.goto('/console/change-facts');
+      await expect(page.locator('[data-change-facts-list]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+      await page.getByRole('link', { name: /ICT third-party risk reporting/ }).click();
+      const consoleLinks = page.locator('[data-obligation-links]');
+      const consoleConfirmed = consoleLinks.locator('[data-obligation-id]').filter({ has: page.getByText(bothAgents) });
+      await expect(consoleConfirmed).toHaveCount(1);
+      await expect(consoleConfirmed.locator('[data-pill="information"]').filter({ hasText: machineConfirmed })).toBeVisible();
+      await expect(page.getByText('Confirmed by a person for the library', { exact: true })).toHaveCount(0);
+      await signOut(page);
+
       await signInAs(page, LOGINS.complianceOfficer);
       const changeId = await openChangeFromFeed(page, CHUNK5_WATCH.obligationsChange);
 
       // Each link is found by what it is, never by its title: titles are library rows.
       const panel = page.locator('[data-change-obligations]');
-      const libraryConfirmed = panel.locator('[data-obligation]').filter({ has: page.getByText('Confirmed by a library editor', { exact: true }) });
+      const libraryConfirmed = panel.locator('[data-obligation]').filter({ has: page.getByText(bothAgents) });
       const suggestion = panel.locator('[data-obligation]').filter({ has: page.getByText(/^Suggested, \d+% match$/) });
       await expect(libraryConfirmed).toHaveCount(1);
       await expect(suggestion).toHaveCount(1);
+      await expect(libraryConfirmed.getByText(machineConfirmed, { exact: true })).toBeVisible();
       const first = (await libraryConfirmed.getAttribute('data-obligation')) ?? '';
       const second = (await suggestion.getAttribute('data-obligation')) ?? '';
       const link = (obligationId: string) => panel.locator(`[data-obligation="${obligationId}"]`);
@@ -124,19 +211,22 @@ test.describe('watch journeys', () => {
       await expect(link(first)).toHaveAttribute('data-case-decision', 'accepted');
       await expect(link(second)).toHaveCount(0);
 
-      // "The obligation shows 1 open change" is not walked here: no screen mounts the
-      // obligation's related-changes panel yet (the obligation page still shows its "later
-      // release" placeholder), so there is nothing to open. The @integration half reads the
-      // count from `GET /obligations/{obligationId}/changes`; the step joins this journey
-      // when the panel is mounted (watch/app.md, the note under WAT-S6).
+      // And the obligation shows "1 open change": its card lists this change, with the
+      // machine's label on its classification, and counts this bank's open work on it.
+      await link(first).getByRole('link').click();
+      await expect(page).toHaveURL(new RegExp(`/inventory/obligations/${first}$`));
+      const related = page.locator('[data-related-changes]');
+      await expect(related.getByText('1 open change', { exact: true })).toBeVisible();
+      const relatedRow = related.locator(`[data-related-change="${CHUNK5_WATCH.obligationsChange}"]`);
+      await expect(relatedRow.locator('[data-pill="information"]').filter({ hasText: machineConfirmed })).toBeVisible();
 
       // And no library row changed: another bank still sees both links, the first as the
-      // library editor confirmed it, the second still a suggestion, and neither decided.
+      // independent agent confirmed it, the second still a suggestion, and neither decided.
       await signOut(page);
       await signInAs(page, LOGINS.secondBankAdmin);
       await page.goto(`/watch/${changeId}`);
       const theirs = page.locator('[data-change-obligations]');
-      await expect(theirs.locator(`[data-obligation="${first}"]`).getByText('Confirmed by a library editor', { exact: true })).toBeVisible();
+      await expect(theirs.locator(`[data-obligation="${first}"]`).getByText(bothAgents)).toBeVisible();
       await expect(theirs.locator(`[data-obligation="${second}"]`).getByText(/^Suggested, \d+% match$/)).toBeVisible();
       await expect(theirs.locator('[data-case-decision]')).toHaveCount(0);
       // An administrator holds no cases.work, so the bank's two answers are not offered.
@@ -468,5 +558,5 @@ test.describe('the change page', () => {
 // - Driving it here would switch tenant A's footprint while every journey in this file
 //   reads that footprint in parallel, so it would race them.
 // The screen walk across the surfaces after a footprint change is FP-S4's own journey in
-// taxonomy.journey.spec.ts, which is still test.fixme and owned there.
+// taxonomy.journey.spec.ts, which is live and owned there.
 // ---------------------------------------------------------------------------
