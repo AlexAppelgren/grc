@@ -93,13 +93,29 @@ stable keys of the hits, best first, from the widest page the API serves.
   the embedder is always the mock, so its scores prove that the harness, the retriever and
   the corpus fit together; `--record` refuses them, no threshold is derived from them, and
   none is written anywhere.
+- **Its order is not yet the same from one database to the next.** Hybrid search breaks a
+  tie on the chunk's id, and every fresh database gives every chunk a new random id. An
+  identifier query such as "FFFS 2017:2" matches many chunks of one instrument at the same
+  rank, so which of them comes first depends on those ids. Measured 2026-09-23 over three
+  fresh databases: two of the 53 questions (`r-en-01`, `r-en-04`) answered in a different
+  order, and MRR moved between 0.833 and 0.843. That is inside the tolerance but it is
+  noise, and a baseline must not be recorded on noise. The fix belongs to the search app,
+  not to this harness (the index fence keeps any other module from writing a chunk): the
+  tie must be broken on something a rebuild keeps, such as the record's stable key and the
+  language. Before recording, run the gate twice on fresh databases and check that the
+  two answers agree.
 - **Nobody has recorded the retrieval track, so a retrieval regression fails no build yet.**
   Every run says so (`no baseline is recorded for retrieval ...`). It is recorded once, by
   the task that chooses the embedder against this set (`c7-embedder-selection-baseline`),
   when D-09's key arrives: that run has no mock in its chain, records with `--record` in
   the same commit as the change that earned the numbers, and from then on CI must run the
   gate with `--retriever` and the real provider configured, or the recorded track fails
-  as "no real evaluator ran". Until then `docs/TODO_FOR_alex.md` carries the gap.
+  as "no real evaluator ran". **No settings module can make that run today.**
+  `config.test_settings` fixes `EMBEDDER_PROVIDER = "mock"` with no environment override,
+  and `config.settings` connects `default` as `cw_app`, which cannot create a database. So
+  that task first adds one of two things: an environment override for the embedder in the
+  test settings, or a settings module for the evaluation on the migrator's URL. Until then
+  `docs/TODO_FOR_alex.md` carries the gap.
 
 ## Status rules
 

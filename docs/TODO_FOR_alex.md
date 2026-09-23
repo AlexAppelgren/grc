@@ -509,4 +509,9 @@ section. Copied here as chunk3-rest-T20 requires.
       the gate fails when a recorded score drops, but with only the mock embedder there is
       nothing honest to record: a mock can never set the bar. Nothing to do beyond the D-09
       key already listed under "Before the first test deploy"; the run that chooses the
-      model records the baseline and removes this line (`backend/eval/README.md`).
+      model records the baseline and removes this line (`backend/eval/README.md`). Two
+      things that run needs first, neither of them yours: a settings route with a real
+      embedder and a throwaway database (today's test settings fix the embedder to the
+      mock), and hybrid search breaking ties on something a rebuild keeps, because today two
+      of the 53 questions can come back in a different order from one fresh database to the
+      next.
