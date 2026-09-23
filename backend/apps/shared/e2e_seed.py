@@ -1557,7 +1557,6 @@ MACHINE_CONFIRMED_RUNS: dict[str, tuple[uuid.UUID, uuid.UUID]] = {
 # The seed's stand-in for the passkey assertion a person's re-verification carries on its
 # audit row: the seed signs nobody in, and it refuses to run deployed (refuse_when_deployed).
 SEED_REVERIFICATION_STEP_UP = uuid.UUID("00000000-0000-4000-9000-000000000018")
-_CONFIRMER_SCOPES: tuple[str, ...] = ("agent-runs:write", "library:read", "proposals:review")
 _MACHINE_CONFIRMED_WORDING: dict[str, dict[str, str]] = {
     "obl-switch-documentation": {
         "sv": (
@@ -1585,28 +1584,14 @@ _MACHINE_CONFIRMED_WORDING: dict[str, dict[str, str]] = {
 }
 
 
-def _confirmer_key() -> tuple[ApiKey, Any]:
-    """The library confirmer's platform key, found by its name or made once, and the agent
-    it is bound to: a definition other than the sweeper's, holding the review scope and never
-    the scope to propose. Its plain value is dropped, as the sweeper key's is (H15)."""
-    seed_agent_definitions()
-    agent = _agent("library-confirmer")
-    _plain, prefix, key_hash = tokens.new_api_key()
-    with tenancy.platform_zone():
-        key, _created = ApiKey.objects.get_or_create(
-            name="Library confirmer (E2E)",
-            defaults={"tenant": None, "agent": agent, "key_prefix": prefix, "key_hash": key_hash, "scopes": list(_CONFIRMER_SCOPES)},
-        )
-    return key, agent
-
-
 def _agents_confirm(stable_key: str) -> None:
     """The sweeper files a new wording of `stable_key` in its own open run and the confirmer
     approves it in a run of its own key, with the model call behind its decision (D-80)."""
     obligation_id = _obligation_id(stable_key)
     sweep_run, review_run = MACHINE_CONFIRMED_RUNS[stable_key]
     filer, sweeper = _sweeper_key()
-    confirmer_key, confirmer = _confirmer_key()
+    confirmer_key = _confirmer_key()
+    confirmer = _agent(CONFIRMING_AGENT)
     with tenancy.platform_zone():
         AgentRun.objects.get_or_create(pk=sweep_run, defaults={"agent": sweeper, "api_key": filer, "model": AGENT_MODEL, "pipeline_version": "0.4"})
         AgentRun.objects.get_or_create(
