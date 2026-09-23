@@ -63,6 +63,14 @@ async function consoleDestinationsOf(page: Page, login: string): Promise<string[
   return mine.map((destination) => destination.id);
 }
 
+/** The research payment obligation's card, reached from the inventory filtered to its instrument. */
+async function openResearchObligation(page: Page): Promise<void> {
+  await page.goto('/inventory?instrument=fffs-2017-2');
+  await expect(page.locator('[data-obligation-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+  await page.locator('[data-obligation="obl-research-payments"]').click();
+  await expect(page.locator('[data-obligation="obl-research-payments"] [data-header-pills]')).toBeVisible();
+}
+
 test.describe('governance journeys', () => {
   test("AUD-S3: The audit log screen shows who did what, with before and after", async ({ page, apiGuard }) => {
     // pending: AUD-S3 (AUD-01) -> built in chunk 4. The record changed with step-up is an
@@ -138,8 +146,81 @@ test.describe('governance journeys', () => {
     // pending: AUD-S4 (AUD-02, chunk 7)
   });
 
-  test.fixme("AUD-S5: A problem report stays inside the bank that filed it", async () => {
-    // pending: AUD-S5 (AUD-03, chunk 4)
+  test("AUD-S5: A problem report stays inside the bank that filed it", async ({ page, apiGuard }, testInfo) => {
+    // A reader of tenant A files a report through the obligation card; the bank's
+    // compliance officer reads it on the same card and closes it with a note; the reader
+    // sees it closed; tenant B's administrator, who reads every report of their own bank,
+    // sees nothing of it. The report is this run's own, pinned by id, so the seeded open
+    // report and earlier runs' closed ones never decide an assertion. The 403 and 404 of a
+    // library editor, another bank, an API key and an agent, and the report's words kept
+    // out of every log, outbox payload and model, are test_aud_s5's.
+    allowFreshContext(apiGuard);
+    const words = `The summary names only the institution's own resources (AUD-S5 ${testInfo.workerIndex}-${Date.now()}).`;
+    const note = 'Version 2 names a research payment account as well; the watch has it.';
+
+    await signInAs(page, LOGINS.reader);
+    await openResearchObligation(page);
+    const obligationUrl = new URL(page.url()).pathname;
+    const provenance = page.locator('[data-provenance-panel]');
+    await provenance.getByRole('button', { name: 'This looks wrong' }).click();
+    const dialog = page.getByRole('dialog', { name: 'What looks wrong?' });
+    // The dialog says who reads it: the bank, and nobody outside it, bleqq included.
+    await expect(dialog.getByText('Colleagues in your organisation read this and take it up. It reaches nobody outside your organisation.')).toBeVisible();
+    await dialog.getByLabel('What you see').fill(words);
+    const filed = page.waitForResponse((r) => /\/api\/v1\/obligations\/[0-9a-f-]{36}\/problem-reports$/.test(r.url()) && r.request().method() === 'POST' && r.ok());
+    await dialog.getByRole('button', { name: 'Send report' }).click();
+    const { id: reportId } = (await (await filed).json()) as { id: string };
+    await dialog.getByRole('button', { name: 'Done' }).click();
+
+    // The reader's own report joins the record's section at once, open, and the section
+    // says a close never changes the library: the watch corrects it.
+    const section = page.locator('[data-problem-reports]');
+    const mine = section.locator(`[data-report-id="${reportId}"]`);
+    await expect(mine).toHaveAttribute('data-report-status', 'open');
+    await expect(mine).toContainText(words);
+    await expect(section.getByText('Reports stay inside your organisation. Closing one does not change the library: when a record is wrong, the watch re-checks it against its source and proposes the correction.')).toBeVisible();
+    await signOut(page);
+
+    // The compliance officer holds proposals.create: every report of the bank on this
+    // record, with who filed it and what they had on screen, and the close.
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto(obligationUrl);
+    const theirs = page.locator(`[data-problem-reports] [data-report-id="${reportId}"]`);
+    await expect(theirs).toContainText(words);
+    await expect(theirs).toContainText('Reported by Oskar Lund');
+    await expect(theirs.getByText('Open', { exact: true })).toBeVisible();
+    await theirs.getByRole('button', { name: 'Close report' }).click();
+    const close = page.getByRole('dialog', { name: 'Close this report' });
+    await expect(close.getByRole('button', { name: 'Close report' })).toBeDisabled();
+    await close.getByLabel('Outcome').selectOption('answered');
+    await close.getByLabel('Note for the reporter').fill(note);
+    await close.getByRole('button', { name: 'Close report' }).click();
+    await expect(close).toBeHidden();
+    await expect(theirs).toHaveAttribute('data-report-status', 'answered');
+    await expect(theirs.locator('[data-report-note]')).toHaveText(note);
+    await expect(theirs).toContainText('Closed by Sara Lindqvist');
+    await expect(theirs.getByRole('button', { name: 'Close report' })).toHaveCount(0);
+    await signOut(page);
+
+    // The reader sees their report closed, with the note and who closed it.
+    await signInAs(page, LOGINS.reader);
+    await page.goto(obligationUrl);
+    const closed = page.locator(`[data-problem-reports] [data-report-id="${reportId}"]`);
+    await expect(closed).toHaveAttribute('data-report-status', 'answered');
+    await expect(closed.getByText('Answered', { exact: true })).toBeVisible();
+    await expect(closed.locator('[data-report-note]')).toHaveText(note);
+    await expect(closed).toContainText('Closed by Sara Lindqvist');
+    await signOut(page);
+
+    // Tenant B's administrator also holds proposals.create, so reads every report their
+    // own bank filed on the same library record: tenant A's is not among them.
+    await signInAs(page, LOGINS.secondBankAdmin);
+    await page.goto(obligationUrl);
+    const other = page.locator('[data-problem-reports]');
+    await expect(other.locator('[data-reports-empty]').or(other.locator('[data-report-id]')).first()).toBeVisible();
+    await expect(other.locator(`[data-report-id="${reportId}"]`)).toHaveCount(0);
+    await expect(other).not.toContainText(words);
+    await expect(other).not.toContainText('Oskar Lund');
   });
 
   test("ADM-S4: The platform console offers each surface to the platform role that owns it", async ({ page, request, apiGuard }) => {
