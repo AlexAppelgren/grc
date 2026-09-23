@@ -437,6 +437,15 @@ def seed_pending_footprint_request(tenants: list[Tenant]) -> int:
 PRO_S7_OBLIGATION = "obl-gdpr-article-22"
 AUTOMATED_DECISIONS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000005")
 # --- end library-updates-frontend ---------------------------------------------------------
+# --- agent-j4-smoke (AGT-S10, J-4) -------------------------------------------------------
+# J-4's own duty: an agent minted in the console files a new version of it under a change it
+# registers, a library editor approves it, and the bank's officer reads it. Every attempt adds
+# a version, so no other spec or seed may name it, and the journey asserts the version its own
+# approval produced, never a number. Product governance under FFFS 2017:2 reaches tenant A
+# with or without Advice (J-6 switches Advice off while other journeys run). The fixture
+# loads it; this names it as J-4's.
+J4_OBLIGATION = "obl-product-governance"
+# --- end agent-j4-smoke -------------------------------------------------------------------
 AGENT_MODEL = "agent pipeline 0.4"
 # The library editor who files PRO-S5's proposal; the second editor decides everything else.
 LIBRARY_EDITOR_EMAIL = "editor@bleqq.test"

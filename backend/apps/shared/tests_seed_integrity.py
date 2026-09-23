@@ -67,6 +67,7 @@ from apps.shared.e2e_seed import (
     EXPECTED_TENANTS,
     EXPECTED_WATCHED_MARKETS,
     WATCHED_MARKET_OBLIGATION,
+    J4_OBLIGATION,
     PRO_S7_OBLIGATION,
     PRO_S13_OBLIGATION,
     PRO_S13_RUN,
@@ -748,6 +749,34 @@ class SeedIntegrityGuard(TestCase):
         self.assertTrue(in_footprint(_scope(obligation), without, restricting=restricting))
         self.assertEqual(list(ObligationVersion.objects.filter(obligation=obligation).values_list("version_number", flat=True)), [1])
     # --- end library-updates-frontend ------------------------------------------------------
+
+    # --- agent-j4-smoke (AGT-S10, J-4) -----------------------------------------------------
+    def test_the_obligation_j4_versions_is_its_own_and_reaches_tenant_a_with_or_without_advice(self) -> None:
+        """AGT-S10: the officer finds the version J-4's agent filed on the obligation card and
+        on "Library updates", which lists only what reaches the bank's footprint, so the duty
+        reaches tenant A with or without Advice. Nothing else the seed files names it, and no
+        proposal waits on it, so the only version beyond 1 is one the journey produced."""
+        seed_e2e()
+        self.assertNotIn(J4_OBLIGATION, {expected.target for expected in EXPECTED_PROPOSALS})
+        self.assertNotIn(J4_OBLIGATION, {PRO_S7_OBLIGATION, RECHECK_OBLIGATION, CONFIRMED_LINK_OBLIGATION, SUGGESTED_LINK_OBLIGATION})
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        footprint = footprint_of(tenant_a.id)
+        without = {dimension: set(keys) for dimension, keys in footprint.items()}
+        for ref in EXPECTED_PENDING_REQUEST.removes:
+            dimension, key = ref.split(":")
+            without[dimension].discard(key)
+        obligation = (
+            Obligation.objects.select_related("instrument__regime__dimension")
+            .prefetch_related("terms__dimension")
+            .get(stable_key=J4_OBLIGATION)
+        )
+        restricting = restricting_dimensions()
+        self.assertTrue(in_footprint(_scope(obligation), footprint, restricting=restricting))
+        self.assertTrue(in_footprint(_scope(obligation), without, restricting=restricting))
+        self.assertEqual(list(ObligationVersion.objects.filter(obligation=obligation).values_list("version_number", flat=True)), [1])
+        self.assertFalse(Proposal.objects.filter(target_id=obligation.id, status=ProposalStatus.OPEN.value).exists())
+    # --- end agent-j4-smoke ----------------------------------------------------------------
 
     # --- FP-S4 (FP-03, tax-fp-s4-journey) ----------------------------------------------------
     def test_every_seeded_case_carries_the_verdict_the_scope_rule_gives(self) -> None:

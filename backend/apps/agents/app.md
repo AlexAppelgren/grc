@@ -53,7 +53,7 @@ content screen ship (chunk 5). Definitions, tenant controls, research
 requests and the runner adapter are R2 (chunk 11). The first real runner is
 decided after that chunk (D-08).
 
-The records are in place ahead of the routes (AGT-01, `in_progress`): `agent`
+The records came ahead of the routes (AGT-01): `agent`
 rows loaded from `backend/agents/<agent>/v<n>/definition.yaml` by `seed_reference`,
 `agent_run` as the provenance anchor of everything an agent writes, and
 `api_key.agent` so the audit log names the agent behind a key rather than the
@@ -64,8 +64,10 @@ change and proposal from a key bound to an agent names an open run of that key,
 a step naming another key's run is not found, and a bank's key writes nothing to
 the watch. AGT-S15 (the confirming agent) is green: `library-confirmer` decides
 the sweeper's proposals inside a run of its own, and a key of the proposing
-definition is refused by four eyes. AGT-01 stays `in_progress` until AGT-S10
-(the J-4 journey) is green as well.
+definition is refused by four eyes. AGT-S10 (the J-4 journey, `@smoke`) walks the
+same flow in the real stack on a key a platform administrator mints in the console
+behind a passkey, and a bank's officer reads what the approval produced. With both
+green, AGT-01 is built.
 
 Two definitions ship: `watch-sweeper` (kind `watch`), which proposes, and
 `library-confirmer` (kind `review`, D-62, D-80), which decides what another
@@ -102,7 +104,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | in_progress |
+| AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | built |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | built |
 | AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | pending |
 | AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61) | M | R2 | pending |
@@ -224,12 +226,17 @@ And the text is stored as data, never executed and never rendered as HTML
 
 ### AGT-S10 — J-4: an agent registers a change and a proposal, an editor approves, the tenant sees what changed `@e2e` (AGT-01, WAT-02, PRO-02, INV-04, J-4)
 ```gherkin
-Given the seeded agent key and library editor
-When the key registers a change and submits a proposal for an obligation summary
-And the editor approves it in the console
-Then the obligation shows version 2 with "Show what changed"
-And the tenant's "Library updates" lists the change
+Given a watch-sweeper key a platform administrator minted in the console with a passkey step-up
+When the key opens a run, registers a change with its regime term, files a new version of an obligation's summary under that change and run with a source per field, and closes the run
+And a library editor approves it in the console queue with a passkey step-up
+Then the bank's officer finds the version the approval produced on the obligation, with "Show what changed"
+And the bank's "Library updates" lists it
+And the watch feed shows the change under "Needs triage"
 ```
+
+The journey versions its own obligation (`J4_OBLIGATION` in `apps/shared/e2e_seed.py`),
+which no other spec or seed names, and asserts the version its approval produced rather
+than a number, so a retry proves the same thing.
 
 ### AGT-S11 — A tenant agent's default scope is the operating markets first, then the watched ones `@integration` (AGT-04)
 ```gherkin
