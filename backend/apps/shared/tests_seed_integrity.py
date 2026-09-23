@@ -60,6 +60,7 @@ from apps.shared.e2e_seed import (
     EXPECTED_PROPOSALS,
     EXPECTED_TENANTS,
     EXPECTED_WATCHED_MARKETS,
+    WATCHED_MARKET_OBLIGATION,
     PRO_S7_OBLIGATION,
     RECHECK_OBLIGATION,
     SUGGESTED_LINK_OBLIGATION,
@@ -309,9 +310,10 @@ class SeedIntegrityGuard(TestCase):
 
     def test_switching_off_advice_hides_an_obligation_of_tenant_a(self) -> None:
         """J-6, FP-01, FP-03, AC-FP1: the pending request switches Advice off. With Advice in
-        tenant A's footprint the only obligation hidden is FP-S4's own outside one
-        (`EXPECTED_OUTSIDE_SCOPE`); without it at least one more is, the advice-only sample
-        obligation among them."""
+        tenant A's footprint the only obligation its own terms and regime hide is FP-S4's
+        outside one (`EXPECTED_OUTSIDE_SCOPE`); without it at least one more is, the
+        advice-only sample obligation among them. `_scope()` derives no jurisdiction, so the
+        Danish and Norwegian rules tenant A's Swedish scope hides are FP-S13's, not these."""
         seed_e2e()
         tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
         tenancy.activate(tenant_a.id)
@@ -774,7 +776,8 @@ class SeedIntegrityGuard(TestCase):
         """FP-04: the markets journeys need Danish and Norwegian rules. Each country has its
         financial supervisory authority and one act under a regime term, with a dated
         in-force precision, and between them obligations for Custody and for Advice that
-        reach tenant A, whose scope names no jurisdiction."""
+        match tenant A's scope in every dimension but jurisdiction (`_scope()` derives none):
+        tenant A operates in Sweden, so what reaches it from Denmark is what watching adds."""
         seed_e2e()
         for key, country in (("finanstilsynet-dk", "dk"), ("finanstilsynet-no", "no")):
             with self.subTest(authority=key):
@@ -809,3 +812,26 @@ class SeedIntegrityGuard(TestCase):
         seed_e2e()
         self.assertEqual(MockMailer.sent, [])
     # --- end tax-nordic-seed -----------------------------------------------------------------
+
+    # --- tax-watched-inventory (FP-04, FP-S13) -------------------------------------------------
+    def test_tenant_a_markets_we_watch_view_holds_the_danish_custody_rule(self) -> None:
+        """FP-S13's journey reads tenant A as seeded: operating in Sweden, providing Custody
+        and watching Denmark. So "Markets we watch" lists the Danish custody obligation and its
+        act and nothing from another market; the Norwegian rule, whose market nobody watches,
+        is not there and is outside the scope; the default view hides the Danish one."""
+        from apps.library.reading import in_view
+
+        seed_e2e()
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        tenancy.activate(tenant_a.id)
+        self.assertIn("jurisdiction:se", EXPECTED_FOOTPRINTS[TENANT_A_SLUG])
+        self.assertEqual(EXPECTED_WATCHED_MARKETS[TENANT_A_SLUG], ("dk",))
+        watched = in_view(Obligation.objects.all(), tenant_a, "watched")
+        self.assertIn(WATCHED_MARKET_OBLIGATION, set(watched.values_list("stable_key", flat=True)))
+        self.assertEqual(set(watched.values_list("instrument__jurisdiction__key", flat=True)), {"dk"})
+        self.assertEqual(set(in_view(Instrument.objects.all(), tenant_a, "watched").values_list("jurisdiction__key", flat=True)), {"dk"})
+        norwegian = Obligation.objects.filter(instrument__jurisdiction__key="no")
+        self.assertTrue(norwegian.exists())
+        self.assertFalse(in_view(norwegian, tenant_a, "in").exists())
+        self.assertFalse(in_view(Obligation.objects.filter(stable_key=WATCHED_MARKET_OBLIGATION), tenant_a, "in").exists())
+    # --- end tax-watched-inventory -------------------------------------------------------------

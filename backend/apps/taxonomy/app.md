@@ -289,11 +289,11 @@ And the database check constraint refuses the row on its own
 
 ### FP-S4 — Every surface respects the regulatory scope and offers a way to look outside it `@integration` `@e2e` (FP-03)
 ```gherkin
-Given a regulatory scope without "Advice"
+Given a regulatory scope that leaves a term out
 When a user opens the feed, the inventory, the roadmap and the briefing
-Then advice-only records are absent from each
-When they choose "Show outside our scope" on the inventory
-Then the advice-only records appear marked as outside our scope
+Then the records whose only term in that dimension is the one left out are absent from each
+When they choose "Show outside our scope" in the inventory's Scope filter
+Then those records appear marked as outside our scope
 ```
 Reports are the note below.
 
@@ -329,7 +329,7 @@ Reports are the note below.
 > **Note — the Instruments tab.** Chunk3-rest (T17) split the inventory into an
 > Obligations tab and an Instruments tab. Both filter through the same footprint rule
 > (`reading.obligation_scopes()` and `reading.instrument_scopes()`, one rule for both kinds,
-> INV-01) and both carry their own "Show outside our scope" switch, so the scenario above
+> INV-01) and both carry their own Scope filter with the same three values (FP-S13), so the scenario above
 > holds unchanged for the new tab: an instrument outside the regulatory scope is absent by
 > default and appears marked as outside it when a reader asks to see past the scope.
 
@@ -446,6 +446,15 @@ And the Danish "Advice" obligation is absent, because the other dimensions still
 And no EU or Swedish obligation is listed, because they are already in the footprint
 And the list takes one footprint filter value, so no contradictory pair can be sent
 ```
+
+> **Note — one value on both lists (tax-watched-inventory).** `GET /obligations` and
+> `GET /instruments` take `footprint=in|all|watched` in place of the retired
+> `outsideFootprint`, which now answers 422 as the watch feed's `inFootprint` does.
+> `watched` asks `taxonomy_in_footprint`, unchanged, twice: the record is outside the scope,
+> and inside it once the jurisdiction terms it reaches are set aside; a derived jurisdiction
+> must be one the bank watches. Each obligation row carries its instrument's `jurisdiction`,
+> which the screen's "Market we watch: Denmark" reads. `GET /library-updates` keeps its
+> boolean `outsideFootprint` (D-8x, tax-watched-inventory).
 
 ### FP-S14 — Markets stay inside the tenant and out of logs and error reports `@integration` (FP-04, NFR-01, AC-NFR1)
 ```gherkin

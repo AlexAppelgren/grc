@@ -68,9 +68,10 @@ ALL_SERVICES = (
 # instruments' regime terms, the terms: 5, chunk3-rest-T13 — obligation_scopes() now
 # inherits through instrument_scopes() so the two verdicts share one rule, at the cost of
 # two more queries than the union it replaced); the tags of the page and their rows (2); one
-# label query each for terms, tags, duty types and levels (4); the dimensions with their term
-# counts and labels (2).
-LIST_QUERIES = 2 + 6 + 2 + 2 + 2 + 2 + 5 + 2 + 4 + 2
+# label query each for terms, tags, duty types, levels and, since tax-watched-inventory
+# (2026-09-23, FP-04), the instruments' jurisdictions a row now names (5); the dimensions
+# with their term counts and labels (2).
+LIST_QUERIES = 2 + 6 + 2 + 2 + 2 + 2 + 5 + 2 + 5 + 2
 # Queries per card read, measured 2026-09-19 and pinned the same way: the savepoint pair (2);
 # the session (6) and the caller's tenant and locale (2), as above; the obligation with its
 # instrument, level, duty type and verifier (1); its titles, its instrument's titles, its
@@ -169,7 +170,7 @@ class ObligationListTests(TestCase):
         return self.client.get(URL, params, **(headers if headers is not None else sign_in(self.reader, tenant=self.tenant)))
 
     def row(self, key: str, params: dict[str, Any]) -> dict[str, Any]:
-        response = self.get({"outsideFootprint": "true", **params})
+        response = self.get({"footprint": "all", **params})
         self.assertEqual(response.status_code, 200, response.content)
         return next(row for row in response.json()["items"] if row["stableKey"] == key)
 
@@ -207,7 +208,7 @@ class ObligationListTests(TestCase):
 
     def test_rows_outside_the_footprint_are_hidden_until_asked_for_with_their_reason(self) -> None:
         self.assertEqual(keys(self.get({})), ["obl-a-appropriateness", "obl-d-research", "obl-e-guidance", "obl-f-unscoped"])
-        everything = self.get({"outsideFootprint": "true"}).json()
+        everything = self.get({"footprint": "all"}).json()
         self.assertEqual(everything["total"], 6)
         rows = {row["stableKey"]: row for row in everything["items"]}
         # The SQL filter and the Python verdict are one rule: what the default hides is what
@@ -300,7 +301,7 @@ class ObligationListTests(TestCase):
         reader = user_principal(permissions={perms.LIBRARY_READ}, tenant_id=self.tenant.id, subject_id=self.reader.id)
         for instant, expected in ((datetime.datetime(2026, 9, 30, 21, 59, tzinfo=datetime.UTC), 1), (datetime.datetime(2026, 9, 30, 22, 0, tzinfo=datetime.UTC), 2)):
             with self.subTest(instant=instant), stub_session(reader), mock.patch("django.utils.timezone.now", return_value=instant):
-                response = self.get({"outsideFootprint": "true"}, headers)
+                response = self.get({"footprint": "all"}, headers)
                 research = next(row for row in response.json()["items"] if row["stableKey"] == "obl-d-research")
                 self.assertEqual(research["version"]["versionNumber"], expected)
 
@@ -315,7 +316,7 @@ class ObligationListTests(TestCase):
             "the regime is inherited",
         )
         self.assertEqual(keys(self.get({"term": ["service_type:execution_only", "account_type:isk"]})), ["obl-a-appropriateness"], "every term must match")
-        self.assertEqual(keys(self.get({"term": "regime:insurance", "outsideFootprint": "true"})), ["obl-c-insurance"])
+        self.assertEqual(keys(self.get({"term": "regime:insurance", "footprint": "all"})), ["obl-c-insurance"])
         self.assertEqual(keys(self.get({"q": "PASSAR"})), ["obl-a-appropriateness"], "a title in any language, any case")
         self.assertEqual(keys(self.get({"q": "third-party"})), ["obl-d-research"], "the reference label")
         self.assertEqual(keys(self.get({"q": "nothing like this"})), [])
@@ -379,7 +380,7 @@ class ObligationListPerformance(TestCase):
 
     def test_a_full_page_stays_inside_the_budget(self) -> None:
         headers = sign_in(self.reader, tenant=self.tenant)
-        params: dict[str, Any] = {"outsideFootprint": "true", "limit": settings.API_PAGE_SIZE_MAX, "asOf": EARLY.isoformat()}
+        params: dict[str, Any] = {"footprint": "all", "limit": settings.API_PAGE_SIZE_MAX, "asOf": EARLY.isoformat()}
         with self.assertNumQueries(LIST_QUERIES):
             response = self.client.get(URL, params, **headers)
         self.assertEqual(len(response.json()["items"]), settings.API_PAGE_SIZE_MAX)
@@ -462,7 +463,7 @@ class JurisdictionDerivationTests(TestCase):
         """The reading D-28 and D-29 give: the derived terms are the record's scope as the
         rule sees it, so the card lists them and names them when they hide the record."""
         set_footprint(self.tenant, ("jurisdiction:dk",))
-        response = self.client.get(URL, {"outsideFootprint": "true"}, **sign_in(self.reader, tenant=self.tenant))
+        response = self.client.get(URL, {"footprint": "all"}, **sign_in(self.reader, tenant=self.tenant))
         rows = {row["stableKey"]: row for row in response.json()["items"]}
         union = {entry["dimension"]["key"]: entry for entry in rows["obl-derived-eu"]["scope"]}["jurisdiction"]
         self.assertEqual(([term["key"] for term in union["terms"]], union["allSelected"]), (["eu", "se", "dk", "no", "fi"], True))
@@ -973,19 +974,19 @@ class PrivateObligationIsolation(TransactionTestCase):
         with as_app_role():
             for params in (
                 {},
-                {"outsideFootprint": "true"},
-                {"q": "private duty", "outsideFootprint": "true"},
-                {"instrument": "bank-b-policy", "outsideFootprint": "true"},
-                {"term": "service_type:non_advised", "outsideFootprint": "true"},
-                {"dutyType": "conduct", "outsideFootprint": "true"},
+                {"footprint": "all"},
+                {"q": "private duty", "footprint": "all"},
+                {"instrument": "bank-b-policy", "footprint": "all"},
+                {"term": "service_type:non_advised", "footprint": "all"},
+                {"dutyType": "conduct", "footprint": "all"},
             ):
                 with self.subTest(params=params):
                     page = self.get(self.key_a, params)
                     self.assertNotIn("obl-b-private", [row["stableKey"] for row in page["items"]])
                     self.assertEqual(page["total"], len(page["items"]), "the total counts only what the tenant may see")
-            self.assertEqual(self.get(self.key_a, {"outsideFootprint": "true"})["total"], 6)
+            self.assertEqual(self.get(self.key_a, {"footprint": "all"})["total"], 6)
             # The owner sees it beside the shared library, so the proof above is not vacuous.
-            own = self.get(self.key_b, {"q": "private duty", "outsideFootprint": "true"})
+            own = self.get(self.key_b, {"q": "private duty", "footprint": "all"})
             self.assertEqual([row["stableKey"] for row in own["items"]], ["obl-b-private"])
 
     def test_another_tenants_private_obligation_has_no_address_either(self) -> None:
@@ -1067,7 +1068,7 @@ class InstrumentListTests(TestCase):
         return self.client.get("/api/v1/instruments", params, **(headers if headers is not None else sign_in(self.reader, tenant=self.tenant)))
 
     def row(self, key: str, params: dict[str, Any]) -> dict[str, Any]:
-        response = self.get({"outsideFootprint": "true", **params})
+        response = self.get({"footprint": "all", **params})
         self.assertEqual(response.status_code, 200, response.content)
         return next(row for row in response.json()["items"] if row["stableKey"] == key)
 
@@ -1100,12 +1101,12 @@ class InstrumentListTests(TestCase):
     def test_obligation_count_follows_the_footprint(self) -> None:
         inside = self.default_row("fffs-instruments")
         self.assertEqual(inside["obligationCount"], 1)
-        everything = self.row("fffs-instruments", {"outsideFootprint": "true"})
+        everything = self.row("fffs-instruments", {"footprint": "all"})
         self.assertEqual(everything["obligationCount"], 2)
 
     def test_rows_outside_the_footprint_are_hidden_until_asked_for(self) -> None:
         self.assertEqual({row["stableKey"] for row in self.get({}).json()["items"]}, {"fffs-instruments", "fffs-amendment-instruments"})
-        everything = self.get({"outsideFootprint": "true"}).json()
+        everything = self.get({"footprint": "all"}).json()
         self.assertEqual({row["stableKey"] for row in everything["items"]}, {"fffs-instruments", "fffs-amendment-instruments", "lfd-instruments"})
         insurance_row = next(row for row in everything["items"] if row["stableKey"] == "lfd-instruments")
         self.assertFalse(insurance_row["inFootprint"])
@@ -1120,10 +1121,10 @@ class InstrumentListTests(TestCase):
         # the footprint hides hides every obligation under it, even one whose own service is
         # inside, and every obligation the footprint shows sits under an instrument it shows,
         # which counts exactly the obligations the list filtered by it answers.
-        instruments = {row["stableKey"]: row for row in self.get({"outsideFootprint": "true"}).json()["items"]}
+        instruments = {row["stableKey"]: row for row in self.get({"footprint": "all"}).json()["items"]}
         shown_instruments = {row["stableKey"]: row for row in self.get({}).json()["items"]}
 
-        hidden = self.obligations({"instrument": "lfd-instruments", "outsideFootprint": "true"})
+        hidden = self.obligations({"instrument": "lfd-instruments", "footprint": "all"})
         self.assertFalse(instruments["lfd-instruments"]["inFootprint"])
         self.assertEqual([row["stableKey"] for row in hidden], ["obl-instruments-insurance"], "an empty list would prove nothing")
         self.assertEqual([row["inFootprint"] for row in hidden], [False])
@@ -1154,13 +1155,13 @@ class InstrumentListTests(TestCase):
                 self.assertEqual((refused.status_code, refused.json()["requiredPermission"]), (403, perms.SCOPE_LIBRARY_READ))
 
     def test_every_filter(self) -> None:
-        self.assertEqual({row["stableKey"] for row in self.get({"regime": "securities", "outsideFootprint": "true"}).json()["items"]}, {"fffs-instruments", "fffs-amendment-instruments"})
+        self.assertEqual({row["stableKey"] for row in self.get({"regime": "securities", "footprint": "all"}).json()["items"]}, {"fffs-instruments", "fffs-amendment-instruments"})
         self.assertEqual(self.get({"regime": "no-such-regime"}).json()["items"], [], "an unknown key matches nothing")
         self.assertEqual({row["stableKey"] for row in self.get({"q": "FFFS 2017"}).json()["items"]}, {"fffs-instruments"})
         self.assertEqual(self.get({"q": "x" * 201}).status_code, 422)
 
     def test_pagination(self) -> None:
-        first = self.get({"outsideFootprint": "true", "limit": 2}).json()
+        first = self.get({"footprint": "all", "limit": 2}).json()
         self.assertEqual(len(first["items"]), 2)
         self.assertEqual(first["total"], 3)
         self.assertEqual(self.get({"limit": 101}).status_code, 422)
@@ -1176,7 +1177,7 @@ class InstrumentListTests(TestCase):
         for limit in (1, 3):
             headers = sign_in(self.reader, tenant=self.tenant)
             with self.subTest(limit=limit), self.assertNumQueries(INSTRUMENT_LIST_QUERIES):
-                response = self.get({"outsideFootprint": "true", "limit": limit}, headers)
+                response = self.get({"footprint": "all", "limit": limit}, headers)
             self.assertEqual(len(response.json()["items"]), limit)
 
     def test_a_person_needs_library_read_and_a_key_needs_library_read_scope(self) -> None:
@@ -1299,7 +1300,7 @@ class PrivateInstrumentIsolation(TransactionTestCase):
 
     def test_another_tenants_private_instrument_is_never_read_or_addressed(self) -> None:
         with as_app_role():
-            for params in ({}, {"outsideFootprint": "true"}, {"q": "bank-b", "outsideFootprint": "true"}, {"regime": "securities", "outsideFootprint": "true"}):
+            for params in ({}, {"footprint": "all"}, {"q": "bank-b", "footprint": "all"}, {"regime": "securities", "footprint": "all"}):
                 with self.subTest(params=params):
                     response = self.client.get("/api/v1/instruments", params, HTTP_X_API_KEY=self.key_a.plain_key)
                     self.assertEqual(response.status_code, 200, response.content)
