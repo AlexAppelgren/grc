@@ -778,8 +778,9 @@ def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposa
         before={"from": payload.key, "active": True},
         after={
             "into": payload.into,
-            "repointed": sum(moved.values()),
-            "moved": moved,
+            "repointed": repoint.count(moved),
+            "moved": {table: len(rows.moved) for table, rows in moved.items()},
+            "rows": repoint.audit_rows(moved),
             "active": False,
             "proposal": str(proposal.id),
         },

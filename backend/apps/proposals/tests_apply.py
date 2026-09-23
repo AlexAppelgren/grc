@@ -665,6 +665,8 @@ class LibraryMergeRepoints(ScenarioTestCase):
         watch_build.term_link(both, flag_key="client_money")
         only = watch_build.change()
         watch_build.term_link(only, flag_key="client_funds")
+        twin = ChangeTerm.objects.get(change=both, flag=funds)
+        moving = ChangeTerm.objects.get(change=only, flag=funds)
 
         preview = self._preview("flag", "client_funds", "client_money")
         # Two changes carry it; one already carries the target, so one link moves.
@@ -681,6 +683,11 @@ class LibraryMergeRepoints(ScenarioTestCase):
         self.assertEqual((audit.before["from"], audit.after["into"]), ("client_funds", "client_money"))
         self.assertEqual(audit.after["repointed"], preview["repointed"])
         self.assertEqual(audit.after["moved"], {ChangeTerm._meta.db_table: 1})
+        # The audit row names the link that moved and the twin that went (H23), so which
+        # change carried the merged-away flag can be rebuilt from the log alone.
+        self.assertEqual(audit.after["rows"], {ChangeTerm._meta.db_table: {"moved": [str(moving.id)], "dropped": [str(twin.id)]}})
+        self.assertEqual(ChangeTerm.objects.get(pk=moving.pk).flag_id, Flag.objects.get(key="client_money").id)
+        self.assertFalse(ChangeTerm.objects.filter(pk=twin.pk).exists())
 
     def test_a_tag_merge_moves_obligation_tags_inside_the_approval(self) -> None:
         self._new("library_tag", "retrocessions", "Retrocessions")
@@ -711,11 +718,12 @@ class LibraryMergeRepoints(ScenarioTestCase):
         twice = library_build.instrument(key="fffs-2026-11", regime="regime:securities")
         once = library_build.instrument(key="fffs-2026-12", regime="regime:securities")
         library_build.relate_instruments(twice, amended, relation="amends")
-        library_build.relate_instruments(twice, amended, relation="amends_in_part")
-        library_build.relate_instruments(once, amended, relation="amends_in_part")
+        twin = library_build.relate_instruments(twice, amended, relation="amends_in_part")
+        moving = library_build.relate_instruments(once, amended, relation="amends_in_part")
         first = library_build.obligation(amended, key="obl-first")
         second = library_build.obligation(amended, key="obl-second")
         library_build.relate(first, second, relation="amends_in_part")
+        between = ObligationRelation.objects.get(relation_type=in_part)
 
         preview = self._preview("relation_type", "amends_in_part", "amends")
         self.assertEqual((preview["usageCount"], preview["repointed"]), (3, 2))
@@ -723,7 +731,15 @@ class LibraryMergeRepoints(ScenarioTestCase):
 
         relations = InstrumentRelation.objects.filter(to_instrument=amended)
         self.assertEqual(sorted(relations.values_list("from_instrument__stable_key", "relation_type__key")), [("fffs-2026-11", "amends"), ("fffs-2026-12", "amends")])
-        self.assertEqual(self._merged_audit(in_part).after["moved"], {InstrumentRelation._meta.db_table: 1, ObligationRelation._meta.db_table: 1})
+        audit = self._merged_audit(in_part)
+        self.assertEqual(audit.after["moved"], {InstrumentRelation._meta.db_table: 1, ObligationRelation._meta.db_table: 1})
+        self.assertEqual(
+            audit.after["rows"],
+            {
+                InstrumentRelation._meta.db_table: {"moved": [str(moving.id)], "dropped": [str(twin.id)]},
+                ObligationRelation._meta.db_table: {"moved": [str(between.id)], "dropped": []},
+            },
+        )
 
     def test_a_merge_the_database_refuses_leaves_nothing_changed(self) -> None:
         self._new("instrument_level", "national_act", "National act", {"bindingDefault": True, "rank": 41})

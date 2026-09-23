@@ -34,6 +34,7 @@ from django.utils.text import slugify
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
 from apps.shared.vocabulary import LibraryVocabulary
+from apps.taxonomy import repoint
 from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of, extra_of, label_of
 from apps.taxonomy.registry import REGISTRY, VocabularyList
 from apps.taxonomy.schemas import (
@@ -625,9 +626,10 @@ def merge(
         # A preview changes nothing and is not a write, so it leaves no audit row: the
         # audit log answers "what changed", and nothing did (AUD-01).
         return VocabularyMerged(
-            **{"from": key}, into=into, usage_count=count, repointed=entry.repoint(source, target, dry_run=True), dry_run=True
+            **{"from": key}, into=into, usage_count=count, repointed=repoint.count(entry.repoint(source, target, dry_run=True)), dry_run=True
         )
-    repointed = entry.repoint(source, target, dry_run=False)
+    moves = entry.repoint(source, target, dry_run=False)
+    repointed = repoint.count(moves)
     source.active = False
     source.version = getattr(source, "version", 1) + 1
     source.save(update_fields=["active", "version"])
@@ -640,7 +642,7 @@ def merge(
         summary=f"Merged {key} into {into} on {list_name}.",
         tenant_id=tenant.id,
         before={"from": key, "usageCount": count, "active": True},
-        after={"into": into, "repointed": repointed, "active": False},
+        after={"into": into, "repointed": repointed, "rows": repoint.audit_rows(moves), "active": False},
     )
     return VocabularyMerged(**{"from": key}, into=into, usage_count=count, repointed=repointed, dry_run=False)
 
