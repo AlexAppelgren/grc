@@ -152,6 +152,19 @@ to the destination's own real-data locator in `frontend/tests/e2e/support/screen
 skeleton that lingers or a `next dev` build fails it. The medians go in the Measured column of
 `docs/plans/UI_Implementation_Plan.md`.
 
+> **Note — NFR-02's R1 part (`r1-perf`, 2026-09-23).** `backend/perf/routes.py` measures 139
+> of the 140 API operations as the principal that calls each in R1 (a member, with a step-up
+> where the route demands one; platform staff; the watch sweeper's real agent key; no one
+> before a session); only `e2eMailOutbox`, which exists under `E2E_MODE` alone, is left out.
+> `backend/perf/baseline.json` is recorded on a fresh `seed_e2e` slot: every p95 is inside
+> its budget, the highest `createConsoleTenant` at about 200 ms, search about 56 ms against
+> 1.5 s and Ask's first event about 51 ms against 2 s. At 3000 obligations the footprint rule
+> had put `GET /obligations` and search over budget; taxonomy 0008 reads a bank's footprint
+> once per query, not once per row (`apps/taxonomy/tests_matching.py` pins the plan). NFR-S7's
+> medians are in the UI plan. Real-model and real-embedder timings wait for the D-07 and D-09
+> keys. Chunk 14 adds the load profile, the deployed measurement against `next start` on
+> Railway and the R2 and R3 routes as they land, each as a new block of rows in `routes.py`.
+
 ### NFR-S8 — The pill gallery matches the design card in both themes `@e2e` (NFR-03, AC-NFR3)
 ```gherkin
 Given the /dev/pills gallery route rendering every tone, slot and record type
