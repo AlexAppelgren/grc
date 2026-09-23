@@ -138,12 +138,18 @@ And an event completed with step-up shows that a passkey was used
 ```gherkin
 Given a So what draft, an Ask answer and an agent classification
 Then each has an ai_generation row with purpose, model, version, input reference, output, citations and review state pending
-When a person confirms the So what
-Then its row's review state is confirmed with the person and time
+When a person in bank A confirms the So what on their case
+Then bank A reads the row's review state as confirmed with the person and time
+And bank B, which has not confirmed its own copy, reads the same row as a draft
+And nothing on the shared row is written
 When a person marks an answer as wrong
 Then feedback is stored on the row
-And a holder of ai_log.read can list the rows for their tenant
+And a holder of ai_log.read can list the rows for their tenant, narrowed to one record
 ```
+
+A library "So what?" is one row every bank reads and none may move (ruling I), so its
+review state is computed for the reading bank from that bank's own `change_case`
+(`so_what_confirmed_by`, `so_what_confirmed_at`), and nothing shared is written (D-62).
 
 ### AUD-S5 — A problem report stays inside the bank that filed it `@integration` `@e2e` (AUD-03)
 ```gherkin
