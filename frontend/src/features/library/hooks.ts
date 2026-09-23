@@ -78,11 +78,15 @@ export const INSTRUMENT_PAGE = 20;
 /** The route's maximum page: the instrument filter's options, so a picker is not cut at the tab's first page. */
 export const INSTRUMENT_OPTIONS = 100;
 
-/** The Instruments tab (a page of 20) and the instrument filter's options (the route's maximum of 100). */
-export function useInstruments(query: InstrumentQuery, limit: number = INSTRUMENT_PAGE): UseQueryResult<Page<Instrument>> {
+/**
+ * The Instruments tab (a page of 20) and the instrument filter's options (the route's
+ * maximum of 100). `enabled` holds back a read only some states need.
+ */
+export function useInstruments(query: InstrumentQuery, limit: number = INSTRUMENT_PAGE, enabled = true): UseQueryResult<Page<Instrument>> {
   return useQuery({
     queryKey: libraryKeys.instruments(query, limit),
     queryFn: () => library.listInstruments({ ...query, limit, offset: 0 }),
+    enabled,
   });
 }
 

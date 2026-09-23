@@ -96,11 +96,21 @@ const fffs: Instrument = {
   sourceUrl: 'https://www.fi.se/en/published/regulations/2017/fffs-20172/',
 };
 
-/** The server: /me for the format context, the taxonomy and vocabulary reads for the filters, and the page. */
-function serve(page: { items: Obligation[]; total: number } | 'error', instrumentPage: { items: Instrument[]; total: number } = { items: [fffs], total: 1 }) {
+/**
+ * The server: /me for the format context, the taxonomy and vocabulary reads for the filters, and the page.
+ * `outsidePage` answers the instrument reads that lift the footprint filter; by default the same page.
+ */
+function serve(
+  page: { items: Obligation[]; total: number } | 'error',
+  instrumentPage: { items: Instrument[]; total: number } = { items: [fffs], total: 1 },
+  outsidePage: { items: Instrument[]; total: number } = instrumentPage,
+) {
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/obligations') return page === 'error' ? { status: 500 } : { status: 200, data: page };
-    if (sent.path === '/api/v1/instruments') return { status: 200, data: instrumentPage };
+    if (sent.path === '/api/v1/instruments') {
+      const outside = (sent.params as { outsideFootprint?: boolean } | null)?.outsideFootprint === true;
+      return { status: 200, data: outside ? outsidePage : instrumentPage };
+    }
     if (sent.path === '/api/v1/me') return { status: 200, data: { user: { id: 'u1', name: 'Sara', locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: [], enrolmentPending: false } };
     if (sent.path === '/api/v1/taxonomy/terms') return { status: 200, data: { items: [{ dimension: { key: 'regime' }, key: 'securities', kind: null, label: 'Securities' }], total: 1 } };
     return { status: 200, data: [{ key: 'conduct', kind: null, label: 'Conduct', labels: { en: 'Conduct' }, usageNote: '', sortOrder: 1, active: true, isSystem: true, isDefault: true, usageCount: 2, extra: {} }] };
@@ -306,20 +316,46 @@ describe('InventoryScreen', () => {
     expect(nav.replace).toHaveBeenCalledWith('/inventory?instrument=fffs-2017-2');
   });
 
-  it('keeps an instrument the options do not list as the picked one, never "All instruments", while it filters', async () => {
+  it('keeps an instrument outside our scope as the picked one, by its name, never "All instruments", while it filters', async () => {
     // An instrument outside our scope, reached from its own card: the list is
-    // filtered by it, so the picker says so rather than claiming no filter.
+    // filtered by it, so the picker says so rather than claiming no filter, and
+    // names it from the instruments outside our scope, read only for this.
     nav.search = 'instrument=lfd-2005-405';
-    const sent = serve({ items: [], total: 0 });
+    const lfd: Instrument = { ...fffs, id: 'in-2', stableKey: 'lfd-2005-405', shortName: 'LFD', inFootprint: false };
+    const sent = serve({ items: [], total: 0 }, { items: [fffs], total: 1 }, { items: [fffs, lfd], total: 2 });
     renderIn(<InventoryScreen />);
     const instrument = (await screen.findByLabelText('Instrument')) as HTMLSelectElement;
-    await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined());
+    await waitFor(() => expect(within(instrument).getByRole('option', { name: 'LFD' })).toHaveProperty('selected', true));
     expect(instrument.value).toBe('lfd-2005-405');
-    expect(within(instrument).getByRole('option', { name: 'lfd-2005-405' })).toHaveProperty('selected', true);
+    expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined();
+    expect(within(instrument).queryByRole('option', { name: 'lfd-2005-405' })).toBeNull();
+    expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ outsideFootprint: true, limit: 100 }));
     expect(sent.find((s) => s.path === '/api/v1/obligations')?.params).toMatchObject({ instrument: 'lfd-2005-405' });
     // Choosing "All instruments" clears it like any other filter.
     fireEvent.change(instrument, { target: { value: '' } });
     expect(nav.replace).toHaveBeenCalledWith('/inventory');
+  });
+
+  it('falls back to the key only for an instrument no read names', async () => {
+    nav.search = 'instrument=sfs-1999-999';
+    const sent = serve({ items: [], total: 0 });
+    renderIn(<InventoryScreen />);
+    const instrument = (await screen.findByLabelText('Instrument')) as HTMLSelectElement;
+    // Neither the options in our scope nor the ones outside it name this key.
+    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ outsideFootprint: true })));
+    await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toBeDefined());
+    expect(instrument.value).toBe('sfs-1999-999');
+    expect(within(instrument).getByRole('option', { name: 'sfs-1999-999' })).toHaveProperty('selected', true);
+  });
+
+  it('asks for the instruments outside our scope only when the picked one is not an option', async () => {
+    nav.search = 'instrument=fffs-2017-2';
+    const sent = serve({ items: [research], total: 1 });
+    renderIn(<InventoryScreen />);
+    const instrument = (await screen.findByLabelText('Instrument')) as HTMLSelectElement;
+    await waitFor(() => expect(within(instrument).getByRole('option', { name: 'FFFS 2017:2 (2)' })).toHaveProperty('selected', true));
+    await screen.findByText('1 obligation');
+    expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).not.toContainEqual(expect.objectContaining({ outsideFootprint: true }));
   });
 
   it('switches to the Instruments tab, carrying the tab and the filters in the URL', async () => {
