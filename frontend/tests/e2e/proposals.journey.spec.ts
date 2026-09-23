@@ -1,5 +1,7 @@
 import type { Page } from '@playwright/test';
 
+import { destinations } from '@/shared/navigation/registry';
+
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, LOGINS, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
@@ -27,6 +29,9 @@ const COSTS_CHARGES_TITLE = 'Add version 2 of the costs and charges obligation, 
 const PENSION_TRANSFER_TITLE = 'Add version 2 of the pension transfer obligation, with a one-month deadline for the transfer';
 const PENSION_TRANSFER_SOURCE = 'Riksdagen, Försäkringsavtalslagen (2005:104), consolidated text';
 const PENSION_TRANSFER_OBLIGATION = "Honour the policyholder's right to transfer pension insurance savings";
+// The console's destinations, read from the registry (src/shared/navigation/registry.ts)
+// and never from a list written here, as ADM-S4 reads them.
+const CONSOLE_HREFS: readonly string[] = destinations.filter((d) => d.surface === 'console').map((d) => d.href);
 
 /** The queue has settled when its rows or its empty state is on screen (states.html). */
 async function queueSettled(page: Page): Promise<void> {
@@ -182,12 +187,23 @@ test.describe('proposals journeys', () => {
     await expect(proposal).toContainText(PENSION_TRANSFER_SOURCE);
     await expect(proposal.locator('a[href="https://www.riksdagen.se/"]').first()).toBeVisible();
     await approveAndApply(page);
-    // The console offers no surface for a bank's problem report.
-    await expect(page.getByRole('navigation', { name: 'Main' }).locator('a[href*="problem-report"]')).toHaveCount(0);
+    // The console offers no surface for a bank's problem report: its rail draws only the
+    // registry's console destinations, the queue among them, and the registry holds none
+    // for a report.
+    const railHrefs = await page.getByRole('navigation', { name: 'Main' }).locator('a').evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''));
+    expect(railHrefs).toContain('/console/queue');
+    expect(railHrefs.filter((href) => !CONSOLE_HREFS.includes(href))).toEqual([]);
+    expect(CONSOLE_HREFS.filter((href) => /report/.test(href))).toEqual([]);
     await signOut(page);
 
-    // A bank's compliance officer has no queue: the console's review screen is restricted.
+    // A bank's compliance officer has no queue: the tenant rail offers no console
+    // destination, and the console's review screen is restricted. That screen refuses in
+    // the client before any request is made; the server's own 403 on the queue routes is
+    // test_pro_s7's.
     await signInAs(page, LOGINS.complianceOfficer);
+    const tenantRail = page.getByRole('navigation', { name: 'Main' });
+    await expect(tenantRail.locator('a[href="/inventory"]')).toBeVisible();
+    await expect(tenantRail.locator('a[href^="/console"]')).toHaveCount(0);
     await page.goto('/console/queue');
     await expect(restrictedScreen(page)).toContainText('Needs proposals review');
 
@@ -208,8 +224,9 @@ test.describe('proposals journeys', () => {
     await dialog.getByRole('button', { name: 'Done' }).click();
     await expect(dialog).toBeHidden();
 
-    // That report stays inside the bank: the console has no route that could return it.
-    // Which platform session could read it is proven route by route in test_pro_s7.
+    // The console has no problem-report route: the address answers 404. This request
+    // carries no session, so it proves only the route's absence; that no platform session
+    // reads the report back is proven route by route in test_pro_s7.
     const consoleReports = await page.goto(`${BACKEND_URL}/api/v1/console/problem-reports`);
     expect(consoleReports?.status()).toBe(404);
   });

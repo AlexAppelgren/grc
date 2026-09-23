@@ -76,7 +76,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 PRO-03 stays `in_progress` for its last clause only. The console queue, the bank's "Library
 updates" screen (`/inventory/updates` over `GET /library-updates`) and "This looks wrong" on
 each of its rows, filed through the same report form the obligation card uses and kept
-inside the bank, are built and proven by PRO-S7 at both levels. A bank's private records
+inside the bank, are built and proven by PRO-S7 at the integration level; the PRO-S7
+journey is written in full and runs with the merged wave (D-67). A bank's private records
 (PRO-S12, INV-07) wait for chunk 13.
 
 ## 3. Acceptance criteria (from PRD, condensed)
