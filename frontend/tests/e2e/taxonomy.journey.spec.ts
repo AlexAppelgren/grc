@@ -30,6 +30,11 @@ const ADVICE_ONLY_OBLIGATION = 'obl-suitability-statement';
 // on today and no version that takes effect later changes what is listed.
 const INVENTORY_AS_OF = '2026-09-16';
 
+// FP-S13: the Danish custody duty and its act, which tenant A's watch on Denmark adds
+// (backend/apps/shared/e2e_seed.py, WATCHED_MARKET_OBLIGATION).
+const WATCHED_MARKET_OBLIGATION = 'obl-dk-csd-registration';
+const WATCHED_MARKET_INSTRUMENT = 'dk-lov-2017-650';
+
 async function openInventory(page: Page): Promise<void> {
   await page.goto(`/inventory?asOf=${INVENTORY_AS_OF}`);
   await expect(page.locator('[data-obligation-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
@@ -570,13 +575,14 @@ test.describe('taxonomy journeys', () => {
       expect(title).not.toBe('');
 
       // The inventory, narrowed to the obligation's regime so a growing library never pages
-      // it out of sight: absent by default while the rest reads, then marked under "Show
-      // outside our scope".
+      // it out of sight: absent by default while the rest reads, then marked once the Scope
+      // filter is set to "Show outside our scope".
       await page.goto(`/inventory?regime=insurance&asOf=${INVENTORY_AS_OF}`);
       const outsideObligation = page.locator(`[data-obligation="${OUTSIDE_SCOPE_OBLIGATION}"]`);
       await expect(page.locator('[data-obligation]').first()).toBeVisible();
       await expect(outsideObligation).toHaveCount(0);
-      await page.getByRole('button', { name: 'Show outside our scope' }).click();
+      await page.getByRole('group', { name: 'Scope' }).getByRole('button', { name: 'Show outside our scope' }).click();
+      await expect(page).toHaveURL(/scope=all/);
       await expect(outsideObligation).toHaveAttribute('data-outside-footprint', '');
 
       // The roadmap: the change's date is within the quarters shown, and it is not there.
@@ -620,7 +626,7 @@ test.describe('taxonomy journeys', () => {
         await expect(adviceOnlyRow(page)).toHaveCount(0);
         await expect(page.locator('[data-obligation]').first()).toBeVisible();
 
-        await page.getByRole('button', { name: 'Show outside our scope' }).click();
+        await page.getByRole('group', { name: 'Scope' }).getByRole('button', { name: 'Show outside our scope' }).click();
         await expect(adviceOnlyRow(page)).toHaveAttribute('data-outside-footprint', '');
         await expect(adviceOnlyRow(page).getByText('Outside our scope: Advice')).toBeVisible();
       } finally {
@@ -656,8 +662,40 @@ test.describe('regulatory scope, markets and standards', () => {
     // pending: FP-S10 (FP-04, AC-FP2)
   });
 
-  test.fixme("FP-S13: The watched-market view of the inventory shows only what watching adds", async () => {
-    // pending: FP-S13 (FP-04); needs the chunk 3 inventory
+  test("FP-S13: The watched-market view of the inventory shows only what watching adds", async ({ page, apiGuard }) => {
+    // Tenant A as seeded (backend/apps/shared/e2e_seed.py): operating in Sweden, providing
+    // Custody and watching Denmark (EXPECTED_FOOTPRINTS, EXPECTED_WATCHED_MARKETS), so the
+    // Danish custody duty is what watching adds. Read only: no journey changes the watch.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.reader);
+    const danish = page.locator(`[data-obligation="${WATCHED_MARKET_OBLIGATION}"]`);
+
+    // In our scope, the default, the Danish duty is hidden while the rest reads.
+    await page.goto(`/inventory?regime=securities&asOf=${INVENTORY_AS_OF}`);
+    await expect(page.locator('[data-obligation]').first()).toBeVisible();
+    await expect(danish).toHaveCount(0);
+
+    // "Markets we watch" is one value of the one Scope filter: choosing it presses it alone.
+    const scope = page.getByRole('group', { name: 'Scope' });
+    await scope.getByRole('button', { name: 'Markets we watch' }).click();
+    await expect(page).toHaveURL(/scope=watched/);
+    await expect(scope.getByRole('button', { name: 'Markets we watch' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(scope.getByRole('button', { name: 'In our scope' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(scope.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
+
+    // The Danish "Custody" duty is listed with its market as meta text, neither dashed nor
+    // marked outside; no EU or Swedish duty is listed, because they are already in the
+    // scope, and every row names Denmark.
+    await expect(danish).toHaveAttribute('data-watched-market', 'dk');
+    await expect(danish.getByText('Market we watch: Denmark', { exact: true })).toBeVisible();
+    await expect(danish).not.toHaveAttribute('data-outside-footprint');
+    await expect(page.locator('[data-obligation-rows] [data-obligation]:not([data-watched-market="dk"])')).toHaveCount(0);
+
+    // The Instruments tab keeps the value and lists the Danish act alone.
+    await page.getByRole('tab', { name: 'Instruments' }).click();
+    await expect(page).toHaveURL(/tab=instruments.*scope=watched/);
+    await expect(page.locator(`[data-instrument-rows] [data-instrument="${WATCHED_MARKET_INSTRUMENT}"]`)).toBeVisible();
+    await expect(page.locator('[data-instrument="fffs-2017-2"]')).toHaveCount(0);
   });
 
   test.fixme("FP-S15: A change's jurisdiction comes from its authority, and the feed has the watched-market view", async () => {

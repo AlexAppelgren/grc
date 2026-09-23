@@ -24,6 +24,7 @@ const serverRow = {
   ],
   version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' } },
   upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' } },
+  jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' },
   inFootprint: true,
   outsideReason: [],
   lastVerifiedAt: '2026-06-30',
@@ -48,6 +49,7 @@ const screenRow = {
   ],
   version: { versionNumber: 1, effectiveFrom: { date: '2018-01-03', precision: 'day' } },
   upcomingVersion: { versionNumber: 2, effectiveFrom: { date: '2026-10-01', precision: 'day' } },
+  jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' },
   inFootprint: true,
   outsideReason: [],
   lastVerifiedAt: '2026-06-30',
@@ -175,7 +177,7 @@ describe('library api', () => {
     expect(library.serializeQuery({ term: ['regime:securities', 'service_type:advice'], dutyType: 'conduct' })).toBe(
       'term=regime%3Asecurities&term=service_type%3Aadvice&dutyType=conduct',
     );
-    expect(library.serializeQuery({ asOf: undefined, instrument: null, outsideFootprint: true, offset: 0 })).toBe('outsideFootprint=true&offset=0');
+    expect(library.serializeQuery({ asOf: undefined, instrument: null, footprint: 'all', offset: 0 })).toBe('footprint=all&offset=0');
     expect(library.serializeQuery({})).toBe('');
   });
 
@@ -219,7 +221,7 @@ describe('library api', () => {
       outsideReason: undefined,
     };
     installAdapter(() => ({ status: 200, data: { items: [outside, bare], total: 2 } }));
-    const page = await library.listObligations({ outsideFootprint: true });
+    const page = await library.listObligations({ footprint: 'all' });
     expect(page.items[1]).toMatchObject({
       scope: [{ dimension: { key: 'channel', kind: null, label: 'Channel' }, terms: [], allSelected: false }],
       outsideReason: [],
@@ -373,7 +375,7 @@ describe('library instruments api', () => {
 
   it('lists instruments and reads the page into the shape the screen uses', async () => {
     const sent = installAdapter(() => ({ status: 200, data: { items: [serverInstrumentRow], total: 1 } }));
-    expect(await library.listInstruments({ regime: 'securities', outsideFootprint: true, limit: 20, offset: 0 })).toEqual({
+    expect(await library.listInstruments({ regime: 'securities', footprint: 'watched', limit: 20, offset: 0 })).toEqual({
       items: [
         {
           id: 'in-1',
@@ -397,7 +399,7 @@ describe('library instruments api', () => {
       ],
       total: 1,
     });
-    expect(sent.map((s) => [s.method, s.path, s.params])).toEqual([['get', '/api/v1/instruments', { regime: 'securities', outsideFootprint: true, limit: 20, offset: 0 }]]);
+    expect(sent.map((s) => [s.method, s.path, s.params])).toEqual([['get', '/api/v1/instruments', { regime: 'securities', footprint: 'watched', limit: 20, offset: 0 }]]);
   });
 
   it('reads a row with no name, no authority and no regime', async () => {

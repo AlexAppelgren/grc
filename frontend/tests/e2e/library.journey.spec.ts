@@ -87,10 +87,13 @@ test.describe('library journeys', () => {
     await expect(page.locator('[data-lineage-group="implements:outgoing"] [data-lineage-instrument="celex-32017l0593"]')).toBeVisible();
 
     // The obligations from this instrument read inside our scope first, the
-    // same list the inventory answers when filtered by it (FP-03), with the
-    // total and a way into that list.
+    // same list the inventory answers when filtered by it (FP-03, FP-04), with
+    // the scope as one filter of three values, the total and a way into that list.
     const obligations = page.locator('[data-obligations-panel]');
-    await expect(obligations.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
+    const scope = obligations.getByRole('group', { name: 'Scope' });
+    await expect(scope.getByRole('button', { name: 'In our scope' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(scope.getByRole('button', { name: 'Markets we watch' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(scope.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
     await expect(obligations.locator(`[data-obligation="${RESEARCH}"]`)).toBeVisible();
     await expect(obligations.locator('[data-obligations-total]')).toHaveText(/^\d+ obligations?$/);
     const inventory = obligations.getByRole('link', { name: 'Open in the inventory' });

@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
+import { ScopeChips } from '@/components/inventory/InventoryFilters';
 import { searchOf } from '@/components/inventory/InventoryScreen';
 import { Facts, type Fact } from '@/components/inventory/ObligationPanels';
 import { ObligationRow } from '@/components/inventory/ObligationRow';
 import { ProvisionTree } from '@/components/inventory/ProvisionTree';
 import { ReportProblemModal, type ReportContext } from '@/components/inventory/ReportProblemModal';
 import { Button } from '@/components/ui/Button';
-import { Chip, ChipRow } from '@/components/ui/Chip';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
@@ -18,7 +18,7 @@ import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States
 import { useFormatContext } from '@/features/identity/hooks';
 import { useInstrument, useObligations, useReportInstrumentProblem } from '@/features/library/hooks';
 import { presentInstrument } from '@/features/library/instrument-presentation';
-import type { InstrumentDetail, InstrumentLineageRef } from '@/features/library/types';
+import type { InstrumentDetail, InstrumentLineageRef, ScopeFilter } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
@@ -123,35 +123,35 @@ function IdentityPanel({ instrument, actions }: { instrument: InstrumentDetail; 
 }
 
 /**
- * The obligations from this instrument, inside our scope unless the reader
- * asks for the rest (FP-03), exactly as the inventory filtered by this
- * instrument lists them: the total says how many there are beyond the first
- * page, and the link opens that same list in the inventory.
+ * The obligations from this instrument under the reader's scope filter
+ * (FP-03, FP-04), exactly as the inventory filtered by this instrument lists
+ * them: the total says how many there are beyond the first page, and the link
+ * opens that same list in the inventory.
  */
 function ObligationsPanel({ instrument }: { instrument: InstrumentDetail }) {
   const t = useT();
-  const [outside, setOutside] = useState(false);
-  const obligations = useObligations(outside ? { instrument: instrument.stableKey, outsideFootprint: true } : { instrument: instrument.stableKey });
+  const [scope, setScope] = useState<ScopeFilter>('in');
+  const obligations = useObligations(scope === 'in' ? { instrument: instrument.stableKey } : { instrument: instrument.stableKey, footprint: scope });
   const items = obligations.data?.items ?? [];
-  const inventory = `/inventory?${searchOf('obligations', { instrument: instrument.stableKey, regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: outside })}`;
+  const inventory = `/inventory?${searchOf('obligations', { instrument: instrument.stableKey, regime: '', service: '', dutyType: '', asOf: '', scope })}`;
   return (
     <Panel title={t('inventory.instrument.obligationsTitle')} data-obligations-panel="">
-      <ChipRow className="mb-3">
-        <Chip pressed={outside} onClick={() => setOutside((current) => !current)}>
-          {t('inventory.showOutside')}
-        </Chip>
-      </ChipRow>
+      <div className="mb-3">
+        <ScopeChips value={scope} onChange={setScope} />
+      </div>
       {obligations.isPending ? (
         <LoadingState rows={2} />
       ) : obligations.isError ? (
         <ErrorState title={t('inventory.instrument.obligationsErrorTitle')} onRetry={() => void obligations.refetch()} />
       ) : items.length === 0 ? (
-        <p className="text-meta text-muted">{t(outside ? 'inventory.instrument.obligationsEmpty' : 'inventory.instrument.obligationsEmptyInScope')}</p>
+        <p className="text-meta text-muted">
+          {t(scope === 'all' ? 'inventory.instrument.obligationsEmpty' : scope === 'watched' ? 'library.empty.watched.title' : 'inventory.instrument.obligationsEmptyInScope')}
+        </p>
       ) : (
         <>
           <div className="grid gap-2">
             {items.map((obligation) => (
-              <ObligationRow key={obligation.id} obligation={obligation} />
+              <ObligationRow key={obligation.id} obligation={obligation} watched={scope === 'watched'} />
             ))}
           </div>
           <Meta className="mt-3">

@@ -92,7 +92,7 @@ describe('library hooks', () => {
   it('keys each set of filters separately, so "as of" and "outside the footprint" re-read', () => {
     expect(libraryKeys.obligations({}, 20)).toEqual(['library', 'obligations', { limit: 20 }]);
     expect(libraryKeys.obligations({ asOf: '2026-06-01' }, 20)).not.toEqual(libraryKeys.obligations({ asOf: '2026-10-01' }, 20));
-    expect(libraryKeys.obligations({ outsideFootprint: true }, 20)).not.toEqual(libraryKeys.obligations({}, 20));
+    expect(libraryKeys.obligations({ footprint: 'watched' }, 20)).not.toEqual(libraryKeys.obligations({}, 20));
   });
 
   it('reads one obligation as of a date, and keys each date separately', async () => {
@@ -136,7 +136,7 @@ describe('library hooks', () => {
     await waitFor(() => expect(list.result.current.data?.total).toBe(1));
     expect(sent.map((s) => [s.path, s.params])).toEqual([['/api/v1/instruments', { regime: 'securities', limit: INSTRUMENT_PAGE, offset: 0 }]]);
     expect(libraryKeys.instruments({}, 20)).toEqual(['library', 'instruments', { limit: 20 }]);
-    expect(libraryKeys.instruments({ outsideFootprint: true }, 20)).not.toEqual(libraryKeys.instruments({}, 20));
+    expect(libraryKeys.instruments({ footprint: 'watched' }, 20)).not.toEqual(libraryKeys.instruments({}, 20));
   });
 
   it('reads one instrument, keyed by its own id', async () => {
