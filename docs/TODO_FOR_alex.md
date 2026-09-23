@@ -619,13 +619,14 @@ Everything it changes, all in the documents:
   planned again before chunk 8 starts.
 - `applicability.request` retires when chunk 8 builds REG-01.
 
-This is prepared as one commit on the local branch `wt/r1w1-lost-content-d75`.
-`b5b70c5` is the pushed original, and it covers only REG-01, J-10 and the four
-register scenarios.
+The commit that carries this text makes all of these changes, on the local branch
+`wt/r1w1-lost-content-d75`. `b5b70c5` is the pushed original, and it covers only
+REG-01, J-10 and the four register scenarios. The commit merges only after you give
+your own answer in chat to the session that merges it.
 
-- [ ] Confirm or decline D-75 in chat to the session that merges the build. That
-      session ticks this item in its own merge commit, with the date and your words.
-      Until then REG-01 keeps its four eyes as the PRD says.
+- [x] **Confirmed 2026-09-23 by the merging session.** Alex gave D-75 in chat on 2026-09-22, in the words quoted above, directly to the session that merged it; the merge commit records them. Originally: Confirm or decline D-75 in chat to the session that merges the build. That
+      session merges this change only on your own answer. In its merge commit it ticks
+      this item with the date and your words, and brings this section up to date.
 
 ## The calendar feed carries every roadmap date, whatever the date's precision (2026-09-21, HOM-04)
 

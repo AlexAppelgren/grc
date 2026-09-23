@@ -1,6 +1,6 @@
 # ADR 0038 — Many pending applicability requests are decided in one call, with four eyes on every row
 
-**Date:** 2026-09-19 · **Status:** accepted by default (D-44, PRD 0.3 REG-01, AC-REG1; the owner confirms)
+**Date:** 2026-09-19 · **Status:** superseded by D-75, which sets applicability through one person's confirmed, audited write, so no request exists to decide in bulk; a paste stays one call capped by `REGISTER_BULK_MAX`, one audit event per row (was: accepted by default, D-44, PRD 0.3 REG-01, AC-REG1)
 
 ## Context
 

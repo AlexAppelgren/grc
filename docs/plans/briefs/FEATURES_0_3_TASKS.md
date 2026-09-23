@@ -561,6 +561,12 @@ second one.
 Nothing here can be built earlier: before chunk 8 nothing can be owned, so the
 page would be empty and a participant would have nothing to hang on.
 
+D-75 removed the applicability request: one holder of `applicability.approve` sets
+applicability after a confirmation dialog, with one audit event and no second
+approver or step-up. f03-T48, f03-T67 and f03-T69 to f03-T71 still describe
+requests and four eyes, and are re-planned against the register spec before chunk 8
+starts (`CHUNK8_TASKS.md`, "Amended by D-75").
+
 ### f03-T50 — Add the My work kinds and settings
 
 **From:** MY_WORK_AND_MARKETS T-24

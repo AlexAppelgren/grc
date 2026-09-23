@@ -50,7 +50,7 @@ library or the agents.
 | `library` | Jurisdictions, languages, authorities, instruments, lineage, provisions, obligations, versions, translations | Library | R1 |
 | `proposals` | The review queue and `apply` | Library | R1 |
 | `watch` | Sources, coverage, changes, timelines, documents, obligation links | Library | R1 |
-| `register` | Tenant obligation overlay per entity, applicability requests, gaps, assessment history, internal links, attestations, waivers | Tenant | R2 |
+| `register` | Tenant obligation overlay per entity, applicability, gaps, assessment history, internal links, attestations, waivers | Tenant | R2 |
 | `cases` | Case, assessment, actions, evidence, sign-off, case file | Tenant | R1 (new + match), R2 |
 | `search` | Chunks, hybrid query, Ask, saved searches, evaluation sets | Library | R1 |
 | `home` | Home, briefing, roadmap, upcoming, calendar feeds | Tenant | R1 |
