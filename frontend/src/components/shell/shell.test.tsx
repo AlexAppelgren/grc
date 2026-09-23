@@ -317,7 +317,11 @@ describe('the signed-in person', () => {
     language.isPending = false;
     language.isError = true;
     view.rerender(shell(PERMISSIONS));
-    expect(within(who).getByRole('alert')).toHaveTextContent('The language could not be changed. Try again.');
+    // Read out from inside the menu, which owns only items and groups, so a live region and never an alert.
+    const failed = within(who).getByText('The language could not be changed. Try again.');
+    expect(failed).toHaveAttribute('aria-live', 'polite');
+    expect(within(who).getByRole('group', { name: 'Language' })).toHaveAttribute('aria-describedby', failed.id);
+    expect(within(who).queryByRole('alert')).toBeNull();
   });
 
   it('offers no language choice before the languages are known', () => {
@@ -556,6 +560,44 @@ describe('at compact width: the tab bar', () => {
     expect(root.style.getPropertyValue('--tabbar-height')).toBe('72px');
     view.unmount();
     expect(root.style.getPropertyValue('--tabbar-height')).toBe('');
+  });
+
+  it('switches the interface language from the sheet, as the rail does, and stays open to show it land', () => {
+    const view = renderShell({ permissions: EVERYONE_AND_ADMIN });
+    openMore();
+    const account = within(sheet()).getByRole('group', { name: 'Account' });
+    const group = within(account).getByRole('group', { name: 'Language' });
+    const english = within(group).getByRole('radio', { name: 'English' });
+    const swedish = within(group).getByRole('radio', { name: 'Svenska' });
+    expect(english).toBeChecked();
+    expect(swedish).not.toBeChecked();
+    expect(swedish.closest('label')).toHaveAttribute('lang', 'sv');
+    expect(within(group).queryByRole('radio', { name: 'Dansk' })).toBeNull();
+    // Between the account's pages and sign out.
+    expect(within(account).getByRole('link', { name: 'My passkeys' }).compareDocumentPosition(group)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(group.compareDocumentPosition(within(account).getByRole('button', { name: 'Sign out' }))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+
+    fireEvent.click(english);
+    expect(language.mutate).not.toHaveBeenCalled();
+    fireEvent.click(swedish);
+    expect(language.mutate).toHaveBeenCalledExactlyOnceWith('sv');
+    expect(sheet()).toBeInTheDocument();
+
+    language.isPending = true;
+    view.rerender(shell(EVERYONE_AND_ADMIN));
+    expect(within(sheet()).getByRole('radio', { name: 'Svenska' })).toBeDisabled();
+    language.isPending = false;
+    language.isError = true;
+    view.rerender(shell(EVERYONE_AND_ADMIN));
+    expect(within(sheet()).getByRole('alert')).toHaveTextContent('The language could not be changed. Try again.');
+  });
+
+  it('offers no language choice in the sheet before the languages are known', () => {
+    language.rows = undefined;
+    renderShell({ permissions: EVERYONE_AND_ADMIN });
+    openMore();
+    expect(within(sheet()).getByRole('group', { name: 'Account' })).toBeInTheDocument();
+    expect(within(sheet()).queryByRole('group', { name: 'Language' })).toBeNull();
   });
 
   it('shows only what the permissions unlock: Today and More, and the account in the sheet', () => {

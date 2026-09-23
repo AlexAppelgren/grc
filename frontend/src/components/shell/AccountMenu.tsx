@@ -10,6 +10,7 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/c
 import { useSession, useSetLanguage, useSignOut } from '@/features/identity/hooks';
 import type { Me } from '@/features/identity/types';
 import { useLanguages } from '@/features/tenant-admin/hooks';
+import type { LanguageRef } from '@/features/tenant-admin/types';
 import { isLocale } from '@/shared/i18n';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { ACCOUNT_PARENT, childDestinations } from '@/shared/navigation/registry';
@@ -39,6 +40,26 @@ export function accountLine(me: Me, t: ReturnType<typeof useT>): string {
   return secondLine(me.tenant?.name ?? null, roles, t);
 }
 
+/**
+ * The interface languages a person can choose and the choice itself (I18N-02),
+ * shared by the rail's menu and the More sheet. Language rows name themselves
+ * ("Svenska"); only those the interface has a catalog for are offered, the
+ * rest are content languages (I18N-01). Choosing the language in use saves nothing.
+ */
+export function useInterfaceLanguages(): { options: LanguageRef[]; choose: (key: string) => void; pending: boolean; failed: boolean } {
+  const { me } = useSession();
+  const languages = useLanguages();
+  const setLanguage = useSetLanguage();
+  return {
+    options: (languages.data ?? []).filter((row) => isLocale(row.key)),
+    choose: (key) => {
+      if (isLocale(key) && key !== me?.user.locale) setLanguage.mutate(key);
+    },
+    pending: setLanguage.isPending,
+    failed: setLanguage.isError,
+  };
+}
+
 /** Signs out, then leaves for sign in whatever the server answered. The rail's menu and the More sheet share it. */
 export function useSignOutToSignIn(): { pending: boolean; signOut: () => void } {
   const router = useRouter();
@@ -55,9 +76,9 @@ export function AccountMenu() {
   const { me } = useSession();
   const { isCompact } = useSidebar();
   const { pending, signOut } = useSignOutToSignIn();
-  const languages = useLanguages();
-  const setLanguage = useSetLanguage();
+  const languages = useInterfaceLanguages();
   const languageLabel = useId();
+  const languageError = useId();
   // Crossing 1024 px hides the rail under an open menu, which would leave its
   // aria-hidden on the page and pointer-events off on body. Close it, during
   // render as React advises for state that follows a value (an effect would
@@ -74,12 +95,6 @@ export function AccountMenu() {
 
   const detail = accountLine(me, t);
   const links = childDestinations(ACCOUNT_PARENT, me.permissions);
-  // Language rows name themselves ("Svenska"); only those the interface has a
-  // catalog for are offered, the rest are content languages (I18N-01, I18N-02).
-  const interfaceLanguages = (languages.data ?? []).filter((row) => isLocale(row.key));
-  const chooseLanguage = (key: string) => {
-    if (isLocale(key) && key !== me.user.locale) setLanguage.mutate(key);
-  };
 
   return (
     <SidebarMenu data-who-panel="">
@@ -119,19 +134,24 @@ export function AccountMenu() {
               </DropdownMenu.Item>
             ))}
             <DropdownMenu.Separator className="mx-1 my-1 h-px bg-sidebar-border" />
-            {interfaceLanguages.length > 1 ? (
+            {languages.options.length > 1 ? (
               <>
                 <DropdownMenu.Label id={languageLabel} className="px-2 py-1.5 text-meta text-sidebar-muted-foreground">
                   {t('language.label')}
                 </DropdownMenu.Label>
-                <DropdownMenu.RadioGroup aria-labelledby={languageLabel} value={locale} onValueChange={chooseLanguage}>
-                  {interfaceLanguages.map((row) => (
+                <DropdownMenu.RadioGroup
+                  aria-labelledby={languageLabel}
+                  aria-describedby={languages.failed ? languageError : undefined}
+                  value={locale}
+                  onValueChange={languages.choose}
+                >
+                  {languages.options.map((row) => (
                     // Stays open on a choice, so the menu itself is seen to change language.
                     <DropdownMenu.RadioItem
                       key={row.key}
                       value={row.key}
                       lang={row.key}
-                      disabled={setLanguage.isPending}
+                      disabled={languages.pending}
                       className={`${MENU_ITEM} justify-between gap-2`}
                       onSelect={(event) => event.preventDefault()}
                     >
@@ -144,11 +164,12 @@ export function AccountMenu() {
                     </DropdownMenu.RadioItem>
                   ))}
                 </DropdownMenu.RadioGroup>
-                {setLanguage.isError ? (
-                  <p role="alert" className="m-0 px-2 py-1.5 text-meta text-negative">
-                    {t('language.failed')}
-                  </p>
-                ) : null}
+                {/* A live region, not an alert: a menu owns only its items and groups
+                    (ARIA 1.2), and Radix hides the rest of the page while the menu is
+                    open, so the failure is read out from inside it. */}
+                <div id={languageError} aria-live="polite" className="px-2 py-1.5 text-meta text-negative empty:hidden">
+                  {languages.failed ? t('language.failed') : null}
+                </div>
                 <DropdownMenu.Separator className="mx-1 my-1 h-px bg-sidebar-border" />
               </>
             ) : null}

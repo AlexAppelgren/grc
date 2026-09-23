@@ -3309,16 +3309,16 @@ new languages and back.
 
 R1 already built the `en` and `sv` half (wave 1, `i18n-en-sv-switch`), and this task
 extends it rather than starting over. The picker is the Language group in the rail's
-account menu (`frontend/src/components/shell/AccountMenu.tsx`): it offers the language
-rows (`GET /reference/languages`) whose key is in `locales`, so the three new ones appear
-there once `locales` names them, each in its own words from its row. `useSetLanguage`
-(`frontend/src/features/identity/hooks.ts`) saves the choice with `PATCH /me` and
-refetches every cached answer. I18N-S3 and I18N-S4 are already real journeys for `sv`:
-extend I18N-S3 to switch to a new language and back on its reserved login
-(`language@example-bank.test`, reserved for I18N-S3), and I18N-S4 to format the same
-seeded dates in that language. `format.test.ts` pins the Swedish quarter phrase ("kv. 4
-2026"); add the new languages' phrases beside it. The More sheet below 1024 px offers no
-language choice yet; add it here if R1 did not.
+account menu (`frontend/src/components/shell/AccountMenu.tsx`) and in the More sheet
+below 1024 px (`MoreSheet.tsx`), both fed by `useInterfaceLanguages` in
+`AccountMenu.tsx`: it offers the language rows (`GET /reference/languages`) whose key is
+in `locales`, so the three new ones appear in both once `locales` names them, each in
+its own words from its row. `useSetLanguage` (`frontend/src/features/identity/hooks.ts`)
+saves the choice with `PATCH /me` and refetches every cached answer. I18N-S3 and I18N-S4
+are already real journeys for `sv`: extend I18N-S3 to switch to a new language and back
+on its reserved login (`language@example-bank.test`, reserved for I18N-S3), and I18N-S4
+to format the same seeded dates in that language. `format.test.ts` pins the Swedish
+quarter phrase ("kv. 4 2026"); add the new languages' phrases beside it.
 
 **Owned paths:**
 - `frontend/src/shared/i18n/messages.ts`, `LocaleProvider.tsx`, `i18n.test.ts`,
