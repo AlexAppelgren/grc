@@ -523,6 +523,77 @@ class SearchScopeTests(CorpusMixin, TestCase):
         self.assertIn(REPORTING_TITLE, titles_of(response), "the shared library still answers")
 
 
+class SearchJurisdictionTests(CorpusMixin, TestCase):
+    """FP-04, D-28, D-29: the jurisdictions an instrument's rules reach narrow a search as
+    they narrow the inventory, because the scope is `library.reading`'s SQL twin and not a
+    copy of it. A bank operating in Norway alone still finds the Union's rules."""
+
+    def setUp(self) -> None:
+        FootprintTerm.objects.create(tenant=self.tenant, term=TaxonomyTerm.objects.get(dimension__key="jurisdiction", key="no"))
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.build_corpus()
+
+    def test_a_bank_in_norway_finds_the_unions_rules_and_not_swedens(self) -> None:
+        inside = titles_of(search("report", tenant=self.tenant, as_of=MIDSUMMER))
+        outside = titles_of(search("report", tenant=self.tenant, as_of=MIDSUMMER, filters=SearchFilters(in_footprint=False)))
+
+        self.assertEqual((inside, outside), ([EU_REPORTING_TITLE], [REPORTING_TITLE]))
+
+    def test_a_provision_is_judged_by_its_instruments_jurisdiction(self) -> None:
+        provisions = [SearchHitType.PROVISION]
+        inside = search("information om kostnader", tenant=self.tenant, lang="sv", types=provisions)
+        outside = search(
+            "information om kostnader", tenant=self.tenant, lang="sv", types=provisions, filters=SearchFilters(in_footprint=False)
+        )
+
+        self.assertEqual((titles_of(inside), titles_of(outside)), ([], [PROVISION_HEADING]))
+
+
+class SearchTieBreakTests(TestCase):
+    """search-eval-gate: a tie is broken on what a rebuilt library keeps. Two duties that
+    read exactly alike score exactly alike on both legs and with the reranker, so the only
+    thing that orders them is the tie-break; swapping their chunks' ids, which is what a
+    fresh database does, must not swap them."""
+
+    tenant: ClassVar[Tenant]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        seed_reference()
+        with library_write("search test corpus"):
+            instrument = _instrument(key="fffs-2017-2", official_ref=FFFS, jurisdiction="se", binding=True, level="act")
+            for key in ("obl-tie-b", "obl-tie-a"):
+                _obligation(
+                    instrument,
+                    key=key,
+                    ref_label="9 kap. 6 §",
+                    duty_type="conduct",
+                    titles={"en": "Keep client assets apart"},
+                    versions=((FIRST_DAY, {"en": "The firm keeps client assets apart from its own."}),),
+                )
+        indexing.reindex_all()
+        indexing.embed_backlog()
+        cls.tenant = factories.tenant(slug="search-ties")
+
+    def keys(self) -> list[str]:
+        hits = search("client assets", tenant=self.tenant, as_of=MIDSUMMER).items
+        return [Obligation.objects.get(pk=hit.id).stable_key for hit in hits]
+
+    def test_tied_chunks_keep_their_order_when_their_ids_are_swapped(self) -> None:
+        before = self.keys()
+        first, second = SearchChunk.objects.filter(source_type=SearchSource.OBLIGATION_VERSION.value).values_list("id", flat=True)
+        spare = uuid.uuid4()
+        with tenancy.platform_zone(), indexing.index_write("test: the same library, rebuilt with other ids"):
+            SearchChunk.objects.filter(pk=first).update(id=spare)
+            SearchChunk.objects.filter(pk=second).update(id=first)
+            SearchChunk.objects.filter(pk=spare).update(id=second)
+
+        self.assertEqual(before, ["obl-tie-a", "obl-tie-b"], "the stable key breaks the tie")
+        self.assertEqual(self.keys(), before)
+
+
 class SearchCallerTests(CorpusMixin, TestCase):
     """The caller, and what a hit shows them."""
 

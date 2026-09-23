@@ -788,12 +788,13 @@ Nothing waits for these; each has the default the build took.
       the gate fails when a recorded score drops, but with only the mock embedder there is
       nothing honest to record: a mock can never set the bar. Nothing to do beyond the D-09
       key already listed under "Before the first test deploy"; the run that chooses the
-      model records the baseline and removes this line (`backend/eval/README.md`). Two
-      things that run needs first, neither of them yours: a settings route with a real
-      embedder and a throwaway database (today's test settings fix the embedder to the
-      mock), and hybrid search breaking ties on something a rebuild keeps, because today two
-      of the 53 questions can come back in a different order from one fresh database to the
-      next.
+      model records the baseline and removes this line (`backend/eval/README.md`). The ties
+      are fixed (tax-jurisdiction-derivation, 2026-09-23): hybrid search now breaks them on
+      the record's stable key, the kind, the language and the start date, never on an id,
+      so every question comes back in the same order from one fresh database to the next.
+      Only D-09's key remains, plus one thing that run needs that is not yours: a settings
+      route with a real embedder and a throwaway database (today's test settings fix the
+      embedder to the mock).
 
 ## tax-jurisdiction-derivation: where a record's derived jurisdictions show (2026-09-23, FP-04, D-28, D-29)
 
