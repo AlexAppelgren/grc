@@ -684,9 +684,9 @@ class ProposalsScenarioTests(ScenarioTestCase):
         # distinct id: never the reviewer that actually decides this proposal.
         third_reviewer = agents_testing.reviewer_api_key()
 
-        # The queue says so before the approval is tried: under every key of the proposing
-        # definition the proposal is the reader's own and `notMine` drops it; under another
-        # agent's key it is neither.
+        # The queue says so before a different agent approves it: under every key of the
+        # proposing definition the proposal is the reader's own and `notMine` drops it; under
+        # another agent's key it is neither.
         for reader, own in ((proposer_key, True), (second_key_same_agent, True), (third_reviewer, False)):
             key_headers = {"HTTP_X_API_KEY": reader.plain_key}
             row = next(item for item in self.client.get(f"{V1}/proposals", **key_headers).json()["items"] if item["id"] == proposal["id"])

@@ -277,7 +277,7 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
         source_url=body.source_url,
         effective_from=body.effective_from,
     )
-    return (201 if created else 200), logic.row(proposal)
+    return (201 if created else 200), logic.proposer_row(proposal)
 
 
 @router.get(

@@ -17,10 +17,11 @@ Two rules decide what a reader is told about who proposed what:
   behind; the server refuses that approval either way (four eyes, AC-PRO2). It marks
   exactly the rows `notMine` drops (`logic.filed_by`).
 
-A decided proposal is read against what it replaced, not against today: the version before
+An approved proposal is read against what it replaced, not against today: the version before
 the one its approval wrote, and the scope the approval's own audit row found. Read against
-today instead, an approved proposal would compare its own text with itself the day its
-version comes into force.
+today instead, it would compare its own text with itself the day its version comes into
+force. A proposal that was not approved, open or rejected, is read against the version in
+force today and the scope the record carries now, and moves with them.
 
 A bank's own list is scoped by row-level security on `proposal_tenant` and never by a
 tenant filter in Python: the tenant the session activated is the only one whose link rows

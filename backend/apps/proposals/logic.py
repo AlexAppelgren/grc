@@ -536,11 +536,12 @@ def _actor_ref(user: Any) -> ProposalActorRef | None:
 
 
 def _agent_ref(agent: Any) -> ProposalAgentRef | None:
-    """A platform agent named on a proposal, by its definition key and version, labelled the
-    way the audit trail labels a reviewing agent (`apps.proposals.api.require_reviewer`)."""
+    """A platform agent named on a proposal, by its definition key and the version the
+    platform runs now. The version it ran when it decided is the decision's audit row's to
+    keep; nothing on the proposal holds it, so nothing here claims it."""
     if agent is None:
         return None
-    return ProposalAgentRef(key=agent.key, label=f"{agent.key} v{agent.current_version}", version=agent.current_version)
+    return ProposalAgentRef(key=agent.key, version=agent.current_version)
 
 
 def row(proposal: Proposal) -> ProposalRow:
@@ -583,6 +584,16 @@ def row(proposal: Proposal) -> ProposalRow:
         applied_at=proposal.applied_at,
         created_at=proposal.created_at,
     )
+
+
+def proposer_row(proposal: Proposal) -> ProposalRow:
+    """The row a proposer's own create call answers, a retry after the decision included. A
+    bank's proposer is told how far its request got and never which platform person or
+    agent decided or corrected it, as its own list never is (`TenantProposalRow`, PRO-03)."""
+    answer = row(proposal)
+    if not proposal.proposed_in_tenant:
+        return answer
+    return answer.model_copy(update={"reviewed_by": None, "reviewed_by_agent": None, "corrected_by": None, "corrected_by_agent": None})
 
 
 # ---------------------------------------------------------------------------------------

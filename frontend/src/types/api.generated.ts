@@ -8066,26 +8066,19 @@ export interface components {
          *     never reads as a person's; the record it applied says so on its own provenance.
          * @example {
          *       "key": "library-confirmer",
-         *       "label": "library-confirmer v1",
          *       "version": 1
          *     }
          */
         ProposalAgentRef: {
             /**
              * Key
-             * @description The agent definition's own key, stable and never changed, for example `watch-sweeper`: the folder its versioned definition lives in. Store and compare this. Two proposals naming the same key were handled by the same agent, whichever of its keys it called with.
+             * @description The agent definition's own key, stable and never changed, for example `watch-sweeper`: the folder its versioned definition lives in. Store and compare this, and show it to name the agent. Two proposals naming the same key were handled by the same agent, whichever of its keys it called with.
              * @example library-confirmer
              */
             key: string;
             /**
-             * Label
-             * @description How the audit trail names the agent: its key and the definition version, for example `library-confirmer v1`. For showing on screen and for nothing else; compare `key`.
-             * @example library-confirmer v1
-             */
-            label: string;
-            /**
              * Version
-             * @description The version of the definition the platform runs for this agent now, counting from 1. The audit row of the decision keeps the version the agent ran when it decided, which a later release may have moved on from.
+             * @description The version of the definition the platform runs for this agent now, counting from 1. It is not necessarily the version that filed or decided this proposal: a later release may have moved on, and only the audit row of the decision keeps the version the agent ran when it decided.
              * @example 1
              */
             version: number;
@@ -8212,11 +8205,14 @@ export interface components {
          *     library says against what the proposal would make it say, and where each changed value
          *     came from. Read it before approving; approving is the only door into the shared library.
          *
-         *     What it is compared with depends on where it stands. A proposal still to be decided is
-         *     read against the version in force today, the wording it would replace. An approved one is
-         *     read against the version before the one it wrote, and its scope against the scope the
-         *     approval found, so the comparison a reviewer made stays the same whatever the calendar
-         *     or a later version says.
+         *     What it is compared with depends on where it stands. Only an approved proposal is pinned:
+         *     it is read against the version numbered just before the one it wrote, and its scope
+         *     against the scope the approval found, so that comparison stays the same whatever the
+         *     calendar or a later version says. A proposal that was not approved, open or rejected, is
+         *     read against the version in force today and the scope the record carries now, so its
+         *     comparison moves when a version comes into force or another is approved; while an
+         *     approved version still waits for its date, an open proposal's diff shows that version's
+         *     changes as well as its own.
          * @example {
          *       "agentRunId": "5a2b9c7d-1e3f-4a8b-9c0d-2e4f6a8b0c12",
          *       "appliedAt": null,
@@ -8248,7 +8244,6 @@ export interface components {
          *       "proposedBy": null,
          *       "proposedByAgent": {
          *         "key": "watch-sweeper",
-         *         "label": "watch-sweeper v1",
          *         "version": 1
          *       },
          *       "rejectionCode": "",
@@ -8293,7 +8288,7 @@ export interface components {
              * @description When the proposal was filed: a UTC timestamp, date and time together. Not the legal date of the change, which is `effectiveFrom`.
              */
             createdAt: string;
-            /** @description The wording the proposal replaces, in the language above. For a proposal not yet approved it is the summary of the version in force today, or of the latest version when every version starts later. For an approved one it is the summary of the version before the one the approval wrote, so it does not move when that version comes into force or a later one arrives. Null when that version has no text in this language, when there is no earlier version, and on a proposal that changes no record text. */
+            /** @description The wording the proposal is compared with, in the language above. For a proposal that was not approved, open or rejected, it is the summary of the version in force today, or of the latest version when every version starts later, so it moves when a version comes into force or another is approved. For an approved one it is the summary of the version before the one the approval wrote, so it does not move when that version comes into force or a later one arrives. Null when that version has no text in this language, when there is no earlier version, and on a proposal that changes no record text. */
             currentSummary?: components["schemas"]["LocalizedText"] | null;
             /**
              * Diff
@@ -8402,7 +8397,7 @@ export interface components {
             scopeAfter?: string[] | null;
             /**
              * Scopebefore
-             * @description The record's scope facets before this proposal, each written `dimension:key`, for example `client_category:retail`. For a proposal not yet approved it is the scope the library holds now. For an approved one that replaced the scope it is the scope the approval found, as the audit row of the approval recorded it; one that left the scope alone shows the scope the record carries now. Both parts are keys of rows an admin manages rather than fixed values, so read the term lists for the labels. Empty when the record carries no facets, and empty on a proposal that changes no record.
+             * @description The record's scope facets before this proposal, each written `dimension:key`, for example `client_category:retail`. For a proposal that was not approved, open or rejected, it is the scope the library holds now. For an approved one that replaced the scope it is the scope the approval found, as the audit row of the approval recorded it; one that left the scope alone shows the scope the record carries now. Both parts are keys of rows an admin manages rather than fixed values, so read the term lists for the labels. Empty when the record carries no facets, and empty on a proposal that changes no record.
              * @example [
              *       "service_type:advice",
              *       "client_category:retail"
@@ -8493,7 +8488,6 @@ export interface components {
          *           "proposedBy": null,
          *           "proposedByAgent": {
          *             "key": "watch-sweeper",
-         *             "label": "watch-sweeper v1",
          *             "version": 1
          *           },
          *           "rejectionCode": "",
@@ -8502,7 +8496,6 @@ export interface components {
          *           "reviewedBy": null,
          *           "reviewedByAgent": {
          *             "key": "library-confirmer",
-         *             "label": "library-confirmer v1",
          *             "version": 1
          *           },
          *           "scopeSuggestion": [],
@@ -8609,7 +8602,6 @@ export interface components {
          *       "proposedBy": null,
          *       "proposedByAgent": {
          *         "key": "watch-sweeper",
-         *         "label": "watch-sweeper v1",
          *         "version": 1
          *       },
          *       "rejectionCode": "",
@@ -8829,7 +8821,6 @@ export interface components {
          *       "proposedBy": null,
          *       "proposedByAgent": {
          *         "key": "watch-sweeper",
-         *         "label": "watch-sweeper v1",
          *         "version": 1
          *       },
          *       "rejectionCode": "",
