@@ -68,7 +68,7 @@ from apps.watch.models import CheckFrequency, CheckStatus
 from apps.shared.models import Tenant
 from apps.taxonomy import footprint_logic, terms_logic
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintTerm
-from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, switch_on_term
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.tenants.logic import set_content_languages
 
@@ -193,6 +193,14 @@ E2E_STANDARD = Path(__file__).resolve().parents[1] / "library" / "fixtures" / "e
 E2E_STANDARD_INSTRUMENT = "iso-iec-27001-2022"
 E2E_STANDARD_OBLIGATION = "iso-iec-27001-2022-conformance"
 # --- end lib-standard-e2e-seed -----------------------------------------------------------
+
+# --- std-journeys (FP-S16) ----------------------------------------------------------------
+# A scope request names active terms only, so FP-S16 cannot follow the standard while its
+# term is off. E2E switches it on (D-8x std-journeys); the reference seed keeps it off until
+# Alex answers the legal question, and no E2E tenant follows it, so the duty stays hidden
+# until a journey adds the term and takes it out again.
+E2E_STANDARD_TERM = ("standard", "iso_iec_27001")
+# --- end std-journeys ---------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -1261,6 +1269,8 @@ def seed_e2e() -> dict[str, int]:
         # lib-standard-e2e-seed: the one standard, added to the counts the command prints.
         for name, count in load_library(E2E_STANDARD).items():
             library[name] += count
+        # std-journeys: the standard's term on, so FP-S16 can follow it (E2E_STANDARD_TERM).
+        switch_on_term(*E2E_STANDARD_TERM)
         # Chunk 6's sources and changes: library-zone rows, written here — before any
         # tenant is activated — for the same reason `seed_authorities()` and
         # `load_library()` run here rather than after `seed_tenants()` (WAT-06).

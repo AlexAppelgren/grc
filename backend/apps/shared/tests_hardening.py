@@ -232,6 +232,10 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "The same seed putting the link, the parent and `active` back on a mirrored term: a "
         "system actor, and the title is the dimension and jurisdiction keys."
     ),
+    "apps/taxonomy/seeds/__init__.py record('taxonomy_term') tenant_id=None actor=Actor.system(SEED_REASON) title=f'{dimension}:{key}'": (
+        "The same seed switching one seeded term on for seed_e2e (std-journeys, FP-S16): a "
+        "system actor, and the title is the dimension and term keys the caller names in code."
+    ),
     "apps/taxonomy/tenant_hooks.py record('vocabulary') tenant_id=tenant.id actor=actor title=f'{list_name}:{spec.key}'": (
         "A bank's own list row, written under its tenant id and the actor that asked for the "
         "bank (the deploy seed, the E2E seed, or the platform person creating it from the "
