@@ -48,7 +48,7 @@ describe('formatPartialDate', () => {
     expect(formatPartialDate('2026-09', 'month', stockholm)).toBe('September 2026');
     expect(formatPartialDate('2026-09-12', 'month', stockholm)).toBe('September 2026');
     expect(formatPartialDate('2026-09', 'quarter', stockholm)).toBe('Q3 2026');
-    expect(formatPartialDate('2026-11', 'quarter', swedish)).toBe('Kv4 2026');
+    expect(formatPartialDate('2026-11', 'quarter', swedish)).toBe('kv. 4 2026');
     expect(formatPartialDate('2026', 'year', stockholm)).toBe('2026');
   });
 
@@ -57,7 +57,7 @@ describe('formatPartialDate', () => {
     expect(formatPartialDate('2026-10-01', 'quarter', stockholm)).toBe('Q4 2026');
     expect(formatPartialDate('2026-12-31', 'quarter', stockholm)).toBe('Q4 2026');
     expect(formatPartialDate('2026-09-30', 'quarter', stockholm)).toBe('Q3 2026');
-    expect(formatPartialDate('2027-01-01', 'quarter', swedish)).toBe('Kv1 2027');
+    expect(formatPartialDate('2027-01-01', 'quarter', swedish)).toBe('kv. 1 2027');
   });
 
   it('never claims more precision than the value carries', () => {

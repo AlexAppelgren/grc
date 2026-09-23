@@ -57,7 +57,7 @@ test.describe('watch journeys', () => {
     const timelineSv = page.locator('[data-change-timeline]');
     await expect(timelineSv.getByText('mars 2026', { exact: true })).toBeVisible();
     await expect(timelineSv.getByText('15 juni 2026', { exact: true })).toBeVisible();
-    await expect(timelineSv.getByText('Kv1 2027', { exact: true })).toBeVisible();
+    await expect(timelineSv.getByText('kv. 1 2027', { exact: true })).toBeVisible();
   });
 
   test.fixme("WAT-S4: Types, flags and scope come from vocabularies and stay suggestions until confirmed", async () => {

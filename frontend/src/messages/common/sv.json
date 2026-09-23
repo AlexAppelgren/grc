@@ -43,7 +43,7 @@
   "pill.ourDeadline": "Vår deadline",
   "pill.you": "Du",
   "pill.lead": "Huvudpunkt",
-  "format.quarter": "Kv{quarter} {year}",
+  "format.quarter": "kv. {quarter} {year}",
   "diff.addedStart": "Tillagd text:",
   "diff.addedEnd": "Slut på tillagd text.",
   "diff.removedStart": "Borttagen text:",

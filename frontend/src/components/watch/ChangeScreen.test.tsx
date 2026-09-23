@@ -187,7 +187,7 @@ describe('the timeline', () => {
 
   it('renders the same dates in Swedish', () => {
     expect(eventMeta(change.events[1]!, sv, svCtx, TODAY)).toEqual(['1 okt. 2026', 'om 12 dagar']);
-    expect(eventMeta(change.events[2]!, sv, svCtx, TODAY)).toEqual(['Kv4 2027']);
+    expect(eventMeta(change.events[2]!, sv, svCtx, TODAY)).toEqual(['kv. 4 2027']);
     expect(eventMeta(change.events[3]!, sv, svCtx, TODAY)).toEqual(['Datum inte satt']);
     expect(eventMeta({ ...change.events[0]!, eventDate: '2026-06', datePrecision: 'month' }, sv, svCtx, TODAY)).toEqual(['juni 2026']);
   });
