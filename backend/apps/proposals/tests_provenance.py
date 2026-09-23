@@ -258,6 +258,12 @@ class ListAndTermProvenance(ScenarioTestCase):
         self.assertTrue(seeded)
         for item in seeded:
             self.assertEqual(self._provenance(item), NOBODY)
+        # The jurisdiction list is a library list with no provenance columns at all, since
+        # nothing proposes it (D-38): it reads as a seeded row does rather than failing.
+        jurisdictions = self._read("/vocab/jurisdiction")["items"]
+        self.assertTrue(jurisdictions)
+        for item in jurisdictions:
+            self.assertEqual(self._provenance(item), NOBODY)
 
         tenant = factories.tenant()
         member = factories.member_user(tenant, roles=("reader",))
