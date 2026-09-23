@@ -219,6 +219,7 @@ message that says what to do.
 | Database role | The app's role | Not superuser, not owner, no `BYPASSRLS` |
 | Tenant isolation | Every tenant-scoped GET, PATCH, DELETE with another tenant's record | 404, never 403, never data |
 | Library fence | The AST of every module writing a `LibraryModel` | Only inside `library_write()` in `proposals/apply.py`, `watch/write.py` (the watch door: the seven watch tables, no inventory table), reference seeds |
+| Library door (ADR 0058) | Every `LibraryModel` table, `search_chunk` and the reference tables, from the app registry against `pg_trigger`; every proposal kind and watch step as cw_app | The `cw_library_door_guard()` trigger of shared 0008 with exactly the doors its table accepts; as cw_app a write outside a door refused and every real writer passing; each door named by one function and `seed` by the reference seeds only; the setting's name only where the `library-door` lint allows it |
 | Four eyes | Every table in the four-eyes list | The requester-is-not-approver check constraint exists |
 | Audit on write | Every non-GET operation through its scenario test | At least one `audit_event` written; a mutating route with no scenario fails |
 | Kinds only | Every `TextChoices`, Postgres enum, generated TS union | In the tier-one allowlist with a reason |

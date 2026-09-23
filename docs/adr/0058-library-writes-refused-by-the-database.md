@@ -49,7 +49,12 @@ sanctioned writers set.
   - `obligation` and `verification`: those two and `reverification` — the stamp reaches
     nothing else;
   - the seven watch tables: `watch` only (D-64);
-  - `search_chunk`: `index` only (D-65).
+  - `search_chunk`: `index` only (D-65);
+  - the library app's reference rows, `language`, `jurisdiction` and
+    `jurisdiction_label`: `seed` only. They are not `LibraryModel`s, so the Python fence
+    never saw them, and every bank reads them; no proposal writes them (the jurisdiction
+    list is not proposable), and `seed_languages()` and `seed_jurisdictions()` open the
+    seed door through `library_write()`.
 
   Per statement, so a write that would touch no row is refused as a write, and the
   check costs one call however many rows a rebuild or a seed writes. The refusal names
@@ -57,16 +62,26 @@ sanctioned writers set.
 - **The schema owner passes**, recognised by `session_user` exactly as the append-only
   hatch recognises it (shared 0005): never `current_user`, which a SECURITY DEFINER
   function or a cascade changes. Migrations, the E2E seed, the test runner's own
-  connection, retention and tenant exit run as the owner.
+  connection and tenant exit run as the owner. The retention purge does not: `cw_app`
+  calls its SECURITY DEFINER function (ADR 0046), so its `session_user` stays `cw_app`.
+  It deletes no library row today; a purge that ever reached one would be refused here.
 - **Completeness is a test, not a list to remember.** `apps/shared/tests_library_db_guard.py`
-  reads every `LibraryModel` table and `search_chunk` from the app registry, not from
-  the migration, and fails for a table without the trigger or with the wrong doors. A
-  library table created later attaches it in its own migration with
+  reads every `LibraryModel` table, `search_chunk` and the reference tables from the app
+  registry, not from the migration, and fails for a table without the trigger or with the
+  wrong doors, and for any row without a tenant in a library-zone app that is none of
+  those. A library table created later attaches it in its own migration with
   `library_door_trigger_operations()`.
+- **Every real writer is proven as the app role.** The same guard files and approves one
+  proposal of every `ProposalKind` through `proposals.logic`, and calls an entry point of
+  every module allowed to open the watch door, on the `cw_app` connection. A kind or a
+  watch step with no proof there fails it, so a writer that names the wrong door fails the
+  backend suite and not only E2E.
 - **Who may name a door.** The compliance lint's `library-door` rule refuses the
   setting's name, its constant and `library_door()` anywhere but the tenancy module,
   the index door, the migration helpers, migrations and tests; the library fence pins
-  which one function names each of `proposal`, `reverification`, `watch` and `index`.
+  which one function names each of `proposal`, `reverification`, `watch` and `index`,
+  and keeps `seed` — `library_write()`'s default and the widest door — to the reference
+  seeds' directories, whether a call names it or takes it by default.
 
 The Python fence is untouched. This is a second layer behind it, not a replacement.
 
@@ -87,13 +102,13 @@ The Python fence is untouched. This is a second layer behind it, not a replaceme
   logic's and the constraint's to prove.
 - **The schema owner.** Anything that authenticates as `cw_migrator` passes. That is the
   migration path, and the owner's credentials are the deploy's, never the app's.
-- **Tables outside the library zone.** `language`, `jurisdiction` and their labels are
-  reference rows that are not `LibraryModel`s and are seeded without a door; they carry
-  no trigger. Tenant tables are row-level security's.
-- **The unit test suite.** Its `default` connection is the schema owner, so outside the
-  guard's own cw_app tests the trigger lets it through. A write path that forgets its
-  door shows first in the E2E run, whose server runs as `cw_app`, and in the cold-start
-  journey, which seeds as `cw_app`.
+- **Tables outside the library zone.** Tenant tables are row-level security's, and the
+  platform's own tables (users, roles, the proposal queue) are not library rows.
+- **The rest of the unit test suite.** Its `default` connection is the schema owner, so
+  outside the guard's cw_app tests the trigger lets it through. The guard proves every
+  proposal kind and every watch step as `cw_app`; a branch of one of them the guard does
+  not take, or a writer outside both, shows first in the E2E run, whose server runs as
+  `cw_app`, and in the cold-start journey, which seeds as `cw_app`.
 
 ## Consequences
 
@@ -102,8 +117,9 @@ Python fence does not see, and a door can reach in the database only the tables 
 reach in Python; the watch door and the index door are narrowed twice.
 
 Harder: every door runs its block in a savepoint, a handful of round trips per door
-opened; a new library table needs its trigger in the migration that creates it, and a
-new writer needs a door the table accepts.
+opened; a new library table needs its trigger in the migration that creates it, a new
+writer needs a door the table accepts, and a new proposal kind or watch step needs its
+proof as the app role in the guard before the suite passes.
 
 To remember: the door is a declaration, not a credential. It turns an accidental write
 into a refused one; it does not turn a deliberate one into a refused one.
