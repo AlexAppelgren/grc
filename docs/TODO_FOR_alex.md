@@ -801,13 +801,16 @@ Nothing waits for these; each has the default the build took.
 - [ ] **A record's scope block and its "outside our scope" reason now list the
       jurisdictions its instrument's rules reach.** They are derived at match time and never
       stored, as D-28 and D-29 say, and the card shows the scope the rule matched on: a
-      Swedish obligation lists Sweden, a Union one lists the European Union, Sweden,
-      Denmark, Norway and Finland (every term, so the group reads as all selected), and an
-      obligation hidden by a Denmark-only scope says it is outside by its jurisdiction,
-      Sweden. A standard's obligation lists none (International is mirrored by no term,
-      D-38). The other reading would show only the instrument's own jurisdiction on the
-      card, or none, while still matching on all of them. Default if you say nothing: the
-      card shows every derived term, because the card and the rule then cannot disagree.
+      Swedish obligation shows one pill, Sweden, and a Union one five pills, European
+      Union, Sweden, Denmark, Norway and Finland. The API marks that Union group as all
+      selected, but the card folds a group into one "all" pill only for services, so it
+      lists the five. An obligation hidden by a Denmark-only scope says it is outside by
+      its jurisdiction, Sweden. A standard's obligation lists none (International is
+      mirrored by no term, D-38). Two other readings: the card folds a fully selected
+      jurisdiction group into one "All jurisdictions" pill, as it does for services; or it
+      shows only the instrument's own jurisdiction, or none, while still matching on all
+      of them. Default if you say nothing: the card lists every derived term as its own
+      pill, because the card and the rule then cannot disagree.
 
 ## Ask sends a reader's question to the model (search-ask-backend, 2026-09-23)
 
