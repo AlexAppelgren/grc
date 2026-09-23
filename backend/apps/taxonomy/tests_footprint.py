@@ -18,7 +18,6 @@ counts what the organisation may see and nothing else (INV-07, AC-FP1).
 
 from __future__ import annotations
 
-import time
 import threading
 import uuid
 from collections.abc import Callable
@@ -36,12 +35,11 @@ from apps.library.tests_reading import as_app_role
 from apps.shared import factories, tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
+from apps.shared.testing import LANDED, RACE_WAIT_SECONDS, backend_pid, hold_until_waiting_on_me
 from apps.taxonomy import footprint_logic, terms_logic
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, FootprintHistory
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
-WAIT_SECONDS = 10
-LANDED = "landed"
 TERM_EVENTS = ("footprint.term_added", "footprint.term_removed")
 DECISION_EVENTS = ("footprint.change_approved", "footprint.change_rejected", "footprint.change_withdrawn")
 
@@ -75,24 +73,6 @@ def _session(tenant_id: uuid.UUID, work: Callable[[], object]) -> str:
         return str(refusal.code)
     finally:
         connections[DEFAULT_DB_ALIAS].close()
-
-
-def _backend_pid() -> int:
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT pg_backend_pid()")
-        return int(cursor.fetchone()[0])
-
-
-def _hold_until_waiting_on_me(other_pid: list[int]) -> None:
-    deadline = time.monotonic() + WAIT_SECONDS
-    while time.monotonic() < deadline:
-        if other_pid:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT pg_backend_pid() = ANY(pg_blocking_pids(%s))", [other_pid[0]])
-                if cursor.fetchone()[0]:
-                    return
-        time.sleep(0.01)
-    raise AssertionError("the second session never waited on the first")
 
 
 class FootprintRaces(TransactionTestCase):
@@ -152,11 +132,11 @@ class FootprintRaces(TransactionTestCase):
         def lead() -> None:
             first()
             acted.set()
-            _hold_until_waiting_on_me(second_pid)
+            hold_until_waiting_on_me(second_pid)
 
         def follow() -> None:
-            second_pid.append(_backend_pid())
-            if not acted.wait(WAIT_SECONDS):
+            second_pid.append(backend_pid())
+            if not acted.wait(RACE_WAIT_SECONDS):
                 raise AssertionError("the first session never acted")
             second()
 

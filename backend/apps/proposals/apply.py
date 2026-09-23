@@ -188,6 +188,11 @@ def _obligation_version(
     The search index moves inside this transaction (`reindex`), so an index that cannot be
     written takes the version down with it and leaves the proposal open.
     """
+    # The obligation's row is locked before its highest version is read: a second approval
+    # on the same obligation waits here until the first commits, then numbers its version
+    # after that one, rather than both claiming one number and the second dying on the
+    # unique key (PRO-02; apps/proposals/tests_decide.py, ObligationVersionRaces).
+    Obligation.objects.select_for_update().filter(pk=proposal.target_id).exists()
     # The target is on the proposal, and creation refused one without it (`logic.
     # _validate_obligation_target`); it is read again here against the library as it is
     # now, because the obligation may have been retired while the proposal waited.

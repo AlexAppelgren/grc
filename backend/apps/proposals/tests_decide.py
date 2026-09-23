@@ -1,9 +1,10 @@
-"""Deciding a proposal (PRO-02, AC-PRO1, AC-PRO2, INV-05): the row lock that lets one
-decision land, the person's fresh passkey on approval, and the kinds an agent may confirm.
+"""Deciding a proposal (PRO-02, AC-PRO1, AC-PRO2, INV-05): the row locks that let one
+decision land and number one obligation's versions in turn, the person's fresh passkey on
+approval, and the kinds an agent may confirm.
 
 The races run two sessions at once, each on its own cw_app connection in its own thread and
-transaction, the way two requests reach production (the pattern of
-apps/taxonomy/tests_footprint.py). The first session decides and holds its transaction open
+transaction, the way two requests reach production (the helpers in apps/shared/testing.py,
+shared with apps/taxonomy/tests_footprint.py). The first session decides and holds its transaction open
 until PostgreSQL reports the second one waiting on it, then commits: the interleaving in
 which a status check on an unlocked row lets both through, because the second session read
 "open" before the first committed.
@@ -36,16 +37,17 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 
 from apps.agents import testing as agents_testing
+from apps.library import testing as build
+from apps.library.models import ObligationVersion
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import logic
 from apps.proposals.models import Proposal, ProposalStatus
 from apps.shared import factories, tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import AuditEvent
-from apps.shared.testing import ScenarioTestCase, sign_in
+from apps.shared.testing import LANDED, RACE_WAIT_SECONDS, ScenarioTestCase, backend_pid, hold_until_waiting_on_me, sign_in
 from apps.taxonomy.models import Flag, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
-from apps.taxonomy.tests_footprint import LANDED, WAIT_SECONDS, _backend_pid, _hold_until_waiting_on_me
 
 V1 = "/api/v1"
 DECISIONS = ("proposal.approved", "proposal.rejected")
@@ -84,6 +86,39 @@ def _platform_session(work: Callable[[], object]) -> str:
         connections[DEFAULT_DB_ALIAS].close()
 
 
+def _race(first: Callable[[], object], second: Callable[[], object]) -> tuple[str, str]:
+    """`first` decides and keeps its transaction open until `second` waits on it."""
+    acted = threading.Event()
+    second_pid: list[int] = []
+
+    def lead() -> None:
+        first()
+        acted.set()
+        hold_until_waiting_on_me(second_pid)
+
+    def follow() -> None:
+        second_pid.append(backend_pid())
+        if not acted.wait(RACE_WAIT_SECONDS):
+            raise AssertionError("the first session never decided")
+        second()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        leading = pool.submit(_platform_session, lead)
+        following = pool.submit(_platform_session, follow)
+        return leading.result(), following.result()
+
+
+def _approval(proposal_id: uuid.UUID, reviewer: Any) -> Callable[[], object]:
+    # What the route does: an unlocked read by id, then the decision.
+    return lambda: logic.approve(
+        proposal=logic.by_id(proposal_id),
+        reviewer=reviewer,
+        actor=_actor(reviewer),
+        note="",
+        step_up_assertion_id=uuid.uuid4(),
+    )
+
+
 class ProposalDecisionRaces(TransactionTestCase):
     databases = {DEFAULT_DB_ALIAS, "app"}
 
@@ -104,14 +139,7 @@ class ProposalDecisionRaces(TransactionTestCase):
 
     # --- helpers --------------------------------------------------------------------------
     def _approve(self, reviewer: Any) -> Callable[[], object]:
-        # What the route does: an unlocked read by id, then the decision.
-        return lambda: logic.approve(
-            proposal=logic.by_id(self.proposal.id),
-            reviewer=reviewer,
-            actor=_actor(reviewer),
-            note="",
-            step_up_assertion_id=uuid.uuid4(),
-        )
+        return _approval(self.proposal.id, reviewer)
 
     def _reject(self, reviewer: Any) -> Callable[[], object]:
         return lambda: logic.reject(
@@ -121,27 +149,6 @@ class ProposalDecisionRaces(TransactionTestCase):
             rejection_code="duplicate",
             note="We have this already.",
         )
-
-    def _race(self, first: Callable[[], object], second: Callable[[], object]) -> tuple[str, str]:
-        """`first` decides and keeps its transaction open until `second` waits on it."""
-        acted = threading.Event()
-        second_pid: list[int] = []
-
-        def lead() -> None:
-            first()
-            acted.set()
-            _hold_until_waiting_on_me(second_pid)
-
-        def follow() -> None:
-            second_pid.append(_backend_pid())
-            if not acted.wait(WAIT_SECONDS):
-                raise AssertionError("the first session never decided")
-            second()
-
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            leading = pool.submit(_platform_session, lead)
-            following = pool.submit(_platform_session, follow)
-            return leading.result(), following.result()
 
     def _assert_approved_once(self) -> None:
         with transaction.atomic():
@@ -154,14 +161,65 @@ class ProposalDecisionRaces(TransactionTestCase):
 
     # --- the races ------------------------------------------------------------------------
     def test_an_approval_and_a_rejection_at_once_land_one_decision(self) -> None:
-        outcomes = self._race(self._approve(self.first), self._reject(self.second))
+        outcomes = _race(self._approve(self.first), self._reject(self.second))
         self.assertEqual(outcomes, (LANDED, "invalid_transition"))
         self._assert_approved_once()
 
     def test_two_approvals_at_once_apply_once(self) -> None:
-        outcomes = self._race(self._approve(self.first), self._approve(self.second))
+        outcomes = _race(self._approve(self.first), self._approve(self.second))
         self.assertEqual(outcomes, (LANDED, "invalid_transition"))
         self._assert_approved_once()
+
+
+class ObligationVersionRaces(TransactionTestCase):
+    """Two approvals of different proposals on one obligation at once (PRO-02, INV-04):
+    each version is numbered after the one before it, rather than both claiming the same
+    number and one dying on the version's unique key as a 500. Agents working the queue in
+    parallel make this the ordinary case.
+
+    Proven to fail 2026-09-23 without the obligation's row lock in
+    `apply._obligation_version`: the second approval raised IntegrityError on
+    `obligation_version_unique`."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def setUp(self) -> None:
+        with transaction.atomic():
+            _seed()
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            self.obligation = build.obligation(build.instrument(key="race-instrument"), key="obl-race")
+            proposer = factories.platform_user(roles=("library_editor",), email="proposer@bleqq.test")
+            self.first = factories.platform_user(roles=("library_editor",), email="first@bleqq.test")
+            self.second = factories.platform_user(roles=("library_editor",), email="second@bleqq.test")
+            self.proposals = [
+                logic.create(
+                    kind="new_obligation_version",
+                    title=f"Reword the duty, take {take}",
+                    payload={"summaries": {"en": f"The duty, reworded (take {take})."}, "originalLanguage": "en"},
+                    field_sources={"summaries.en": "https://www.fi.se/"},
+                    target_type="obligation",
+                    target_id=self.obligation.id,
+                    proposer=logic.Proposer(actor=_actor(proposer), user=proposer),
+                )[0]
+                for take in (1, 2)
+            ]
+
+    def test_two_approvals_on_one_obligation_at_once_add_two_versions(self) -> None:
+        first, second = self.proposals
+        outcomes = _race(_approval(first.id, self.first), _approval(second.id, self.second))
+        self.assertEqual(outcomes, (LANDED, LANDED))
+        with transaction.atomic():
+            tenancy.clear_tenant()
+            applied = {
+                version.applied_by_proposal_id: version.version_number
+                for version in ObligationVersion.objects.filter(obligation=self.obligation, applied_by_proposal__isnull=False)
+            }
+            self.assertEqual(applied, {first.id: 2, second.id: 3})
+            self.assertEqual(
+                set(Proposal.objects.filter(pk__in=[first.id, second.id]).values_list("status", flat=True)),
+                {ProposalStatus.APPROVED.value},
+            )
 
 
 class DecidingAProposal(ScenarioTestCase):
