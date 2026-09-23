@@ -19,7 +19,6 @@
 operation approveFootprintRequest app taxonomy 4 findings (description, operations)
 operation createApiKey app identity 3 findings (operations)
 operation createFootprintRequest app taxonomy 4 findings (description, operations)
-operation createProposal app proposals 3 findings (operations)
 operation createRole app identity 3 findings (operations)
 operation createTerm app taxonomy 3 findings (operations)
 operation createVocabularyRow app taxonomy 4 findings (description, operations)

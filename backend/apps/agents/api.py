@@ -138,8 +138,9 @@ def finish_agent_run(
     person, or for a second and independent agent, to approve it. The close is recorded in
     the audit log against the agent behind the key.
 
-    Answers 200 with the closed run. Errors: `not_found` when no such run exists or it
-    belongs to another key, which are deliberately the same answer so that a run id cannot
+    Answers 200 with the closed run. Errors: `tenant_agents_not_available` when the key
+    belongs to a bank rather than to the platform, since a bank opens no run in this
+    release; `not_found` when no such run exists or it belongs to another key, which are deliberately the same answer so that a run id cannot
     be probed for; `invalid_transition` when the run is already closed and the values sent
     differ from the ones it closed with; `permission_denied` when the key lacks
     `agent-runs:write`; `unauthenticated` when the key is missing, revoked or expired; and

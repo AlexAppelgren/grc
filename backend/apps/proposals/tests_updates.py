@@ -135,7 +135,7 @@ class LibraryUpdates(ScenarioTestCase):
                 "effectiveFrom": "2026-10-01",
                 "effectiveFromPrecision": "quarter",
             },
-            proposer=logic.Proposer(actor=factories.user_actor(), agent_run_id=None),
+            proposer=logic.Proposer(actor=factories.user_actor()),
             target_type="obligation",
             target_id=obligation.id,
             field_sources={"summaries.sv": SOURCE, "effectiveFrom": SOURCE},

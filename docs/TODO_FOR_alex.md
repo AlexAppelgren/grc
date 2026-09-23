@@ -558,3 +558,21 @@ section. Copied here as chunk3-rest-T20 requires.
       and pin a rejected one to the version in force on the day it was rejected. Default if
       you say nothing: it stays as built, which is what the brief asked for ("open proposals
       keep today's in-force version").
+
+## agent-flow-run-guards: what an agent files names its run (2026-09-23)
+- [ ] **Default taken: an agent's key must name an open run of its own on
+      `POST /changes` and `POST /proposals`** (AGT-01, PRO-01): every key that registers a
+      change, and every key bound to an agent that files a proposal. Naming none, or a closed
+      one, answers 422 `run_not_open`; another key's run answers 404, as does any run a
+      person names. A bank's own key, which is bound to no agent, still files a proposal
+      without a run in R1, as a bank's person does, and every watch write (a run, a source
+      check, a change and anything on one) refuses it with 403 `tenant_agents_not_available`
+      whatever scopes it holds. Say so if a bank key's proposal should need a run too: a
+      bank's key cannot open one in R1, so that would stop bank keys proposing until
+      chunk 11 brings a bank's own agents.
+- [ ] **Default taken: finding similar records names no run** (AGT-01, AGT-S1).
+      `POST /search/similar` is a read, so it takes no `agentRunId` and leaves nothing
+      behind to trace; AGT-S1 therefore says "each write references the run" rather than
+      "each step". Every write of the flow (opening and closing the run, a source check, a
+      change, a proposal) names it. Say so if you want the lookups an agent makes traced to
+      its run as well: that is an optional, checked `agentRunId` on the similar-records call.

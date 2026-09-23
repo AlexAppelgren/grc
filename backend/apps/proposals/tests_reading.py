@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import sys
 import time
-import uuid
 from datetime import date, datetime, timedelta
 from typing import Any
 
@@ -45,6 +44,7 @@ from apps.library.models import (
     Provision,
 )
 from apps.agents import testing as agents_testing
+from apps.agents.models import AgentRun
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import logic
 from apps.proposals.models import Proposal, ProposalStatus
@@ -170,11 +170,18 @@ class QueueReads(ScenarioTestCase):
         if terms is not None:
             payload["terms"] = terms
             sources["terms"] = PROVISION_SOURCE
+        # An agent files under an open run of its own key (AGT-01).
+        run = None
+        if proposer is not None and proposer.agent_id is not None:
+            run = AgentRun.objects.create(
+                agent_id=proposer.agent_id, api_key_id=proposer.api_key_id, model=agents_testing.SWEEPER_MODEL, pipeline_version=agents_testing.SWEEPER_PIPELINE
+            ).id
         proposal, _ = logic.create(
             kind="new_obligation_version",
             title=f"Version 2 of {obligation.stable_key}",
             payload=payload,
-            proposer=proposer or logic.Proposer(actor=factories.user_actor(), agent_run_id=uuid.uuid4()),
+            proposer=proposer or logic.Proposer(actor=factories.user_actor()),
+            agent_run_id=run,
             target_type="obligation",
             target_id=obligation.id,
             field_sources=sources,
@@ -203,7 +210,6 @@ class QueueReads(ScenarioTestCase):
             actor=Actor(kind=ActorType.AGENT, id=key.agent.id, label=key.agent.key),
             api_key_id=key.id,
             agent_id=key.agent.id,
-            agent_run_id=uuid.uuid4(),
         )
 
     def _agent_key(self, *, agent_row: Any = None, scopes: tuple[str, ...] = (perms.SCOPE_PROPOSALS_REVIEW,)) -> Any:
@@ -410,7 +416,7 @@ class QueueReads(ScenarioTestCase):
             kind="vocabulary_create",
             title=f"Add the flag number {number}",
             payload={"list": "flag", "key": f"flag_{number}", "labels": {"en": f"Flag {number}"}},
-            proposer=logic.Proposer(actor=factories.user_actor(), agent_run_id=uuid.uuid4()),
+            proposer=logic.Proposer(actor=factories.user_actor()),
         )
         return proposal
 

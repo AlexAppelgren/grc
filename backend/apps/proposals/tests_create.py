@@ -29,13 +29,16 @@ from django.db import connection
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
+from apps.agents import testing as agent_build
+from apps.agents.models import RunStatus
 from apps.identity.models import ApiKey
 from apps.library.models import Instrument, Jurisdiction, Obligation, ObligationVersion, Provision, RecordStatus
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import apply, logic
 from apps.proposals.models import Proposal, ProposalTenant
 from apps.proposals.schemas import ProposalObligationVersionPayload
-from apps.shared import factories
+from apps.shared import factories, tenancy
+from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent
 from apps.shared.tenancy import library_write
 from apps.taxonomy.models import DutyType, InstrumentLevel, ProvisionKind, TaxonomyTerm
@@ -313,6 +316,62 @@ class ObligationProposalCreation(TestCase):
                 proposer=self.proposer,
             )
         self.assertEqual(caught.exception.code, "unknown_key")
+
+
+class AnAgentsProposalNamesItsRun(TestCase):
+    """AGT-01, PRO-01: a proposal from a key bound to an agent names an open run of that
+    key, so every proposal an agent filed traces to the night that produced it. The check
+    is `runs.require_open_run_of_key`, the one every agent write asks."""
+
+    FLAG = {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}
+
+    def setUp(self) -> None:
+        seed_languages()
+        seed_library_vocabularies()
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        self.key = agent_build.agent_key(scopes=("proposals:write",))
+        self.open_run = agent_build.platform_run(key=self.key)
+        self.proposer = logic.Proposer(actor=factories.agent_actor(), api_key_id=self.key.id, agent_id=self.key.agent.id)
+
+    def _create(self, proposer: logic.Proposer, agent_run_id: uuid.UUID | None) -> Proposal:
+        proposal, _ = logic.create(
+            kind="vocabulary_create",
+            title="Add the flag Client money",
+            payload=dict(self.FLAG),
+            proposer=proposer,
+            agent_run_id=agent_run_id,
+        )
+        return proposal
+
+    def test_an_open_run_of_the_key_is_stored_on_the_proposal(self) -> None:
+        self.assertEqual(self._create(self.proposer, self.open_run.id).agent_run_id, self.open_run.id)
+
+    def test_naming_no_run_or_a_closed_one_is_refused(self) -> None:
+        with self.assertRaises(ValidationError) as missing:
+            self._create(self.proposer, None)
+        self.assertEqual(missing.exception.code, "run_not_open")
+        self.open_run.status = RunStatus.SUCCEEDED.value
+        self.open_run.save(update_fields=["status"])
+        with self.assertRaises(ValidationError) as closed:
+            self._create(self.proposer, self.open_run.id)
+        self.assertEqual(closed.exception.code, "run_not_open")
+        self.assertFalse(Proposal.objects.exists())
+
+    def test_a_run_of_another_key_or_a_person_naming_one_is_not_found(self) -> None:
+        """404 and never 422: which run ids exist is not something a caller may probe for,
+        and a person opens no run at all."""
+        stranger = agent_build.agent_key(scopes=("proposals:write",))
+        editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
+        others = {
+            "another key": logic.Proposer(actor=factories.agent_actor(), api_key_id=stranger.id, agent_id=stranger.agent.id),
+            "a person": logic.Proposer(actor=factories.user_actor(user_id=editor.id), user=editor),
+        }
+        for name, proposer in others.items():
+            with self.subTest(caller=name):
+                with self.assertRaises(ProblemError) as caught:
+                    self._create(proposer, self.open_run.id)
+                self.assertEqual(caught.exception.status, 404)
+        self.assertFalse(Proposal.objects.exists())
 
 
 class ProposalTenantLink(TestCase):

@@ -1029,7 +1029,16 @@ class ProposalCreateBody(WriteBody):
     target_type: str = ""
     target_id: UUID | None = None
     change_id: UUID | None = None
-    agent_run_id: UUID | None = None  # the run that produced it (agents, chunk 5)
+    agent_run_id: UUID | None = Field(
+        default=None,
+        description=(
+            "The run this proposal was found in, as the UUID `POST /agent-runs` returned. "
+            "Required from a key bound to an agent, and it must be a run that same key has "
+            "open: naming none, or a closed one, answers 422 `run_not_open`, and a run of "
+            "another key answers 404 `not_found`. A person and a bank's own key name none."
+        ),
+        examples=["5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21"],
+    )
     model: str = ""  # the model that drafted it (AUD-02; labelled until a person confirms)
     field_sources: dict[str, str] = Field(default_factory=dict)  # schema: ProposalFieldSources
     source_label: str = ""

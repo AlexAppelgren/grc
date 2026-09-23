@@ -1231,8 +1231,9 @@ class WatchChangeInput(WriteBody):
         default=None,
         description=(
             f"The run that found this, as {_UUID}, so every library row an agent wrote points at the run "
-            "that wrote it (AGT-01). Required in practice for an agent's own write; null when a "
-            "library editor registers a change by hand."
+            "that wrote it (AGT-01). Required from a key, and it must be a run that same key has "
+            "open: naming none, or a closed one, answers 422 `run_not_open`, and a run of another "
+            "key answers 404 `not_found`. Null when a library editor registers a change by hand."
         ),
         examples=["5b8e1a44-9c2d-4f17-b0a3-1e7c6d5f4a21"],
     )

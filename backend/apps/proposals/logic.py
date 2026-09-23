@@ -42,6 +42,7 @@ from django.core.validators import URLValidator
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.agents import runs
 from apps.library.models import DatePrecision
 from apps.library.reading import active_obligation, terms_of, unknown_provision_keys
 from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus, ProposalTenant
@@ -100,13 +101,14 @@ NAMED_PAYLOADS = (
 
 @dataclass(frozen=True)
 class Proposer:
-    """Who proposes: a person (session) or an agent (API key). Exactly one is set."""
+    """Who proposes: a person (session) or an agent (API key). Exactly one is set. The run
+    a proposal was filed under is not part of who proposes: `create()` takes it on its own,
+    and checks it, so there is one way to name a run and it is always checked."""
 
     actor: Actor
     user: Any = None
     api_key_id: uuid.UUID | None = None
     agent_id: uuid.UUID | None = None
-    agent_run_id: uuid.UUID | None = None
 
     @property
     def origin(self) -> OriginType:
@@ -380,7 +382,15 @@ def create(
     effective_from: Any = None,
 ) -> tuple[Proposal, bool]:
     """Create a proposal, or answer the one an earlier identical submission made. Returns
-    `(proposal, created)`."""
+    `(proposal, created)`.
+
+    A key bound to an agent names an open run of its own, so every proposal an agent filed
+    traces to the night that produced it (AGT-01); a run anyone else names is checked the
+    same way, and so is never one they did not open. That is asked first, before anything
+    else is read, so a retry must arrive while its run is still open: once the run is
+    closed, a retry answers `run_not_open` as any new filing against that run would."""
+    if proposer.agent_id is not None or agent_run_id is not None:
+        runs.require_open_run_of_key(proposer.api_key_id, agent_run_id)
     validated_kind(kind)
     parsed = validated_payload(kind, payload)
     _validate_obligation_target(kind, target_type, target_id)
@@ -427,7 +437,7 @@ def create(
         source_url=source_url,
         effective_from=effective_from,
         origin=proposer.origin.value,
-        agent_run_id=agent_run_id or proposer.agent_run_id,
+        agent_run_id=agent_run_id,
         proposed_by_user=proposer.user,
         proposed_by_api_key_id=proposer.api_key_id,
         proposed_by_agent_id=proposer.agent_id,

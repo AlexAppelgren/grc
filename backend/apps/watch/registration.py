@@ -15,8 +15,11 @@ carries. A merge writes `change.updated` and never `change.registered`, so no se
 is attempted anywhere.
 
 **Nothing is registered against a run that is not open.** A change points at the run that
-found it, so a closed or unknown run is refused (422 `run_not_open`) and stores nothing: a
-finished account of a night's work is not something anything may be added to afterwards.
+found it, so a key's registration that names no run, or a closed one, is refused (422
+`run_not_open`), another key's run is not found (404), and either stores nothing: a finished
+account of a night's work is not something anything may be added to afterwards. A bank's
+key writes nothing here at all (403 `tenant_agents_not_available`, `runs.refuse_tenant_key`):
+in R1 every run and everything it files is the platform's.
 
 **Fetched content is untrusted** (AGT-07, playbook 11.2). Every string the run read off a
 page — the reform's title and summary, and each page's own headline — goes through
@@ -84,9 +87,15 @@ def register_change(
     library already holds under this stable key.
 
     Every key is resolved and every refusal raised before the write opens, so a call naming
-    a vocabulary row the library does not hold stores nothing at all (AC-WAT2).
+    a vocabulary row the library does not hold stores nothing at all (AC-WAT2). A key must
+    name an open run of its own, and a bank's key is refused outright; a library editor
+    names none, and a run one names is not theirs.
     """
-    run = runs.require_open_run(who, body.agent_run_id) if body.agent_run_id is not None else None
+    run = (
+        runs.require_open_run(who, body.agent_run_id)
+        if who.kind is PrincipalKind.AGENT or body.agent_run_id is not None
+        else None
+    )
     change_type = keys.resolve_keys(keys.CHANGE_TYPE_LIST, [body.change_type])[0]
     flags = keys.resolve_keys(keys.FLAG_LIST, body.flags)
     terms = keys.resolve_terms(body.term_ids)
@@ -206,14 +215,16 @@ def _merge(
 # POST /changes/{changeId}/documents
 # ---------------------------------------------------------------------------------------
 def add_document(
-    *, actor: Actor, order: list[str], change_id: uuid.UUID, body: WatchChangeDocumentInput
+    *, who: Principal, actor: Actor, order: list[str], change_id: uuid.UUID, body: WatchChangeDocumentInput
 ) -> tuple[int, WatchChangeDocument]:
-    """Attach one fetched page to a change already registered.
+    """Attach one fetched page to a change already registered. A bank's key is refused
+    before anything is read.
 
     `(change, url)` is unique, so the same page posted twice answers the page that is
     already there rather than doubling it — which is what makes this safe for a run to
     retry.
     """
+    runs.refuse_tenant_key(who)
     change = keys.change_for_write(change_id)
     url = str(body.url)
     existing = keys.document_with_url(change, url)

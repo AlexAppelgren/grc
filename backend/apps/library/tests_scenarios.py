@@ -581,6 +581,8 @@ class LibraryScenarioTests(ScenarioTestCase):
                 "isMachine": True,
             },
             "fieldSources": {"summaries.en": "https://www.fi.se/"},
+            # An agent files under an open run of its own (AGT-01).
+            "agentRunId": str(agents_testing.platform_run(key=proposer).id),
         }
         created = self._post("/proposals", body, {"HTTP_X_API_KEY": proposer.plain_key})
         self.assertEqual(created.status_code, 201, created.content)

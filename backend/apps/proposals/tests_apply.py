@@ -269,9 +269,10 @@ class ProposalApply(ScenarioTestCase):
     # --- deciding -------------------------------------------------------------------------------
     def test_an_agent_proposal_is_decided_by_any_reviewer_and_nobody_rejects_their_own(self) -> None:
         key = factories.api_key(self.tenant, scopes=("proposals:write",))
-        agent = self._post("/proposals", {"kind": "vocabulary_create", "title": "Add Greenwashing", "payload": {"list": "flag", "key": "greenwashing", "labels": {"en": "Greenwashing"}}, "agentRunId": "00000000-0000-4000-8000-0000000000aa", "model": "mock-1"}, {"HTTP_X_API_KEY": key.plain_key})
+        agent = self._post("/proposals", {"kind": "vocabulary_create", "title": "Add Greenwashing", "payload": {"list": "flag", "key": "greenwashing", "labels": {"en": "Greenwashing"}}, "model": "mock-1"}, {"HTTP_X_API_KEY": key.plain_key})
         self.assertEqual(agent.status_code, 201, agent.content)
-        self.assertEqual((agent.json()["agentRunId"], agent.json()["model"], agent.json()["origin"]), ("00000000-0000-4000-8000-0000000000aa", "mock-1", "agent"))
+        # A bank's own key is bound to no agent and names no run; a run it named would have to be its own (AGT-01).
+        self.assertEqual((agent.json()["agentRunId"], agent.json()["model"], agent.json()["origin"]), (None, "mock-1", "agent"))
         self.assertEqual(self._post(f"/proposals/{agent.json()['id']}/approve", {}, sign_in(self.editor, step_up=True)).status_code, 200)
         own = self._proposed(self._post("/vocab/flag", {"labels": {"en": "Sanctions"}}, sign_in(self.editor)))
         refused = self._post(f"/proposals/{own['id']}/reject", {"rejectionCode": "duplicate", "note": "Mine."}, sign_in(self.editor))
