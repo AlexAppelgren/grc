@@ -641,3 +641,18 @@ Nothing waits for these; each has the default the build took.
       their own would close the second, but needs the baseline to record a value per kind
       of text, which it does not today. Default if you say nothing: 0 for both, and the
       report's lines per kind of text are read by the person recording the baseline.
+
+## search-eval-gate: the release gate does not check search quality yet (2026-09-23, SRC-05)
+
+- [ ] **The retrieval track of the release gate is unrecorded until D-09's key arrives, so a
+      retrieval regression would not fail CI until then.** The real retriever is wired
+      (`apps.search.eval:Retriever`, hybrid search over the sample library) and SRC-S8 proves
+      the gate fails when a recorded score drops, but with only the mock embedder there is
+      nothing honest to record: a mock can never set the bar. Nothing to do beyond the D-09
+      key already listed under "Before the first test deploy"; the run that chooses the
+      model records the baseline and removes this line (`backend/eval/README.md`). Two
+      things that run needs first, neither of them yours: a settings route with a real
+      embedder and a throwaway database (today's test settings fix the embedder to the
+      mock), and hybrid search breaking ties on something a rebuild keeps, because today two
+      of the 53 questions can come back in a different order from one fresh database to the
+      next.

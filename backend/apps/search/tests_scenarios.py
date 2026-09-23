@@ -9,20 +9,25 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: SRC.
 """
 
+import json
+import tempfile
 import uuid
+from pathlib import Path
 from typing import Any, ClassVar
 from unittest import mock, skip
 
 from django.contrib.postgres.search import SearchQuery
 from django.db import connection
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
 from apps.identity.models import User
 from apps.library.models import ProblemReport, SubjectType
 from apps.library.seeds import seed_languages
+from apps.search.eval import SPEC, Retriever
 from apps.search.indexing import index_write
 from apps.search.models import SearchChunk, SearchSource
+from apps.search.tests_eval import load_search_eval
 from apps.search.tests_hybrid import (
     COSTS_TITLE_FI,
     COSTS_TITLE_SV,
@@ -40,6 +45,8 @@ from apps.taxonomy.models import DutyType
 from apps.shared.tenancy import library_write
 
 SEARCH = "/api/v1/search"
+# SRC-S8's stand-in for the agents' classifier, named to the gate the way a real one is.
+CLASSIFIER = "apps.search.tests_scenarios:LabelledClassifier"
 
 
 class SearchScenarioTests(TestCase):
@@ -75,15 +82,91 @@ class SearchScenarioTests(TestCase):
         Saved searches notify and show what changed since the last visit (SRC-04).
         """
 
-    @skip("pending: SRC-S8")
     def test_src_s8(self) -> None:
         """SRC-S8
 
         The evaluation set gates releases (SRC-05).
 
+        `scripts/search_eval.py` runs the real retriever, `apps.search.eval:Retriever`: hybrid
+        search over the fixture library, seeded and indexed in this test's database, asked
+        the committed questions. It reports recall and accuracy per language. A mock anywhere
+        in the chain scores but is never recorded, so a mock embedder behind a real reranker
+        (`none`, the fused order) is refused by `--record` and the baseline is untouched. A
+        chain with no mock in it — the keyword leg and the fused order, which is what D-09
+        leaves a deployment with until a model is chosen — passes a recorded baseline it
+        matches and fails one it falls short of by more than the tolerance, naming every
+        metric of both tracks. That baseline is synthetic: the committed one stays
+        unrecorded until a real embedder earns it (docs/TODO_FOR_alex.md, D-09). The
+        classifier is the agents' and not this app's, so a stand-in answering the labels
+        takes its place (`LabelledClassifier`). A question the library cannot answer gets
+        no hit at all from the real retriever, which is the one answer the gate scores right.
+
         Operations: `rateAnswer`, the reader's verdict the evaluation set reads back.
         It answers 501 not_built until the Ask backend lands.
         """
+        gate = load_search_eval()
+        questions = gate.load_jsonl(gate.EVAL / "retrieval.jsonl")
+        # The mock classifier reads these predictions, so the first report shows the
+        # classification track's languages beside the retrieval track's.
+        texts = [dict(row, predictions=row["expected"]) for row in gate.load_jsonl(gate.EVAL / "classification.jsonl")]
+        tolerance = gate.load_json(gate.EVAL / "tolerance.json")["metrics"]
+        committed = gate.load_json(gate.EVAL / "baseline.json")
+        counts = {"retrieval": len(questions), "classification": len(texts)}
+
+        with tempfile.TemporaryDirectory() as folder:
+            paths = gate.Paths(
+                retrieval=gate.EVAL / "retrieval.jsonl",
+                classification=Path(folder) / "classification.jsonl",
+                baseline=Path(folder) / "baseline.json",
+                tolerance=gate.EVAL / "tolerance.json",
+            )
+            paths.classification.write_text("\n".join(json.dumps(row) for row in texts), encoding="utf-8")
+
+            def run(baseline: dict[str, Any], *argv: str) -> tuple[int, list[str]]:
+                paths.baseline.write_text(json.dumps(baseline), encoding="utf-8")
+                lines: list[str] = []
+                return gate.run(["--retriever", SPEC, *argv], paths, out=lines.append), lines
+
+            with override_settings(EMBEDDER_PROVIDER="mock", RERANKER_PROVIDER="none"):
+                code, lines = run(committed, "--record")
+
+            self.assertEqual(code, 1, lines)
+            self.assertEqual(lines[-1], "search_eval: nothing to record: no real evaluator ran")
+            self.assertEqual(json.loads(paths.baseline.read_text(encoding="utf-8")), committed)
+            self.assertIn(f"  retrieval: {len(questions)} rows, evaluator {SPEC} (embedder mock, reranker none)", lines)
+            for track, rows in (("retrieval", questions), ("classification", texts)):
+                report = _track_report(lines, track)
+                first = gate.TRACKS[track][0].split("_", 1)[1]  # the report drops the track's prefix
+                for language in sorted({row["language"] for row in rows}):
+                    with self.subTest(track=track, language=language):
+                        self.assertTrue(any(line.startswith(f"    by language {language}: {first} ") for line in report), report)
+
+            with override_settings(EMBEDDER_PROVIDER="none", RERANKER_PROVIDER="none"):
+                retriever = Retriever()
+                self.assertFalse(retriever.is_mock, retriever.name)
+                measured = {
+                    **gate.evaluate_retrieval(questions, retriever).metrics,
+                    **gate.evaluate_classification(texts, LabelledClassifier()).metrics,
+                }
+                real = ("--classifier", CLASSIFIER)
+                matched, _ = run(_recorded(committed, measured, rows=counts), *real)
+                short = {metric: value + tolerance[metric] + 0.01 for metric, value in measured.items()}
+                code, lines = run(_recorded(committed, short, rows=counts), *real)
+                silent = retriever.search("quidditch", "en", None)
+                with override_settings(RERANKER_PROVIDER="mock"):
+                    self.assertTrue(retriever.is_mock, "a mock reranker alone makes the chain a mock")
+
+        self.assertEqual(matched, 0, "a real chain within its tolerance passes")
+        self.assertEqual(code, 1, lines)
+        self.assertEqual(lines[-1], "search_eval: FAILED")
+        self.assertEqual(sorted(measured), sorted(gate.METRICS), "both tracks were measured")
+        for metric in gate.METRICS:
+            with self.subTest(metric=metric):
+                self.assertTrue(
+                    any(line.startswith(f"  {metric}: {measured[metric]:.3f} is under the floor ") for line in lines), lines
+                )
+        self.assertEqual(silent, [], "a question the library cannot answer gets no hit")
+        self.assertEqual((gate.recall_at_k([], silent), gate.reciprocal_rank([], silent)), (1.0, 1.0))
 
     @skip("pending: SRC-S9")
     def test_src_s9(self) -> None:
@@ -293,3 +376,41 @@ class HybridSearchScenarioTests(CorpusMixin, TestCase):
             DutyType.objects.get(key="reporting").labels.filter(language="en").update(text="Supervisory returns")
 
         self.assertEqual(self.search(body), answer, "the filter carried a key, so a new label changes nothing")
+
+
+# ---------------------------------------------------------------------------------------
+# SRC-S8: the release gate's harness, run the way the gate runs it
+# ---------------------------------------------------------------------------------------
+class LabelledClassifier:
+    """SRC-S8's stand-in for the agents' classifier, which is not this app's: it answers every
+    text of the committed set with its label. It is not a mock, so the gate holds it to a
+    recorded classification baseline the way it will hold the real one, and the only
+    baseline it ever meets is SRC-S8's synthetic one in a temporary folder."""
+
+    name = CLASSIFIER
+    is_mock = False
+
+    def __init__(self) -> None:
+        gate = load_search_eval()
+        self._labels = {row["text"]: row["expected"] for row in gate.load_jsonl(gate.EVAL / "classification.jsonl")}
+
+    def classify(self, text: str) -> dict[str, Any]:
+        return dict(self._labels[text])
+
+
+def _track_report(lines: list[str], track: str) -> list[str]:
+    """One track's lines of the report: its heading and everything indented under it."""
+    start = next(index for index, line in enumerate(lines) if line.startswith(f"  {track}: "))
+    end = next((index for index in range(start + 1, len(lines)) if not lines[index].startswith("    ")), len(lines))
+    return lines[start:end]
+
+
+def _recorded(baseline: dict[str, Any], metrics: dict[str, float], *, rows: dict[str, int]) -> dict[str, Any]:
+    """A synthetic baseline with every track in `rows` recorded at these values. It is never
+    written to eval/baseline.json, which only a real run's `--record` may change."""
+    synthetic = json.loads(json.dumps(baseline))
+    synthetic["recorded"] = True
+    for track, count in rows.items():
+        synthetic["tracks"][track] = {"recorded": True, "recorded_at": "SRC-S8", "evaluator": "synthetic", "rows": count}
+    synthetic["metrics"].update(metrics)
+    return synthetic
