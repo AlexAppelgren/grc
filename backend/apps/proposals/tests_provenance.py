@@ -32,8 +32,9 @@ from apps.proposals import logic
 from apps.proposals.models import Proposal
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.audit import Actor, ActorType
+from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
-from apps.taxonomy.models import Flag, FlagLabel, TaxonomyTerm, TaxonomyTermLabel
+from apps.taxonomy.models import Flag, FlagLabel, InstrumentLevel, TaxonomyTerm, TaxonomyTermLabel
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
 V1 = "/api/v1"
@@ -248,6 +249,20 @@ class ListAndTermProvenance(ScenarioTestCase):
         self.assertEqual(self._stamp(row), agents_stamp)
         self.assertFalse(row.active)
         self.assertEqual(self._stamp(target), ("user", None, into_created))
+
+    def test_a_column_an_agent_changed_names_the_agents_and_its_audit_row_holds_the_values(self) -> None:
+        """A list row's own columns (`extra`: a level's binding default and rank, a
+        dimension's footprint rule) are facts the rules read, not a sort order, so an
+        approval that changes one stamps the row as a wording change does, and the audit row
+        holds the values before and after (INV-05, D-62, AUD-01)."""
+        level = InstrumentLevel.objects.get(key="eu_guidance")
+        before = level.rank
+        proposal = self._agents_apply("vocabulary_relabel", {"list": "instrument_level", "key": "eu_guidance", "extra": {"rank": before + 7}})
+        self.assertEqual(self._stamp(level), ("agent", self.confirming.agent.id, proposal.id))
+        self.assertEqual(level.rank, before + 7)
+        event = AuditEvent.objects.get(action="vocabulary.updated", subject_id=level.id)
+        self.assertEqual(event.before["extra"], {"rank": before})
+        self.assertEqual(event.after["extra"], {"rank": before + 7})
 
     def test_a_seeded_row_and_a_banks_own_list_carry_no_confirmation(self) -> None:
         seeded = self._read("/vocab/flag")["items"]
