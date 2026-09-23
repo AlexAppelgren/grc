@@ -133,10 +133,14 @@ When a compliance officer accepts the first and removes the second on their own 
 Then both decisions are stored on that bank's case and audited, the second is hidden from that bank's change page, and the obligation shows "1 open change"
 And no library row changed: the second link is still there, still a suggestion, and another bank still sees both
 ```
-`@e2e` stays `test.fixme()`, owned and named by `c5-e2e-watch-journeys-b`: blocked on both
-`c5-watch-curation-confirm` (the library editor's half) and `c5-cases-so-what-and-links`
-(the compliance officer's own accept and remove, `POST`/`DELETE
-/changes/{changeId}/case/obligation-links`, still `not_built` — neither is on `main`).
+`@e2e` built for the bank's half: the compliance officer confirms one link and says the
+other is not related on their own bank's case ("Confirm link", "Not related"), the removed
+link is hidden from that bank's change page and still stored, the first obligation's card
+lists the change with its open count, and another bank still sees both links, neither
+decided. The library editor's half joins the same journey with the curation confirmation;
+until then the seed stands in for it with one link a library editor already confirmed
+(`c5-seed-watch`). That both decisions are audited is asserted by the `@integration` half,
+because the audit log's record-kind filter offers no case kind yet.
 
 > **Note — the library editor's confirmation.** The step "a library editor confirms the
 > first for the shared library" is the held half of this feature and is asserted in WAT-S4,
@@ -153,13 +157,15 @@ And no library row changed: the second link is still there, still a suggestion, 
 ```gherkin
 Given a change whose registering run filed a drafted "So what?" with it
 Then the tenant's copy shows "AI draft" beside it and an ai_generation row exists with model, version and purpose
-When the compliance officer chooses "Confirm wording" or rewrites and chooses "Save wording"
+When the compliance officer chooses "Confirm wording" or rewrites and chooses "Save and confirm"
 Then the tenant's copy is marked confirmed with the person and time
 And another tenant's copy is still the draft
 ```
-`@e2e` stays `test.fixme()`, owned and named by `c5-e2e-watch-journeys-b`: `c5-cases-so-what-and-links`
-is not on `main`, so `PUT`/`POST /changes/{changeId}/so-what` still answer `not_built` and
-the panel carries no confirm or rewrite control yet.
+`@e2e` built: tenant A's compliance officer confirms the draft as it stands, then rewrites it
+and saves; the page reads back the bank's own words, confirmed, with no AI label, and tenant
+B's administrator still reads the draft with its label and is offered no control. The
+screen names the time of the confirmation, not the person: the change read carries
+`soWhatConfirmedAt` and no name, and the person is in the audit row and the save's own answer.
 
 ### WAT-S8 — A tenant requests a source and private sources stay private `@integration` `@e2e` (WAT-06)
 ```gherkin
