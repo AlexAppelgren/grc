@@ -8,9 +8,11 @@ import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
 // the title is what scripts/requirements_coverage.py looks for. Never delete a
 // stub: un-fixme it when the journey is real.
 //
-// The seed's anchor date. Every read here pins it, so nothing depends on today
-// and the research payment version that takes effect on 2026-10-01 never
-// changes what a step reads.
+// The seed's anchor date, which the inventory list is read as of. The cards
+// themselves open on today's date, so a step on a card either chooses a
+// version by its own chip, types the date it reads as of, or asserts only
+// what reads the same on both sides of 2026-10-01, the day the research
+// payment rules change: a run after that day must pass unchanged.
 const AS_OF = '2026-09-16';
 
 // Library titles are rows, not catalog copy, so a record is found by its
@@ -67,8 +69,28 @@ test.describe('library journeys', () => {
     await expect(identity).toContainText('Finansinspektionen');
     await expect(identity.getByText('In force from 3 Jan 2018')).toBeVisible();
 
-    // Lineage: amended by FFFS 2026:11 (INV-01, T13's seeded amendment).
-    await expect(page.locator('[data-lineage-group="Amended by"]').getByText('FFFS 2026:11')).toBeVisible();
+    // Lineage, grouped by relation and direction: FFFS 2026:11 amends this
+    // instrument, and this instrument implements the delegated directive
+    // (INV-01, T13's seeded amendment). Both are library facts, so they are
+    // found through the group's key rather than quoted copy.
+    await expect(page.locator('[data-lineage-group="amends:incoming"] [data-lineage-instrument="fffs-2026-11"]')).toBeVisible();
+    await expect(page.locator('[data-lineage-group="implements:outgoing"] [data-lineage-instrument="celex-32017l0593"]')).toBeVisible();
+
+    // The obligations from this instrument read inside our scope first, the
+    // same list the inventory answers when filtered by it (FP-03), with the
+    // total and a way into that list.
+    const obligations = page.locator('[data-obligations-panel]');
+    await expect(obligations.getByRole('button', { name: 'Show outside our scope' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(obligations.locator(`[data-obligation="${RESEARCH}"]`)).toBeVisible();
+    await expect(obligations.locator('[data-obligations-total]')).toHaveText(/^\d+ obligations?$/);
+    const inventory = obligations.getByRole('link', { name: 'Open in the inventory' });
+    await expect(inventory).toHaveAttribute('href', '/inventory?instrument=fffs-2017-2');
+
+    // The inventory it opens is filtered by this instrument, and its picker
+    // says so rather than "All instruments".
+    await inventory.click();
+    await expect(page.locator(`[data-obligation-rows] [data-obligation="${RESEARCH}"]`)).toBeVisible();
+    await expect(page.locator('[data-inventory-filters]').getByLabel('Instrument', { exact: true })).toHaveValue('fffs-2017-2');
   });
 
   test("INV-S2: The provision tree holds verbatim text versions", async ({ page, apiGuard }) => {
@@ -76,11 +98,13 @@ test.describe('library journeys', () => {
     await signInAs(page, LOGINS.complianceOfficer);
     await openInstrument(page, 'fffs-2017-2');
 
-    // 9 kap. 6 § opens with the version in force before the amendment: both
-    // chips exist, and versions are chosen by their own chip rather than by
-    // today's date, which stays ahead of the amendment for years.
+    // 9 kap. 6 § carries a chip for each version. The one pressed on arrival is
+    // the version in force today, which changes on 1 October 2026 when the
+    // amendment takes effect, so the journey chooses the earlier version by
+    // its own chip before it asserts anything about it.
     const section = page.locator('[data-provision="fffs-2017-2/9-6"]');
     await expect(section).toBeVisible();
+    await section.getByRole('button', { name: 'In force 3 Jan 2018 to 30 Sept 2026' }).click();
     await expect(section.getByRole('button', { name: 'In force 3 Jan 2018 to 30 Sept 2026' })).toHaveAttribute('aria-pressed', 'true');
     await expect(section.getByRole('button', { name: 'In force from 1 Oct 2026' })).toHaveAttribute('aria-pressed', 'false');
 
@@ -89,8 +113,14 @@ test.describe('library journeys', () => {
     // The transitional note is the fixture's own text (T8), not app copy.
     await expect(section).toContainText('The annual assessment is first due for research received after 1 October 2026.');
 
-    // "Show what changed" opens the sentence-level diff between the two versions.
+    // "Show what changed" opens the sentence-level diff between the two
+    // versions, names both of them, and, because the officer reads an English
+    // translation of Swedish law, says it is a machine translation.
     await section.getByRole('button', { name: 'Show what changed' }).click();
+    const banner = section.locator('[data-diff-banner]');
+    await expect(banner).toContainText('in force from 3 Jan 2018');
+    await expect(banner).toContainText('in force from 1 Oct 2026');
+    await expect(section.locator('[data-diff-banner] + [data-machine-translation]')).toHaveText('Machine translation. The original is authoritative.');
     await expect(section.locator('[data-legal-text] ins, [data-legal-text] del').first()).toBeVisible();
 
     // The provision half of INV-S7: with 6 § expanded, the card still shows
