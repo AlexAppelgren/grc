@@ -637,12 +637,114 @@ test.describe('taxonomy journeys', () => {
         await approver.context().close();
       }
     });
+
+    // FP-S16's standard (backend/apps/shared/e2e_seed.py, E2E_STANDARD_OBLIGATION and
+    // E2E_STANDARD_TERM): the one conformance duty carries the standard's term, which no
+    // seeded bank follows, under an instrument whose regime tenant A holds.
+    const STANDARD_DIMENSION = 'standard';
+    const STANDARD_TERM = 'iso_iec_27001';
+    const STANDARD_OBLIGATION = 'iso-iec-27001-2022-conformance';
+
+    function standardGroup(page: Page) {
+      return page.locator(`[data-dimension="${STANDARD_DIMENSION}"]`);
+    }
+
+    function standardCheckbox(page: Page) {
+      return standardGroup(page).getByRole('checkbox', { name: /^ISO\/IEC 27001$/ });
+    }
+
+    /** The duty in tenant A's inventory, narrowed to its regime so a growing library never pages it out. */
+    async function openStandardDuty(page: Page) {
+      await page.goto(`/inventory?regime=ai_ict&asOf=${INVENTORY_AS_OF}`);
+      await expect(page.locator('[data-obligation-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+      return page.locator(`[data-obligation="${STANDARD_OBLIGATION}"]`);
+    }
+
+    /** Ticks or unticks the standard and waits for the counted preview. */
+    async function draftStandard(page: Page, follow: boolean) {
+      await page.goto('/admin/footprint');
+      await page.getByRole('button', { name: 'Propose a change' }).click();
+      if (follow) await standardCheckbox(page).check();
+      else await standardCheckbox(page).uncheck();
+      const draft = page.locator('[data-draft-preview]');
+      await expect(draft.getByRole('heading', { name: follow ? 'Your change: Add ISO/IEC 27001' : 'Your change: Remove ISO/IEC 27001' })).toBeVisible();
+      await expect(draft.getByText('Loading…')).toHaveCount(0);
+      return draft;
+    }
+
+    async function sendDraft(page: Page): Promise<void> {
+      await page.locator('[data-draft-preview]').getByRole('button', { name: 'Request approval' }).click();
+      await expect(page.getByText('Sent for approval.', { exact: true })).toBeFocused();
+    }
+
+    test("FP-S16: A standard shows only to tenants whose regulatory scope names it", async ({ page, browser, apiGuard }, testInfo) => {
+      // FP-S16 (FP-01, FP-02, INV-08, AC-FP3). The one audit event per added term is proved
+      // by the backend's FP-S16 test; here, the screens: absent, proposed, approved with a
+      // passkey, visible, and taken out again through the same door.
+      allowFreshContext(apiGuard);
+      apiGuard.allow(/\/api\/v1\/tenant\/footprint\/requests\/[^/]+\/approve$/, 403, 'the first attempt answers step_up_required and opens the prompt');
+      await signInAs(page, LOGINS.complianceOfficer);
+      await officerStartsClean(page);
+
+      // Absent from the inventory, and there, marked, under "Show outside our scope".
+      const duty = await openStandardDuty(page);
+      await expect(duty).toHaveCount(0);
+      await page.getByRole('button', { name: 'Show outside our scope' }).click();
+      await expect(duty).toHaveAttribute('data-outside-footprint', '');
+
+      // The scope page reads the empty opt-in group as following nothing, never as unrestricted.
+      await page.goto('/admin/footprint');
+      await expect(standardGroup(page).getByText('None followed.', { exact: true })).toBeVisible();
+      await expect(standardGroup(page).getByText('Not restricted: every option applies.')).toHaveCount(0);
+
+      const approver = await secondPerson(browser, apiGuard, testInfo, LOGINS.approver);
+      try {
+        // Following it reveals the duty, hides nothing and warns of no narrowing.
+        const follow = await draftStandard(page, true);
+        await expect(follow.locator('[data-preview-side="reveals"]').getByText(/^[1-9]\d* obligations?$/)).toBeVisible();
+        await expect(follow.locator('[data-preview-side="hides"]').getByText(/^0 obligations$/)).toBeVisible();
+        await expect(follow.locator('[data-notice="warn"]')).toHaveCount(0);
+        await expect(follow.getByText(/will start to filter/)).toHaveCount(0);
+        await sendDraft(page);
+        await expect(standardGroup(page).locator(`[data-term="${STANDARD_TERM}"]`).getByText('Added when approved')).toBeVisible();
+
+        await approveWithPasskey(approver);
+        await page.goto('/admin/footprint');
+        await expect(standardGroup(page).locator(`[data-term="${STANDARD_TERM}"]`)).toHaveText(/^ISO\/IEC 27001 In our scope$/);
+
+        // Now in the inventory, inside the scope.
+        const followed = await openStandardDuty(page);
+        await expect(followed).toBeVisible();
+        await expect(followed).not.toHaveAttribute('data-outside-footprint');
+
+        // Removing it counts the duty as hidden, and the warning says what that means.
+        const unfollow = await draftStandard(page, false);
+        await expect(unfollow.locator('[data-preview-side="hides"]').getByText(/^[1-9]\d* obligations?$/)).toBeVisible();
+        await expect(unfollow.getByText('What this hides leaves the feed, the inventory, the roadmap and the briefing for every member.')).toBeVisible();
+        await sendDraft(page);
+        await approveWithPasskey(approver);
+        await page.goto('/admin/footprint');
+        await expect(standardGroup(page).getByText('None followed.', { exact: true })).toBeVisible();
+      } finally {
+        // Restore the scope as seeded, on failure too: withdraw a request of ours still
+        // waiting, then take the standard out again through the same door if it is held.
+        await officerStartsClean(page);
+        await expect(standardGroup(page)).toBeVisible();
+        if ((await page.locator('[data-pending-request]').count()) === 0 && (await standardGroup(page).locator(`[data-term="${STANDARD_TERM}"]`).count()) > 0) {
+          await draftStandard(page, false);
+          await sendDraft(page);
+          await approveWithPasskey(approver);
+        }
+        await approver.context().close();
+      }
+    });
   });
 });
 
-// PRD 0.3: the regulatory scope's restricted page (FP-02), markets (FP-04) and
-// the opt-in standards dimension (INV-08). Each stays test.fixme until the task
-// in docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
+// PRD 0.3: the regulatory scope's restricted page (FP-02) and markets (FP-04).
+// Each stays test.fixme until the task in docs/plans/briefs/FEATURES_0_3_TASKS.md
+// that builds it lands. The opt-in standards dimension (INV-08), FP-S16, changes
+// tenant A's scope, so it runs with the footprint journeys above.
 test.describe('regulatory scope, markets and standards', () => {
   test.fixme("FP-S7: Members without scope permissions cannot open the regulatory scope page", async () => {
     // pending: FP-S7 (FP-02, ADM-01)
@@ -664,7 +766,4 @@ test.describe('regulatory scope, markets and standards', () => {
     // pending: FP-S15 (FP-04); needs the chunk 5 watch feed
   });
 
-  test.fixme("FP-S16: A standard shows only to tenants whose regulatory scope names it", async () => {
-    // pending: FP-S16 (FP-01, FP-02, INV-08, AC-FP3)
-  });
 });
