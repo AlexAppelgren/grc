@@ -489,8 +489,16 @@ def rename_passkey(principal: Principal, passkey_id: uuid.UUID, nickname: str) -
 
 
 def remove_passkey(principal: Principal, passkey_id: uuid.UUID) -> None:
+    # Locked before they are counted: two removals at once would otherwise each count the
+    # other's passkey as the one left and leave the person with none, which only re-enrolment
+    # may do (ID-04, ID-05; the calendar feed reads that moment as a re-enrolment).
+    live = set(
+        WebAuthnCredential.objects.select_for_update()
+        .filter(user_id=principal.subject_id, retired_at__isnull=True)
+        .values_list("pk", flat=True)
+    )
     row = _own_passkey(principal.subject_id, passkey_id)
-    if not WebAuthnCredential.objects.filter(user_id=principal.subject_id, retired_at__isnull=True).exclude(pk=row.pk).exists():
+    if not live - {row.pk}:
         raise ValidationError("You cannot remove your last passkey.", code="last_passkey")
     row.retired_at = timezone.now()
     row.save(update_fields=["retired_at"])
