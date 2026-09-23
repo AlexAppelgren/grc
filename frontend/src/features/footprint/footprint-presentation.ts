@@ -5,7 +5,19 @@ import type { Translate } from '@/shared/i18n';
 import type { FormatContext } from '@/shared/utils/format';
 import { formatDateTime } from '@/shared/utils/format';
 
-import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, FootprintPreviewCount, FootprintRequestStatus, TaxonomyTerm, TermChange, TermRef } from './types';
+import type {
+  FootprintChangeRequest,
+  FootprintDimension,
+  FootprintPreview,
+  FootprintPreviewCount,
+  FootprintRequestStatus,
+  JurisdictionRef,
+  Market,
+  MarketLevel,
+  TaxonomyTerm,
+  TermChange,
+  TermRef,
+} from './types';
 
 // Derived facts and pills for the regulatory scope screen
 // (design/screens/admin-footprint.html; FP-01, FP-02, AC-FP1). The page reads
@@ -23,6 +35,8 @@ export interface ScopeGroupRow {
 export interface ScopeGroup {
   dimension: TermRef;
   rows: ScopeGroupRow[];
+  /** Its terms mirror the jurisdiction rows, so the group is the markets we operate in. */
+  mirrored: boolean;
 }
 
 /** The groups the page shows (REGULATORY_SCOPE.md 4.2): a dimension appears when it
@@ -40,6 +54,7 @@ export function scopeGroups(dimensions: readonly FootprintDimension[], terms: re
       const listed = new Set(active.map((term) => term.key));
       return {
         dimension: d.dimension,
+        mirrored: active.some((term) => term.mirrored === true),
         rows: [...active.map((term) => ({ term, held: held.has(term.key) })), ...d.terms.filter((term) => !listed.has(term.key)).map((term) => ({ term, held: true }))],
       };
     })
@@ -218,4 +233,26 @@ export function historyLine(request: FootprintChangeRequest, t: Translate, ctx: 
           ? t('footprint.history.withdrawn', { title })
           : t('footprint.history.pending', { title });
   return { when, who, text };
+}
+
+/** A market's level in words, for someone who reads the markets without changing them. */
+export function marketLevelLabel(level: MarketLevel, t: Translate): string {
+  return level === 'operating' ? t('footprint.markets.operating') : level === 'watching' ? t('footprint.markets.watching') : t('footprint.markets.notWatched');
+}
+
+/** "Also included": one line per jurisdiction whose rules reach the markets, read from
+ * each market's parent in the reference list, in the markets' order. A market with no
+ * parent, or a parent the list does not carry, adds nothing. */
+export function reachLines(markets: readonly Market[], jurisdictions: readonly JurisdictionRef[], t: Translate): string[] {
+  const byKey = new Map(jurisdictions.map((jurisdiction) => [jurisdiction.key, jurisdiction]));
+  const reached = new Map<string, { parent: string; markets: string[] }>();
+  for (const market of markets) {
+    const parentKey = byKey.get(market.jurisdiction.key)?.parentKey;
+    const parent = parentKey === null || parentKey === undefined ? undefined : byKey.get(parentKey);
+    if (parent === undefined) continue;
+    const line = reached.get(parent.key) ?? { parent: parent.label, markets: [] };
+    line.markets.push(market.jurisdiction.label);
+    reached.set(parent.key, line);
+  }
+  return [...reached.values()].map((line) => t('footprint.markets.reach', { parent: line.parent, markets: joined(line.markets, t) }));
 }
