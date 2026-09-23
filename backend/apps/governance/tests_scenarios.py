@@ -756,8 +756,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         proposer_key = factories.api_key(tenant, scopes=("proposals:write",))
         tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
         reviewer_key = agents_testing.reviewer_api_key()
-        # An obligation version, the record that can say an agent confirmed it: an agent
-        # may not approve a vocabulary row, which waits for a person (D-79).
+        # An obligation version, whose record names the agent that confirmed it (D-79).
         approved = self._post(
             "/proposals",
             {

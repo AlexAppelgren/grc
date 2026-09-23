@@ -51,7 +51,8 @@ from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 
 V1 = "/api/v1"
 WATCH_SWEEPER = DEFINITIONS / "watch-sweeper" / "v1" / "definition.yaml"
-LIBRARY_CONFIRMER = DEFINITIONS / "library-confirmer" / "v1" / "definition.yaml"
+CONFIRMER_VERSION = dict(SHIPPED)["library-confirmer"]
+LIBRARY_CONFIRMER = DEFINITIONS / "library-confirmer" / f"v{CONFIRMER_VERSION}" / "definition.yaml"
 # Where a run reads each list it names at run start, every route taking `library:read`: the
 # registry's library lists through one route, the three that are not registry rows through
 # routes of their own.
@@ -123,7 +124,7 @@ class DefinitionReaderTests(TestCase):
 
     def test_only_a_published_definition_is_active(self) -> None:
         self.assertFalse(read_definition(WATCH_SWEEPER).active, "watch-sweeper v1 is still a draft")
-        self.assertFalse(read_definition(LIBRARY_CONFIRMER).active, "library-confirmer v1 waits for its evals")
+        self.assertFalse(read_definition(LIBRARY_CONFIRMER).active, f"library-confirmer v{CONFIRMER_VERSION} waits for its evals")
 
     def test_a_definition_it_cannot_read_raises_instead_of_guessing(self) -> None:
         directory = Path(tempfile.mkdtemp())
@@ -176,10 +177,10 @@ class DefinitionContractTests(SimpleTestCase):
                 self.assertNotIn(perms.SCOPE_PROPOSALS_WRITE, scopes, name)
             else:
                 self.assertNotIn(perms.SCOPE_PROPOSALS_REVIEW, scopes, name)
-        confirmer, sweeper = _parsed("library-confirmer", 1), _parsed("watch-sweeper", 1)
+        confirmer, sweeper = _parsed("library-confirmer", CONFIRMER_VERSION), _parsed("watch-sweeper", 1)
         self.assertNotEqual(confirmer["id"], sweeper["id"])
         prompts = {
-            (DEFINITIONS / definition["id"] / "v1" / definition["prompt"]).read_text(encoding="utf-8")
+            (DEFINITIONS / definition["id"] / f"v{definition['version']}" / definition["prompt"]).read_text(encoding="utf-8")
             for definition in (confirmer, sweeper)
         }
         self.assertEqual(len(prompts), 2, "the confirmer has a prompt of its own")
@@ -199,7 +200,7 @@ class DefinitionContractTests(SimpleTestCase):
                 self.assertIsNotNone(route, f"{name}: no route serves {listed}")
                 self.assertIn(route, sorted(tools), f"{name} reads {listed} at run start and declares no tool for {route}")
                 self.assertIn(perms.SCOPE_LIBRARY_READ, tools[route]["scopes"], f"{name}: {route} needs library:read")
-        self.assertIn("rejection_reason", _parsed("library-confirmer", 1)["vocabularies_read_at_run_start"])
+        self.assertIn("rejection_reason", _parsed("library-confirmer", CONFIRMER_VERSION)["vocabularies_read_at_run_start"])
 
 
 class DefinitionsShipInTheImageTests(SimpleTestCase):
@@ -489,7 +490,7 @@ class AgentDecisionTests(SimpleTestCase):
     DECISION: dict[str, Any] = {
         "model": "claude-opus-5",
         "modelVersion": "2026-05-01",
-        "promptTemplate": "library-confirmer/decide/v1",
+        "promptTemplate": "library-confirmer/decide/v2",
         "output": "Approve. The proposed wording matches the amended regulation as published.",
         "citations": [{"label": "Finansinspektionen", "url": "https://www.fi.se/"}],
     }

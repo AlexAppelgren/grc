@@ -1089,6 +1089,42 @@ class ProposalsScenarioTests(ScenarioTestCase):
             sorted([proposal["id"], waiting["id"]]),
         )
 
+        # It approves a vocabulary proposal from the same queue too, since every list row
+        # records who confirmed it (D-79, lifted 2026-09-23): the row names the confirming
+        # agent and the proposal, every label it wrote is stored machine-made, and the list
+        # read names both agents and no person.
+        flag = self._post(
+            "/proposals",
+            {
+                "kind": "vocabulary_create",
+                "title": "Add the flag Client money",
+                "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money", "sv": "Kundmedel"}},
+                "agentRunId": str(agents_testing.platform_run(key=proposer_key).id),
+            },
+            {"HTTP_X_API_KEY": proposer_key.plain_key},
+        )
+        self.assertEqual(flag.status_code, 201, flag.content)
+        tenancy.clear_tenant()
+        confirmed = self._post(f"/proposals/{flag.json()['id']}/approve", {"note": "Confirmed.", **sent}, reviewer_headers)
+        self.assertEqual(confirmed.status_code, 200, confirmed.content)
+        self.assertEqual((confirmed.json()["reviewedBy"], confirmed.json()["reviewedByAgent"]["key"]), (None, reviewer_key.agent.key))
+        tenancy.clear_tenant()
+        row = Flag.objects.get(key="client_money")
+        self.assertEqual(
+            (row.verified_origin, row.verified_by_agent_id, str(row.applied_by_proposal_id)), ("agent", reviewer_key.agent.id, flag.json()["id"])
+        )
+        self.assertEqual({label.language: label.is_machine for label in row.labels.all()}, {"en": True, "sv": True})
+        console = factories.platform_user(roles=("library_editor",), email="console-pro-s13@bleqq.test")
+        read = self.client.get(f"{V1}/vocab/flag/client_money", **sign_in(console))
+        self.assertEqual(read.status_code, 200, read.content)
+        self.assertEqual(
+            (read.json()["verifiedOrigin"], read.json()["confirmedByAgent"]["key"], read.json()["proposedByAgent"]["key"]),
+            ("agent", reviewer_key.agent.key, proposing_agent.key),
+        )
+        self.assertEqual(read.json()["machineLanguages"], ["en", "sv"])
+        tenancy.clear_tenant()
+        self.assertEqual(AuditEvent.objects.get(action="proposal.approved", subject_id=flag.json()["id"]).after["agentRunId"], sent["agentRunId"])
+
         # A bank's key without the review scope answers 403; no route under it writes a
         # library row except through apply, which the fence guard proves structurally.
         no_scope = factories.api_key(self.tenant, scopes=("changes:write",))
