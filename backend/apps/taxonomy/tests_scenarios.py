@@ -1217,8 +1217,9 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         The watch list is a bank's own judgement, so it lives under row-level security and
         its keys travel in the body, never in a path or a query. The second half drives a
         watch and an unwatch through the WSGI entry point gunicorn calls, with the Sentry
-        SDK initialised as settings.py initialises it and the loggers at their deployed
-        levels, and reads what each channel would have carried off the machine.
+        SDK started from the arguments settings.py passes it and the loggers at their
+        deployed levels, and reads what each channel would have carried off the machine:
+        the transactions and the error events, which pass through before_send.
         """
         import logging
         import os
@@ -1231,13 +1232,12 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         from django.core.signals import request_finished, request_started
         from django.db import close_old_connections
         from django.test import RequestFactory, override_settings
-        from sentry_sdk.integrations.django import DjangoIntegration
         from sentry_sdk.integrations.logging import LoggingIntegration
         from sentry_sdk.transport import Transport
 
-        from apps.shared import sentry_scrub
         from apps.shared.logging import JsonFormatter
         from apps.shared.middleware import RequestIdLogFilter
+        from apps.shared.testing import sentry_init_kwargs
 
         # Given tenant A watches Norway, with a regulatory scope and a request waiting, and
         # tenant B watches nothing.
@@ -1351,23 +1351,21 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         for logger, level in deployed.items():
             logger.addHandler(app_log)
             logger.setLevel(level)
-        # settings.py's flags, which apps/shared/tests_middleware.py pins; every trace kept.
-        # The host's name and the build's release are named here only because they differ
-        # from machine to machine and are nobody's content.
+        # What settings.py itself passes, read by booting it with a DSN, so this proof follows
+        # it. Four things are replaced: the transport, so nothing leaves; every trace is
+        # kept; every warning becomes an error event, so the over-budget line of each request
+        # passes through before_send as an error would; and the host's name and the build's
+        # release, which differ from machine to machine and are nobody's content.
+        deployed_sentry = sentry_init_kwargs()
         sentry_sdk.init(
-            dsn="https://public@sentry.example.invalid/1",
-            transport=transport,
-            server_name="api",
-            release="fp-s14",
-            integrations=[DjangoIntegration(), LoggingIntegration()],
-            default_integrations=False,
-            auto_enabling_integrations=False,
-            send_default_pii=False,
-            max_request_body_size="never",
-            include_local_variables=False,
-            traces_sample_rate=1.0,
-            before_send=sentry_scrub.before_send,
-            before_send_transaction=sentry_scrub.before_send_transaction,
+            **{
+                **deployed_sentry,
+                "transport": transport,
+                "traces_sample_rate": 1.0,
+                "integrations": [*deployed_sentry["integrations"], LoggingIntegration(event_level=logging.WARNING)],
+                "server_name": "api",
+                "release": "fp-s14",
+            }
         )
         try:
             with override_settings(API_BUDGET_MS=0):
@@ -1387,6 +1385,12 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(AuditEvent.objects.filter(action__in=("markets.watch_added", "markets.watch_removed"), subject_title="dk").count(), 2)
         transactions = [event for event in transport.events if event.get("type") == "transaction"]
         self.assertEqual(len(transactions), 2, "one transaction per request reached the transport")
+        errors = [event for event in transport.events if event.get("type") != "transaction" and "logentry" in event]
+        self.assertEqual(
+            [event["logentry"]["message"] for event in errors].count("request over budget"),
+            2,
+            "each request's over-budget warning reached the transport as an error event, through before_send",
+        )
         self.assertTrue(app_log.lines, "each request logged over budget")
         denmark = Jurisdiction.objects.prefetch_related("labels").get(key="dk")
         keys = set(Jurisdiction.objects.values_list("key", flat=True))

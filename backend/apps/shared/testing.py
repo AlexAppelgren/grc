@@ -6,6 +6,8 @@ Excluded from coverage (pyproject) because it is test scaffolding."""
 
 from __future__ import annotations
 
+import importlib
+import os
 import uuid
 from datetime import datetime
 from typing import Any
@@ -13,6 +15,7 @@ from unittest import mock
 
 from django.db.models import Model
 from django.test import Client, TestCase
+from sentry_sdk.integrations import logging as sentry_logging
 
 from apps.shared import authentication, tenancy
 from apps.shared.authentication import Principal, PrincipalKind
@@ -32,6 +35,27 @@ def production_models() -> list[type[Model]]:
         for model in apps.get_models()
         if model.__module__.startswith("apps.") and ".tests_" not in model.__module__
     ]
+
+
+def sentry_init_kwargs() -> dict[str, Any]:
+    """Boots the settings with a DSN and returns what they pass to `sentry_sdk.init`, so a
+    test that starts the SDK starts it as a deployed process does, never from a copy of
+    settings.py that could drift from it."""
+    # The ignored set is process-global; start without the entry so the reload has to add it.
+    sentry_logging.unignore_logger("gunicorn.access")
+    env = {"SENTRY_DSN": "https://public@sentry.example.invalid/1", "ENVIRONMENT": "test", "DEBUG": "true"}
+    import config.settings as base
+
+    try:
+        with mock.patch.dict(os.environ, env), mock.patch("sentry_sdk.init") as init:
+            importlib.reload(base)
+    finally:
+        # Reload once more without the DSN so later tests see the runner's settings module.
+        with mock.patch.dict(os.environ, {"SENTRY_DSN": "", "ENVIRONMENT": "test", "DEBUG": "false"}):
+            importlib.reload(base)
+    return dict(init.call_args.kwargs)
+
+
 SESSION_TOKEN_FOR_TESTS = "test-session-token"  # noqa: S105 a stub, never a real credential
 API_KEY_FOR_TESTS = "test-api-key"  # noqa: S105 a stub, never a real credential
 

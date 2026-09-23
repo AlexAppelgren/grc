@@ -430,7 +430,7 @@ Then Norway is not watched and no id of tenant A's rows is returned
 When tenant B asks to stop watching Norway
 Then the answer is 404 and tenant A's row is unchanged
 When tenant A watches and stops watching a market
-Then the request line that the access log prints, the application log and the captured error-reporting transaction hold no jurisdiction key
+Then the request line that the access log prints, the application log and the captured error-reporting transactions and error events hold no jurisdiction key
 ```
 
 ### FP-S15 — A change's jurisdiction comes from its authority, and the watch feed has the watched-market view `@integration` `@e2e` (FP-04)
