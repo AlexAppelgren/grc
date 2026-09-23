@@ -105,6 +105,8 @@ test.describe('identity journeys', () => {
       await page.getByRole('button', { name: 'Skip for now' }).click();
       await expect(page.locator('[data-who-panel]')).toBeVisible();
       await expect(page.locator('[data-who-panel]')).toContainText('Example Bank AB');
+      // She lands on Today; it has read what it shows before she signs out.
+      await expect(page.getByRole('heading', { level: 1, name: 'What is coming, and where we stand' })).toBeVisible();
 
       await signOut(page);
 

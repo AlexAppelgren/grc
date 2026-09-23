@@ -132,6 +132,10 @@ export function restrictedScreen(page: Page) {
 }
 
 export async function signOut(page: Page): Promise<void> {
+  // Settle first: a screen still loading its data (Today reads the briefing once
+  // GET /home is in) would send its next request after the session had ended,
+  // and that request answers 401.
+  await expect(page.locator('[data-loading-state]')).toHaveCount(0);
   // The width decides, as COMPACT_QUERY does: below 1024 px the account lives
   // in the More sheet; from 1024 px in the rail's account menu (open the
   // account row first, then choose the menu item). [data-who-panel] marks the
