@@ -101,3 +101,26 @@ earlier ones.
 
 ### Exit criterion
 - [x] The pre-push checklist (Appendix D) passes on the empty app, end to end, including the full `npm run test:e2e` against a freshly seeded backend (2026-09-19: 4 live specs green, 111 stubs skipped, 29 s)
+
+## R1 performance pass (`r1-perf`, NFR-02)
+
+2026-09-23, on the branch `claude/r1w4-r1-perf`, awaiting integration. Every R1 API operation
+and screen has a recorded baseline inside its budget.
+
+- **API:** `backend/perf/routes.py` measures 139 of the 140 operations as the principal that
+  calls each in R1 (only `e2eMailOutbox`, E2E-only, is left out); `backend/perf/baseline.json`
+  is recorded on a fresh `seed_e2e` slot. Highest p95: `createConsoleTenant` 199 ms (371
+  queries, one per seeded role and list), `listObligations` 67 ms, everything else under
+  60 ms; search 56 ms against 1.5 s, Ask's first event 51 ms against 2 s. The harness's
+  query count read 0 once the connection's query log filled; fixed.
+- **Footprint at scale:** on a slot scaled to 3021 obligations and 6431 chunks the
+  per-row footprint function put the lists and search over budget. Taxonomy 0008 reads the
+  bank's footprint once per query (p95 before and after, 10 samples): `GET /obligations`
+  378 to 233 ms, its watched-market view 615 to 241 ms, `GET /instruments` 262 to 119 ms,
+  search 903 to 501 ms. The two obligations views are inside budget with little margin; the
+  rest of their cost is building each row's scope (its terms and its instrument's reach),
+  the next place to look if the library grows past a few thousand obligations.
+- **Screens (NFR-S7):** green twice from a fresh seed against `next start`; medians in the
+  Measured column of `UI_Implementation_Plan.md`, the slowest the inventory at about 250 ms.
+- **Not yet:** real-model and real-embedder timings wait for the D-07 and D-09 keys; the
+  load profile and the deployed measurement are chunk 14's.

@@ -57,41 +57,44 @@ overwritten.
 
 Measured is the median time from a client-side navigation to the screen's own
 real data against `next start`, in milliseconds, per `frontend/tests/e2e/support/screen-timing.ts`
-and the budgets in `screen-budgets.ts` (NFR-S7). It is empty until the R1 performance pass
-records it.
+and the budgets in `screen-budgets.ts` (NFR-S7). The R1 performance pass (`r1-perf`,
+2026-09-23) recorded it from two runs, each on a fresh seed against `next start` in the
+cloud session (4 CPUs), five samples a screen: "run 1 / run 2". Every screen is inside its
+500 ms budget; the slowest is the inventory at about 250 ms. A screen with no number has no
+destination of its own in the registry.
 
 | Card | Route | Surface | Chunk | Status | Measured |
 |---|---|---|---|---|---|
-| `tenant-shell.html`, `tenant-today.html` | `/` | tenant | 0, 6 | shell built in chunk 0; Today's panels chunk 6 |  |
+| `tenant-shell.html`, `tenant-today.html` | `/` | tenant | 0, 6 | shell built in chunk 0; Today's panels chunk 6 | 106 / 104 |
 | `auth-invitation`, `auth-code`, `auth-enrol`, `auth-sign-in`, `auth-step-up`, `auth-recovery` | `/auth/*` | both | 1 | in build |  |
-| `me-passkeys`, `me-sessions` | `/me/passkeys`, `/me/sessions` | both | 1 | in build |  |
-| `admin-organisation`, `admin-members`, `admin-roles`, `admin-api-keys`, `admin-security-log` | `/admin/*` | tenant | 1 | in build |  |
-| `admin-vocabularies.html` | `/admin/vocabularies` | tenant | 2 | in build (VOC-S2 to VOC-S5, VOC-S7, VOC-S11 and VOC-S15 journeys un-fixme'd; Suggest, VOC-S6, is chunk 8) |  |
-| `admin-vocabulary.html` | `/admin/vocabularies/[list]`; console variant `/console/vocabularies/[list]` | both | 2, 4 | in build, both variants |  |
-| `admin-footprint.html` (on screen: Regulatory scope) | `/admin/footprint` | tenant | 2; markets panel 3 | in build: requests with preview, four eyes and step-up (FP-S2, FP-S5 un-fixme'd); the markets panel (card states 17 to 19) is not built (FP-S10 fixme) |  |
+| `me-passkeys`, `me-sessions` | `/me/passkeys`, `/me/sessions` | both | 1 | in build | passkeys 60 / 69; sessions 65 / 51 |
+| `admin-organisation`, `admin-members`, `admin-roles`, `admin-api-keys`, `admin-security-log` | `/admin/*` | tenant | 1 | in build | admin 8 / 13; organisation 78 / 71; members 96 / 99; roles 65 / 72; API keys 63 / 65; security log 72 / 65 |
+| `admin-vocabularies.html` | `/admin/vocabularies` | tenant | 2 | in build (VOC-S2 to VOC-S5, VOC-S7, VOC-S11 and VOC-S15 journeys un-fixme'd; Suggest, VOC-S6, is chunk 8) | 93 / 87 |
+| `admin-vocabulary.html` | `/admin/vocabularies/[list]`; console variant `/console/vocabularies/[list]` | both | 2, 4 | in build, both variants | console list 67 / 67 |
+| `admin-footprint.html` (on screen: Regulatory scope) | `/admin/footprint` | tenant | 2; markets panel 3 | in build: requests with preview, four eyes and step-up (FP-S2, FP-S5 un-fixme'd); the markets panel (card states 17 to 19) is not built (FP-S10 fixme) | 166 / 171 |
 | `picker-create-or-suggest.html` | inside every vocabulary picker | both | 2 (near-duplicate), 8 (suggest) | in build: Create with the near-duplicate check (VOC-S7); Suggest is chunk 8 |  |
-| `tenant-inventory.html` | `/inventory` (Obligations, Instruments tabs) | tenant | 3 | in build until FP-04's watched-market view (FP-S13) and FP-S4's journey land; INV-S1, INV-S3 and INV-S4 are un-fixme'd |  |
+| `tenant-inventory.html` | `/inventory` (Obligations, Instruments tabs) | tenant | 3 | in build until FP-04's watched-market view (FP-S13) and FP-S4's journey land; INV-S1, INV-S3 and INV-S4 are un-fixme'd | 244 / 256 |
 | `tenant-obligation.html` | `/inventory/obligations/[obligationId]` | tenant | 3; register panels 8 | in build: INV-S3 to INV-S7 and AUD-S5 are un-fixme'd, and the Reported problems section (AUD-03) is built; the Related changes panel (WAT-S6) and the machine-confirmed label (INV-S14) are fixme; register panels land with chunk 8 |  |
 | `tenant-instrument.html` | `/inventory/instruments/[instrumentId]` | tenant | 3 | in build: INV-S1, INV-S2 and INV-S7 are un-fixme'd, and the Reported problems section (AUD-03) is built, unit-tested here and walked end to end on the obligation card (AUD-S5); a standard's edition with no text (INV-S11, INV-08) is fixme |  |
 | `console-shell.html` | `/console` | console | 4 | in build (ADM-S4 un-fixme'd) |  |
-| `console-queue.html` | `/console/queue`, `/console/queue/[proposalId]` | console | 4 | in build (PRO-S3, PRO-S4, PRO-S5 and PRO-S9 un-fixme'd; PRO-S13's journey and the batch variant are not) |  |
+| `console-queue.html` | `/console/queue`, `/console/queue/[proposalId]` | console | 4 | in build (PRO-S3, PRO-S4, PRO-S5 and PRO-S9 un-fixme'd; PRO-S13's journey and the batch variant are not) | 76 / 76 |
 | `tenant-library-updates.html` | `/inventory/updates` | tenant | 4 | in build: the screen reads `GET /library-updates` and moves the bookmark with `POST /me/visit`; PRO-S7's journey is fixme |  |
-| `tenant-watch.html` | `/watch` (tabs by case category, Coverage) | tenant | 5; workflow tabs fill in 9 | in build (WAT-S1, WAT-S2 and WAT-S9 un-fixme'd; FP-S4 and FP-S15's watched-market view are not) |  |
+| `tenant-watch.html` | `/watch` (tabs by case category, Coverage) | tenant | 5; workflow tabs fill in 9 | in build (WAT-S1, WAT-S2 and WAT-S9 un-fixme'd; FP-S4 and FP-S15's watched-market view are not) | 155 / 154 |
 | `tenant-change.html` | `/watch/[changeId]` | tenant | 5; case panels 9 | in build: timeline, documents, obligation links and the "So what?" draft render; Rewrite, Confirm wording, Confirm link and Not related are not built (WAT-S4, WAT-S6, WAT-S7 fixme) |  |
-| `console-sources.html` | `/console/sources` | console | 5 | in build, read-only: Add, Edit, Pause and Check now are not on the page in R1, nor the jurisdiction filter, which needs `GET /authorities` to admit a console session |  |
-| `console-change-facts.html` | `/console/change-facts`, `/console/change-facts/[changeId]` | console | 5 | in build: the queue of facts nobody has confirmed, and correcting one; confirming a suggestion is not built (D-74, WAT-S4) |  |
-| `console-agent-keys.html` | `/console/agent-keys` | console | 5 | in build: the screen is on `main` and its routes answer 501 until they are built (ID-S20's console journey is fixme) |  |
-| `tenant-briefing.html` | `/briefing`, `/briefing/[weekStart]` | tenant | 6 | in build (HOM-S3 un-fixme'd) |  |
-| `tenant-roadmap.html` | `/roadmap` | tenant | 6 | in build (HOM-S4 and HOM-S6 un-fixme'd) |  |
-| `tenant-calendar-feeds.html` | `/me/calendar-feeds` | tenant | 6 | in build: the routes are on `main`; the screen is not built (HOM-S5 fixme) |  |
-| `tenant-search.html` | `/search` | tenant | 7 | in build (SRC-S1 and SRC-S3 un-fixme'd; J-7, SRC-S10, waits on Ask) |  |
+| `console-sources.html` | `/console/sources` | console | 5 | in build, read-only: Add, Edit, Pause and Check now are not on the page in R1, nor the jurisdiction filter, which needs `GET /authorities` to admit a console session | 78 / 67 |
+| `console-change-facts.html` | `/console/change-facts`, `/console/change-facts/[changeId]` | console | 5 | in build: the queue of facts nobody has confirmed, and correcting one; confirming a suggestion is not built (D-74, WAT-S4) | 80 / 76 |
+| `console-agent-keys.html` | `/console/agent-keys` | console | 5 | in build: the screen is on `main` and its routes answer 501 until they are built (ID-S20's console journey is fixme) | 53 / 59 |
+| `tenant-briefing.html` | `/briefing`, `/briefing/[weekStart]` | tenant | 6 | in build (HOM-S3 un-fixme'd) | 104 / 101 |
+| `tenant-roadmap.html` | `/roadmap` | tenant | 6 | in build (HOM-S4 and HOM-S6 un-fixme'd) | 81 / 73 |
+| `tenant-calendar-feeds.html` | `/me/calendar-feeds` | tenant | 6 | in build: the routes are on `main`; the screen is not built (HOM-S5 fixme) | 58 / 84 |
+| `tenant-search.html` | `/search` | tenant | 7 | in build (SRC-S1 and SRC-S3 un-fixme'd; J-7, SRC-S10, waits on Ask) | 16 / 15 |
 | `tenant-ask.html` | `/search?mode=ask` | tenant | 7 | in build (the screen and every state built with component tests; SRC-S4, SRC-S5 and SRC-S10 journeys are ask-journeys', wave 3) |  |
 | `states.html` | every screen | both | 2 onwards | in build: the shared states are on `main` (`components/ui/States.tsx` for loading, error, not found and the refusals rendered in place; `components/ui/EmptyState.tsx`; the Restricted screen that `RequirePermission` and `/restricted` render); the card is met screen by screen, as each screen that draws its states ships |  |
-| `console-vocabularies.html` | `/console/vocabularies` | console | 4 | not drawn: `admin-vocabularies.html` shared-list tab is the same list, rendered for `library_vocab.manage` with Rename, Merge, Retire producing proposals. Draw a separate card only if the build finds a difference |  |
+| `console-vocabularies.html` | `/console/vocabularies` | console | 4 | not drawn: `admin-vocabularies.html` shared-list tab is the same list, rendered for `library_vocab.manage` with Rename, Merge, Retire producing proposals. Draw a separate card only if the build finds a difference | 67 / 67 |
 | `console-languages.html` | `/console/languages` | console | 4 | card pending (languages and jurisdictions are library vocabularies; `admin-vocabulary.html` console variant renders them) |  |
-| `admin-audit-log.html` | `/admin/audit-log` | tenant | 4 (proposed, AUD-01 is R1 M and no chunk names its screen) | in build without a card: the screen is on `main`, cut from the prototype's `vAudit()`, and AUD-S3's journey is un-fixme'd |  |
-| `admin-ai-log.html` | `/admin/ai-log` | tenant | 7 (AUD-02) | in build: the card is drawn and the screen reads `GET /ai-generations` under `ai_log.read`, filtered by purpose, review state and one record; a row opens to what the model wrote and its sources, labelled AI until a person confirmed it (AUD-S4 un-fixme'd) |  |
-| `console-evaluation.html` | `/console/evaluation` | console | 7 (SRC-05) | built: the set filterable by language, the baseline per metric ("Unrecorded", never zero), past runs and the add form marked not yet in the release gate; ADM-S4 walks it |  |
+| `admin-audit-log.html` | `/admin/audit-log` | tenant | 4 (proposed, AUD-01 is R1 M and no chunk names its screen) | in build without a card: the screen is on `main`, cut from the prototype's `vAudit()`, and AUD-S3's journey is un-fixme'd | 86 / 76 |
+| `admin-ai-log.html` | `/admin/ai-log` | tenant | 7 (AUD-02) | in build: the card is drawn and the screen reads `GET /ai-generations` under `ai_log.read`, filtered by purpose, review state and one record; a row opens to what the model wrote and its sources, labelled AI until a person confirmed it (AUD-S4 un-fixme'd) | 84 / 77 |
+| `console-evaluation.html` | `/console/evaluation` | console | 7 (SRC-05) | built: the set filterable by language, the baseline per metric ("Unrecorded", never zero), past runs and the add form marked not yet in the release gate; ADM-S4 walks it | 91 / 89 |
 | `tenant-gaps.html`, register panels | `/inventory/obligations/[id]` right column, `/gaps` | tenant | 8 | card pending; prototype `vGaps()`, `vGap()`, `entityPanel()`, `gapsPanel()`, `historyPanel()`, `interpPanel()` are the cut |  |
 | `admin-organisation.html` entities, licences and certificates, products, departments with heads, teams | `/admin/organisation` | tenant | 8 | extends the chunk 1 card; departments with heads and teams designed (f03-T60); the entity, licence, certificate and product sections are card pending |  |
 | `admin-members.html` team membership on the member row | `/admin/members` | tenant | 8 | extends the chunk 1 card; designed (f03-T60) |  |
@@ -101,7 +104,7 @@ records it.
 | case panels on `tenant-change.html` | `/watch/[changeId]` | tenant | 9 | card pending; prototype `vChange()` work panels are the cut |  |
 | `tenant-notifications.html`, comments panel | who panel, every record | tenant | 10 | card pending |  |
 | `admin-agents.html`, `console-agent-definitions.html` | `/admin/agents`, `/console/agents` | both | 11 | card pending; prototype `vAgents()` is the cut |  |
-| `console-tenants.html`, `console-health.html` | `/console/tenants`, `/console/health` | console | 4; health 14 | tenants in build without a card (the list, and a tenant created with its first administrator invited, ADM-S6 un-fixme'd; support access is TEN-06, chunk 8); health chunk 14 (ADM-S5), card pending |  |
+| `console-tenants.html`, `console-health.html` | `/console/tenants`, `/console/health` | console | 4; health 14 | tenants in build without a card (the list, and a tenant created with its first administrator invited, ADM-S6 un-fixme'd; support access is TEN-06, chunk 8); health chunk 14 (ADM-S5), card pending | tenants 51 / 56 |
 | `tenant-reports.html`, `admin-data.html` | `/reports`, `/admin/data` | tenant | 12 | card pending; prototype `vReports()` is the cut |  |
 | `admin-integrations.html`, `admin-security.html` | `/admin/integrations`, `/admin/security` | tenant | 13 | card pending |  |
 
