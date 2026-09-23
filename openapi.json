@@ -3798,6 +3798,7 @@
             "lineage": [
               {
                 "direction": "incoming",
+                "fromRef": "",
                 "instrument": {
                   "key": "fffs-2026-11",
                   "shortName": "FFFS 2026:11"
@@ -4014,11 +4015,19 @@
         "description": "One instrument-to-instrument relation, from either side (INV-01): what this\ninstrument implements or elaborates, and what implements, elaborates or amends it.",
         "properties": {
           "direction": {
-            "description": "Whether this instrument is the one doing the relating (`outgoing`, this instrument implements, elaborates or amends the other) or the one being related to (`incoming`, the other does so to this one). A card reads `outgoing` under headings such as \"Implements\" and \"incoming\" under \"Amended by\".",
+            "description": "Whether this instrument is the one doing the relating (`outgoing`, this instrument implements, elaborates or amends the other) or the one being related to (`incoming`, the other does so to this one). One of the two words, never anything else. The card groups the lineage by relation and direction: `outgoing` under the relation's label (\"Implements\"), `incoming` under the label said of this instrument (\"Amends this instrument\").",
             "examples": [
               "incoming"
             ],
             "title": "Direction",
+            "type": "string"
+          },
+          "fromRef": {
+            "description": "The place in the instrument doing the relating, in the words the source uses (\"1 \u00a7\"): in this instrument when `direction` is `outgoing`, in the one named in `instrument` when it is `incoming`. It means the same whichever card reads it. An empty string when the relation names no specific place, which is most of them: a whole instrument usually does the relating.",
+            "examples": [
+              ""
+            ],
+            "title": "Fromref",
             "type": "string"
           },
           "instrument": {
@@ -4038,9 +4047,9 @@
             "description": "How the two instruments are related, as key, kind and label: `implements`, `elaborates` and `amends` are seeded on day one. The relation types are vocabulary rows a platform admin may extend, relabel or retire without a deploy, so read `GET /vocab/relation_type` for the live set and match on the key."
           },
           "toRef": {
-            "description": "Where in the related instrument this points, in the words the source uses (\"Article 25(3) and (4)\"), whichever side of the relation this instrument is on. An empty string when the relation names no specific place, which is most of them: a whole-instrument amendment needs none.",
+            "description": "The place in the instrument being related to, in the words the source uses (\"Article 25(3) and (4)\"): in the one named in `instrument` when `direction` is `outgoing`, in this instrument when it is `incoming`. It means the same whichever card reads it, so MiFID II's own card still says which of its articles a guideline elaborates. An empty string when the relation names no specific place, which is most of them: a whole-instrument amendment needs none.",
             "examples": [
-              ""
+              "Article 25(3) and (4)"
             ],
             "title": "Toref",
             "type": "string"
@@ -4051,6 +4060,7 @@
           "direction",
           "instrument",
           "note",
+          "fromRef",
           "toRef"
         ],
         "title": "InstrumentLineageRef",
@@ -18998,7 +19008,7 @@
     },
     "/api/v1/instruments": {
       "get": {
-        "description": "The instruments inventory: every law, regulation or guideline of the shared library\nwhose own scope (its regime) overlaps this bank's footprint, narrowed by regime or a\nphrase. Call it for the Instruments tab and its filter, and from an agent run that\nneeds the instruments an obligation's own regime reaches.\n\nA read: it changes nothing and writes no audit row. It takes a person's session\nholding `library.read` in their bank, or an agent's key carrying the `library:read`\nscope. The rows are shared library facts, the same for every bank and changed only\nthrough an approved proposal.\n\nPaginated: 20 rows by default and 100 at most, ordered by stable key so paging is\nrepeatable. `obligationCount` counts the obligations this bank would see under each\ninstrument, inside its footprint by default. Jurisdiction, level, authority and\n`asOf` filters are deferred: \"as of\" applies to obligations only, and the Instruments\ntab lists every visible instrument with its own in-force dates.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope; `validation_error` (422) when\nthe phrase is longer than 200 characters or the page size or offset is out of range.",
+        "description": "The instruments inventory: every law, regulation or guideline of the shared library\nwhose own scope (its regime) overlaps this bank's footprint, narrowed by regime or a\nphrase. Call it for the Instruments tab and its filter, or with a bank's own API key\nto read the instruments behind that bank's inventory.\n\nA read: it changes nothing and writes no audit row. It takes a person's session\nholding `library.read` in their bank, or a bank's own API key carrying the\n`library:read` scope. The list is read against that bank's footprint, so a platform\nkey, such as the one bleqq's own watch agents run with, belongs to no bank and answers\n404 even when it carries `library:read`. The rows are shared library facts, the same\nfor every bank and changed only through an approved proposal.\n\nPaginated: 20 rows by default and 100 at most, ordered by stable key so paging is\nrepeatable. `obligationCount` counts the obligations this bank would see under each\ninstrument, inside its footprint by default. Jurisdiction, level, authority and\n`asOf` filters are deferred: \"as of\" applies to obligations only, and the Instruments\ntab lists every visible instrument with its own in-force dates.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope, which is checked first, so a\nplatform key without the scope gets this; `not_found` (404) when the caller is a\nplatform key carrying the scope, since it belongs to no bank; `validation_error` (422)\nwhen the phrase is longer than 200 characters or the page size or offset is out of\nrange.",
         "operationId": "listInstruments",
         "parameters": [
           {
@@ -19137,7 +19147,7 @@
     },
     "/api/v1/instruments/{instrument_id}": {
       "get": {
-        "description": "One instrument of the shared library: its identity, official reference and ELI, its\nin-force dates with their precision, the authority behind it, when a person last\nre-verified it and its lineage to other instruments (what it implements or\nelaborates, and what implements, elaborates or amends it in turn). Call it for the\ninstrument card.\n\nA read: it changes nothing and writes no audit row. It takes a person's session\nholding `library.read` in their bank, or an agent's key carrying the `library:read`\nscope. The designed `GET /instruments/{instrumentId}/relations` is served here as\n`lineage`, and the provision tree is its own read.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope; `not_found` (404) when no\ninstrument has that id or it is one this caller may not see, the two answering alike\nso that no id can be probed for; `validation_error` (422) when the path segment is\nnot a UUID.",
+        "description": "One instrument of the shared library: its identity, official reference and ELI, its\nin-force dates with their precision, the authority behind it, when a person last\nre-verified it and its lineage to other instruments (what it implements or\nelaborates, and what implements, elaborates or amends it in turn). Call it for the\ninstrument card.\n\nA read: it changes nothing and writes no audit row. It takes a person's session\nholding `library.read` in their bank, or a bank's own API key carrying the\n`library:read` scope; a platform key belongs to no bank and answers 404 even when it\ncarries `library:read`. The designed `GET /instruments/{instrumentId}/relations` is\nserved here as `lineage`, and the provision tree is its own read.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope, which is checked first;\n`not_found` (404) when no instrument has that id or it is one this caller may not\nsee, the two answering alike so that no id can be probed for, and when the caller is\na platform key carrying the scope; `validation_error` (422) when the path segment is\nnot a UUID.",
         "operationId": "getInstrument",
         "parameters": [
           {
@@ -19232,7 +19242,7 @@
     },
     "/api/v1/instruments/{instrument_id}/provisions": {
       "get": {
-        "description": "The verbatim provision tree of one instrument: chapters, sections, articles,\nparagraphs or whatever each node's own kind names, each with every text version it\nhas ever carried, its children in the tree and the obligations that cite it. Call it\nfor the instrument card's provision tree, and from an agent run that needs the law\nitself rather than a plain-language duty.\n\nA read: it changes nothing and writes no audit row. It takes a person's session\nholding `library.read` in their bank, or an agent's key carrying the `library:read`\nscope. `asOf` decides only which version each node's `inForceVersion` names; every\nversion stays in `versions` regardless, so a reader can choose an earlier or a future\none by its own chip rather than trusting today's date. The designed\n`GET /provisions/{provisionId}/versions` is served here, embedded in each node.\n\nAnswered as a plain array of root nodes rather than a page, because a tree has no\nnatural page boundary; an instrument with no provisions yet is a 200 with an empty\narray. The number of queries does not grow with the tree's size.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope; `not_found` (404) when no\ninstrument has that id or it is one this caller may not see; `validation_error` (422)\nwhen the path segment is not a UUID or asOf is not a date.",
+        "description": "The verbatim provision tree of one instrument: chapters, sections, articles,\nparagraphs or whatever each node's own kind names, each with every text version it\nhas ever carried, its children in the tree and the obligations that cite it. Call it\nfor the instrument card's provision tree, or with a bank's own API key when an\nintegration needs the law itself rather than a plain-language duty.\n\nA read: it changes nothing and writes no audit row. It takes a person's session\nholding `library.read` in their bank, or a bank's own API key carrying the\n`library:read` scope; a platform key belongs to no bank and answers 404 even when it\ncarries `library:read`. `asOf` decides only which version each node's\n`inForceVersion` names, and defaults to today in that bank's time zone; every version\nstays in `versions` regardless, so a reader can choose an earlier or a future one by\nits own chip rather than trusting today's date. The designed\n`GET /provisions/{provisionId}/versions` is served here, embedded in each node.\n\nAnswered as a plain array of root nodes rather than a page, because a tree has no\nnatural page boundary; an instrument with no provisions yet is a 200 with an empty\narray. The number of queries does not grow with the tree's size.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope, which is checked first;\n`not_found` (404) when no instrument has that id or it is one this caller may not\nsee, and when the caller is a platform key carrying the scope; `validation_error`\n(422) when the path segment is not a UUID or asOf is not a date.",
         "operationId": "listInstrumentProvisions",
         "parameters": [
           {
@@ -20717,7 +20727,7 @@
     },
     "/api/v1/provisions/{provision_id}/diff": {
       "get": {
-        "description": "What changed between two versions of one provision's verbatim text, sentence by\nsentence: the sentences that stand unchanged, the ones the newer version dropped and\nthe ones it adds. Call it behind \"Show what changed\" on the provision tree.\n\nBy default it compares the latest version against the one before it; from and to\nname any two versions by their number. Both are versions of the same provision: this\ncall never compares one record with another. The comparison is made in a language\nboth versions hold, preferring the one lang asks for, and the answer says which\nlanguage it settled on and whether either side was machine translated and so still\nunconfirmed by a person.\n\nA read: it changes nothing, writes no audit row and logs none of the text, which is\nthe library's own content. It takes a person's session holding `library.read` in\ntheir bank, or an agent's key carrying the `library:read` scope.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope; `not_found` (404) when no\nprovision has that id or it is one this caller may not see; `unknown_key` (422) when\na version number is asked for that this provision has no version for;\n`validation_error` (422) when the provision has fewer than two versions and neither\nnumber was given, when the two versions share no language at all, when lang is\nlonger than 8 characters, or when the path segment is not a UUID.",
+        "description": "What changed between two versions of one provision's verbatim text, sentence by\nsentence: the sentences that stand unchanged, the ones the newer version dropped and\nthe ones it adds. Call it behind \"Show what changed\" on the provision tree.\n\nBy default it compares the latest version against the one before it; from and to\nname any two versions by their number. Both are versions of the same provision: this\ncall never compares one record with another. The comparison is made in a language\nboth versions hold, preferring the one lang asks for, and the answer says which\nlanguage it settled on and whether either side was machine translated and so still\nunconfirmed by a person.\n\nA read: it changes nothing, writes no audit row and logs none of the text, which is\nthe library's own content. It takes a person's session holding `library.read` in\ntheir bank, or a bank's own API key carrying the `library:read` scope; a platform key\nbelongs to no bank and answers 404 even when it carries `library:read`.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope, which is checked first;\n`not_found` (404) when no provision has that id or it is one this caller may not see,\nand when the caller is a platform key carrying the scope; `unknown_key` (422) when\na version number is asked for that this provision has no version for;\n`validation_error` (422) when the provision has fewer than two versions and neither\nnumber was given, when the two versions share no language at all, when lang is\nlonger than 8 characters, or when the path segment is not a UUID.",
         "operationId": "getProvisionDiff",
         "parameters": [
           {

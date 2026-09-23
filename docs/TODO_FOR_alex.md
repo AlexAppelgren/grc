@@ -510,3 +510,22 @@ section. Copied here as chunk3-rest-T20 requires.
       roadmap page already shows. Default if you say nothing: it stays as built, and a feed
       never disagrees with the roadmap page beside it, which is the rule chunk 6 ruling 5 set
       for these two reads.
+
+## lib-instrument-card-fixes: the instrument card's lineage headings and empty text (2026-09-23, INV-01, INV-02)
+
+- [ ] **The lineage headings read "Implements" going out and "Amends this instrument" coming
+      in, where the design card says "Amended by" and "Elaborated by".** Relation types
+      (`implements`, `elaborates`, `amends`) are vocabulary rows a platform admin can add to
+      or relabel, and each has one label. The card now groups the lineage by relation and
+      direction with no pair hard-coded, so a new relation type shows up without a deploy:
+      an outgoing group is headed by the label itself, and an incoming one by the label
+      followed by "this instrument" (in Swedish "den här rättsakten"). "Amended by" needs a
+      second label per relation type, said from the other side. Default if you say nothing:
+      it stays as built. If you want the design's wording, relation types gain an inverse
+      label (a vocabulary change, one more label per row, in every content language) and
+      the card uses it for the incoming groups.
+- [ ] **The empty provision tree says "The provision tree appears here once the library holds
+      it."**, where `design/screens/tenant-instrument.html` still says "as the library editor
+      approves it". bleqq staffs no library editor (D-62), so the screen names no approver.
+      The design card's lineage headings and this sentence are still the old wording; whoever
+      next edits `design/` should bring the card in line, or tell us to follow the card.

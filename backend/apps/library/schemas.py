@@ -1835,9 +1835,10 @@ class InstrumentLineageRef(LibraryResponse):
         description=(
             "Whether this instrument is the one doing the relating (`outgoing`, this "
             "instrument implements, elaborates or amends the other) or the one being "
-            "related to (`incoming`, the other does so to this one). A card reads "
-            "`outgoing` under headings such as \"Implements\" and \"incoming\" under "
-            "\"Amended by\"."
+            "related to (`incoming`, the other does so to this one). One of the two words, "
+            "never anything else. The card groups the lineage by relation and direction: "
+            "`outgoing` under the relation's label (\"Implements\"), `incoming` under the "
+            "label said of this instrument (\"Amends this instrument\")."
         ),
         examples=["incoming"],
     )
@@ -1846,14 +1847,26 @@ class InstrumentLineageRef(LibraryResponse):
         description="What the relation is, in the library's own words. An empty string when nothing was recorded, never null.",
         examples=["Amends FFFS 2017:2, in force 1 October 2026."],
     )
-    to_ref: str = Field(
+    from_ref: str = Field(
         description=(
-            "Where in the related instrument this points, in the words the source uses "
-            "(\"Article 25(3) and (4)\"), whichever side of the relation this instrument "
-            "is on. An empty string when the relation names no specific place, which is "
-            "most of them: a whole-instrument amendment needs none."
+            "The place in the instrument doing the relating, in the words the source uses "
+            "(\"1 §\"): in this instrument when `direction` is `outgoing`, in the one named "
+            "in `instrument` when it is `incoming`. It means the same whichever card reads "
+            "it. An empty string when the relation names no specific place, which is most "
+            "of them: a whole instrument usually does the relating."
         ),
         examples=[""],
+    )
+    to_ref: str = Field(
+        description=(
+            "The place in the instrument being related to, in the words the source uses "
+            "(\"Article 25(3) and (4)\"): in the one named in `instrument` when `direction` "
+            "is `outgoing`, in this instrument when it is `incoming`. It means the same "
+            "whichever card reads it, so MiFID II's own card still says which of its "
+            "articles a guideline elaborates. An empty string when the relation names no "
+            "specific place, which is most of them: a whole-instrument amendment needs none."
+        ),
+        examples=["Article 25(3) and (4)"],
     )
 
 
@@ -1881,6 +1894,7 @@ _SAMPLE_INSTRUMENT_DETAIL: dict[str, Any] = {
             "direction": "incoming",
             "instrument": {"key": "fffs-2026-11", "shortName": "FFFS 2026:11"},
             "note": "Amends FFFS 2017:2, in force 1 October 2026.",
+            "fromRef": "",
             "toRef": "",
         }
     ],

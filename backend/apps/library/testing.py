@@ -93,12 +93,20 @@ def instrument(
     return row
 
 
-def relate_instruments(source: Instrument, target: Instrument, *, relation: str, note: str = "", to_ref: str = "") -> InstrumentRelation:
+def relate_instruments(
+    source: Instrument, target: Instrument, *, relation: str, note: str = "", from_ref: str = "", to_ref: str = ""
+) -> InstrumentRelation:
     """Files `target` beside `source` (INV-01): `source` "implements", "elaborates" or
-    "amends" `target`, the direction the fixture and the lineage read both use."""
+    "amends" `target`, the direction the fixture and the lineage read both use. `from_ref`
+    is the place in `source` that does it and `to_ref` the place in `target` it reaches."""
     with library_write(REASON):
         return InstrumentRelation.objects.create(
-            from_instrument=source, to_instrument=target, relation_type=RelationType.objects.get(key=relation), note=note, to_ref=to_ref
+            from_instrument=source,
+            to_instrument=target,
+            relation_type=RelationType.objects.get(key=relation),
+            note=note,
+            from_ref=from_ref,
+            to_ref=to_ref,
         )
 
 

@@ -1,13 +1,16 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
+import { searchOf } from '@/components/inventory/InventoryScreen';
 import { Facts, type Fact } from '@/components/inventory/ObligationPanels';
 import { ObligationRow } from '@/components/inventory/ObligationRow';
 import { ProvisionTree } from '@/components/inventory/ProvisionTree';
 import { ReportProblemModal, type ReportContext } from '@/components/inventory/ReportProblemModal';
 import { Button } from '@/components/ui/Button';
+import { Chip, ChipRow } from '@/components/ui/Chip';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
@@ -31,17 +34,39 @@ import { problemStatus } from '@/shared/utils/problem';
 /** Reporting a problem with a library record is everyone's, but it is still a permission. */
 const REPORT_PERMISSION = 'problems.report';
 
-function lineageOf(lineage: readonly InstrumentLineageRef[], relation: string, direction: 'outgoing' | 'incoming'): InstrumentLineageRef[] {
-  return lineage.filter((link) => link.relation.key === relation && link.direction === direction);
+/** One heading of the lineage panel: every link of one relation type in one direction. */
+interface LineageGroupOf {
+  id: string;
+  relation: InstrumentLineageRef['relation'];
+  direction: InstrumentLineageRef['direction'];
+  links: InstrumentLineageRef[];
 }
 
-function LineageGroup({ title, links }: { title: string; links: readonly InstrumentLineageRef[] }) {
-  if (links.length === 0) return null;
+/**
+ * The lineage grouped by relation type and direction, in the order the read
+ * answers them. Relation types are rows an admin may add to, so no pair is
+ * hard-coded: every pair the read carries gets its own heading.
+ */
+function lineageGroups(lineage: readonly InstrumentLineageRef[]): LineageGroupOf[] {
+  const groups = new Map<string, LineageGroupOf>();
+  for (const link of lineage) {
+    const id = `${link.relation.key}:${link.direction}`;
+    const group = groups.get(id) ?? { id, relation: link.relation, direction: link.direction, links: [] };
+    group.links.push(link);
+    groups.set(id, group);
+  }
+  return [...groups.values()];
+}
+
+function LineageGroup({ group }: { group: LineageGroupOf }) {
+  const t = useT();
+  // "Implements" going out; "Amends this instrument" coming in, where the related instrument does the amending.
+  const title = t(group.direction === 'outgoing' ? 'inventory.instrument.lineageOutgoing' : 'inventory.instrument.lineageIncoming', { relation: group.relation.label });
   return (
-    <div className="mb-3" data-lineage-group={title}>
+    <div className="mb-3" data-lineage-group={group.id}>
       <h3 className="mb-1.5 font-semibold">{title}</h3>
       <ul className="m-0 grid list-none gap-1.5 p-0 text-meta">
-        {links.map((link) => (
+        {group.links.map((link) => (
           <li key={`${link.relation.key}:${link.direction}:${link.instrument.key}`} data-lineage-instrument={link.instrument.key}>
             <span className="font-medium">{link.instrument.shortName}</span>
             {link.note === '' ? null : <Meta className="mt-0.5">{link.note}</Meta>}
@@ -52,22 +77,16 @@ function LineageGroup({ title, links }: { title: string; links: readonly Instrum
   );
 }
 
-/** "Lineage": what this instrument implements, what elaborates it, and what amends it (INV-01). */
+/** "Lineage": what this instrument implements, elaborates or amends, and what does so to it in turn (INV-01). */
 function LineagePanel({ instrument }: { instrument: InstrumentDetail }) {
   const t = useT();
-  const implements_ = lineageOf(instrument.lineage, 'implements', 'outgoing');
-  const elaboratedBy = lineageOf(instrument.lineage, 'elaborates', 'incoming');
-  const amendedBy = lineageOf(instrument.lineage, 'amends', 'incoming');
+  const groups = lineageGroups(instrument.lineage);
   return (
     <Panel title={t('inventory.instrument.lineageTitle')} data-lineage-panel="">
-      {instrument.lineage.length === 0 ? (
+      {groups.length === 0 ? (
         <p className="text-meta text-muted">{t('inventory.instrument.lineageEmpty')}</p>
       ) : (
-        <>
-          <LineageGroup title={t('inventory.instrument.lineageImplements')} links={implements_} />
-          <LineageGroup title={t('inventory.instrument.lineageElaboratedBy')} links={elaboratedBy} />
-          <LineageGroup title={t('inventory.instrument.lineageAmendedBy')} links={amendedBy} />
-        </>
+        groups.map((group) => <LineageGroup key={group.id} group={group} />)
       )}
     </Panel>
   );
@@ -103,24 +122,45 @@ function IdentityPanel({ instrument, actions }: { instrument: InstrumentDetail; 
   );
 }
 
+/**
+ * The obligations from this instrument, inside our scope unless the reader
+ * asks for the rest (FP-03), exactly as the inventory filtered by this
+ * instrument lists them: the total says how many there are beyond the first
+ * page, and the link opens that same list in the inventory.
+ */
 function ObligationsPanel({ instrument }: { instrument: InstrumentDetail }) {
   const t = useT();
-  const obligations = useObligations({ instrument: instrument.stableKey, outsideFootprint: true });
+  const [outside, setOutside] = useState(false);
+  const obligations = useObligations(outside ? { instrument: instrument.stableKey, outsideFootprint: true } : { instrument: instrument.stableKey });
   const items = obligations.data?.items ?? [];
+  const inventory = `/inventory?${searchOf('obligations', { instrument: instrument.stableKey, regime: '', service: '', dutyType: '', asOf: '', outsideFootprint: outside })}`;
   return (
     <Panel title={t('inventory.instrument.obligationsTitle')} data-obligations-panel="">
+      <ChipRow className="mb-3">
+        <Chip pressed={outside} onClick={() => setOutside((current) => !current)}>
+          {t('inventory.showOutside')}
+        </Chip>
+      </ChipRow>
       {obligations.isPending ? (
         <LoadingState rows={2} />
       ) : obligations.isError ? (
         <ErrorState title={t('inventory.instrument.obligationsErrorTitle')} onRetry={() => void obligations.refetch()} />
       ) : items.length === 0 ? (
-        <p className="text-meta text-muted">{t('inventory.instrument.obligationsEmpty')}</p>
+        <p className="text-meta text-muted">{t(outside ? 'inventory.instrument.obligationsEmpty' : 'inventory.instrument.obligationsEmptyInScope')}</p>
       ) : (
-        <div className="grid gap-2">
-          {items.map((obligation) => (
-            <ObligationRow key={obligation.id} obligation={obligation} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-2">
+            {items.map((obligation) => (
+              <ObligationRow key={obligation.id} obligation={obligation} />
+            ))}
+          </div>
+          <Meta className="mt-3">
+            <span data-obligations-total="">{t('inventory.count', { count: obligations.data?.total ?? items.length })}</span>
+            <Link href={inventory} prefetch={false} className="underline">
+              {t('inventory.instrument.obligationsInInventory')}
+            </Link>
+          </Meta>
+        </>
       )}
     </Panel>
   );

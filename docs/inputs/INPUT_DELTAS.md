@@ -718,12 +718,14 @@ in `docs/DECISIONS.md`; the researched detail is in
   `eliUri` (an empty string, never null, when none is published), `authority` in full,
   `verifiedBy` (a platform person or null, INV-06) and `lineage`, instead of the designed
   `Instrument`. `lineage` is `[{relation, direction: outgoing|incoming, instrument{key,
-  shortName}, note, toRef}]`, both directions of `InstrumentRelation` in one list, so the
-  designed `GET /instruments/{instrumentId}/relations` is served here instead of as its
-  own route. `direction` says whether this instrument is the one relating (`outgoing`) or
-  the one related to (`incoming`); `toRef` is the relation's own pinpoint reference
-  (`Article 25(3) and (4)`), an empty string when the relation names no specific place,
-  which is most of them. The card carries no footprint verdict of its own; the Instruments
+  shortName}, note, fromRef, toRef}]`, both directions of `InstrumentRelation` in one
+  list, so the designed `GET /instruments/{instrumentId}/relations` is served here instead
+  of as its own route. `direction` says whether this instrument is the one relating
+  (`outgoing`) or the one related to (`incoming`). `fromRef` and `toRef` keep the designed
+  relation's own meaning whichever card reads them: the place in the instrument relating
+  and the place in the one related to (`Article 25(3) and (4)`), each an empty string
+  rather than null when the relation names no specific place, which is most of them. The
+  card carries no footprint verdict of its own; the Instruments
   tab and its filter read that from the row. The provision tree is its own read
   (`GET /instruments/{instrumentId}/provisions`, chunk3-rest-T16). A record the caller
   cannot see answers 404, never 403 (INV-07).

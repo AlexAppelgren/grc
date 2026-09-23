@@ -3,7 +3,7 @@
 import { Chip } from '@/components/ui/Chip';
 import { Select, TextInput } from '@/components/ui/Field';
 import { useTerms } from '@/features/footprint/hooks';
-import { useInstruments } from '@/features/library/hooks';
+import { INSTRUMENT_OPTIONS, useInstruments } from '@/features/library/hooks';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
@@ -27,14 +27,26 @@ export interface InventoryFilters {
   outsideFootprint: boolean;
 }
 
-/** The instrument picker's own options, each with its obligation count (INV-01, T17). */
+/**
+ * The instrument picker's own options, each with its obligation count (INV-01, T17),
+ * read at the route's maximum page so the picker is not cut at the tab's first 20.
+ * An instrument in the URL that is not among them keeps an option of its own, so the
+ * picker never reads "All instruments" while the list is filtered by one. One outside
+ * our scope is named from the options outside it, read only then; the key shows only
+ * while that read loads, or for an instrument past the hundredth or unknown.
+ */
 function InstrumentSelect({ value, outsideFootprint, onChange }: { value: string; outsideFootprint: boolean; onChange: (next: string) => void }) {
   const t = useT();
-  const instruments = useInstruments({ outsideFootprint });
+  const instruments = useInstruments({ outsideFootprint }, INSTRUMENT_OPTIONS);
+  const options = instruments.data?.items ?? [];
+  const unlisted = value !== '' && !options.some((instrument) => instrument.stableKey === value);
+  const outside = useInstruments({ outsideFootprint: true }, INSTRUMENT_OPTIONS, unlisted && instruments.isSuccess && !outsideFootprint);
+  const unlistedName = outside.data?.items.find((instrument) => instrument.stableKey === value)?.shortName ?? value;
   return (
     <Select className="w-auto" aria-label={t('inventory.filter.instrument')} value={value} onChange={(event) => onChange(event.target.value)}>
       <option value="">{t('inventory.filter.allInstruments')}</option>
-      {(instruments.data?.items ?? []).map((instrument) => (
+      {unlisted ? <option value={value}>{unlistedName}</option> : null}
+      {options.map((instrument) => (
         <option key={instrument.stableKey} value={instrument.stableKey}>
           {t('inventory.filter.instrumentOption', { name: instrument.shortName, count: instrument.obligationCount })}
         </option>
