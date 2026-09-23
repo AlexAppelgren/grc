@@ -12,6 +12,7 @@ import {
   isMachineConfirmed,
   isSuggested,
   keyDateMeta,
+  machineConfirmedBy,
   presentChange,
   presentChangeRow,
   rowUrgency,
@@ -201,6 +202,30 @@ describe('isMachineConfirmed', () => {
     const mixed = { ...confirmed, flags: [fact('ai', 'AI', true)] };
     expect(presentChangeRow(mixed, 'row', t).map((p) => p.label)).toContain('Suggested by the agent');
     expect(presentChangeRow(mixed, 'row', t).map((p) => p.label)).not.toContain('Machine-confirmed');
+  });
+});
+
+describe('machineConfirmedBy', () => {
+  const sweeper = { id: 'a1', key: 'watch-sweeper' };
+  const confirmer = { id: 'a2', key: 'library-confirmer' };
+  const sv = createT('sv');
+
+  it('names the agent that suggested a fact and the one that confirmed it', () => {
+    const facts = [{ confirmedOrigin: 'agent' as const, suggestedByAgent: sweeper, confirmedByAgent: confirmer }];
+    expect(machineConfirmedBy(facts, t)).toBe('Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer');
+    expect(machineConfirmedBy(facts, sv)).toBe('Maskinbekräftad: föreslagen av watch-sweeper, bekräftad av library-confirmer');
+  });
+
+  it('names the confirming agent alone when no agent suggested it', () => {
+    expect(machineConfirmedBy([{ confirmedOrigin: 'agent', suggestedByAgent: null, confirmedByAgent: confirmer }], t)).toBe('Machine-confirmed by library-confirmer');
+  });
+
+  it('says each pair once, and nothing for a suggestion or a person’s confirmation', () => {
+    const byAgent = { confirmedOrigin: 'agent' as const, suggestedByAgent: sweeper, confirmedByAgent: confirmer };
+    expect(machineConfirmedBy([byAgent, byAgent], t)).toBe('Machine-confirmed: suggested by watch-sweeper, confirmed by library-confirmer');
+    expect(machineConfirmedBy([{ confirmedOrigin: 'user', suggestedByAgent: sweeper, confirmedByAgent: null }], t)).toBeNull();
+    expect(machineConfirmedBy([{ confirmedOrigin: null, suggestedByAgent: sweeper, confirmedByAgent: null }], t)).toBeNull();
+    expect(machineConfirmedBy([], t)).toBeNull();
   });
 });
 

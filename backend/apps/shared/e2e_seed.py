@@ -1024,6 +1024,7 @@ class SeedChunk5Watch:
     timeline_change: str
     obligations_change: str
     payments_change: str
+    curation_change: str
     healthy_source: str
     failing_source: str
     inactive_source: str
@@ -1040,6 +1041,11 @@ EXPECTED_CHUNK5_WATCH = SeedChunk5Watch(
     # A third reform so the feed and the console queue are not both single-row lists;
     # "Markets we watch" stays empty until `f03-T41` derives a jurisdiction (D-29).
     payments_change="chg-e2e-c5-payments",
+    # WAT-S4's own reform, every fact the sweeper's suggestion, which the journey confirms as
+    # a person in the console. No other journey reads or corrects it, so confirming it can
+    # never move a fact under another journey (the payments change is corrected by
+    # taxonomy.journey.spec.ts as the same editor, whose correction is then their own).
+    curation_change="chg-e2e-c5-curation",
     healthy_source="EUR-Lex legal database (E2E)",
     failing_source="Open web sweep, payments (E2E)",
     inactive_source="ISO standards register (E2E, inactive)",
@@ -1055,10 +1061,10 @@ RECHECK_OBLIGATION = "obl-priips-kid"
 CONFIRMED_LINK_OBLIGATION = "obl-dora-ict-register"
 SUGGESTED_LINK_OBLIGATION = "obl-client-assets"
 
-# The one library editor whose confirmations this seed stands behind: the same account
-# `proposals.journey.spec.ts` signs in as, so a journey that confirms something here and
-# something in the console queue is confirming as one person.
-CONFIRMING_EDITOR_EMAIL = "editor@bleqq.test"
+# The independent agent whose confirmations this seed stands behind (D-74): a watch fact's
+# confirmed state is an agent's of another definition than the sweeper that suggested it,
+# made through its own platform key, so it reads machine-confirmed naming both agents.
+CONFIRMING_AGENT = "library-confirmer"
 
 
 def seed_platform_agent_runs() -> tuple[AgentRun, AgentRun]:
@@ -1124,6 +1130,28 @@ def _sweeper_key() -> tuple[ApiKey, Any]:
     return key, agent
 
 
+# The scopes the confirmer's platform key holds, from its definition
+# (`backend/agents/library-confirmer/v1/definition.yaml`): never `changes:write` or
+# `proposals:write`, so it cannot file what it would then confirm.
+_CONFIRMER_SCOPES: tuple[str, ...] = ("agent-runs:write", "library:read", "proposals:review")
+
+
+def _confirmer_key() -> ApiKey:
+    """The library confirmer's platform key, found by its name or made once, bound to its
+    own agent definition: the key every confirmation in this seed names (D-74). Like the
+    sweeper's, nothing authenticates as it, so its plain value is dropped at once, and it is
+    written in `tenancy.platform_zone()` (H15)."""
+    seed_agent_definitions()
+    agent = _agent(CONFIRMING_AGENT)
+    _plain, prefix, key_hash = tokens.new_api_key()
+    with tenancy.platform_zone():
+        key, _created = ApiKey.objects.get_or_create(
+            name="Library confirmer (E2E)",
+            defaults={"tenant": None, "agent": agent, "key_prefix": prefix, "key_hash": key_hash, "scopes": list(_CONFIRMER_SCOPES)},
+        )
+    return key
+
+
 def seed_chunk5_sources(closed_run: AgentRun) -> None:
     """The registry's own variety (WAT-01), four sources across three of its four kinds
     (`tenant_private` is WAT-06, R3, and fits no shared row): a healthy one, one that has
@@ -1175,11 +1203,13 @@ def _register_and_fan_out(change: Any) -> None:
 def seed_chunk5_changes(closed_run: AgentRun) -> SeedChunk5Watch:
     """The three reforms beyond chunk 6's four (WAT-01 to WAT-05): each with a regime term,
     a change type and a flag as suggestions, and their real cases fanned out through the
-    outbox cursor exactly as a registration would open them (CAS-01). Runs after
-    `seed_logins()`, because a confirmed classification names a library editor who must
-    already exist, and it clears the tenant it is called with left active.
+    outbox cursor exactly as a registration would open them (CAS-01). Every fact is the
+    sweeper's suggestion, through its key; the confirmed ones are the library confirmer's,
+    through its own (D-74), so nothing here names a person and a journey's person may
+    confirm any suggestion left. It clears the tenant it is called with left active.
     """
-    editor = User.objects.get(email=CONFIRMING_EDITOR_EMAIL)
+    sweeper, _agent_row = _sweeper_key()
+    confirmer = _confirmer_key()
     tenancy.clear_tenant()
     week = timezone_now_this_week(TENANT_A.timezone)
     today = week.date()
@@ -1198,19 +1228,22 @@ def seed_chunk5_changes(closed_run: AgentRun) -> SeedChunk5Watch:
         urgency="within_3_months",
         first_seen_at=week,
         so_what_draft="Update the appropriateness assessment template before the rules take effect.",
+        suggester=sweeper,
     )
     watch_e2e_seed.seed_event(timeline, label="Consultation opened", event_date=datetime.date(2026, 3, 1), precision=DatePrecision.MONTH, sort_order=1)
     watch_e2e_seed.seed_event(timeline, label="Adopted", event_date=datetime.date(2026, 6, 15), precision=DatePrecision.DAY, sort_order=2)
     watch_e2e_seed.seed_event(timeline, label="In force", event_date=datetime.date(2027, 1, 1), precision=DatePrecision.QUARTER, occurred=False, sort_order=3)
     watch_e2e_seed.seed_document(timeline, url="https://www.fi.se/en/published/news/2026/appropriateness/", title="FI clarifies the appropriateness assessment", is_primary=True)
-    watch_e2e_seed.seed_flag_link(timeline, flag_key="advice_perimeter")
-    watch_e2e_seed.seed_scope_term_link(timeline, term_ref="regime:securities", confirmed_by_id=editor.id, confirmed_at=week)
+    watch_e2e_seed.seed_flag_link(timeline, flag_key="advice_perimeter", suggester=sweeper)
+    watch_e2e_seed.seed_scope_term_link(timeline, term_ref="regime:securities", suggester=sweeper, confirmer=confirmer, confirmed_at=week)
     if is_new:
         _register_and_fan_out(timeline)
 
     # WAT-S6's own change: two documents (one a merged duplicate, one carrying a screened
-    # hit) and two obligation links, one confirmed for the shared library and one still a
-    # suggestion, so a bank's own decision has something to decide.
+    # hit) and two obligation links, one an independent agent confirmed for the shared
+    # library and one still a suggestion, so a bank's own decision has something to decide.
+    # Its type, flag and scope term are machine-confirmed too, so its feed row carries the
+    # machine-confirmed pill where the other two carry the suggestion marker.
     is_new = not _regulatory_change_exists(EXPECTED_CHUNK5_WATCH.obligations_change)
     obligations_change = watch_e2e_seed.seed_change(
         stable_key=EXPECTED_CHUNK5_WATCH.obligations_change,
@@ -1225,18 +1258,25 @@ def seed_chunk5_changes(closed_run: AgentRun) -> SeedChunk5Watch:
         first_seen_at=week + datetime.timedelta(hours=2),
         so_what_draft="Confirm the ICT register covers every third-party arrangement in scope.",
         source_url="https://www.esma.europa.eu/",
+        suggester=sweeper,
+        type_confirmer=confirmer,
+        confirmed_at=week,
     )
     watch_e2e_seed.seed_document(obligations_change, url="https://www.esma.europa.eu/press-news/ict-rts", title="ESMA finalises ICT reporting standards", is_primary=True)
     watch_e2e_seed.seed_document(
         obligations_change, url="https://www.esma.europa.eu/press-news/ict-rts-annex", title="Annex: reporting template", is_duplicate=True, risk_flags=["embedded_instructions"],
     )
-    watch_e2e_seed.seed_flag_link(obligations_change, flag_key="ai", confidence=0.61)
-    watch_e2e_seed.seed_scope_term_link(obligations_change, term_ref="regime:ai_ict", confidence=0.88)
-    watch_e2e_seed.seed_obligation_link(
-        obligations_change, _obligation(CONFIRMED_LINK_OBLIGATION), confidence=0.92, confirmed_by_id=editor.id, confirmed_at=week,
+    watch_e2e_seed.seed_flag_link(
+        obligations_change, flag_key="ai", confidence=0.61, suggester=sweeper, confirmer=confirmer, confirmed_at=week,
+    )
+    watch_e2e_seed.seed_scope_term_link(
+        obligations_change, term_ref="regime:ai_ict", confidence=0.88, suggester=sweeper, confirmer=confirmer, confirmed_at=week,
     )
     watch_e2e_seed.seed_obligation_link(
-        obligations_change, _obligation(SUGGESTED_LINK_OBLIGATION), confidence=0.55,
+        obligations_change, _obligation(CONFIRMED_LINK_OBLIGATION), confidence=0.92, suggester=sweeper, confirmer=confirmer, confirmed_at=week,
+    )
+    watch_e2e_seed.seed_obligation_link(
+        obligations_change, _obligation(SUGGESTED_LINK_OBLIGATION), confidence=0.55, suggester=sweeper,
     )
     if is_new:
         _register_and_fan_out(obligations_change)
@@ -1251,11 +1291,36 @@ def seed_chunk5_changes(closed_run: AgentRun) -> SeedChunk5Watch:
         key_date_label="Consultation closes",
         urgency="monitor",
         first_seen_at=week + datetime.timedelta(hours=4),
+        suggester=sweeper,
+        type_confidence=0.83,
     )
     watch_e2e_seed.seed_document(payments, url="https://www.fi.se/en/published/news/2026/instant-payments/", is_primary=True)
-    watch_e2e_seed.seed_scope_term_link(payments, term_ref="regime:payments", confidence=0.7)
+    watch_e2e_seed.seed_scope_term_link(payments, term_ref="regime:payments", confidence=0.7, suggester=sweeper)
     if is_new:
         _register_and_fan_out(payments)
+
+    # WAT-S4's reform: the scenario's own classification, each fact suggested by the sweeper
+    # with its confidence, and nothing confirmed.
+    is_new = not _regulatory_change_exists(EXPECTED_CHUNK5_WATCH.curation_change)
+    curation = watch_e2e_seed.seed_change(
+        stable_key=EXPECTED_CHUNK5_WATCH.curation_change,
+        title="ESMA consults on the marketing of complex products to retail clients",
+        change_type="consultation",
+        authority="esma",
+        authority_label="European Securities and Markets Authority",
+        key_date=today + datetime.timedelta(days=120),
+        key_date_label="Consultation closes",
+        urgency="monitor",
+        first_seen_at=week + datetime.timedelta(hours=6),
+        source_url="https://www.esma.europa.eu/",
+        suggester=sweeper,
+        type_confidence=0.91,
+    )
+    watch_e2e_seed.seed_document(curation, url="https://www.esma.europa.eu/press-news/complex-products", is_primary=True)
+    watch_e2e_seed.seed_flag_link(curation, flag_key="advice_perimeter", confidence=0.74, suggester=sweeper)
+    watch_e2e_seed.seed_scope_term_link(curation, term_ref="regime:securities", confidence=0.8, suggester=sweeper)
+    if is_new:
+        _register_and_fan_out(curation)
 
     return EXPECTED_CHUNK5_WATCH
 

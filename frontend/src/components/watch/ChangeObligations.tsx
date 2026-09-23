@@ -8,6 +8,7 @@ import { useFormatContext } from '@/features/identity/hooks';
 import type { PresentedPill } from '@/features/shared/presentation-types';
 import { slotTone } from '@/features/shared/tone-by-kind';
 import type { CaseObligationDecision, ChangeDetail } from '@/features/watch/api';
+import { machineConfirmedBy } from '@/features/watch/change-presentation';
 import { useAcceptCaseObligationLink, useCanWorkCase, useRemoveCaseObligationLink } from '@/features/watch/hooks';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -81,6 +82,7 @@ export function ChangeObligations({ change }: { change: ChangeDetail }) {
     <Rows data-change-obligations="">
       {links.map((link) => {
         const decision = decisions.get(link.obligationId);
+        const machineConfirmed = machineConfirmedBy([link], t);
         return (
           <Row key={link.obligationId} data-obligation={link.obligationId} data-case-decision={decision?.decision}>
             <PillRow pills={presentObligationLink(link, decision, t, ctx)} />
@@ -89,8 +91,9 @@ export function ChangeObligations({ change }: { change: ChangeDetail }) {
                 {link.title}
               </Link>
             </h3>
-            <p className="text-meta text-muted">
+            <p className="flex flex-wrap gap-x-3 gap-y-1 text-meta text-muted">
               <code className="font-mono">{link.refLabel}</code>
+              {machineConfirmed === null ? null : <span>{machineConfirmed}</span>}
             </p>
             {canWork && decision === undefined ? <LinkDecision changeId={change.id} obligationId={link.obligationId} /> : null}
           </Row>

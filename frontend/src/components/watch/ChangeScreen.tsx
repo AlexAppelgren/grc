@@ -12,7 +12,7 @@ import { useFormatContext } from '@/features/identity/hooks';
 import type { PresentedPill } from '@/features/shared/presentation-types';
 import { slotTone } from '@/features/shared/tone-by-kind';
 import type { ChangeDetail } from '@/features/watch/api';
-import { CHANGE_SLOT_ORDER, caseStatusLabel, presentChange, urgencyOf, type ChangeFacts } from '@/features/watch/change-presentation';
+import { CHANGE_SLOT_ORDER, caseStatusLabel, machineConfirmedBy, presentChange, urgencyOf, type ChangeFacts } from '@/features/watch/change-presentation';
 import { useChange } from '@/features/watch/hooks';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -127,6 +127,8 @@ export function ChangeScreen({ changeId }: { changeId: string }) {
   const slot = (prefix: string) => pills.filter((pill) => pill.key.startsWith(prefix));
   const urgencySuggested = change.case === null || !change.case.urgencyConfirmed;
   const provenance = typeProvenance(change);
+  // Which agents stand behind a machine's confirmation, never read as a person's (D-74).
+  const machineConfirmation = machineConfirmedBy([...(change.changeTypeFact ? [change.changeTypeFact] : []), ...change.flags, ...change.terms], t);
 
   return (
     <div data-change={change.stableKey}>
@@ -178,6 +180,7 @@ export function ChangeScreen({ changeId }: { changeId: string }) {
                 )}
               </dd>
             </dl>
+            {machineConfirmation === null ? null : <p className="mt-2 text-meta text-muted" data-machine-confirmed="">{machineConfirmation}</p>}
           </Panel>
 
           <Panel title={t('watch.change.obligations')}>
