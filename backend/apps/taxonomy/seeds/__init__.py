@@ -147,6 +147,18 @@ _REJECTION_REASONS: list[SystemRow] = [
     SystemRow("bad_source", {"en": "Bad source", "sv": "Bristfällig källa"}, "The source is missing, outdated or not the authoritative text."),
     SystemRow("duplicate", {"en": "Duplicate", "sv": "Dubblett"}, "The library already holds this, or another proposal makes the same change."),
     SystemRow("not_relevant", {"en": "Not relevant", "sv": "Inte relevant"}, "The change is outside what the library covers."),
+    # Not in the CHECK list: the PRD's sector scope as a reason of its own (PRO-01, AGT-08),
+    # so a reviewer can say why an off-sector record never enters the library.
+    SystemRow(
+        "outside_sector_scope",
+        {"en": "Outside the sector scope", "sv": "Utanför sektorsomfattningen"},
+        "The record falls outside the PRD's sector scope: regulated financial services only (banking, "
+        "payments, investment services, insurance and pension provision, and asset and wealth management), "
+        "with the AML, data protection and ICT-risk regimes that apply to them and the tax and AI rules as "
+        "they apply to financial firms and their products. Every record carries a regime from the regime "
+        "list, which is the boundary. Other sectors, and standards outside that scope such as ISO 9001, "
+        "ISO 14001 or ISO 45001, never enter the library.",
+    ),
     SystemRow("poor_wording", {"en": "Poor wording", "sv": "Otydlig formulering"}, "The facts hold, but the wording needs more than a correction in review."),
     SystemRow("other", {"en": "Other", "sv": "Annat"}, "None of the above; the note says why."),
 ]

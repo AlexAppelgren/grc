@@ -8311,7 +8311,7 @@ export interface components {
             proposedText: string;
             /**
              * Rejectioncode
-             * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `poor_wording` and `other`. Empty unless the status is `rejected`.
+             * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `outside_sector_scope`, `poor_wording` and `other`. Empty unless the status is `rejected`.
              * @default
              */
             rejectionCode: string;
@@ -8571,7 +8571,7 @@ export interface components {
             proposedBy?: components["schemas"]["ProposalActorRef"] | null;
             /**
              * Rejectioncode
-             * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `poor_wording` and `other`. Empty unless the status is `rejected`.
+             * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `outside_sector_scope`, `poor_wording` and `other`. Empty unless the status is `rejected`.
              * @default
              */
             rejectionCode: string;
@@ -8767,7 +8767,7 @@ export interface components {
             proposedBy?: components["schemas"]["ProposalActorRef"] | null;
             /**
              * Rejectioncode
-             * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `poor_wording` and `other`. Empty unless the status is `rejected`.
+             * @description Why it was refused: the key of a row of the `rejection_reason` library list, which an admin may extend, so a client stores and compares the key and shows the label the list gives. The keys seeded on day one are `wrong_fact`, `wrong_scope`, `bad_source`, `duplicate`, `not_relevant`, `outside_sector_scope`, `poor_wording` and `other`. Empty unless the status is `rejected`.
              * @default
              */
             rejectionCode: string;

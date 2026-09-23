@@ -57,8 +57,9 @@ SEED = Actor.system("seed_reference")
 # must stay out of the mirror. Written here rather than imported because that row, and the
 # JurisdictionKind member it carries, land with that task.
 UNOPERATED_JURISDICTION_KIND = "international"
-# schema v0.3's `proposal.rejection_code` CHECK, in its order: the only list the inputs define.
-REJECTION_REASONS = ["wrong_fact", "wrong_scope", "bad_source", "duplicate", "not_relevant", "poor_wording", "other"]
+# schema v0.3's `proposal.rejection_code` CHECK, in its order, with the PRD's sector scope
+# (PRO-S9) filed beside "not relevant".
+REJECTION_REASONS = ["wrong_fact", "wrong_scope", "bad_source", "duplicate", "not_relevant", "outside_sector_scope", "poor_wording", "other"]
 
 
 class VocabularyEdges(ScenarioTestCase):
@@ -287,12 +288,12 @@ class RejectionReasons(ScenarioTestCase):
     def _rows(self) -> dict[str, Any]:
         return {row["key"]: row for row in self._get("/vocab/rejection_reason").json()["items"]}
 
-    def test_every_deploy_files_the_seven_reasons_in_en_and_sv(self) -> None:
+    def test_every_deploy_files_the_eight_reasons_in_en_and_sv(self) -> None:
         listed = {item["list"]: item for item in self._get("/vocab").json()["items"]}
         summary = listed["rejection_reason"]
         self.assertEqual(
             (summary["tier"], summary["kind"], summary["kinds"], summary["count"], summary["proposable"]),
-            (2, None, [], 7, True),
+            (2, None, [], len(REJECTION_REASONS), True),
         )
         rows = self._rows()
         self.assertEqual(list(rows), REJECTION_REASONS)

@@ -575,6 +575,15 @@ class ProposalsScenarioTests(ScenarioTestCase):
         again = self._post(f"/proposals/{proposal['id']}/approve", {}, sign_in(self.second_editor, step_up=True))
         self.assertEqual(again.status_code, 409)
         self.assertEqual(again.json()["code"], "invalid_transition")
+        # The reason list holds the sector scope as a system row of its own, whose usage note
+        # names the PRD's sector scope, so a reviewer can say why an off-sector record is refused.
+        listed = self.client.get(f"{V1}/vocab/rejection_reason", **editor)
+        self.assertEqual(listed.status_code, 200, listed.content)
+        reason = {row["key"]: row for row in listed.json()["items"]}["outside_sector_scope"]
+        self.assertTrue(reason["isSystem"])
+        self.assertEqual(reason["labels"], {"en": "Outside the sector scope", "sv": "Utanför sektorsomfattningen"})
+        self.assertIn("sector scope", reason["usageNote"])
+        self.assertIn("regulated financial services only", reason["usageNote"])
 
     @skip("pending: PRO-S10 (INV-08, chunks 4 and 5)")
     def test_pro_s10(self) -> None:
