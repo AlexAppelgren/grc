@@ -24,6 +24,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Prefetch, prefetch_related_objects
 from django.utils import timezone
 
 from apps.library import reading
@@ -98,12 +99,15 @@ def pending_row(tenant_id: uuid.UUID, order: list[str]) -> FootprintRequestRow |
     return None if request is None else request_row(request, order)
 
 
-def requests_of(tenant_id: uuid.UUID) -> list[FootprintChangeRequest]:
-    return list(
-        FootprintChangeRequest.objects.filter(tenant_id=tenant_id)
-        .select_related("requested_by", "decided_by")
-        .order_by("-requested_at", "id")
-    )
+def requests_of(
+    tenant_id: uuid.UUID, order: list[str], *, limit: int, offset: int
+) -> tuple[list[FootprintRequestRow], int]:
+    """One page of the request history (FP-02, NFR-02), newest first, and how many requests
+    there are in all. The id settles two requests sent in the same instant, so two reads
+    always agree on the order."""
+    found = FootprintChangeRequest.objects.filter(tenant_id=tenant_id)
+    page = found.select_related("requested_by", "decided_by").order_by("-requested_at", "id")[offset : offset + limit]
+    return request_rows(list(page), order), found.count()
 
 
 def _person(user: Any) -> PersonRef | None:
@@ -112,20 +116,31 @@ def _person(user: Any) -> PersonRef | None:
 
 
 def request_row(request: FootprintChangeRequest, order: list[str]) -> FootprintRequestRow:
-    adds, removes = _changes(request)
-    return FootprintRequestRow(
-        id=request.id,
-        status=request.status,
-        requested_by=_person(request.requested_by),
-        requested_at=request.requested_at,
-        adds=terms_logic.labelled_term_refs(adds, order),
-        removes=terms_logic.labelled_term_refs(removes, order),
-        preview=_preview_now(request, adds, removes),
-        decided_by=_person(request.decided_by),
-        decided_at=request.decided_at,
-        decision_note=request.decision_note,
-        version=request.version,
-    )
+    return request_rows([request], order)[0]
+
+
+def request_rows(requests: list[FootprintChangeRequest], order: list[str]) -> list[FootprintRequestRow]:
+    """A page of requests costs the same few queries however many it holds: the terms of all
+    of them with their dimensions in one read per side, and their labels in one."""
+    changes = _changes_of(requests)
+    terms = {term.id: term for adds, removes in changes for term in (*adds, *removes)}
+    labelled = dict(zip(terms, terms_logic.labelled_term_refs(list(terms.values()), order), strict=True))
+    return [
+        FootprintRequestRow(
+            id=request.id,
+            status=request.status,
+            requested_by=_person(request.requested_by),
+            requested_at=request.requested_at,
+            adds=[labelled[term.id] for term in adds],
+            removes=[labelled[term.id] for term in removes],
+            preview=_preview_now(request, adds, removes),
+            decided_by=_person(request.decided_by),
+            decided_at=request.decided_at,
+            decision_note=request.decision_note,
+            version=request.version,
+        )
+        for request, (adds, removes) in zip(requests, changes, strict=True)
+    ]
 
 
 # ---------------------------------------------------------------------------------------
@@ -168,13 +183,24 @@ def preview_of(tenant_id: uuid.UUID, adds: list[Any], removes: list[Any]) -> Foo
     )
 
 
-def _changes(request: FootprintChangeRequest) -> tuple[list[Any], list[Any]]:
-    """The terms a request would switch on and off, in the picker's order."""
-    order = ("dimension__sort_order", "sort_order", "key")
-    return (
-        list(request.adds.select_related("dimension").order_by(*order)),
-        list(request.removes.select_related("dimension").order_by(*order)),
+def _changes_of(requests: list[FootprintChangeRequest]) -> list[tuple[list[Any], list[Any]]]:
+    """The terms each request would switch on and off, with their dimensions, in one query
+    per side for any number of requests. The database orders them as the picker and the
+    scope panel do (terms_logic), by its own collation."""
+    in_picker_order = ("term__dimension__sort_order", "term__sort_order", "term__key")
+    prefetch_related_objects(
+        requests,
+        Prefetch("add_links", FootprintChangeAdd.objects.select_related("term__dimension").order_by(*in_picker_order)),
+        Prefetch("remove_links", FootprintChangeRemove.objects.select_related("term__dimension").order_by(*in_picker_order)),
     )
+    return [
+        ([link.term for link in request.add_links.all()], [link.term for link in request.remove_links.all()])
+        for request in requests
+    ]
+
+
+def _changes(request: FootprintChangeRequest) -> tuple[list[Any], list[Any]]:
+    return _changes_of([request])[0]
 
 
 def _preview_now(request: FootprintChangeRequest, adds: list[Any], removes: list[Any]) -> FootprintPreview:
@@ -252,7 +278,7 @@ def _switch_on(
             subject_type=SUBJECT_TYPE,
             subject_id=row.id,
             subject_title=f"{term.dimension.key}:{term.key}",
-            summary=f"Added {term.dimension.key}:{term.key} to the footprint.",
+            summary=f"Added {term.dimension.key}:{term.key} to the regulatory scope.",
             tenant_id=tenant.id,
             after=_term_state(term, request),
             step_up_assertion_id=step_up_assertion_id,
@@ -290,7 +316,7 @@ def _switch_off(
             subject_type=SUBJECT_TYPE,
             subject_id=row.id,
             subject_title=f"{term.dimension.key}:{term.key}",
-            summary=f"Removed {term.dimension.key}:{term.key} from the footprint.",
+            summary=f"Removed {term.dimension.key}:{term.key} from the regulatory scope.",
             tenant_id=tenant.id,
             before=_term_state(term, request),
             step_up_assertion_id=step_up_assertion_id,
@@ -333,7 +359,7 @@ def create_request(
         if getattr(diag, "constraint_name", None) != "footprint_change_request_one_pending":
             raise
         raise ValidationError(
-            "A footprint change is already waiting for a decision.", code="request_pending"
+            "A regulatory scope change is already waiting for a decision.", code="request_pending"
         ) from exc
     for term in adds:
         FootprintChangeAdd.objects.create(tenant=tenant, request=request, term=term)
@@ -345,7 +371,7 @@ def create_request(
         subject_type=REQUEST_SUBJECT_TYPE,
         subject_id=request.id,
         subject_title=f"{len(adds)} added, {len(removes)} removed",
-        summary="Requested a footprint change.",
+        summary="Requested a regulatory scope change.",
         tenant_id=tenant.id,
         after={
             "adds": [f"{term.dimension.key}:{term.key}" for term in adds],
@@ -362,7 +388,7 @@ def _decidable(request: FootprintChangeRequest, expected_version: int | None) ->
     request.refresh_from_db(from_queryset=FootprintChangeRequest.objects.select_for_update())
     if request.status != ApprovalStatus.PENDING.value:
         raise ValidationError(
-            "This footprint change has already been decided.", code="invalid_transition"
+            "This regulatory scope change has already been decided.", code="invalid_transition"
         )
     if expected_version is not None and expected_version != request.version:
         raise ValidationError("Someone changed this first. Reload and try again.", code="stale_write")
@@ -384,7 +410,7 @@ def approve(
     _decidable(request, expected_version)
     if request.requested_by_id == decider.id:
         raise ValidationError(
-            "A footprint change is approved by someone other than the person who asked for it.",
+            "A regulatory scope change is approved by someone other than the person who asked for it.",
             code="four_eyes_violation",
         )
     adds, removes = _changes(request)
@@ -431,7 +457,7 @@ def reject(
     _decidable(request, expected_version)
     if request.requested_by_id == decider.id:
         raise ValidationError(
-            "A footprint change is decided by someone other than the person who asked for it.",
+            "A regulatory scope change is decided by someone other than the person who asked for it.",
             code="four_eyes_violation",
         )
     return _decide(
@@ -501,7 +527,7 @@ def _decide(
         subject_type=REQUEST_SUBJECT_TYPE,
         subject_id=request.id,
         subject_title=str(request.id),
-        summary=f"Footprint change {status.value}.",
+        summary=f"Regulatory scope change {status.value}.",
         tenant_id=tenant.id,
         before=before,
         after=after,
