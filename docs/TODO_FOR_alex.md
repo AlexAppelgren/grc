@@ -169,7 +169,7 @@ adopted. The ISO/IEC 27001:2022 transition MD 26 describes ended on
 - [ ] Sentry on its EU region, or decide against it.
 - [ ] The design for the screens the prototype lacks (`design/README.md`), if you want to shape them before the agent does.
 - [ ] Overlay motion (tab bar open question 6): `Modal` and the More sheet open and close without animation, so the two stay consistent. Say if you want motion, and it is added to both together.
-- [ ] Dark-theme screenshots of the tab bar and the More sheet, once the app has a real theme switch. Until then the dark tokens exist only under `.dark`, nothing sets that class, and `contrast.test.ts` pins the dark values instead.
+- [ ] Dark-theme screenshots of the tab bar and the More sheet. The app already follows the system's dark setting (next-themes puts `dark` on `<html>`; there is no switch in the app), so they can be taken now. Until you ask for them, `contrast.test.ts` pins the dark values and the NFR-S9 journey measures them in a browser under a dark system theme.
 
 ## PRD 0.4, from your answers of 2026-09-19
 
