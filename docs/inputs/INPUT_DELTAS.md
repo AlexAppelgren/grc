@@ -1023,3 +1023,31 @@ them. `POST /changes` also loses the bare `soWhatDraft` string the build had put
 body: words with no model, no model version and no citation cannot become the
 `ai_generation` row AUD-02 asks for, so the object is the shape and a bare string is a 422.
 `WatchChange.soWhatDraft`, the response field, is unchanged.
+
+
+## 12. Two reads that are on `main` in a shape of their own (review-fixes, 2026-09-23)
+
+`backend/scripts/contract_drift_pending.txt` still listed both as chunk 1 work to come.
+Both are built, and each departs from the design on purpose, so they are explained here
+instead and their pending lines are gone.
+
+- `GET /me/whats-new` (`getWhatsNew`) is not built and is not coming: `GET /library-updates`
+  (`listLibraryUpdates`, 622ce06) answers the same question, with the designed
+  `POST /me/visit` (`markVisit`) moving the reader's bookmark. The designed read was one
+  object, `{since, changes[], newObligationVersions[], decidedProposals}`, from a `since`
+  that defaulted to the last visit. The built read lists what an approved proposal applied
+  to the shared library since the reader's own bookmark, grouped by the day it arrived in
+  the bank's time zone, as `{since, days[{date, items[]}], total}` paged with `limit` and
+  `offset`, filtered by `kind`, and cut to the bank's footprint unless `outsideFootprint`
+  asks otherwise. It takes no `since`: the start is the bookmark, or the default window for
+  a reader who has never marked the library as seen. Each row is titled by the library
+  record it touched and names nobody, so a change another bank asked for reads like any
+  other. It sits beside the inventory under `library.read` rather than under `/me`, because
+  what it lists is library facts; only the bookmark is the person's, and it stays on
+  `POST /me/visit`. The designed `decidedProposals` count is not carried.
+- `GET /audit-events` (`listAuditEvents`, built 2026-09-19 in cfc3bf40) answers
+  `{items, total}` paged with `limit` and `offset`, like every other list (playbook 10),
+  instead of the designed cursor page `{items, nextCursor}`. Its filters are `subjectType`,
+  `subjectId`, `actorId`, `from` (inclusive) and `to` (exclusive): `actorId` matches any
+  actor, a person or an agent, where the designed `actorUserId` named a person only, and the
+  designed `action` filter is not built.
