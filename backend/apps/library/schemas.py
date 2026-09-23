@@ -1746,17 +1746,26 @@ class InstrumentLineageRef(LibraryResponse):
         description="What the relation is, in the library's own words. An empty string when nothing was recorded, never null.",
         examples=["Amends FFFS 2017:2, in force 1 October 2026."],
     )
-    to_ref: str = Field(
+    from_ref: str = Field(
         description=(
-            "The place in the other instrument, the one named in `instrument`, in the words "
-            "the source uses (\"Article 25(3) and (4)\"). For an `outgoing` relation that is "
-            "where this instrument points in the other; for an `incoming` one it is the part "
-            "of the other instrument that does the relating, never a place in this one. The "
-            "name is kept for the published contract. An empty string when the relation "
-            "names no specific place, which is most of them: a whole-instrument amendment "
-            "needs none."
+            "The place in the instrument doing the relating, in the words the source uses "
+            "(\"1 §\"): in this instrument when `direction` is `outgoing`, in the one named "
+            "in `instrument` when it is `incoming`. It means the same whichever card reads "
+            "it. An empty string when the relation names no specific place, which is most "
+            "of them: a whole instrument usually does the relating."
         ),
         examples=[""],
+    )
+    to_ref: str = Field(
+        description=(
+            "The place in the instrument being related to, in the words the source uses "
+            "(\"Article 25(3) and (4)\"): in the one named in `instrument` when `direction` "
+            "is `outgoing`, in this instrument when it is `incoming`. It means the same "
+            "whichever card reads it, so MiFID II's own card still says which of its "
+            "articles a guideline elaborates. An empty string when the relation names no "
+            "specific place, which is most of them: a whole-instrument amendment needs none."
+        ),
+        examples=["Article 25(3) and (4)"],
     )
 
 
@@ -1784,6 +1793,7 @@ _SAMPLE_INSTRUMENT_DETAIL: dict[str, Any] = {
             "direction": "incoming",
             "instrument": {"key": "fffs-2026-11", "shortName": "FFFS 2026:11"},
             "note": "Amends FFFS 2017:2, in force 1 October 2026.",
+            "fromRef": "",
             "toRef": "",
         }
     ],

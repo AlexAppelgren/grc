@@ -1520,15 +1520,15 @@ export interface paths {
          * Browse the instruments behind the inventory
          * @description The instruments inventory: every law, regulation or guideline of the shared library
          *     whose own scope (its regime) overlaps this bank's footprint, narrowed by regime or a
-         *     phrase. Call it for the Instruments tab and its filter, and from an agent run that
-         *     needs the instruments an obligation's own regime reaches.
+         *     phrase. Call it for the Instruments tab and its filter, or with a bank's own API key
+         *     to read the instruments behind that bank's inventory.
          *
          *     A read: it changes nothing and writes no audit row. It takes a person's session
-         *     holding `library.read` in their bank, or the key of an agent that belongs to one bank
-         *     carrying the `library:read` scope. The list is read against that bank's footprint, so
-         *     a platform run's key, which belongs to no bank, answers 404 however it is scoped. The
-         *     rows are shared library facts, the same for every bank and changed only through an
-         *     approved proposal.
+         *     holding `library.read` in their bank, or a bank's own API key carrying the
+         *     `library:read` scope. The list is read against that bank's footprint, so a platform
+         *     key, such as the one bleqq's own watch agents run with, belongs to no bank and answers
+         *     404 even when it carries `library:read`. The rows are shared library facts, the same
+         *     for every bank and changed only through an approved proposal.
          *
          *     Paginated: 20 rows by default and 100 at most, ordered by stable key so paging is
          *     repeatable. `obligationCount` counts the obligations this bank would see under each
@@ -1537,8 +1537,9 @@ export interface paths {
          *     tab lists every visible instrument with its own in-force dates.
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope; `not_found` (404) when the
-         *     caller is a platform run's key and so belongs to no bank; `validation_error` (422)
+         *     (403) without library.read or the library:read scope, which is checked first, so a
+         *     platform key without the scope gets this; `not_found` (404) when the caller is a
+         *     platform key carrying the scope, since it belongs to no bank; `validation_error` (422)
          *     when the phrase is longer than 200 characters or the page size or offset is out of
          *     range.
          */
@@ -1567,17 +1568,17 @@ export interface paths {
          *     instrument card.
          *
          *     A read: it changes nothing and writes no audit row. It takes a person's session
-         *     holding `library.read` in their bank, or the key of an agent that belongs to one bank
-         *     carrying the `library:read` scope; a platform run's key, which belongs to no bank,
-         *     answers 404 however it is scoped. The designed
-         *     `GET /instruments/{instrumentId}/relations` is served here as `lineage`, and the
-         *     provision tree is its own read.
+         *     holding `library.read` in their bank, or a bank's own API key carrying the
+         *     `library:read` scope; a platform key belongs to no bank and answers 404 even when it
+         *     carries `library:read`. The designed `GET /instruments/{instrumentId}/relations` is
+         *     served here as `lineage`, and the provision tree is its own read.
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope; `not_found` (404) when no
-         *     instrument has that id or it is one this caller may not see, the two answering alike
-         *     so that no id can be probed for, and when the caller is a platform run's key;
-         *     `validation_error` (422) when the path segment is not a UUID.
+         *     (403) without library.read or the library:read scope, which is checked first;
+         *     `not_found` (404) when no instrument has that id or it is one this caller may not
+         *     see, the two answering alike so that no id can be probed for, and when the caller is
+         *     a platform key carrying the scope; `validation_error` (422) when the path segment is
+         *     not a UUID.
          */
         get: operations["getInstrument"];
         put?: never;
@@ -1630,13 +1631,13 @@ export interface paths {
          * @description The verbatim provision tree of one instrument: chapters, sections, articles,
          *     paragraphs or whatever each node's own kind names, each with every text version it
          *     has ever carried, its children in the tree and the obligations that cite it. Call it
-         *     for the instrument card's provision tree, and from an agent run that needs the law
-         *     itself rather than a plain-language duty.
+         *     for the instrument card's provision tree, or with a bank's own API key when an
+         *     integration needs the law itself rather than a plain-language duty.
          *
          *     A read: it changes nothing and writes no audit row. It takes a person's session
-         *     holding `library.read` in their bank, or the key of an agent that belongs to one bank
-         *     carrying the `library:read` scope; a platform run's key, which belongs to no bank,
-         *     answers 404 however it is scoped. `asOf` decides only which version each node's
+         *     holding `library.read` in their bank, or a bank's own API key carrying the
+         *     `library:read` scope; a platform key belongs to no bank and answers 404 even when it
+         *     carries `library:read`. `asOf` decides only which version each node's
          *     `inForceVersion` names, and defaults to today in that bank's time zone; every version
          *     stays in `versions` regardless, so a reader can choose an earlier or a future one by
          *     its own chip rather than trusting today's date. The designed
@@ -1647,10 +1648,10 @@ export interface paths {
          *     array. The number of queries does not grow with the tree's size.
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope; `not_found` (404) when no
-         *     instrument has that id or it is one this caller may not see, and when the caller is a
-         *     platform run's key; `validation_error` (422) when the path segment is not a UUID or
-         *     asOf is not a date.
+         *     (403) without library.read or the library:read scope, which is checked first;
+         *     `not_found` (404) when no instrument has that id or it is one this caller may not
+         *     see, and when the caller is a platform key carrying the scope; `validation_error`
+         *     (422) when the path segment is not a UUID or asOf is not a date.
          */
         get: operations["listInstrumentProvisions"];
         put?: never;
@@ -2256,14 +2257,13 @@ export interface paths {
          *
          *     A read: it changes nothing, writes no audit row and logs none of the text, which is
          *     the library's own content. It takes a person's session holding `library.read` in
-         *     their bank, or the key of an agent that belongs to one bank carrying the
-         *     `library:read` scope; a platform run's key, which belongs to no bank, answers 404
-         *     however it is scoped.
+         *     their bank, or a bank's own API key carrying the `library:read` scope; a platform key
+         *     belongs to no bank and answers 404 even when it carries `library:read`.
          *
          *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope; `not_found` (404) when no
-         *     provision has that id or it is one this caller may not see, and when the caller is a
-         *     platform run's key; `unknown_key` (422) when
+         *     (403) without library.read or the library:read scope, which is checked first;
+         *     `not_found` (404) when no provision has that id or it is one this caller may not see,
+         *     and when the caller is a platform key carrying the scope; `unknown_key` (422) when
          *     a version number is asked for that this provision has no version for;
          *     `validation_error` (422) when the provision has fewer than two versions and neither
          *     number was given, when the two versions share no language at all, when lang is
@@ -5801,6 +5801,7 @@ export interface components {
          *       "lineage": [
          *         {
          *           "direction": "incoming",
+         *           "fromRef": "",
          *           "instrument": {
          *             "key": "fffs-2026-11",
          *             "shortName": "FFFS 2026:11"
@@ -5922,6 +5923,12 @@ export interface components {
              * @example incoming
              */
             direction: string;
+            /**
+             * Fromref
+             * @description The place in the instrument doing the relating, in the words the source uses ("1 §"): in this instrument when `direction` is `outgoing`, in the one named in `instrument` when it is `incoming`. It means the same whichever card reads it. An empty string when the relation names no specific place, which is most of them: a whole instrument usually does the relating.
+             * @example
+             */
+            fromRef: string;
             /** @description The other instrument in the relation, by key and short name. */
             instrument: components["schemas"]["ObligationInstrumentRef"];
             /**
@@ -5934,8 +5941,8 @@ export interface components {
             relation: components["schemas"]["LibraryRef"];
             /**
              * Toref
-             * @description The place in the other instrument, the one named in `instrument`, in the words the source uses ("Article 25(3) and (4)"). For an `outgoing` relation that is where this instrument points in the other; for an `incoming` one it is the part of the other instrument that does the relating, never a place in this one. The name is kept for the published contract. An empty string when the relation names no specific place, which is most of them: a whole-instrument amendment needs none.
-             * @example
+             * @description The place in the instrument being related to, in the words the source uses ("Article 25(3) and (4)"): in the one named in `instrument` when `direction` is `outgoing`, in this instrument when it is `incoming`. It means the same whichever card reads it, so MiFID II's own card still says which of its articles a guideline elaborates. An empty string when the relation names no specific place, which is most of them: a whole-instrument amendment needs none.
+             * @example Article 25(3) and (4)
              */
             toRef: string;
         };

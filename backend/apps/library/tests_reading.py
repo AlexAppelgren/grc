@@ -26,7 +26,7 @@ from django.db import DEFAULT_DB_ALIAS, connection, connections, transaction
 from django.test import TestCase, TransactionTestCase
 from pydantic import ValidationError
 
-from apps.agents import testing as agents_build
+from apps.agents import testing as agents_testing
 from apps.identity.models import User
 from apps.library import reading
 from apps.library import testing as build
@@ -935,13 +935,17 @@ class InstrumentListTests(TestCase):
     def test_a_platform_run_key_belongs_to_no_bank_and_reads_no_instrument(self) -> None:
         # The instrument reads are made against one bank's footprint and date, so a key
         # of bleqq's own watch agents, which holds library:read but belongs to no bank,
-        # answers 404 as the routes document, never an unfiltered list.
+        # answers 404 as the routes document, never an unfiltered list. The scope is
+        # checked first, so the same key without library:read is refused with 403.
         with tenancy.platform_zone():
-            key = agents_build.agent_key()
+            key = agents_testing.agent_key()
+            unscoped = agents_testing.agent_key(scopes=("changes:write",))
         for url in ("/api/v1/instruments", f"/api/v1/instruments/{self.fffs.id}", f"/api/v1/instruments/{self.fffs.id}/provisions"):
             with self.subTest(url=url):
                 response = self.client.get(url, HTTP_X_API_KEY=key.plain_key)
                 self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"))
+                refused = self.client.get(url, HTTP_X_API_KEY=unscoped.plain_key)
+                self.assertEqual((refused.status_code, refused.json()["requiredPermission"]), (403, perms.SCOPE_LIBRARY_READ))
 
     def test_every_filter(self) -> None:
         self.assertEqual({row["stableKey"] for row in self.get({"regime": "securities", "outsideFootprint": "true"}).json()["items"]}, {"fffs-instruments", "fffs-amendment-instruments"})
@@ -1031,11 +1035,13 @@ class InstrumentDetailTests(TestCase):
             [("amends", "incoming", "fffs-amendment-instruments")],
         )
         self.assertEqual(incoming["lineage"][0]["note"], "Amends FFFS 2017:2, in force 1 October 2026.")
-        # `toRef` is the place in the other instrument either way: where the amendment
-        # reaches into FFFS 2017:2 on the amendment's card, and the part of the amendment
-        # that does it on FFFS 2017:2's own card, never a place in the card's own text.
-        self.assertEqual(outgoing["lineage"][0]["toRef"], "9 kap. 6 §")
-        self.assertEqual(incoming["lineage"][0]["toRef"], "1 §")
+        # `fromRef` and `toRef` mean the same on both cards, as the designed relation has
+        # them: the part of the amendment that amends, and the place in FFFS 2017:2 it
+        # reaches. Neither swaps with the direction, so the amended instrument's own card
+        # still says which of its sections is amended.
+        for card in (outgoing, incoming):
+            with self.subTest(direction=card["lineage"][0]["direction"]):
+                self.assertEqual((card["lineage"][0]["fromRef"], card["lineage"][0]["toRef"]), ("1 §", "9 kap. 6 §"))
 
     def test_an_address_with_nothing_at_it_answers_404_and_a_malformed_one_422(self) -> None:
         missing = self.client.get(f"/api/v1/instruments/{uuid.uuid4()}", **sign_in(self.reader, tenant=self.tenant))
