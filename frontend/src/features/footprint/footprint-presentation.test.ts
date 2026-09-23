@@ -123,6 +123,8 @@ describe('preview', () => {
     expect(previewSummary(still, sv)).toBe('Döljer inget och visar inget.');
     expect(previewSummary({ hidden: { obligations: { count: 0, available: false } }, revealed: { obligations: { count: 0, available: false } } }, t)).toBe('What it hides is not counted yet.');
     expect(previewSummary(undefined, t)).toBe('What it hides is not counted yet.');
+    // An answer that carries no revealed side is summarised from the side it does carry.
+    expect(previewSummary({ hidden: { obligations: { count: 2, available: true } } } as unknown as FootprintPreview, t)).toBe('Hides 2 obligations.');
   });
 
   it('knows whether the counted part hides anything, never guessing at a count it does not have', () => {
@@ -174,6 +176,8 @@ describe('draft and diff', () => {
     expect([...(after.client_category ?? [])]).toEqual(['retail']);
     expect(narrowedGroups([service, client], after).map((d) => d.dimension.key)).toEqual(['client_category']);
     expect(narrowedGroups([service, client], draftAfter([service, client], request()))).toEqual([]);
+    // A draft that does not mention an empty group leaves it empty, so it narrows nothing.
+    expect(narrowedGroups([service, client], {})).toEqual([]);
   });
 });
 
