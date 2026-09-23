@@ -58,6 +58,7 @@ from apps.shared.e2e_seed import (
     EXPECTED_PENDING_REQUEST,
     EXPECTED_PROBLEM_REPORT,
     EXPECTED_PROPOSALS,
+    EXPECTED_TENANT_A_ONLY,
     EXPECTED_TENANTS,
     EXPECTED_WATCHED_MARKETS,
     PRO_S7_OBLIGATION,
@@ -225,7 +226,9 @@ class SeedIntegrityGuard(TestCase):
         for tenant in Tenant.objects.all():
             tenancy.activate(tenant.id)
             created = AuditEvent.objects.filter(tenant=tenant, action="vocabulary.created")
-            self.assertEqual(created.count(), sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values()))
+            # TEN-S7's one tenant-A tag is the seed's work too, but not a system row.
+            system = created.exclude(subject_title=f"{EXPECTED_TENANT_A_ONLY.tag_list}:{EXPECTED_TENANT_A_ONLY.tag_key}")
+            self.assertEqual(system.count(), sum(len(rows) for _, rows in TENANT_SYSTEM_ROWS.values()))
             self.assertEqual(set(created.values_list("actor_label", flat=True)), {"seed_e2e"})
 
     def test_each_tenant_has_exactly_its_seeded_footprint_and_the_pending_request(self) -> None:
@@ -809,3 +812,61 @@ class SeedIntegrityGuard(TestCase):
         seed_e2e()
         self.assertEqual(MockMailer.sent, [])
     # --- end tax-nordic-seed -----------------------------------------------------------------
+
+    # --- tax-market-journeys (FP-S8, TEN-S7) --------------------------------------------------
+    def test_fp_s8_has_two_people_in_tenant_b_and_one_obligation_per_jurisdiction(self) -> None:
+        """FP-S8: tenant B's admin requests and a second tenant-B login with a passkey approves
+        (four eyes); B's scope names no jurisdiction, so turning Denmark on is the change. As
+        seeded the journey's three obligations are in B's scope; with Denmark added the EU
+        and Danish ones still are and the Swedish one is not."""
+        from apps.library import reading
+        from apps.shared.e2e_seed import EXPECTED_MARKET_JOURNEY as spec
+        from apps.shared.permissions import FOOTPRINT_APPROVE, FOOTPRINT_REQUEST
+
+        seed_e2e()
+        tenant = Tenant.objects.get(slug=spec.tenant_slug)
+        tenancy.activate(tenant.id)
+        requester = Membership.objects.get(tenant=tenant, user__email=spec.requester_email)
+        approver = Membership.objects.get(tenant=tenant, user__email=spec.approver_email)
+        self.assertNotEqual(requester.user_id, approver.user_id)
+        self.assertIn(FOOTPRINT_REQUEST, {p for role in requester.roles.all() for p in role.permissions})
+        approver_permissions = {p for role in approver.roles.all() for p in role.permissions}
+        self.assertIn(FOOTPRINT_APPROVE, approver_permissions)
+        self.assertNotIn(FOOTPRINT_REQUEST, approver_permissions)
+        for membership in (requester, approver):
+            self.assertIn(membership.user.email, E2E_PASSKEYS)
+            self.assertTrue(WebAuthnCredential.objects.filter(user=membership.user).exists())
+
+        footprint = footprint_of(tenant.id)
+        self.assertNotIn("jurisdiction", footprint)
+        restricting = restricting_dimensions()
+        keys = {"eu": spec.union_obligation, "se": spec.home_obligation, spec.country: spec.country_obligation}
+        obligations = {o.stable_key: o for o in Obligation.objects.select_related("instrument__jurisdiction").filter(stable_key__in=keys.values())}
+        scopes = reading.obligation_scopes([o.id for o in obligations.values()])
+        with_country = {**footprint, "jurisdiction": {spec.country}}
+        for jurisdiction, key in keys.items():
+            with self.subTest(obligation=key):
+                obligation = obligations[key]
+                self.assertEqual(obligation.instrument.jurisdiction.key, jurisdiction)
+                scope = {dimension: {t.key for t in terms} for dimension, terms in scopes[obligation.id].items()}
+                self.assertTrue(in_footprint(scope, footprint, restricting=restricting))
+                self.assertEqual(in_footprint(scope, with_country, restricting=restricting), jurisdiction != "se")
+
+    def test_tenant_a_has_a_role_and_a_tag_tenant_b_does_not(self) -> None:
+        """TEN-S7 (J-8): the custom role and tenant tag the journey looks for in B are A's
+        alone, and a reseed writes neither again."""
+        from apps.identity.models import TenantRole
+
+        spec = EXPECTED_TENANT_A_ONLY
+        from apps.taxonomy.tenant_lists_logic import entry_for
+
+        seed_e2e()
+        seed_e2e()
+        tags = entry_for(spec.tag_list).model._default_manager
+        for tenant in Tenant.objects.all():
+            with self.subTest(tenant=tenant.slug):
+                tenancy.activate(tenant.id)
+                expected = 1 if tenant.slug == spec.tenant_slug else 0
+                self.assertEqual(TenantRole.objects.filter(tenant=tenant, key=spec.role_key).count(), expected)
+                self.assertEqual(tags.filter(tenant=tenant, key=spec.tag_key).count(), expected)
+    # --- end tax-market-journeys ---------------------------------------------------------------

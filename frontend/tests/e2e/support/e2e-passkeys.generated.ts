@@ -98,4 +98,10 @@ export const E2E_PASSKEYS_GENERATED: Readonly<Record<string, SeededPasskey>> = {
     privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgfHckdrhZk-n7rS-Xsce_W7LQAMD6-KmHC3LZvo5aCOyhRANCAAS0YAk5zeOVgIE00-Bf19vA0NzPZ9ipMklLaQw4_hwSoVMIZkdlpH3tPJFLRHpy0hbLQdUlQyeMjRMGB4tBAaoq',
     publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtGAJOc3jlYCBNNPgX9fbwNDcz2fYqTJJS2kMOP4cEqFTCGZHZaR97TyRS0R6ctIWy0HVJUMnjI0TBgeLQQGqKg',
   },
+  'approver@second-bank.test': {
+    id: 'HoDpXeyObXArC7s8SrOWzA',
+    userHandle: 'AAAAAAAAQACAAAAAAAABEQ',
+    privateKey: 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgqp4keK1CVCmUqb6cuZmxD4PZsm4iHTiQkEIDgB8CBTmhRANCAAQItrG7COh7F-vyB9XMk6g-gn4Jp6BtV6O3663YP4y-LUtTEc-4zlyk0tFyDvnF9JlXLtLIOE8vHq82uz9Z-763',
+    publicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECLaxuwjoexfr8gfVzJOoPoJ-CaegbVejt-ut2D-Mvi1LUxHPuM5cpNLRcg75xfSZVy7SyDhPLx6vNrs_Wfu-tw',
+  },
 };
