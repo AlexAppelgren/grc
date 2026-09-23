@@ -22,7 +22,9 @@ from __future__ import annotations
 
 import datetime
 from io import StringIO
+from zoneinfo import ZoneInfo
 
+from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 
@@ -45,9 +47,12 @@ from apps.shared.e2e_passkeys import E2E_PASSKEYS
 from apps.library.models import Instrument, Obligation, ObligationVersion, ProblemReport, ReportStatus, Verification
 from apps.proposals.logic import parsed_payload, sourced_fields
 from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
+from apps.search import ask, hybrid
 from apps.search.models import SearchChunk, SearchSource
+from apps.search.schemas import Answer, AskAnswerEvent, AskRequest
 from apps.shared.e2e_seed import (
     CONFIRMED_LINK_OBLIGATION,
+    EXPECTED_ASK,
     EXPECTED_CHUNK5_WATCH,
     EXPECTED_FOOTPRINTS,
     EXPECTED_HOME,
@@ -71,6 +76,9 @@ from apps.taxonomy.matching import footprint_of, in_footprint, in_footprint_sql,
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
+
+# The login search.journey.spec.ts asks as (LOGINS.reader), tenant A's reader.
+READER_EMAIL = "reader@example-bank.test"
 
 
 def _scope(obligation: Obligation) -> dict[str, set[str]]:
@@ -739,3 +747,51 @@ class SeedIntegrityGuard(TestCase):
             spoken_for,
             "FP-S4 keeps this obligation outside tenant A's scope: point the proposal or record that names it at one that stays inside",
         )
+
+    # --- ask-journeys (SRC-S4, SRC-S5, SRC-S10) ----------------------------------------------
+    def test_the_answered_question_flags_the_pending_change_and_the_unsupported_one_retrieves_nothing(self) -> None:
+        """SRC-S4, SRC-S5, SRC-S10 (SRC-03, AC-SRC2): search.journey.spec.ts asks the seeded
+        reader's two questions of tenant A and expects one answer citing the research payment
+        duty with its pending change flagged, and one "no answer". Both are asked here the way
+        the route asks them, with no "as of" and with one ten days ahead (SRC-S10 sets it),
+        so a seed or library change that moves either answer fails here first."""
+        seed_e2e()
+        link = ChangeObligation.objects.select_related("change").get(
+            change__stable_key=EXPECTED_ASK.pending_change, obligation__stable_key=EXPECTED_ASK.pending_obligation
+        )
+        self.assertIsNotNone(link.confirmed_at, "Ask flags only a link the library confirmed")
+        self.assertEqual(EXPECTED_ASK.pending_obligation, EXPECTED_LIBRARY.research_obligation)
+        tenant_a = Tenant.objects.get(slug=TENANT_A_SLUG)
+        self.assertTrue(tenant_a.ai_enabled, "Ask answers only a bank whose AI features are on")
+        reader = User.objects.get(email=READER_EMAIL)
+        today = datetime.datetime.now(ZoneInfo(tenant_a.timezone)).date()
+        research = Obligation.objects.get(stable_key=EXPECTED_ASK.pending_obligation)
+
+        tenancy.activate(tenant_a.id)
+        for as_of in (None, today + datetime.timedelta(days=10)):
+            with self.subTest(as_of=as_of):
+                self.assertEqual(
+                    hybrid.passages(EXPECTED_ASK.unsupported_question, tenant=tenant_a, lang=None, as_of=as_of or today, depth=settings.ASK_RETRIEVAL_DEPTH),
+                    [],
+                    "the unsupported question retrieves nothing, so no model is asked",
+                )
+                self.assertTrue(self._answer(EXPECTED_ASK.unsupported_question, as_of, tenant_a, reader).no_answer)
+
+                answer = self._answer(EXPECTED_ASK.answered_question, as_of, tenant_a, reader)
+                self.assertFalse(answer.no_answer)
+                cited = {citation.index: citation.obligation_id for citation in answer.citations}
+                flagged = [
+                    statement for statement in answer.statements
+                    if research.id in {cited[index] for index in statement.citation_indexes}
+                ]
+                self.assertTrue(flagged, "a statement cites the research payment duty")
+                self.assertEqual({statement.pending_change_id for statement in flagged}, {link.change_id})
+
+    @staticmethod
+    def _answer(question: str, as_of: datetime.date | None, tenant: Tenant, reader: User) -> Answer:
+        body = AskRequest.model_validate({"question": question, "asOf": as_of})
+        events = list(ask.answer_events(body, tenant_id=tenant.id, user_id=reader.id))
+        closing = events[-1]
+        assert isinstance(closing, AskAnswerEvent), closing
+        return closing.answer
+    # --- end ask-journeys ------------------------------------------------------------------
