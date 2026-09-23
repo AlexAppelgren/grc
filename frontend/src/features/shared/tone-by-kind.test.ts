@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { pillToneNames } from '@/components/ui/pill-tones';
 
-import { apiKeyStateTone, checkStatusTone, proposalStatusTone, slotTone } from './tone-by-kind';
+import { apiKeyStateTone, checkStatusTone, problemReportStatusTone, proposalStatusTone, slotTone } from './tone-by-kind';
 
 // The chunk 5 entries, pinned against design/system/pills-and-labels.md and
 // the cards. A tone comes from the row's own kind or from the slot it sits
@@ -51,5 +51,11 @@ describe('tone by kind: the watch and console entries', () => {
   it('takes every tone from the six, so no seventh can be introduced here', () => {
     const tones = [...Object.values(checkStatusTone), ...Object.values(apiKeyStateTone), ...Object.values(slotTone), ...Object.values(proposalStatusTone)];
     for (const tone of tones) expect(pillToneNames).toContain(tone);
+  });
+});
+
+describe('tone by kind: a problem report', () => {
+  it('reads a report waiting for a colleague as warning, a fix as positive, and a decision as information', () => {
+    expect(problemReportStatusTone).toEqual({ open: 'warning', answered: 'information', fixed: 'positive', rejected: 'information' });
   });
 });

@@ -12,7 +12,8 @@
    prototype was silent: the "as of" date control, the version list with who
    approved each version, the machine-translated label, library tags after the
    flags and tenant tags outlined, provenance from the proposal, and the
-   "This looks wrong" report form. The register panels of the prototype
+   "This looks wrong" report form, and the "Reported problems" section under
+   provenance with its close form (AUD-03, D-50). The register panels of the prototype
    (applies, where we stand, gaps, history, interpretation) are chunk 8. */
 :root{
   --brand:#003824;--bg:#f4f5f5;--surface:#ffffff;--surface-2:#f7f8f7;--sand:#f8f6f1;--sand-2:#efe9dc;--sand-3:#e7ddcb;
@@ -288,6 +289,13 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     </div><div class="grid" style="align-content:start">
       <div class="panel"><h2>Where it comes from</h2><dl class="kv"><dt>Instrument</dt><dd><a href="#">FFFS 2017:2 om värdepappersrörelse</a></dd><dt>Official reference</dt><dd class="mono">FFFS 2017:2, 9 kap. 6 §</dd><dt>Level</dt><dd>FI regulation</dd><dt>Implements</dt><dd>MiFID II delegated directive (EU) 2017/593, art. 13</dd><dt>Source</dt><dd><a href="#" rel="noopener">fi.se, consolidated text</a></dd><dt>Last verified</dt><dd>30 Jun 2026 by Sara Lindqvist</dd><dt>Created</dt><dd>12 Mar 2026 by Research agent 0.3, through proposal review</dd></dl>
         <div class="bar"><button class="btn ghost small">This looks wrong</button></div></div>
+      <div class="panel"><h2>Reported problems</h2>
+        <p class="meta" style="display:block">Every report your organisation filed on this record, newest first.</p>
+        <p class="meta" style="display:block;margin-bottom:12px">Reports stay inside your organisation. Closing one does not change the library: when a record is wrong, the watch re-checks it against its source and proposes the correction.</p>
+        <div class="rows">
+          <div class="row"><div class="meta"><span class="pill warning">Open</span></div><p>The retention line says five years; the source says ten.</p><div class="meta"><span>Reported by Johan Berg, 20 Sep 2026, 11:14</span><span>Version 2, Swedish</span></div><div class="bar"><button class="btn ghost small">Close report</button></div></div>
+          <div class="row"><div class="meta"><span class="pill">Answered</span></div><p>The in-force date looks wrong.</p><div class="meta"><span>Reported by Anna Nilsson, 12 Sep 2026, 09:02</span></div><p style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">The screen showed version 1, which said five years.</p><div class="meta"><span>Closed by Erik Holm, 13 Sep 2026, 15:40</span></div></div>
+        </div></div>
       <div class="panel"><h2>Related changes</h2><p><a href="#">FI adopts amended rules on paying for investment research</a><br><span class="meta"><span class="pill negative">Act now</span> Needs triage</span></p></div>
       <div class="panel"><h2>Participants</h2>
         <dl class="kv" style="grid-template-columns:150px 1fr;margin-bottom:12px"><dt>First-line owner</dt><dd>Anna Nilsson</dd><dt>Compliance contact</dt><dd>Sara Lindqvist</dd><dt>Owner team</dt><dd>Retail compliance</dd></dl>
@@ -334,10 +342,23 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <h2 class="k">"As of" a date before version 2, with the diff off</h2>
     <div class="notice">Showing version 1, in force on 1 June 2026. <a href="#">Back to today</a></div>
 
-    <h2 class="k">This looks wrong (creates a problem report the console resolves)</h2>
+    <h2 class="k">Reported problems: closing one, seen by the reporter or a colleague who may propose library changes</h2>
+    <div class="modal"><form class="box" aria-labelledby="cr"><h2 id="cr">Close this report</h2>
+      <div class="field"><label for="co">Outcome</label><select id="co"><option>Answered: the record needs no correction</option><option>Fixed: the record was wrong</option><option>Rejected: the record is right as it stands</option></select></div>
+      <div class="field"><label for="cn">Note for the reporter</label><textarea id="cn"></textarea><span class="hint">Say what you found, so the reporter knows.</span></div>
+      <p class="err" role="alert">Someone closed this report already. The list now shows how.</p>
+      <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit" disabled>Close report</button></div></form></div>
+
+    <h2 class="k">Reported problems: a member who may not close colleagues' reports sees their own; empty, error and refused</h2>
+    <div class="panel"><h2>Reported problems</h2><p class="meta" style="display:block">The reports you filed on this record, newest first.</p>
+      <p class="meta" style="display:block">No problems reported on this record.</p></div>
+    <div class="empty" role="alert"><h2>Reported problems could not be loaded</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
+    <p class="err" role="alert">You may not read these reports. Needs problems report</p>
+
+    <h2 class="k">This looks wrong (creates a problem report inside your own organisation)</h2>
     <div class="modal"><form class="box" aria-labelledby="lw"><h2 id="lw">What looks wrong?</h2>
       <div class="field"><label for="lf">Where</label><select id="lf"><option>The legal text</option><option>The translation</option><option>The scope</option><option>The duty</option><option>The source or reference</option><option>Something else</option></select></div>
-      <div class="field"><label for="lt">What you see</label><textarea id="lt" placeholder="e.g. The English text says 'annually'; the Swedish original says 'at least annually'"></textarea><span class="hint">A library editor reads this and fixes it through a proposal. You will see the fix under Library updates.</span></div>
+      <div class="field"><label for="lt">What you see</label><textarea id="lt" placeholder="e.g. The English text says 'annually'; the Swedish original says 'at least annually'"></textarea><span class="hint">Colleagues in your organisation read this and take it up. It reaches nobody outside your organisation.</span></div>
       <div class="bar"><button class="btn ghost" type="button">Cancel</button><button class="btn" type="submit">Send report</button></div></form></div>
     <p class="ok" role="status">Report sent. Thank you.</p>
 
@@ -346,7 +367,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load this obligation</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted"><h1>Not found</h1><p>There is nothing at this address in your organisation.</p><a href="#">Back to Inventory</a></div>
     </div>
-    <p class="note">Obligation card. Header slots: instrument (brand), regime (information), binding level (information "Binding" or warning "Guidance, comply or explain"), then compliance status once chunk 8 lands. The legal text block shows one version in one language; "Show what changed" marks sentences added and removed against the previous version; "As of" picks the version in force on that date. Translations are rows: the original carries no label, a machine translation carries the label above the text. Scope terms are brand pills, "All services" when every term is selected, "Not client-specific" when the list is empty. Library tags follow as brand pills, tenant tags outlined. Nothing here edits the library: re-verification and corrections happen in the console; a member reports. Participants (COL-04, chunk 8) hang on the register entry, which is created on its first write, not on the library record: the owners sit read-only above the list, each participant names who added them, adding needs register edit and anyone may leave their own row. A person or a team is one picker over the people reference and the team list; a team reaches its active members. Participation lists and notifies and grants nothing, so it needs no step-up and no second person; the server's refusals (already a participant, cannot open the record, the participant cap, the missing permission) render in place.</p>
+    <p class="note">Obligation card. Header slots: instrument (brand), regime (information), binding level (information "Binding" or warning "Guidance, comply or explain"), then compliance status once chunk 8 lands. The legal text block shows one version in one language; "Show what changed" marks sentences added and removed against the previous version; "As of" picks the version in force on that date. Translations are rows: the original carries no label, a machine translation carries the label above the text. Scope terms are brand pills, "All services" when every term is selected, "Not client-specific" when the list is empty. Library tags follow as brand pills, tenant tags outlined. Nothing here edits the library: re-verification and corrections happen in the console; a member reports. Reported problems (AUD-03, D-50) sits under provenance on the obligation and the instrument card: the reports this bank filed on the record, newest first, each with its reporter, time, words, the version and language on screen, and a status pill by kind (open warning, fixed positive, answered and rejected information). A colleague holding proposals.create reads and closes every one; anyone else reads and closes their own. Closing takes an outcome and a required note, needs no step-up, and never changes the library; a report closed by someone else first answers in place. Nobody outside the bank, bleqq included, sees a report, and the console has no surface for one. Participants (COL-04, chunk 8) hang on the register entry, which is created on its first write, not on the library record: the owners sit read-only above the list, each participant names who added them, adding needs register edit and anyone may leave their own row. A person or a team is one picker over the people reference and the team list; a team reaches its active members. Participation lists and notifies and grants nothing, so it needs no step-up and no second person; the server's refusals (already a participant, cannot open the record, the participant cap, the missing permission) render in place.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>Today</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg>Watch<span class="dot">3</span></button><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8"/></svg>Inventory</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>Search</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

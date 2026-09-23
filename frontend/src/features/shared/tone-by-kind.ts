@@ -53,6 +53,19 @@ export const proposalStatusTone: Record<ProposalStatusKind, PillTone> = {
   superseded: 'information',
 };
 
+// AUD-03: a problem report's status, on the record's "Reported problems"
+// section. `open` waits for a colleague (warning); `fixed` says the record was
+// wrong and is being corrected (positive); `answered` and `rejected` are
+// decisions made on purpose, neutral facts (information), never negative.
+export type ProblemReportStatusKind = 'open' | 'answered' | 'fixed' | 'rejected';
+
+export const problemReportStatusTone: Record<ProblemReportStatusKind, PillTone> = {
+  open: 'warning',
+  answered: 'information',
+  fixed: 'positive',
+  rejected: 'information',
+};
+
 // WAT-01: how a source check ended, as `CheckStatus` names it in the API.
 // The coverage log and the feed's Coverage tab read the check, never the
 // sentence it carries. `never` is the third member the coverage read answers:

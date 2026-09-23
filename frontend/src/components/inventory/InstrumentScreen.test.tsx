@@ -100,6 +100,8 @@ function serve(answer: InstrumentDetail | number, obligations: Obligation[] = [r
     if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path === '/api/v1/obligations') return { status: 200, data: { items: obligations, total } };
     if (sent.path.endsWith('/provisions')) return { status: 200, data: [] };
+    // The record's "Reported problems" (AUD-03): the bank has filed none on it.
+    if (sent.path === '/api/v1/problem-reports') return { status: 200, data: { items: [], total: 0 } };
     if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
     return { status: 200, data: answer };
@@ -300,5 +302,20 @@ describe('InstrumentScreen', () => {
     renderIn(<InstrumentScreen instrumentId="in-1" />, ['library.read']);
     await screen.findByRole('heading', { level: 1 });
     expect(screen.queryByRole('button', { name: 'This looks wrong' })).toBeNull();
+  });
+
+  it("shows the instrument's reported problems, and none of it without the permission", async () => {
+    const sent = serve(fffs);
+    const withReport = renderIn(<InstrumentScreen instrumentId="in-1" />);
+    expect(await screen.findByText('No problems reported on this record.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Reported problems' })).toBeInTheDocument();
+    expect(sent.filter((call) => call.path === '/api/v1/problem-reports').map((call) => call.params)).toEqual([
+      { subjectType: 'instrument', subjectId: fffs.id, limit: 20, offset: 0 },
+    ]);
+    withReport.unmount();
+
+    renderIn(<InstrumentScreen instrumentId="in-1" />, ['library.read']);
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.queryByRole('heading', { name: 'Reported problems' })).toBeNull();
   });
 });

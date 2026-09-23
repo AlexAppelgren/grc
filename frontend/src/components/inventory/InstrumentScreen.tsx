@@ -8,6 +8,7 @@ import { searchOf } from '@/components/inventory/InventoryScreen';
 import { Facts, type Fact } from '@/components/inventory/ObligationPanels';
 import { ObligationRow } from '@/components/inventory/ObligationRow';
 import { ProvisionTree } from '@/components/inventory/ProvisionTree';
+import { RecordProblemReports } from '@/components/inventory/RecordProblemReports';
 import { ReportProblemModal, type ReportContext } from '@/components/inventory/ReportProblemModal';
 import { Button } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
@@ -21,6 +22,7 @@ import { presentInstrument } from '@/features/library/instrument-presentation';
 import { presentBindingLevel } from '@/features/library/obligation-presentation';
 import type { InstrumentDetail, InstrumentLineageRef } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
+import { useRefreshProblemReports } from '@/features/problem-reports/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate } from '@/shared/utils/format';
@@ -28,7 +30,8 @@ import { problemStatus } from '@/shared/utils/problem';
 
 // The instrument card (design/screens/tenant-instrument.html; INV-01, INV-06,
 // FP-03). It reads and never writes the library: the one thing a reader can
-// send from here is a problem report, which stays inside their own bank. The
+// send from here is a problem report, which stays inside their own bank,
+// and the close of one in its Reported problems section (AUD-03). The
 // provision tree is its own panel (chunk3-rest-T18); the identity panel and
 // lineage land here.
 
@@ -176,6 +179,12 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
   const instrument = useInstrument(instrumentId);
   const record = instrument.data;
   const report = useReportInstrumentProblem(instrumentId);
+  const refreshReports = useRefreshProblemReports();
+  // A report just filed joins the record's "Reported problems" when the form closes.
+  const onReporting = (open: boolean) => {
+    setReporting(open);
+    if (!open) refreshReports();
+  };
 
   if (instrument.isError) {
     if (problemStatus(instrument.error) === 404) return <NotFoundScreen backHref="/inventory" backLabel={t('inventory.instrument.back')} />;
@@ -226,11 +235,12 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
               ) : undefined
             }
           />
+          <RecordProblemReports subjectType="instrument" subjectId={record.id} />
           <LineagePanel instrument={record} />
         </div>
       </div>
 
-      <ReportProblemModal open={reporting} onOpenChange={setReporting} context={context} report={report} />
+      <ReportProblemModal open={reporting} onOpenChange={onReporting} context={context} report={report} />
     </div>
   );
 }
